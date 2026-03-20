@@ -19,6 +19,11 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      { source: '/contact', destination: '/contacts', permanent: true },
+    ];
+  },
   images: {
     domains: ['localhost', 'pilo-rus.ru', 'pilmos.ru'],
   },
