@@ -22,7 +22,7 @@ jobs:
           target: "~/pilo-rus/app/"
           overwrite: true
 
-      - name: Update env and create deploy trigger
+      - name: Setup env and create deploy trigger
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -31,7 +31,6 @@ jobs:
           script: |
             ENV_FILE=~/pilo-rus/app/.env
 
-            # Update or add SMTP settings
             update_env() {
               local key=$1
               local value=$2
@@ -42,17 +41,20 @@ jobs:
               fi
             }
 
-            if [ -f "$ENV_FILE" ]; then
-              update_env "SMTP_HOST" "mail.beget.com"
-              update_env "SMTP_PORT" "587"
-              update_env "SMTP_USER" "info@pilo-rus.ru"
-              update_env "SMTP_PASSWORD" "${{ secrets.SMTP_PASSWORD }}"
-              update_env "ADMIN_EMAIL" "info@pilo-rus.ru"
-              update_env "NEXTAUTH_URL" "https://pilo-rus.ru"
-              echo "✅ .env updated with SMTP settings"
-            else
-              echo "⚠️ .env not found at $ENV_FILE"
+            # Create .env if it doesn't exist
+            if [ ! -f "$ENV_FILE" ]; then
+              touch "$ENV_FILE"
+              echo "📄 Created new .env file"
             fi
+
+            # Update SMTP and basic settings
+            update_env "SMTP_HOST" "mail.beget.com"
+            update_env "SMTP_PORT" "587"
+            update_env "SMTP_USER" "info@pilo-rus.ru"
+            update_env "SMTP_PASSWORD" "${{ secrets.SMTP_PASSWORD }}"
+            update_env "ADMIN_EMAIL" "info@pilo-rus.ru"
+            update_env "NEXTAUTH_URL" "https://pilo-rus.ru"
+            echo "✅ .env updated with SMTP settings"
 
             # Create deploy trigger for CronTab
             touch ~/pilo-rus/.deploy-trigger
