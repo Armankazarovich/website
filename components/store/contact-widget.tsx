@@ -162,12 +162,12 @@ export function ContactWidget({
   return (
     <div
       id="contact-widget"
-      className={`fixed bottom-20 lg:bottom-8 z-50 flex flex-col items-end gap-3 transition-all duration-500 ${positionClass} ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+      className={`fixed bottom-20 lg:bottom-8 z-50 flex flex-col items-end gap-3 transition-all duration-500 pointer-events-none ${positionClass} ${
+        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       } ${widgetPosition === "left" ? "items-start" : "items-end"}`}
     >
       {/* Popup with channels */}
-      <div className={`transition-all duration-300 origin-bottom-right ${
+      <div className={`transition-all duration-300 origin-bottom-right pointer-events-auto ${
         widgetPosition === "left" ? "origin-bottom-left" : "origin-bottom-right"
       } ${
         open
@@ -206,7 +206,7 @@ export function ContactWidget({
       {/* Main FAB button */}
       <button
         onClick={() => setOpen(!open)}
-        className={`group flex items-center gap-2.5 shadow-xl transition-all duration-300 hover:shadow-2xl active:scale-95 ${
+        className={`pointer-events-auto group flex items-center gap-2.5 shadow-xl transition-all duration-300 hover:shadow-2xl active:scale-95 ${
           open
             ? "bg-muted border border-border text-foreground px-4 py-3 rounded-2xl"
             : "bg-brand-orange text-white px-5 py-3.5 rounded-2xl hover:bg-brand-orange/90"
