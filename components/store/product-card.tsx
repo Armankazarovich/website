@@ -55,6 +55,11 @@ export function ProductCard({
     const price = unitType === "CUBE" ? firstVariant.pricePerCube : firstVariant.pricePerPiece;
     if (!price) return;
 
+    // Haptic feedback like Telegram
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+
     addItem({
       variantId: firstVariant.id,
       productId: id,
@@ -70,14 +75,16 @@ export function ProductCard({
     toast({
       title: "✓ Добавлено в корзину",
       description: `${name} · ${firstVariant.size}`,
-      duration: 3000,
+      duration: 4000,
       action: (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="shrink-0 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
-        >
-          Открыть
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => setCartOpen(true)}
+            className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
+            В корзину →
+          </button>
+        </div>
       ),
     } as any);
   };

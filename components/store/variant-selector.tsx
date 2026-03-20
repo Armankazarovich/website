@@ -70,6 +70,11 @@ export function VariantSelector({
   const handleAdd = () => {
     if (!selectedVariant || !currentPrice) return;
 
+    // Haptic feedback like Telegram
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+
     addItem({
       variantId: selectedVariant.id,
       productId,
@@ -82,10 +87,19 @@ export function VariantSelector({
       price: Number(currentPrice),
     });
 
+    const { setCartOpen } = useCartStore.getState();
     toast({
       title: "✓ Добавлено в корзину",
       description: `${productName} · ${selectedVariant.size} · ${quantity} ${unitType === "CUBE" ? "м³" : "шт"}`,
-      duration: 3000,
+      duration: 4000,
+      action: (
+        <button
+          onClick={() => setCartOpen(true)}
+          className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0"
+        >
+          В корзину →
+        </button>
+      ),
     } as any);
   };
 
