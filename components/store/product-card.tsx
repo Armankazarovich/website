@@ -7,6 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { WishlistButton } from "@/components/store/wishlist-button";
 
 interface Variant {
@@ -77,16 +78,15 @@ export function ProductCard({
       description: `${name} · ${firstVariant.size}`,
       duration: 4000,
       action: (
-        <div className="flex gap-2 shrink-0">
-          <button
-            onClick={() => setCartOpen(true)}
-            className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors"
-          >
-            В корзину →
-          </button>
-        </div>
+        <ToastAction
+          altText="Открыть корзину"
+          onClick={() => setCartOpen(true)}
+          className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors border-0"
+        >
+          В корзину →
+        </ToastAction>
       ),
-    } as any);
+    });
   };
 
   /* Показываем первые 3 размера + счётчик остальных */
