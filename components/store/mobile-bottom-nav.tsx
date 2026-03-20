@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -181,45 +181,73 @@ export function MobileBottomNav() {
     },
   ];
 
+  // Haptic feedback helper
+  const haptic = useCallback(() => {
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(8);
+    }
+  }, []);
+
   return (
     <>
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/80 backdrop-blur-xl border-t border-border/60 safe-area-inset-bottom">
-        <div className="flex items-center justify-around px-2 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/90 backdrop-blur-xl border-t border-border/50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around px-1 pt-1.5 pb-2">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = item.href ? pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)) : false;
+            const isActive = item.href
+              ? pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
+              : false;
 
             const content = (
               <div
-                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors relative ${
-                  isActive
+                className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-2xl
+                  transition-all duration-150 active:scale-[0.88] active:duration-75
+                  ${isActive
                     ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                    : "text-muted-foreground"
+                  }`}
+                style={{ WebkitTapHighlightColor: "transparent" }}
               >
-                <div className="relative">
-                  <Icon className="w-5 h-5" />
+                {/* Active pill indicator */}
+                {isActive && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" />
+                )}
+
+                {/* Active background glow */}
+                {isActive && (
+                  <span className="absolute inset-0 rounded-2xl bg-primary/8" />
+                )}
+
+                {/* Icon + badge */}
+                <div className="relative z-10">
+                  <Icon className={`transition-all duration-150 ${isActive ? "w-[22px] h-[22px]" : "w-5 h-5"}`} strokeWidth={isActive ? 2.2 : 1.8} />
                   {mounted && item.badge !== undefined && item.badge > 0 && (
-                    <span className={`absolute -top-1.5 -right-1.5 ${"badgeColor" in item && item.badgeColor ? item.badgeColor : "bg-primary"} text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold leading-none`}>
+                    <span className={`absolute -top-2 -right-2 ${"badgeColor" in item && item.badgeColor ? item.badgeColor : "bg-primary"} text-white text-[9px] min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center font-bold leading-none`}>
                       {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] font-medium leading-none">{item.label}</span>
+
+                <span className={`relative z-10 text-[10px] leading-none transition-all duration-150 ${isActive ? "font-semibold" : "font-medium"}`}>
+                  {item.label}
+                </span>
               </div>
             );
 
             if (item.href) {
               return (
-                <Link key={item.id} href={item.href}>
+                <Link key={item.id} href={item.href} onClick={haptic}>
                   {content}
                 </Link>
               );
             }
 
             return (
-              <button key={item.id} onClick={item.action ?? undefined}>
+              <button
+                key={item.id}
+                onClick={() => { haptic(); item.action?.(); }}
+              >
                 {content}
               </button>
             );

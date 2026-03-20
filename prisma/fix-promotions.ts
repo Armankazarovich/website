@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🔍 Searching for volume discount promotion...");
+  console.log("🔍 Fixing all promotions...");
 
   const promotions = await prisma.promotion.findMany();
   console.log(`Found ${promotions.length} promotions:`);
@@ -27,12 +27,28 @@ async function main() {
         discount: null,
       },
     });
-    console.log(`✅ Updated: "${volumePromo.title}" → "Скидки при большом объёме"`);
-  } else {
-    console.log("⚠️  Volume discount promotion not found. Showing all:");
-    promotions.forEach((p) =>
-      console.log(`  title: "${p.title}" | desc: "${p.description?.slice(0, 60)}..."`)
-    );
+    console.log(`✅ Updated volume promo`);
+  }
+
+  // Fix "free delivery" promotion — remove specific savings amount
+  const deliveryPromo = promotions.find(
+    (p) =>
+      p.title.toLowerCase().includes("доставк") ||
+      p.description?.toLowerCase().includes("8 000") ||
+      p.description?.toLowerCase().includes("8000")
+  );
+
+  if (deliveryPromo) {
+    await prisma.promotion.update({
+      where: { id: deliveryPromo.id },
+      data: {
+        title: "Бесплатная доставка от 10 м³",
+        description:
+          "При заказе пиломатериалов от 10 м³ доставка по Москве и Московской области полностью бесплатна. Используем собственный транспорт.",
+        discount: null,
+      },
+    });
+    console.log(`✅ Updated delivery promo — removed specific savings amount`);
   }
 
   console.log("✅ Done!");
