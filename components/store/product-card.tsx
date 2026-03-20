@@ -118,42 +118,33 @@ export function ProductCard({
           </div>
         )}
 
-        {/* Wishlist button — top right of image */}
-        <div className="absolute top-2 right-2 z-10">
+        {/* Верхняя строка: бейджи слева + wishlist справа — одна высота */}
+        <div className="absolute top-2 left-2 right-2 z-10 flex items-center justify-between gap-2">
+          {/* Левые бейджи */}
+          <div className="flex items-center gap-1.5">
+            {featured && (
+              <span className="inline-flex items-center gap-1 h-7 bg-brand-orange text-white text-[10px] font-bold px-2.5 rounded-xl shadow-md uppercase tracking-wide">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C10 6 6 8 6 12.5C6 16.6 8.9 20 12 20C15.1 20 18 16.6 18 12.5C18 10 16.5 8 15 6.5C15 8 14.3 9.5 13 10.5C13.5 8.5 12 4 12 2Z"/>
+                </svg>
+                Хит
+              </span>
+            )}
+            <span className={`inline-flex items-center gap-1 h-7 text-[10px] font-semibold px-2.5 rounded-xl shadow-md backdrop-blur-sm ${
+              hasStock
+                ? "bg-emerald-500/90 text-white"
+                : "bg-black/50 text-white/70"
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "bg-white animate-pulse" : "bg-white/40"}`} />
+              {hasStock ? "В наличии" : "Нет"}
+            </span>
+          </div>
+
+          {/* Wishlist — та же высота h-7 */}
           <WishlistButton
             size="sm"
-            item={{
-              id,
-              slug,
-              name,
-              category,
-              images,
-              saleUnit,
-              variants,
-            }}
+            item={{ id, slug, name, category, images, saleUnit, variants }}
           />
-        </div>
-
-        {/* Верхние бейджи */}
-        <div className="absolute top-2.5 left-2.5 right-12 flex items-start justify-between pointer-events-none">
-          {/* Хит продаж */}
-          {featured && (
-            <span className="inline-flex items-center gap-1.5 bg-brand-orange text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shadow-lg uppercase tracking-wide">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C10 6 6 8 6 12.5C6 16.6 8.9 20 12 20C15.1 20 18 16.6 18 12.5C18 10 16.5 8 15 6.5C15 8 14.3 9.5 13 10.5C13.5 8.5 12 4 12 2Z"/>
-              </svg>
-              Хит
-            </span>
-          )}
-          {/* Статус наличия */}
-          <span className={`ml-auto inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg shadow-lg backdrop-blur-sm ${
-            hasStock
-              ? "bg-emerald-500/85 text-white"
-              : "bg-black/50 text-white/70"
-          }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${hasStock ? "bg-white animate-pulse" : "bg-white/40"}`} />
-            {hasStock ? "В наличии" : "Нет"}
-          </span>
         </div>
 
         {/* Hover overlay с кнопкой "Подробнее" */}
