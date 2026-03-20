@@ -82,7 +82,7 @@ export default async function CabinetOrdersPage() {
                       {ORDER_STATUS_LABELS[order.status]}
                     </span>
                     <span className="font-bold text-lg text-primary">
-                      {formatPrice(Number(order.totalAmount))} ₽
+                      {formatPrice(Number(order.totalAmount))}
                     </span>
                     <Link href={`/track?order=${order.orderNumber}`} className="text-xs text-primary hover:underline">
                       Отследить →
@@ -102,7 +102,7 @@ export default async function CabinetOrdersPage() {
                       <div className="flex items-center gap-3 shrink-0 text-muted-foreground">
                         <span>{Number(item.quantity)} {item.unitType === "CUBE" ? "м³" : "шт"}</span>
                         <span className="font-medium text-foreground">
-                          {formatPrice(Number(item.price) * Number(item.quantity))} ₽
+                          {formatPrice(Number(item.price) * Number(item.quantity))}
                         </span>
                       </div>
                     </div>

@@ -96,7 +96,7 @@ export function VariantCards({
             {price ? (
               <div>
                 <p className="font-bold text-lg text-primary leading-none">
-                  {formatPrice(Number(price))} ₽
+                  {formatPrice(Number(price))}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">за {unit}</p>
               </div>
