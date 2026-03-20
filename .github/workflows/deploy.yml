@@ -29,7 +29,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            echo "PATH: $PATH"
-            which npm 2>/dev/null || echo "npm not in PATH"
-            find /usr /opt /usr/local -name "npm" -type f 2>/dev/null | head -5
-            find /usr /opt /usr/local -name "pm2" -type f 2>/dev/null | head -5
+            find $HOME -name "npm" -type f 2>/dev/null | head -5
+            find $HOME -name "node" -type f 2>/dev/null | head -5
+            find $HOME -name "pm2" 2>/dev/null | head -5
+            ls $HOME/.nvm/versions/ 2>/dev/null || echo "no nvm"
+            ls $HOME/node_modules/.bin/pm2 2>/dev/null || echo "no pm2 there"
+            env | grep -i node || echo "no node env vars"
