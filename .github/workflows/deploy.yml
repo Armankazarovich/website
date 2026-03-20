@@ -12,18 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Prepare target directory
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            whoami
-            echo "Home: $HOME"
-            ls /home/armankmb/pilo-rus/ || echo "DIR NOT FOUND"
-            mkdir -p /home/armankmb/pilo-rus/app
-
       - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -31,7 +19,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: /home/armankmb/pilo-rus/app/
+          target: "~/pilo-rus/app/"
           overwrite: true
 
       - name: Build and restart
@@ -41,7 +29,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/armankmb/pilo-rus/app
+            cd ~/pilo-rus/app
             npm ci --production=false
             npm run build
             pm2 restart pilorus
