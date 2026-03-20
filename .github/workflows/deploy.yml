@@ -12,6 +12,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Prepare target directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            whoami
+            echo "Home: $HOME"
+            ls /home/armankmb/pilo-rus/ || echo "DIR NOT FOUND"
+            mkdir -p /home/armankmb/pilo-rus/app
+
       - name: Copy files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -21,7 +33,6 @@ jobs:
           source: "."
           target: /home/armankmb/pilo-rus/app/
           overwrite: true
-          rm: false
 
       - name: Build and restart
         uses: appleboy/ssh-action@v1.0.3
