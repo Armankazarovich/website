@@ -29,11 +29,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            source $HOME/.profile 2>/dev/null || true
-            source $HOME/.bashrc 2>/dev/null || true
-            cd ~/pilo-rus/app
-            npm ci --production=false
-            npm run build
-            pm2 restart pilorus
+            echo "PATH: $PATH"
+            which npm 2>/dev/null || echo "npm not in PATH"
+            find /usr /opt /usr/local -name "npm" -type f 2>/dev/null | head -5
+            find /usr /opt /usr/local -name "pm2" -type f 2>/dev/null | head -5
