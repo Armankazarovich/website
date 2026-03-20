@@ -158,7 +158,7 @@ export function Header({ categories = [] }: HeaderProps) {
       setCatalogOpen(false);
       setSelectedType("");
       setSelectedSize("");
-    }, 200);
+    }, 350);
   };
 
   const handleApplyFilters = useCallback(() => {
@@ -672,7 +672,7 @@ export function Header({ categories = [] }: HeaderProps) {
                   Личный кабинет
                 </Link>
 
-                <p className="text-center text-[10px] text-muted-foreground/40 pt-1">ООО ПИТИ · Химки, МО · 2025</p>
+                <p className="text-center text-[10px] text-muted-foreground/40 pt-1">ООО ПИТИ · Химки, МО · {new Date().getFullYear()}</p>
               </div>
             </motion.div>
           </>
