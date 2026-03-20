@@ -22,7 +22,7 @@ jobs:
           target: "~/pilo-rus/app/"
           overwrite: true
 
-      - name: Build and restart
+      - name: Find npm and trigger build
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -30,7 +30,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           request_pty: true
           script: |
-            bash -l -c "which npm && which pm2 && echo OK || echo FAIL"
-            cat ~/.bash_profile 2>/dev/null | grep -i node || echo "no node in bash_profile"
-            cat ~/.profile 2>/dev/null | grep -i node || echo "no node in profile"
-            cat /etc/environment 2>/dev/null | grep -i node || echo "no node in etc/environment"
+            echo "=== Searching npm everywhere ==="
+            find / -name "npm" -type f 2>/dev/null | grep -v "/proc" | grep -v "/sys" | head -10
+            echo "=== Check if files copied correctly ==="
+            ls ~/pilo-rus/app/package.json 2>/dev/null && echo "FILES OK" || echo "FILES MISSING"
+            echo "=== readlink home ==="
+            readlink -f ~
