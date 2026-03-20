@@ -28,10 +28,9 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          request_pty: true
           script: |
-            find $HOME -name "npm" -type f 2>/dev/null | head -5
-            find $HOME -name "node" -type f 2>/dev/null | head -5
-            find $HOME -name "pm2" 2>/dev/null | head -5
-            ls $HOME/.nvm/versions/ 2>/dev/null || echo "no nvm"
-            ls $HOME/node_modules/.bin/pm2 2>/dev/null || echo "no pm2 there"
-            env | grep -i node || echo "no node env vars"
+            bash -l -c "which npm && which pm2 && echo OK || echo FAIL"
+            cat ~/.bash_profile 2>/dev/null | grep -i node || echo "no node in bash_profile"
+            cat ~/.profile 2>/dev/null | grep -i node || echo "no node in profile"
+            cat /etc/environment 2>/dev/null | grep -i node || echo "no node in etc/environment"
