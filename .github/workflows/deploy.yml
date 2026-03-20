@@ -9,7 +9,20 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          source: "app/,components/,lib/,prisma/,public/,store/,tailwind.config.ts,next.config.ts,package.json,package-lock.json,tsconfig.json,postcss.config.mjs"
+          target: /home/armankmb/pilo-rus/app/
+          rm: false
+
+      - name: Build and restart
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -17,7 +30,6 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd /home/armankmb/pilo-rus/app
-            git pull
             npm ci --production=false
             npm run build
             pm2 restart pilorus
