@@ -11,10 +11,8 @@ import {
   SlidersHorizontal,
   X,
   Handshake,
-  Heart,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
-import { useWishlistStore } from "@/store/wishlist";
 import { SearchModal } from "@/components/store/search-modal";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { PartnershipModal } from "@/components/store/partnership-modal";
@@ -119,7 +117,6 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
   const { cartOpen, setCartOpen } = useCartStore();
-  const wishlistCount = useWishlistStore((s) => s.items.length);
   const [searchOpen, setSearchOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [partnershipOpen, setPartnershipOpen] = useState(false);
@@ -148,15 +145,6 @@ export function MobileBottomNav() {
           },
         ]
       : []),
-    {
-      id: "wishlist",
-      icon: Heart,
-      label: "Избранное",
-      href: "/wishlist",
-      action: null,
-      badge: wishlistCount,
-      badgeColor: "bg-red-500",
-    },
     {
       id: "cart",
       icon: ShoppingCart,
