@@ -52,12 +52,23 @@
 @layer base {
   * {
     @apply border-border;
+    /* Remove 300ms tap delay on mobile */
+    touch-action: manipulation;
   }
   body {
     @apply bg-background text-foreground;
+    /* Smooth scrolling everywhere */
+    scroll-behavior: smooth;
+    /* Hardware acceleration for smoother rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   h1, h2, h3 {
     @apply font-display;
+  }
+  /* Smooth page transitions */
+  a, button {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 

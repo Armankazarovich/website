@@ -62,6 +62,9 @@ export const viewport: Viewport = {
   themeColor: "#E8700A",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
 };
 
 const organizationSchema = {

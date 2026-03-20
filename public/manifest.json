@@ -4,9 +4,21 @@
   "description": "Пиломатериалы от производителя в Химках",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5E6C8",
+  "background_color": "#1A0F0A",
   "theme_color": "#E8700A",
   "orientation": "portrait-primary",
+  "scope": "/",
+  "id": "/",
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "/images/production/sklad-3.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "ПилоРус — главная страница"
+    }
+  ],
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
@@ -52,5 +64,6 @@
     }
   ],
   "categories": ["shopping", "business"],
-  "lang": "ru"
+  "lang": "ru",
+  "dir": "ltr"
 }
