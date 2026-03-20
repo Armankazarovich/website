@@ -21,13 +21,7 @@ jobs:
           source: "."
           target: "~/pilo-rus/app/"
           overwrite: true
-          # Exclude heavy folders — uploads stay on server, node_modules rebuilt there
-          exclude: |
-            public/images/products
-            public/images/categories
-            .git
-            node_modules
-            .next
+          exclude: ".git,.next,node_modules,public/images/products,public/images/categories"
 
       - name: Setup env and create deploy trigger
         uses: appleboy/ssh-action@v1.0.3
