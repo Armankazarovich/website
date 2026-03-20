@@ -18,8 +18,9 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "app/,components/,lib/,prisma/,public/,store/,tailwind.config.ts,next.config.ts,package.json,package-lock.json,tsconfig.json,postcss.config.mjs"
+          source: "."
           target: /home/armankmb/pilo-rus/app/
+          overwrite: true
           rm: false
 
       - name: Build and restart
