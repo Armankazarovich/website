@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cabinet
+Disallow: /api
+
+# Яндекс
+User-agent: Yandex
+Allow: /
+Disallow: /admin
+Disallow: /cabinet
+Disallow: /api
+Clean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term
+
+Sitemap: https://pilo-rus.ru/sitemap.xml
+Host: pilo-rus.ru

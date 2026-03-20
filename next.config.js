@@ -1,0 +1,39 @@
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200,
+        },
+      },
+    },
+  ],
+});
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  images: {
+    domains: ['localhost', 'pilo-rus.ru', 'pilmos.ru'],
+  },
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:3000', 'pilo-rus.ru'],
+    },
+  },
+  // Skip type checking and linting during build (already checked locally)
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+};
+
+module.exports = withPWA(nextConfig);

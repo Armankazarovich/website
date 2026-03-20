@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SaleUnit {
+  CUBE
+  PIECE
+  BOTH
+}
+
+enum UnitType {
+  CUBE
+  PIECE
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id           String             @id @default(cuid())
+  name         String?
+  email        String             @unique
+  phone        String?
+  passwordHash String
+  role         Role               @default(USER)
+  address      String?
+  orders       Order[]
+  reviews      Review[]
+  pushSubs     PushSubscription[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+}
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  image    String?
+  sortOrder Int      @default(0)
+  products Product[]
+}
+
+model Product {
+  id          String           @id @default(cuid())
+  slug        String           @unique
+  name        String
+  description String?
+  categoryId  String
+  category    Category         @relation(fields: [categoryId], references: [id])
+  images      String[]
+  saleUnit    SaleUnit         @default(BOTH)
+  variants    ProductVariant[]
+  active      Boolean          @default(true)
+  featured    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id            String      @id @default(cuid())
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size          String
+  pricePerCube  Decimal?    @db.Decimal(10, 2)
+  pricePerPiece Decimal?    @db.Decimal(10, 2)
+  piecesPerCube Int?
+  inStock       Boolean     @default(true)
+  orderItems    OrderItem[]
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     Int         @default(autoincrement())
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  guestName       String?
+  guestEmail      String?
+  guestPhone      String?
+  status          OrderStatus @default(NEW)
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  paymentMethod   String      @default("Наличные / Счёт")
+  deliveryAddress String?
+  comment         String?
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String         @id @default(cuid())
+  orderId   String
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  productName  String
+  variantSize  String
+  unitType  UnitType
+  quantity  Decimal        @db.Decimal(10, 3)
+  price     Decimal        @db.Decimal(10, 2)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  name      String
+  rating    Int
+  text      String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Promotion {
+  id          String    @id @default(cuid())
+  title       String
+  description String
+  discount    Int?
+  imageUrl    String?
+  validUntil  DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+model SiteSettings {
+  id    String @id @default("default")
+  key   String @unique
+  value String
+}
+
+model PartnershipLead {
+  id        String   @id @default(cuid())
+  name      String
+  company   String?
+  phone     String
+  message   String?
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
