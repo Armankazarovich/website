@@ -22,17 +22,14 @@ jobs:
           target: "~/pilo-rus/app/"
           overwrite: true
 
-      - name: Find npm and trigger build
+      - name: Create deploy trigger
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          request_pty: true
           script: |
-            echo "=== Searching npm everywhere ==="
-            find / -name "npm" -type f 2>/dev/null | grep -v "/proc" | grep -v "/sys" | head -10
-            echo "=== Check if files copied correctly ==="
-            ls ~/pilo-rus/app/package.json 2>/dev/null && echo "FILES OK" || echo "FILES MISSING"
-            echo "=== readlink home ==="
-            readlink -f ~
+            touch ~/pilo-rus/.deploy-trigger
+            echo "Deploy trigger created at $(date)"
+            echo "Files in ~/pilo-rus/app/:"
+            ls ~/pilo-rus/app/package.json && echo "package.json OK"
