@@ -23,7 +23,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: "~/pilo-rus/app/"
+          target: "/home/armankmb/pilo-rus/app/"
           overwrite: true
 
       - name: Setup env and create deploy trigger
@@ -33,7 +33,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            ENV_FILE=~/pilo-rus/app/.env
+            ENV_FILE=/home/armankmb/pilo-rus/app/.env
 
             update_env() {
               local key=$1
@@ -61,5 +61,5 @@ jobs:
             echo "✅ .env updated with SMTP settings"
 
             # Create deploy trigger for CronTab
-            touch ~/pilo-rus/.deploy-trigger
+            touch /home/armankmb/pilo-rus/.deploy-trigger
             echo "✅ Deploy trigger created at $(date)"
