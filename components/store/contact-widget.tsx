@@ -162,7 +162,7 @@ export function ContactWidget({
   return (
     <div
       id="contact-widget"
-      className={`fixed bottom-20 lg:bottom-8 z-50 flex flex-col items-end gap-3 transition-all duration-500 pointer-events-none ${positionClass} ${
+      className={`fixed bottom-20 lg:bottom-8 z-50 hidden lg:flex flex-col items-end gap-3 transition-all duration-500 pointer-events-none ${positionClass} ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       } ${widgetPosition === "left" ? "items-start" : "items-end"}`}
     >
