@@ -17,7 +17,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "app/,components/,lib/,prisma/,public/,store/,tailwind.config.ts,next.config.ts,package.json,package-lock.json,tsconfig.json,postcss.config.mjs"
           target: /home/armankmb/pilo-rus/app/
           rm: false
@@ -27,7 +27,7 @@ jobs:
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/armankmb/pilo-rus/app
             npm ci --production=false
