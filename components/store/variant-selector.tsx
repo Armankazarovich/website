@@ -5,8 +5,8 @@ import { Minus, Plus, ShoppingCart, Phone } from "lucide-react";
 import { useCartStore, type UnitType } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { flyToCart } from "@/lib/cart-fly";
 
 interface Variant {
   id: string;
@@ -30,7 +30,6 @@ export function VariantSelector({
   productId, productName, productSlug, productImage, saleUnit, variants,
 }: VariantSelectorProps) {
   const { addItem } = useCartStore();
-  const { toast } = useToast();
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
     variants.find((v) => v.inStock) || variants[0] || null
@@ -67,10 +66,11 @@ export function VariantSelector({
     }
   };
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!selectedVariant || !currentPrice) return;
 
-    // Haptic feedback like Telegram
+    flyToCart(e.currentTarget, productImage ?? null);
+
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(10);
     }
@@ -86,21 +86,6 @@ export function VariantSelector({
       quantity,
       price: Number(currentPrice),
     });
-
-    const { setCartOpen } = useCartStore.getState();
-    toast({
-      title: "✓ Добавлено в корзину",
-      description: `${productName} · ${selectedVariant.size} · ${quantity} ${unitType === "CUBE" ? "м³" : "шт"}`,
-      duration: 4000,
-      action: (
-        <button
-          onClick={() => setCartOpen(true)}
-          className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors shrink-0"
-        >
-          В корзину →
-        </button>
-      ),
-    } as any);
   };
 
   const adjustQty = (delta: number) => {
