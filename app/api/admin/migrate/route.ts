@@ -69,5 +69,46 @@ export async function GET(req: NextRequest) {
     results.push("✅ User.customRole column added");
   } catch (e: any) { results.push(`⚠️ User.customRole: ${e.message}`); }
 
+  // Fix promotions text — remove specific percentages
+  try {
+    const promotions = await prisma.promotion.findMany();
+    const volumePromo = promotions.find(
+      (p) => p.title.toLowerCase().includes("объём") || p.title.toLowerCase().includes("объем") || p.title.toLowerCase().includes("скидк")
+    );
+    if (volumePromo) {
+      await prisma.promotion.update({
+        where: { id: volumePromo.id },
+        data: {
+          title: "Скидки при большом объёме",
+          description: "Чем больше объём заказа — тем выгоднее цена. Скидки на крупные партии обсуждаются индивидуально с менеджером. Звоните нам — рассчитаем лучшее предложение для вашего проекта.",
+          discount: null,
+        },
+      });
+      results.push("✅ Volume promo text fixed (removed specific %)");
+    } else {
+      results.push("ℹ️ Volume promo not found — skipped");
+    }
+  } catch (e: any) { results.push(`⚠️ Promo fix: ${e.message}`); }
+
+  try {
+    const promotions = await prisma.promotion.findMany();
+    const deliveryPromo = promotions.find(
+      (p) => p.title.toLowerCase().includes("доставк") || p.description?.includes("8 000") || p.description?.includes("8000")
+    );
+    if (deliveryPromo) {
+      await prisma.promotion.update({
+        where: { id: deliveryPromo.id },
+        data: {
+          title: "Бесплатная доставка от 10 м³",
+          description: "При заказе пиломатериалов от 10 м³ доставка по Москве и Московской области полностью бесплатна. Используем собственный транспорт.",
+          discount: null,
+        },
+      });
+      results.push("✅ Delivery promo text fixed");
+    } else {
+      results.push("ℹ️ Delivery promo not found — skipped");
+    }
+  } catch (e: any) { results.push(`⚠️ Delivery promo fix: ${e.message}`); }
+
   return NextResponse.json({ ok: true, results });
 }
