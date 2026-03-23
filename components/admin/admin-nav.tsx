@@ -12,6 +12,7 @@ import {
   Megaphone,
   ChevronRight,
   Globe,
+  HelpCircle,
 } from "lucide-react";
 
 const adminNav = [
@@ -23,6 +24,7 @@ const adminNav = [
   { href: "/admin/reviews", label: "Отзывы", icon: Star },
   { href: "/admin/site", label: "Сайт", icon: Globe },
   { href: "/admin/settings", label: "Настройки", icon: Settings },
+  { href: "/admin/help", label: "Помощь", icon: HelpCircle },
 ];
 
 export function AdminNav() {
