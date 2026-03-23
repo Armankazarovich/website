@@ -81,16 +81,17 @@ export function ProductCard({
       title: "✓ Добавлено в корзину",
       description: `${name} · ${firstVariant.size}`,
       duration: 4000,
+      ...(images[0] ? { image: images[0] } : {}),
       action: (
         <ToastAction
           altText="Открыть корзину"
           onClick={() => setCartOpen(true)}
-          className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors border-0"
+          className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors border-0 shrink-0"
         >
           В корзину →
         </ToastAction>
       ),
-    });
+    } as any);
   };
 
   /* Показываем первые 3 размера + счётчик остальных */
