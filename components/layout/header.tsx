@@ -174,7 +174,7 @@ export function Header({ categories = [] }: HeaderProps) {
   return (
     <>
       {/* Top bar */}
-      <div className="bg-brand-brown text-white text-xs py-1.5 hidden md:block">
+      <div className="bg-zinc-950 text-white text-xs py-1.5 hidden md:block">
         <div className="container flex justify-between items-center">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/40 px-2 py-0.5 rounded-full">
@@ -204,10 +204,10 @@ export function Header({ categories = [] }: HeaderProps) {
       {/* Main header */}
       <header
         className={cn(
-          "sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b transition-all duration-300",
+          "sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b transition-all duration-300",
           scrolled
-            ? "shadow-[0_4px_24px_-4px_rgba(232,112,10,0.15)] border-brand-orange/20 bg-background/97"
-            : "border-border/60"
+            ? "shadow-[0_4px_24px_-4px_rgba(232,112,10,0.18)] border-brand-orange/25 bg-background/[0.98]"
+            : "border-border/50"
         )}
       >
         <div className="container flex items-center justify-between h-[68px] gap-3">
