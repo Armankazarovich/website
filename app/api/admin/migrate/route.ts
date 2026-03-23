@@ -113,7 +113,7 @@ export async function GET(req: NextRequest) {
         await prisma.siteSettings.update({ where: { key: s.key }, data: { value: s.value } });
         results.push(`✅ Setting ${s.key} updated to: ${s.value}`);
       } else {
-        await prisma.siteSettings.create({ data: { key: s.key, value: s.value } });
+        await prisma.siteSettings.create({ data: { id: s.key, key: s.key, value: s.value } });
         results.push(`✅ Setting ${s.key} created: ${s.value}`);
       }
     }
