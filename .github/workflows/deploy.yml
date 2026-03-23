@@ -58,6 +58,7 @@ jobs:
             update_env "SMTP_PASSWORD" "${{ secrets.SMTP_PASSWORD }}"
             update_env "ADMIN_EMAIL" "info@pilo-rus.ru"
             update_env "NEXTAUTH_URL" "https://pilo-rus.ru"
+            update_env "AUTH_URL" "https://pilo-rus.ru"
             update_env "NEXTAUTH_SECRET" "${{ secrets.NEXTAUTH_SECRET }}"
             update_env "AUTH_SECRET" "${{ secrets.NEXTAUTH_SECRET }}"
             echo "✅ .env updated with SMTP and auth settings"
