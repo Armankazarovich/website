@@ -1,9 +1,10 @@
+import type { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CabinetSidebar } from "@/components/cabinet/cabinet-sidebar";
 
-export default async function CabinetLayout({ children }: { children: React.ReactNode }) {
+export default async function CabinetLayout({ children }: { children: ReactNode }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
