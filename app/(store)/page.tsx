@@ -124,7 +124,7 @@ async function getData() {
     }),
     prisma.promotion.findMany({
       where: { active: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
       take: 3,
     }),
     prisma.review.findMany({
