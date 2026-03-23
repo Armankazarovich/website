@@ -19,8 +19,14 @@ const transporter = nodemailer.createTransport({
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
   const mailOptions = {
     from: `"ПилоРус" <${process.env.SMTP_USER}>`,
+    replyTo: process.env.SMTP_USER,
     to: email,
     subject: "Восстановление пароля — ПилоРус",
+    headers: {
+      "X-Mailer": "ПилоРус Mailer",
+      "X-Priority": "1",
+      "Precedence": "bulk",
+    },
     html: `
       <!DOCTYPE html>
       <html lang="ru">

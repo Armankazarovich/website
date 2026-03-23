@@ -139,6 +139,20 @@ export default function CheckoutPage() {
     defaultValues: { paymentMethod: "cash" },
   });
 
+  // Автозаполнение данных залогиненного пользователя
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((user) => {
+        if (user.name) setValue("name", user.name);
+        if (user.phone) setValue("phone", user.phone);
+        if (user.email) setValue("email", user.email);
+        if (user.address) setValue("address", user.address);
+      })
+      .catch(() => {});
+  }, [session?.user?.id, setValue]);
+
   // Wait for hydration before checking cart (localStorage loads after mount)
   if (!mounted) {
     return (
