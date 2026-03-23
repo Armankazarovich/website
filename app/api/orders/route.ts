@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOrderNotification, sendCustomerOrderConfirmation } from "@/lib/mail";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
+import { auth } from "@/lib/auth";
 import { z } from "zod";
 
 const orderSchema = z.object({
@@ -35,8 +36,13 @@ export async function POST(req: NextRequest) {
 
     const { name, phone, email, address, paymentMethod, comment, items, totalAmount } = parsed.data;
 
+    // Привязать заказ к аккаунту если пользователь авторизован
+    const session = await auth();
+    const userId = session?.user?.id ?? null;
+
     const order = await prisma.order.create({
       data: {
+        userId: userId || undefined,
         guestName: name,
         guestPhone: phone,
         guestEmail: email || null,

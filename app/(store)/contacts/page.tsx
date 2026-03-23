@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { ContactForm } from "@/components/store/contact-form";
 
 export const metadata: Metadata = {
   title: "Контакты",
@@ -83,45 +84,7 @@ export default function ContactsPage() {
         </div>
 
         {/* Quick request form */}
-        <div className="bg-card rounded-2xl border border-border p-6">
-          <h2 className="font-display font-bold text-xl mb-4">Оставить заявку</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Отправьте нам сообщение — перезвоним в течение 15 минут
-          </p>
-          <form className="space-y-4" action="/api/orders" method="POST">
-            <div>
-              <label className="text-sm font-medium block mb-1">Ваше имя</label>
-              <input
-                type="text"
-                placeholder="Иван Иванов"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1">Телефон *</label>
-              <input
-                type="tel"
-                placeholder="+7 (999) 000-00-00"
-                required
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium block mb-1">Вопрос или пожелание</label>
-              <textarea
-                rows={4}
-                placeholder="Что вас интересует?"
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <a
-              href="tel:+79859707133"
-              className="block w-full bg-primary text-primary-foreground text-center py-3 rounded-xl font-semibold hover:bg-primary/90 transition-colors"
-            >
-              📞 Позвонить сейчас
-            </a>
-          </form>
-        </div>
+        <ContactForm />
       </div>
     </div>
   );
