@@ -146,9 +146,17 @@ export function PwaFooterBadges() {
           />
 
           {/* Dialog */}
-          <div className="relative w-full max-w-sm rounded-2xl backdrop-blur-2xl bg-black/55 border border-white/10 shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl shadow-black/80"
+            style={{
+              backdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
+              WebkitBackdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.55) 100%)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
+          >
             {/* Glass shine */}
-            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
             {/* Colored top stripe */}
             <div className="h-1 w-full" style={{ background: INSTRUCTIONS[open].color }} />
 

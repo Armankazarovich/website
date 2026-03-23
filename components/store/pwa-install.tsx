@@ -87,11 +87,21 @@ export function PwaInstall() {
       className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
-      <div className="max-w-xl mx-auto relative rounded-2xl backdrop-blur-2xl bg-black/50 border border-white/10 shadow-2xl shadow-black/60 p-4 overflow-hidden">
-        {/* Subtle glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-orange/8 via-transparent to-transparent pointer-events-none" />
-        {/* Glass shine top */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+      <div className="max-w-xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80"
+        style={{
+          backdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
+          WebkitBackdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
+          background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.55) 100%)",
+          border: "1px solid rgba(255,255,255,0.12)",
+        }}
+      >
+        {/* Top shine — liquid glass reflection */}
+        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+        {/* Inner top glow */}
+        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
+        {/* Orange glow hint */}
+        <div className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full bg-brand-orange/15 blur-2xl pointer-events-none" />
+        <div className="relative p-4">
 
         <div className="relative flex items-start gap-3">
           {/* App icon — белый фон с логотипом */}
@@ -186,6 +196,7 @@ export function PwaInstall() {
             )}
           </div>
         </div>
+        </div>{/* /relative p-4 */}
       </div>
     </div>
   );
