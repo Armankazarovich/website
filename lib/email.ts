@@ -21,12 +21,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
     from: `"ПилоРус" <${process.env.SMTP_USER}>`,
     replyTo: process.env.SMTP_USER,
     to: email,
-    subject: "Восстановление пароля — ПилоРус",
-    headers: {
-      "X-Mailer": "ПилоРус Mailer",
-      "X-Priority": "1",
-      "Precedence": "bulk",
-    },
+    subject: "Сброс пароля для вашего аккаунта ПилоРус",
     html: `
       <!DOCTYPE html>
       <html lang="ru">
