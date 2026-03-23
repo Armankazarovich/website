@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import Link from "next/link";
 import { ShoppingBag, ArrowRight, Package, Clock, CheckCircle, Truck } from "lucide-react";
+import { RepeatOrderButton } from "@/components/cabinet/repeat-order-button";
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
   PENDING:    Clock,
@@ -84,6 +85,7 @@ export default async function CabinetOrdersPage() {
                     <span className="font-bold text-lg text-primary">
                       {formatPrice(Number(order.totalAmount))}
                     </span>
+                    <RepeatOrderButton orderId={order.id} />
                     <Link href={`/track?order=${order.orderNumber}`} className="text-xs text-primary hover:underline">
                       Отследить →
                     </Link>

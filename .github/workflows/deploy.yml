@@ -58,7 +58,9 @@ jobs:
             update_env "SMTP_PASSWORD" "${{ secrets.SMTP_PASSWORD }}"
             update_env "ADMIN_EMAIL" "info@pilo-rus.ru"
             update_env "NEXTAUTH_URL" "https://pilo-rus.ru"
-            echo "✅ .env updated with SMTP settings"
+            update_env "NEXTAUTH_SECRET" "${{ secrets.NEXTAUTH_SECRET }}"
+            update_env "AUTH_SECRET" "${{ secrets.NEXTAUTH_SECRET }}"
+            echo "✅ .env updated with SMTP and auth settings"
 
             # Create deploy trigger for CronTab
             touch /home/armankmb/pilo-rus/.deploy-trigger
