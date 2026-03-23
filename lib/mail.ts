@@ -6,9 +6,13 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.beget.com",
   port: SMTP_PORT,
   secure: SMTP_PORT === 465,
+  requireTLS: SMTP_PORT === 587,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
 
