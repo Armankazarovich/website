@@ -32,7 +32,7 @@ export function Footer({ settings = {} }: FooterProps) {
             </p>
             <div className="flex items-center gap-2 bg-brand-orange/10 border border-brand-orange/20 rounded-xl px-4 py-2.5">
               <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse shrink-0" />
-              <span className="text-sm text-zinc-300">Работаем ежедневно 09:00–18:00</span>
+              <span className="text-sm text-zinc-300">{s("working_hours") || "Работаем ежедневно 09:00–18:00"}</span>
             </div>
           </div>
 
