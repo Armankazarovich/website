@@ -91,12 +91,11 @@ export function PwaFooterBadges() {
           />
 
           {/* Dialog */}
-          <div className="relative w-full max-w-sm rounded-2xl bg-zinc-900 border border-white/10 shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-sm rounded-2xl backdrop-blur-2xl bg-black/55 border border-white/10 shadow-2xl overflow-hidden">
+            {/* Glass shine */}
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
             {/* Colored top stripe */}
-            <div
-              className="h-1 w-full"
-              style={{ background: INSTRUCTIONS[open].color }}
-            />
+            <div className="h-1 w-full" style={{ background: INSTRUCTIONS[open].color }} />
 
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
@@ -105,7 +104,7 @@ export function PwaFooterBadges() {
                 </h3>
                 <button
                   onClick={() => setOpen(null)}
-                  className="text-zinc-500 hover:text-zinc-300 transition-colors ml-3 shrink-0"
+                  className="text-white/40 hover:text-white/80 transition-colors ml-3 shrink-0"
                   aria-label="Закрыть"
                 >
                   <X className="w-5 h-5" />
@@ -114,16 +113,16 @@ export function PwaFooterBadges() {
 
               <div className="space-y-2">
                 {INSTRUCTIONS[open].steps.map((step, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-white/5 rounded-xl px-4 py-3">
+                  <div key={i} className="flex items-center gap-3 bg-white/6 border border-white/8 rounded-xl px-4 py-3">
                     <span className="text-base shrink-0 w-6 text-center">{step.icon}</span>
-                    <p className="text-sm text-zinc-300 leading-snug">{step.text}</p>
+                    <p className="text-sm text-zinc-200 leading-snug">{step.text}</p>
                   </div>
                 ))}
               </div>
 
               <button
                 onClick={() => setOpen(null)}
-                className="mt-4 w-full bg-brand-orange hover:bg-brand-orange/90 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors"
+                className="mt-4 w-full bg-brand-orange hover:bg-brand-orange/90 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors shadow-lg shadow-brand-orange/25"
               >
                 Понятно!
               </button>
