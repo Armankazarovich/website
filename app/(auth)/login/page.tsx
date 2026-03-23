@@ -82,8 +82,7 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       setSuccess(true);
-      router.push("/cabinet");
-      router.refresh();
+      window.location.href = "/cabinet";
     }
   };
 
