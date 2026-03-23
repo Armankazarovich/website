@@ -180,45 +180,58 @@ export function MobileBottomNav() {
   return (
     <>
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/90 backdrop-blur-xl border-t border-border/50 safe-area-inset-bottom">
-        <div className="flex items-center justify-around px-1 pt-1.5 pb-2">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-inset-bottom"
+        style={{
+          backdropFilter: "blur(32px) saturate(160%)",
+          WebkitBackdropFilter: "blur(32px) saturate(160%)",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          background: "var(--mobile-nav-bg)",
+        } as React.CSSProperties}
+      >
+        {/* Top shine line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+        <div className="flex items-center justify-around px-1 pt-2 pb-2.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.href
               ? pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
               : false;
+            const isCart = item.id === "cart";
+            const hasCartItems = mounted && isCart && item.badge !== undefined && item.badge > 0;
 
             const content = (
               <div
                 className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-2xl
-                  transition-all duration-150 active:scale-[0.88] active:duration-75
-                  ${isActive
-                    ? "text-primary"
-                    : "text-muted-foreground"
-                  }`}
+                  transition-all duration-200 active:scale-[0.85] active:duration-75
+                  ${isActive ? "text-brand-orange" : "text-muted-foreground"}`}
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
-                {/* Active pill indicator */}
+                {/* Orange top glow pill */}
                 {isActive && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" />
+                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-brand-orange shadow-[0_0_8px_3px_rgba(232,112,10,0.5)]" />
                 )}
 
-                {/* Active background glow */}
+                {/* Active background */}
                 {isActive && (
-                  <span className="absolute inset-0 rounded-2xl bg-primary/8" />
+                  <span className="absolute inset-0 rounded-2xl bg-brand-orange/10" />
                 )}
 
                 {/* Icon + badge */}
-                <div className="relative z-10">
-                  <Icon className={`transition-all duration-150 ${isActive ? "w-[22px] h-[22px]" : "w-5 h-5"}`} strokeWidth={isActive ? 2.2 : 1.8} />
+                <div className={`relative z-10 ${hasCartItems && !isActive ? "text-brand-orange" : ""}`}>
+                  <Icon
+                    className={`transition-all duration-200 ${isActive ? "w-[22px] h-[22px]" : "w-5 h-5"}`}
+                    strokeWidth={isActive ? 2.3 : 1.8}
+                  />
                   {mounted && item.badge !== undefined && item.badge > 0 && (
-                    <span className={`absolute -top-2 -right-2 ${"badgeColor" in item && item.badgeColor ? item.badgeColor : "bg-primary"} text-white text-[9px] min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center font-bold leading-none`}>
+                    <span className="absolute -top-2 -right-2.5 bg-brand-orange text-white text-[9px] min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-sm shadow-brand-orange/40">
                       {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   )}
                 </div>
 
-                <span className={`relative z-10 text-[10px] leading-none transition-all duration-150 ${isActive ? "font-semibold" : "font-medium"}`}>
+                <span className={`relative z-10 text-[10px] leading-none transition-all duration-200 ${isActive ? "font-bold" : "font-medium"}`}>
                   {item.label}
                 </span>
               </div>

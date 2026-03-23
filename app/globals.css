@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    --mobile-nav-bg: rgba(255, 255, 255, 0.82);
     --background: 0 0% 100%;
     --foreground: 20 14% 10%;
     --card: 0 0% 100%;
@@ -27,6 +28,7 @@
   }
 
   .dark {
+    --mobile-nav-bg: rgba(18, 14, 11, 0.82);
     --background: 20 14% 8%;
     --foreground: 27 30% 95%;
     --card: 20 14% 11%;
