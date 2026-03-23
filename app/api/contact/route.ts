@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     if (adminEmail) {
       const nodemailer = await import("nodemailer");
       const transporter = nodemailer.default.createTransport({
-        host: process.env.SMTP_HOST || "mail.beget.com",
+        host: process.env.SMTP_HOST || "smtp.beget.com",
         port: SMTP_PORT,
         secure: SMTP_PORT === 465,
         requireTLS: SMTP_PORT === 587,
