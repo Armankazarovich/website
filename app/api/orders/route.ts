@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendOrderNotification } from "@/lib/mail";
+import { sendOrderNotification, sendCustomerOrderConfirmation } from "@/lib/mail";
+import { sendTelegramOrderNotification } from "@/lib/telegram";
 import { z } from "zod";
 
 const orderSchema = z.object({
@@ -57,7 +58,15 @@ export async function POST(req: NextRequest) {
       include: { items: true },
     });
 
-    // Send email notification (non-blocking)
+    const orderItems = order.items.map((item) => ({
+      productName: item.productName,
+      variantSize: item.variantSize,
+      unitType: item.unitType,
+      quantity: Number(item.quantity),
+      price: Number(item.price),
+    }));
+
+    // Admin email
     sendOrderNotification({
       orderNumber: order.orderNumber,
       guestName: order.guestName,
@@ -67,13 +76,33 @@ export async function POST(req: NextRequest) {
       deliveryAddress: order.deliveryAddress,
       comment: order.comment,
       paymentMethod: order.paymentMethod,
-      items: order.items.map((item) => ({
-        productName: item.productName,
-        variantSize: item.variantSize,
-        unitType: item.unitType,
-        quantity: Number(item.quantity),
-        price: Number(item.price),
-      })),
+      items: orderItems,
+    }).catch(console.error);
+
+    // Customer confirmation email
+    if (order.guestEmail) {
+      sendCustomerOrderConfirmation(order.guestEmail, {
+        orderNumber: order.orderNumber,
+        customerName: order.guestName || "Клиент",
+        totalAmount: Number(order.totalAmount),
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: order.paymentMethod,
+        items: orderItems,
+      }).catch(console.error);
+    }
+
+    // Telegram notification
+    sendTelegramOrderNotification({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      guestEmail: order.guestEmail,
+      deliveryAddress: order.deliveryAddress,
+      paymentMethod: order.paymentMethod,
+      comment: order.comment,
+      totalAmount: Number(order.totalAmount),
+      items: orderItems,
     }).catch(console.error);
 
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });

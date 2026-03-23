@@ -1,14 +1,15 @@
 import nodemailer from "nodemailer";
 
+const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "mail.beget.com",
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  host: process.env.SMTP_HOST || "smtp.beget.com",
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
   },
-  tls: { rejectUnauthorized: false },
 });
 
 export async function sendPasswordResetEmail(email: string, resetUrl: string) {
