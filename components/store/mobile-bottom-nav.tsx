@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
@@ -202,39 +203,39 @@ export function MobileBottomNav() {
             const hasCartItems = mounted && isCart && item.badge !== undefined && item.badge > 0;
 
             const content = (
-              <div
-                className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 rounded-2xl
-                  transition-all duration-200 active:scale-[0.85] active:duration-75
+              <motion.div
+                whileTap={{ scale: 0.72 }}
+                transition={{ type: "spring", stiffness: 500, damping: 18 }}
+                className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5
                   ${isActive ? "text-brand-orange" : "text-muted-foreground"}`}
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
-                {/* Orange top glow pill */}
+                {/* Тонкая оранжевая точка сверху — только активная */}
                 {isActive && (
-                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-brand-orange shadow-[0_0_8px_3px_rgba(232,112,10,0.5)]" />
-                )}
-
-                {/* Active background */}
-                {isActive && (
-                  <span className="absolute inset-0 rounded-2xl bg-brand-orange/10" />
+                  <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-5 h-[3px] rounded-full bg-brand-orange shadow-[0_0_6px_2px_rgba(232,112,10,0.55)]" />
                 )}
 
                 {/* Icon + badge */}
-                <div className={`relative z-10 ${hasCartItems && !isActive ? "text-brand-orange" : ""}`}>
+                <motion.div
+                  animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  className={`relative ${hasCartItems && !isActive ? "text-brand-orange" : ""}`}
+                >
                   <Icon
-                    className={`transition-all duration-200 ${isActive ? "w-[22px] h-[22px]" : "w-5 h-5"}`}
-                    strokeWidth={isActive ? 2.3 : 1.8}
+                    className="w-[22px] h-[22px]"
+                    strokeWidth={isActive ? 2.3 : 1.7}
                   />
                   {mounted && item.badge !== undefined && item.badge > 0 && (
                     <span className="absolute -top-2 -right-2.5 bg-brand-orange text-white text-[9px] min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-sm shadow-brand-orange/40">
                       {item.badge > 9 ? "9+" : item.badge}
                     </span>
                   )}
-                </div>
+                </motion.div>
 
-                <span className={`relative z-10 text-[10px] leading-none transition-all duration-200 ${isActive ? "font-bold" : "font-medium"}`}>
+                <span className={`text-[10px] leading-none ${isActive ? "font-bold" : "font-medium"}`}>
                   {item.label}
                 </span>
-              </div>
+              </motion.div>
             );
 
             if (item.href) {
