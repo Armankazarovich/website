@@ -392,76 +392,125 @@ export function Header({ categories = [] }: HeaderProps) {
             </button>
           </nav>
 
-          {/* Actions */}
-          <div className="flex items-center gap-0.5 shrink-0">
-            {/* Partnership button (md only) */}
-            <button
-              onClick={() => setPartnershipOpen(true)}
-              className="hidden md:flex lg:hidden items-center gap-1.5 text-sm font-medium text-foreground/80 hover:text-primary transition-colors px-2 rounded-lg py-1.5 hover:bg-accent"
+          {/* Tablet nav (md only — between logo and actions) */}
+          <nav className="hidden md:flex lg:hidden items-center gap-0.5 flex-1 justify-center">
+            <Link
+              href="/catalog"
+              className={cn(
+                "flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname.startsWith("/catalog")
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
             >
-              <Handshake className="w-4 h-4 text-brand-orange" />
-              <span className="text-xs">Сотрудничество</span>
-            </button>
+              Каталог
+            </Link>
+            <Link
+              href="/delivery"
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname === "/delivery"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              Доставка
+            </Link>
+            <Link
+              href="/promotions"
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname === "/promotions"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              Акции
+            </Link>
+            <Link
+              href="/contacts"
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname === "/contacts"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              Контакты
+            </Link>
+          </nav>
 
-            {/* Search — hidden on mobile (есть в нижнем меню) */}
-            <Button
-              variant="ghost"
-              size="icon"
+          {/* Actions */}
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Search */}
+            <button
               onClick={() => setSearchOpen(true)}
               aria-label="Поиск"
-              className="hidden sm:flex"
+              className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <Search className="w-4 h-4" />
-            </Button>
+            </button>
 
             {/* Wishlist */}
             <WishlistCount />
 
             {/* Theme toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Переключить тему"
+              className="w-9 h-9 flex items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground relative overflow-hidden"
             >
               <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            </Button>
+            </button>
 
             {/* Cart */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
+            <Link
+              href="/cart"
+              data-cart-icon
               aria-label="Корзина"
-              asChild
+              className={cn(
+                "relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all",
+                mounted && totalItems > 0
+                  ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20"
+                  : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border"
+              )}
             >
-              <Link href="/cart" data-cart-icon>
-                <ShoppingCart className="w-5 h-5" />
-                {mounted && totalItems > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
-                    {totalItems > 9 ? "9+" : totalItems}
-                  </span>
-                )}
-              </Link>
-            </Button>
+              <ShoppingCart className="w-4 h-4" />
+              {mounted && totalItems > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-brand-orange text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-bold shadow-sm">
+                  {totalItems > 9 ? "9+" : totalItems}
+                </span>
+              )}
+            </Link>
 
-            {/* User — only desktop */}
-            <Button variant="ghost" size="icon" asChild className="hidden lg:flex">
-              <Link href="/cabinet" aria-label="Личный кабинет">
-                <User className="w-5 h-5" />
-              </Link>
-            </Button>
+            {/* User — desktop only */}
+            <Link
+              href="/cabinet"
+              aria-label="Личный кабинет"
+              className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+            >
+              <User className="w-4 h-4" />
+            </Link>
 
-            {/* ── Hamburger (mobile only) ── */}
+            {/* Partnership — md only */}
+            <button
+              onClick={() => setPartnershipOpen(true)}
+              className="hidden md:flex lg:hidden items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
+            >
+              <Handshake className="w-3.5 h-3.5" />
+              Партнёрство
+            </button>
+
+            {/* Hamburger (mobile only) */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl hover:bg-accent transition-colors gap-1.5 ml-0.5"
+              className="lg:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
               aria-label="Открыть меню"
             >
-              <span className="w-5 h-0.5 bg-foreground rounded-full transition-all" />
-              <span className="w-5 h-0.5 bg-foreground rounded-full transition-all" />
-              <span className="w-3.5 h-0.5 bg-foreground/60 rounded-full transition-all" />
+              <span className="w-4.5 h-0.5 bg-foreground rounded-full" />
+              <span className="w-4.5 h-0.5 bg-foreground rounded-full" />
+              <span className="w-3 h-0.5 bg-foreground/50 rounded-full" />
             </button>
           </div>
         </div>
