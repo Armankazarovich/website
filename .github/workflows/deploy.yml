@@ -53,7 +53,7 @@ jobs:
 
             # Update SMTP and basic settings
             update_env "SMTP_HOST" "smtp.beget.com"
-            update_env "SMTP_PORT" "587"
+            update_env "SMTP_PORT" "465"
             update_env "SMTP_USER" "info@pilo-rus.ru"
             update_env "SMTP_PASSWORD" "${{ secrets.SMTP_PASSWORD }}"
             update_env "ADMIN_EMAIL" "info@pilo-rus.ru"
