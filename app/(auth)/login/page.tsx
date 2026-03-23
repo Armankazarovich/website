@@ -82,7 +82,8 @@ export default function LoginPage() {
       setLoading(false);
     } else {
       setSuccess(true);
-      setTimeout(() => router.push("/cabinet"), 800);
+      router.push("/cabinet");
+      router.refresh();
     }
   };
 
