@@ -7,7 +7,12 @@ import { AdminNav } from "@/components/admin/admin-nav";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
 
-  if (!session || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  const staffStatus = (session?.user as any)?.staffStatus;
+  const isStaff = role && role !== "USER";
+  const isBlocked = staffStatus === "PENDING" || staffStatus === "SUSPENDED";
+
+  if (!session || !isStaff || isBlocked) {
     redirect("/login");
   }
 
@@ -22,7 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <p className="text-xs text-white/50 mt-0.5">Панель управления</p>
         </div>
 
-        <AdminNav />
+        <AdminNav role={role} />
 
         <div className="p-3 border-t border-white/10">
           <div className="px-3 py-2 text-xs text-white/50">

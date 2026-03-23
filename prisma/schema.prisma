@@ -10,6 +10,17 @@ datasource db {
 enum Role {
   USER
   ADMIN
+  MANAGER     // Менеджер по продажам
+  COURIER     // Курьер
+  ACCOUNTANT  // Бухгалтер
+  WAREHOUSE   // Складчик
+  SELLER      // Продавец
+}
+
+enum StaffStatus {
+  PENDING    // Ждёт подтверждения
+  ACTIVE     // Активен
+  SUSPENDED  // Заблокирован
 }
 
 enum SaleUnit {
@@ -28,6 +39,8 @@ enum OrderStatus {
   CONFIRMED
   PROCESSING
   SHIPPED
+  IN_DELIVERY
+  READY_PICKUP
   DELIVERED
   CANCELLED
 }
@@ -39,6 +52,8 @@ model User {
   phone        String?
   passwordHash String
   role         Role               @default(USER)
+  staffStatus  StaffStatus?
+  customRole   String?
   address      String?
   orders       Order[]
   reviews      Review[]

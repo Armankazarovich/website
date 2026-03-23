@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ORDER_STATUS_LABELS } from "@/lib/utils";
 
-const statuses = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+const statuses = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED", "CANCELLED"] as const;
 
 interface Props {
   orderId: string;
@@ -35,6 +35,8 @@ export function OrderStatusSelect({ orderId, currentStatus }: Props) {
     CONFIRMED: "bg-purple-100 text-purple-800",
     PROCESSING: "bg-yellow-100 text-yellow-800",
     SHIPPED: "bg-orange-100 text-orange-800",
+    IN_DELIVERY: "bg-sky-100 text-sky-800",
+    READY_PICKUP: "bg-violet-100 text-violet-800",
     DELIVERED: "bg-green-100 text-green-800",
     CANCELLED: "bg-red-100 text-red-800",
   };

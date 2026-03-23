@@ -70,11 +70,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
+        // Block pending/suspended staff from logging in
+        if (user.role !== "USER" && (user as any).staffStatus && (user as any).staffStatus !== "ACTIVE") {
+          return null;
+        }
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
+          staffStatus: (user as any).staffStatus ?? null,
           rememberMe: rememberMe === "true",
         };
       },
@@ -85,6 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.staffStatus = (user as any).staffStatus ?? null;
         token.rememberMe = (user as any).rememberMe ?? false;
       }
       return token;
@@ -93,6 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token) {
         session.user.id = token.id as string;
         (session.user as any).role = token.role;
+        (session.user as any).staffStatus = token.staffStatus ?? null;
       }
       return session;
     },

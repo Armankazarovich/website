@@ -13,26 +13,31 @@ import {
   ChevronRight,
   Globe,
   HelpCircle,
+  Users,
 } from "lucide-react";
 
-const adminNav = [
-  { href: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true },
-  { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
-  { href: "/admin/products", label: "Товары", icon: Package },
-  { href: "/admin/categories", label: "Категории", icon: Tag },
-  { href: "/admin/promotions", label: "Акции", icon: Megaphone },
-  { href: "/admin/reviews", label: "Отзывы", icon: Star },
-  { href: "/admin/site", label: "Сайт", icon: Globe },
-  { href: "/admin/settings", label: "Настройки", icon: Settings },
-  { href: "/admin/help", label: "Помощь", icon: HelpCircle },
+const allNavItems = [
+  { href: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
+  { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
+  { href: "/admin/products", label: "Товары", icon: Package, roles: ["ADMIN", "MANAGER", "WAREHOUSE", "SELLER"] },
+  { href: "/admin/categories", label: "Категории", icon: Tag, roles: ["ADMIN"] },
+  { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/reviews", label: "Отзывы", icon: Star, roles: ["ADMIN", "MANAGER"] },
+  { href: "/admin/site", label: "Сайт", icon: Globe, roles: ["ADMIN"] },
+  { href: "/admin/settings", label: "Настройки", icon: Settings, roles: ["ADMIN"] },
+  { href: "/admin/staff", label: "Команда", icon: Users, roles: ["ADMIN"] },
+  { href: "/admin/help", label: "Помощь", icon: HelpCircle, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
 ];
 
-export function AdminNav() {
+export function AdminNav({ role }: { role?: string }) {
   const pathname = usePathname();
+  const visibleItems = allNavItems.filter((item) =>
+    !item.roles || item.roles.includes(role || "")
+  );
 
   return (
     <nav className="flex-1 p-3 space-y-1">
-      {adminNav.map((item) => {
+      {visibleItems.map((item) => {
         const isActive = item.exact
           ? pathname === item.href
           : pathname.startsWith(item.href);
