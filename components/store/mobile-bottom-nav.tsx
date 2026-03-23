@@ -225,7 +225,7 @@ export function MobileBottomNav() {
 
             if (item.href) {
               return (
-                <Link key={item.id} href={item.href} onClick={haptic}>
+                <Link key={item.id} href={item.href} onClick={haptic} {...(item.id === "cart" ? { "data-cart-icon": true } : {})}>
                   {content}
                 </Link>
               );

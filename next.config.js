@@ -26,6 +26,8 @@ const nextConfig = {
   },
   images: {
     domains: ['localhost', 'pilo-rus.ru', 'pilmos.ru'],
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 дней кэш
   },
   experimental: {
     serverActions: {
