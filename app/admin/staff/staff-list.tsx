@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, UserCog, Clock, ShieldAlert, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CheckCircle, XCircle, UserCog, Clock, ShieldAlert, Loader2, UserPlus, X } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Администратор",
@@ -35,9 +37,43 @@ type StaffMember = {
   createdAt: Date;
 };
 
+const EMPTY_FORM = { name: "", phone: "", email: "", password: "", role: "", customRole: "" };
+
 export function StaffList({ staff }: { staff: StaffMember[] }) {
   const [members, setMembers] = useState(staff);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const setField = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError("");
+    if (!form.name || !form.email || !form.password || !form.role) {
+      setFormError("Заполните все обязательные поля");
+      return;
+    }
+    setFormLoading(true);
+    try {
+      const res = await fetch("/api/admin/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка");
+      setMembers((prev) => [data.user, ...prev]);
+      setForm(EMPTY_FORM);
+      setShowForm(false);
+    } catch (err: any) {
+      setFormError(err.message);
+    } finally {
+      setFormLoading(false);
+    }
+  };
 
   const update = async (id: string, body: object) => {
     setLoadingId(id);
@@ -163,6 +199,60 @@ export function StaffList({ staff }: { staff: StaffMember[] }) {
 
   return (
     <div className="space-y-8">
+      {/* Add employee button */}
+      <div>
+        <Button onClick={() => { setShowForm(!showForm); setFormError(""); }} variant={showForm ? "outline" : "default"}>
+          {showForm ? <><X className="w-4 h-4 mr-2" /> Отмена</> : <><UserPlus className="w-4 h-4 mr-2" /> Добавить сотрудника</>}
+        </Button>
+      </div>
+
+      {/* Add employee form */}
+      {showForm && (
+        <form onSubmit={handleAdd} className="bg-card border border-border rounded-2xl p-5 space-y-4 max-w-lg">
+          <h3 className="font-semibold">Новый сотрудник</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <Label>Имя и фамилия *</Label>
+              <Input className="mt-1" placeholder="Иван Иванов" value={form.name} onChange={(e) => setField("name", e.target.value)} disabled={formLoading} />
+            </div>
+            <div>
+              <Label>Телефон</Label>
+              <Input className="mt-1" placeholder="+7 999 000-00-00" value={form.phone} onChange={(e) => setField("phone", e.target.value)} disabled={formLoading} />
+            </div>
+            <div>
+              <Label>Email *</Label>
+              <Input className="mt-1" type="email" placeholder="ivan@mail.ru" value={form.email} onChange={(e) => setField("email", e.target.value)} disabled={formLoading} />
+            </div>
+            <div>
+              <Label>Пароль *</Label>
+              <Input className="mt-1" type="password" placeholder="Минимум 6 символов" value={form.password} onChange={(e) => setField("password", e.target.value)} disabled={formLoading} />
+            </div>
+            <div>
+              <Label>Роль *</Label>
+              <select
+                className="mt-1 w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={form.role}
+                onChange={(e) => setField("role", e.target.value)}
+                disabled={formLoading}
+              >
+                <option value="">Выберите роль...</option>
+                {ALL_ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              </select>
+            </div>
+            {form.role === "CUSTOM" && (
+              <div className="col-span-2">
+                <Label>Своя должность</Label>
+                <Input className="mt-1" placeholder="Например: Логист" value={form.customRole} onChange={(e) => setField("customRole", e.target.value)} disabled={formLoading} />
+              </div>
+            )}
+          </div>
+          {formError && <p className="text-sm text-destructive">{formError}</p>}
+          <Button type="submit" disabled={formLoading}>
+            {formLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Добавляю...</> : "Добавить сотрудника"}
+          </Button>
+        </form>
+      )}
+
       {/* Pending */}
       {pending.length > 0 && (
         <section>
