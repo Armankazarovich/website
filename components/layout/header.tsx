@@ -436,7 +436,7 @@ export function Header({ categories = [] }: HeaderProps) {
               aria-label="Корзина"
               asChild
             >
-              <Link href="/cart">
+              <Link href="/cart" data-cart-icon>
                 <ShoppingCart className="w-5 h-5" />
                 {mounted && totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">

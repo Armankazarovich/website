@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/utils";
 import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { WishlistButton } from "@/components/store/wishlist-button";
+import { flyToCart } from "@/lib/cart-fly";
 
 interface Variant {
   id: string;
@@ -55,6 +56,9 @@ export function ProductCard({
     const unitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
     const price = unitType === "CUBE" ? firstVariant.pricePerCube : firstVariant.pricePerPiece;
     if (!price) return;
+
+    // Fly to cart animation
+    flyToCart(e.currentTarget as HTMLElement, images[0] ?? null);
 
     // Haptic feedback like Telegram
     if (typeof navigator !== "undefined" && navigator.vibrate) {
