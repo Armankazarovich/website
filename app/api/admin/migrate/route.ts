@@ -91,23 +91,13 @@ export async function GET(req: NextRequest) {
   } catch (e: any) { results.push(`⚠️ Promo fix: ${e.message}`); }
 
   try {
-    const promotions = await prisma.promotion.findMany();
-    const deliveryPromo = promotions.find(
-      (p) => p.title.toLowerCase().includes("доставк") || p.description?.includes("8 000") || p.description?.includes("8000")
-    );
-    if (deliveryPromo) {
-      await prisma.promotion.update({
-        where: { id: deliveryPromo.id },
-        data: {
-          title: "Бесплатная доставка от 10 м³",
-          description: "При заказе пиломатериалов от 10 м³ доставка по Москве и Московской области полностью бесплатна. Используем собственный транспорт.",
-          discount: null,
-        },
-      });
-      results.push("✅ Delivery promo text fixed");
-    } else {
-      results.push("ℹ️ Delivery promo not found — skipped");
-    }
+    const updated = await prisma.$executeRaw`
+      UPDATE "Promotion"
+      SET description = 'При заказе пиломатериалов от 10 м³ доставка по Москве и Московской области полностью бесплатна. Используем собственный транспорт.',
+          discount = NULL
+      WHERE title ILIKE '%доставк%' OR description ILIKE '%экономи%'
+    `;
+    results.push(`✅ Delivery promo text fixed via SQL (rows: ${updated})`);
   } catch (e: any) { results.push(`⚠️ Delivery promo fix: ${e.message}`); }
 
   return NextResponse.json({ ok: true, results });

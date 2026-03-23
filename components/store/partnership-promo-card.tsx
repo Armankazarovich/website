@@ -5,7 +5,7 @@ import { Handshake, CheckCircle, ArrowRight } from "lucide-react";
 import { PartnershipModal } from "@/components/store/partnership-modal";
 
 const PERKS = [
-  "Скидка от 5% до 20% на весь объём",
+  "Выгодные оптовые цены для постоянных партнёров",
   "Персональный менеджер 24/7",
   "Отсрочка платежа до 30 дней",
   "Приоритетная отгрузка без очереди",
