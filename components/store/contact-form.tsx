@@ -104,7 +104,7 @@ export function ContactForm() {
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
           >
             <Phone className="w-4 h-4 text-brand-orange" />
-            📞 Позвонить сейчас
+            Позвонить сейчас
           </a>
         </form>
       )}

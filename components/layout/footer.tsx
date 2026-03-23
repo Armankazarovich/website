@@ -18,21 +18,82 @@ export function Footer({ settings = {} }: FooterProps) {
           {/* Logo & About */}
           <div>
             <Link href="/" className="flex items-center gap-3 mb-4">
-              <div className="relative w-12 h-12">
+              <div className="relative w-16 h-16 shrink-0">
                 <Image src="/logo.png" alt="ПилоРус" fill className="object-contain" />
               </div>
               <div>
-                <p className="font-display font-bold text-xl text-white">ПилоРус</p>
+                <p className="font-display font-bold text-2xl text-white">ПилоРус</p>
                 <p className="text-xs text-zinc-500">Пиломатериалы от производителя</p>
               </div>
             </Link>
-            <p className="text-sm text-zinc-400 leading-relaxed mb-5">
+            <p className="text-sm text-zinc-400 leading-relaxed mb-4">
               ООО «ПИТИ» — производитель пиломатериалов в Подмосковье.
               Работаем без посредников напрямую с производства.
             </p>
-            <div className="flex items-center gap-2 bg-brand-orange/10 border border-brand-orange/20 rounded-xl px-4 py-2.5">
-              <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse shrink-0" />
-              <span className="text-sm text-zinc-300">{s("working_hours") || "Работаем ежедневно 09:00–18:00"}</span>
+
+            {/* Share buttons — glassmorphism */}
+            <div className="mb-4">
+              <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">Поделиться</p>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://vk.com/share.php?url=https://pilo-rus.ru"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Поделиться ВКонтакте"
+                  className="w-9 h-9 rounded-xl backdrop-blur-sm bg-white/5 border border-white/10 hover:bg-[#0077FF]/80 hover:border-[#0077FF]/50 transition-all duration-200 flex items-center justify-center group"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-zinc-400 group-hover:text-white transition-colors">
+                    <path d="M15.07 2H8.93C3.33 2 2 3.33 2 8.93v6.14C2 20.67 3.33 22 8.93 22h6.14C20.67 22 22 20.67 22 15.07V8.93C22 3.33 20.67 2 15.07 2zm3.08 13.26h-1.6c-.6 0-.79-.48-1.87-1.57-1-.93-1.4-.93-1.64-.93-.33 0-.43.1-.43.57v1.43c0 .4-.13.64-1.17.64-1.73 0-3.65-1.05-5-3-2.03-2.85-2.58-5-2.58-5.43 0-.24.1-.46.57-.46h1.6c.43 0 .59.19.75.65.83 2.38 2.2 4.47 2.77 4.47.21 0 .31-.1.31-.64V9.5c-.07-1.15-.67-1.25-.67-1.65 0-.2.16-.4.42-.4h2.52c.36 0 .48.19.48.62v3.33c0 .36.16.48.26.48.21 0 .38-.12.77-.5 1.19-1.33 2.04-3.38 2.04-3.38.11-.24.31-.46.74-.46h1.6c.48 0 .59.25.48.62-.2.93-2.13 3.65-2.13 3.65-.17.27-.23.4 0 .7.17.23.72.7 1.09 1.12.67.77 1.19 1.41 1.33 1.86.14.43-.08.65-.52.65z"/>
+                  </svg>
+                </a>
+                <a
+                  href="https://wa.me/?text=Пиломатериалы от производителя ПилоРус https://pilo-rus.ru"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Поделиться в WhatsApp"
+                  className="w-9 h-9 rounded-xl backdrop-blur-sm bg-white/5 border border-white/10 hover:bg-[#25D366]/80 hover:border-[#25D366]/50 transition-all duration-200 flex items-center justify-center group"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-zinc-400 group-hover:text-white transition-colors">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                </a>
+                <a
+                  href="https://t.me/share/url?url=https://pilo-rus.ru&text=Пиломатериалы от производителя ПилоРус"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Поделиться в Telegram"
+                  className="w-9 h-9 rounded-xl backdrop-blur-sm bg-white/5 border border-white/10 hover:bg-[#2AABEE]/80 hover:border-[#2AABEE]/50 transition-all duration-200 flex items-center justify-center group"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-zinc-400 group-hover:text-white transition-colors">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            {/* PWA platform badges — glassmorphism */}
+            <div className="mb-5">
+              <p className="text-xs text-zinc-500 mb-2 uppercase tracking-widest font-medium">Установить приложение</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 backdrop-blur-sm bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-[#3DDC84]">
+                    <path d="M17.523 15.341a.5.5 0 01-.694.132l-3.08-2.18a.5.5 0 00-.554 0l-3.08 2.18a.5.5 0 01-.694-.132l-.408-.577a.5.5 0 01.098-.689l2.892-2.046V7a.5.5 0 01.5-.5h1a.5.5 0 01.5.5v4.029l2.892 2.046a.5.5 0 01.098.689zM2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10S2 17.523 2 12z"/>
+                  </svg>
+                  Android
+                </div>
+                <div className="flex items-center gap-1.5 backdrop-blur-sm bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-zinc-300">
+                    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+                  </svg>
+                  iOS
+                </div>
+                <div className="flex items-center gap-1.5 backdrop-blur-sm bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-[#0078D4]">
+                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+                  </svg>
+                  Windows
+                </div>
+              </div>
             </div>
           </div>
 
@@ -158,7 +219,7 @@ export function Footer({ settings = {} }: FooterProps) {
               </li>
               <li className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-brand-orange shrink-0" />
-                <span>{s("working_hours")}</span>
+                <span>{s("working_hours") || "Ежедневно: 09:00–18:00"}</span>
               </li>
             </ul>
           </div>
@@ -174,7 +235,7 @@ export function Footer({ settings = {} }: FooterProps) {
         <div className="container py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-zinc-600">
           <p>{s("footer_copyright") || `© ${new Date().getFullYear()} ООО «ПИТИ» (ПилоРус). Все права защищены.`}</p>
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
-            <span>ИНН {s("inn")} / ОГРН {s("ogrn")}</span>
+            <span>ИНН {s("inn") || "5047121641"} / ОГРН {s("ogrn") || "1235000042474"}</span>
             <Link href="/privacy" className="hover:text-zinc-400 transition-colors underline underline-offset-2">
               Политика конфиденциальности
             </Link>
