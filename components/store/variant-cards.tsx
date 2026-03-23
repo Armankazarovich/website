@@ -1,8 +1,8 @@
 "use client";
 
 import { useCartStore } from "@/store/cart";
-import { useToast } from "@/components/ui/use-toast";
 import { formatPrice } from "@/lib/utils";
+import { flyToCart } from "@/lib/cart-fly";
 
 interface Variant {
   id: string;
@@ -31,9 +31,8 @@ export function VariantCards({
   variants,
 }: VariantCardsProps) {
   const addItem = useCartStore((s) => s.addItem);
-  const { toast } = useToast();
 
-  const handleAdd = (v: Variant) => {
+  const handleAdd = (e: React.MouseEvent<HTMLDivElement>, v: Variant) => {
     if (!v.inStock) return;
 
     const isPiece = saleUnit === "PIECE";
@@ -41,6 +40,12 @@ export function VariantCards({
     const price = isPiece
       ? (v.pricePerPiece ?? 0)
       : (v.pricePerCube ?? v.pricePerPiece ?? 0);
+
+    flyToCart(e.currentTarget, productImage ?? null);
+
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(10);
+    }
 
     addItem({
       variantId: v.id,
@@ -52,12 +57,6 @@ export function VariantCards({
       unitType,
       quantity: 1,
       price,
-    });
-
-    toast({
-      title: "Добавлено в корзину",
-      description: `${productName} — ${v.size}`,
-      duration: 3000,
     });
   };
 
@@ -73,7 +72,7 @@ export function VariantCards({
         return (
           <div
             key={v.id}
-            onClick={() => handleAdd(v)}
+            onClick={(e) => handleAdd(e, v)}
             className={`relative rounded-2xl border p-4 transition-all duration-200 group ${
               v.inStock
                 ? "border-border bg-card hover:border-primary hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 active:scale-95 cursor-pointer"

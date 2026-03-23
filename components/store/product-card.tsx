@@ -6,8 +6,6 @@ import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
-import { useToast } from "@/components/ui/use-toast";
-import { ToastAction } from "@/components/ui/toast";
 import { WishlistButton } from "@/components/store/wishlist-button";
 import { flyToCart } from "@/lib/cart-fly";
 
@@ -38,8 +36,7 @@ const FALLBACK_GRADIENT =
 export function ProductCard({
   id, slug, name, category, images, saleUnit, variants, featured,
 }: ProductCardProps) {
-  const { addItem, setCartOpen } = useCartStore();
-  const { toast } = useToast();
+  const { addItem } = useCartStore();
 
   const activeVariants = variants.filter((v) => v.inStock);
   const firstVariant = activeVariants[0] || variants[0];
@@ -77,21 +74,6 @@ export function ProductCard({
       price: Number(price),
     });
 
-    toast({
-      title: "✓ Добавлено в корзину",
-      description: `${name} · ${firstVariant.size}`,
-      duration: 4000,
-      ...(images[0] ? { image: images[0] } : {}),
-      action: (
-        <ToastAction
-          altText="Открыть корзину"
-          onClick={() => setCartOpen(true)}
-          className="rounded-lg bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary/90 transition-colors border-0 shrink-0"
-        >
-          В корзину →
-        </ToastAction>
-      ),
-    } as any);
   };
 
   /* Показываем первые 3 размера + счётчик остальных */
