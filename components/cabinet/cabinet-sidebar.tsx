@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, User, LogOut, ChevronRight } from "lucide-react";
+import { ShoppingBag, User, LogOut, ChevronRight, LayoutDashboard } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 interface SidebarUser {
@@ -10,6 +10,7 @@ interface SidebarUser {
   email: string;
   phone: string | null;
   createdAt: Date;
+  role: string;
 }
 
 const NAV_ITEMS = [
@@ -79,6 +80,18 @@ export function CabinetSidebar({ user }: { user: SidebarUser | null }) {
           })}
         </nav>
       </div>
+
+      {/* Admin link — только для сотрудников */}
+      {user?.role && user.role !== "USER" && (
+        <Link
+          href="/admin"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-brand-orange bg-brand-orange/8 hover:bg-brand-orange/15 border border-brand-orange/25 hover:border-brand-orange/40 transition-all group mb-3"
+        >
+          <LayoutDashboard className="w-4 h-4 group-hover:scale-110 transition-transform" />
+          Панель управления
+          <ChevronRight className="w-3.5 h-3.5 ml-auto" />
+        </Link>
+      )}
 
       {/* Logout */}
       <button

@@ -20,7 +20,7 @@ export default async function CabinetLayout({ children }: { children: React.Reac
     getSiteSettings(),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, email: true, phone: true, createdAt: true },
+      select: { name: true, email: true, phone: true, createdAt: true, role: true },
     }),
   ]);
 
