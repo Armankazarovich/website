@@ -77,8 +77,9 @@ export default function ContactsPage() {
             <h3 className="font-semibold mb-2">Реквизиты компании</h3>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>ООО «ПИТИ»</p>
-              <p>ИНН: 504712164</p>
+              <p>ИНН: 5047121641</p>
               <p>КПП: 504701001</p>
+              <p>ОГРН: 1235000042474</p>
             </div>
           </div>
         </div>

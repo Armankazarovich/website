@@ -100,5 +100,24 @@ export async function GET(req: NextRequest) {
     results.push(`✅ Delivery promo text fixed via SQL (rows: ${updated})`);
   } catch (e: any) { results.push(`⚠️ Delivery promo fix: ${e.message}`); }
 
+  // Fix site settings: correct ИНН, ОГРН, working hours
+  try {
+    const settingsToFix = [
+      { key: "inn", value: "5047121641" },
+      { key: "ogrn", value: "1235000042474" },
+      { key: "working_hours", value: "Ежедневно: 09:00–18:00" },
+    ];
+    for (const s of settingsToFix) {
+      const existing = await prisma.siteSetting.findUnique({ where: { key: s.key } });
+      if (existing) {
+        await prisma.siteSetting.update({ where: { key: s.key }, data: { value: s.value } });
+        results.push(`✅ Setting ${s.key} updated to: ${s.value}`);
+      } else {
+        await prisma.siteSetting.create({ data: { key: s.key, value: s.value } });
+        results.push(`✅ Setting ${s.key} created: ${s.value}`);
+      }
+    }
+  } catch (e: any) { results.push(`⚠️ Settings fix: ${e.message}`); }
+
   return NextResponse.json({ ok: true, results });
 }
