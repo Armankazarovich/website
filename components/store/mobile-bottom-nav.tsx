@@ -81,9 +81,10 @@ function MobileFiltersSheet({
           </div>
           <button
             onClick={onClose}
+            aria-label="Закрыть фильтры"
             className="w-8 h-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
 

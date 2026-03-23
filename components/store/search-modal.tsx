@@ -75,6 +75,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Найти товар — доска, брус, вагонка..."
+            aria-label="Поиск товаров"
             className="flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
           />
           {loading ? (
@@ -82,6 +83,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
           ) : (
             <button
               onClick={onClose}
+              aria-label="Закрыть поиск"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-5 h-5" />
@@ -162,6 +164,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
             <Link
               href={`/catalog?search=${encodeURIComponent(query)}`}
               onClick={onClose}
+              aria-label={`Смотреть все результаты поиска по запросу "${query}"`}
               className="text-sm text-primary hover:underline"
             >
               Смотреть все результаты →

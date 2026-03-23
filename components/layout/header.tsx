@@ -510,9 +510,10 @@ export function Header({ categories = [] }: HeaderProps) {
                 </Link>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Закрыть меню"
                   className="w-8 h-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                 </button>
