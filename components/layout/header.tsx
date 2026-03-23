@@ -519,16 +519,19 @@ export function Header({ categories = [] }: HeaderProps) {
               <motion.span
                 animate={mobileMenuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="w-[18px] h-0.5 bg-foreground rounded-full block"
+                style={{ width: 18 }}
+                className="h-0.5 bg-foreground rounded-full block"
               />
               <motion.span
                 animate={mobileMenuOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
                 transition={{ duration: 0.15 }}
-                className="w-[18px] h-0.5 bg-foreground rounded-full block"
+                style={{ width: 18 }}
+                className="h-0.5 bg-foreground rounded-full block"
               />
               <motion.span
-                animate={mobileMenuOpen ? { rotate: -45, y: -6, width: "18px" } : { rotate: 0, y: 0, width: "12px" }}
+                animate={mobileMenuOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
                 transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                style={{ width: mobileMenuOpen ? 18 : 12 }}
                 className="h-0.5 bg-foreground/60 rounded-full block"
               />
             </button>
