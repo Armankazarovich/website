@@ -87,17 +87,14 @@ export function PwaInstall() {
       className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
-      <div className="max-w-xl mx-auto relative rounded-2xl backdrop-blur-xl bg-zinc-900/96 border border-white/10 shadow-2xl shadow-black/50 p-4 overflow-hidden">
+      <div className="max-w-xl mx-auto relative rounded-2xl bg-zinc-950 border border-zinc-800 shadow-2xl shadow-black/70 p-4 overflow-hidden">
         {/* Subtle glow */}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-orange/8 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-orange/10 via-transparent to-transparent pointer-events-none" />
 
         <div className="relative flex items-start gap-3">
-          {/* App icon */}
-          <div className="w-11 h-11 rounded-xl bg-brand-orange flex items-center justify-center shrink-0 shadow-lg shadow-brand-orange/30">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
+          {/* App icon — логотип ПилоРус */}
+          <div className="w-11 h-11 rounded-xl bg-brand-orange flex items-center justify-center shrink-0 shadow-lg shadow-brand-orange/30 overflow-hidden">
+            <img src="/logo.png" alt="ПилоРус" width={36} height={36} className="object-contain" />
           </div>
 
           <div className="flex-1 min-w-0">
