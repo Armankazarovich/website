@@ -4,6 +4,7 @@ import { MobileBottomNav } from "@/components/store/mobile-bottom-nav";
 import { CookieConsent } from "@/components/store/cookie-consent";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { ContactWidget } from "@/components/store/contact-widget";
+import { PwaInstall } from "@/components/store/pwa-install";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
@@ -23,6 +24,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <Footer settings={siteSettings} />
       <MobileBottomNav />
       <CookieConsent />
+      <PwaInstall />
       <ScrollToTop />
       <ContactWidget
         phone={getSetting(siteSettings, "phone")}
