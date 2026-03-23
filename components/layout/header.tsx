@@ -176,7 +176,17 @@ export function Header({ categories = [] }: HeaderProps) {
       {/* Top bar */}
       <div className="bg-brand-brown text-white text-xs py-1.5 hidden md:block">
         <div className="container flex justify-between items-center">
-          <span className="text-white/70">Московская обл., г. Химки, Заводская 2А, стр.28</span>
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/40 px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse-dot" />
+              <span className="text-[10px] font-semibold text-green-400 tracking-wide">Работаем</span>
+            </span>
+            <span className="text-white/30">|</span>
+            <span className="flex items-center gap-1 text-white/55">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="2"/></svg>
+              Химки, Заводская 2А, стр.28
+            </span>
+          </div>
           <div className="flex items-center gap-5">
             <a href="tel:+79859707133" className="flex items-center gap-1.5 hover:text-brand-cream transition-colors font-medium">
               <Phone className="w-3 h-3" />
@@ -186,7 +196,7 @@ export function Header({ categories = [] }: HeaderProps) {
               <Phone className="w-3 h-3" />
               8-999-662-26-02
             </a>
-            <span className="text-white/50">09:00–18:00, ежедневно</span>
+            <span className="text-white/40 text-[10px] tracking-wide">09:00–18:00 · ежедневно</span>
           </div>
         </div>
       </div>
@@ -194,8 +204,10 @@ export function Header({ categories = [] }: HeaderProps) {
       {/* Main header */}
       <header
         className={cn(
-          "sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b border-border/60 transition-all duration-300",
-          scrolled && "shadow-lg bg-background/95"
+          "sticky top-0 z-50 bg-background/85 backdrop-blur-md border-b transition-all duration-300",
+          scrolled
+            ? "shadow-[0_4px_24px_-4px_rgba(232,112,10,0.15)] border-brand-orange/20 bg-background/97"
+            : "border-border/60"
         )}
       >
         <div className="container flex items-center justify-between h-[68px] gap-3">
@@ -232,20 +244,10 @@ export function Header({ categories = [] }: HeaderProps) {
             >
               <Link
                 href="/catalog"
-                className={cn(
-                  "flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  pathname === "/catalog" || pathname.startsWith("/catalog")
-                    ? "text-primary bg-primary/10"
-                    : "text-foreground/80 hover:text-foreground hover:bg-accent"
-                )}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-brand-orange text-white shadow-sm shadow-brand-orange/25 hover:bg-brand-orange/90 hover:shadow-md hover:shadow-brand-orange/35 transition-all duration-200"
               >
                 Каталог
-                <ChevronDown
-                  className={cn(
-                    "w-3.5 h-3.5 transition-transform duration-200",
-                    catalogOpen && "rotate-180"
-                  )}
-                />
+                <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", catalogOpen && "rotate-180")} />
               </Link>
 
               {/* Mega-menu dropdown */}
@@ -372,13 +374,19 @@ export function Header({ categories = [] }: HeaderProps) {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "relative px-3 py-2 rounded-lg text-sm font-medium transition-colors group",
                   pathname === link.href
-                    ? "text-primary bg-primary/10"
+                    ? "text-brand-orange"
                     : "text-foreground/80 hover:text-foreground hover:bg-accent"
                 )}
               >
                 {link.label}
+                <span className={cn(
+                  "absolute bottom-0.5 left-3 right-3 h-0.5 rounded-full bg-brand-orange transition-all duration-300 origin-left",
+                  pathname === link.href
+                    ? "scale-x-100 opacity-100"
+                    : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-40"
+                )} />
               </Link>
             ))}
 
@@ -470,10 +478,10 @@ export function Header({ categories = [] }: HeaderProps) {
               data-cart-icon
               aria-label="Корзина"
               className={cn(
-                "relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all",
+                "relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200",
                 mounted && totalItems > 0
-                  ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20"
-                  : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border"
+                  ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 hover:border-brand-orange/70 hover:shadow-[0_0_14px_3px_rgba(232,112,10,0.25)]"
+                  : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-brand-orange hover:border-brand-orange/30 hover:shadow-[0_0_10px_2px_rgba(232,112,10,0.12)]"
               )}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -502,15 +510,27 @@ export function Header({ categories = [] }: HeaderProps) {
               Партнёрство
             </button>
 
-            {/* Hamburger (mobile only) */}
+            {/* Hamburger (mobile only) — animates to X */}
             <button
-              onClick={() => setMobileMenuOpen(true)}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
-              aria-label="Открыть меню"
+              aria-label={mobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
             >
-              <span className="w-4.5 h-0.5 bg-foreground rounded-full" />
-              <span className="w-4.5 h-0.5 bg-foreground rounded-full" />
-              <span className="w-3 h-0.5 bg-foreground/50 rounded-full" />
+              <motion.span
+                animate={mobileMenuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="w-[18px] h-0.5 bg-foreground rounded-full block"
+              />
+              <motion.span
+                animate={mobileMenuOpen ? { opacity: 0, scaleX: 0 } : { opacity: 1, scaleX: 1 }}
+                transition={{ duration: 0.15 }}
+                className="w-[18px] h-0.5 bg-foreground rounded-full block"
+              />
+              <motion.span
+                animate={mobileMenuOpen ? { rotate: -45, y: -6, width: "18px" } : { rotate: 0, y: 0, width: "12px" }}
+                transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                className="h-0.5 bg-foreground/60 rounded-full block"
+              />
             </button>
           </div>
         </div>
@@ -572,17 +592,23 @@ export function Header({ categories = [] }: HeaderProps) {
               <div className="flex-1 overflow-y-auto py-4">
 
                 {/* Звонок */}
-                <div className="mx-4 mb-4 p-3.5 rounded-2xl bg-primary/8 border border-primary/20">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Позвонить нам</p>
-                  <a href="tel:+79859707133" className="flex items-center gap-2 font-display font-bold text-base text-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .27h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1-1.06a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    8-985-970-71-33
-                  </a>
-                  <a href="tel:+79996622602" className="flex items-center gap-2 font-medium text-sm text-muted-foreground mt-1 ml-6">
-                    8-999-662-26-02
-                  </a>
+                <div className="mx-4 mb-4 p-4 rounded-2xl relative overflow-hidden border border-brand-orange/20 bg-gradient-to-br from-brand-orange/10 via-brand-orange/5 to-transparent">
+                  <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-brand-orange/15 blur-xl pointer-events-none" />
+                  <div className="relative">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Позвонить нам</p>
+                    </div>
+                    <a href="tel:+79859707133" className="flex items-center gap-2 font-display font-bold text-base text-brand-orange hover:text-brand-orange/80 transition-colors">
+                      <div className="w-7 h-7 rounded-lg bg-brand-orange/15 flex items-center justify-center shrink-0">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .27h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1-1.06a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      8-985-970-71-33
+                    </a>
+                    <a href="tel:+79996622602" className="flex items-center gap-2 font-medium text-sm text-muted-foreground hover:text-foreground transition-colors mt-1.5 ml-9">
+                      8-999-662-26-02
+                    </a>
+                  </div>
                 </div>
 
                 {/* Навигация */}
