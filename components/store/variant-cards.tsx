@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
