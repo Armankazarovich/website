@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { useSession } from "next-auth/react";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -33,32 +34,46 @@ async function saveSub(sub: PushSubscription) {
 }
 
 export function PushSubscription() {
+  const { data: session } = useSession();
+
   useEffect(() => {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
     if (!vapidKey) return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     if (Notification.permission === "denied") return;
 
-    navigator.serviceWorker.ready.then(async (reg) => {
-      // Если уже есть подписка — обновим в БД и выйдем
+    async function init() {
+      // Залогиненный пользователь = подписчик по умолчанию:
+      // если разрешение ещё не запрашивалось — автоматически спрашиваем через 3s
+      if (session?.user?.id && Notification.permission === "default") {
+        await new Promise((r) => setTimeout(r, 3000));
+        await Notification.requestPermission();
+      }
+
+      if (Notification.permission === "denied") return;
+
+      const reg = await navigator.serviceWorker.ready;
+
+      // Если уже есть подписка — обновим в БД (привяжем userId если залогинен)
       const existing = await reg.pushManager.getSubscription();
       if (existing) {
         saveSub(existing);
         return;
       }
 
-      // Если разрешение уже дано — подпишем сразу
+      // Если разрешение дано — подпишем
       if (Notification.permission === "granted") {
         const sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+          applicationServerKey: urlBase64ToUint8Array(vapidKey!),
         });
         saveSub(sub);
       }
-      // Если permission === "default" — не спрашиваем сами,
-      // ждём пока пользователь нажмёт "Разрешить уведомления" в PWA баннере
-    });
-  }, []);
+      // Гости с permission === "default" подписываются через PWA баннер
+    }
+
+    init();
+  }, [session?.user?.id]); // перезапуск при логине/логауте
 
   return null;
 }

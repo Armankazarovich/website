@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Share, Plus } from "lucide-react";
+import { X, Share, Plus, Bell } from "lucide-react";
+import { requestPushPermission } from "@/components/push-subscription";
 
 type Platform = "ios-safari" | "ios-other" | "android" | "desktop-chrome" | "desktop-other" | "installed" | null;
 
@@ -32,6 +33,7 @@ export function PwaInstall() {
   const [visible, setVisible] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showSteps, setShowSteps] = useState(false);
+  const [pushState, setPushState] = useState<"idle" | "granted" | "denied">("idle");
 
   useEffect(() => {
     const p = detectPlatform();
@@ -46,16 +48,35 @@ export function PwaInstall() {
       }
     } catch {}
 
-    const timer = setTimeout(() => setVisible(true), 5000);
+    // Инициализируем состояние push
+    if (typeof Notification !== "undefined") {
+      if (Notification.permission === "granted") setPushState("granted");
+      else if (Notification.permission === "denied") setPushState("denied");
+    }
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
+    // Умная задержка: если куки уже приняты — показываем через 5s
+    // Если нет — ждём событие cookies-accepted или 25s fallback
+    const cookiesAccepted = localStorage.getItem("cookies-accepted");
+    if (cookiesAccepted) {
+      const t = setTimeout(() => setVisible(true), 5000);
+      const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
+      window.addEventListener("beforeinstallprompt", handler);
+      return () => { clearTimeout(t); window.removeEventListener("beforeinstallprompt", handler); };
+    }
+
+    let shown = false;
+    const onCookies = () => {
+      if (!shown) { shown = true; setTimeout(() => setVisible(true), 3000); }
     };
+    window.addEventListener("cookies-accepted", onCookies, { once: true });
+    const fallback = setTimeout(() => { if (!shown) { shown = true; setVisible(true); } }, 25000);
+
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
     window.addEventListener("beforeinstallprompt", handler);
 
     return () => {
-      clearTimeout(timer);
+      window.removeEventListener("cookies-accepted", onCookies);
+      clearTimeout(fallback);
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);
@@ -137,30 +158,55 @@ export function PwaInstall() {
 
               {/* Action buttons */}
               {!showSteps && (
-                <div className="mt-3 flex items-center gap-2">
-                  {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
+                <>
+                  <div className="mt-3 flex items-center gap-2">
+                    {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
+                      <button
+                        onClick={handleInstall}
+                        className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                      >
+                        Установить
+                      </button>
+                    )}
+                    {platform === "ios-safari" && (
+                      <button
+                        onClick={handleInstall}
+                        className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                      >
+                        Как установить
+                      </button>
+                    )}
                     <button
-                      onClick={handleInstall}
-                      className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                      onClick={dismiss}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
                     >
-                      Установить
+                      Не сейчас
                     </button>
+                  </div>
+
+                  {/* Push уведомления */}
+                  {"PushManager" in (typeof window !== "undefined" ? window : {}) && (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      {pushState === "idle" && (
+                        <button
+                          onClick={async () => {
+                            const ok = await requestPushPermission();
+                            setPushState(ok ? "granted" : "denied");
+                          }}
+                          className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-2 rounded-lg hover:bg-muted"
+                        >
+                          <Bell className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Уведомления о заказах и акциях</span>
+                        </button>
+                      )}
+                      {pushState === "granted" && (
+                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1.5 px-2 py-1.5">
+                          <Bell className="w-3 h-3 shrink-0" /> Уведомления включены ✓
+                        </p>
+                      )}
+                    </div>
                   )}
-                  {platform === "ios-safari" && (
-                    <button
-                      onClick={handleInstall}
-                      className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
-                    >
-                      Как установить
-                    </button>
-                  )}
-                  <button
-                    onClick={dismiss}
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
-                  >
-                    Не сейчас
-                  </button>
-                </div>
+                </>
               )}
             </div>
           </div>
