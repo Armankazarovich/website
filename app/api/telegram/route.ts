@@ -31,9 +31,32 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Handle /help command
+    // Handle /start and /help commands
     if (body.message?.text) {
       const msgText = body.message.text as string;
+
+      if (msgText === "/start" || msgText.startsWith("/start@")) {
+        const chatId = body.message.chat.id;
+        if (TELEGRAM_BOT_TOKEN) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `👋 *Добро пожаловать в ПилоРус\\!*\n\nЗдесь приходят уведомления о новых заказах\\.\nНажмите /help чтобы получить инструкцию по работе с заказами\\.`,
+              parse_mode: "MarkdownV2",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "📝 Регистрация сотрудника", url: "https://pilo-rus.ru/join" }],
+                  [{ text: "🔐 Войти в AdminPanel", url: "https://pilo-rus.ru/admin" }],
+                ],
+              },
+            }),
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
+
       if (msgText === "/help" || msgText.startsWith("/help@")) {
         const chatId = body.message.chat.id;
         const messages = buildHelpMessages();
@@ -54,6 +77,41 @@ export async function POST(req: NextRequest) {
 
     if (body.callback_query) {
       const data: string = body.callback_query.data || "";
+
+      // Handle help button
+      if (data === "help") {
+        const chatId = body.callback_query.message?.chat.id;
+        if (chatId && TELEGRAM_BOT_TOKEN) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ callback_query_id: body.callback_query.id }),
+          });
+
+          const [msg1, msg2] = buildHelpMessages();
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatId, text: msg1, parse_mode: "Markdown" }),
+          });
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: msg2,
+              parse_mode: "Markdown",
+              reply_markup: {
+                inline_keyboard: [
+                  [{ text: "📝 Регистрация сотрудника", url: "https://pilo-rus.ru/join" }],
+                  [{ text: "🔐 Войти в AdminPanel", url: "https://pilo-rus.ru/admin" }],
+                ],
+              },
+            }),
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
 
       // Handle staff approve/reject
       if (data.startsWith("staff:")) {

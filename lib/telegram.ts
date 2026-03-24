@@ -44,6 +44,7 @@ export function buildOrderKeyboard(orderId: string, currentStatus: string) {
     rows.push([{ text: "❌ Отменить", callback_data: `st:${orderId}:CANCELLED` }]);
   }
 
+  rows.push([{ text: "ℹ️ Инструкция", callback_data: "help" }]);
   rows.push([{ text: "📋 Открыть в админке", url: `https://pilo-rus.ru/admin/orders/${orderId}` }]);
 
   return { inline_keyboard: rows };
