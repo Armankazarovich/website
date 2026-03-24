@@ -31,14 +31,14 @@ const allNavItems = [
   { href: "/admin/help", label: "Помощь", icon: HelpCircle, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
 ];
 
-export function AdminNav({ role }: { role?: string }) {
+export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
   const visibleItems = allNavItems.filter((item) =>
     !item.roles || item.roles.includes(role || "")
   );
 
   return (
-    <nav className="flex-1 p-3 space-y-1">
+    <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
       {visibleItems.map((item) => {
         const isActive = item.exact
           ? pathname === item.href
@@ -47,6 +47,7 @@ export function AdminNav({ role }: { role?: string }) {
           <Link
             key={item.href}
             href={item.href}
+            onClick={onNavigate}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group ${
               isActive
                 ? "bg-white/15 text-white"
