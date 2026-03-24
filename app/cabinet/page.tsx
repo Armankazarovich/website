@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import Link from "next/link";
 import { ShoppingBag, ArrowRight, Package, Clock, CheckCircle, Truck } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { RepeatOrderButton } from "@/components/cabinet/repeat-order-button";
 
 const STATUS_ICONS: Record<string, React.ElementType> = {
@@ -28,6 +29,7 @@ export default async function CabinetOrdersPage() {
 
   return (
     <div>
+      <BackButton href="/catalog" label="Каталог" />
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

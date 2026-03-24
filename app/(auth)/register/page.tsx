@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Eye, EyeOff, User, Mail, Phone, Lock, CheckCircle2 } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 const schema = z.object({
   name: z.string().min(2, "Введите имя (минимум 2 символа)"),
@@ -97,6 +98,7 @@ export default function RegisterPage() {
   return (
     <div className="flex-1 flex items-center justify-center bg-muted/30 px-4 py-12">
       <div className="w-full max-w-sm">
+        <BackButton href="/" label="Главная" />
 
         {/* Заголовок */}
         <div className="text-center mb-8">

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle, Loader2, User, Building2 } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { useSession, signIn } from "next-auth/react";
 
 type ClientType = "individual" | "company";
@@ -290,6 +291,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="container py-8 max-w-4xl">
+      <BackButton href="/cart" label="Корзина" />
       <h1 className="font-display font-bold text-3xl mb-8">Оформление заказа</h1>
 
       {/* Auth block — only show if not logged in */}

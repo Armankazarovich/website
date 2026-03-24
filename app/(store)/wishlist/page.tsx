@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Heart, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { useWishlistStore } from "@/store/wishlist";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ export default function WishlistPage() {
 
   return (
     <div className="container py-8">
+      <BackButton href="/catalog" label="Каталог" />
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>

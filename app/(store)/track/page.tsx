@@ -4,6 +4,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, Package, Clock, CheckCircle, Truck, XCircle, Phone, ArrowRight } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 import { Button } from "@/components/ui/button";
 
 type OrderStatus = "NEW" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -241,10 +242,8 @@ export default function TrackPage() {
   return (
     <div className="container py-10 max-w-2xl">
       <div className="mb-8">
-        <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-          ← На главную
-        </Link>
-        <h1 className="font-display font-bold text-3xl mt-3 mb-2">Отслеживание заказа</h1>
+        <BackButton href="/cabinet" label="Мои заказы" />
+        <h1 className="font-display font-bold text-3xl mt-1 mb-2">Отслеживание заказа</h1>
         <p className="text-muted-foreground">
           Введите номер заказа и телефон, который указали при оформлении
         </p>

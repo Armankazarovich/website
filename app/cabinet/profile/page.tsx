@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -131,6 +132,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
+      <BackButton href="/cabinet" label="Мои заказы" />
       <div>
         <h1 className="font-display font-bold text-2xl">Профиль</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Ваши данные и настройки аккаунта</p>

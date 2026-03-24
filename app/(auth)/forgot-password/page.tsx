@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail, ArrowLeft, CheckCircle2, KeyRound } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 const schema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -45,6 +46,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-[calc(100vh-180px)] flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
+        <BackButton href="/" label="Главная" />
         {/* Card */}
         <div className="bg-card border border-border rounded-3xl shadow-lg overflow-hidden">
           {/* Header */}

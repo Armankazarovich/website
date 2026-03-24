@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef, useCallback, useTransition } from "react";
+import { Suspense, useState, useEffect, useCallback, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { X, SlidersHorizontal, Filter, ChevronDown, LayoutGrid, Ruler, ArrowLeft } from "lucide-react";
@@ -36,15 +36,12 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
   const [typeOpen, setTypeOpen] = useState(true);
   const [sizeOpen, setSizeOpen] = useState(true);
 
-  const fetchedRef = useRef(false);
-
   useEffect(() => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-
     fetch("/api/catalog/sizes").then(r => r.json()).then(d => setSizes(d.sizes ?? [])).catch(() => {});
     fetch("/api/catalog/categories").then(r => r.json()).then(d => setCategories(d.categories ?? [])).catch(() => {});
+  }, []);
 
+  useEffect(() => {
     const url = currentCategory
       ? `/api/catalog/available-types?category=${encodeURIComponent(currentCategory)}`
       : "/api/catalog/available-types";
@@ -66,7 +63,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
   );
 
   const navigate = (url: string) => {
-    startTransition(() => router.push(url));
+    startTransition(() => { router.push(url); onClose(); });
   };
 
   const resetAll = () => {
@@ -114,7 +111,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
           <div className="px-3 pb-3 border-t border-border">
             <div className="space-y-0.5 mt-2">
               <button
-                onClick={() => navigate(createUrl({ category: null }))}
+                onClick={() => navigate(createUrl({ category: null, type: null }))}
                 className={`w-full flex items-center px-3 py-2 rounded-xl text-sm transition-colors text-left ${
                   !currentCategory ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted text-muted-foreground hover:text-foreground"
                 }`}
@@ -124,7 +121,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
               {categories.map(cat => (
                 <button
                   key={cat.id}
-                  onClick={() => navigate(createUrl({ category: currentCategory === cat.slug ? null : cat.slug }))}
+                  onClick={() => navigate(createUrl({ category: currentCategory === cat.slug ? null : cat.slug, type: null }))}
                   className={`w-full flex items-center px-3 py-2 rounded-xl text-sm transition-colors text-left ${
                     currentCategory === cat.slug
                       ? "bg-primary/10 text-primary font-medium"

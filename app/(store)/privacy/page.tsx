@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
   title: "Политика конфиденциальности — ПилоРус",
@@ -9,11 +10,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="container max-w-3xl py-12">
-      <nav className="text-sm text-muted-foreground mb-8">
-        <Link href="/" className="hover:text-foreground transition-colors">Главная</Link>
-        <span className="mx-2">/</span>
-        <span className="text-foreground">Политика конфиденциальности</span>
-      </nav>
+      <BackButton href="/" label="Главная" />
 
       <h1 className="font-display font-bold text-3xl sm:text-4xl mb-2">
         Политика конфиденциальности

@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { Lock, Loader2 } from "lucide-react";
 import { ResetPasswordForm } from "./reset-password-form";
+import { BackButton } from "@/components/ui/back-button";
 
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-[calc(100vh-180px)] flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
+        <BackButton href="/" label="Главная" />
         <div className="bg-card border border-border rounded-3xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-br from-brand-brown to-brand-brown/80 px-8 py-7">

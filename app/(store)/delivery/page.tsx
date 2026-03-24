@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { CheckCircle, Truck, MapPin, Clock, FileText, Phone } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
   title: "Доставка и оплата",
@@ -10,6 +11,7 @@ export const metadata: Metadata = {
 export default function DeliveryPage() {
   return (
     <div className="container py-12">
+      <BackButton href="/" label="Главная" />
       <h1 className="font-display font-bold text-4xl mb-3">Доставка и оплата</h1>
       <p className="text-muted-foreground text-lg mb-10">
         Работаем честно — без скрытых наценок на доставку

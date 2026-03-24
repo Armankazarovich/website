@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CheckCircle, Factory, Award, Users, Leaf } from "lucide-react";
+import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
   title: "О производстве",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="container py-12">
+      <BackButton href="/" label="Главная" />
       <h1 className="font-display font-bold text-4xl mb-3">О производстве</h1>
       <p className="text-muted-foreground text-lg mb-10 max-w-2xl">
         ООО «ПИТИ» — производитель пиломатериалов в Подмосковье. Работаем напрямую

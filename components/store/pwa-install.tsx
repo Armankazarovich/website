@@ -84,10 +84,9 @@ export function PwaInstall() {
 
   return (
     <div
-      className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-[101] p-3 sm:p-4"
-      style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
+      className="fixed bottom-0 left-0 right-0 z-[150] pointer-events-none px-3 sm:px-4 pt-3 sm:pt-4 pb-[76px] lg:pb-4"
     >
-      <div className="max-w-xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80"
+      <div className="max-w-xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80 pointer-events-auto"
         style={{
           backdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
           WebkitBackdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
@@ -123,7 +122,7 @@ export function PwaInstall() {
               </div>
               <button
                 onClick={dismiss}
-                className="text-zinc-600 hover:text-zinc-400 transition-colors shrink-0"
+                className="text-white/50 hover:text-white/90 transition-colors shrink-0"
                 aria-label="Закрыть"
               >
                 <X className="w-4 h-4" />

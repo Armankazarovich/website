@@ -109,10 +109,6 @@ export function MobileBottomNav() {
                 ${isActive ? "text-brand-orange" : "text-muted-foreground"}`}
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
-              {/* Active indicator */}
-              {isActive && (
-                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 w-5 h-[3px] rounded-full bg-brand-orange shadow-[0_0_6px_2px_rgba(232,112,10,0.55)]" />
-              )}
 
               {/* Icon + badge */}
               <motion.div

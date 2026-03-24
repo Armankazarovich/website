@@ -21,6 +21,7 @@ import {
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { BackButton } from "@/components/ui/back-button";
 
 // ─── Share Banner (detects ?share= param) ─────────────────────────────────────
 function ShareBanner() {
@@ -262,6 +263,7 @@ export default function CartPage() {
 
   return (
     <div className="container py-8">
+      <BackButton href="/catalog" label="Каталог" />
       {/* Share banner — SSR safe */}
       <Suspense fallback={null}>
         <ShareBanner />
