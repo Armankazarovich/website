@@ -60,7 +60,7 @@ export function CatalogTypeFilter({ currentType, category, availableTypes }: Cat
   );
 
   return (
-    <div className="sticky top-[68px] md:top-24 z-40 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 mb-6 bg-background/95 backdrop-blur-xl border-b border-border">
+    <div className="sticky top-[68px] md:top-24 lg:static lg:top-auto z-40 -mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 py-2 lg:py-0 mb-6 bg-background/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none border-b border-border lg:border-none">
       <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-none">
         {category && (
           <Link
