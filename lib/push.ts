@@ -52,3 +52,24 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
     )
   );
 }
+
+export async function sendPushToStaff(payload: PushPayload) {
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) return;
+
+  const webpush = getWebPush();
+  // Берём подписки только сотрудников (role != USER)
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: {
+      user: { role: { not: "USER" } },
+    },
+  });
+
+  await Promise.allSettled(
+    subscriptions.map((sub) =>
+      webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify(payload)
+      )
+    )
+  );
+}

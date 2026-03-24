@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOrderNotification, sendCustomerOrderConfirmation } from "@/lib/mail";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
-import { sendPushToAll } from "@/lib/push";
+import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 
@@ -100,8 +100,18 @@ export async function POST(req: NextRequest) {
       }).catch(console.error);
     }
 
-    // Push уведомление сотрудникам о новом заказе
-    sendPushToAll({
+    // Push клиенту — подтверждение заказа
+    if (userId) {
+      sendPushToUser(userId, {
+        title: `✅ Заказ #${order.orderNumber} принят!`,
+        body: `Сумма: ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽. Менеджер свяжется с вами.`,
+        url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
+        icon: "/icons/icon-192x192.png",
+      }).catch(console.error);
+    }
+
+    // Push сотрудникам — новый заказ
+    sendPushToStaff({
       title: `🛒 Новый заказ #${order.orderNumber}`,
       body: `${order.guestName || "Клиент"} — ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽`,
       url: `/admin/orders/${order.id}`,
