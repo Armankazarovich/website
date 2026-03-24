@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, UserCog, Clock, ShieldAlert, Loader2, UserPlus, X } from "lucide-react";
+import { CheckCircle, XCircle, UserCog, Clock, ShieldAlert, Loader2, UserPlus, X, Pencil, Trash2, Search } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Администратор",
@@ -46,8 +46,59 @@ export function StaffList({ staff }: { staff: StaffMember[] }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [search, setSearch] = useState("");
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", email: "" });
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const setField = (key: string, val: string) => setForm((f) => ({ ...f, [key]: val }));
+
+  const filteredMembers = search.trim()
+    ? members.filter((m) => {
+        const q = search.toLowerCase();
+        return (
+          m.name?.toLowerCase().includes(q) ||
+          m.email.toLowerCase().includes(q) ||
+          m.phone?.toLowerCase().includes(q)
+        );
+      })
+    : members;
+
+  const handleEdit = (member: StaffMember) => {
+    setEditId(member.id);
+    setEditForm({ name: member.name || "", phone: member.phone || "", email: member.email });
+  };
+
+  const handleEditSave = async (id: string) => {
+    setLoadingId(id);
+    try {
+      const res = await fetch(`/api/admin/staff/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, ...data.user } : m)));
+        setEditId(null);
+      }
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setLoadingId(id);
+    try {
+      const res = await fetch(`/api/admin/staff/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setMembers((prev) => prev.filter((m) => m.id !== id));
+        setDeleteConfirmId(null);
+      }
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,113 +145,144 @@ export function StaffList({ staff }: { staff: StaffMember[] }) {
     }
   };
 
-  const pending = members.filter((m) => m.staffStatus === "PENDING");
-  const active = members.filter((m) => m.staffStatus === "ACTIVE" || !m.staffStatus);
-  const suspended = members.filter((m) => m.staffStatus === "SUSPENDED");
+  const pending = filteredMembers.filter((m) => m.staffStatus === "PENDING");
+  const active = filteredMembers.filter((m) => m.staffStatus === "ACTIVE" || !m.staffStatus);
+  const suspended = filteredMembers.filter((m) => m.staffStatus === "SUSPENDED");
 
   const renderMember = (member: StaffMember) => {
     const isLoading = loadingId === member.id;
     const roleBadge = ROLE_COLORS[member.role] || "bg-gray-100 text-gray-600";
     const displayRole = member.customRole || ROLE_LABELS[member.role] || member.role;
+    const isEditing = editId === member.id;
+    const isConfirmingDelete = deleteConfirmId === member.id;
 
     return (
-      <div
-        key={member.id}
-        className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-card border border-border rounded-xl"
-      >
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
-          {member.name?.charAt(0)?.toUpperCase() || "?"}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-semibold text-sm">{member.name || "—"}</p>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${roleBadge}`}>
-              {displayRole}
-            </span>
+      <div key={member.id} className="flex flex-col gap-3 p-4 bg-card border border-border rounded-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          {/* Avatar */}
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
+            {member.name?.charAt(0)?.toUpperCase() || "?"}
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">{member.email}</p>
-          {member.phone && <p className="text-xs text-muted-foreground">{member.phone}</p>}
-          <p className="text-[10px] text-muted-foreground/60 mt-1">
-            Добавлен: {new Date(member.createdAt).toLocaleDateString("ru-RU")}
-          </p>
-        </div>
 
-        {/* Actions */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          {/* Role selector */}
-          {member.staffStatus !== "PENDING" && (
-            <select
-              className="h-8 px-2 rounded-lg border border-input bg-background text-xs focus:outline-none"
-              value={member.role}
-              disabled={isLoading}
-              onChange={(e) => update(member.id, { role: e.target.value })}
-            >
-              {ALL_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABELS[r]}
-                </option>
-              ))}
-            </select>
-          )}
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-sm">{member.name || "—"}</p>
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${roleBadge}`}>
+                {displayRole}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-0.5">{member.email}</p>
+            {member.phone && <p className="text-xs text-muted-foreground">{member.phone}</p>}
+            <p className="text-[10px] text-muted-foreground/60 mt-1">
+              Добавлен: {new Date(member.createdAt).toLocaleDateString("ru-RU")}
+            </p>
+          </div>
 
-          {isLoading ? (
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-          ) : (
-            <>
-              {member.staffStatus === "PENDING" && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
+          {/* Actions */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            {member.staffStatus !== "PENDING" && (
+              <select
+                className="h-8 px-2 rounded-lg border border-input bg-background text-xs focus:outline-none"
+                value={member.role}
+                disabled={isLoading}
+                onChange={(e) => update(member.id, { role: e.target.value })}
+              >
+                {ALL_ROLES.map((r) => (
+                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                ))}
+              </select>
+            )}
+
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                {member.staffStatus === "PENDING" && (
+                  <>
+                    <Button size="sm" variant="outline"
+                      className="h-8 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
+                      onClick={() => update(member.id, { staffStatus: "ACTIVE" })}>
+                      <CheckCircle className="w-3.5 h-3.5 mr-1" /> Одобрить
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      className="h-8 text-xs border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+                      onClick={() => update(member.id, { staffStatus: "SUSPENDED" })}>
+                      <XCircle className="w-3.5 h-3.5 mr-1" /> Отклонить
+                    </Button>
+                  </>
+                )}
+                {member.staffStatus === "ACTIVE" && (
+                  <Button size="sm" variant="outline" className="h-8 text-xs text-muted-foreground"
+                    onClick={() => update(member.id, { staffStatus: "SUSPENDED" })}>
+                    Заблокировать
+                  </Button>
+                )}
+                {member.staffStatus === "SUSPENDED" && (
+                  <Button size="sm" variant="outline"
                     className="h-8 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
-                    onClick={() => update(member.id, { staffStatus: "ACTIVE" })}
-                  >
-                    <CheckCircle className="w-3.5 h-3.5 mr-1" /> Одобрить
+                    onClick={() => update(member.id, { staffStatus: "ACTIVE" })}>
+                    Восстановить
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs border-red-300 text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
-                    onClick={() => update(member.id, { staffStatus: "SUSPENDED" })}
-                  >
-                    <XCircle className="w-3.5 h-3.5 mr-1" /> Отклонить
-                  </Button>
-                </>
-              )}
-              {member.staffStatus === "ACTIVE" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs text-muted-foreground"
-                  onClick={() => update(member.id, { staffStatus: "SUSPENDED" })}
-                >
-                  Заблокировать
+                )}
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                  title="Редактировать"
+                  onClick={() => isEditing ? setEditId(null) : handleEdit(member)}>
+                  <Pencil className="w-3.5 h-3.5" />
                 </Button>
-              )}
-              {member.staffStatus === "SUSPENDED" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400"
-                  onClick={() => update(member.id, { staffStatus: "ACTIVE" })}
-                >
-                  Восстановить
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                  title="Удалить"
+                  onClick={() => setDeleteConfirmId(isConfirmingDelete ? null : member.id)}>
+                  <Trash2 className="w-3.5 h-3.5" />
                 </Button>
-              )}
-            </>
-          )}
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Edit form */}
+        {isEditing && (
+          <div className="border-t border-border pt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <Input placeholder="Имя" value={editForm.name} onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))} className="h-8 text-xs" />
+            <Input placeholder="Телефон" value={editForm.phone} onChange={(e) => setEditForm(f => ({ ...f, phone: e.target.value }))} className="h-8 text-xs" />
+            <Input placeholder="Email" type="email" value={editForm.email} onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))} className="h-8 text-xs" />
+            <div className="sm:col-span-3 flex gap-2">
+              <Button size="sm" className="h-8 text-xs" onClick={() => handleEditSave(member.id)} disabled={isLoading}>
+                {isLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null} Сохранить
+              </Button>
+              <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setEditId(null)}>Отмена</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirm */}
+        {isConfirmingDelete && (
+          <div className="border-t border-destructive/20 pt-3 flex items-center gap-3 bg-destructive/5 rounded-lg px-3 py-2">
+            <p className="text-xs text-destructive flex-1">Удалить <strong>{member.name || member.email}</strong>? Это действие нельзя отменить.</p>
+            <Button size="sm" variant="destructive" className="h-7 text-xs"
+              onClick={() => handleDelete(member.id)} disabled={isLoading}>
+              {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Удалить"}
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setDeleteConfirmId(null)}>Отмена</Button>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
     <div className="space-y-8">
-      {/* Add employee button */}
-      <div>
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Поиск по имени, email, телефону..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
         <Button onClick={() => { setShowForm(!showForm); setFormError(""); }} variant={showForm ? "outline" : "default"}>
           {showForm ? <><X className="w-4 h-4 mr-2" /> Отмена</> : <><UserPlus className="w-4 h-4 mr-2" /> Добавить сотрудника</>}
         </Button>

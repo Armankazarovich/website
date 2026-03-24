@@ -14,6 +14,7 @@ import {
   Globe,
   HelpCircle,
   Users,
+  Bell,
 } from "lucide-react";
 
 const allNavItems = [
@@ -26,6 +27,7 @@ const allNavItems = [
   { href: "/admin/site", label: "Сайт", icon: Globe, roles: ["ADMIN"] },
   { href: "/admin/settings", label: "Настройки", icon: Settings, roles: ["ADMIN"] },
   { href: "/admin/staff", label: "Команда", icon: Users, roles: ["ADMIN"] },
+  { href: "/admin/notifications", label: "Уведомления", icon: Bell, roles: ["ADMIN"] },
   { href: "/admin/help", label: "Помощь", icon: HelpCircle, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
 ];
 

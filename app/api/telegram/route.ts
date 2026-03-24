@@ -2,8 +2,9 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { handleTelegramCallback, buildOrderText, buildOrderKeyboard, buildHelpMessages } from "@/lib/telegram";
+import { handleTelegramCallback, buildOrderText, buildOrderKeyboard, buildHelpMessages, ORDER_STATUS_LABELS } from "@/lib/telegram";
 import { sendOrderStatusEmail } from "@/lib/email";
+import { sendPushToUser } from "@/lib/push";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
@@ -184,6 +185,16 @@ export async function POST(req: NextRequest) {
             statusDescription: statusDescriptions[result.newStatus] || "",
             trackUrl: `https://pilo-rus.ru/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
             customerName: order.guestName || "Клиент",
+          }).catch(console.error);
+        }
+
+        // Push уведомление клиенту о смене статуса
+        if (order.userId && statusLabels[result.newStatus]) {
+          sendPushToUser(order.userId, {
+            title: `Заказ #${order.orderNumber} — ${ORDER_STATUS_LABELS[result.newStatus] || result.newStatus}`,
+            body: statusDescriptions[result.newStatus] || "",
+            url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
+            icon: "/icons/icon-192x192.png",
           }).catch(console.error);
         }
 

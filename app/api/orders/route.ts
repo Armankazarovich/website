@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOrderNotification, sendCustomerOrderConfirmation } from "@/lib/mail";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
+import { sendPushToAll } from "@/lib/push";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
 
@@ -98,6 +99,14 @@ export async function POST(req: NextRequest) {
         items: orderItems,
       }).catch(console.error);
     }
+
+    // Push уведомление сотрудникам о новом заказе
+    sendPushToAll({
+      title: `🛒 Новый заказ #${order.orderNumber}`,
+      body: `${order.guestName || "Клиент"} — ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽`,
+      url: `/admin/orders/${order.id}`,
+      icon: "/icons/icon-192x192.png",
+    }).catch(console.error);
 
     // Telegram notification
     sendTelegramOrderNotification({

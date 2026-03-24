@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { staffStatus, role } = body;
+  const { staffStatus, role, name, phone, email } = body;
 
   if (staffStatus && !VALID_STATUSES.includes(staffStatus)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -26,6 +26,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const data: any = {};
   if (staffStatus) data.staffStatus = staffStatus;
   if (role) data.role = role;
+  if (name !== undefined) data.name = name;
+  if (phone !== undefined) data.phone = phone;
+  if (email !== undefined) data.email = email;
 
   const user = await prisma.user.update({
     where: { id: params.id },
@@ -43,4 +46,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   });
 
   return NextResponse.json({ user });
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if ((session?.user as any)?.role !== "ADMIN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Запретить удалять самого себя
+  if ((session?.user as any)?.id === params.id) {
+    return NextResponse.json({ error: "Нельзя удалить свой аккаунт" }, { status: 400 });
+  }
+
+  await prisma.user.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
 }
