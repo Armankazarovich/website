@@ -67,6 +67,10 @@ jobs:
             touch /home/armankmb/pilo-rus/.deploy-trigger
             echo "✅ Deploy trigger created at $(date)"
 
+            # Remove orphaned files not tracked by SCP (deleted from git but still on server)
+            rm -rf "/home/armankmb/pilo-rus/app/app/(store)/cabinet"
+            echo "✅ Cleaned orphaned files"
+
             # Build and restart
             cd /home/armankmb/pilo-rus/app
             echo "🔨 Building..."
