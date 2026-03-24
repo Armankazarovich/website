@@ -5,7 +5,7 @@ import { CookieConsent } from "@/components/store/cookie-consent";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { ContactWidget } from "@/components/store/contact-widget";
 import { PwaInstall } from "@/components/store/pwa-install";
-import { PageTransition } from "@/components/ui/page-transition";
+import { AccountDrawer } from "@/components/store/account-drawer";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
@@ -21,13 +21,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-screen flex-col">
       <Header categories={categories} />
-      <main className="flex-1 pb-16 lg:pb-0">
-        <PageTransition>{children}</PageTransition>
-      </main>
+      <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} />
       <MobileBottomNav />
       <CookieConsent />
       <PwaInstall />
+      <AccountDrawer />
       <ScrollToTop />
       <ContactWidget
         phone={getSetting(siteSettings, "phone")}

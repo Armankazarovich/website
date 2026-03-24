@@ -14,6 +14,7 @@ import {
   Handshake,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { useAccountDrawer } from "@/store/account-drawer";
 import { SearchModal } from "@/components/store/search-modal";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { PartnershipModal } from "@/components/store/partnership-modal";
@@ -123,6 +124,7 @@ export function MobileBottomNav() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [partnershipOpen, setPartnershipOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { toggle: toggleAccount } = useAccountDrawer();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -166,8 +168,8 @@ export function MobileBottomNav() {
       id: "account",
       icon: User,
       label: "Кабинет",
-      href: "/cabinet",
-      action: null,
+      href: null,
+      action: () => toggleAccount(),
     },
   ];
 
@@ -182,7 +184,7 @@ export function MobileBottomNav() {
     <>
       {/* Bottom navigation */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 lg:hidden safe-area-inset-bottom"
+        className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom"
         style={{
           backdropFilter: "blur(32px) saturate(160%)",
           WebkitBackdropFilter: "blur(32px) saturate(160%)",

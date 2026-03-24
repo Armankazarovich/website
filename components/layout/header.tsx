@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cart";
+import { useAccountDrawer } from "@/store/account-drawer";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SearchModal } from "@/components/store/search-modal";
@@ -129,6 +130,7 @@ export function Header({ categories = [] }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
+  const { toggle: toggleAccount } = useAccountDrawer();
 
   useEffect(() => {
     setMounted(true);
@@ -493,13 +495,13 @@ export function Header({ categories = [] }: HeaderProps) {
             </Link>
 
             {/* User — desktop only */}
-            <Link
-              href="/cabinet"
+            <button
+              onClick={toggleAccount}
               aria-label="Личный кабинет"
               className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <User className="w-4 h-4" />
-            </Link>
+            </button>
 
             {/* Partnership — md only */}
             <button
