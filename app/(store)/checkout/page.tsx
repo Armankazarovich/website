@@ -145,6 +145,7 @@ export default function CheckoutPage() {
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
   const [innLoading, setInnLoading] = useState(false);
   const [innError, setInnError] = useState("");
+  const [geoLoading, setGeoLoading] = useState(false);
   const [authMode, setAuthMode] = useState<"guest" | "login" | "register">("guest");
   const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
@@ -541,8 +542,47 @@ export default function CheckoutPage() {
 
             {deliveryType === "delivery" ? (
               <div>
-                <Label htmlFor="address">Адрес доставки *</Label>
-                <Input id="address" placeholder="г. Москва, ул. Примерная, д.1" className="mt-1" {...register("address")} />
+                <div className="flex items-center justify-between mb-1">
+                  <Label htmlFor="address">Адрес доставки *</Label>
+                  <button
+                    type="button"
+                    disabled={geoLoading}
+                    onClick={() => {
+                      if (!navigator.geolocation) return;
+                      setGeoLoading(true);
+                      navigator.geolocation.getCurrentPosition(
+                        async ({ coords }) => {
+                          try {
+                            const res = await fetch(
+                              `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json&accept-language=ru`,
+                              { headers: { "User-Agent": "pilo-rus.ru" } }
+                            );
+                            const data = await res.json();
+                            const a = data.address || {};
+                            const parts = [
+                              a.city || a.town || a.village || a.county,
+                              a.road,
+                              a.house_number,
+                            ].filter(Boolean);
+                            const addr = parts.length ? parts.join(", ") : data.display_name;
+                            setValue("address", addr);
+                          } catch { /* silent */ }
+                          finally { setGeoLoading(false); }
+                        },
+                        () => setGeoLoading(false),
+                        { timeout: 8000 }
+                      );
+                    }}
+                    className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    {geoLoading
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                    }
+                    {geoLoading ? "Определяем..." : "Определить местоположение"}
+                  </button>
+                </div>
+                <Input id="address" placeholder="г. Москва, ул. Примерная, д.1" {...register("address")} />
                 {errors.address && <p className="text-xs text-destructive mt-1">{errors.address.message}</p>}
                 <p className="text-xs text-muted-foreground mt-1">Стоимость доставки уточняется менеджером.</p>
               </div>
