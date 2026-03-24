@@ -10,11 +10,12 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="container max-w-3xl py-12">
-      <BackButton href="/" label="Главная" />
-
-      <h1 className="font-display font-bold text-3xl sm:text-4xl mb-2">
-        Политика конфиденциальности
-      </h1>
+      <div className="flex items-start gap-3 mb-2">
+        <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
+        <h1 className="font-display font-bold text-3xl sm:text-4xl">
+          Политика конфиденциальности
+        </h1>
+      </div>
       <p className="text-muted-foreground mb-10">
         ООО «ПИТИ» (торговая марка ПилоРус) · ИНН 504712164 · Актуальна с 01.01.2025
       </p>

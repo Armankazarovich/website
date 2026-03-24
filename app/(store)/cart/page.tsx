@@ -263,14 +263,16 @@ export default function CartPage() {
 
   return (
     <div className="container py-8">
-      <BackButton href="/catalog" label="Каталог" />
       {/* Share banner — SSR safe */}
       <Suspense fallback={null}>
         <ShareBanner />
       </Suspense>
 
       <div className="flex items-center justify-between mb-8">
-        <h1 className="font-display font-bold text-3xl">Корзина</h1>
+        <div className="flex items-center gap-3">
+          <BackButton href="/catalog" label="Каталог" className="mb-0" />
+          <h1 className="font-display font-bold text-3xl">Корзина</h1>
+        </div>
         <ShareCartButton />
       </div>
 

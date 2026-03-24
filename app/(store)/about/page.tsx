@@ -10,8 +10,10 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="container py-12">
-      <BackButton href="/" label="Главная" />
-      <h1 className="font-display font-bold text-4xl mb-3">О производстве</h1>
+      <div className="flex items-start gap-3 mb-3">
+        <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
+        <h1 className="font-display font-bold text-4xl">О производстве</h1>
+      </div>
       <p className="text-muted-foreground text-lg mb-10 max-w-2xl">
         ООО «ПИТИ» — производитель пиломатериалов в Подмосковье. Работаем напрямую
         с потребителями уже более 10 лет.

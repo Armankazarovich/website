@@ -29,14 +29,16 @@ export default async function CabinetOrdersPage() {
 
   return (
     <div>
-      <BackButton href="/catalog" label="Каталог" />
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display font-bold text-2xl">Мои заказы</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            {orders.length > 0 ? `${orders.length} заказ${orders.length === 1 ? "" : orders.length < 5 ? "а" : "ов"}` : "Заказов пока нет"}
-          </p>
+        <div className="flex items-start gap-3">
+          <BackButton href="/catalog" label="Каталог" className="mt-0.5 mb-0 shrink-0" />
+          <div>
+            <h1 className="font-display font-bold text-2xl">Мои заказы</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              {orders.length > 0 ? `${orders.length} заказ${orders.length === 1 ? "" : orders.length < 5 ? "а" : "ов"}` : "Заказов пока нет"}
+            </p>
+          </div>
         </div>
         <Link
           href="/catalog"

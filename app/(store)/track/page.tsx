@@ -242,11 +242,15 @@ export default function TrackPage() {
   return (
     <div className="container py-10 max-w-2xl">
       <div className="mb-8">
-        <BackButton href="/cabinet" label="Мои заказы" />
-        <h1 className="font-display font-bold text-3xl mt-1 mb-2">Отслеживание заказа</h1>
-        <p className="text-muted-foreground">
-          Введите номер заказа и телефон, который указали при оформлении
-        </p>
+        <div className="flex items-start gap-3 mb-1">
+          <BackButton href="/cabinet" label="Мои заказы" className="mt-0.5 mb-0 shrink-0" />
+          <div>
+            <h1 className="font-display font-bold text-3xl">Отслеживание заказа</h1>
+            <p className="text-muted-foreground mt-1">
+              Введите номер заказа и телефон, который указали при оформлении
+            </p>
+          </div>
+        </div>
       </div>
       <Suspense>
         <TrackForm />

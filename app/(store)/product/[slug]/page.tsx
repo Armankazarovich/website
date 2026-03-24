@@ -9,8 +9,7 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { BackButton } from "@/components/ui/back-button";
-import { Package, Phone } from "lucide-react";
+import { Package, Phone, ArrowLeft } from "lucide-react";
 
 interface Props {
   params: { slug: string };
@@ -97,8 +96,6 @@ export default async function ProductPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
       />
-      <BackButton href={`/catalog?category=${product.category.slug}`} label={product.category.name} />
-
       {/* Main product section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
         {/* Gallery */}
@@ -141,12 +138,21 @@ export default async function ProductPage({ params }: Props) {
         {/* Product info + variant selector */}
         <div className="space-y-6">
           <div>
-            <Link
-              href={`/catalog/${product.category.slug}`}
-              className="text-sm text-primary hover:underline"
-            >
-              {product.category.name}
-            </Link>
+            <div className="flex items-center gap-2 mb-1">
+              <Link
+                href={`/catalog?category=${product.category.slug}`}
+                aria-label={product.category.name}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+              </Link>
+              <Link
+                href={`/catalog?category=${product.category.slug}`}
+                className="text-sm text-primary hover:underline"
+              >
+                {product.category.name}
+              </Link>
+            </div>
             <h1 className="font-display font-bold text-3xl mt-1 mb-2">{product.name}</h1>
             {product.description && (
               <p className="text-muted-foreground leading-relaxed">{product.description}</p>

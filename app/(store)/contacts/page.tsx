@@ -11,8 +11,10 @@ export const metadata: Metadata = {
 export default function ContactsPage() {
   return (
     <div className="container py-12">
-      <BackButton href="/" label="Главная" />
-      <h1 className="font-display font-bold text-4xl mb-3">Контакты</h1>
+      <div className="flex items-start gap-3 mb-3">
+        <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
+        <h1 className="font-display font-bold text-4xl">Контакты</h1>
+      </div>
       <p className="text-muted-foreground text-lg mb-10">Мы всегда рады помочь вам с выбором</p>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">

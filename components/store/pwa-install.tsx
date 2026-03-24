@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Download, Share, Plus, MoreVertical } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Share, Plus } from "lucide-react";
 
 type Platform = "ios-safari" | "ios-other" | "android" | "desktop-chrome" | "desktop-other" | "installed" | null;
 
@@ -23,7 +24,7 @@ function detectPlatform(): Platform {
   return "desktop-other";
 }
 
-const DISMISS_KEY = "pwa-banner-v2";
+const DISMISS_KEY = "pwa-banner-v3";
 const DISMISS_DAYS = 30;
 
 export function PwaInstall() {
@@ -37,7 +38,6 @@ export function PwaInstall() {
     setPlatform(p);
     if (p === "installed" || p === null) return;
 
-    // Check if dismissed recently
     try {
       const raw = localStorage.getItem(DISMISS_KEY);
       if (raw) {
@@ -46,7 +46,6 @@ export function PwaInstall() {
       }
     } catch {}
 
-    // Show after 5s delay
     const timer = setTimeout(() => setVisible(true), 5000);
 
     const handler = (e: Event) => {
@@ -83,120 +82,90 @@ export function PwaInstall() {
   if (!visible || platform === "installed" || platform === null) return null;
 
   return (
-    <div
-      className="fixed bottom-0 left-0 right-0 z-[150] pointer-events-none px-3 sm:px-4 pt-3 sm:pt-4 pb-[76px] lg:pb-4"
-    >
-      <div className="max-w-xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80 pointer-events-auto"
-        style={{
-          backdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
-          WebkitBackdropFilter: "blur(40px) saturate(180%) brightness(0.45)",
-          background: "linear-gradient(135deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.55) 100%)",
-          border: "1px solid rgba(255,255,255,0.12)",
-        }}
-      >
-        {/* Top shine — liquid glass reflection */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
-        {/* Inner top glow */}
-        <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-        {/* Orange glow hint */}
-        <div className="absolute -left-8 -bottom-8 w-32 h-32 rounded-full bg-brand-orange/15 blur-2xl pointer-events-none" />
-        <div className="relative p-4">
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 16, scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          className="fixed right-4 bottom-[84px] lg:bottom-6 z-[150] w-[300px] sm:w-[320px]"
+        >
+          <div className="bg-card border border-border rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
+            {/* Brand accent stripe */}
+            <div className="h-1 bg-gradient-to-r from-brand-orange to-brand-brown" />
 
-        <div className="relative flex items-start gap-3">
-          {/* App icon — белый фон с логотипом */}
-          <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-lg overflow-hidden">
-            <img src="/logo.png" alt="ПилоРус" width={36} height={36} className="object-contain" />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="font-semibold text-sm text-white leading-tight">ПилоРус — приложение</p>
-                <p className="text-xs text-zinc-400 mt-0.5">
-                  {platform === "ios-other"
-                    ? "Откройте в Safari для установки"
-                    : platform === "desktop-other"
-                    ? "Откройте в Chrome для установки"
-                    : "Быстрый доступ без браузера"}
-                </p>
-              </div>
-              <button
-                onClick={dismiss}
-                className="text-white/50 hover:text-white/90 transition-colors shrink-0"
-                aria-label="Закрыть"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* iOS steps */}
-            {showSteps && (
-              <div className="mt-3 space-y-1.5">
-                {platform === "ios-other" ? (
-                  <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 rounded-lg px-3 py-2">
-                    <Share className="w-3.5 h-3.5 shrink-0" />
-                    Откройте этот сайт в Safari для установки
-                  </div>
-                ) : (
-                  <>
-                    {[
-                      { icon: <Share className="w-3.5 h-3.5 text-brand-orange shrink-0" />, text: 'Нажмите «Поделиться» внизу Safari' },
-                      { icon: <Plus className="w-3.5 h-3.5 text-brand-orange shrink-0" />, text: 'Выберите «На экран "Домой"»' },
-                      { icon: <span className="text-brand-orange text-xs font-bold shrink-0 w-3.5 text-center">✓</span>, text: 'Нажмите «Добавить» — готово!' },
-                    ].map((step, i) => (
-                      <div key={i} className="flex items-center gap-2.5 text-xs text-zinc-300 bg-white/5 rounded-lg px-3 py-2">
-                        {step.icon}
-                        {step.text}
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Action buttons */}
-            {!showSteps && (
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
-                  <button
-                    onClick={handleInstall}
-                    className="inline-flex items-center gap-1.5 bg-brand-orange hover:bg-brand-orange/90 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors shadow-lg shadow-brand-orange/20"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Установить
-                  </button>
-                )}
-                {platform === "ios-safari" && (
-                  <button
-                    onClick={handleInstall}
-                    className="inline-flex items-center gap-1.5 bg-brand-orange hover:bg-brand-orange/90 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors shadow-lg shadow-brand-orange/20"
-                  >
-                    <Share className="w-3.5 h-3.5" />
-                    Как установить
-                  </button>
-                )}
-                {(platform === "desktop-other" ||
-                  platform === "ios-other" ||
-                  (platform === "desktop-chrome" && !installPrompt) ||
-                  (platform === "android" && !installPrompt)) && (
-                  <p className="text-xs text-zinc-500">
+            <div className="p-4">
+              {/* Header row */}
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white border border-border/40 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+                  <img src="/logo.png" alt="ПилоРус" width={32} height={32} className="object-contain" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-foreground leading-tight">ПилоРус — приложение</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {platform === "ios-other"
-                      ? "Откройте в Safari →"
-                      : <>Откройте в Chrome → <span className="inline-flex items-center gap-0.5 text-zinc-400"><MoreVertical className="w-3 h-3" /> → «Установить»</span></>}
+                      ? "Откройте в Safari для установки"
+                      : platform === "desktop-other"
+                      ? "Откройте в Chrome"
+                      : "Быстрый доступ без браузера"}
                   </p>
-                )}
+                </div>
                 <button
                   onClick={dismiss}
-                  className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors ml-auto"
+                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0 -mt-0.5"
+                  aria-label="Закрыть"
                 >
-                  Не сейчас
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            )}
+
+              {/* iOS steps */}
+              {showSteps && platform === "ios-safari" && (
+                <div className="mt-3 space-y-1.5">
+                  {[
+                    { icon: <Share className="w-3.5 h-3.5 text-primary shrink-0" />, text: 'Нажмите «Поделиться» в Safari' },
+                    { icon: <Plus className="w-3.5 h-3.5 text-primary shrink-0" />, text: 'Выберите «На экран "Домой"»' },
+                    { icon: <span className="text-primary text-xs font-bold shrink-0">✓</span>, text: 'Нажмите «Добавить»' },
+                  ].map((s, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
+                      {s.icon} {s.text}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Action buttons */}
+              {!showSteps && (
+                <div className="mt-3 flex items-center gap-2">
+                  {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
+                    <button
+                      onClick={handleInstall}
+                      className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                    >
+                      Установить
+                    </button>
+                  )}
+                  {platform === "ios-safari" && (
+                    <button
+                      onClick={handleInstall}
+                      className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                    >
+                      Как установить
+                    </button>
+                  )}
+                  <button
+                    onClick={dismiss}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
+                  >
+                    Не сейчас
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        </div>{/* /relative p-4 */}
-      </div>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

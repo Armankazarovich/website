@@ -12,19 +12,21 @@ export default function WishlistPage() {
 
   return (
     <div className="container py-8">
-      <BackButton href="/catalog" label="Каталог" />
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="font-display font-bold text-3xl flex items-center gap-3">
-            <Heart className="w-7 h-7 text-red-500 fill-red-500" />
-            Избранное
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {items.length > 0
-              ? `${items.length} товар${items.length === 1 ? "" : items.length < 5 ? "а" : "ов"} сохранено`
-              : "Пока ничего нет"}
-          </p>
+        <div className="flex items-start gap-3">
+          <BackButton href="/catalog" label="Каталог" className="mt-1 mb-0 shrink-0" />
+          <div>
+            <h1 className="font-display font-bold text-3xl flex items-center gap-3">
+              <Heart className="w-7 h-7 text-red-500 fill-red-500" />
+              Избранное
+            </h1>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {items.length > 0
+                ? `${items.length} товар${items.length === 1 ? "" : items.length < 5 ? "а" : "ов"} сохранено`
+                : "Пока ничего нет"}
+            </p>
+          </div>
         </div>
         {items.length > 0 && (
           <button

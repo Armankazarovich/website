@@ -18,6 +18,21 @@ import { useSession, signIn } from "next-auth/react";
 
 type ClientType = "individual" | "company";
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  let d = digits;
+  if (d[0] === "8") d = "7" + d.slice(1);
+  if (d[0] !== "7") d = "7" + d;
+  d = d.slice(0, 11);
+  let result = "+7";
+  if (d.length > 1) result += " (" + d.slice(1, 4);
+  if (d.length > 4) result += ") " + d.slice(4, 7);
+  if (d.length > 7) result += "-" + d.slice(7, 9);
+  if (d.length > 9) result += "-" + d.slice(9, 11);
+  return result;
+}
+
 const checkoutSchema = z.object({
   name: z.string().min(2, "Введите имя"),
   phone: z.string().min(10, "Введите корректный номер телефона"),
@@ -123,6 +138,7 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderNum, setOrderNum] = useState<number | null>(null);
   const [orderPhone, setOrderPhone] = useState("");
+  const [phoneValue, setPhoneValue] = useState("");
   const [clientType, setClientType] = useState<ClientType>("individual");
   const [authMode, setAuthMode] = useState<"guest" | "login" | "register">("guest");
   const [mounted, setMounted] = useState(false);
@@ -147,7 +163,7 @@ export default function CheckoutPage() {
       .then((r) => r.json())
       .then((user) => {
         if (user.name) setValue("name", user.name);
-        if (user.phone) setValue("phone", user.phone);
+        if (user.phone) { setPhoneValue(user.phone); setValue("phone", user.phone); }
         if (user.email) setValue("email", user.email);
         if (user.address) setValue("address", user.address);
       })
@@ -291,8 +307,10 @@ export default function CheckoutPage() {
 
   return (
     <div className="container py-8 max-w-4xl">
-      <BackButton href="/cart" label="Корзина" />
-      <h1 className="font-display font-bold text-3xl mb-8">Оформление заказа</h1>
+      <div className="mb-8">
+        <BackButton href="/cart" label="Корзина" className="mb-2" />
+        <h1 className="font-display font-bold text-3xl">Оформление заказа</h1>
+      </div>
 
       {/* Auth block — only show if not logged in */}
       {!session?.user && (
@@ -421,7 +439,17 @@ export default function CheckoutPage() {
               </div>
               <div>
                 <Label htmlFor="phone">Телефон *</Label>
-                <Input id="phone" placeholder="+7 (999) 000-00-00" className="mt-1" {...register("phone")} />
+                <Input
+                  id="phone"
+                  placeholder="+7 (999) 000-00-00"
+                  className="mt-1"
+                  value={phoneValue}
+                  onChange={e => {
+                    const f = formatPhone(e.target.value);
+                    setPhoneValue(f);
+                    setValue("phone", f);
+                  }}
+                />
                 {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone.message}</p>}
               </div>
             </div>

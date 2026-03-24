@@ -132,10 +132,12 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <BackButton href="/cabinet" label="Мои заказы" />
-      <div>
-        <h1 className="font-display font-bold text-2xl">Профиль</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Ваши данные и настройки аккаунта</p>
+      <div className="flex items-start gap-3">
+        <BackButton href="/cabinet" label="Мои заказы" className="mt-0.5 mb-0 shrink-0" />
+        <div>
+          <h1 className="font-display font-bold text-2xl">Профиль</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Ваши данные и настройки аккаунта</p>
+        </div>
       </div>
 
       {/* Profile form */}

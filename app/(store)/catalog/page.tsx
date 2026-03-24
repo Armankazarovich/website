@@ -2,10 +2,10 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
-import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
   title: "Каталог пиломатериалов",
@@ -151,19 +151,31 @@ export default async function CatalogPage({
   ];
 
   return (
-    <div className="container py-8">
-
-      {searchParams.category && (
-        <BackButton href="/catalog" label="Все категории" />
-      )}
+    <div className="container py-6">
 
       {/* ── Горизонтальная фильтр-полоса ── */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="font-display font-bold text-2xl sm:text-3xl">Каталог</h1>
-          <span className="text-sm text-muted-foreground">{totalCount} товаров</span>
+        <div className="mb-3">
+          <h1 className="font-display font-bold text-2xl sm:text-3xl">
+            {searchParams.category
+              ? categories.find((c) => c.slug === searchParams.category)?.name ?? "Каталог"
+              : "Каталог"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {searchParams.category ? "Показаны товары категории" : "Все пиломатериалы в наличии"}
+          </p>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+          {/* Back arrow pill — only when category is selected */}
+          {searchParams.category && (
+            <Link
+              href="/catalog"
+              aria-label="Все категории"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all shrink-0 border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+          )}
           {typeFilters
             .filter((f) => {
               // "Все" — всегда показываем
@@ -276,11 +288,11 @@ export default async function CatalogPage({
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center justify-between mb-5 gap-4">
-            <h1 className="font-display font-bold text-2xl">
+            <h2 className="font-display font-bold text-2xl">
               {searchParams.category
                 ? categories.find((c) => c.slug === searchParams.category)?.name || "Каталог"
                 : "Все пиломатериалы"}
-            </h1>
+            </h2>
 
             <div className="flex items-center gap-1 shrink-0">
               <span className="text-sm text-muted-foreground hidden sm:block mr-1">Сортировка:</span>

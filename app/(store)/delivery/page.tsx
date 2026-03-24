@@ -11,8 +11,10 @@ export const metadata: Metadata = {
 export default function DeliveryPage() {
   return (
     <div className="container py-12">
-      <BackButton href="/" label="Главная" />
-      <h1 className="font-display font-bold text-4xl mb-3">Доставка и оплата</h1>
+      <div className="flex items-start gap-3 mb-3">
+        <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
+        <h1 className="font-display font-bold text-4xl">Доставка и оплата</h1>
+      </div>
       <p className="text-muted-foreground text-lg mb-10">
         Работаем честно — без скрытых наценок на доставку
       </p>
