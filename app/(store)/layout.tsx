@@ -8,6 +8,7 @@ import { PwaInstall } from "@/components/store/pwa-install";
 import { AccountDrawer } from "@/components/store/account-drawer";
 import { FiltersDrawer } from "@/components/store/filters-drawer";
 import { SearchDrawer } from "@/components/store/search-drawer";
+import { CartDrawer } from "@/components/store/cart-drawer";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
@@ -31,6 +32,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <AccountDrawer />
       <FiltersDrawer />
       <SearchDrawer />
+      <CartDrawer />
       <ScrollToTop />
       <ContactWidget
         phone={getSetting(siteSettings, "phone")}

@@ -16,9 +16,11 @@ import { useAccountDrawer } from "@/store/account-drawer";
 import { useFiltersDrawer } from "@/store/filters-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 
+
 export function MobileBottomNav() {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
+  const { setCartOpen } = useCartStore();
   const [mounted, setMounted] = useState(false);
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleFilters } = useFiltersDrawer();
@@ -51,8 +53,8 @@ export function MobileBottomNav() {
       id: "cart",
       icon: ShoppingCart,
       label: "Корзина",
-      href: "/cart",
-      action: null,
+      href: null,
+      action: () => setCartOpen(true),
       badge: totalItems,
     },
     {

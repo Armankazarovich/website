@@ -19,6 +19,8 @@ interface SearchParams {
   size?: string;
   type?: string;
   instock?: string;
+  minprice?: string;
+  maxprice?: string;
 }
 
 /** Извлекает сечение из строки размера "25×100×6000" → "25×100" */
@@ -36,12 +38,18 @@ export default async function CatalogPage({
   const perPage = 24;
   const currentSize = searchParams.size || "";
   const currentType = searchParams.type || "";
-  const currentInStock = searchParams.instock === "1";
+  const currentMinPrice = searchParams.minprice ? Number(searchParams.minprice) : null;
+  const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
 
-  // Build variant sub-filter (size + instock can combine)
+  // Build variant sub-filter
   const variantWhere: Record<string, unknown> = {};
   if (currentSize) variantWhere.size = { contains: currentSize };
-  if (currentInStock) variantWhere.inStock = true;
+  if (currentMinPrice !== null || currentMaxPrice !== null) {
+    variantWhere.pricePerCube = {
+      ...(currentMinPrice !== null ? { gte: currentMinPrice } : {}),
+      ...(currentMaxPrice !== null ? { lte: currentMaxPrice } : {}),
+    };
+  }
 
   // Build where clause
   const where = {
@@ -113,6 +121,8 @@ export default async function CatalogPage({
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
+    if (searchParams.minprice) params.set("minprice", searchParams.minprice);
+    if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
     params.set("page", String(p));
     return `/catalog?${params.toString()}`;
   };
@@ -123,6 +133,8 @@ export default async function CatalogPage({
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
+    if (searchParams.minprice) params.set("minprice", searchParams.minprice);
+    if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
     if (sort) params.set("sort", sort);
     return `/catalog?${params.toString()}`;
   };
@@ -246,7 +258,7 @@ export default async function CatalogPage({
               }
             >
               <CatalogFilters
-                currentInStock={currentInStock}
+                currentInStock={false}
                 currentSize={currentSize}
                 sizes={crossSections}
                 currentType={currentType}

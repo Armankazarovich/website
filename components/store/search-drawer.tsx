@@ -87,7 +87,7 @@ function SearchContent({ onClose }: { onClose: () => void }) {
             Популярные запросы
           </p>
           <div className="flex flex-wrap gap-2">
-            {["Доска обрезная", "Брус 150×150", "Вагонка", "Планкен", "Блок-хаус", "Фанера"].map((hint) => (
+            {["Доска 25×100", "Брус 100×100", "Брус 150×150", "Вагонка", "Лиственница", "Планкен", "Фанера 18мм", "Блок-хаус"].map((hint) => (
               <button
                 key={hint}
                 onClick={() => setQuery(hint)}
