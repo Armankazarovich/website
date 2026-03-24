@@ -143,6 +143,8 @@ export default function CheckoutPage() {
   const [phoneValue, setPhoneValue] = useState("");
   const [clientType, setClientType] = useState<ClientType>("individual");
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
+  const [innLoading, setInnLoading] = useState(false);
+  const [innError, setInnError] = useState("");
   const [authMode, setAuthMode] = useState<"guest" | "login" | "register">("guest");
   const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
@@ -425,21 +427,49 @@ export default function CheckoutPage() {
                 <Building2 className="w-5 h-5 text-primary" />
                 Реквизиты организации
               </h2>
-              <div>
-                <Label htmlFor="orgName">Название организации *</Label>
-                <Input id="orgName" placeholder='ООО "Ромашка" / ИП Иванов И.И.' className="mt-1" {...register("orgName")} />
-              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="inn">ИНН *</Label>
-                  <Input id="inn" placeholder="7712345678" className="mt-1" maxLength={12} {...register("inn")} />
-                  <p className="text-xs text-muted-foreground mt-1">10 цифр для ООО, 12 для ИП</p>
+                  <div className="relative mt-1">
+                    <Input
+                      id="inn"
+                      placeholder="7712345678"
+                      className="pr-8"
+                      maxLength={12}
+                      {...register("inn", {
+                        onBlur: async (e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (!/^\d{10}(\d{2})?$/.test(val)) return;
+                          setInnLoading(true);
+                          setInnError("");
+                          try {
+                            const res = await fetch(`/api/inn-lookup?inn=${val}`);
+                            const data = await res.json();
+                            if (data.error) { setInnError(data.error); return; }
+                            if (data.name) setValue("orgName", data.name);
+                            if (data.kpp) setValue("kpp", data.kpp);
+                            if (data.address && deliveryType === "delivery") setValue("address", data.address);
+                          } catch { setInnError("Ошибка поиска"); }
+                          finally { setInnLoading(false); }
+                        },
+                      })}
+                    />
+                    {innLoading && (
+                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  {innError && <p className="text-xs text-destructive mt-1">{innError}</p>}
+                  {!innError && <p className="text-xs text-muted-foreground mt-1">10 цифр для ООО, 12 для ИП — данные заполнятся автоматически</p>}
                 </div>
                 <div>
                   <Label htmlFor="kpp">КПП</Label>
                   <Input id="kpp" placeholder="773501001" className="mt-1" maxLength={9} {...register("kpp")} />
                   <p className="text-xs text-muted-foreground mt-1">Для ИП не требуется</p>
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="orgName">Название организации *</Label>
+                <Input id="orgName" placeholder='Заполнится автоматически по ИНН' className="mt-1" {...register("orgName")} />
               </div>
             </div>
           )}
