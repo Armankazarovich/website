@@ -10,34 +10,51 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const res = await fetch(
-      `https://api-fns.ru/api/egr?req=${inn}&key=free`,
-      { headers: { "User-Agent": "Mozilla/5.0" }, next: { revalidate: 0 } }
-    );
+    const res = await fetch(`https://egrul.itsoft.ru/${inn}.json`, {
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
 
     if (!res.ok) {
-      return NextResponse.json({ error: "Не найдено" }, { status: 404 });
-    }
-
-    const data = await res.json();
-    const item = data?.items?.[0];
-
-    if (!item) {
       return NextResponse.json({ error: "Организация не найдена" }, { status: 404 });
     }
 
-    // Нормализуем ответ (ЮЛ или ИП)
-    const isIP = !!item.ИП;
-    const entity = item.ЮЛ || item.ИП;
+    const data = await res.json();
 
-    const name = isIP
-      ? `ИП ${entity?.ФИОПолн || ""}`
-      : entity?.НаимСокрЮЛ || entity?.НаимПолнЮЛ || "";
+    // ЮЛ (юридическое лицо)
+    if (data.СвЮЛ) {
+      const юл = data.СвЮЛ;
+      const attrs = юл["@attributes"] || {};
+      const наимЮЛ = юл.СвНаимЮЛ || {};
+      const shortName = наимЮЛ.СвНаимЮЛСокр?.["@attributes"]?.НаимСокр || "";
+      const fullName = наимЮЛ["@attributes"]?.НаимЮЛПолн || "";
+      const name = shortName || fullName;
+      const kpp = attrs.КПП || "";
 
-    const kpp = entity?.КПП || "";
-    const address = entity?.Адрес?.АдресПолн || entity?.АдрМНЮЛ?.АдресПолн || "";
+      // Адрес
+      const адрБлок = юл.СвАдресЮЛ;
+      let address = "";
+      if (адрБлок) {
+        const адрАттр = адрБлок["@attributes"] || {};
+        address = адрАттр.АдресПолн || адрАттр.СтрАдр || "";
+        if (!address && адрБлок.АдрЮЛФИАС) {
+          const фиас = адрБлок.АдрЮЛФИАС["@attributes"] || {};
+          address = фиас.АдресПолн || "";
+        }
+      }
 
-    return NextResponse.json({ name, kpp, address, inn });
+      return NextResponse.json({ name, kpp, address, inn });
+    }
+
+    // ИП (индивидуальный предприниматель)
+    if (data.СвИП) {
+      const ип = data.СвИП;
+      const фио = ип.СвФЛ?.["@attributes"] || {};
+      const name = `ИП ${[фио.Фамилия, фио.Имя, фио.Отчество].filter(Boolean).join(" ")}`;
+      return NextResponse.json({ name, kpp: "", address: "", inn });
+    }
+
+    return NextResponse.json({ error: "Организация не найдена" }, { status: 404 });
   } catch {
     return NextResponse.json({ error: "Ошибка запроса" }, { status: 500 });
   }
