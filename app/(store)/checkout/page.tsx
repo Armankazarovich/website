@@ -40,6 +40,8 @@ const checkoutSchema = z.object({
   address: z.string().min(5, "Введите адрес доставки"),
   paymentMethod: z.enum(["cash", "invoice"]),
   comment: z.string().optional(),
+  contactMethod: z.enum(["phone", "whatsapp", "telegram", "sms"]).optional(),
+  contactExtra: z.string().optional(),
   // Company fields (optional, validated manually)
   orgName: z.string().optional(),
   inn: z.string().optional(),
@@ -152,11 +154,14 @@ export default function CheckoutPage() {
     handleSubmit,
     setValue,
     reset,
+    watch,
     formState: { errors },
   } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: { paymentMethod: "cash" },
   });
+
+  const contactMethod = watch("contactMethod");
 
   // Автозаполнение данных залогиненного пользователя
   useEffect(() => {
@@ -214,8 +219,13 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      // Build comment with company info if needed
+      // Build comment with company info + preferred contact
       let comment = data.comment || "";
+      if (data.contactMethod) {
+        const labels: Record<string, string> = { phone: "📞 Телефон", whatsapp: "💬 WhatsApp", telegram: "✈️ Telegram", sms: "📱 SMS" };
+        const contactLine = `Способ связи: ${labels[data.contactMethod]}${data.contactExtra ? ` — ${data.contactExtra}` : ""}`;
+        comment = comment ? `${contactLine}\n${comment}` : contactLine;
+      }
       if (clientType === "company" && data.orgName) {
         const companyInfo = `Юр. лицо: ${data.orgName}, ИНН: ${data.inn}${data.kpp ? `, КПП: ${data.kpp}` : ""}`;
         comment = comment ? `${companyInfo}\n${comment}` : companyInfo;
@@ -549,6 +559,52 @@ export default function CheckoutPage() {
                 </div>
               </label>
             </div>
+          </div>
+
+          {/* Preferred contact */}
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+            <div>
+              <h2 className="font-display font-semibold text-lg">Как вам удобнее связаться?</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Менеджер свяжется удобным для вас способом</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {([
+                { value: "phone", label: "Телефон", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C9.6 21 3 14.4 3 6c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+                { value: "whatsapp", label: "WhatsApp", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M20.5 3.5A11.9 11.9 0 0012 0C5.4 0 0 5.4 0 12c0 2.1.6 4.2 1.6 6L0 24l6.2-1.6C8 23.4 10 24 12 24c6.6 0 12-5.4 12-12 0-3.2-1.2-6.2-3.5-8.5zm-8.5 18.4c-1.8 0-3.6-.5-5.1-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.9 9.9 0 012.1 12C2.1 6.5 6.5 2 12 2s9.9 4.5 9.9 10-4.4 9.9-9.9 9.9zm5.4-7.4c-.3-.1-1.7-.9-2-.9-.2-.1-.4-.1-.6.1-.2.2-.7.9-.9 1.1-.1.2-.3.2-.6.1-.3-.1-1.2-.5-2.3-1.4-.9-.8-1.4-1.7-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.2-.5 0-.2-.5-1.3-.7-1.8-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.3.3-1 1-1 2.4s1 2.7 1.2 2.9c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.7-.7 2-1.4.2-.6.2-1.2.1-1.4-.1 0-.3-.1-.6-.2z" fill="currentColor" opacity=".9"/></svg> },
+                { value: "telegram", label: "Telegram", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+                { value: "sms", label: "SMS", icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+              ] as const).map((m) => {
+                const selected = contactMethod === m.value;
+                return (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setValue("contactMethod", m.value)}
+                    className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 transition-all text-sm font-medium ${
+                      selected
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-primary/40 text-muted-foreground"
+                    }`}
+                  >
+                    <span className={selected ? "text-primary" : "text-muted-foreground"}>{m.icon}</span>
+                    {m.label}
+                  </button>
+                );
+              })}
+            </div>
+            {(contactMethod === "telegram" || contactMethod === "whatsapp") && (
+              <div>
+                <Label htmlFor="contactExtra">
+                  {contactMethod === "telegram" ? "Ваш Telegram (@username)" : "Номер WhatsApp"}
+                </Label>
+                <Input
+                  id="contactExtra"
+                  placeholder={contactMethod === "telegram" ? "@username" : "+7 (999) 000-00-00"}
+                  className="mt-1"
+                  {...register("contactExtra")}
+                />
+              </div>
+            )}
           </div>
 
           {/* Comment */}
