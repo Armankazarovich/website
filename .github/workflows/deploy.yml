@@ -66,3 +66,12 @@ jobs:
             # Create deploy trigger for CronTab
             touch /home/armankmb/pilo-rus/.deploy-trigger
             echo "✅ Deploy trigger created at $(date)"
+
+            # Build and restart
+            cd /home/armankmb/pilo-rus/app
+            echo "🔨 Building..."
+            npm run build 2>&1
+            echo "🔄 Restarting PM2..."
+            pm2 restart pilo-rus --update-env
+            pm2 save
+            echo "✅ Done at $(date)"
