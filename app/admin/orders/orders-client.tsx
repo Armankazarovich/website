@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
-import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
-import { Search } from "lucide-react";
+import { formatDate, formatPrice } from "@/lib/utils";
+import { Search, Trash2, Loader2 } from "lucide-react";
 
 const STATUS_FILTERS = [
   { key: "ALL", label: "Все" },
@@ -30,15 +31,15 @@ type Order = {
   items: { id: string }[];
 };
 
-type Stats = {
-  todayCount: number;
-  todayRevenue: number;
-  newCount: number;
-};
+type Stats = { todayCount: number; todayRevenue: number; newCount: number };
 
-export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats }) {
+export function OrdersClient({ orders: initialOrders, stats: initialStats }: { orders: Order[]; stats: Stats }) {
+  const router = useRouter();
+  const [orders, setOrders] = useState(initialOrders);
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {
@@ -52,6 +53,50 @@ export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats 
       return matchStatus && matchSearch;
     });
   }, [orders, statusFilter, search]);
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const stats = useMemo(() => {
+    const todayOrders = orders.filter((o) => new Date(o.createdAt) >= today);
+    return {
+      todayCount: todayOrders.length,
+      todayRevenue: todayOrders.reduce((s, o) => s + Number(o.totalAmount), 0),
+      newCount: orders.filter((o) => o.status === "NEW").length,
+    };
+  }, [orders]);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((o) => o.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Удалить ${selected.size} заказ(ов)? Это действие нельзя отменить.`)) return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/admin/orders/bulk-delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [...selected] }),
+      });
+      if (res.ok) {
+        setOrders((prev) => prev.filter((o) => !selected.has(o.id)));
+        setSelected(new Set());
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -71,7 +116,7 @@ export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats 
         </div>
       </div>
 
-      {/* Фильтры + поиск */}
+      {/* Фильтры + поиск + bulk delete */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -83,7 +128,7 @@ export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats 
             className="w-full pl-9 pr-3 py-2 text-sm bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 flex-1">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.key}
@@ -98,6 +143,16 @@ export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats 
             </button>
           ))}
         </div>
+        {selected.size > 0 && (
+          <button
+            onClick={handleBulkDelete}
+            disabled={deleting}
+            className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:bg-destructive/90 transition-colors shrink-0"
+          >
+            {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            Удалить ({selected.size})
+          </button>
+        )}
       </div>
 
       {/* Таблица */}
@@ -106,6 +161,14 @@ export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats 
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.size > 0 && selected.size === filtered.length}
+                    onChange={toggleAll}
+                    className="rounded"
+                  />
+                </th>
                 <th className="text-left px-4 py-3 font-semibold">№</th>
                 <th className="text-left px-4 py-3 font-semibold">Клиент</th>
                 <th className="text-left px-4 py-3 font-semibold">Телефон</th>
@@ -118,7 +181,18 @@ export function OrdersClient({ orders, stats }: { orders: Order[]; stats: Stats 
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((order) => (
-                <tr key={order.id} className="hover:bg-muted/30 transition-colors group">
+                <tr
+                  key={order.id}
+                  className={`hover:bg-muted/30 transition-colors ${selected.has(order.id) ? "bg-destructive/5" : ""}`}
+                >
+                  <td className="px-3 py-3 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(order.id)}
+                      onChange={() => toggleSelect(order.id)}
+                      className="rounded"
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium">
                     <Link href={`/admin/orders/${order.id}`} className="hover:text-primary transition-colors">
                       #{order.orderNumber}

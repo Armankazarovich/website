@@ -91,3 +91,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   return NextResponse.json(order);
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  await prisma.order.delete({ where: { id: params.id } });
+  return NextResponse.json({ success: true });
+}

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { ArrowLeft, Phone, Mail, MapPin, CreditCard, MessageSquare, Package } from "lucide-react";
+import { DeleteOrderButton } from "./delete-button";
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({
@@ -24,7 +25,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Шапка */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <Link
           href="/admin/orders"
           className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -37,6 +38,9 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
         <span className={`ml-2 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusColor}`}>
           {statusLabel}
         </span>
+        <div className="ml-auto">
+          <DeleteOrderButton orderId={order.id} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

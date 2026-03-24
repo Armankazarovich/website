@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag } from "lucide-react";
+import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity } from "lucide-react";
+import { requestPushPermission } from "@/components/push-subscription";
 
 const SEGMENTS = [
   { key: "all", label: "Все подписчики", icon: Bell },
@@ -36,6 +37,58 @@ export default function NotificationsPage() {
   const [subs, setSubs] = useState<Sub[]>([]);
   const [subsLoading, setSubsLoading] = useState(false);
   const [subsFilter, setSubsFilter] = useState<"all" | "registered" | "guests">("all");
+
+  type DebugInfo = {
+    count: number;
+    withUser: number;
+    guests: number;
+    vapidConfigured: boolean;
+    publicKeyPrefix: string;
+    nextPublicKeySet: boolean;
+    browserPermission?: string;
+    swActive?: boolean;
+    browserSubActive?: boolean;
+  };
+  const [debug, setDebug] = useState<DebugInfo | null>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeResult, setSubscribeResult] = useState<"ok" | "err" | null>(null);
+
+  const checkDebug = async () => {
+    setDebugLoading(true);
+    try {
+      const res = await fetch("/api/push/debug");
+      const data = await res.json();
+      const browserPermission = typeof Notification !== "undefined" ? Notification.permission : "unknown";
+      let swActive = false;
+      let browserSubActive = false;
+      if ("serviceWorker" in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration("/");
+        if (reg) {
+          swActive = true;
+          const sub = await reg.pushManager.getSubscription();
+          browserSubActive = !!sub;
+        }
+      }
+      setDebug({ ...data, browserPermission, swActive, browserSubActive });
+    } finally {
+      setDebugLoading(false);
+    }
+  };
+
+  const handleSubscribe = async () => {
+    setSubscribing(true);
+    setSubscribeResult(null);
+    try {
+      await requestPushPermission();
+      setSubscribeResult("ok");
+      setTimeout(() => checkDebug(), 1500);
+    } catch {
+      setSubscribeResult("err");
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   const setField = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -121,6 +174,74 @@ export default function NotificationsPage() {
             <p>📦 <strong>Авто:</strong> смена статуса → пуш клиенту</p>
             <p>💡 <strong>Авто:</strong> советы каждый понедельник, акции по пятницам</p>
             <p>📣 <strong>Вручную:</strong> форма ниже — рассылка по сегменту</p>
+          </div>
+
+          {/* Диагностика */}
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Activity className="w-4 h-4 text-muted-foreground" />
+                Диагностика Push
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={checkDebug}
+                  disabled={debugLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted/40 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {debugLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
+                  Проверить
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubscribe}
+                  disabled={subscribing}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {subscribing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bell className="w-3 h-3" />}
+                  Подписаться сейчас
+                </button>
+              </div>
+            </div>
+            {subscribeResult === "ok" && (
+              <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" /> Подписка активирована
+              </p>
+            )}
+            {subscribeResult === "err" && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <XCircle className="w-3 h-3" /> Ошибка подписки — проверьте консоль
+              </p>
+            )}
+            {debug && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                <div className="bg-muted/40 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">Подписчиков в БД</p>
+                  <p className="font-bold text-base">{debug.count}</p>
+                  <p className="text-muted-foreground">{debug.withUser} зарег. / {debug.guests} гостей</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">VAPID ключи</p>
+                  <p className={`font-semibold ${debug.vapidConfigured ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+                    {debug.vapidConfigured ? "✓ Настроены" : "✗ Не настроены"}
+                  </p>
+                  <p className="text-muted-foreground">{debug.publicKeyPrefix}</p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-2.5">
+                  <p className="text-muted-foreground mb-0.5">Браузер</p>
+                  <p className={`font-semibold ${debug.browserPermission === "granted" ? "text-green-600 dark:text-green-400" : debug.browserPermission === "denied" ? "text-destructive" : "text-yellow-600"}`}>
+                    {debug.browserPermission === "granted" ? "✓ Разрешено" : debug.browserPermission === "denied" ? "✗ Заблокировано" : "? Не спрашивали"}
+                  </p>
+                  <p className="text-muted-foreground">
+                    SW: {debug.swActive ? "✓" : "✗"} · Подписка: {debug.browserSubActive ? "✓" : "✗"}
+                  </p>
+                </div>
+              </div>
+            )}
+            {!debug && !debugLoading && (
+              <p className="text-xs text-muted-foreground">Нажмите «Проверить» чтобы увидеть статус Push системы</p>
+            )}
           </div>
 
           <form onSubmit={handleSend} className="bg-card border border-border rounded-2xl p-6 space-y-4">
