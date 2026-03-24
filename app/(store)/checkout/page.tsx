@@ -140,6 +140,7 @@ export default function CheckoutPage() {
   const [orderPhone, setOrderPhone] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
   const [clientType, setClientType] = useState<ClientType>("individual");
+  const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
   const [authMode, setAuthMode] = useState<"guest" | "login" | "register">("guest");
   const [mounted, setMounted] = useState(false);
   const { data: session } = useSession();
@@ -150,6 +151,7 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
@@ -162,13 +164,19 @@ export default function CheckoutPage() {
     fetch("/api/me")
       .then((r) => r.json())
       .then((user) => {
-        if (user.name) setValue("name", user.name);
-        if (user.phone) { setPhoneValue(user.phone); setValue("phone", user.phone); }
-        if (user.email) setValue("email", user.email);
-        if (user.address) setValue("address", user.address);
+        if (!user || user.error) return;
+        const phone = user.phone || "";
+        setPhoneValue(phone);
+        reset({
+          name: user.name || "",
+          phone,
+          email: user.email || "",
+          address: user.address || "",
+          paymentMethod: "cash",
+        });
       })
       .catch(() => {});
-  }, [session?.user?.id, setValue]);
+  }, [session?.user?.id, reset]);
 
   // Wait for hydration before checking cart (localStorage loads after mount)
   if (!mounted) {
@@ -307,8 +315,8 @@ export default function CheckoutPage() {
 
   return (
     <div className="container py-8 max-w-4xl">
-      <div className="mb-8">
-        <BackButton href="/cart" label="Корзина" className="mb-2" />
+      <div className="flex items-center gap-3 mb-8">
+        <BackButton href="/cart" label="Корзина" className="mb-0 shrink-0" />
         <h1 className="font-display font-bold text-3xl">Оформление заказа</h1>
       </div>
 
@@ -459,15 +467,54 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Delivery */}
+          {/* Delivery type */}
           <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
-            <h2 className="font-display font-semibold text-lg">Адрес доставки</h2>
-            <div>
-              <Label htmlFor="address">Адрес *</Label>
-              <Input id="address" placeholder="г. Москва, ул. Примерная, д.1" className="mt-1" {...register("address")} />
-              {errors.address && <p className="text-xs text-destructive mt-1">{errors.address.message}</p>}
-              <p className="text-xs text-muted-foreground mt-1">Доставляем по Москве и МО. Стоимость уточняется менеджером.</p>
+            <h2 className="font-display font-semibold text-lg">Способ получения</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => { setDeliveryType("delivery"); setValue("address", ""); }}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  deliveryType === "delivery"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border hover:border-primary/40 text-muted-foreground"
+                }`}
+              >
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/></svg>
+                <span className="font-medium text-sm">Доставка</span>
+                <span className="text-xs text-muted-foreground text-center">По Москве и МО</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setDeliveryType("pickup"); setValue("address", "Самовывоз: Химки, ул. Заводская 2А, стр.28"); }}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  deliveryType === "pickup"
+                    ? "border-primary bg-primary/5 text-primary"
+                    : "border-border hover:border-primary/40 text-muted-foreground"
+                }`}
+              >
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                <span className="font-medium text-sm">Самовывоз</span>
+                <span className="text-xs text-muted-foreground text-center">Бесплатно</span>
+              </button>
             </div>
+
+            {deliveryType === "delivery" ? (
+              <div>
+                <Label htmlFor="address">Адрес доставки *</Label>
+                <Input id="address" placeholder="г. Москва, ул. Примерная, д.1" className="mt-1" {...register("address")} />
+                {errors.address && <p className="text-xs text-destructive mt-1">{errors.address.message}</p>}
+                <p className="text-xs text-muted-foreground mt-1">Стоимость доставки уточняется менеджером.</p>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                <svg className="w-4 h-4 text-primary mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Химки, ул. Заводская 2А, стр.28</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Ежедневно 09:00–18:00 · Есть погрузчик · Предзвоните перед приездом</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Payment */}

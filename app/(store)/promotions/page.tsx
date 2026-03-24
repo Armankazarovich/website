@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { Tag } from "lucide-react";
 import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
+import { BackButton } from "@/components/ui/back-button";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,10 @@ export default async function PromotionsPage() {
 
   return (
     <div className="container py-12">
-      <h1 className="font-display font-bold text-4xl mb-3">Акции и скидки</h1>
+      <div className="flex items-center gap-3 mb-3">
+        <BackButton href="/" label="Главная" className="mb-0 shrink-0" />
+        <h1 className="font-display font-bold text-4xl">Акции и скидки</h1>
+      </div>
       <p className="text-muted-foreground text-lg mb-10">Выгодные предложения от производителя</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
