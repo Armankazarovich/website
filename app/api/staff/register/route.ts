@@ -78,6 +78,12 @@ export async function POST(req: NextRequest) {
           chat_id: TELEGRAM_CHAT_ID,
           text,
           parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[
+              { text: "✅ Одобрить", callback_data: `staff:${user.id}:approve` },
+              { text: "❌ Отклонить", callback_data: `staff:${user.id}:reject` },
+            ]],
+          },
         }),
       }).catch(console.error);
     }

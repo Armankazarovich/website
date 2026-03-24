@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { handleTelegramCallback, buildOrderText, buildOrderKeyboard } from "@/lib/telegram";
+import { handleTelegramCallback, buildOrderText, buildOrderKeyboard, buildHelpMessages } from "@/lib/telegram";
 import { sendOrderStatusEmail } from "@/lib/email";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -31,7 +31,83 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
+    // Handle /help command
+    if (body.message?.text) {
+      const msgText = body.message.text as string;
+      if (msgText === "/help" || msgText.startsWith("/help@")) {
+        const chatId = body.message.chat.id;
+        const messages = buildHelpMessages();
+        for (const helpMsg of messages) {
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: helpMsg,
+              parse_mode: "Markdown",
+            }),
+          });
+        }
+        return NextResponse.json({ ok: true });
+      }
+    }
+
     if (body.callback_query) {
+      const data: string = body.callback_query.data || "";
+
+      // Handle staff approve/reject
+      if (data.startsWith("staff:")) {
+        const parts = data.split(":");
+        const userId = parts[1];
+        const action = parts[2];
+
+        if (userId && action && TELEGRAM_BOT_TOKEN) {
+          const newStatus = action === "approve" ? "ACTIVE" : "SUSPENDED";
+
+          await prisma.user.update({
+            where: { id: userId },
+            data: { staffStatus: newStatus as any },
+          });
+
+          // Answer callback with alert
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              callback_query_id: body.callback_query.id,
+              text: action === "approve" ? "✅ Сотрудник одобрен!" : "❌ Сотрудник отклонён",
+              show_alert: true,
+            }),
+          });
+
+          // Edit original message — remove buttons, add status line
+          if (body.callback_query.message) {
+            const changer = body.callback_query.from;
+            const changerName = changer?.username
+              ? `@${changer.username}`
+              : [changer?.first_name, changer?.last_name].filter(Boolean).join(" ") || "Администратор";
+
+            const statusLine = action === "approve"
+              ? `\n\n✅ *Одобрен* — ${changerName}`
+              : `\n\n❌ *Отклонён* — ${changerName}`;
+
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: body.callback_query.message.chat.id,
+                message_id: body.callback_query.message.message_id,
+                text: body.callback_query.message.text + statusLine,
+                parse_mode: "Markdown",
+                reply_markup: { inline_keyboard: [] },
+              }),
+            });
+          }
+        }
+
+        return NextResponse.json({ ok: true });
+      }
+
       const result = await handleTelegramCallback(body.callback_query);
 
       if (result?.orderId && result?.newStatus) {
