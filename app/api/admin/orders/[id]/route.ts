@@ -1,14 +1,54 @@
-import { NextRequest, NextResponse } from "next/server";
-
 export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sendPushToUser } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
 
+const statusLabels: Record<string, string> = {
+  CONFIRMED: "Ваш заказ подтверждён",
+  PROCESSING: "Заказ передан в комплектацию",
+  SHIPPED: "Ваш заказ отгружен",
+  IN_DELIVERY: "Ваш заказ доставляется",
+  READY_PICKUP: "Ваш заказ готов к выдаче",
+  DELIVERED: "Ваш заказ доставлен",
+  CANCELLED: "Ваш заказ отменён",
+};
+
+const statusDescriptions: Record<string, string> = {
+  CONFIRMED: "Ваш заказ подтверждён менеджером. Мы свяжемся с вами для уточнения деталей доставки.",
+  PROCESSING: "Ваш заказ передан в комплектацию. Материалы готовятся к отгрузке.",
+  SHIPPED: "Ваш заказ отгружен и доставляется по указанному адресу. Ожидайте звонка водителя.",
+  IN_DELIVERY: "Ваш заказ в пути! Водитель уже едет к вам. Ожидайте звонка.",
+  READY_PICKUP: "Ваш заказ готов к самовывозу. Приезжайте: Химки, ул. Заводская 2А, стр.28",
+  DELIVERED: "Ваш заказ успешно доставлен. Спасибо за покупку в ПилоРус!",
+  CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
+};
+
+const STAFF_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session || !STAFF_ROLES.includes((session.user as any).role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: params.id },
+    include: {
+      items: true,
+      user: { select: { id: true, name: true, email: true, phone: true } },
+    },
+  });
+
+  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json(order);
+}
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  if (!session || !STAFF_ROLES.includes((session.user as any).role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -19,51 +59,31 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: { status },
   });
 
-  const statusLabels: Record<string, string> = {
-    CONFIRMED: "Ваш заказ подтверждён",
-    PROCESSING: "Заказ передан в комплектацию",
-    SHIPPED: "Ваш заказ отгружен",
-    DELIVERED: "Ваш заказ доставлен",
-    CANCELLED: "Ваш заказ отменён",
-  };
-
-  // Send push notification to user if they're registered
-  if (order.userId) {
-    if (statusLabels[status]) {
-      sendPushToUser(order.userId, {
-        title: "ПилоРус",
-        body: `${statusLabels[status]} #${order.orderNumber}`,
-        url: "/cabinet",
-      }).catch(console.error);
-    }
+  // Push клиенту
+  if (order.userId && statusLabels[status]) {
+    sendPushToUser(order.userId, {
+      title: `Заказ #${order.orderNumber} — ${statusLabels[status]}`,
+      body: statusDescriptions[status] || "",
+      url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
+      icon: "/icons/icon-192x192.png",
+    }).catch(console.error);
   }
 
-  // Send email notification
-  if (order.guestEmail || order.userId) {
+  // Email клиенту
+  if (statusLabels[status]) {
     let email = order.guestEmail;
     if (!email && order.userId) {
       const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true } });
       email = user?.email || null;
     }
-
-    if (email && statusLabels[status]) {
-      const statusDescriptions: Record<string, string> = {
-        CONFIRMED: "Ваш заказ подтверждён менеджером. Мы свяжемся с вами для уточнения деталей доставки.",
-        PROCESSING: "Ваш заказ передан в комплектацию. Материалы готовятся к отгрузке.",
-        SHIPPED: "Ваш заказ отгружен и доставляется по указанному адресу. Ожидайте звонка водителя.",
-        DELIVERED: "Ваш заказ успешно доставлен. Спасибо за покупку в ПилоРус!",
-        CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
-      };
-
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const trackUrl = `${baseUrl}/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`;
-
+    if (email) {
+      const baseUrl = process.env.NEXTAUTH_URL || "https://pilo-rus.ru";
       sendOrderStatusEmail(email, {
         orderNumber: order.orderNumber,
         status,
         statusLabel: statusLabels[status],
         statusDescription: statusDescriptions[status] || "",
-        trackUrl,
+        trackUrl: `${baseUrl}/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
         customerName: order.guestName || "Клиент",
       }).catch(console.error);
     }

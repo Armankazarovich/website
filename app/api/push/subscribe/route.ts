@@ -13,6 +13,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid subscription" }, { status: 400 });
     }
 
+    const existing = await prisma.pushSubscription.findUnique({ where: { endpoint } });
+
     await prisma.pushSubscription.upsert({
       where: { endpoint },
       update: { p256dh: keys.p256dh, auth: keys.auth, userId: session?.user?.id || null },
@@ -23,6 +25,27 @@ export async function POST(req: NextRequest) {
         userId: session?.user?.id || null,
       },
     });
+
+    // Приветственный пуш только для новых подписок
+    if (!existing && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+      try {
+        const webpush = require("web-push");
+        webpush.setVapidDetails(
+          "mailto:info@pilo-rus.ru",
+          process.env.VAPID_PUBLIC_KEY,
+          process.env.VAPID_PRIVATE_KEY
+        );
+        webpush.sendNotification(
+          { endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } },
+          JSON.stringify({
+            title: "🌲 ПилоРус — уведомления включены!",
+            body: "Вы будете первыми узнавать об акциях и статусах заказов.",
+            icon: "/icons/icon-192x192.png",
+            url: "/",
+          })
+        ).catch(() => {});
+      } catch {}
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
