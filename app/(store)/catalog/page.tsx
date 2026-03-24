@@ -18,6 +18,7 @@ interface SearchParams {
   page?: string;
   size?: string;
   type?: string;
+  instock?: string;
 }
 
 /** Извлекает сечение из строки размера "25×100×6000" → "25×100" */
@@ -35,17 +36,19 @@ export default async function CatalogPage({
   const perPage = 24;
   const currentSize = searchParams.size || "";
   const currentType = searchParams.type || "";
+  const currentInStock = searchParams.instock === "1";
+
+  // Build variant sub-filter (size + instock can combine)
+  const variantWhere: Record<string, unknown> = {};
+  if (currentSize) variantWhere.size = { contains: currentSize };
+  if (currentInStock) variantWhere.inStock = true;
 
   // Build where clause
   const where = {
     active: true,
     ...(searchParams.category ? { category: { slug: searchParams.category } } : {}),
-    ...(currentSize
-      ? { variants: { some: { size: { contains: currentSize } } } }
-      : {}),
-    ...(currentType
-      ? { name: { contains: currentType, mode: "insensitive" as const } }
-      : {}),
+    ...(currentType ? { name: { contains: currentType, mode: "insensitive" as const } } : {}),
+    ...(Object.keys(variantWhere).length > 0 ? { variants: { some: variantWhere } } : {}),
   };
 
   // Базовый where без фильтра по типу — для подсчёта доступных типов
@@ -109,6 +112,7 @@ export default async function CatalogPage({
     if (searchParams.sort) params.set("sort", searchParams.sort);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
+    if (searchParams.instock) params.set("instock", searchParams.instock);
     params.set("page", String(p));
     return `/catalog?${params.toString()}`;
   };
@@ -118,6 +122,7 @@ export default async function CatalogPage({
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
+    if (searchParams.instock) params.set("instock", searchParams.instock);
     if (sort) params.set("sort", sort);
     return `/catalog?${params.toString()}`;
   };
@@ -241,7 +246,7 @@ export default async function CatalogPage({
               }
             >
               <CatalogFilters
-                currentInStock={false}
+                currentInStock={currentInStock}
                 currentSize={currentSize}
                 sizes={crossSections}
                 currentType={currentType}

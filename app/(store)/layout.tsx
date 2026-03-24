@@ -6,6 +6,8 @@ import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { ContactWidget } from "@/components/store/contact-widget";
 import { PwaInstall } from "@/components/store/pwa-install";
 import { AccountDrawer } from "@/components/store/account-drawer";
+import { FiltersDrawer } from "@/components/store/filters-drawer";
+import { SearchDrawer } from "@/components/store/search-drawer";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
@@ -27,6 +29,8 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <CookieConsent />
       <PwaInstall />
       <AccountDrawer />
+      <FiltersDrawer />
+      <SearchDrawer />
       <ScrollToTop />
       <ContactWidget
         phone={getSetting(siteSettings, "phone")}

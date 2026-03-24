@@ -19,9 +19,9 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
+import { useSearchDrawer } from "@/store/search-drawer";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { SearchModal } from "@/components/store/search-modal";
 import { PartnershipModal } from "@/components/store/partnership-modal";
 import { WishlistCount } from "@/components/store/wishlist-count";
 
@@ -117,7 +117,6 @@ const COMMON_SIZES = ["25×100", "25×150", "50×150", "50×200", "100×100", "1
 export function Header({ categories = [] }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [partnershipOpen, setPartnershipOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -131,6 +130,7 @@ export function Header({ categories = [] }: HeaderProps) {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
   const { toggle: toggleAccount } = useAccountDrawer();
+  const { toggle: toggleSearch } = useSearchDrawer();
 
   useEffect(() => {
     setMounted(true);
@@ -454,7 +454,7 @@ export function Header({ categories = [] }: HeaderProps) {
           <div className="flex items-center gap-1 shrink-0">
             {/* Search */}
             <button
-              onClick={() => setSearchOpen(true)}
+              onClick={toggleSearch}
               aria-label="Поиск"
               className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
@@ -542,7 +542,6 @@ export function Header({ categories = [] }: HeaderProps) {
       </header>
 
       {/* Search Modal */}
-      {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
 
       {/* Partnership Modal */}
       {partnershipOpen && <PartnershipModal onClose={() => setPartnershipOpen(false)} />}
