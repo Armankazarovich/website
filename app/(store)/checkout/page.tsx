@@ -507,12 +507,23 @@ export default function CheckoutPage() {
                 <p className="text-xs text-muted-foreground mt-1">Стоимость доставки уточняется менеджером.</p>
               </div>
             ) : (
-              <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
-                <svg className="w-4 h-4 text-primary mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Химки, ул. Заводская 2А, стр.28</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Ежедневно 09:00–18:00 · Есть погрузчик · Предзвоните перед приездом</p>
+              <div className="rounded-xl bg-primary/5 border border-primary/20 overflow-hidden">
+                <div className="flex items-start gap-3 p-3">
+                  <svg className="w-4 h-4 text-primary mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Химки, ул. Заводская 2А, стр.28</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Ежедневно 09:00–18:00 · Есть погрузчик · Предзвоните перед приездом</p>
+                  </div>
                 </div>
+                <a
+                  href="https://yandex.ru/maps/?mode=routes&rtext=~55.8945%2C37.3877&rtt=auto"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-primary/10 hover:bg-primary/20 transition-colors text-sm font-medium text-primary border-t border-primary/20"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                  Построить маршрут в Яндекс.Картах
+                </a>
               </div>
             )}
           </div>
