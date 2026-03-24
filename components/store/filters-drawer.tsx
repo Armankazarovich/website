@@ -3,9 +3,8 @@
 import { Suspense, useState, useEffect, useRef, useCallback, useTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
-import { X, SlidersHorizontal, Filter, ChevronDown, LayoutGrid, Tag } from "lucide-react";
+import { X, SlidersHorizontal, Filter, ChevronDown, LayoutGrid, Ruler, ArrowLeft } from "lucide-react";
 import { useFiltersDrawer } from "@/store/filters-drawer";
-import { formatPrice } from "@/lib/utils";
 
 const PRODUCT_TYPES = [
   { label: "Доска обрезная", value: "доска" },
@@ -19,54 +18,6 @@ const PRODUCT_TYPES = [
   { label: "ДСП / МДФ / ОСБ", value: "дсп" },
 ];
 
-/* ── Dual range slider ─────────────────────────────────────────── */
-function DualRangeSlider({
-  min, max, minVal, maxVal, step, onMinChange, onMaxChange,
-}: {
-  min: number; max: number; minVal: number; maxVal: number;
-  step: number; onMinChange: (v: number) => void; onMaxChange: (v: number) => void;
-}) {
-  const minPercent = max === min ? 0 : ((minVal - min) / (max - min)) * 100;
-  const maxPercent = max === min ? 100 : ((maxVal - min) / (max - min)) * 100;
-
-  return (
-    <div className="relative h-6 flex items-center select-none">
-      {/* Track bg */}
-      <div className="absolute inset-x-0 h-1.5 rounded-full bg-muted" />
-      {/* Active range */}
-      <div
-        className="absolute h-1.5 rounded-full bg-primary"
-        style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
-      />
-      {/* Min input (transparent, on top) */}
-      <input
-        type="range" min={min} max={max} step={step} value={minVal}
-        onChange={(e) => onMinChange(Math.min(Number(e.target.value), maxVal - step))}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        style={{ zIndex: minVal > max - (max - min) * 0.1 ? 5 : 3 }}
-      />
-      {/* Max input */}
-      <input
-        type="range" min={min} max={max} step={step} value={maxVal}
-        onChange={(e) => onMaxChange(Math.max(Number(e.target.value), minVal + step))}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        style={{ zIndex: 4 }}
-      />
-      {/* Visual thumb min */}
-      <div
-        className="absolute w-5 h-5 rounded-full bg-primary border-2 border-background shadow-md pointer-events-none transition-transform"
-        style={{ left: `${minPercent}%`, transform: "translateX(-50%)", zIndex: 6 }}
-      />
-      {/* Visual thumb max */}
-      <div
-        className="absolute w-5 h-5 rounded-full bg-primary border-2 border-background shadow-md pointer-events-none transition-transform"
-        style={{ left: `${maxPercent}%`, transform: "translateX(-50%)", zIndex: 6 }}
-      />
-    </div>
-  );
-}
-
-/* ── Main filters content ──────────────────────────────────────── */
 function FiltersContent({ onClose }: { onClose: () => void }) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -76,24 +27,16 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
   const currentSize = searchParams.get("size") ?? "";
   const currentCategory = searchParams.get("category") ?? "";
 
-  // Price state (local, navigate on change with debounce)
-  const [priceRange, setPriceRange] = useState<[number, number] | null>(null);
-  const [globalMin, setGlobalMin] = useState(0);
-  const [globalMax, setGlobalMax] = useState(100000);
-  const currentMinPrice = searchParams.get("minprice") ? Number(searchParams.get("minprice")) : null;
-  const currentMaxPrice = searchParams.get("maxprice") ? Number(searchParams.get("maxprice")) : null;
-
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [sizes, setSizes] = useState<string[]>([]);
   const [availableTypes, setAvailableTypes] = useState<string[] | undefined>(undefined);
 
-  const [catOpen, setCatOpen] = useState(false);
-  const [priceOpen, setPriceOpen] = useState(true);
+  // All accordions open by default on mobile
+  const [catOpen, setCatOpen] = useState(true);
   const [typeOpen, setTypeOpen] = useState(true);
-  const [sizeOpen, setSizeOpen] = useState(!!currentSize);
+  const [sizeOpen, setSizeOpen] = useState(true);
 
   const fetchedRef = useRef(false);
-  const priceDebounce = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (fetchedRef.current) return;
@@ -101,19 +44,12 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
 
     fetch("/api/catalog/sizes").then(r => r.json()).then(d => setSizes(d.sizes ?? [])).catch(() => {});
     fetch("/api/catalog/categories").then(r => r.json()).then(d => setCategories(d.categories ?? [])).catch(() => {});
-    fetch("/api/catalog/price-range").then(r => r.json()).then(d => {
-      setGlobalMin(d.min ?? 0);
-      setGlobalMax(d.max ?? 100000);
-      setPriceRange([currentMinPrice ?? d.min ?? 0, currentMaxPrice ?? d.max ?? 100000]);
-    }).catch(() => {
-      setPriceRange([currentMinPrice ?? 0, currentMaxPrice ?? 100000]);
-    });
 
     const url = currentCategory
       ? `/api/catalog/available-types?category=${encodeURIComponent(currentCategory)}`
       : "/api/catalog/available-types";
     fetch(url).then(r => r.json()).then(d => setAvailableTypes(d.types ?? undefined)).catch(() => {});
-  }, [currentCategory, currentMinPrice, currentMaxPrice]);
+  }, [currentCategory]);
 
   const createUrl = useCallback(
     (updates: Record<string, string | null>) => {
@@ -140,25 +76,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
     });
   };
 
-  const handlePriceChange = (min: number, max: number) => {
-    setPriceRange([min, max]);
-    clearTimeout(priceDebounce.current);
-    priceDebounce.current = setTimeout(() => {
-      navigate(createUrl({
-        minprice: min > globalMin ? String(min) : null,
-        maxprice: max < globalMax ? String(max) : null,
-      }));
-    }, 600);
-  };
-
-  const activeCount = [
-    currentType, currentSize, currentCategory,
-    currentMinPrice !== null ? "1" : "",
-    currentMaxPrice !== null ? "1" : "",
-  ].filter(Boolean).length;
-
-  const displayMin = priceRange?.[0] ?? globalMin;
-  const displayMax = priceRange?.[1] ?? globalMax;
+  const activeCount = [currentType, currentSize, currentCategory].filter(Boolean).length;
 
   return (
     <div className={`space-y-3 ${isPending ? "opacity-60" : ""} transition-opacity`}>
@@ -174,7 +92,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
         </button>
       )}
 
-      {/* Categories */}
+      {/* Categories — open by default */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <button
           type="button"
@@ -221,61 +139,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {/* Price range */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setPriceOpen(!priceOpen)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
-        >
-          <h3 className="font-display font-semibold text-sm flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-primary shrink-0" />
-            Цена за м³
-          </h3>
-          <div className="flex items-center gap-2 shrink-0">
-            {(currentMinPrice !== null || currentMaxPrice !== null) && (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">1</span>
-            )}
-            <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${priceOpen ? "rotate-180" : ""}`} />
-          </div>
-        </button>
-        {priceOpen && priceRange && (
-          <div className="px-5 pb-5 border-t border-border">
-            <div className="flex items-center justify-between mt-4 mb-5">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-0.5">от</p>
-                <p className="font-display font-bold text-base text-primary">{formatPrice(displayMin)}</p>
-              </div>
-              <div className="h-px flex-1 mx-3 bg-border" />
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground mb-0.5">до</p>
-                <p className="font-display font-bold text-base text-primary">{formatPrice(displayMax)}</p>
-              </div>
-            </div>
-            <DualRangeSlider
-              min={globalMin} max={globalMax}
-              minVal={displayMin} maxVal={displayMax}
-              step={1000}
-              onMinChange={(v) => handlePriceChange(v, displayMax)}
-              onMaxChange={(v) => handlePriceChange(displayMin, v)}
-            />
-            {(currentMinPrice !== null || currentMaxPrice !== null) && (
-              <button
-                onClick={() => {
-                  setPriceRange([globalMin, globalMax]);
-                  navigate(createUrl({ minprice: null, maxprice: null }));
-                }}
-                className="mt-4 text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
-              >
-                <X className="w-3 h-3" />
-                Сбросить цену
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Type filter */}
+      {/* Type filter — open by default */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <button
           type="button"
@@ -326,7 +190,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
         )}
       </div>
 
-      {/* Size filter */}
+      {/* Size filter — open by default */}
       {sizes.length > 0 && (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <button
@@ -334,7 +198,10 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
             onClick={() => setSizeOpen(!sizeOpen)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
           >
-            <h3 className="font-display font-semibold text-sm">Сечение</h3>
+            <h3 className="font-display font-semibold text-sm flex items-center gap-2">
+              <Ruler className="w-3.5 h-3.5 text-primary shrink-0" />
+              Размеры
+            </h3>
             <div className="flex items-center gap-2 shrink-0">
               {currentSize && (
                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">1</span>
@@ -376,7 +243,6 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
   );
 }
 
-/* ── Drawer shell ──────────────────────────────────────────────── */
 export function FiltersDrawer() {
   const { open, setOpen } = useFiltersDrawer();
 
@@ -395,6 +261,7 @@ export function FiltersDrawer() {
             className="relative w-[88vw] max-w-[360px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
+            {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -411,10 +278,11 @@ export function FiltersDrawer() {
               </button>
             </div>
 
+            {/* Content */}
             <div className="flex-1 overflow-y-auto px-5 py-5">
               <Suspense fallback={
                 <div className="space-y-3">
-                  {[...Array(4)].map((_, i) => (
+                  {[...Array(3)].map((_, i) => (
                     <div key={i} className="h-14 bg-muted rounded-2xl animate-pulse" />
                   ))}
                 </div>
@@ -423,12 +291,14 @@ export function FiltersDrawer() {
               </Suspense>
             </div>
 
+            {/* Footer — back button (filters apply instantly on click) */}
             <div className="px-5 pb-8 pt-3 border-t border-border shrink-0">
               <button
                 onClick={() => setOpen(false)}
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 rounded-xl transition-colors"
+                className="w-full flex items-center justify-center gap-2 border border-border hover:bg-muted text-foreground font-semibold py-3 rounded-xl transition-colors"
               >
-                Применить фильтры
+                <ArrowLeft className="w-4 h-4" />
+                Показать товары
               </button>
             </div>
           </motion.div>

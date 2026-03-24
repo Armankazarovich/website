@@ -129,6 +129,13 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
           {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
         </div>
 
+        <div className="text-right -mt-2">
+          <Link href="/forgot-password" onClick={() => setOpen(false)}
+            className="text-xs text-muted-foreground hover:text-primary transition-colors">
+            Забыли пароль?
+          </Link>
+        </div>
+
         {error && (
           <div className="bg-destructive/8 border border-destructive/20 rounded-xl px-4 py-3">
             <p className="text-sm text-destructive">{error}</p>

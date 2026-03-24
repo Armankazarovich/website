@@ -84,7 +84,7 @@ export function PwaInstall() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4"
+      className="fixed bottom-16 lg:bottom-0 left-0 right-0 z-[101] p-3 sm:p-4"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
       <div className="max-w-xl mx-auto relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80"

@@ -9,7 +9,7 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { BreadcrumbScroll } from "@/components/store/breadcrumb-scroll";
+import { BackButton } from "@/components/ui/back-button";
 import { Package, Phone } from "lucide-react";
 
 interface Props {
@@ -97,15 +97,7 @@ export default async function ProductPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
       />
-      {/* Breadcrumb — glassmorphism pills с авто-скроллом */}
-      <BreadcrumbScroll
-        items={[
-          { label: "Главная", href: "/" },
-          { label: "Каталог", href: "/catalog" },
-          { label: product.category.name, href: `/catalog?category=${product.category.slug}` },
-          { label: product.name }, // без href = текущая страница
-        ]}
-      />
+      <BackButton href={`/catalog?category=${product.category.slug}`} label={product.category.name} />
 
       {/* Main product section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">

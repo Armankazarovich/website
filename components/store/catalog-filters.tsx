@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition, useState } from "react";
-import { Filter, X, ChevronDown, Package2 } from "lucide-react";
+import { Filter, X, ChevronDown, Ruler } from "lucide-react";
 
 const PRODUCT_TYPES = [
   { label: "Доска обрезная", value: "доска" },
@@ -26,7 +26,6 @@ interface CatalogFiltersProps {
 }
 
 export function CatalogFilters({
-  currentInStock,
   currentSize,
   sizes,
   currentType = "",
@@ -36,7 +35,7 @@ export function CatalogFilters({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const [typeOpen, setTypeOpen] = useState(true);
+  const [typeOpen, setTypeOpen] = useState(false);
   const [sizeOpen, setSizeOpen] = useState(false);
 
   const createUrl = useCallback(
@@ -66,40 +65,7 @@ export function CatalogFilters({
   return (
     <div className={`space-y-3 ${isPending ? "opacity-60" : ""} transition-opacity`}>
 
-      {/* In stock toggle */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <button
-          type="button"
-          onClick={() => navigate(createUrl({ instock: currentInStock ? null : "1" }))}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
-        >
-          <h3 className="font-display font-semibold text-sm flex items-center gap-2">
-            <Package2 className="w-3.5 h-3.5 text-primary shrink-0" />
-            Только в наличии
-          </h3>
-          <div
-            className="relative flex items-center shrink-0 transition-colors duration-200"
-            style={{
-              width: 40,
-              height: 22,
-              background: currentInStock ? "var(--primary)" : "var(--muted)",
-              borderRadius: 11,
-            }}
-          >
-            <div
-              className="absolute bg-white rounded-full shadow transition-transform duration-200"
-              style={{
-                width: 16,
-                height: 16,
-                left: 3,
-                transform: currentInStock ? "translateX(18px)" : "translateX(0)",
-              }}
-            />
-          </div>
-        </button>
-      </div>
-
-      {/* Type filter — accordion */}
+      {/* Type filter — accordion, closed by default */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <button
           type="button"
@@ -156,7 +122,7 @@ export function CatalogFilters({
         )}
       </div>
 
-      {/* Size filter — accordion */}
+      {/* Size filter — accordion, closed by default */}
       {sizes.length > 0 && (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <button
@@ -164,7 +130,10 @@ export function CatalogFilters({
             onClick={() => setSizeOpen(!sizeOpen)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
           >
-            <h3 className="font-display font-semibold text-sm">Сечение</h3>
+            <h3 className="font-display font-semibold text-sm flex items-center gap-2">
+              <Ruler className="w-3.5 h-3.5 text-primary shrink-0" />
+              Размеры
+            </h3>
             <div className="flex items-center gap-2 shrink-0">
               {currentSize && (
                 <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">

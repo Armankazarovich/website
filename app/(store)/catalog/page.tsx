@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
-import { BreadcrumbScroll } from "@/components/store/breadcrumb-scroll";
+import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
   title: "Каталог пиломатериалов",
@@ -153,19 +153,9 @@ export default async function CatalogPage({
   return (
     <div className="container py-8">
 
-      {/* Breadcrumb */}
-      <BreadcrumbScroll
-        items={[
-          { label: "Главная", href: "/" },
-          ...(searchParams.category
-            ? [
-                { label: "Каталог", href: "/catalog" },
-                { label: categories.find((c) => c.slug === searchParams.category)?.name ?? "Категория" },
-              ]
-            : [{ label: "Каталог" }]
-          ),
-        ]}
-      />
+      {searchParams.category && (
+        <BackButton href="/catalog" label="Все категории" />
+      )}
 
       {/* ── Горизонтальная фильтр-полоса ── */}
       <div className="mb-6">
