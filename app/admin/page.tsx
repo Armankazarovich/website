@@ -45,13 +45,11 @@ export default async function AdminDashboard() {
     prisma.orderItem.groupBy({
       by: ["productName"],
       _sum: { price: true },
-      _count: { id: true },
-      orderBy: { _sum: { price: "desc" } },
-      take: 5,
+      _count: { _all: true },
     }),
     prisma.order.groupBy({
       by: ["status"],
-      _count: { id: true },
+      _count: { _all: true },
     }),
   ]);
 
@@ -68,9 +66,14 @@ export default async function AdminDashboard() {
   }
   const maxAmount = Math.max(...chartDays.map(d => d.amount), 1);
 
+  // Top items — sort by sum in JS, take 5
+  const topItemsSorted = [...topItems]
+    .sort((a, b) => Number(b._sum.price || 0) - Number(a._sum.price || 0))
+    .slice(0, 5);
+
   // Status breakdown
   const statusMap: Record<string, number> = {};
-  for (const s of statusCounts) statusMap[s.status] = s._count.id;
+  for (const s of statusCounts) statusMap[s.status] = s._count._all;
   const statusOrder = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED", "CANCELLED"];
   const statusData = statusOrder.map(s => ({ status: s, count: statusMap[s] || 0 })).filter(s => s.count > 0);
 
@@ -181,17 +184,17 @@ export default async function AdminDashboard() {
             <h2 className="font-semibold text-sm">Топ товаров (выручка)</h2>
           </div>
           <div className="divide-y divide-border">
-            {topItems.map((item, i) => (
+            {topItemsSorted.map((item, i) => (
               <div key={item.productName} className="flex items-center gap-3 px-5 py-3">
                 <span className="w-5 text-center text-xs font-bold text-muted-foreground">{i + 1}</span>
                 <p className="flex-1 text-sm font-medium truncate">{item.productName}</p>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-bold">{formatPrice(Number(item._sum.price || 0))}</p>
-                  <p className="text-xs text-muted-foreground">{item._count.id} позиций</p>
+                  <p className="text-xs text-muted-foreground">{item._count._all} позиций</p>
                 </div>
               </div>
             ))}
-            {topItems.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Нет данных</p>}
+            {topItemsSorted.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Нет данных</p>}
           </div>
         </div>
 
