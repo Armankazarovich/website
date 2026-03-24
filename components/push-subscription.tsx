@@ -22,15 +22,25 @@ function bufferToBase64(buffer: ArrayBuffer): string {
 async function saveSub(sub: PushSubscription) {
   const key = sub.getKey("p256dh");
   const auth = sub.getKey("auth");
-  if (!key || !auth) return;
-  await fetch("/api/push/subscribe", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      endpoint: sub.endpoint,
-      keys: { p256dh: bufferToBase64(key), auth: bufferToBase64(auth) },
-    }),
-  }).catch(() => {});
+  if (!key || !auth) {
+    console.error("[Push] subscription missing encryption keys");
+    return;
+  }
+  try {
+    const res = await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        endpoint: sub.endpoint,
+        keys: { p256dh: bufferToBase64(key), auth: bufferToBase64(auth) },
+      }),
+    });
+    if (!res.ok) {
+      console.error("[Push] save subscription failed:", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("[Push] save subscription error:", err);
+  }
 }
 
 export function PushSubscription() {
