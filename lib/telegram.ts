@@ -9,6 +9,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   IN_DELIVERY: "Доставляется",
   READY_PICKUP: "Готов к выдаче",
   DELIVERED: "Доставлен",
+  COMPLETED: "Завершён (самовывоз)",
   CANCELLED: "Отменён",
 };
 
@@ -20,8 +21,12 @@ export const STATUS_EMOJI: Record<string, string> = {
   IN_DELIVERY: "🛵",
   READY_PICKUP: "📦",
   DELIVERED: "🎉",
+  COMPLETED: "🏁",
   CANCELLED: "❌",
 };
+
+// Финальные статусы — сообщение в Telegram удаляется автоматически
+export const FINAL_STATUSES = ["CANCELLED", "DELIVERED", "COMPLETED"];
 
 export const STATUS_FLOW = [
   "NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED",
@@ -40,7 +45,7 @@ export function buildOrderKeyboard(orderId: string, currentStatus: string) {
     rows.push(nextButtons.slice(i, i + 2));
   }
 
-  if (currentStatus !== "CANCELLED" && currentStatus !== "DELIVERED") {
+  if (!FINAL_STATUSES.includes(currentStatus)) {
     rows.push([{ text: "❌ Отменить", callback_data: `st:${orderId}:CANCELLED` }]);
   }
 
@@ -122,6 +127,7 @@ export async function sendTelegramOrderNotification(order: {
   paymentMethod: string;
   comment?: string | null;
   totalAmount: number;
+  deliveryCost?: number;
   items: Array<{
     productName: string;
     variantSize: string;
@@ -129,22 +135,45 @@ export async function sendTelegramOrderNotification(order: {
     quantity: number;
     price: number;
   }>;
-}) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+}): Promise<string | null> {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return null;
 
   const text = buildOrderText(order, "NEW");
   const reply_markup = buildOrderKeyboard(order.id, "NEW");
 
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
-      text,
-      parse_mode: "Markdown",
-      reply_markup,
-    }),
-  });
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text,
+        parse_mode: "Markdown",
+        reply_markup,
+      }),
+    });
+    const data = await res.json();
+    return data.ok ? String(data.result.message_id) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Удалить сообщение из Telegram группы (вызывается при финальных статусах)
+export async function deleteTelegramMessage(messageId: string): Promise<void> {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        message_id: Number(messageId),
+      }),
+    });
+  } catch {
+    // Тихо игнорируем — бот может не иметь права удалять
+  }
 }
 
 export function buildHelpMessages(): string[] {

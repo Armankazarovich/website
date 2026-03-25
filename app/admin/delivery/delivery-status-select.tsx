@@ -11,6 +11,7 @@ const STATUS_OPTIONS = [
   { value: "IN_DELIVERY", label: "Доставляется" },
   { value: "READY_PICKUP", label: "Готов к выдаче" },
   { value: "DELIVERED", label: "✓ Доставлен" },
+  { value: "COMPLETED", label: "🏁 Завершён (самовывоз)" },
   { value: "CANCELLED", label: "✕ Отменён" },
 ];
 

@@ -42,6 +42,7 @@ enum OrderStatus {
   IN_DELIVERY
   READY_PICKUP
   DELIVERED
+  COMPLETED   // Завершён (самовывоз — клиент забрал)
   CANCELLED
 }
 
@@ -113,10 +114,11 @@ model Order {
   paymentMethod   String      @default("Наличные / Счёт")
   deliveryAddress String?
   comment         String?
-  items           OrderItem[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  deletedAt       DateTime?
+  items             OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  deletedAt         DateTime?
+  telegramMessageId String?     // ID сообщения в Telegram группе для авто-удаления
 }
 
 model OrderItem {

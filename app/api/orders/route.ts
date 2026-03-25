@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
       icon: "/icons/icon-192x192.png",
     }).catch(console.error);
 
-    // Telegram notification
+    // Telegram notification — сохраняем message_id для авто-удаления при финальных статусах
     sendTelegramOrderNotification({
       id: order.id,
       orderNumber: order.orderNumber,
@@ -148,6 +148,10 @@ export async function POST(req: NextRequest) {
       comment: order.comment,
       totalAmount: Number(order.totalAmount),
       items: orderItems,
+    }).then((msgId) => {
+      if (msgId) {
+        prisma.order.update({ where: { id: order.id }, data: { telegramMessageId: msgId } }).catch(console.error);
+      }
     }).catch(console.error);
 
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });

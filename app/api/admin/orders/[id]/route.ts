@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
-import { sendTelegramStatusUpdate, sendTelegramOrderEdited } from "@/lib/telegram";
+import { sendTelegramStatusUpdate, sendTelegramOrderEdited, deleteTelegramMessage, FINAL_STATUSES } from "@/lib/telegram";
 import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 
@@ -16,6 +16,7 @@ const statusLabels: Record<string, string> = {
   IN_DELIVERY: "Ваш заказ доставляется",
   READY_PICKUP: "Ваш заказ готов к выдаче",
   DELIVERED: "Ваш заказ доставлен",
+  COMPLETED: "Заказ завершён — самовывоз получен",
   CANCELLED: "Ваш заказ отменён",
 };
 
@@ -26,6 +27,7 @@ const statusDescriptions: Record<string, string> = {
   IN_DELIVERY: "Ваш заказ в пути! Водитель уже едет к вам. Ожидайте звонка.",
   READY_PICKUP: "Ваш заказ готов к самовывозу. Приезжайте: Химки, ул. Заводская 2А, стр.28",
   DELIVERED: "Ваш заказ успешно доставлен. Спасибо за покупку в ПилоРус!",
+  COMPLETED: "Вы получили заказ самовывозом. Спасибо за покупку в ПилоРус!",
   CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
 };
 
@@ -69,6 +71,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (totalAmount !== undefined) updateData.totalAmount = totalAmount;
   if (deliveryCost !== undefined) updateData.deliveryCost = deliveryCost;
 
+  // При финальном статусе — получаем telegramMessageId ДО обновления, чтобы удалить сообщение
+  let telegramMsgToDelete: string | null = null;
+  if (status && FINAL_STATUSES.includes(status)) {
+    const current = await prisma.order.findUnique({
+      where: { id: params.id },
+      select: { telegramMessageId: true },
+    });
+    telegramMsgToDelete = current?.telegramMessageId ?? null;
+    if (telegramMsgToDelete) {
+      updateData.telegramMessageId = null; // Очищаем поле
+    }
+  }
+
   // Удалить позиции
   if (removeItemIds?.length) {
     await prisma.orderItem.deleteMany({
@@ -105,6 +120,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
       icon: "/icons/icon-192x192.png",
     }).catch(console.error);
+  }
+
+  // Удалить Telegram сообщение при финальном статусе
+  if (telegramMsgToDelete) {
+    deleteTelegramMessage(telegramMsgToDelete).catch(console.error);
   }
 
   // Telegram + push сотрудникам при смене статуса

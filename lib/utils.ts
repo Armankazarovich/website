@@ -48,6 +48,7 @@ export const ORDER_STATUS_LABELS: Record<string, string> = {
   IN_DELIVERY: "Доставляется",
   READY_PICKUP: "Готов к выдаче",
   DELIVERED: "Доставлен",
+  COMPLETED: "Завершён (самовывоз)",
   CANCELLED: "Отменён",
 };
 
@@ -59,5 +60,6 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   IN_DELIVERY: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
   READY_PICKUP: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300",
   DELIVERED: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+  COMPLETED: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
   CANCELLED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };

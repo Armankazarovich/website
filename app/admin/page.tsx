@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import { ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { AutoRefresh } from "@/components/admin/auto-refresh";
 
 export default async function AdminDashboard() {
   const now = new Date();
@@ -35,9 +36,9 @@ export default async function AdminDashboard() {
       take: 6,
       select: { id: true, orderNumber: true, guestName: true, totalAmount: true, status: true, createdAt: true, items: { select: { id: true } } },
     }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
     prisma.order.findMany({
       where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null },
       select: { createdAt: true, totalAmount: true },
@@ -76,15 +77,23 @@ export default async function AdminDashboard() {
   // Status breakdown
   const statusMap: Record<string, number> = {};
   for (const s of statusCounts) statusMap[s.status] = s._count._all;
-  const statusOrder = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED", "CANCELLED"];
+  const statusOrder = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED", "COMPLETED", "CANCELLED"];
   const statusData = statusOrder.map(s => ({ status: s, count: statusMap[s] || 0 })).filter(s => s.count > 0);
 
   // Average order value (30 days)
   const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
-  const avgOrder = orders30count > 0 ? Number(revenue30._sum.totalAmount || 0) / orders30count : 0;
+  const cancelledCount30 = await prisma.order.count({ where: { status: "CANCELLED", createdAt: { gte: days30ago }, deletedAt: null } });
+
+  // Суммируем выручку + доставку
+  const revenue30total = Number(revenue30._sum.totalAmount || 0) + Number((revenue30._sum as any).deliveryCost || 0);
+  const revenue7total = Number(revenue7._sum.totalAmount || 0) + Number((revenue7._sum as any).deliveryCost || 0);
+  const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0) + Number((revenueToday._sum as any).deliveryCost || 0);
+  const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
 
   return (
     <div className="space-y-5">
+      {/* Автообновление каждые 60 секунд */}
+      <AutoRefresh intervalMs={60000} />
       <div className="flex items-center justify-between">
         <h1 className="font-display font-bold text-2xl">Дашборд</h1>
         <p className="text-sm text-muted-foreground">{now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}</p>
@@ -93,8 +102,8 @@ export default async function AdminDashboard() {
       {/* Main stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Выручка за 30 дн.", value: formatPrice(Number(revenue30._sum.totalAmount || 0)), icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Выручка сегодня", value: formatPrice(Number(revenueToday._sum.totalAmount || 0)), icon: BarChart3, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950" },
+          { label: "Выручка за 30 дн.", value: formatPrice(revenue30total), icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
+          { label: "Выручка сегодня", value: formatPrice(revenueTodayTotal), icon: BarChart3, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950" },
           { label: "Средний чек", value: formatPrice(avgOrder), icon: ArrowUpRight, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950" },
           { label: "Новых заказов", value: newOrders, icon: Clock, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950" },
         ].map((s) => (
@@ -109,7 +118,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Secondary stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <div className="bg-card rounded-2xl border border-border p-4 text-center">
           <ShoppingBag className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
           <p className="text-xl font-bold">{totalOrders}</p>
@@ -124,6 +133,11 @@ export default async function AdminDashboard() {
           <Package className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
           <p className="text-xl font-bold">{totalProducts}</p>
           <p className="text-xs text-muted-foreground">Активных товаров</p>
+        </div>
+        <div className="bg-card rounded-2xl border border-border p-4 text-center">
+          <div className="w-4 h-4 text-red-500 mx-auto mb-1 text-xs font-bold">✕</div>
+          <p className="text-xl font-bold text-red-500">{cancelledCount30}</p>
+          <p className="text-xs text-muted-foreground">Отменено (30 дн.)</p>
         </div>
       </div>
 
@@ -149,8 +163,8 @@ export default async function AdminDashboard() {
             })}
           </div>
           <div className="mt-3 pt-3 border-t border-border flex justify-between text-xs text-muted-foreground">
-            <span>7 дней: <strong className="text-foreground">{formatPrice(Number(revenue7._sum.totalAmount || 0))}</strong></span>
-            <span>30 дней: <strong className="text-foreground">{formatPrice(Number(revenue30._sum.totalAmount || 0))}</strong></span>
+            <span>7 дней: <strong className="text-foreground">{formatPrice(revenue7total)}</strong></span>
+            <span>30 дней: <strong className="text-foreground">{formatPrice(revenue30total)}</strong></span>
           </div>
         </div>
 

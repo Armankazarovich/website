@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
@@ -16,6 +16,7 @@ const STATUS_FILTERS = [
   { key: "IN_DELIVERY", label: "В пути" },
   { key: "READY_PICKUP", label: "Самовывоз" },
   { key: "DELIVERED", label: "Доставлены" },
+  { key: "COMPLETED", label: "Завершены" },
   { key: "CANCELLED", label: "Отменены" },
 ];
 
@@ -40,6 +41,12 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+
+  // Автообновление каждые 30 секунд — новые заказы всегда видны
+  useEffect(() => {
+    const timer = setInterval(() => router.refresh(), 30000);
+    return () => clearInterval(timer);
+  }, [router]);
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {

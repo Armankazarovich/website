@@ -6,10 +6,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive } from "lucide-react";
 import { DeliveryStatusSelect } from "./delivery-status-select";
+import { AutoRefresh } from "@/components/admin/auto-refresh";
 
 const ACTIVE_STATUSES = ["CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY"];
 const PICKUP_STATUS = "READY_PICKUP";
-const ARCHIVE_STATUSES = ["DELIVERED", "CANCELLED"];
+const ARCHIVE_STATUSES = ["DELIVERED", "COMPLETED", "CANCELLED"];
 
 const STATUS_LABELS: Record<string, string> = {
   CONFIRMED: "Подтверждён",
@@ -18,6 +19,7 @@ const STATUS_LABELS: Record<string, string> = {
   IN_DELIVERY: "Доставляется",
   READY_PICKUP: "Готов к выдаче",
   DELIVERED: "Доставлен",
+  COMPLETED: "Завершён (самовывоз)",
   CANCELLED: "Отменён",
 };
 
@@ -28,6 +30,7 @@ const STATUS_COLORS: Record<string, string> = {
   IN_DELIVERY: "bg-purple-500/10 text-purple-700 dark:text-purple-400",
   READY_PICKUP: "bg-green-500/10 text-green-700 dark:text-green-400",
   DELIVERED: "bg-muted text-muted-foreground",
+  COMPLETED: "bg-teal-500/10 text-teal-700 dark:text-teal-400",
   CANCELLED: "bg-destructive/10 text-destructive",
 };
 
@@ -61,6 +64,8 @@ export default async function DeliveryPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
+      {/* Автообновление каждые 30 секунд */}
+      <AutoRefresh intervalMs={30000} />
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="font-display font-bold text-2xl flex items-center gap-2">
