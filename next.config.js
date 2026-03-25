@@ -27,6 +27,15 @@ const nextConfig = {
   async headers() {
     return [
       {
+        // Service Worker — без кэша, явный тип и разрешённый scope
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Service-Worker-Allowed', value: '/' },
+        ],
+      },
+      {
         // Статические файлы Next.js — кэш на 1 год (immutable)
         source: '/_next/static/:path*',
         headers: [
