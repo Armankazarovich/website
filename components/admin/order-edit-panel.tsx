@@ -28,7 +28,7 @@ type OrderEditable = {
 };
 
 type Variant = { id: string; size: string; pricePerCube: number | null; pricePerPiece: number | null };
-type Product = { id: string; name: string; variants: Variant[] };
+type Product = { id: string; name: string; saleUnit: "CUBE" | "PIECE" | "BOTH"; variants: Variant[] };
 
 type NewItem = {
   variantId: string;
@@ -83,6 +83,18 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
   const selPrice = selVariant
     ? Number(selUnit === "CUBE" ? selVariant.pricePerCube : selVariant.pricePerPiece) || 0
     : 0;
+
+  // Доступные единицы на основе saleUnit и наличия цен
+  const availableUnits = useMemo<("CUBE" | "PIECE")[]>(() => {
+    if (!selProduct) return ["CUBE", "PIECE"];
+    const { saleUnit } = selProduct;
+    if (saleUnit === "CUBE") return ["CUBE"];
+    if (saleUnit === "PIECE") return ["PIECE"];
+    const units: ("CUBE" | "PIECE")[] = [];
+    if (selVariant?.pricePerCube != null) units.push("CUBE");
+    if (selVariant?.pricePerPiece != null) units.push("PIECE");
+    return units.length > 0 ? units : ["CUBE", "PIECE"];
+  }, [selProduct, selVariant]);
 
   const totalAmount = useMemo(() => {
     const existingTotal = currentItems
@@ -333,7 +345,12 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <select
                   value={selProductId}
-                  onChange={(e) => { setSelProductId(e.target.value); setSelVariantId(""); }}
+                  onChange={(e) => {
+                    const p = products.find((pr) => pr.id === e.target.value);
+                    setSelProductId(e.target.value);
+                    setSelVariantId("");
+                    if (p) setSelUnit(p.saleUnit === "PIECE" ? "PIECE" : "CUBE");
+                  }}
                   className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">— товар —</option>
@@ -351,10 +368,11 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                 <select
                   value={selUnit}
                   onChange={(e) => setSelUnit(e.target.value as "CUBE" | "PIECE")}
-                  className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none"
+                  disabled={availableUnits.length <= 1}
+                  className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none disabled:opacity-70"
                 >
-                  <option value="CUBE">м³</option>
-                  <option value="PIECE">шт</option>
+                  {availableUnits.includes("CUBE") && <option value="CUBE">м³ (кубометры)</option>}
+                  {availableUnits.includes("PIECE") && <option value="PIECE">шт (штуки)</option>}
                 </select>
                 <input
                   type="number"

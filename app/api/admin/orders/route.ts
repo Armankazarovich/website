@@ -56,6 +56,8 @@ export async function POST(req: NextRequest) {
       price: Number(item.price),
     }));
 
+    const orderDeliveryCost = Number((order as any).deliveryCost ?? 0);
+
     // Telegram
     sendTelegramOrderNotification({
       id: order.id,
@@ -67,6 +69,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: order.paymentMethod,
       comment: order.comment,
       totalAmount: Number(order.totalAmount),
+      deliveryCost: orderDeliveryCost,
       items: orderItems,
     }).catch(console.error);
 
@@ -90,6 +93,7 @@ export async function POST(req: NextRequest) {
         paymentMethod: order.paymentMethod,
         comment: order.comment,
         totalAmount: Number(order.totalAmount),
+        deliveryCost: orderDeliveryCost,
         items: orderItems,
       }).then((pdfBuffer) =>
         sendCustomerOrderConfirmation(
@@ -98,6 +102,7 @@ export async function POST(req: NextRequest) {
             orderNumber: order.orderNumber,
             customerName: order.guestName || "Клиент",
             totalAmount: Number(order.totalAmount),
+            deliveryCost: orderDeliveryCost,
             deliveryAddress: order.deliveryAddress,
             paymentMethod: order.paymentMethod,
             items: orderItems,

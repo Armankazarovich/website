@@ -104,7 +104,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Удалить ${selected.size} заказ(ов)? Это действие нельзя отменить.`)) return;
+    if (!window.confirm(`Переместить ${selected.size} заказ(ов) в корзину?`)) return;
     setDeleting(true);
     try {
       const res = await fetch("/api/admin/orders/bulk-delete", {

@@ -13,6 +13,9 @@ export async function DELETE(req: NextRequest) {
   if (!Array.isArray(ids) || ids.length === 0) {
     return NextResponse.json({ error: "ids required" }, { status: 400 });
   }
-  await prisma.order.deleteMany({ where: { id: { in: ids } } });
+  await prisma.order.updateMany({
+    where: { id: { in: ids }, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
   return NextResponse.json({ deleted: ids.length });
 }

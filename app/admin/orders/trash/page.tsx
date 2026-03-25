@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Trash2, ArrowLeft } from "lucide-react";
 import { TrashActions } from "./trash-actions";
+import { ClearTrashButton } from "./clear-trash-button";
 
 export default async function OrdersTrashPage() {
   const session = await auth();
@@ -19,20 +20,23 @@ export default async function OrdersTrashPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center gap-3">
-        <Link
-          href="/admin/orders"
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Заказы
-        </Link>
-        <span className="text-muted-foreground">/</span>
-        <h1 className="font-display font-bold text-2xl flex items-center gap-2">
-          <Trash2 className="w-5 h-5 text-destructive" />
-          Корзина
-        </h1>
-        <span className="text-sm text-muted-foreground">({deleted.length})</span>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/orders"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Заказы
+          </Link>
+          <span className="text-muted-foreground">/</span>
+          <h1 className="font-display font-bold text-2xl flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-destructive" />
+            Корзина
+          </h1>
+          <span className="text-sm text-muted-foreground">({deleted.length})</span>
+        </div>
+        {deleted.length > 0 && <ClearTrashButton count={deleted.length} />}
       </div>
 
       {deleted.length === 0 ? (

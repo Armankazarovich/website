@@ -272,20 +272,17 @@ export default function NewPhoneOrderPage() {
                     className="w-full pl-8 pr-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   {showProductDropdown && filteredProducts.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1 left-0 right-0 rounded-xl shadow-2xl max-h-52 overflow-y-auto" style={{backgroundColor:"#1a1510", border:"1px solid rgba(255,255,255,0.12)"}}>
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 rounded-xl shadow-xl max-h-52 overflow-y-auto bg-popover border border-border">
                       {filteredProducts.slice(0, 20).map((p) => (
                         <button
                           key={p.id}
                           type="button"
                           onMouseDown={() => handleSelectProduct(p)}
-                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedProductId === p.id ? "font-semibold text-primary" : "text-white"}`}
-                          style={{backgroundColor: selectedProductId === p.id ? "rgba(232,112,10,0.2)" : "transparent"}}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = selectedProductId === p.id ? "rgba(232,112,10,0.25)" : "rgba(255,255,255,0.07)")}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedProductId === p.id ? "rgba(232,112,10,0.2)" : "transparent")}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${selectedProductId === p.id ? "font-semibold text-primary bg-primary/10" : "text-foreground"}`}
                         >
                           {p.name}
-                          {p.saleUnit === "CUBE" && <span className="ml-2 text-xs opacity-50">м³</span>}
-                          {p.saleUnit === "PIECE" && <span className="ml-2 text-xs opacity-50">шт</span>}
+                          {p.saleUnit === "CUBE" && <span className="ml-2 text-xs text-muted-foreground">м³</span>}
+                          {p.saleUnit === "PIECE" && <span className="ml-2 text-xs text-muted-foreground">шт</span>}
                         </button>
                       ))}
                     </div>
