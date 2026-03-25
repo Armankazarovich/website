@@ -221,7 +221,7 @@ export default function NewPhoneOrderPage() {
                     className="w-full pl-8 pr-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   {showProductDropdown && filteredProducts.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-popover border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto" style={{background:"var(--card, #1e1a16)"}}>
                       {filteredProducts.slice(0, 20).map((p) => (
                         <button
                           key={p.id}
@@ -232,13 +232,13 @@ export default function NewPhoneOrderPage() {
                             setProductSearch(p.name);
                             setShowProductDropdown(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/70 transition-colors ${selectedProductId === p.id ? "bg-primary/10 font-semibold" : ""}`}
+                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary/15 transition-colors ${selectedProductId === p.id ? "bg-primary/20 font-semibold text-primary" : "text-foreground"}`}
                         >
                           {p.name}
                         </button>
                       ))}
                       {filteredProducts.length === 0 && (
-                        <p className="px-3 py-2 text-sm text-muted-foreground">Ничего не найдено</p>
+                        <p className="px-4 py-2.5 text-sm text-muted-foreground">Ничего не найдено</p>
                       )}
                     </div>
                   )}
