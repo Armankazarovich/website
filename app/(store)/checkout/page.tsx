@@ -36,7 +36,7 @@ function formatPhone(raw: string): string {
 const checkoutSchema = z.object({
   name: z.string().min(2, "Введите имя"),
   phone: z.string().min(10, "Введите корректный номер телефона"),
-  email: z.string().email("Введите корректный email").optional().or(z.literal("")),
+  email: z.string().email("Введите корректный email — пришлём подтверждение заказа"),
   address: z.string().min(5, "Введите адрес доставки"),
   paymentMethod: z.enum(["cash", "invoice"]),
   comment: z.string().optional(),
@@ -503,8 +503,14 @@ export default function CheckoutPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="email">Email (необязательно)</Label>
+              <Label htmlFor="email">
+                Email <span className="text-destructive">*</span>
+              </Label>
               <Input id="email" type="email" placeholder="email@example.ru" className="mt-1" {...register("email")} />
+              {errors.email
+                ? <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
+                : <p className="text-xs text-muted-foreground mt-1">Пришлём подтверждение заказа и PDF счёт</p>
+              }
             </div>
           </div>
 
