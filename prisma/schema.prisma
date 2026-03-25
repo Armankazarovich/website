@@ -109,12 +109,14 @@ model Order {
   guestPhone      String?
   status          OrderStatus @default(NEW)
   totalAmount     Decimal     @db.Decimal(10, 2)
+  deliveryCost    Decimal     @default(0) @db.Decimal(10, 2)
   paymentMethod   String      @default("Наличные / Счёт")
   deliveryAddress String?
   comment         String?
   items           OrderItem[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  deletedAt       DateTime?
 }
 
 model OrderItem {

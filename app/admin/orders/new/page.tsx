@@ -16,7 +16,7 @@ type Variant = {
 type Product = {
   id: string;
   name: string;
-  saleUnit: string;
+  saleUnit: "CUBE" | "PIECE" | "BOTH";
   variants: Variant[];
 };
 
@@ -46,6 +46,8 @@ export default function NewPhoneOrderPage() {
   });
 
   const [items, setItems] = useState<CartItem[]>([]);
+  const [deliveryCost, setDeliveryCost] = useState(0);
+  const [deliveryCostInput, setDeliveryCostInput] = useState("");
 
   // Для добавления позиции
   const [productSearch, setProductSearch] = useState("");
@@ -75,6 +77,41 @@ export default function NewPhoneOrderPage() {
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const selectedVariant = selectedProduct?.variants.find((v) => v.id === selectedVariantId);
 
+  // Доступные единицы для выбранного товара/варианта
+  const availableUnits = useMemo((): Array<"CUBE" | "PIECE"> => {
+    if (!selectedProduct) return ["CUBE", "PIECE"];
+    const { saleUnit } = selectedProduct;
+    const hasCube = saleUnit !== "PIECE" && (selectedVariant ? selectedVariant.pricePerCube != null : true);
+    const hasPiece = saleUnit !== "CUBE" && (selectedVariant ? selectedVariant.pricePerPiece != null : true);
+    const units: Array<"CUBE" | "PIECE"> = [];
+    if (hasCube) units.push("CUBE");
+    if (hasPiece) units.push("PIECE");
+    return units.length > 0 ? units : ["CUBE"];
+  }, [selectedProduct, selectedVariant]);
+
+  // Автовыбор единицы при смене товара
+  const handleSelectProduct = (product: Product) => {
+    setSelectedProductId(product.id);
+    setSelectedVariantId("");
+    setProductSearch(product.name);
+    setShowProductDropdown(false);
+    // Автовыбор единицы
+    if (product.saleUnit === "CUBE") setUnitType("CUBE");
+    else if (product.saleUnit === "PIECE") setUnitType("PIECE");
+    // BOTH — оставить текущий выбор
+  };
+
+  // При смене варианта — пересчитать доступные единицы
+  useEffect(() => {
+    if (!selectedProduct) return;
+    const variant = selectedProduct.variants.find((v) => v.id === selectedVariantId);
+    if (!variant) return;
+    const hasCube = selectedProduct.saleUnit !== "PIECE" && variant.pricePerCube != null;
+    const hasPiece = selectedProduct.saleUnit !== "CUBE" && variant.pricePerPiece != null;
+    if (unitType === "CUBE" && !hasCube && hasPiece) setUnitType("PIECE");
+    if (unitType === "PIECE" && !hasPiece && hasCube) setUnitType("CUBE");
+  }, [selectedVariantId]);
+
   const itemPrice = useMemo(() => {
     if (!selectedVariant) return 0;
     if (unitType === "CUBE") return Number(selectedVariant.pricePerCube ?? 0);
@@ -102,10 +139,11 @@ export default function NewPhoneOrderPage() {
 
   const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
 
-  const totalAmount = useMemo(
+  const itemsTotal = useMemo(
     () => items.reduce((sum, it) => sum + it.quantity * it.price, 0),
     [items]
   );
+  const totalAmount = itemsTotal + deliveryCost;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +156,7 @@ export default function NewPhoneOrderPage() {
       const res = await fetch("/api/admin/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, items, totalAmount }),
+        body: JSON.stringify({ ...form, items, totalAmount, deliveryCost }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -226,23 +264,17 @@ export default function NewPhoneOrderPage() {
                         <button
                           key={p.id}
                           type="button"
-                          onMouseDown={() => {
-                            setSelectedProductId(p.id);
-                            setSelectedVariantId("");
-                            setProductSearch(p.name);
-                            setShowProductDropdown(false);
-                          }}
+                          onMouseDown={() => handleSelectProduct(p)}
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedProductId === p.id ? "font-semibold text-primary" : "text-white"}`}
                           style={{backgroundColor: selectedProductId === p.id ? "rgba(232,112,10,0.2)" : "transparent"}}
                           onMouseEnter={e => (e.currentTarget.style.backgroundColor = selectedProductId === p.id ? "rgba(232,112,10,0.25)" : "rgba(255,255,255,0.07)")}
                           onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedProductId === p.id ? "rgba(232,112,10,0.2)" : "transparent")}
                         >
                           {p.name}
+                          {p.saleUnit === "CUBE" && <span className="ml-2 text-xs opacity-50">м³</span>}
+                          {p.saleUnit === "PIECE" && <span className="ml-2 text-xs opacity-50">шт</span>}
                         </button>
                       ))}
-                      {filteredProducts.length === 0 && (
-                        <p className="px-4 py-2.5 text-sm text-muted-foreground">Ничего не найдено</p>
-                      )}
                     </div>
                   )}
                 </div>
@@ -266,10 +298,11 @@ export default function NewPhoneOrderPage() {
                 <select
                   value={unitType}
                   onChange={(e) => setUnitType(e.target.value as "CUBE" | "PIECE")}
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={availableUnits.length <= 1}
+                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-70"
                 >
-                  <option value="CUBE">м³ (кубометры)</option>
-                  <option value="PIECE">шт (штуки)</option>
+                  {availableUnits.includes("CUBE") && <option value="CUBE">м³ (кубометры)</option>}
+                  {availableUnits.includes("PIECE") && <option value="PIECE">шт (штуки)</option>}
                 </select>
               </div>
               <div>
@@ -335,6 +368,13 @@ export default function NewPhoneOrderPage() {
                     </td>
                   </tr>
                 ))}
+                {deliveryCost > 0 && (
+                  <tr className="bg-blue-500/5">
+                    <td className="px-4 py-2 font-medium" colSpan={3}>Доставка</td>
+                    <td className="px-4 py-2 text-right font-semibold">{deliveryCost.toLocaleString("ru-RU")} ₽</td>
+                    <td className="px-4 py-2"></td>
+                  </tr>
+                )}
               </tbody>
               <tfoot className="border-t border-border bg-muted/30">
                 <tr>
@@ -346,6 +386,25 @@ export default function NewPhoneOrderPage() {
             </table>
           </div>
         )}
+
+        {/* Стоимость доставки */}
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Доставка</h2>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min={0}
+              placeholder="Стоимость доставки (₽)"
+              value={deliveryCostInput}
+              onChange={(e) => {
+                setDeliveryCostInput(e.target.value);
+                setDeliveryCost(Number(e.target.value) || 0);
+              }}
+              className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 w-64"
+            />
+            <span className="text-xs text-muted-foreground">0 = самовывоз / без доставки</span>
+          </div>
+        </div>
 
         {error && <p className="text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-3">{error}</p>}
 

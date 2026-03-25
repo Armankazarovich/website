@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
-import { sendTelegramStatusUpdate } from "@/lib/telegram";
+import { sendTelegramStatusUpdate, sendTelegramOrderEdited } from "@/lib/telegram";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   }
 
   const order = await prisma.order.findUnique({
-    where: { id: params.id },
+    where: { id: params.id, deletedAt: null },
     include: {
       items: true,
       user: { select: { id: true, name: true, email: true, phone: true } },
@@ -54,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod, removeItemIds, addItems, totalAmount } = body;
+  const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod, removeItemIds, addItems, totalAmount, deliveryCost } = body;
 
   const updateData: Record<string, any> = {};
   if (status !== undefined) updateData.status = status;
@@ -65,6 +65,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (comment !== undefined) updateData.comment = comment || null;
   if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
   if (totalAmount !== undefined) updateData.totalAmount = totalAmount;
+  if (deliveryCost !== undefined) updateData.deliveryCost = deliveryCost;
 
   // Удалить позиции
   if (removeItemIds?.length) {
@@ -120,6 +121,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }).catch(console.error);
   }
 
+  // Telegram уведомление при редактировании (без смены статуса)
+  if (!status && (guestName !== undefined || guestPhone !== undefined || removeItemIds?.length || addItems?.length || totalAmount !== undefined || deliveryCost !== undefined)) {
+    sendTelegramOrderEdited({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      totalAmount: Number(order.totalAmount),
+      deliveryCost: Number(order.deliveryCost),
+    }).catch(console.error);
+  }
+
   // Email клиенту
   if (statusLabels[status]) {
     let email = order.guestEmail;
@@ -148,6 +160,29 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
-  await prisma.order.delete({ where: { id: params.id } });
+  const { searchParams } = new URL(req.url);
+  const permanent = searchParams.get("permanent") === "true";
+
+  if (permanent) {
+    await prisma.order.delete({ where: { id: params.id } });
+  } else {
+    await prisma.order.update({
+      where: { id: params.id },
+      data: { deletedAt: new Date() },
+    });
+  }
+  return NextResponse.json({ success: true });
+}
+
+// Restore soft-deleted order
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const session = await auth();
+  if (!session || (session.user as any).role !== "ADMIN") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+  await prisma.order.update({
+    where: { id: params.id },
+    data: { deletedAt: null },
+  });
   return NextResponse.json({ success: true });
 }

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { guestName, guestPhone, guestEmail, deliveryAddress, paymentMethod, comment, items, totalAmount } = body;
+    const { guestName, guestPhone, guestEmail, deliveryAddress, paymentMethod, comment, items, totalAmount, deliveryCost } = body;
 
     if (!guestName || !guestPhone || !items?.length) {
       return NextResponse.json({ error: "Обязательные поля: имя, телефон, товары" }, { status: 400 });
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         paymentMethod: paymentMethod || "Наличные",
         comment: comment || null,
         totalAmount,
+        deliveryCost: deliveryCost || 0,
         items: {
           create: items.map((item: any) => ({
             variantId: item.variantId,

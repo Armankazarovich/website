@@ -93,6 +93,7 @@ export type InvoiceOrder = {
   paymentMethod?: string | null;
   comment?: string | null;
   totalAmount: number | string;
+  deliveryCost?: number | string | null;
   items: Array<{
     productName: string;
     variantSize: string;
@@ -183,6 +184,15 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
                 </View>
               );
             })}
+            {order.deliveryCost && Number(order.deliveryCost) > 0 ? (
+              <View style={[styles.tableRow, { backgroundColor: "#f0f4ff" }]}>
+                <Text style={styles.colName}>Доставка</Text>
+                <Text style={styles.colSize}>—</Text>
+                <Text style={styles.colQty}>—</Text>
+                <Text style={styles.colPrice}>—</Text>
+                <Text style={styles.colTotal}>{Number(order.deliveryCost).toLocaleString("ru-RU")} руб.</Text>
+              </View>
+            ) : null}
           </View>
 
           <View style={styles.totalRow}>

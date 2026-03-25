@@ -237,6 +237,38 @@ export async function sendTelegramStatusUpdate(order: {
   });
 }
 
+export async function sendTelegramOrderEdited(order: {
+  id: string;
+  orderNumber: number;
+  guestName?: string | null;
+  totalAmount: number;
+  deliveryCost?: number;
+}) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const deliveryLine = order.deliveryCost && order.deliveryCost > 0
+    ? `\nДоставка: ${order.deliveryCost.toLocaleString("ru-RU")} ₽`
+    : "";
+  const text = [
+    `✏️ *Заказ #${order.orderNumber} изменён*`,
+    ``,
+    `Клиент: ${order.guestName || "—"}`,
+    `Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽${deliveryLine}`,
+  ].join("\n");
+
+  const reply_markup = buildOrderKeyboard(order.id, "");
+
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: "Markdown",
+      reply_markup,
+    }),
+  });
+}
+
 export async function handleTelegramCallback(callbackQuery: any) {
   const data: string = callbackQuery.data || "";
 

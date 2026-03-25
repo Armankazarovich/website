@@ -49,6 +49,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             comment: order.comment,
             paymentMethod: order.paymentMethod,
             totalAmount: Number(order.totalAmount),
+            deliveryCost: Number((order as any).deliveryCost ?? 0),
             items: order.items.map((item) => ({
               id: item.id,
               variantId: item.variantId || "",

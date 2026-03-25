@@ -15,11 +15,13 @@ import {
   HelpCircle,
   Users,
   Bell,
+  Truck,
 } from "lucide-react";
 
 const allNavItems = [
   { href: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
   { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
+  { href: "/admin/delivery", label: "Доставка", icon: Truck, roles: ["ADMIN", "MANAGER", "COURIER"] },
   { href: "/admin/products", label: "Товары", icon: Package, roles: ["ADMIN", "MANAGER", "WAREHOUSE", "SELLER"] },
   { href: "/admin/categories", label: "Категории", icon: Tag, roles: ["ADMIN"] },
   { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: ["ADMIN", "MANAGER"] },

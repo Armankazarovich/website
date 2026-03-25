@@ -31,6 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     paymentMethod: order.paymentMethod,
     comment: order.comment,
     totalAmount: Number(order.totalAmount),
+    deliveryCost: Number((order as any).deliveryCost ?? 0),
     items: order.items.map((item) => ({
       productName: item.productName,
       variantSize: item.variantSize,

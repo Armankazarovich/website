@@ -23,6 +23,7 @@ type OrderEditable = {
   comment: string | null;
   paymentMethod: string;
   totalAmount: number;
+  deliveryCost: number;
   items: OrderItem[];
 };
 
@@ -58,7 +59,8 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
   const [currentItems, setCurrentItems] = useState<OrderItem[]>(order.items);
   const [removedIds, setRemovedIds] = useState<string[]>([]);
   const [newItems, setNewItems] = useState<NewItem[]>([]);
-  const [deliveryCost, setDeliveryCost] = useState(0);
+  const [deliveryCost, setDeliveryCost] = useState(order.deliveryCost);
+  const [deliveryCostInput, setDeliveryCostInput] = useState(order.deliveryCost > 0 ? String(order.deliveryCost) : "");
 
   // Выбор товара для добавления
   const [products, setProducts] = useState<Product[]>([]);
@@ -119,6 +121,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
           removeItemIds: removedIds,
           addItems: newItems,
           totalAmount,
+          deliveryCost,
         }),
       });
       setEditing(false);
@@ -141,7 +144,8 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
     setCurrentItems(order.items);
     setRemovedIds([]);
     setNewItems([]);
-    setDeliveryCost(0);
+    setDeliveryCost(order.deliveryCost);
+    setDeliveryCostInput(order.deliveryCost > 0 ? String(order.deliveryCost) : "");
   };
 
   const [pdfError, setPdfError] = useState("");
@@ -378,18 +382,20 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
               </button>
 
               {/* Доставка */}
-              {deliveryCost === 0 && (
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="Стоимость доставки (₽)"
-                    onBlur={(e) => setDeliveryCost(Number(e.target.value) || 0)}
-                    className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none w-56"
-                  />
-                  <span className="text-xs text-muted-foreground">добавить доставку к заказу</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Стоимость доставки (₽)"
+                  value={deliveryCostInput}
+                  onChange={(e) => {
+                    setDeliveryCostInput(e.target.value);
+                    setDeliveryCost(Number(e.target.value) || 0);
+                  }}
+                  className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none w-56"
+                />
+                <span className="text-xs text-muted-foreground">стоимость доставки</span>
+              </div>
             </div>
           </div>
 

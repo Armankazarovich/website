@@ -9,7 +9,7 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm("Удалить этот заказ? Это действие нельзя отменить.")) return;
+    if (!window.confirm("Переместить заказ в корзину?")) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, { method: "DELETE" });
