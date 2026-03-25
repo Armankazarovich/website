@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle, XCircle, UserCog, Clock, ShieldAlert, Loader2, UserPlus, X, Pencil, Trash2, Search } from "lucide-react";
+import { CheckCircle, XCircle, UserCog, Clock, ShieldAlert, Loader2, UserPlus, X, Pencil, Trash2, Search, Wifi, WifiOff } from "lucide-react";
 
 const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Администратор",
@@ -35,7 +35,28 @@ type StaffMember = {
   staffStatus: string | null;
   customRole: string | null;
   createdAt: Date;
+  lastActiveAt: Date | null;
 };
+
+function getOnlineStatus(lastActiveAt: Date | null): {
+  label: string;
+  color: string;
+  dot: string;
+} {
+  if (!lastActiveAt) return { label: "Не входил", color: "text-muted-foreground", dot: "bg-gray-400" };
+  const now = Date.now();
+  const diff = now - new Date(lastActiveAt).getTime();
+  const mins = diff / 60000;
+  const hours = diff / 3600000;
+  const days = diff / 86400000;
+
+  if (mins < 5) return { label: "Онлайн", color: "text-green-600 dark:text-green-400", dot: "bg-green-500" };
+  if (mins < 30) return { label: `${Math.floor(mins)} мин назад`, color: "text-yellow-600 dark:text-yellow-400", dot: "bg-yellow-400" };
+  if (hours < 2) return { label: `${Math.floor(hours)} ч назад`, color: "text-orange-500", dot: "bg-orange-400" };
+  if (days < 1) return { label: `Сегодня ${new Date(lastActiveAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}`, color: "text-muted-foreground", dot: "bg-gray-400" };
+  if (days < 7) return { label: `${Math.floor(days)} дн назад`, color: "text-muted-foreground", dot: "bg-gray-400" };
+  return { label: new Date(lastActiveAt).toLocaleDateString("ru-RU"), color: "text-muted-foreground", dot: "bg-gray-300" };
+}
 
 const EMPTY_FORM = { name: "", phone: "", email: "", password: "", role: "", customRole: "" };
 
@@ -155,13 +176,17 @@ export function StaffList({ staff }: { staff: StaffMember[] }) {
     const displayRole = member.customRole || ROLE_LABELS[member.role] || member.role;
     const isEditing = editId === member.id;
     const isConfirmingDelete = deleteConfirmId === member.id;
+    const online = getOnlineStatus(member.lastActiveAt);
 
     return (
       <div key={member.id} className="flex flex-col gap-3 p-4 bg-card border border-border rounded-xl">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-primary font-bold text-sm">
-            {member.name?.charAt(0)?.toUpperCase() || "?"}
+          {/* Avatar with online dot */}
+          <div className="relative w-10 h-10 shrink-0">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+              {member.name?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${online.dot}`} title={online.label} />
           </div>
 
           {/* Info */}
@@ -170,6 +195,9 @@ export function StaffList({ staff }: { staff: StaffMember[] }) {
               <p className="font-semibold text-sm">{member.name || "—"}</p>
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${roleBadge}`}>
                 {displayRole}
+              </span>
+              <span className={`text-[10px] font-medium ${online.color}`}>
+                · {online.label}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">{member.email}</p>

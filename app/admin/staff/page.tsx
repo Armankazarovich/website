@@ -24,6 +24,7 @@ export default async function StaffPage() {
       staffStatus: true,
       customRole: true,
       createdAt: true,
+      lastActiveAt: true,
     },
   });
 

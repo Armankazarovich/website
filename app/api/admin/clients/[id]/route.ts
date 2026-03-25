@@ -10,21 +10,32 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const body = await req.json();
-  const { name, phone, address } = body;
+  try {
+    const body = await req.json();
+    const { name, phone, address, role } = body;
 
-  const updateData: Record<string, any> = {};
-  if (name !== undefined) updateData.name = name || null;
-  if (phone !== undefined) updateData.phone = phone || null;
-  if (address !== undefined) updateData.address = address || null;
+    const STAFF_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "ADMIN"] as const;
+    const isRolePromotion = role && STAFF_ROLES.includes(role);
 
-  const user = await prisma.user.update({
-    where: { id: params.id, role: "USER" },
-    data: updateData,
-    select: { id: true, name: true, phone: true, address: true, email: true },
-  });
+    const user = await prisma.user.update({
+      where: { id: params.id },
+      data: {
+        ...(name !== undefined ? { name: name || null } : {}),
+        ...(phone !== undefined ? { phone: phone || null } : {}),
+        ...(address !== undefined ? { address: address || null } : {}),
+        ...(isRolePromotion ? {
+          role: role as "MANAGER" | "COURIER" | "ACCOUNTANT" | "WAREHOUSE" | "SELLER" | "ADMIN",
+          staffStatus: "ACTIVE" as const,
+        } : {}),
+      },
+      select: { id: true, name: true, phone: true, address: true, email: true, role: true },
+    });
 
-  return NextResponse.json({ user });
+    return NextResponse.json({ user });
+  } catch (err: any) {
+    console.error("PATCH /api/admin/clients/[id] error:", err);
+    return NextResponse.json({ error: err?.message || "Ошибка обновления" }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {

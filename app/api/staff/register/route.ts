@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { normalizePhone } from "@/lib/phone";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     const user = await prisma.user.create({
       data: {
         name: name.trim(),
-        phone: phone.trim(),
+        phone: normalizePhone(phone) || phone.trim(),
         email: email.toLowerCase().trim(),
         passwordHash,
         role: role === "CUSTOM" ? "MANAGER" : (role as any), // CUSTOM maps to MANAGER role, identified by customRole field

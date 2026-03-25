@@ -97,21 +97,43 @@ export async function requestPushPermission(): Promise<boolean> {
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return false;
 
-  // Wait for SW with a 15s timeout to avoid hanging forever
+  // Сначала убедимся что SW зарегистрирован
   let reg: ServiceWorkerRegistration;
   try {
+    // Попробуем получить существующий, или зарегистрировать новый
+    const existing = await navigator.serviceWorker.getRegistration("/");
+    if (existing) {
+      reg = existing;
+    } else {
+      reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+      await new Promise<void>((resolve) => {
+        if (reg.active) { resolve(); return; }
+        const handler = () => { if (reg.active) { resolve(); reg.removeEventListener("updatefound", handler); } };
+        reg.addEventListener("updatefound", handler);
+        // Fallback через 3s
+        setTimeout(resolve, 3000);
+      });
+    }
+
+    // Ждём активации SW максимум 10s
     reg = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("SW not ready after 15s")), 15000)
+        setTimeout(() => reject(new Error("SW not ready after 10s")), 10000)
       ),
     ]);
   } catch (err) {
-    console.error("[Push] Service worker not ready:", err);
+    console.error("[Push] Service worker registration failed:", err);
     return false;
   }
 
   try {
+    // Если подписка уже есть — обновим и вернём успех
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      await saveSub(existing);
+      return true;
+    }
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidKey),

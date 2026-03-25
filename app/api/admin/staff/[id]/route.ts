@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { normalizePhone } from "@/lib/phone";
 
 const VALID_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 const VALID_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"];
@@ -27,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (staffStatus) data.staffStatus = staffStatus;
   if (role) data.role = role;
   if (name !== undefined) data.name = name;
-  if (phone !== undefined) data.phone = phone;
+  if (phone !== undefined) data.phone = phone ? (normalizePhone(phone) || phone) : null;
   if (email !== undefined) data.email = email;
 
   const user = await prisma.user.update({

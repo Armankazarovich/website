@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound } from "lucide-react";
+import { Search, Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -41,6 +42,7 @@ type Client = {
 };
 
 export function ClientsList({ clients: initialClients }: { clients: Client[] }) {
+  const router = useRouter();
   const [clients, setClients] = useState(initialClients);
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
@@ -50,6 +52,8 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [promoteId, setPromoteId] = useState<string | null>(null);
   const [promoteRole, setPromoteRole] = useState("");
+  const [promoteError, setPromoteError] = useState<string | null>(null);
+  const [promotedName, setPromotedName] = useState<string | null>(null);
   const [resetPasswordId, setResetPasswordId] = useState<string | null>(null);
   const [resetResult, setResetResult] = useState<{ password: string; emailSent: boolean; email: string } | null>(null);
 
@@ -116,21 +120,30 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
     }
   };
 
-  const handlePromote = async (id: string) => {
+  const handlePromote = async (id: string, clientName: string | null) => {
     if (!promoteRole) return;
     setLoadingId(id);
+    setPromoteError(null);
     try {
       const res = await fetch(`/api/admin/clients/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: promoteRole }),
       });
+      const data = await res.json();
       if (res.ok) {
         // Убираем из списка клиентов — он теперь сотрудник
         setClients((prev) => prev.filter((c) => c.id !== id));
         setPromoteId(null);
         setPromoteRole("");
+        setPromotedName(clientName || "Клиент");
+        // Обновляем данные страницы
+        router.refresh();
+      } else {
+        setPromoteError(data?.error || "Не удалось назначить роль");
       }
+    } catch (e: any) {
+      setPromoteError("Ошибка сети: " + (e?.message || "попробуйте снова"));
     } finally {
       setLoadingId(null);
     }
@@ -149,6 +162,17 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
 
   return (
     <div className="space-y-4">
+      {/* Success banner after promote */}
+      {promotedName && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span><strong>{promotedName}</strong> успешно назначен сотрудником и добавлен в команду</span>
+          <button className="ml-auto text-green-500 hover:text-green-700" onClick={() => setPromotedName(null)}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -241,7 +265,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                   <Button size="sm" variant="ghost"
                     className={`h-8 w-8 p-0 ${isPromoting ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                     title="Назначить сотрудником"
-                    onClick={() => { setPromoteId(isPromoting ? null : client.id); setPromoteRole(""); setEditId(null); setResetPasswordId(null); }}>
+                    onClick={() => { setPromoteId(isPromoting ? null : client.id); setPromoteRole(""); setPromoteError(null); setEditId(null); setResetPasswordId(null); }}>
                     <UserCog className="w-3.5 h-3.5" />
                   </Button>
                   <Button size="sm" variant="ghost"
@@ -278,13 +302,19 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                       ))}
                     </select>
                     <Button size="sm" className="h-8 text-xs px-3"
-                      onClick={() => handlePromote(client.id)}
+                      onClick={() => handlePromote(client.id, client.name)}
                       disabled={!promoteRole || isLoading}>
                       {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Назначить"}
                     </Button>
                     <Button size="sm" variant="ghost" className="h-8 text-xs"
-                      onClick={() => setPromoteId(null)}>Отмена</Button>
+                      onClick={() => { setPromoteId(null); setPromoteError(null); }}>Отмена</Button>
                   </div>
+                  {promoteError && (
+                    <div className="flex items-center gap-1.5 mt-2 text-[11px] text-red-600 dark:text-red-400">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      {promoteError}
+                    </div>
+                  )}
                   <p className="text-[10px] text-muted-foreground mt-1.5">
                     Клиент получит доступ в админку и исчезнет из этого списка
                   </p>

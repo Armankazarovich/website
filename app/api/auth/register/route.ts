@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { normalizePhone } from "@/lib/phone";
 
 const schema = z.object({
   name: z.string().min(2),
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
-      data: { name, email, phone: phone || null, passwordHash },
+      data: { name, email, phone: normalizePhone(phone) || null, passwordHash },
     });
 
     return NextResponse.json({ id: user.id }, { status: 201 });
