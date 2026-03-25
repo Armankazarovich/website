@@ -1,230 +1,272 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
+> Последнее обновление: 25.03.2026
+
+---
+
 ## Стек
+
 - **Next.js 14** App Router, TypeScript
 - **Prisma** + PostgreSQL (localhost:5432, БД: `pilorus`)
 - **Tailwind CSS** + shadcn/ui компоненты
-- **@react-pdf/renderer** — генерация PDF счетов
+- **@react-pdf/renderer** — генерация PDF счетов (WOFF шрифты, не TTF)
 - **nodemailer** — email уведомления
 - **Telegram Bot API** — уведомления в группу
 - **Web Push** — push-уведомления для сотрудников
-- **SheetJS (xlsx)** — планируется для экспорта
 
 ## Деплой
+
 - GitHub → GitHub Actions → VPS (автодеплой при пуше в `main`)
 - URL: `https://pilo-rus.ru`
-- При изменении схемы Prisma: `npx prisma db push` (не migrate dev — оно интерактивное)
+- Build script: `"build": "prisma db push --accept-data-loss && next build"` — автомигрирует схему при каждом деплое
+- При изменении схемы Prisma НИКОГДА не использовать `migrate dev` (интерактивный), только `db push`
+
+---
 
 ## Структура проекта
 
 ```
 app/
-  admin/                 — Панель управления
-    page.tsx             — Дашборд (серверный компонент)
-    layout.tsx           — Auth guard + AdminShell
+  admin/
+    page.tsx             — Дашборд (серверный, все stats с deletedAt: null)
+    layout.tsx           — Auth guard + AdminShell + навигация
     orders/
-      page.tsx           — Список заказов (с кнопкой Корзина + Заказ по телефону)
-      orders-client.tsx  — Клиентский компонент (поиск, фильтр, bulk delete)
-      new/page.tsx       — Создание заказа по телефону (с доставкой + авто-единицы)
+      page.tsx           — Список заказов (deletedAt: null)
+      orders-client.tsx  — Поиск, фильтр статуса, bulk soft-delete, CSV
+      new/page.tsx       — Создание заказа по телефону
+                           (saleUnit logic, deliveryCost + калькулятор)
       trash/
-        page.tsx         — Корзина удалённых заказов
-        trash-actions.tsx — Восстановить / Удалить навсегда
+        page.tsx             — Корзина (deletedAt: { not: null }), кнопка Очистить
+        trash-actions.tsx    — Восстановить (PUT) / Удалить навсегда (DELETE?permanent=true)
+        clear-trash-button.tsx — Кнопка "Очистить корзину" (ADMIN only)
       [id]/
         page.tsx         — Карточка заказа
-        delete-button.tsx — Кнопка мягкого удаления
+        delete-button.tsx — Soft delete (без ?permanent)
+    delivery/
+      page.tsx           — Доставка: активные заказы + самовывоз + архив
+                           (PDF кнопка на каждой карточке, показывает deliveryCost)
+      delivery-status-select.tsx — Смена статуса прямо из карточки
+      rates/
+        page.tsx         — Тарифы: калькулятор объёма + таблица тарифов
+                           (добавить/редактировать/удалить тариф)
     products/
       page.tsx           — Список товаров (серверный)
       products-client.tsx — Поиск + фильтр по категории
-    delivery/
-      page.tsx           — Доставка для шофёров (активные заказы)
-      delivery-status-select.tsx — Смена статуса прямо из карточки
     staff/
-      staff-list.tsx     — Список сотрудников
+      page.tsx           — Список сотрудников
+      staff-list.tsx     — Таблица с кнопками изменения роли
     settings/page.tsx    — Синх Google Sheets + тест Telegram
+
   api/
     admin/
       orders/
-        route.ts         — POST создание заказа (телефон)
+        route.ts             — POST создание заказа (телефон)
+                               deliveryCost → Telegram + PDF + Email
+        bulk-delete/route.ts — DELETE (soft delete, updateMany deletedAt)
+        clear-trash/route.ts — DELETE навсегда все из корзины (ADMIN only)
         [id]/
-          route.ts       — GET/PATCH/DELETE/PUT (PATCH=edit, DELETE=soft, PUT=restore)
+          route.ts       — GET/PATCH/DELETE/PUT
+                           PATCH: сохраняет все поля + deliveryCost + items
+                                  → Telegram + PDF + Email если редактирование
+                           DELETE: soft (deletedAt) / hard (?permanent=true)
+                           PUT: restore (deletedAt: null)
           pdf/route.ts   — GET генерация PDF счёта
-      products/route.ts  — GET все товары (включает saleUnit + variants)
-      test-telegram/route.ts — POST тест Telegram
-    sync/
-      sheets/route.ts    — POST ручная синхронизация Google Sheets
-      status/route.ts    — GET статус последней синхронизации
-  checkout/              — Клиентский чекаут
-lib/
-  invoice-pdf.tsx        — PDF счёт (шрифты WOFF, ruб. вместо ₽)
-  telegram.ts            — sendTelegramOrderNotification, sendTelegramStatusUpdate, sendTelegramOrderEdited
-  email.ts               — sendOrderStatusEmail (HTML, мобильный дизайн)
-  mail.ts                — sendCustomerOrderConfirmation (с PDF вложением)
-  sync-log.ts            — readSyncLog / writeSyncLog (файл .sync-log.json)
-  permissions.ts         — (ПЛАНИРУЕТСЯ) константы прав доступа
+      products/
+        route.ts         — GET все товары (include saleUnit, variants)
+        [id]/route.ts    — PATCH/DELETE товара
+      delivery-rates/
+        route.ts         — GET все тарифы / POST создать / DELETE ?id=...
+        [id]/route.ts    — PATCH обновить тариф (ADMIN only)
+      analytics/
+        route.ts         — (планируется)
+
 components/
   admin/
-    admin-nav.tsx        — Навигация: Дашборд, Заказы, Доставка, Товары, ...
-    admin-shell.tsx      — Обёртка с sidebar
-    order-edit-panel.tsx — Редактирование заказа + позиции + стоимость доставки
+    order-edit-panel.tsx — Редактирование заказа:
+                           поля клиента, items (add/remove), deliveryCost
+                           saleUnit logic: авто-выбор единиц по product.saleUnit
+    admin-nav.tsx        — Навигация (роли: ADMIN, MANAGER, COURIER, ACCOUNTANT, WAREHOUSE, SELLER)
     order-status-select.tsx
-prisma/
-  schema.prisma          — Схема БД
-public/
-  fonts/                 — Roboto-Regular.woff, Roboto-Bold.woff (WOFF, не TTF!)
+
+lib/
+  invoice-pdf.tsx        — PDF счёт (@react-pdf/renderer, WOFF шрифты)
+                           включает строку Доставка если deliveryCost > 0
+  mail.ts                — Email уведомления клиенту (с PDF attachment)
+                           isUpdate: true → "Заказ обновлён" + "✏️ Обновлён" бейдж
+                           показывает deliveryCost как отдельную строку
+  telegram.ts            — sendTelegramOrderNotification + sendTelegramOrderEdited
+                           + sendTelegramStatusUpdate
+  email.ts               — Email смена статуса клиенту
+  push.ts                — Web Push (sendPushToStaff, sendPushToUser)
+  prisma.ts              — Prisma client
+  auth.ts                — NextAuth
+
+prisma/schema.prisma     — Схема БД
+public/fonts/            — Roboto-Regular.woff + Roboto-Bold.woff (для PDF)
 ```
 
-## Схема БД (ключевые поля)
+---
+
+## Схема БД — ключевые модели
 
 ### Order
 ```prisma
 model Order {
   id              String      @id @default(cuid())
   orderNumber     Int         @default(autoincrement())
-  userId          String?
+  status          String      @default("NEW")
   guestName       String?
-  guestEmail      String?
   guestPhone      String?
-  status          OrderStatus @default(NEW)
-  totalAmount     Decimal     @db.Decimal(10, 2)
-  deliveryCost    Decimal     @default(0) @db.Decimal(10, 2)  // ← добавлено
-  paymentMethod   String
+  guestEmail      String?
   deliveryAddress String?
+  paymentMethod   String      @default("Наличные")
   comment         String?
-  items           OrderItem[]
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  deliveryCost    Decimal     @default(0) @db.Decimal(10, 2)  // ← отдельное поле!
+  deletedAt       DateTime?   // ← soft delete
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
-  deletedAt       DateTime?   // ← soft delete
+  items           OrderItem[]
+  userId          String?
+  user            User?
 }
 ```
 
-### Product
+### DeliveryRate
 ```prisma
-model Product {
-  saleUnit    SaleUnit    @default(BOTH)  // CUBE | PIECE | BOTH
-  variants    ProductVariant[]
+model DeliveryRate {
+  id          String @id @default(cuid())
+  vehicleName String   // "Газель 3т"
+  payload     String   // "до 3т"
+  maxVolume   Float    // 10.0
+  basePrice   Int      // 5000
+  sortOrder   Int      @default(0)
 }
-model ProductVariant {
-  pricePerCube  Decimal?
-  pricePerPiece Decimal?
-}
 ```
 
-### User
-```prisma
-model User {
-  role        Role        // ADMIN | MANAGER | COURIER | ACCOUNTANT | WAREHOUSE | SELLER
-  staffStatus StaffStatus // PENDING | ACTIVE | SUSPENDED
-}
-// permissions String[] — ПЛАНИРУЕТСЯ (задача не реализована)
-```
+---
 
-## Реализованный функционал
+## Ключевые правила
 
-### Заказы
-- ✅ Список с поиском/фильтром/bulk-delete/CSV экспорт
-- ✅ Редактирование заказа (клиент, позиции, доставка)
-- ✅ Создание заказа по телефону (`/admin/orders/new`)
-  - Поиск товара с автодополнением
-  - Автовыбор единиц (м³/шт) по `saleUnit`
-  - Стоимость доставки как отдельное поле
-- ✅ Мягкое удаление (корзина `/admin/orders/trash`)
-  - Восстановление заказа
-  - Удаление навсегда (`?permanent=true`)
-- ✅ PDF счёт: скачивание из карточки заказа, строка "Доставка" если > 0
-- ✅ PDF к email при создании заказа (если указан email)
+### Soft Delete
+- Все запросы к заказам: `where: { deletedAt: null }`
+- Удаление: `update({ data: { deletedAt: new Date() } })` (мягкое)
+- Жёсткое: только `DELETE ?permanent=true` или `clear-trash`
+- Восстановление: `PUT /api/admin/orders/[id]` → `update({ data: { deletedAt: null } })`
 
-### Уведомления
-- ✅ Telegram: новый заказ, смена статуса, изменение деталей заказа
-- ✅ Email клиенту: подтверждение заказа (мобильный дизайн)
-- ✅ Email клиенту: смена статуса (мобильный дизайн)
-- ✅ Push-уведомления сотрудникам
+### deliveryCost
+- Хранится ОТДЕЛЬНО от totalAmount в БД
+- В UI (order-edit-panel): totalAmount = сумма позиций + deliveryCost
+- При создании заказа (POST): передавать в Telegram, PDF, Email
+- При редактировании (PATCH): то же самое
+- В PDF: отдельная строка "Доставка X ₽" синим цветом
+- В email: отдельная строка в таблице
 
-### Товары
-- ✅ Список с поиском + фильтр по категории
-- ✅ CRUD товаров и вариантов
+### saleUnit на Product
+- CUBE → только м³
+- PIECE → только шт
+- BOTH → оба варианта (фильтрация по pricePerCube/pricePerPiece)
+- Реализовано в: `orders/new/page.tsx` и `order-edit-panel.tsx`
 
-### Доставка (`/admin/delivery`)
-- ✅ Активные заказы (CONFIRMED → READY_PICKUP)
-- ✅ Карточки: имя, телефон (кликабельный), адрес, состав, стоимость доставки
-- ✅ Смена статуса прямо из карточки
-- ✅ Видно ADMIN, MANAGER, COURIER
+### Тарифы доставки (DeliveryRate)
+- Данные в production-БД ПУСТЫЕ — нужно добавить через UI `/admin/delivery/rates`
+- Администратор нажимает "+ Добавить" → заполняет форму в таблице
+- Калькулятор: вводит объём м³ → показывает подходящие машины sorted по цене
 
-### Настройки
-- ✅ Синхронизация Google Sheets (таблица: `19rN2YNzrn6IHOXnyzDB_JHUGSC-KLxfRHqwfhD3_lmg`, раз в 6 ч)
-- ✅ Статус последней синхронизации (время, кол-во, ошибки)
-- ✅ Тест Telegram подключения
+### Дропдауны
+- Всегда использовать CSS-переменные темы: `bg-popover border-border text-foreground`
+- НЕ использовать хардкодные цвета типа `#1a1510`, `rgba(255,255,255,0.07)`, `text-white`
 
-## Важные нюансы
+---
 
-### PDF шрифты
-- **WOFF файлы** в `public/fonts/` (не TTF — git ломает TTF через LF→CRLF)
-- `.gitattributes` содержит `*.woff binary` и `*.ttf binary`
-- Все суммы в PDF: `руб.` (не `₽` — символ не входит в шрифт)
+## Роли пользователей
 
-### Единицы измерения
-- `Product.saleUnit`: CUBE / PIECE / BOTH
-- В форме заказа по телефону и в `OrderEditPanel`: автовыбор + скрытие недоступных единиц
-- API `/api/admin/products` возвращает `saleUnit` автоматически (поле на модели)
+| Роль | Доступ |
+|------|--------|
+| ADMIN | Всё, включая trash, тарифы, очистить корзину |
+| MANAGER | Заказы, доставка, товары |
+| COURIER | Заказы (просмотр), доставка |
+| ACCOUNTANT | Заказы (просмотр) |
+| WAREHOUSE | Заказы, товары |
+| SELLER | Заказы |
 
-### Мягкое удаление
-- `Order.deletedAt`: если `null` — активный, если дата — в корзине
-- Все запросы добавляют `where: { deletedAt: null }`
-- DELETE `/api/admin/orders/[id]` → soft delete
-- DELETE `/api/admin/orders/[id]?permanent=true` → удалить навсегда
-- PUT `/api/admin/orders/[id]` → восстановить
+---
 
-### Навигация (admin-nav.tsx)
-```
-Дашборд    — все роли
-Заказы     — все роли
-Доставка   — ADMIN, MANAGER, COURIER
-Товары     — ADMIN, MANAGER, WAREHOUSE, SELLER
-Категории  — ADMIN
-Акции      — ADMIN, MANAGER
-Отзывы     — ADMIN, MANAGER
-Сайт       — ADMIN
-Настройки  — ADMIN
-Команда    — ADMIN
-Уведомления — ADMIN
-Помощь     — все роли
-```
+## Статусы заказов
 
-## Задачи в плане (НЕ реализованы)
+| Статус | Описание |
+|--------|----------|
+| NEW | Новый (только что создан) |
+| CONFIRMED | Подтверждён менеджером |
+| PROCESSING | В обработке/комплектации |
+| SHIPPED | Отгружен |
+| IN_DELIVERY | Доставляется |
+| READY_PICKUP | Готов к самовывозу |
+| DELIVERED | Доставлен ✓ |
+| CANCELLED | Отменён |
 
-### 1. Права сотрудников (средне, ~60 мин)
-- Добавить `permissions String[]` в модель User
-- Создать `lib/permissions.ts` с константами прав
-- UI в `/admin/staff/` — чекбоксы прав для каждого сотрудника
-- PATCH `/api/admin/staff/[id]` принимает `permissions`
-- `app/admin/layout.tsx` — скрывать меню по правам
-- Включить `permissions` в сессию через `lib/auth.ts`
+Страница доставки показывает: CONFIRMED, PROCESSING, SHIPPED, IN_DELIVERY (активные), READY_PICKUP (самовывоз отдельно), DELIVERED + CANCELLED (архив).
 
-### 2. Аналитика — фильтр по дате
-- Конвертировать `app/admin/page.tsx` в клиентский компонент
-- API `GET /api/admin/analytics?from=...&to=...`
-- Пресеты: Сегодня, 7 дней, 30 дней, Этот месяц
+---
 
-### 3. Экспорт Excel/PDF отчётов
-- Установить `xlsx` (SheetJS): `npm install xlsx`
-- API `GET /api/admin/analytics/export?format=excel&from=...&to=...`
-- API `GET /api/admin/analytics/export?format=pdf`
-- Шаблон отчёта в `lib/report-pdf.tsx`
+## Известные состояния production
 
-### 4. Активность сотрудников (обсуждалось)
-- Лог действий: кто создал/изменил заказ, сменил статус
-- Таблица `ActivityLog` в схеме
-- Отображение в `/admin/staff/` или отдельный раздел
+- **Тарифы доставки**: таблица DeliveryRate в production-БД ПУСТАЯ — нужно добавить через `/admin/delivery/rates` вручную
+- **Шрифты PDF**: Roboto-Regular.woff и Roboto-Bold.woff в `public/fonts/` (WOFF формат, НЕ TTF)
+- **Env vars на сервере**: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, SMTP_*, VAPID_*, DATABASE_URL
 
-## Переменные окружения (`.env`)
-```
-DATABASE_URL=postgresql://...
-TELEGRAM_BOT_TOKEN=...
-TELEGRAM_CHAT_ID=...
-NEXTAUTH_URL=https://pilo-rus.ru
-NEXTAUTH_SECRET=...
-EMAIL_HOST=...
-EMAIL_USER=...
-EMAIL_PASS=...
-GOOGLE_SHEETS_ID=19rN2YNzrn6IHOXnyzDB_JHUGSC-KLxfRHqwfhD3_lmg
-CRON_SECRET=...
-```
+---
+
+## Что сделано (текущее состояние системы)
+
+### ✅ Полностью работает
+- Каталог товаров + категории + варианты + цены
+- Заказы: список, фильтрация, поиск, CSV экспорт
+- Заказы: редактирование всех полей (клиент, товары, доставка, оплата)
+- Заказы по телефону: создание с поиском товара, saleUnit, калькулятором доставки
+- Мягкое удаление + Корзина + Восстановление + Очистить корзину
+- PDF счёт: генерация + скачивание + отправка на email при создании/обновлении
+- Email уведомления: новый заказ, смена статуса, обновление заказа
+- Telegram уведомления: новый заказ, смена статуса, редактирование
+- Push-уведомления сотрудникам
+- Страница доставки: активные + самовывоз + архив + PDF кнопка + статус смена
+- Калькулятор тарифов: объём → машина + CRUD тарифов
+- Дашборд: статистика (без удалённых заказов), статусы, выручка
+- Отзывы: модерация
+- Акции: управление
+- Настройки: Google Sheets синхронизация, тест Telegram
+
+### ❌ Не реализовано (план на следующую сессию)
+
+**1. Аналитика с фильтром дат (приоритет: высокий)**
+- Дашборд сейчас серверный, без выбора периода
+- Нужно: клиентский компонент с DatePicker (от/до)
+- Кнопки быстрого выбора: Сегодня / 7 дней / 30 дней / Этот месяц
+- API: `GET /api/admin/analytics?from=...&to=...` → { revenue, orders, avgOrder, byDay[], topProducts[] }
+- Экспорт Excel (.xlsx через SheetJS) — `npm install xlsx`
+- Экспорт PDF отчёта (через @react-pdf/renderer)
+
+**2. Права сотрудников (приоритет: средний)**
+- Сейчас: все сотрудники одного доступа, только по роли
+- Нужно: гибкие права через `permissions String[]` на User модели
+- Константы: orders.view, orders.edit, products.view, analytics.view и т.д.
+- UI в `/admin/staff`: чекбоксы прав для каждого сотрудника
+- Скрывать пункты меню по правам
+- Миграция: `prisma db push` после добавления поля
+
+**3. Активность сотрудников (приоритет: низкий)**
+- Лог действий: кто что сделал и когда
+- Новая модель `ActivityLog` в Prisma
+- Показывать на странице /admin/staff/[id]
+
+---
+
+## Частые проблемы и решения
+
+| Проблема | Причина | Решение |
+|----------|---------|---------|
+| Production "Application error" | Схема Prisma не синхронизирована | `prisma db push` в build script ✅ уже добавлено |
+| PDF ошибка 500 | Шрифты TTF сломаны git'ом | Использовать WOFF формат |
+| Дропдаун тёмный фон в светлой теме | Хардкодные цвета | Использовать `bg-popover border-border` |
+| Тарифы пустые в production | Seed только локально | Добавить через UI `/admin/delivery/rates` |
+| Bulk delete навсегда удалял | `deleteMany` вместо `updateMany` | ✅ исправлено |
