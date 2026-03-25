@@ -11,13 +11,13 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 
-// Roboto с кириллицей — локальные файлы из public/fonts/
+// Roboto с кириллицей — локальные WOFF файлы из public/fonts/
 const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
 Font.register({
   family: "Roboto",
   fonts: [
-    { src: path.join(FONTS_DIR, "Roboto-Regular.ttf"), fontWeight: 400 },
-    { src: path.join(FONTS_DIR, "Roboto-Bold.ttf"), fontWeight: 700 },
+    { src: path.join(FONTS_DIR, "Roboto-Regular.woff"), fontWeight: 400 },
+    { src: path.join(FONTS_DIR, "Roboto-Bold.woff"), fontWeight: 700 },
   ],
 });
 

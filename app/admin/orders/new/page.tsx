@@ -221,7 +221,7 @@ export default function NewPhoneOrderPage() {
                     className="w-full pl-8 pr-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                   {showProductDropdown && filteredProducts.length > 0 && (
-                    <div className="absolute z-50 top-full mt-1 left-0 right-0 border border-border rounded-xl shadow-xl max-h-52 overflow-y-auto" style={{background:"var(--card, #1e1a16)"}}>
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 rounded-xl shadow-2xl max-h-52 overflow-y-auto" style={{backgroundColor:"#1a1510", border:"1px solid rgba(255,255,255,0.12)"}}>
                       {filteredProducts.slice(0, 20).map((p) => (
                         <button
                           key={p.id}
@@ -232,7 +232,10 @@ export default function NewPhoneOrderPage() {
                             setProductSearch(p.name);
                             setShowProductDropdown(false);
                           }}
-                          className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary/15 transition-colors ${selectedProductId === p.id ? "bg-primary/20 font-semibold text-primary" : "text-foreground"}`}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${selectedProductId === p.id ? "font-semibold text-primary" : "text-white"}`}
+                          style={{backgroundColor: selectedProductId === p.id ? "rgba(232,112,10,0.2)" : "transparent"}}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = selectedProductId === p.id ? "rgba(232,112,10,0.25)" : "rgba(255,255,255,0.07)")}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = selectedProductId === p.id ? "rgba(232,112,10,0.2)" : "transparent")}
                         >
                           {p.name}
                         </button>
