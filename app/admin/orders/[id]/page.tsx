@@ -51,6 +51,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             totalAmount: Number(order.totalAmount),
             items: order.items.map((item) => ({
               id: item.id,
+              variantId: item.variantId || "",
               productName: item.productName,
               variantSize: item.variantSize,
               unitType: item.unitType,

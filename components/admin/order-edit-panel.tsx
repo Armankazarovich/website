@@ -144,24 +144,39 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
     setDeliveryCost(0);
   };
 
+  const [pdfError, setPdfError] = useState("");
+
   const handleDownloadPdf = async () => {
     setDownloading(true);
+    setPdfError("");
     try {
       const res = await fetch(`/api/admin/orders/${order.id}/pdf`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setPdfError(data.error || `Ошибка ${res.status}`);
+        return;
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `schet-${order.id.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err: any) {
+      setPdfError(err.message || "Ошибка загрузки PDF");
     } finally {
       setDownloading(false);
     }
   };
 
   return (
+    <div className="flex flex-col gap-1.5">
+      {pdfError && (
+        <p className="text-xs text-destructive">{pdfError}</p>
+      )}
     <div className="flex gap-2 flex-wrap">
       <button
         onClick={handleDownloadPdf}
@@ -397,6 +412,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
