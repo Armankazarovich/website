@@ -103,58 +103,111 @@ export async function sendCustomerOrderConfirmation(
       const unit = item.unitType === "CUBE" ? "м³" : "шт";
       const total = (item.price * item.quantity).toLocaleString("ru-RU");
       return `<tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#333;">${item.productName} ${item.variantSize}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#666;text-align:center;">${item.quantity} ${unit}</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:14px;color:#333;text-align:right;font-weight:600;">${total} ₽</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0ede8;">
+          <p style="margin:0;font-size:14px;color:#1a1a1a;font-weight:600;line-height:1.3;">${item.productName}</p>
+          <p style="margin:3px 0 0;font-size:12px;color:#999;">${item.variantSize} · ${item.quantity} ${unit}</p>
+        </td>
+        <td style="padding:12px 16px;border-bottom:1px solid #f0ede8;text-align:right;white-space:nowrap;">
+          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;">${total} ₽</p>
+        </td>
       </tr>`;
     })
     .join("");
 
   const html = `<!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 20px;">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .email-wrap { padding: 12px 8px !important; }
+      .email-card { border-radius: 12px !important; }
+      .email-header { padding: 22px 20px !important; }
+      .email-body { padding: 22px 16px !important; }
+      .email-footer { padding: 14px 16px !important; }
+      .order-badge { padding: 12px 14px !important; }
+      .order-num { font-size: 16px !important; }
+      .total-row td { padding: 12px 16px !important; font-size: 15px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f0ede8;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" class="email-wrap" style="background:#f0ede8;padding:28px 12px;">
     <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <table width="100%" cellpadding="0" cellspacing="0" class="email-card" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);">
+
+        <!-- Header -->
         <tr>
-          <td style="background:#5C3317;padding:28px 36px;">
-            <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">🪵 ПилоРус</h1>
-            <p style="margin:4px 0 0;color:rgba(255,255,255,0.6);font-size:13px;">Пиломатериалы от производителя</p>
+          <td class="email-header" style="background:linear-gradient(135deg,#5C3317 0%,#7a4520 100%);padding:26px 28px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td>
+                  <p style="margin:0;color:#ffffff;font-size:20px;font-weight:700;">🪵 ПилоРус</p>
+                  <p style="margin:4px 0 0;color:rgba(255,255,255,0.6);font-size:12px;">Пиломатериалы от производителя</p>
+                </td>
+                <td align="right">
+                  <p style="margin:0;background:rgba(255,255,255,0.15);color:#ffffff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;">✅ Принят</p>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
+
+        <!-- Body -->
         <tr>
-          <td style="padding:36px;">
-            <p style="margin:0 0 6px;color:#555;font-size:15px;">Здравствуйте, ${order.customerName}!</p>
-            <h2 style="margin:0 0 20px;font-size:20px;color:#1a1a1a;">Ваш заказ принят ✅</h2>
-            <div style="background:#E8700A15;border-left:4px solid #E8700A;padding:14px 18px;border-radius:0 10px 10px 0;margin-bottom:24px;">
-              <p style="margin:0;font-size:16px;font-weight:700;color:#E8700A;">Заказ #${order.orderNumber}</p>
-              <p style="margin:4px 0 0;color:#666;font-size:13px;">Менеджер свяжется с вами в ближайшее время</p>
+          <td class="email-body" style="padding:26px 28px;">
+
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.5;">
+              Здравствуйте, <strong style="color:#1a1a1a;">${order.customerName}</strong>!<br>
+              Ваш заказ успешно оформлен.
+            </p>
+
+            <!-- Order badge -->
+            <div class="order-badge" style="background:#fff8f0;border:1.5px solid #E8700A30;border-left:4px solid #E8700A;padding:14px 18px;border-radius:0 10px 10px 0;margin-bottom:24px;">
+              <p class="order-num" style="margin:0 0 3px;font-size:18px;font-weight:700;color:#E8700A;">Заказ #${order.orderNumber}</p>
+              <p style="margin:0;color:#888;font-size:13px;">Менеджер свяжется с вами в ближайшее время</p>
             </div>
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #f0f0f0;border-radius:10px;overflow:hidden;margin-bottom:20px;">
+
+            <!-- Items table -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1.5px solid #f0ede8;border-radius:10px;overflow:hidden;margin-bottom:0;">
               <thead>
-                <tr style="background:#f9f9f9;">
-                  <th style="padding:10px 12px;text-align:left;font-size:12px;color:#999;font-weight:600;text-transform:uppercase;">Товар</th>
-                  <th style="padding:10px 12px;text-align:center;font-size:12px;color:#999;font-weight:600;text-transform:uppercase;">Кол-во</th>
-                  <th style="padding:10px 12px;text-align:right;font-size:12px;color:#999;font-weight:600;text-transform:uppercase;">Сумма</th>
+                <tr style="background:#f9f6f2;">
+                  <th style="padding:10px 16px;text-align:left;font-size:11px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Товар</th>
+                  <th style="padding:10px 16px;text-align:right;font-size:11px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Сумма</th>
                 </tr>
               </thead>
               <tbody>${itemsHtml}</tbody>
+              <tfoot>
+                <tr class="total-row" style="background:#f9f6f2;border-top:2px solid #E8700A30;">
+                  <td style="padding:14px 16px;font-size:14px;color:#777;">Способ оплаты: <strong style="color:#333;">${order.paymentMethod}</strong></td>
+                  <td style="padding:14px 16px;text-align:right;font-size:17px;font-weight:700;color:#E8700A;white-space:nowrap;">${order.totalAmount.toLocaleString("ru-RU")} ₽</td>
+                </tr>
+              </tfoot>
             </table>
-            <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#1a1a1a;text-align:right;">
-              Итого: ${order.totalAmount.toLocaleString("ru-RU")} ₽
+
+            ${order.deliveryAddress ? `
+            <div style="margin-top:16px;padding:12px 16px;background:#f5f9ff;border-radius:10px;font-size:14px;color:#555;">
+              📍 <strong>Адрес доставки:</strong> ${order.deliveryAddress}
+            </div>` : ""}
+
+            <hr style="border:none;border-top:1px solid #f0ede8;margin:24px 0 18px;">
+
+            <p style="margin:0;color:#999;font-size:13px;line-height:1.8;">
+              Вопросы? Звоните:<br>
+              <a href="tel:+79859707133" style="color:#E8700A;font-weight:700;font-size:16px;text-decoration:none;">8-985-970-71-33</a><br>
+              <span style="font-size:12px;">Пн–Сб 9:00–18:00 МСК</span>
             </p>
-            <p style="margin:0 0 24px;font-size:13px;color:#999;text-align:right;">Оплата: ${order.paymentMethod}</p>
-            ${order.deliveryAddress ? `<p style="margin:0 0 24px;font-size:14px;color:#555;">📍 Адрес доставки: ${order.deliveryAddress}</p>` : ""}
-            <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-            <p style="margin:0;color:#999;font-size:13px;">Вопросы? Звоните: <a href="tel:+79859707133" style="color:#E8700A;font-weight:600;">8-985-970-71-33</a></p>
           </td>
         </tr>
+
+        <!-- Footer -->
         <tr>
-          <td style="background:#f9f9f9;padding:20px 36px;border-top:1px solid #eee;">
-            <p style="margin:0;color:#aaa;font-size:12px;">© 2026 ПилоРус · Химки, ул. Заводская 2А, стр.28</p>
+          <td class="email-footer" style="background:#f9f6f2;padding:16px 28px;border-top:1px solid #ede8e0;">
+            <p style="margin:0;color:#bbb;font-size:12px;">© 2026 ПилоРус · Химки, ул. Заводская 2А, стр.28 · pilo-rus.ru</p>
           </td>
         </tr>
+
       </table>
     </td></tr>
   </table>

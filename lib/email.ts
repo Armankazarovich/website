@@ -102,48 +102,74 @@ export async function sendOrderStatusEmail(email: string, data: {
     from: `"ПилоРус" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `Заказ #${data.orderNumber} — ${data.statusLabel} | ПилоРус`,
-    html: `
-      <!DOCTYPE html>
-      <html lang="ru">
-      <head><meta charset="UTF-8"></head>
-      <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:40px 20px;">
-          <tr><td align="center">
-            <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    html: `<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @media only screen and (max-width: 600px) {
+      .email-wrap { padding: 16px 12px !important; }
+      .email-card { border-radius: 12px !important; }
+      .email-header { padding: 22px 20px !important; }
+      .email-body { padding: 24px 20px !important; }
+      .email-footer { padding: 16px 20px !important; }
+      .email-btn { display: block !important; text-align: center !important; padding: 14px 20px !important; }
+      .status-block { padding: 14px 16px !important; }
+      h1 { font-size: 18px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f0ede8;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" class="email-wrap" style="background:#f0ede8;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" class="email-card" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.1);">
+        <!-- Header -->
+        <tr>
+          <td class="email-header" style="background:linear-gradient(135deg,#5C3317 0%,#7a4520 100%);padding:28px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
               <tr>
-                <td style="background:#5C3317;padding:28px 36px;">
-                  <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">🪵 ПилоРус</h1>
-                  <p style="margin:4px 0 0;color:rgba(255,255,255,0.6);font-size:13px;">Обновление статуса заказа</p>
+                <td>
+                  <p style="margin:0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.3px;">🪵 ПилоРус</p>
+                  <p style="margin:4px 0 0;color:rgba(255,255,255,0.65);font-size:12px;">Пиломатериалы от производителя</p>
                 </td>
-              </tr>
-              <tr>
-                <td style="padding:36px;">
-                  <p style="margin:0 0 8px;color:#555;font-size:15px;">Здравствуйте, ${data.customerName}!</p>
-                  <div style="background:${color}15;border-left:4px solid ${color};padding:16px 20px;border-radius:0 12px 12px 0;margin:20px 0;">
-                    <p style="margin:0;font-size:18px;font-weight:700;color:${color};">
-                      ${data.statusLabel}
-                    </p>
-                    <p style="margin:6px 0 0;color:#555;font-size:14px;">Заказ #${data.orderNumber}</p>
-                  </div>
-                  <p style="margin:0 0 24px;color:#555;font-size:15px;line-height:1.6;">${data.statusDescription}</p>
-                  <a href="${data.trackUrl}" style="display:inline-block;background:#E8700A;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:600;">
-                    Отследить заказ →
-                  </a>
-                  <hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
-                  <p style="margin:0;color:#999;font-size:13px;">Вопросы? Звоните: <a href="tel:+79859707133" style="color:#E8700A;">8-985-970-71-33</a></p>
-                </td>
-              </tr>
-              <tr>
-                <td style="background:#f9f9f9;padding:20px 36px;border-top:1px solid #eee;">
-                  <p style="margin:0;color:#aaa;font-size:12px;">© 2024 ПилоРус · Химки, ул. Заводская 2А</p>
+                <td align="right">
+                  <p style="margin:0;color:rgba(255,255,255,0.5);font-size:11px;">Статус заказа</p>
                 </td>
               </tr>
             </table>
-          </td></tr>
-        </table>
-      </body>
-      </html>
-    `,
+          </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+          <td class="email-body" style="padding:28px 32px;">
+            <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.5;">Здравствуйте, <strong>${data.customerName}</strong>!</p>
+            <div class="status-block" style="background:${color}12;border-left:4px solid ${color};padding:16px 20px;border-radius:0 10px 10px 0;margin-bottom:20px;">
+              <p style="margin:0 0 4px;font-size:19px;font-weight:700;color:${color};">${data.statusLabel}</p>
+              <p style="margin:0;color:#777;font-size:13px;">Заказ <strong style="color:#333;">#${data.orderNumber}</strong></p>
+            </div>
+            <p style="margin:0 0 28px;color:#555;font-size:15px;line-height:1.65;">${data.statusDescription}</p>
+            <a href="${data.trackUrl}" class="email-btn" style="display:inline-block;background:#E8700A;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:700;letter-spacing:0.2px;">
+              Отследить заказ →
+            </a>
+            <hr style="border:none;border-top:1px solid #eee;margin:28px 0 20px;">
+            <p style="margin:0;color:#999;font-size:13px;line-height:1.6;">
+              Вопросы? Звоните: <a href="tel:+79859707133" style="color:#E8700A;font-weight:600;text-decoration:none;">8-985-970-71-33</a><br>
+              <span style="font-size:12px;">Пн–Сб 9:00–18:00 МСК</span>
+            </p>
+          </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+          <td class="email-footer" style="background:#f9f6f2;padding:18px 32px;border-top:1px solid #ede8e0;">
+            <p style="margin:0;color:#bbb;font-size:12px;">© 2026 ПилоРус · Химки, ул. Заводская 2А, стр.28</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
   };
 
   try {
