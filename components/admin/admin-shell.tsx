@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X, LogOut } from "lucide-react";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 
 interface AdminShellProps {
   role: string;
@@ -25,7 +26,8 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
           <p className="text-xs text-white/50 mt-0.5">Панель управления</p>
         </div>
         <AdminNav role={role} />
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-white/10 space-y-1">
+          <AdminPwaInstall />
           <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
           <Link
             href="/"
@@ -79,7 +81,8 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
           </button>
         </div>
         <AdminNav role={role} onNavigate={() => setOpen(false)} />
-        <div className="p-3 border-t border-white/10">
+        <div className="p-3 border-t border-white/10 space-y-1">
+          <AdminPwaInstall />
           <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
           <Link
             href="/"
