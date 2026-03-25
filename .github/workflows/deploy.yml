@@ -36,9 +36,13 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 10m
           script: |
+            set -eo pipefail
             cd /home/armankmb/pilo-rus/app
+            echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
-            npm run build 2>&1 | tail -20
+            echo "🔨 Building..."
+            npm run build
+            echo "🚀 Restarting pm2..."
             pm2 restart pilo-rus --update-env
             pm2 save
             echo "✅ Deployed at $(date)"

@@ -91,17 +91,35 @@ export function PushSubscription() {
 // Экспортируем функцию для вызова из PWA-баннера при явном запросе
 export async function requestPushPermission(): Promise<boolean> {
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
-  if (!vapidKey) return false;
+  if (!vapidKey) { console.error("[Push] NEXT_PUBLIC_VAPID_KEY not set"); return false; }
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return false;
 
-  const reg = await navigator.serviceWorker.ready;
-  const sub = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidKey),
-  });
-  await saveSub(sub);
-  return true;
+  // Wait for SW with a 15s timeout to avoid hanging forever
+  let reg: ServiceWorkerRegistration;
+  try {
+    reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("SW not ready after 15s")), 15000)
+      ),
+    ]);
+  } catch (err) {
+    console.error("[Push] Service worker not ready:", err);
+    return false;
+  }
+
+  try {
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
+    });
+    await saveSub(sub);
+    return true;
+  } catch (err) {
+    console.error("[Push] pushManager.subscribe error:", err);
+    return false;
+  }
 }
