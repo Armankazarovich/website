@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, CheckCircle, AlertCircle, Loader2, Clock, BarChart2, AlertTriangle, Zap } from "lucide-react";
+import { RefreshCw, CheckCircle, AlertCircle, Loader2, Clock, BarChart2, AlertTriangle, Zap, Send } from "lucide-react";
 
 type SyncLog = {
   syncedAt: string;
@@ -41,6 +41,8 @@ export default function AdminSettingsPage() {
   const [syncError, setSyncError] = useState("");
   const [lastSync, setLastSync] = useState<SyncLog | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [testingTg, setTestingTg] = useState(false);
+  const [tgResult, setTgResult] = useState<{ ok: boolean; error?: string; chatId?: string; tokenPrefix?: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/sync/status")
@@ -171,6 +173,58 @@ export default function AdminSettingsPage() {
           <div className="flex items-center gap-2 text-sm text-destructive">
             <AlertCircle className="w-4 h-4" />
             {syncError}
+          </div>
+        )}
+      </div>
+
+      {/* Telegram */}
+      <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <Send className="w-5 h-5 text-primary" />
+          <h2 className="font-display font-semibold text-lg">Telegram уведомления</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Новые заказы и смена статусов отправляются в группу Telegram. Нажмите кнопку чтобы проверить подключение.
+        </p>
+
+        <Button
+          variant="outline"
+          onClick={async () => {
+            setTestingTg(true);
+            setTgResult(null);
+            try {
+              const res = await fetch("/api/admin/test-telegram", { method: "POST" });
+              const data = await res.json();
+              setTgResult(data);
+            } catch (e: any) {
+              setTgResult({ ok: false, error: e.message });
+            } finally {
+              setTestingTg(false);
+            }
+          }}
+          disabled={testingTg}
+        >
+          {testingTg ? (
+            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Проверяю...</>
+          ) : (
+            <><Send className="w-4 h-4 mr-2" /> Отправить тест в Telegram</>
+          )}
+        </Button>
+
+        {tgResult && (
+          <div className={`flex flex-col gap-1 text-sm rounded-xl px-4 py-3 ${tgResult.ok ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-destructive/10 text-destructive"}`}>
+            {tgResult.ok ? (
+              <>
+                <div className="flex items-center gap-2 font-semibold"><CheckCircle className="w-4 h-4" /> Telegram работает!</div>
+                <p className="text-xs opacity-70">Chat ID: {tgResult.chatId} · Token: {tgResult.tokenPrefix}</p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 font-semibold"><AlertCircle className="w-4 h-4" /> Ошибка подключения</div>
+                <p className="text-xs">{tgResult.error}</p>
+                {tgResult.chatId && <p className="text-xs opacity-70">Chat ID: {tgResult.chatId} · Token: {tgResult.tokenPrefix}</p>}
+              </>
+            )}
           </div>
         )}
       </div>

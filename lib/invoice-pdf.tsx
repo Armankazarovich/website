@@ -178,8 +178,8 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
                   <Text style={styles.colName}>{item.productName}</Text>
                   <Text style={styles.colSize}>{item.variantSize}</Text>
                   <Text style={styles.colQty}>{qty} {unit}</Text>
-                  <Text style={styles.colPrice}>{price.toLocaleString("ru-RU")} ₽</Text>
-                  <Text style={styles.colTotal}>{(qty * price).toLocaleString("ru-RU")} ₽</Text>
+                  <Text style={styles.colPrice}>{price.toLocaleString("ru-RU")} руб.</Text>
+                  <Text style={styles.colTotal}>{(qty * price).toLocaleString("ru-RU")} руб.</Text>
                 </View>
               );
             })}
@@ -188,7 +188,7 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>ИТОГО:</Text>
             <Text style={styles.totalAmount}>
-              {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
+              {Number(order.totalAmount).toLocaleString("ru-RU")} руб.
             </Text>
           </View>
         </View>
