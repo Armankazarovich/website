@@ -52,11 +52,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const { status } = await req.json();
+  const body = await req.json();
+  const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod } = body;
+
+  const updateData: Record<string, any> = {};
+  if (status !== undefined) updateData.status = status;
+  if (guestName !== undefined) updateData.guestName = guestName || null;
+  if (guestPhone !== undefined) updateData.guestPhone = guestPhone || null;
+  if (guestEmail !== undefined) updateData.guestEmail = guestEmail || null;
+  if (deliveryAddress !== undefined) updateData.deliveryAddress = deliveryAddress || null;
+  if (comment !== undefined) updateData.comment = comment || null;
+  if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
 
   const order = await prisma.order.update({
     where: { id: params.id },
-    data: { status },
+    data: updateData,
   });
 
   // Push клиенту

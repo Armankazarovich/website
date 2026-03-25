@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendOrderNotification, sendCustomerOrderConfirmation } from "@/lib/mail";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { auth } from "@/lib/auth";
@@ -88,16 +89,33 @@ export async function POST(req: NextRequest) {
       items: orderItems,
     }).catch(console.error);
 
-    // Customer confirmation email
+    // Customer confirmation email + PDF
     if (order.guestEmail) {
-      sendCustomerOrderConfirmation(order.guestEmail, {
+      generateInvoicePdf({
         orderNumber: order.orderNumber,
-        customerName: order.guestName || "Клиент",
-        totalAmount: Number(order.totalAmount),
+        createdAt: order.createdAt,
+        guestName: order.guestName,
+        guestPhone: order.guestPhone,
+        guestEmail: order.guestEmail,
         deliveryAddress: order.deliveryAddress,
         paymentMethod: order.paymentMethod,
+        comment: order.comment,
+        totalAmount: Number(order.totalAmount),
         items: orderItems,
-      }).catch(console.error);
+      }).then((pdfBuffer) =>
+        sendCustomerOrderConfirmation(
+          order.guestEmail!,
+          {
+            orderNumber: order.orderNumber,
+            customerName: order.guestName || "Клиент",
+            totalAmount: Number(order.totalAmount),
+            deliveryAddress: order.deliveryAddress,
+            paymentMethod: order.paymentMethod,
+            items: orderItems,
+          },
+          pdfBuffer
+        )
+      ).catch(console.error);
     }
 
     // Push клиенту — подтверждение заказа

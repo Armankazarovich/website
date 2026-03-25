@@ -95,7 +95,8 @@ export async function sendCustomerOrderConfirmation(
     deliveryAddress?: string | null;
     paymentMethod: string;
     items: Array<{ productName: string; variantSize: string; unitType: string; quantity: number; price: number }>;
-  }
+  },
+  pdfBuffer?: Buffer
 ) {
   const itemsHtml = order.items
     .map((item) => {
@@ -166,6 +167,17 @@ export async function sendCustomerOrderConfirmation(
       to: email,
       subject: `Заказ #${order.orderNumber} принят — ПилоРус`,
       html,
+      ...(pdfBuffer
+        ? {
+            attachments: [
+              {
+                filename: `schet-${order.orderNumber}.pdf`,
+                content: pdfBuffer,
+                contentType: "application/pdf",
+              },
+            ],
+          }
+        : {}),
     });
   } catch (err) {
     console.error("Customer confirmation email error:", err);

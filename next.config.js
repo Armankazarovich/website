@@ -19,6 +19,7 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  serverExternalPackages: ['@react-pdf/renderer'],
   async redirects() {
     return [
       { source: '/contact', destination: '/contacts', permanent: true },

@@ -1,0 +1,99 @@
+export const dynamic = "force-dynamic";
+
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { sendCustomerOrderConfirmation } from "@/lib/mail";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { sendPushToStaff } from "@/lib/push";
+
+const STAFF_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+
+export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session || !STAFF_ROLES.includes((session.user as any).role)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  try {
+    const body = await req.json();
+    const { guestName, guestPhone, guestEmail, deliveryAddress, paymentMethod, comment, items, totalAmount } = body;
+
+    if (!guestName || !guestPhone || !items?.length) {
+      return NextResponse.json({ error: "Обязательные поля: имя, телефон, товары" }, { status: 400 });
+    }
+
+    const order = await prisma.order.create({
+      data: {
+        guestName,
+        guestPhone,
+        guestEmail: guestEmail || null,
+        deliveryAddress: deliveryAddress || null,
+        paymentMethod: paymentMethod || "Наличные",
+        comment: comment || null,
+        totalAmount,
+        items: {
+          create: items.map((item: any) => ({
+            variantId: item.variantId,
+            productName: item.productName,
+            variantSize: item.variantSize,
+            unitType: item.unitType,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    const orderItems = order.items.map((item) => ({
+      productName: item.productName,
+      variantSize: item.variantSize,
+      unitType: item.unitType,
+      quantity: Number(item.quantity),
+      price: Number(item.price),
+    }));
+
+    // Push сотрудникам
+    sendPushToStaff({
+      title: `📞 Заказ по телефону #${order.orderNumber}`,
+      body: `${order.guestName} — ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽`,
+      url: `/admin/orders/${order.id}`,
+      icon: "/icons/icon-192x192.png",
+    }).catch(console.error);
+
+    // Email клиенту + PDF (если email указан)
+    if (order.guestEmail) {
+      generateInvoicePdf({
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        guestName: order.guestName,
+        guestPhone: order.guestPhone,
+        guestEmail: order.guestEmail,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: order.paymentMethod,
+        comment: order.comment,
+        totalAmount: Number(order.totalAmount),
+        items: orderItems,
+      }).then((pdfBuffer) =>
+        sendCustomerOrderConfirmation(
+          order.guestEmail!,
+          {
+            orderNumber: order.orderNumber,
+            customerName: order.guestName || "Клиент",
+            totalAmount: Number(order.totalAmount),
+            deliveryAddress: order.deliveryAddress,
+            paymentMethod: order.paymentMethod,
+            items: orderItems,
+          },
+          pdfBuffer
+        )
+      ).catch(console.error);
+    }
+
+    return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });
+  } catch (err) {
+    console.error("Admin order creation error:", err);
+    return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
+  }
+}
