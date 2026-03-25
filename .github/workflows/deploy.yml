@@ -38,6 +38,8 @@ jobs:
           script: |
             set -eo pipefail
             cd /home/armankmb/pilo-rus/app
+            echo "🧹 Removing stale server-only files..."
+            rm -rf worker/
             echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
             echo "🔨 Building..."
