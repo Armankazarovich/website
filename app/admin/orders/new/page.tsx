@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Loader2, Phone, Search } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Loader2, Phone, Search, Calculator, ChevronDown } from "lucide-react";
 
 type Variant = {
   id: string;
@@ -48,6 +48,19 @@ export default function NewPhoneOrderPage() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [deliveryCost, setDeliveryCost] = useState(0);
   const [deliveryCostInput, setDeliveryCostInput] = useState("");
+
+  // Калькулятор доставки
+  const [deliveryRates, setDeliveryRates] = useState<Array<{ id: string; vehicleName: string; payload: string; maxVolume: number; basePrice: number }>>([]);
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [calcVolume, setCalcVolume] = useState("");
+  const [calcSuggestions, setCalcSuggestions] = useState<typeof deliveryRates>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/delivery-rates")
+      .then((r) => r.json())
+      .then((data) => setDeliveryRates(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   // Для добавления позиции
   const [productSearch, setProductSearch] = useState("");
@@ -388,8 +401,77 @@ export default function NewPhoneOrderPage() {
         )}
 
         {/* Стоимость доставки */}
-        <div className="bg-card border border-border rounded-2xl p-5">
-          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Доставка</h2>
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Доставка</h2>
+
+          {/* Калькулятор */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setCalcOpen((v) => !v)}
+              className="flex items-center gap-1.5 text-xs text-primary hover:opacity-80 transition-opacity"
+            >
+              <Calculator className="w-3.5 h-3.5" />
+              Калькулятор транспорта
+              <ChevronDown className={`w-3 h-3 transition-transform ${calcOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {calcOpen && (
+              <div className="mt-3 p-4 bg-muted/30 border border-border rounded-xl space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0.1}
+                    step={0.1}
+                    placeholder="Объём заказа (м³)"
+                    value={calcVolume}
+                    onChange={(e) => setCalcVolume(e.target.value)}
+                    className="px-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 w-44"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const vol = parseFloat(calcVolume);
+                      if (!vol) return;
+                      setCalcSuggestions(deliveryRates.filter((r) => r.maxVolume >= vol).sort((a, b) => a.basePrice - b.basePrice));
+                    }}
+                    className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    Подобрать
+                  </button>
+                </div>
+
+                {calcSuggestions.length > 0 && (
+                  <div className="space-y-1.5">
+                    {calcSuggestions.map((r, i) => (
+                      <div key={r.id} className={`flex items-center justify-between px-3 py-2 rounded-lg ${i === 0 ? "bg-primary/10 border border-primary/20" : "bg-background border border-border"}`}>
+                        <div>
+                          <span className="text-sm font-medium">{i === 0 ? "⭐ " : ""}{r.vehicleName}</span>
+                          <span className="text-xs text-muted-foreground ml-2">{r.payload} · до {r.maxVolume} м³</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeliveryCostInput(String(r.basePrice));
+                            setDeliveryCost(r.basePrice);
+                            setCalcOpen(false);
+                          }}
+                          className="text-xs px-2.5 py-1 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors ml-3 shrink-0"
+                        >
+                          {r.basePrice.toLocaleString("ru-RU")} ₽ →
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {calcVolume && calcSuggestions.length === 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">Объём превышает вместимость — нужно несколько рейсов</p>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-3">
             <input
               type="number"

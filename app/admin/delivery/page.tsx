@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Truck, Phone, MapPin, Package, ArrowRight } from "lucide-react";
+import { Truck, Phone, MapPin, Package, ArrowRight, Calculator } from "lucide-react";
 import { DeliveryStatusSelect } from "./delivery-status-select";
 
 const DELIVERY_STATUSES = ["CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP"];
@@ -51,6 +51,13 @@ export default async function DeliveryPage() {
           Доставка
         </h1>
         <div className="flex gap-3 text-sm">
+          <Link
+            href="/admin/delivery/rates"
+            className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-sm hover:bg-muted/50 transition-colors"
+          >
+            <Calculator className="w-4 h-4" />
+            Тарифы и калькулятор
+          </Link>
           <div className="px-4 py-2 bg-card border border-border rounded-xl">
             <span className="text-muted-foreground">Активных заказов:</span>{" "}
             <strong>{orders.length}</strong>
