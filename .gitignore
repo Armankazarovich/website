@@ -41,7 +41,6 @@ next-env.d.ts
 !/public/uploads/.gitkeep
 
 # next-pwa generated files (regenerated on every build, must not be committed)
-/public/sw.js
 /public/sw.js.map
 /public/workbox-*.js
 /public/workbox-*.js.map

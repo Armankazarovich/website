@@ -80,9 +80,9 @@ export default function NotificationsPage() {
     setSubscribing(true);
     setSubscribeResult(null);
     try {
-      await requestPushPermission();
-      setSubscribeResult("ok");
-      setTimeout(() => checkDebug(), 1500);
+      const ok = await requestPushPermission();
+      setSubscribeResult(ok ? "ok" : "err");
+      if (ok) setTimeout(() => checkDebug(), 1500);
     } catch {
       setSubscribeResult("err");
     } finally {
