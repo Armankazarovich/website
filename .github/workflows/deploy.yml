@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: production-deploy
@@ -16,66 +17,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy files to server
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (on GitHub — no RAM issues)
+        env:
+          NEXT_PUBLIC_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_KEY }}
+          NEXTAUTH_URL: https://pilo-rus.ru
+          AUTH_URL: https://pilo-rus.ru
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          AUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run build
+
+      - name: Copy build to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
+          source: ".next/,public/"
           target: "/home/armankmb/pilo-rus/app/"
           overwrite: true
 
-      - name: Setup env and create deploy trigger
+      - name: Restart PM2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            ENV_FILE=/home/armankmb/pilo-rus/app/.env
-
-            update_env() {
-              local key=$1
-              local value=$2
-              if grep -q "^${key}=" "$ENV_FILE" 2>/dev/null; then
-                sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
-              else
-                echo "${key}=${value}" >> "$ENV_FILE"
-              fi
-            }
-
-            # Create .env if it doesn't exist
-            if [ ! -f "$ENV_FILE" ]; then
-              touch "$ENV_FILE"
-              echo "📄 Created new .env file"
-            fi
-
-            # Update SMTP and basic settings
-            update_env "SMTP_HOST" "smtp.beget.com"
-            update_env "SMTP_PORT" "465"
-            update_env "SMTP_USER" "info@pilo-rus.ru"
-            update_env "SMTP_PASSWORD" "${{ secrets.SMTP_PASSWORD }}"
-            update_env "ADMIN_EMAIL" "info@pilo-rus.ru"
-            update_env "NEXTAUTH_URL" "https://pilo-rus.ru"
-            update_env "AUTH_URL" "https://pilo-rus.ru"
-            update_env "NEXTAUTH_SECRET" "${{ secrets.NEXTAUTH_SECRET }}"
-            update_env "AUTH_SECRET" "${{ secrets.NEXTAUTH_SECRET }}"
-            echo "✅ .env updated with SMTP and auth settings"
-
-            # Create deploy trigger for CronTab
-            touch /home/armankmb/pilo-rus/.deploy-trigger
-            echo "✅ Deploy trigger created at $(date)"
-
-            # Remove orphaned files not tracked by SCP (deleted from git but still on server)
-            rm -rf "/home/armankmb/pilo-rus/app/app/(store)/cabinet"
-            echo "✅ Cleaned orphaned files"
-
-            # Build and restart
             cd /home/armankmb/pilo-rus/app
-            echo "🔨 Building..."
-            npm run build 2>&1
-            echo "🔄 Restarting PM2..."
+            git pull origin main --quiet
             pm2 restart pilo-rus --update-env
             pm2 save
-            echo "✅ Done at $(date)"
+            echo "✅ Deployed at $(date)"

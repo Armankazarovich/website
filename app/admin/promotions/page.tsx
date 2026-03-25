@@ -27,8 +27,11 @@ function PromotionCard({
   const [title, setTitle] = useState(promo.title);
   const [description, setDescription] = useState(promo.description);
   const [discount, setDiscount] = useState(promo.discount ? String(promo.discount) : "");
+  const [validUntil, setValidUntil] = useState(promo.validUntil ? promo.validUntil.slice(0, 10) : "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const isExpired = promo.validUntil && new Date(promo.validUntil) < new Date();
 
   const handleSave = async () => {
     setSaving(true);
@@ -36,6 +39,7 @@ function PromotionCard({
       title,
       description,
       discount: discount ? Number(discount) : null,
+      validUntil: validUntil ? new Date(validUntil).toISOString() : null,
     });
     setSaving(false);
     setSaved(true);
@@ -77,10 +81,26 @@ function PromotionCard({
               className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
             />
           </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Действует до</label>
+            <input
+              type="date"
+              value={validUntil}
+              onChange={(e) => setValidUntil(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </div>
+          {validUntil && (
+            <div className="flex items-end pb-2">
+              <span className={`text-xs font-medium px-2 py-1 rounded-lg ${isExpired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                {isExpired ? "⚠ Истекла" : `До ${new Date(validUntil).toLocaleDateString("ru-RU")}`}
+              </span>
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-2 shrink-0">
-          <Badge variant={promo.active ? "default" : "secondary"}>
-            {promo.active ? "Активна" : "Скрыта"}
+          <Badge variant={isExpired ? "destructive" : promo.active ? "default" : "secondary"}>
+            {isExpired ? "Истекла" : promo.active ? "Активна" : "Скрыта"}
           </Badge>
           <button
             onClick={() => onUpdate(promo.id, { active: !promo.active })}

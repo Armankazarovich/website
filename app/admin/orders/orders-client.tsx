@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { formatDate, formatPrice } from "@/lib/utils";
-import { Search, Trash2, Loader2 } from "lucide-react";
+import { Search, Trash2, Loader2, Download } from "lucide-react";
 
 const STATUS_FILTERS = [
   { key: "ALL", label: "Все" },
@@ -80,6 +80,29 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
     }
   };
 
+  const handleExportCSV = () => {
+    const rows = [
+      ["№", "Клиент", "Телефон", "Адрес", "Дата", "Сумма", "Статус"],
+      ...filtered.map((o) => [
+        `#${o.orderNumber}`,
+        o.guestName || "",
+        o.guestPhone || "",
+        o.deliveryAddress || "",
+        new Date(o.createdAt).toLocaleDateString("ru-RU"),
+        Number(o.totalAmount),
+        o.status,
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleBulkDelete = async () => {
     if (!window.confirm(`Удалить ${selected.size} заказ(ов)? Это действие нельзя отменить.`)) return;
     setDeleting(true);
@@ -143,6 +166,13 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
             </button>
           ))}
         </div>
+        <button
+          onClick={handleExportCSV}
+          className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-muted/80 transition-colors shrink-0"
+        >
+          <Download className="w-4 h-4" />
+          CSV
+        </button>
         {selected.size > 0 && (
           <button
             onClick={handleBulkDelete}
