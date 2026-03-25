@@ -154,6 +154,15 @@ model Promotion {
   createdAt   DateTime  @default(now())
 }
 
+model DeliveryRate {
+  id          String @id @default(cuid())
+  vehicleName String          // "Газель"
+  payload     String          // "1.5 т"
+  maxVolume   Float           // 3.5 (м³)
+  basePrice   Int             // 3000 (руб.)
+  sortOrder   Int    @default(0)
+}
+
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String?
