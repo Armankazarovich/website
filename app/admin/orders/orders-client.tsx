@@ -28,6 +28,7 @@ type Order = {
   deliveryAddress: string | null;
   createdAt: Date;
   totalAmount: any;
+  deliveryCost: any;
   status: string;
   items: { id: string }[];
 };
@@ -65,8 +66,10 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   const stats = useMemo(() => {
     const todayOrders = orders.filter((o) => new Date(o.createdAt) >= today);
     return {
-      todayCount: todayOrders.length,
-      todayRevenue: todayOrders.reduce((s, o) => s + Number(o.totalAmount), 0),
+      todayCount: todayOrders.filter((o) => o.status !== "CANCELLED").length,
+      todayRevenue: todayOrders
+        .filter((o) => o.status !== "CANCELLED")
+        .reduce((s, o) => s + Number(o.totalAmount) + Number(o.deliveryCost ?? 0), 0),
       newCount: orders.filter((o) => o.status === "NEW").length,
     };
   }, [orders]);

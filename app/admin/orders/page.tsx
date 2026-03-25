@@ -16,8 +16,10 @@ export default async function AdminOrdersPage() {
 
   const todayOrders = orders.filter((o) => new Date(o.createdAt) >= today);
   const stats = {
-    todayCount: todayOrders.length,
-    todayRevenue: todayOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0),
+    todayCount: todayOrders.filter((o) => o.status !== "CANCELLED").length,
+    todayRevenue: todayOrders
+      .filter((o) => o.status !== "CANCELLED")
+      .reduce((sum, o) => sum + Number(o.totalAmount) + Number(o.deliveryCost ?? 0), 0),
     newCount: orders.filter((o) => o.status === "NEW").length,
   };
 
