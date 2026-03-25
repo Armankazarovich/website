@@ -24,21 +24,22 @@ export default async function AdminDashboard() {
     topItems,
     statusCounts,
   ] = await Promise.all([
-    prisma.order.count(),
-    prisma.order.count({ where: { status: "NEW" } }),
-    prisma.order.count({ where: { createdAt: { gte: today } } }),
+    prisma.order.count({ where: { deletedAt: null } }),
+    prisma.order.count({ where: { status: "NEW", deletedAt: null } }),
+    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
     prisma.product.count({ where: { active: true } }),
     prisma.review.count({ where: { approved: false } }),
     prisma.order.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 6,
       select: { id: true, orderNumber: true, guestName: true, totalAmount: true, status: true, createdAt: true, items: { select: { id: true } } },
     }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago } } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago } } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today } } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
     prisma.order.findMany({
-      where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" } },
+      where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null },
       select: { createdAt: true, totalAmount: true },
       orderBy: { createdAt: "asc" },
     }),
@@ -49,6 +50,7 @@ export default async function AdminDashboard() {
     }),
     prisma.order.groupBy({
       by: ["status"],
+      where: { deletedAt: null },
       _count: { _all: true },
     }),
   ]);
@@ -78,7 +80,7 @@ export default async function AdminDashboard() {
   const statusData = statusOrder.map(s => ({ status: s, count: statusMap[s] || 0 })).filter(s => s.count > 0);
 
   // Average order value (30 days)
-  const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago } } });
+  const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
   const avgOrder = orders30count > 0 ? Number(revenue30._sum.totalAmount || 0) / orders30count : 0;
 
   return (

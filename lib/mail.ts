@@ -92,8 +92,10 @@ export async function sendCustomerOrderConfirmation(
     orderNumber: number;
     customerName: string;
     totalAmount: number;
+    deliveryCost?: number;
     deliveryAddress?: string | null;
     paymentMethod: string;
+    isUpdate?: boolean;
     items: Array<{ productName: string; variantSize: string; unitType: string; quantity: number; price: number }>;
   },
   pdfBuffer?: Buffer
@@ -113,6 +115,17 @@ export async function sendCustomerOrderConfirmation(
       </tr>`;
     })
     .join("");
+
+  const deliveryCostHtml = order.deliveryCost && order.deliveryCost > 0
+    ? `<tr>
+        <td style="padding:10px 16px;border-bottom:1px solid #f0ede8;background:#f5f9ff;">
+          <p style="margin:0;font-size:14px;color:#1a1a1a;font-weight:600;">🚚 Доставка</p>
+        </td>
+        <td style="padding:10px 16px;border-bottom:1px solid #f0ede8;background:#f5f9ff;text-align:right;white-space:nowrap;">
+          <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a1a;">${order.deliveryCost.toLocaleString("ru-RU")} ₽</p>
+        </td>
+      </tr>`
+    : "";
 
   const html = `<!DOCTYPE html>
 <html lang="ru">
@@ -147,7 +160,7 @@ export async function sendCustomerOrderConfirmation(
                   <p style="margin:4px 0 0;color:rgba(255,255,255,0.6);font-size:12px;">Пиломатериалы от производителя</p>
                 </td>
                 <td align="right">
-                  <p style="margin:0;background:rgba(255,255,255,0.15);color:#ffffff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;">✅ Принят</p>
+                  <p style="margin:0;background:rgba(255,255,255,0.15);color:#ffffff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:8px;">${order.isUpdate ? "✏️ Обновлён" : "✅ Принят"}</p>
                 </td>
               </tr>
             </table>
@@ -160,13 +173,15 @@ export async function sendCustomerOrderConfirmation(
 
             <p style="margin:0 0 20px;color:#555;font-size:15px;line-height:1.5;">
               Здравствуйте, <strong style="color:#1a1a1a;">${order.customerName}</strong>!<br>
-              Ваш заказ успешно оформлен.
+              ${order.isUpdate
+                ? "Ваш заказ был обновлён. Актуальный счёт во вложении."
+                : "Ваш заказ успешно оформлен."}
             </p>
 
             <!-- Order badge -->
             <div class="order-badge" style="background:#fff8f0;border:1.5px solid #E8700A30;border-left:4px solid #E8700A;padding:14px 18px;border-radius:0 10px 10px 0;margin-bottom:24px;">
               <p class="order-num" style="margin:0 0 3px;font-size:18px;font-weight:700;color:#E8700A;">Заказ #${order.orderNumber}</p>
-              <p style="margin:0;color:#888;font-size:13px;">Менеджер свяжется с вами в ближайшее время</p>
+              <p style="margin:0;color:#888;font-size:13px;">${order.isUpdate ? "Изменения внёс менеджер ПилоРус" : "Менеджер свяжется с вами в ближайшее время"}</p>
             </div>
 
             <!-- Items table -->
@@ -177,7 +192,7 @@ export async function sendCustomerOrderConfirmation(
                   <th style="padding:10px 16px;text-align:right;font-size:11px;color:#aaa;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Сумма</th>
                 </tr>
               </thead>
-              <tbody>${itemsHtml}</tbody>
+              <tbody>${itemsHtml}${deliveryCostHtml}</tbody>
               <tfoot>
                 <tr class="total-row" style="background:#f9f6f2;border-top:2px solid #E8700A30;">
                   <td style="padding:14px 16px;font-size:14px;color:#777;">Способ оплаты: <strong style="color:#333;">${order.paymentMethod}</strong></td>
@@ -218,7 +233,9 @@ export async function sendCustomerOrderConfirmation(
     await transporter.sendMail({
       from: `"ПилоРус" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `Заказ #${order.orderNumber} принят — ПилоРус`,
+      subject: order.isUpdate
+        ? `Заказ #${order.orderNumber} обновлён — новый счёт ПилоРус`
+        : `Заказ #${order.orderNumber} принят — ПилоРус`,
       html,
       ...(pdfBuffer
         ? {

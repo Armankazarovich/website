@@ -6,6 +6,8 @@ import { auth } from "@/lib/auth";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { sendTelegramStatusUpdate, sendTelegramOrderEdited } from "@/lib/telegram";
+import { sendCustomerOrderConfirmation } from "@/lib/mail";
+import { generateInvoicePdf } from "@/lib/invoice-pdf";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -92,6 +94,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const order = await prisma.order.update({
     where: { id: params.id },
     data: updateData,
+    include: { items: true },
   });
 
   // Push клиенту
@@ -121,15 +124,61 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }).catch(console.error);
   }
 
-  // Telegram уведомление при редактировании (без смены статуса)
-  if (!status && (guestName !== undefined || guestPhone !== undefined || removeItemIds?.length || addItems?.length || totalAmount !== undefined || deliveryCost !== undefined)) {
+  // Telegram + email при редактировании (без смены статуса)
+  const isOrderEdit = !status && (guestName !== undefined || guestPhone !== undefined || removeItemIds?.length || addItems?.length || totalAmount !== undefined || deliveryCost !== undefined);
+  if (isOrderEdit) {
     sendTelegramOrderEdited({
       id: order.id,
       orderNumber: order.orderNumber,
       guestName: order.guestName,
       totalAmount: Number(order.totalAmount),
-      deliveryCost: Number(order.deliveryCost),
+      deliveryCost: Number((order as any).deliveryCost ?? 0),
     }).catch(console.error);
+
+    // Отправить обновлённый счёт клиенту если есть email
+    const orderItems = (order as any).items?.map((item: any) => ({
+      productName: item.productName,
+      variantSize: item.variantSize,
+      unitType: item.unitType,
+      quantity: Number(item.quantity),
+      price: Number(item.price),
+    })) ?? [];
+
+    let customerEmail = order.guestEmail;
+    if (!customerEmail && order.userId) {
+      const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true } });
+      customerEmail = user?.email || null;
+    }
+    if (customerEmail && orderItems.length > 0) {
+      generateInvoicePdf({
+        orderNumber: order.orderNumber,
+        createdAt: order.createdAt,
+        guestName: order.guestName,
+        guestPhone: order.guestPhone,
+        guestEmail: order.guestEmail,
+        deliveryAddress: order.deliveryAddress,
+        paymentMethod: order.paymentMethod,
+        comment: order.comment,
+        totalAmount: Number(order.totalAmount),
+        deliveryCost: Number((order as any).deliveryCost ?? 0),
+        items: orderItems,
+      }).then((pdfBuffer) =>
+        sendCustomerOrderConfirmation(
+          customerEmail!,
+          {
+            orderNumber: order.orderNumber,
+            customerName: order.guestName || "Клиент",
+            totalAmount: Number(order.totalAmount),
+            deliveryCost: Number((order as any).deliveryCost ?? 0),
+            deliveryAddress: order.deliveryAddress,
+            paymentMethod: order.paymentMethod,
+            items: orderItems,
+            isUpdate: true,
+          },
+          pdfBuffer
+        )
+      ).catch(console.error);
+    }
   }
 
   // Email клиенту
