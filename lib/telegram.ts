@@ -45,6 +45,11 @@ export function buildOrderKeyboard(orderId: string, currentStatus: string) {
     rows.push(nextButtons.slice(i, i + 2));
   }
 
+  // Кнопка "Завершён (самовывоз)" — только когда заказ готов к выдаче
+  if (currentStatus === "READY_PICKUP") {
+    rows.push([{ text: "🏁 Завершён — клиент забрал", callback_data: `st:${orderId}:COMPLETED` }]);
+  }
+
   if (!FINAL_STATUSES.includes(currentStatus)) {
     rows.push([{ text: "❌ Отменить", callback_data: `st:${orderId}:CANCELLED` }]);
   }
@@ -193,8 +198,9 @@ export function buildHelpMessages(): string[] {
     `🚚 *Отгружен* — Водитель готовится к выезду`,
     `🛵 *Доставляется* — Едет к клиенту, ждёт звонка`,
     `📦 *Готов к выдаче* — Самовывоз, Химки ул. Заводская 2А стр.28`,
-    `🎉 *Доставлен* — Успешная сделка, считается в дневном отчёте`,
-    `❌ *Отменён* — Уточнить причину у клиента`,
+    `🎉 *Доставлен* — Успешная доставка, сообщение удалится из группы`,
+    `🏁 *Завершён* — Клиент забрал самовывозом, сообщение удалится`,
+    `❌ *Отменён* — Уточнить причину у клиента, сообщение удалится`,
   ].join("\n");
 
   const msg2 = [
@@ -210,7 +216,7 @@ export function buildHelpMessages(): string[] {
     `Проверьте папку «Спам». Письма приходят от info@pilo\\-rus.ru`,
     ``,
     `*Кнопки пропали у заказа?*`,
-    `Заказ в финальном статусе — «Доставлен» или «Отменён». Работа завершена.`,
+    `Заказ в финальном статусе — «Доставлен», «Завершён» или «Отменён». Сообщение автоматически удалено из группы.`,
     ``,
     `*Можно изменить статус через сайт?*`,
     `Да → Заказы в админке → номер заказа → выбор статуса.`,
@@ -284,7 +290,12 @@ export async function sendTelegramOrderEdited(order: {
     `Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽${deliveryLine}`,
   ].join("\n");
 
-  const reply_markup = buildOrderKeyboard(order.id, "");
+  // Для edited-уведомлений не показываем кнопки статусов — только ссылку в админку
+  const reply_markup = {
+    inline_keyboard: [[
+      { text: "📋 Открыть заказ", url: `https://pilo-rus.ru/admin/orders/${order.id}` },
+    ]],
+  };
 
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",
