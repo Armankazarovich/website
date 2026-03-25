@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToStaff } from "@/lib/push";
+import { sendTelegramOrderNotification } from "@/lib/telegram";
 
 const STAFF_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 
@@ -53,6 +54,20 @@ export async function POST(req: NextRequest) {
       quantity: Number(item.quantity),
       price: Number(item.price),
     }));
+
+    // Telegram
+    sendTelegramOrderNotification({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      guestEmail: order.guestEmail,
+      deliveryAddress: order.deliveryAddress,
+      paymentMethod: order.paymentMethod,
+      comment: order.comment,
+      totalAmount: Number(order.totalAmount),
+      items: orderItems,
+    }).catch(console.error);
 
     // Push сотрудникам
     sendPushToStaff({

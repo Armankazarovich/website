@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Loader2, Phone } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Loader2, Phone, Search } from "lucide-react";
 
 type Variant = {
   id: string;
@@ -48,10 +48,13 @@ export default function NewPhoneOrderPage() {
   const [items, setItems] = useState<CartItem[]>([]);
 
   // Для добавления позиции
+  const [productSearch, setProductSearch] = useState("");
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState("");
   const [unitType, setUnitType] = useState<"CUBE" | "PIECE">("CUBE");
   const [quantity, setQuantity] = useState(1);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch("/api/admin/products")
@@ -62,6 +65,12 @@ export default function NewPhoneOrderPage() {
       })
       .catch(() => setLoadingProducts(false));
   }, []);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter((p) => p.name.toLowerCase().includes(q));
+  }, [products, productSearch]);
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const selectedVariant = selectedProduct?.variants.find((v) => v.id === selectedVariantId);
@@ -87,6 +96,7 @@ export default function NewPhoneOrderPage() {
     ]);
     setSelectedProductId("");
     setSelectedVariantId("");
+    setProductSearch("");
     setQuantity(1);
   };
 
@@ -197,16 +207,42 @@ export default function NewPhoneOrderPage() {
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">Товар</label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => { setSelectedProductId(e.target.value); setSelectedVariantId(""); }}
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">— выберите товар —</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+              <div className="sm:col-span-2" ref={searchRef}>
+                <label className="text-xs text-muted-foreground mb-1 block">Поиск товара</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Введите название товара..."
+                    value={productSearch}
+                    onChange={(e) => { setProductSearch(e.target.value); setShowProductDropdown(true); }}
+                    onFocus={() => setShowProductDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowProductDropdown(false), 150)}
+                    className="w-full pl-8 pr-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  {showProductDropdown && filteredProducts.length > 0 && (
+                    <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-popover border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto">
+                      {filteredProducts.slice(0, 20).map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onMouseDown={() => {
+                            setSelectedProductId(p.id);
+                            setSelectedVariantId("");
+                            setProductSearch(p.name);
+                            setShowProductDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/70 transition-colors ${selectedProductId === p.id ? "bg-primary/10 font-semibold" : ""}`}
+                        >
+                          {p.name}
+                        </button>
+                      ))}
+                      {filteredProducts.length === 0 && (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">Ничего не найдено</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Вариант / размер</label>

@@ -205,6 +205,38 @@ export function buildStaffKeyboard(userId: string) {
   };
 }
 
+export async function sendTelegramStatusUpdate(order: {
+  id: string;
+  orderNumber: number;
+  guestName?: string | null;
+  status: string;
+  totalAmount: number;
+}) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const emoji = STATUS_EMOJI[order.status] || "🔄";
+  const label = ORDER_STATUS_LABELS[order.status] || order.status;
+  const text = [
+    `${emoji} *Статус изменён — Заказ #${order.orderNumber}*`,
+    ``,
+    `Клиент: ${order.guestName || "—"}`,
+    `Новый статус: *${label}*`,
+    `Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽`,
+  ].join("\n");
+
+  const reply_markup = buildOrderKeyboard(order.id, order.status);
+
+  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: "Markdown",
+      reply_markup,
+    }),
+  });
+}
+
 export async function handleTelegramCallback(callbackQuery: any) {
   const data: string = callbackQuery.data || "";
 

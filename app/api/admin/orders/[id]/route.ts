@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { sendPushToUser } from "@/lib/push";
+import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
+import { sendTelegramStatusUpdate } from "@/lib/telegram";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -53,7 +54,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   const body = await req.json();
-  const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod } = body;
+  const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod, removeItemIds, addItems, totalAmount } = body;
 
   const updateData: Record<string, any> = {};
   if (status !== undefined) updateData.status = status;
@@ -63,6 +64,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (deliveryAddress !== undefined) updateData.deliveryAddress = deliveryAddress || null;
   if (comment !== undefined) updateData.comment = comment || null;
   if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
+  if (totalAmount !== undefined) updateData.totalAmount = totalAmount;
+
+  // Удалить позиции
+  if (removeItemIds?.length) {
+    await prisma.orderItem.deleteMany({
+      where: { id: { in: removeItemIds }, orderId: params.id },
+    });
+  }
+
+  // Добавить позиции
+  if (addItems?.length) {
+    await prisma.orderItem.createMany({
+      data: addItems.map((item: any) => ({
+        orderId: params.id,
+        variantId: item.variantId,
+        productName: item.productName,
+        variantSize: item.variantSize,
+        unitType: item.unitType,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+    });
+  }
 
   const order = await prisma.order.update({
     where: { id: params.id },
@@ -75,6 +99,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       title: `Заказ #${order.orderNumber} — ${statusLabels[status]}`,
       body: statusDescriptions[status] || "",
       url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
+      icon: "/icons/icon-192x192.png",
+    }).catch(console.error);
+  }
+
+  // Telegram + push сотрудникам при смене статуса
+  if (status && statusLabels[status]) {
+    sendTelegramStatusUpdate({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      status,
+      totalAmount: Number(order.totalAmount),
+    }).catch(console.error);
+    sendPushToStaff({
+      title: `Заказ #${order.orderNumber} — ${statusLabels[status]}`,
+      body: order.guestName || "Клиент",
+      url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
     }).catch(console.error);
   }

@@ -48,6 +48,15 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             deliveryAddress: order.deliveryAddress,
             comment: order.comment,
             paymentMethod: order.paymentMethod,
+            totalAmount: Number(order.totalAmount),
+            items: order.items.map((item) => ({
+              id: item.id,
+              productName: item.productName,
+              variantSize: item.variantSize,
+              unitType: item.unitType,
+              quantity: Number(item.quantity),
+              price: Number(item.price),
+            })),
           }} />
           <DeleteOrderButton orderId={order.id} />
         </div>
