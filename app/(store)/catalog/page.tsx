@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/store/product-card";
@@ -51,10 +52,14 @@ export default async function CatalogPage({
     };
   }
 
-  // Build where clause
+  // Build where clause (always filter hidden categories)
+  const categoryFilter = searchParams.category
+    ? { slug: searchParams.category, sortOrder: { lt: 900 } }
+    : { sortOrder: { lt: 900 } };
+
   const where = {
     active: true,
-    ...(searchParams.category ? { category: { slug: searchParams.category } } : {}),
+    category: categoryFilter,
     ...(currentType ? { name: { contains: currentType, mode: "insensitive" as const } } : {}),
     ...(Object.keys(variantWhere).length > 0 ? { variants: { some: variantWhere } } : {}),
   };
@@ -62,7 +67,9 @@ export default async function CatalogPage({
   // Базовый where без фильтра по типу — для подсчёта доступных типов
   const whereForTypes = {
     active: true,
-    ...(searchParams.category ? { category: { slug: searchParams.category } } : {}),
+    category: searchParams.category
+      ? { slug: searchParams.category, sortOrder: { lt: 900 } }
+      : { sortOrder: { lt: 900 } },
   };
 
   const [categories, products, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
@@ -80,9 +87,7 @@ export default async function CatalogPage({
     }),
     prisma.product.count({ where }),
     prisma.productVariant.findMany({
-      where: searchParams.category
-        ? { product: { active: true, category: { slug: searchParams.category } } }
-        : { product: { active: true } },
+      where: { product: { active: true, category: categoryFilter } },
       select: { size: true },
       distinct: ["size"],
     }),
@@ -92,6 +97,11 @@ export default async function CatalogPage({
       select: { name: true },
     }),
   ]);
+
+  // Если запрошена скрытая или несуществующая категория — редирект в каталог
+  if (searchParams.category && !categories.find((c) => c.slug === searchParams.category)) {
+    redirect("/catalog");
+  }
 
   // Доступные типы — только те, для которых есть товары в категории
   const productNamesLower = productsForTypes.map((p) => p.name.toLowerCase());

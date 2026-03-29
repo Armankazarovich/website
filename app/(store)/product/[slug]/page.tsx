@@ -140,17 +140,17 @@ export default async function ProductPage({ params }: Props) {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Link
-                href={`/catalog?category=${product.category.slug}`}
-                aria-label={product.category.name}
+                href={product.category.sortOrder < 900 ? `/catalog?category=${product.category.slug}` : "/catalog"}
+                aria-label={product.category.sortOrder < 900 ? product.category.name : "Каталог"}
                 className="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
               </Link>
               <Link
-                href={`/catalog?category=${product.category.slug}`}
+                href={product.category.sortOrder < 900 ? `/catalog?category=${product.category.slug}` : "/catalog"}
                 className="text-sm text-primary hover:underline"
               >
-                {product.category.name}
+                {product.category.sortOrder < 900 ? product.category.name : "Каталог"}
               </Link>
             </div>
             <h1 className="font-display font-bold text-3xl mt-1 mb-2">{product.name}</h1>

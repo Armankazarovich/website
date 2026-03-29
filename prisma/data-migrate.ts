@@ -85,6 +85,21 @@ async function main() {
     console.log("[data-migrate] ✓ Категория переименована в «Фанера, ДСП, МДФ, ОСБ»");
   }
 
+  // 7. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
+  const knownRedirects = [
+    { fromSlug: "kedr",        toSlug: null,     permanent: true },  // /catalog?category=kedr → /catalog
+    { fromSlug: "dsp-mdf-osb", toSlug: "fanera", permanent: true },  // → /catalog?category=fanera
+    { fromSlug: "dsp-mdf-osb-csp", toSlug: "fanera", permanent: true },
+  ];
+  for (const r of knownRedirects) {
+    await prisma.categoryRedirect.upsert({
+      where:  { fromSlug: r.fromSlug },
+      create: { fromSlug: r.fromSlug, toSlug: r.toSlug, permanent: r.permanent },
+      update: {},
+    });
+  }
+  console.log("[data-migrate] ✓ Редиректы категорий установлены");
+
   console.log("[data-migrate] Готово.");
   await prisma.$disconnect();
 }

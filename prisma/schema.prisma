@@ -199,3 +199,11 @@ model PasswordResetToken {
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model CategoryRedirect {
+  id        String   @id @default(cuid())
+  fromSlug  String   @unique   // старый slug (напр: "kedr", "dsp-mdf-osb")
+  toSlug    String?            // новый slug (null = просто /catalog)
+  permanent Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
