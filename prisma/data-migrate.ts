@@ -22,7 +22,7 @@ async function main() {
 
   // 1. Режим работы 09:00-20:00
   const existingHours = await prisma.siteSettings.findUnique({ where: { key: "working_hours" } });
-  if (!existingHours || !existingHours.value.includes("09:00")) {
+  if (!existingHours || !existingHours.value.includes("20:00")) {
     await upsertSetting("working_hours", "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00");
     console.log("[data-migrate] ✓ Режим работы обновлён");
   }
@@ -47,15 +47,19 @@ async function main() {
     where: { slug: { in: ["fanera", "fanera-dsp-mdf-osb"] } }
   });
   const dspCat = await prisma.category.findFirst({
-    where: { slug: { in: ["dsp-mdf-osb-csp", "dsp"] } }
+    where: { slug: { in: ["dsp-mdf-osb", "dsp-mdf-osb-csp", "dsp"] } }
   });
 
-  // 4. Деактивировать товары Кедр
+  // 4. Деактивировать товары Кедр + скрыть категорию
   if (kedrCat) {
     const activeKedr = await prisma.product.count({ where: { categoryId: kedrCat.id, active: true } });
     if (activeKedr > 0) {
       await prisma.product.updateMany({ where: { categoryId: kedrCat.id }, data: { active: false } });
       console.log(`[data-migrate] ✓ Кедр: ${activeKedr} товаров деактивировано`);
+    }
+    if (kedrCat.sortOrder !== 999) {
+      await prisma.category.update({ where: { id: kedrCat.id }, data: { sortOrder: 999 } });
+      console.log("[data-migrate] ✓ Кедр категория скрыта (sortOrder=999)");
     }
   }
 

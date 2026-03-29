@@ -98,21 +98,9 @@ export function Footer({ settings = {} }: FooterProps) {
                 </Link>
               </li>
               <li>
-                <Link href="/catalog?category=kedr" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  Кедр
-                </Link>
-              </li>
-              <li>
                 <Link href="/catalog?category=fanera" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
                   <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  Фанера
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog?category=dsp-mdf-osb" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  ДСП / МДФ / ОСБ
+                  Фанера, ДСП, МДФ, ОСБ
                 </Link>
               </li>
               <li>
@@ -196,7 +184,7 @@ export function Footer({ settings = {} }: FooterProps) {
               </li>
               <li className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-brand-orange shrink-0" />
-                <span>{s("working_hours") || "Ежедневно: 09:00–18:00"}</span>
+                <span>{s("working_hours") || "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00"}</span>
               </li>
             </ul>
           </div>
