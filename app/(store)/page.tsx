@@ -407,17 +407,37 @@ export default async function HomePage() {
               <p className="text-muted-foreground">Широкий ассортимент пиломатериалов напрямую с производства</p>
             </div>
 
-            {/* Big photo/gradient cards — с onError fallback на градиент */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mb-8">
-              {categories.map((cat) => (
-                <CategoryCard
-                  key={cat.id}
-                  slug={cat.slug}
-                  name={cat.name}
-                  image={cat.image}
-                  productCount={cat._count.products}
-                />
-              ))}
+            {/* Bento-сетка: мобиль 2x2, десктоп — hero+side+wide */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 lg:grid-rows-[240px_240px_160px] gap-3 sm:gap-4 mb-8">
+              {/* Hero — большая карточка, слева */}
+              {categories[0] && (
+                <div className="h-44 sm:h-56 lg:col-span-2 lg:row-span-2 lg:h-full">
+                  <CategoryCard slug={categories[0].slug} name={categories[0].name} image={categories[0].image} productCount={categories[0]._count.products} className="h-full" />
+                </div>
+              )}
+              {/* Side top */}
+              {categories[1] && (
+                <div className="h-44 sm:h-56 lg:h-full">
+                  <CategoryCard slug={categories[1].slug} name={categories[1].name} image={categories[1].image} productCount={categories[1]._count.products} className="h-full" />
+                </div>
+              )}
+              {/* Side bottom — скрыта на мобиле, видна на десктопе */}
+              {categories[2] && (
+                <div className="hidden lg:block lg:h-full">
+                  <CategoryCard slug={categories[2].slug} name={categories[2].name} image={categories[2].image} productCount={categories[2]._count.products} className="h-full" />
+                </div>
+              )}
+              {/* Wide banner — нижняя строка (мобиль: на всю ширину вместо скрытой) */}
+              {categories[2] && (
+                <div className="col-span-2 h-36 sm:h-44 lg:hidden">
+                  <CategoryCard slug={categories[2].slug} name={categories[2].name} image={categories[2].image} productCount={categories[2]._count.products} className="h-full" />
+                </div>
+              )}
+              {categories[3] && (
+                <div className="col-span-2 h-36 sm:h-44 lg:col-span-3 lg:h-full">
+                  <CategoryCard slug={categories[3].slug} name={categories[3].name} image={categories[3].image} productCount={categories[3]._count.products} className="h-full" />
+                </div>
+              )}
             </div>
 
             <div className="text-center">

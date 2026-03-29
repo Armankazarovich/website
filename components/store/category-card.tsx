@@ -19,9 +19,10 @@ interface CategoryCardProps {
   name: string;
   image?: string | null;
   productCount: number;
+  className?: string;
 }
 
-export function CategoryCard({ slug, name, image, productCount }: CategoryCardProps) {
+export function CategoryCard({ slug, name, image, productCount, className }: CategoryCardProps) {
   const [imgError, setImgError] = useState(false);
   const style = CATEGORY_STYLES[slug] ?? DEFAULT_STYLE;
   const showImage = image && !imgError;
@@ -29,7 +30,7 @@ export function CategoryCard({ slug, name, image, productCount }: CategoryCardPr
   return (
     <Link
       href={`/catalog?category=${slug}`}
-      className="group relative h-40 sm:h-52 lg:h-60 rounded-2xl overflow-hidden block"
+      className={`group relative rounded-2xl overflow-hidden block ${className ?? "h-40 sm:h-52 lg:h-60"}`}
     >
       {showImage ? (
         <Image
