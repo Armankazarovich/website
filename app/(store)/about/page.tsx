@@ -136,7 +136,11 @@ export default function AboutPage() {
           <div className="space-y-2 text-muted-foreground">
             <p><strong className="text-foreground">Юридический адрес:</strong> Московская обл., г. Химки, ул. Заводская 2А, стр.28</p>
             <p><strong className="text-foreground">Email:</strong> info@pilo-rus.ru</p>
-            <p><strong className="text-foreground">Телефон:</strong> 8-985-970-71-33</p>
+            <p><strong className="text-foreground">Телефон:</strong>{" "}
+              <a href="tel:+79859707133" className="hover:underline">8-985-970-71-33</a>{" · "}
+              <a href="tel:+79996622602" className="hover:underline">8-999-662-26-02</a>{" · "}
+              <a href="tel:+79776068020" className="hover:underline">8-977-606-80-20</a>
+            </p>
           </div>
         </div>
       </div>

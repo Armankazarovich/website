@@ -232,6 +232,18 @@ export default async function CatalogPage({
               >
                 📞 8-985-970-71-33
               </a>
+              <a
+                href="tel:+79996622602"
+                className="block mt-1.5 text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                8-999-662-26-02
+              </a>
+              <a
+                href="tel:+79776068020"
+                className="block mt-1.5 text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                8-977-606-80-20
+              </a>
             </div>
           </div>
         </aside>

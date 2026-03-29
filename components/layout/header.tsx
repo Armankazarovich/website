@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PartnershipModal } from "@/components/store/partnership-modal";
 import { WishlistCount } from "@/components/store/wishlist-count";
+import { PhoneLinks, type PhoneItem } from "@/components/shared/phone-links";
 
 export interface HeaderCategory {
   id: string;
@@ -33,8 +34,16 @@ export interface HeaderCategory {
   _count?: { products: number };
 }
 
+// v2 - 3 phones
+const DEFAULT_PHONES: PhoneItem[] = [
+  { display: "8-985-970-71-33", tel: "+79859707133" },
+  { display: "8-999-662-26-02", tel: "+79996622602" },
+  { display: "8-977-606-80-20", tel: "+79776068020" },
+];
+
 interface HeaderProps {
   categories?: HeaderCategory[];
+  phones?: PhoneItem[];
 }
 
 const infoLinks = [
@@ -114,7 +123,7 @@ const MATERIAL_TYPES = [
 /* ── Популярные сечения ──────────────────────────────────────── */
 const COMMON_SIZES = ["25×100", "25×150", "50×150", "50×200", "100×100", "150×150", "40×150", "50×100"];
 
-export function Header({ categories = [] }: HeaderProps) {
+export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -190,14 +199,12 @@ export function Header({ categories = [] }: HeaderProps) {
             </span>
           </div>
           <div className="flex items-center gap-5">
-            <a href="tel:+79859707133" className="flex items-center gap-1.5 hover:text-brand-cream transition-colors font-medium">
-              <Phone className="w-3 h-3" />
-              8-985-970-71-33
-            </a>
-            <a href="tel:+79996622602" className="flex items-center gap-1.5 hover:text-brand-cream transition-colors font-medium">
-              <Phone className="w-3 h-3" />
-              8-999-662-26-02
-            </a>
+            {phones.map((p) => (
+              <a key={p.tel} href={`tel:${p.tel}`} className="flex items-center gap-1.5 hover:text-brand-cream transition-colors font-medium">
+                <Phone className="w-3 h-3" />
+                {p.display}
+              </a>
+            ))}
             <span className="text-white/40 text-[10px] tracking-wide">09:00–18:00 · ежедневно</span>
           </div>
         </div>
@@ -603,15 +610,7 @@ export function Header({ categories = [] }: HeaderProps) {
                       <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Позвонить нам</p>
                     </div>
-                    <a href="tel:+79859707133" className="flex items-center gap-2 font-display font-bold text-base text-brand-orange hover:text-brand-orange/80 transition-colors">
-                      <div className="w-7 h-7 rounded-lg bg-brand-orange/15 flex items-center justify-center shrink-0">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .27h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1-1.06a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </div>
-                      8-985-970-71-33
-                    </a>
-                    <a href="tel:+79996622602" className="flex items-center gap-2 font-medium text-sm text-muted-foreground hover:text-foreground transition-colors mt-1.5 ml-9">
-                      8-999-662-26-02
-                    </a>
+                    <PhoneLinks phones={phones} variant="mobile-menu" />
                   </div>
                 </div>
 

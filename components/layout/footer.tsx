@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Mail, MapPin, Clock } from "lucide-react";
 import { FooterPartnershipButton } from "@/components/store/footer-partnership-button";
 import { PwaFooterBadges } from "@/components/store/pwa-footer-badges";
-import { getSetting } from "@/lib/site-settings";
+import { getSetting, getPhones } from "@/lib/site-settings";
+import { PhoneLinks } from "@/components/shared/phone-links";
 
 interface FooterProps {
   settings?: Record<string, string>;
@@ -186,12 +187,7 @@ export function Footer({ settings = {} }: FooterProps) {
                 <MapPin className="w-4 h-4 mt-0.5 text-brand-orange shrink-0" />
                 <span>{s("address")}</span>
               </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-brand-orange shrink-0" />
-                <a href={`tel:${s("phone_link")}`} className="hover:text-brand-orange transition-colors">
-                  {s("phone")}
-                </a>
-              </li>
+              <PhoneLinks phones={getPhones(settings)} variant="footer" />
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-brand-orange shrink-0" />
                 <a href={`mailto:${s("email")}`} className="hover:text-brand-orange transition-colors">

@@ -10,7 +10,7 @@ import { FiltersDrawer } from "@/components/store/filters-drawer";
 import { SearchDrawer } from "@/components/store/search-drawer";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { prisma } from "@/lib/prisma";
-import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const [categories, siteSettings] = await Promise.all([
@@ -23,7 +23,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header categories={categories} />
+      <Header categories={categories} phones={getPhones(siteSettings)} />
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} />
       <MobileBottomNav />

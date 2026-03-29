@@ -11,6 +11,10 @@ export async function getSiteSettings(): Promise<Record<string, string>> {
 export const DEFAULT_SETTINGS: Record<string, string> = {
   phone: "8-985-970-71-33",
   phone_link: "+79859707133",
+  phone2: "8-999-662-26-02",
+  phone2_link: "+79996622602",
+  phone3: "8-977-606-80-20",
+  phone3_link: "+79776068020",
   email: "info@pilo-rus.ru",
   address: "Химки, ул. Заводская 2А, стр.28",
   address_map: "https://yandex.ru/maps/-/CHqJJGqe",
@@ -32,4 +36,13 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
 
 export function getSetting(settings: Record<string, string>, key: string): string {
   return settings[key] ?? DEFAULT_SETTINGS[key] ?? "";
+}
+
+export function getPhones(settings: Record<string, string>) {
+  const all = [
+    { display: getSetting(settings, "phone"), tel: getSetting(settings, "phone_link") },
+    { display: getSetting(settings, "phone2"), tel: getSetting(settings, "phone2_link") },
+    { display: getSetting(settings, "phone3"), tel: getSetting(settings, "phone3_link") },
+  ];
+  return all.filter((p) => p.display && p.tel);
 }

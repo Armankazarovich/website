@@ -1,6 +1,73 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.03.2026
+> Последнее обновление: 29.03.2026 (вечер)
+
+---
+
+## 🗂️ Расположение проекта
+
+```
+D:\pilorus\                              ← ГЛАВНАЯ ПАПКА (всегда работаем здесь)
+├── website\                             ← КОД САЙТА (этот репозиторий)
+├── scripts\
+│   ├── backup.js                        ← Скрипт авто-бэкапов
+│   ├── apply-belarus-changes.js         ← Разовый скрипт изменений клиента Беларусь (выполнен)
+│   ├── fix-hours.js                     ← Разовый скрипт режима работы (выполнен)
+│   └── generate-report.py              ← Python скрипт PDF отчёта (py -3 generate-report.py)
+├── backups\                             ← Бэкапы (current + previous)
+├── reports\                             ← PDF отчёты для клиентов
+│   └── belarus-changes-report.pdf       ← Отчёт по изменениям для клиента (29.03.2026)
+└── docs\                                ← Документы, брендбук, сертификат
+```
+
+## 🔄 Workflow разработки (ОБЯЗАТЕЛЬНО следовать)
+
+```
+ШАГ 1 — ЛОКАЛЬНО
+  Вносим изменения в D:\pilorus\website
+  Тестируем: localhost:3000 (npm run dev)
+  Проверяем скриншотом все затронутые функции
+
+ШАГ 2 — ПОДТВЕРЖДЕНИЕ
+  Показываем результат пользователю
+  Ждём "ок, деплоим"
+
+ШАГ 3 — БЭКАП + ДЕПЛОЙ
+  npm run backup          ← создаёт бэкап (current + previous)
+  git add .
+  git commit -m "feat: ..."
+  git push origin main    ← сайт обновится через ~2 мин
+
+ШАГ 4 — ПРОВЕРКА
+  Открываем pilo-rus.ru и убеждаемся что всё работает
+```
+
+## 💾 Система бэкапов
+
+- Скрипт: `D:\pilorus\scripts\backup.js`
+- Команда: `npm run backup` (из папки website) или `node D:/pilorus/scripts/backup.js`
+- Всегда хранит **2 версии**: `backup-current-ДАТА` + `backup-previous-ДАТА`
+- Содержимое zip: весь код БЕЗ node_modules, .next, .env
+- JSON экспорт БД: категории, товары, заказы, пользователи, настройки
+- VPS снапшот: управляет пользователь вручную в панели Beget (не автоматизировано)
+
+## 🗺️ Дорожная карта (Roadmap)
+
+### Ближайшие задачи
+- Аналитика с фильтром дат (дашборд, Excel/PDF экспорт)
+- Права сотрудников (гибкие permissions)
+- Мониторинг `/admin/monitor` (health check БД, Telegram, Email, Push)
+
+### Средний приоритет
+- Яндекс.Метрика — подключение через настройки
+- Яндекс.Маркет — YML фид `/api/yandex-market.xml`
+- SEO + Яндекс.Вебмастер верификация
+
+### Долгосрочные (SaaS)
+- ЭДО (Диадок/СБИС) — электронный документооборот
+- Склад и инвентаризация — учёт остатков, приход/расход
+- Себестоимость — реальная наценка с учётом расходов
+- Мультитенантность — один код, много магазинов
 
 ---
 
@@ -436,7 +503,33 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
-### Сессия 25.03.2026 (текущая)
+### Сессия 29.03.2026 (вечер) — 3 телефона + клиент Беларусь
+- ✅ Добавлен 3-й телефон 8-977-606-80-20 (+79776068020) на весь сайт
+- ✅ Создан централизованный компонент `components/shared/phone-links.tsx` (PhoneLinks)
+  - Принимает `phones: PhoneItem[]` как prop — безопасен для client и server компонентов
+  - Варианты: `footer` | `mobile-menu` | `inline` | `sidebar`
+- ✅ `lib/site-settings.ts` — добавлены `phone2`, `phone2_link`, `phone3`, `phone3_link` в DEFAULT_SETTINGS + функция `getPhones(settings)`
+- ✅ `components/layout/header.tsx` — DEFAULT_PHONES (3 телефона), prop `phones: PhoneItem[]`, мобильное меню через `<PhoneLinks variant="mobile-menu">`
+- ✅ `components/layout/footer.tsx` — `<PhoneLinks phones={getPhones(settings)} variant="footer">`
+- ✅ `app/(store)/about/page.tsx` — 3 телефона с разделителем ·
+- ✅ `app/(store)/cart/page.tsx` — 3 телефона inline
+- ✅ `app/(store)/catalog/page.tsx` — 3 телефона в сайдбаре (sidebar вариант)
+- ✅ БД: phone2, phone2_link, phone3, phone3_link записи созданы в SiteSettings
+- ✅ Изменения клиента Беларусь выполнены через скрипт:
+  - Режим работы: Пн–Сб 09:00–20:00, Вс 09:00–18:00 (SiteSettings working_hours)
+  - Категория «Кедр» деактивирована (7 товаров скрыты, данные сохранены)
+  - 5 товаров из «ДСП, МДФ, ОСБ, ЦСП» → перемещены в «Фанера»
+  - «Фанера» переименована в «Фанера, ДСП, МДФ, ОСБ» (теперь 10 товаров)
+  - «ДСП, МДФ, ОСБ, ЦСП» скрыта (sortOrder=999)
+- ✅ PDF отчёт для клиента создан: `D:\pilorus\reports\belarus-changes-report.pdf`
+
+### Сессия 29.03.2026 (утро)
+- ✅ CLAUDE.md обновлён — полная база знаний актуализирована
+- ✅ PWA кнопка "Установить приложение" в сайдбаре админки (AdminPwaInstall) — уже была реализована
+- ✅ Email обязателен в клиентском checkout (z.string().email(), поле со звёздочкой *)
+- ✅ Push AbortError (sw.js) — не критичная ошибка, исправляется перезагрузкой страницы
+
+### Сессия 25.03.2026
 - ✅ Telegram авто-удаление: FINAL_STATUSES → deleteMessage из группы
 - ✅ Статус COMPLETED "Завершён самовывоз" — добавлен везде
 - ✅ telegramMessageId сохраняется в Order при создании
@@ -468,7 +561,29 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ---
 
+## AdminPwaInstall — как работает
+
+**Файл:** `components/admin/admin-pwa-install.tsx`
+**Расположение:** нижняя часть сайдбара (desktop + mobile drawer) в `components/admin/admin-shell.tsx`
+
+**Логика:**
+- Определяет платформу: ios-safari / android / desktop-chrome
+- Android/Chrome: кнопка "Установить" → `installPrompt.prompt()`
+- iOS Safari: кнопка "Установить" → показывает 3 шага (Поделиться → На экран Домой → Добавить)
+- iOS Others / desktop-other / установлено → скрывается
+- После установки (`appinstalled`) исчезает из меню
+
+**Стиль:** вписан в тему сайдбара (текст белый/полупрозрачный, `hover:bg-white/10`)
+
+---
+
 ## На следующую сессию (план)
+
+### 0. Деплой накопленных изменений (приоритет: СРОЧНО)
+- Все изменения сессии сделаны локально, но НЕ задеплоены
+- git status: M header.tsx, footer.tsx, about, cart, catalog, layout, site-settings + ?? components/shared/
+- Команды: `git add . && git commit -m "feat: 3 phones + phone-links component + belarus client changes" && git push origin main`
+- После деплоя проверить pilo-rus.ru — 3 телефона везде, новые категории
 
 ### 1. Аналитика с фильтром дат (приоритет: высокий)
 - Дашборд → клиентский компонент с DatePicker (от/до)
@@ -494,6 +609,35 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ---
 
+## Телефонная система (3 номера)
+
+### Как добавить/изменить телефоны
+1. В БД: обновить `SiteSettings` записи `phone`, `phone2`, `phone3` (и `_link` варианты)
+2. В коде (fallback): `lib/site-settings.ts` → `DEFAULT_SETTINGS` объект
+3. В header.tsx (client fallback): `DEFAULT_PHONES` массив
+4. Компонент `PhoneLinks` сам рендерит любое количество телефонов
+
+### Где телефоны отображаются
+| Место | Вариант | Источник |
+|-------|---------|----------|
+| Header desktop topbar | прямой рендер | phones prop → getPhones() |
+| Header мобильное меню | mobile-menu | phones prop |
+| Footer | footer | getPhones() из server component |
+| Каталог сайдбар | sidebar | hardcoded 3 phones |
+| Корзина | inline links | hardcoded 3 phones |
+| Страница "О нас" | inline с · | hardcoded 3 phones |
+| ContactWidget | только 1-й | getSetting("phone") |
+
+### SiteSettings модель (внимание: id @default("default"))
+```ts
+// При upsert использовать:
+try { await prisma.siteSettings.create({ data: { id: key, key, value } }) }
+catch { await prisma.siteSettings.update({ where: { key }, data: { value } }) }
+// НЕ использовать upsert() напрямую — unique constraint конфликт с id
+```
+
+---
+
 ## Частые проблемы и решения
 
 | Проблема | Причина | Решение |
@@ -507,3 +651,7 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 | Телефон "не найден" при логине | 8/7/+7 разные форматы | normalizePhone() при сохранении ✅ |
 | "SW: X" в Push диагностике | SW не успел зарегистрироваться | Нажать "Подписаться сейчас" или обновить страницу |
 | Push AbortError | Конфликт SW версий | Обновить страницу, очистить кеш браузера |
+| Заказ без email в админке | Форма phone-order не требует email | Email необязателен в admin/orders/new (корректно — звонок по телефону) |
+| HMR не обновляет client component | Webpack file watcher Windows | Перезапустить `npm run dev` или дождаться `✓ Compiled` |
+| node -e падает с кириллицей | Encoding issue в Windows shell | Использовать .js файл вместо inline node -e |
+| SiteSettings upsert конфликт | id @default("default") | try{create}catch{update} вместо upsert() |
