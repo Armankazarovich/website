@@ -598,7 +598,7 @@ export default function CheckoutPage() {
                   <svg className="w-4 h-4 text-primary mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">Химки, ул. Заводская 2А, стр.28</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Ежедневно 09:00–18:00 · Есть погрузчик · Предзвоните перед приездом</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Пн–Сб: 09:00–20:00, Вс: 09:00–18:00 · Есть погрузчик · Предзвоните перед приездом</p>
                   </div>
                 </div>
                 <a

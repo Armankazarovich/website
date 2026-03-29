@@ -93,9 +93,9 @@ const organizationSchema = {
   },
   "openingHoursSpecification": {
     "@type": "OpeningHoursSpecification",
-    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
     "opens": "09:00",
-    "closes": "18:00"
+    "closes": "20:00"
   },
   "sameAs": ["https://pilmos.ru"]
 };

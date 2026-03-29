@@ -48,7 +48,7 @@ export default function ContactsPage() {
             {
               icon: Clock,
               title: "Режим работы",
-              items: [{ label: "Ежедневно: 09:00 – 18:00", href: null }],
+              items: [{ label: "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00", href: null }],
               color: "text-purple-600",
               bg: "bg-purple-100",
             },

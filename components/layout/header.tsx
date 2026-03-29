@@ -205,7 +205,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                 {p.display}
               </a>
             ))}
-            <span className="text-white/40 text-[10px] tracking-wide">09:00–18:00 · ежедневно</span>
+            <span className="text-white/40 text-[10px] tracking-wide">Пн–Сб 09:00–20:00 · Вс 09:00–18:00</span>
           </div>
         </div>
       </div>
