@@ -5,6 +5,8 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { existsSync } from "fs";
+import { join } from "path";
 const prisma = new PrismaClient();
 
 async function upsertSetting(key: string, value: string) {
@@ -85,8 +87,9 @@ async function main() {
     console.log("[data-migrate] ✓ Категория переименована в «Фанера, ДСП, МДФ, ОСБ»");
   }
 
-  // 7. Восстановить изображения категорий если были перезаписаны runtime-загрузкой
-  // Runtime-uploaded файлы теряются при деплое (не в git). Откатываем на стабильные пути.
+  // 7. Восстановить изображения категорий если файл отсутствует на диске
+  // Логика: если у категории нет фото или загруженный файл не найден — восстановить стабильный.
+  // Если файл upload-* существует (пользователь заменил фото) — не трогать.
   const stableImages: Record<string, string> = {
     "sosna-el":    "/images/categories/sosna-el.webp",
     "listvennitsa":"/images/categories/listvennitsa.png",
@@ -96,13 +99,45 @@ async function main() {
   };
   for (const [slug, stablePath] of Object.entries(stableImages)) {
     const cat = await prisma.category.findUnique({ where: { slug } });
-    if (cat && cat.image && cat.image.includes("upload-")) {
+    if (!cat) continue;
+
+    let needsRestore = false;
+    if (!cat.image) {
+      // Нет фото → восстановить
+      needsRestore = true;
+    } else if (cat.image.includes("upload-")) {
+      // Есть upload-* URL — проверяем существует ли файл физически
+      const filePath = join(process.cwd(), "public", cat.image);
+      if (!existsSync(filePath)) {
+        // Файл потерян (новый сервер или удалён) → восстановить
+        needsRestore = true;
+      }
+      // Файл жив → пользователь сменил фото, не трогаем
+    }
+
+    if (needsRestore) {
       await prisma.category.update({ where: { slug }, data: { image: stablePath } });
       console.log(`[data-migrate] ✓ Восстановлено фото ${slug}: ${stablePath}`);
     }
   }
 
-  // 8. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
+  // 8. Установить showInMenu/showInFooter для существующих категорий
+  // Скрытые (sortOrder=999) → false, остальные → true (только если поле ещё не задано вручную)
+  const allCats = await prisma.category.findMany({ select: { id: true, slug: true, sortOrder: true } });
+  for (const cat of allCats) {
+    const isHiddenByOrder = cat.sortOrder >= 999;
+    // Принудительно скрываем kedr и dsp из навигации
+    const forceHide = ["kedr", "dsp-mdf-osb", "dsp-mdf-osb-csp"].includes(cat.slug);
+    if (isHiddenByOrder || forceHide) {
+      await prisma.category.update({
+        where: { id: cat.id },
+        data: { showInMenu: false, showInFooter: false },
+      });
+    }
+  }
+  console.log("[data-migrate] ✓ Флаги навигации категорий обновлены");
+
+  // 9. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
   const knownRedirects = [
     { fromSlug: "kedr",        toSlug: null,     permanent: true },  // /catalog?category=kedr → /catalog
     { fromSlug: "dsp-mdf-osb", toSlug: "fanera", permanent: true },  // → /catalog?category=fanera
@@ -115,7 +150,7 @@ async function main() {
       update: {},
     });
   }
-  console.log("[data-migrate] ✓ Редиректы категорий установлены");
+  console.log("[data-migrate] ✓ Редиректы категорий установлены (шаг 9)");
 
   console.log("[data-migrate] Готово.");
   await prisma.$disconnect();

@@ -20,9 +20,19 @@ export async function GET() {
 
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { name, slug, image, sortOrder } = await req.json();
+  const { name, slug, image, sortOrder, parentId, seoTitle, seoDescription, showInMenu, showInFooter } = await req.json();
   const category = await prisma.category.create({
-    data: { name, slug, image, sortOrder: sortOrder ?? 0 },
+    data: {
+      name,
+      slug,
+      image: image || null,
+      sortOrder: sortOrder ?? 0,
+      parentId: parentId || null,
+      seoTitle: seoTitle || null,
+      seoDescription: seoDescription || null,
+      showInMenu: showInMenu !== false,
+      showInFooter: showInFooter !== false,
+    },
     include: { _count: { select: { products: true } } },
   });
   return NextResponse.json(category);

@@ -13,11 +13,16 @@ import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [categories, siteSettings] = await Promise.all([
+  const [categories, footerCategories, siteSettings] = await Promise.all([
     prisma.category.findMany({
-      where: { sortOrder: { lt: 900 } },
+      where: { showInMenu: true },
       orderBy: { sortOrder: "asc" },
       include: { _count: { select: { products: { where: { active: true } } } } },
+    }),
+    prisma.category.findMany({
+      where: { showInFooter: true, parentId: null },
+      orderBy: { sortOrder: "asc" },
+      select: { id: true, name: true, slug: true },
     }),
     getSiteSettings(),
   ]);
@@ -26,7 +31,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col">
       <Header categories={categories} phones={getPhones(siteSettings)} />
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
-      <Footer settings={siteSettings} />
+      <Footer settings={siteSettings} categories={footerCategories} />
       <MobileBottomNav />
       <CookieConsent />
       <PwaInstall />

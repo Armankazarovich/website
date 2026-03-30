@@ -6,11 +6,18 @@ import { PwaFooterBadges } from "@/components/store/pwa-footer-badges";
 import { getSetting, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 
-interface FooterProps {
-  settings?: Record<string, string>;
+interface FooterCategory {
+  id: string;
+  name: string;
+  slug: string;
 }
 
-export function Footer({ settings = {} }: FooterProps) {
+interface FooterProps {
+  settings?: Record<string, string>;
+  categories?: FooterCategory[];
+}
+
+export function Footer({ settings = {}, categories = [] }: FooterProps) {
   const s = (key: string) => getSetting(settings, key);
   return (
     <footer className="bg-zinc-950 text-white mt-auto border-t-[3px] border-brand-orange">
@@ -79,36 +86,20 @@ export function Footer({ settings = {} }: FooterProps) {
             </div>
           </div>
 
-          {/* Catalog */}
+          {/* Catalog — dynamic from DB */}
           <div>
             <h3 className="font-display font-semibold text-base mb-4 text-brand-orange uppercase tracking-wide">
               Каталог
             </h3>
             <ul className="space-y-2.5 text-sm text-zinc-400">
-              <li>
-                <Link href="/catalog?category=sosna-el" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  Сосна и Ель
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog?category=listvennitsa" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  Лиственница
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog?category=fanera" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  Фанера, ДСП, МДФ, ОСБ
-                </Link>
-              </li>
-              <li>
-                <Link href="/catalog?category=lipa-osina" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
-                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
-                  Липа и Осина
-                </Link>
-              </li>
+              {categories.map((cat) => (
+                <li key={cat.id}>
+                  <Link href={`/catalog?category=${cat.slug}`} className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
+                    <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
+                    {cat.name}
+                  </Link>
+                </li>
+              ))}
               <li className="pt-1">
                 <Link href="/catalog" className="text-zinc-300 hover:text-brand-orange transition-colors font-medium">
                   Весь каталог →

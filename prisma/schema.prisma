@@ -65,12 +65,27 @@ model User {
 }
 
 model Category {
-  id       String    @id @default(cuid())
-  name     String
-  slug     String    @unique
-  image    String?
-  sortOrder Int      @default(0)
-  products Product[]
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  image          String?
+  sortOrder      Int        @default(0)
+
+  // Подкатегории
+  parentId       String?
+  parent         Category?  @relation("sub", fields: [parentId], references: [id])
+  children       Category[] @relation("sub")
+
+  // SEO
+  seoTitle       String?
+  seoDescription String?
+
+  // Навигация
+  showInMenu     Boolean    @default(true)
+  showInFooter   Boolean    @default(true)
+
+  products       Product[]
+  updatedAt      DateTime   @updatedAt @default(now())
 }
 
 model Product {

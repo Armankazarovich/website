@@ -8,10 +8,24 @@ import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 
-export const metadata: Metadata = {
-  title: "Каталог пиломатериалов",
-  description: "Широкий выбор пиломатериалов: доска, брус, вагонка, блок-хаус. Цены от производителя.",
-};
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  if (searchParams.category) {
+    const cat = await prisma.category.findUnique({
+      where: { slug: searchParams.category },
+      select: { name: true, seoTitle: true, seoDescription: true },
+    });
+    if (cat) {
+      return {
+        title: cat.seoTitle || `${cat.name} — пиломатериалы ПилоРус`,
+        description: cat.seoDescription || `Купить ${cat.name} от производителя. Широкий ассортимент, доставка по Москве и МО.`,
+      };
+    }
+  }
+  return {
+    title: "Каталог пиломатериалов",
+    description: "Широкий выбор пиломатериалов: доска, брус, вагонка, блок-хаус. Цены от производителя.",
+  };
+}
 
 interface SearchParams {
   category?: string;
@@ -54,8 +68,8 @@ export default async function CatalogPage({
 
   // Build where clause (always filter hidden categories)
   const categoryFilter = searchParams.category
-    ? { slug: searchParams.category, sortOrder: { lt: 900 } }
-    : { sortOrder: { lt: 900 } };
+    ? { slug: searchParams.category, showInMenu: true }
+    : { showInMenu: true };
 
   const where = {
     active: true,
@@ -73,7 +87,7 @@ export default async function CatalogPage({
   };
 
   const [categories, products, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
-    prisma.category.findMany({ where: { sortOrder: { lt: 900 } }, orderBy: { sortOrder: "asc" } }),
+    prisma.category.findMany({ where: { showInMenu: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
       where,
       include: {

@@ -19,6 +19,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ...(body.slug !== undefined && { slug: body.slug }),
       ...(body.image !== undefined && { image: body.image }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
+      ...(body.parentId !== undefined && { parentId: body.parentId || null }),
+      ...(body.seoTitle !== undefined && { seoTitle: body.seoTitle || null }),
+      ...(body.seoDescription !== undefined && { seoDescription: body.seoDescription || null }),
+      ...(body.showInMenu !== undefined && { showInMenu: body.showInMenu }),
+      ...(body.showInFooter !== undefined && { showInFooter: body.showInFooter }),
     },
     include: { _count: { select: { products: true } } },
   });

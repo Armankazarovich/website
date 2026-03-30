@@ -5,7 +5,6 @@ import { auth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
-import sharp from "sharp";
 
 // Максимальные размеры и качество для разных папок
 const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: number }> = {
@@ -31,18 +30,26 @@ export async function POST(req: Request) {
 
   const cfg = RESIZE_CONFIG[folder] ?? RESIZE_CONFIG.default;
   const timestamp = Date.now();
-  const filename = `upload-${timestamp}.webp`;
   const dir = join(process.cwd(), "public", "images", folder);
 
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 
-  // Сжимаем и конвертируем в WebP
-  const optimized = await sharp(inputBuffer)
-    .resize(cfg.width, cfg.height, { fit: "cover", withoutEnlargement: true })
-    .webp({ quality: cfg.quality })
-    .toBuffer();
+  // Пробуем сжать через sharp → WebP
+  try {
+    const sharp = (await import("sharp")).default;
+    const optimized = await sharp(inputBuffer)
+      .resize(cfg.width, cfg.height, { fit: "cover", withoutEnlargement: true })
+      .webp({ quality: cfg.quality })
+      .toBuffer();
 
-  await writeFile(join(dir, filename), optimized);
-
-  return NextResponse.json({ url: `/images/${folder}/${filename}` });
+    const filename = `upload-${timestamp}.webp`;
+    await writeFile(join(dir, filename), optimized);
+    return NextResponse.json({ url: `/images/${folder}/${filename}` });
+  } catch {
+    // Sharp недоступен или не смог обработать — сохраняем оригинал
+    const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
+    const filename = `upload-${timestamp}.${ext}`;
+    await writeFile(join(dir, filename), inputBuffer);
+    return NextResponse.json({ url: `/images/${folder}/${filename}` });
+  }
 }
