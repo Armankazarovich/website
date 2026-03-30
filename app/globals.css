@@ -25,6 +25,9 @@
     --input: 27 20% 88%;
     --ring: 27 91% 48%;
     --radius: 0.625rem;
+    /* Brand colors as CSS vars for theme switching */
+    --brand-sidebar: 20 64% 25%;
+    --brand-primary: 27 91% 48%;
   }
 
   .dark {
@@ -48,6 +51,158 @@
     --border: 20 14% 20%;
     --input: 20 14% 20%;
     --ring: 27 91% 55%;
+    --brand-sidebar: 20 64% 20%;
+    --brand-primary: 27 91% 55%;
+  }
+
+  /* ── Forest ─────────────────────────────────────── */
+  [data-palette="forest"] {
+    --primary: 168 58% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 20% 94%;
+    --secondary-foreground: 160 30% 10%;
+    --muted: 160 15% 96%;
+    --muted-foreground: 160 15% 45%;
+    --accent: 160 20% 94%;
+    --accent-foreground: 160 30% 10%;
+    --border: 160 15% 88%;
+    --input: 160 15% 88%;
+    --ring: 168 58% 38%;
+    --brand-sidebar: 160 49% 20%;
+    --brand-primary: 168 58% 38%;
+  }
+  .dark[data-palette="forest"] {
+    --primary: 168 58% 48%;
+    --ring: 168 58% 48%;
+    --secondary: 162 20% 16%;
+    --muted: 162 20% 16%;
+    --muted-foreground: 160 20% 55%;
+    --accent: 162 20% 16%;
+    --border: 162 20% 20%;
+    --input: 162 20% 20%;
+    --brand-sidebar: 162 49% 17%;
+    --brand-primary: 168 58% 48%;
+  }
+
+  /* ── Ocean ──────────────────────────────────────── */
+  [data-palette="ocean"] {
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 30% 94%;
+    --secondary-foreground: 214 30% 10%;
+    --muted: 214 20% 96%;
+    --muted-foreground: 214 15% 45%;
+    --accent: 214 30% 94%;
+    --accent-foreground: 214 30% 10%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 217 91% 55%;
+    --brand-sidebar: 214 54% 23%;
+    --brand-primary: 217 91% 55%;
+  }
+  .dark[data-palette="ocean"] {
+    --primary: 217 91% 65%;
+    --ring: 217 91% 65%;
+    --secondary: 214 20% 16%;
+    --muted: 214 20% 16%;
+    --muted-foreground: 214 15% 55%;
+    --accent: 214 20% 16%;
+    --border: 214 20% 20%;
+    --input: 214 20% 20%;
+    --brand-sidebar: 214 54% 20%;
+    --brand-primary: 217 91% 65%;
+  }
+
+  /* ── Midnight ───────────────────────────────────── */
+  [data-palette="midnight"] {
+    --primary: 258 90% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 251 20% 94%;
+    --secondary-foreground: 251 30% 10%;
+    --muted: 251 15% 96%;
+    --muted-foreground: 251 15% 45%;
+    --accent: 251 20% 94%;
+    --accent-foreground: 251 30% 10%;
+    --border: 251 20% 88%;
+    --input: 251 20% 88%;
+    --ring: 258 90% 60%;
+    --brand-sidebar: 251 52% 13%;
+    --brand-primary: 258 90% 60%;
+  }
+  .dark[data-palette="midnight"] {
+    --background: 251 30% 7%;
+    --card: 251 30% 10%;
+    --card-foreground: 251 20% 95%;
+    --popover: 251 30% 10%;
+    --popover-foreground: 251 20% 95%;
+    --primary: 258 90% 70%;
+    --ring: 258 90% 70%;
+    --secondary: 251 20% 16%;
+    --muted: 251 20% 16%;
+    --muted-foreground: 251 15% 60%;
+    --accent: 251 20% 16%;
+    --border: 251 20% 20%;
+    --input: 251 20% 20%;
+    --brand-sidebar: 251 52% 11%;
+    --brand-primary: 258 90% 70%;
+  }
+
+  /* ── Slate ──────────────────────────────────────── */
+  [data-palette="slate"] {
+    --primary: 199 89% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 20% 94%;
+    --secondary-foreground: 215 20% 10%;
+    --muted: 215 15% 96%;
+    --muted-foreground: 215 10% 45%;
+    --accent: 215 20% 94%;
+    --accent-foreground: 215 20% 10%;
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 199 89% 45%;
+    --brand-sidebar: 215 28% 17%;
+    --brand-primary: 199 89% 45%;
+  }
+  .dark[data-palette="slate"] {
+    --primary: 199 89% 55%;
+    --ring: 199 89% 55%;
+    --secondary: 215 15% 16%;
+    --muted: 215 15% 16%;
+    --muted-foreground: 215 10% 55%;
+    --accent: 215 15% 16%;
+    --border: 215 15% 20%;
+    --input: 215 15% 20%;
+    --brand-sidebar: 215 28% 14%;
+    --brand-primary: 199 89% 55%;
+  }
+
+  /* ── Crimson ────────────────────────────────────── */
+  [data-palette="crimson"] {
+    --primary: 10 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 355 20% 94%;
+    --secondary-foreground: 355 30% 10%;
+    --muted: 355 15% 96%;
+    --muted-foreground: 355 15% 45%;
+    --accent: 355 20% 94%;
+    --accent-foreground: 355 30% 10%;
+    --border: 355 20% 88%;
+    --input: 355 20% 88%;
+    --ring: 10 80% 50%;
+    --brand-sidebar: 355 62% 14%;
+    --brand-primary: 10 80% 50%;
+  }
+  .dark[data-palette="crimson"] {
+    --primary: 10 80% 60%;
+    --ring: 10 80% 60%;
+    --secondary: 355 15% 16%;
+    --muted: 355 15% 16%;
+    --muted-foreground: 355 10% 55%;
+    --accent: 355 15% 16%;
+    --border: 355 15% 20%;
+    --input: 355 15% 20%;
+    --brand-sidebar: 355 62% 11%;
+    --brand-primary: 10 80% 60%;
   }
 }
 

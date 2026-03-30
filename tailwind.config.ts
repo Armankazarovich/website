@@ -53,10 +53,10 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // ПилоРус brand colors
+        // ПилоРус brand colors (dynamic via CSS vars for theming)
         brand: {
-          orange: "#E8700A",
-          brown: "#5C3317",
+          orange: "hsl(var(--brand-primary))",
+          brown: "hsl(var(--brand-sidebar))",
           green: "#3A7D1E",
           cream: "#F5E6C8",
           dark: "#1A1A1A",

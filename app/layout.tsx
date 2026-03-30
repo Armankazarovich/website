@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Oswald } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/theme-provider";
+import { PaletteProvider } from "@/components/palette-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushSubscription } from "@/components/push-subscription";
 import { SwRegister } from "@/components/sw-register";
@@ -120,10 +121,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
-          <SwRegister />
-          <PushSubscription />
+          <PaletteProvider>
+            {children}
+            <Toaster />
+            <SwRegister />
+            <PushSubscription />
+          </PaletteProvider>
         </ThemeProvider>
       </body>
     </html>
