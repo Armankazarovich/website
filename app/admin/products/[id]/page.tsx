@@ -110,13 +110,22 @@ export default function AdminProductEditPage() {
 
   const uploadPhotoFile = async (file: File) => {
     setUploadingPhoto(true);
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folder", "products");
-    const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
-    const data = await res.json();
-    if (data.url) setImages([data.url]);
-    setUploadingPhoto(false);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "products");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) {
+        setImages([data.url]);
+      } else {
+        alert(data.error || "Ошибка загрузки фото");
+      }
+    } catch {
+      alert("Ошибка загрузки фото");
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -380,7 +389,7 @@ export default function AdminProductEditPage() {
               <h3 className="font-semibold mb-4">Текущее фото</h3>
               <div className="relative w-72 h-52 rounded-2xl overflow-hidden bg-muted border border-border">
                 {images[0] ? (
-                  <Image src={images[0]} alt={name} fill className="object-cover" />
+                  <Image src={images[0]} alt={name} fill className="object-cover" unoptimized />
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                     <ImageIcon className="w-12 h-12" />

@@ -75,7 +75,7 @@ function CategoryRow({
         {/* Миниатюра */}
         <div className="w-14 h-10 rounded-lg overflow-hidden border bg-muted shrink-0 relative">
           {cat.image
-            ? <Image src={cat.image} alt={cat.name} fill className="object-cover" />
+            ? <Image src={cat.image} alt={cat.name} fill className="object-cover" unoptimized />
             : <div className="absolute inset-0 flex items-center justify-center"><ImageIcon className="w-4 h-4 text-muted-foreground" /></div>
           }
         </div>
@@ -171,6 +171,7 @@ function CategoryModal({
   const [seoTitle, setSeoTitle]             = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [uploading, setUploading]           = useState(false);
+  const [uploadError, setUploadError]       = useState("");
   const [dragOver, setDragOver]             = useState(false);
   const [saving, setSaving]                 = useState(false);
   const [saved, setSaved]                   = useState(false);
@@ -178,28 +179,39 @@ function CategoryModal({
 
   // Заполнить поля при открытии
   useEffect(() => {
-    if (open && cat) {
-      setName(cat.name);
-      setSlug(cat.slug);
-      setImage(cat.image || "");
-      setParentId(cat.parentId || "");
-      setShowInMenu(cat.showInMenu);
-      setShowInFooter(cat.showInFooter);
-      setSeoTitle(cat.seoTitle || "");
-      setSeoDescription(cat.seoDescription || "");
+    if (open) {
+      setName(cat?.name ?? "");
+      setSlug(cat?.slug ?? "");
+      setImage(cat?.image || "");
+      setParentId(cat?.parentId || "");
+      setShowInMenu(cat?.showInMenu ?? true);
+      setShowInFooter(cat?.showInFooter ?? true);
+      setSeoTitle(cat?.seoTitle || "");
+      setSeoDescription(cat?.seoDescription || "");
       setSaved(false);
+      setUploadError("");
     }
   }, [open, cat]);
 
   const uploadFile = async (file: File) => {
     setUploading(true);
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("folder", "categories");
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    if (data.url) setImage(data.url);
-    setUploading(false);
+    setUploadError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "categories");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) {
+        setImage(data.url);
+      } else {
+        setUploadError(data.error || "Ошибка загрузки");
+      }
+    } catch (e) {
+      setUploadError("Ошибка загрузки файла");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -256,7 +268,7 @@ function CategoryModal({
                   <Loader2 className="w-5 h-5 animate-spin text-primary" />
                 </div>
               ) : image ? (
-                <Image src={image} alt="preview" fill className="object-cover" />
+                <Image src={image} alt="preview" fill className="object-cover" unoptimized />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-1.5">
                   <Upload className="w-5 h-5" />
@@ -273,6 +285,9 @@ function CategoryModal({
               <button onClick={() => setImage("")} className="text-[10px] text-muted-foreground hover:text-destructive mt-1 w-full text-center">
                 Убрать
               </button>
+            )}
+            {uploadError && (
+              <p className="text-[10px] text-destructive mt-1 text-center">{uploadError}</p>
             )}
           </div>
 
