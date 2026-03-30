@@ -204,6 +204,246 @@
     --brand-sidebar: 355 62% 11%;
     --brand-primary: 10 80% 60%;
   }
+
+  /* ══ MARKETPLACE THEMES ═══════════════════════════ */
+
+  /* ── Wildberries ─────────────────────────────────── */
+  [data-palette="wildberries"] {
+    --primary: 308 84% 43%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 308 30% 94%;
+    --secondary-foreground: 308 40% 10%;
+    --muted: 308 15% 96%;
+    --muted-foreground: 308 15% 45%;
+    --accent: 308 30% 94%;
+    --accent-foreground: 308 40% 10%;
+    --border: 308 20% 88%;
+    --input: 308 20% 88%;
+    --ring: 308 84% 43%;
+    --brand-sidebar: 258 45% 13%;
+    --brand-primary: 308 84% 43%;
+  }
+  .dark[data-palette="wildberries"] {
+    --background: 258 30% 7%;
+    --card: 258 30% 10%;
+    --card-foreground: 258 20% 95%;
+    --popover: 258 30% 10%;
+    --popover-foreground: 258 20% 95%;
+    --primary: 308 84% 55%;
+    --ring: 308 84% 55%;
+    --secondary: 258 20% 16%;
+    --muted: 258 20% 16%;
+    --muted-foreground: 258 15% 60%;
+    --accent: 258 20% 16%;
+    --border: 258 20% 20%;
+    --input: 258 20% 20%;
+    --brand-sidebar: 258 45% 11%;
+    --brand-primary: 308 84% 55%;
+  }
+
+  /* ── Ozon ────────────────────────────────────────── */
+  [data-palette="ozon"] {
+    --primary: 220 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 40% 94%;
+    --secondary-foreground: 220 40% 10%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 15% 45%;
+    --accent: 220 40% 94%;
+    --accent-foreground: 220 40% 10%;
+    --border: 220 20% 88%;
+    --input: 220 20% 88%;
+    --ring: 220 100% 50%;
+    --brand-sidebar: 225 100% 20%;
+    --brand-primary: 220 100% 50%;
+  }
+  .dark[data-palette="ozon"] {
+    --background: 225 40% 7%;
+    --card: 225 40% 10%;
+    --card-foreground: 225 20% 95%;
+    --popover: 225 40% 10%;
+    --popover-foreground: 225 20% 95%;
+    --primary: 220 100% 62%;
+    --ring: 220 100% 62%;
+    --secondary: 225 20% 16%;
+    --muted: 225 20% 16%;
+    --muted-foreground: 225 15% 60%;
+    --accent: 225 20% 16%;
+    --border: 225 20% 20%;
+    --input: 225 20% 20%;
+    --brand-sidebar: 225 100% 17%;
+    --brand-primary: 220 100% 62%;
+  }
+
+  /* ── Яндекс ──────────────────────────────────────── */
+  [data-palette="yandex"] {
+    --primary: 10 97% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 10 20% 94%;
+    --secondary-foreground: 10 30% 10%;
+    --muted: 10 10% 96%;
+    --muted-foreground: 10 10% 45%;
+    --accent: 10 20% 94%;
+    --accent-foreground: 10 30% 10%;
+    --border: 10 15% 88%;
+    --input: 10 15% 88%;
+    --ring: 10 97% 55%;
+    --brand-sidebar: 0 0% 10%;
+    --brand-primary: 10 97% 55%;
+  }
+  .dark[data-palette="yandex"] {
+    --background: 0 0% 8%;
+    --card: 0 0% 11%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 10 97% 62%;
+    --ring: 10 97% 62%;
+    --secondary: 0 0% 16%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 55%;
+    --accent: 0 0% 16%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --brand-sidebar: 0 0% 8%;
+    --brand-primary: 10 97% 62%;
+  }
+
+  /* ── AliExpress ──────────────────────────────────── */
+  [data-palette="aliexpress"] {
+    --primary: 14 100% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 14 30% 94%;
+    --secondary-foreground: 14 40% 10%;
+    --muted: 14 15% 96%;
+    --muted-foreground: 14 15% 45%;
+    --accent: 14 30% 94%;
+    --accent-foreground: 14 40% 10%;
+    --border: 14 20% 88%;
+    --input: 14 20% 88%;
+    --ring: 14 100% 53%;
+    --brand-sidebar: 0 100% 9%;
+    --brand-primary: 14 100% 53%;
+  }
+  .dark[data-palette="aliexpress"] {
+    --background: 0 50% 6%;
+    --card: 0 40% 9%;
+    --card-foreground: 10 20% 95%;
+    --popover: 0 40% 9%;
+    --popover-foreground: 10 20% 95%;
+    --primary: 14 100% 62%;
+    --ring: 14 100% 62%;
+    --secondary: 0 20% 15%;
+    --muted: 0 20% 15%;
+    --muted-foreground: 0 10% 55%;
+    --accent: 0 20% 15%;
+    --border: 0 20% 18%;
+    --input: 0 20% 18%;
+    --brand-sidebar: 0 100% 7%;
+    --brand-primary: 14 100% 62%;
+  }
+
+  /* ── Amazon ──────────────────────────────────────── */
+  [data-palette="amazon"] {
+    --primary: 36 100% 50%;
+    --primary-foreground: 0 0% 10%;
+    --secondary: 36 30% 94%;
+    --secondary-foreground: 36 30% 10%;
+    --muted: 36 15% 96%;
+    --muted-foreground: 36 10% 45%;
+    --accent: 36 30% 94%;
+    --accent-foreground: 36 30% 10%;
+    --border: 36 15% 88%;
+    --input: 36 15% 88%;
+    --ring: 36 100% 50%;
+    --brand-sidebar: 208 27% 19%;
+    --brand-primary: 36 100% 50%;
+  }
+  .dark[data-palette="amazon"] {
+    --background: 208 20% 8%;
+    --card: 208 20% 11%;
+    --card-foreground: 36 20% 95%;
+    --popover: 208 20% 11%;
+    --popover-foreground: 36 20% 95%;
+    --primary: 36 100% 55%;
+    --ring: 36 100% 55%;
+    --secondary: 208 15% 16%;
+    --muted: 208 15% 16%;
+    --muted-foreground: 208 10% 55%;
+    --accent: 208 15% 16%;
+    --border: 208 15% 20%;
+    --input: 208 15% 20%;
+    --brand-sidebar: 208 27% 16%;
+    --brand-primary: 36 100% 55%;
+  }
+
+  /* ── Авито ───────────────────────────────────────── */
+  [data-palette="avito"] {
+    --primary: 204 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 204 30% 94%;
+    --secondary-foreground: 204 30% 10%;
+    --muted: 204 15% 96%;
+    --muted-foreground: 204 15% 45%;
+    --accent: 204 30% 94%;
+    --accent-foreground: 204 30% 10%;
+    --border: 204 20% 88%;
+    --input: 204 20% 88%;
+    --ring: 204 100% 50%;
+    --brand-sidebar: 207 77% 21%;
+    --brand-primary: 204 100% 50%;
+  }
+  .dark[data-palette="avito"] {
+    --background: 207 30% 7%;
+    --card: 207 30% 10%;
+    --card-foreground: 204 20% 95%;
+    --popover: 207 30% 10%;
+    --popover-foreground: 204 20% 95%;
+    --primary: 204 100% 60%;
+    --ring: 204 100% 60%;
+    --secondary: 207 20% 16%;
+    --muted: 207 20% 16%;
+    --muted-foreground: 207 15% 55%;
+    --accent: 207 20% 16%;
+    --border: 207 20% 20%;
+    --input: 207 20% 20%;
+    --brand-sidebar: 207 77% 18%;
+    --brand-primary: 204 100% 60%;
+  }
+
+  /* ── СберМегаМаркет ──────────────────────────────── */
+  [data-palette="sber"] {
+    --primary: 134 66% 37%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 134 20% 94%;
+    --secondary-foreground: 134 30% 10%;
+    --muted: 134 10% 96%;
+    --muted-foreground: 134 10% 45%;
+    --accent: 134 20% 94%;
+    --accent-foreground: 134 30% 10%;
+    --border: 134 15% 88%;
+    --input: 134 15% 88%;
+    --ring: 134 66% 37%;
+    --brand-sidebar: 145 74% 10%;
+    --brand-primary: 134 66% 37%;
+  }
+  .dark[data-palette="sber"] {
+    --background: 145 30% 6%;
+    --card: 145 30% 9%;
+    --card-foreground: 134 20% 95%;
+    --popover: 145 30% 9%;
+    --popover-foreground: 134 20% 95%;
+    --primary: 134 66% 47%;
+    --ring: 134 66% 47%;
+    --secondary: 145 20% 15%;
+    --muted: 145 20% 15%;
+    --muted-foreground: 145 10% 55%;
+    --accent: 145 20% 15%;
+    --border: 145 20% 18%;
+    --input: 145 20% 18%;
+    --brand-sidebar: 145 74% 8%;
+    --brand-primary: 134 66% 47%;
+  }
 }
 
 @layer base {

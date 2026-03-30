@@ -2,46 +2,42 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export const PALETTES = [
-  {
-    id: "timber",
-    name: "Timber",
-    sidebar: "#5C3317",
-    accent: "#E8700A",
-  },
-  {
-    id: "forest",
-    name: "Forest",
-    sidebar: "#1A4D3D",
-    accent: "#2BA88F",
-  },
-  {
-    id: "ocean",
-    name: "Ocean",
-    sidebar: "#1B3A5C",
-    accent: "#3B82F6",
-  },
-  {
-    id: "midnight",
-    name: "Midnight",
-    sidebar: "#1A1033",
-    accent: "#8B5CF6",
-  },
-  {
-    id: "slate",
-    name: "Slate",
-    sidebar: "#1E293B",
-    accent: "#0EA5E9",
-  },
-  {
-    id: "crimson",
-    name: "Crimson",
-    sidebar: "#3D0C11",
-    accent: "#E8472A",
-  },
-] as const;
+export type PaletteItem = {
+  id: string;
+  name: string;
+  sidebar: string;
+  accent: string;
+};
 
-export type PaletteId = (typeof PALETTES)[number]["id"];
+export const PALETTE_GROUPS: { label: string; palettes: PaletteItem[] }[] = [
+  {
+    label: "Наши темы",
+    palettes: [
+      { id: "timber",    name: "Timber (наш)",      sidebar: "#5C3317", accent: "#E8700A" },
+      { id: "forest",    name: "Forest",             sidebar: "#1A4D3D", accent: "#2BA88F" },
+      { id: "ocean",     name: "Ocean",              sidebar: "#1B3A5C", accent: "#3B82F6" },
+      { id: "midnight",  name: "Midnight",           sidebar: "#1A1033", accent: "#8B5CF6" },
+      { id: "slate",     name: "Slate",              sidebar: "#1E293B", accent: "#0EA5E9" },
+      { id: "crimson",   name: "Crimson",            sidebar: "#3D0C11", accent: "#E8472A" },
+    ],
+  },
+  {
+    label: "Маркетплейсы",
+    palettes: [
+      { id: "wildberries", name: "Wildberries",      sidebar: "#1C1230", accent: "#CB11AB" },
+      { id: "ozon",        name: "Ozon",             sidebar: "#001A66", accent: "#005BFF" },
+      { id: "yandex",      name: "Яндекс",           sidebar: "#1A1A1A", accent: "#FC3F1D" },
+      { id: "aliexpress",  name: "AliExpress",       sidebar: "#2D0000", accent: "#FF4010" },
+      { id: "amazon",      name: "Amazon",           sidebar: "#232F3E", accent: "#FF9900" },
+      { id: "avito",       name: "Авито",            sidebar: "#0A3D62", accent: "#00AAFF" },
+      { id: "sber",        name: "СберМегаМаркет",   sidebar: "#052E16", accent: "#21A038" },
+    ],
+  },
+];
+
+export const PALETTES: PaletteItem[] = PALETTE_GROUPS.flatMap((g) => g.palettes);
+
+export type PaletteId = string;
 
 const STORAGE_KEY = "color-palette";
 
@@ -68,7 +64,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
   const [palette, setPaletteState] = useState<PaletteId>("timber");
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as PaletteId | null;
+    const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && PALETTES.find((p) => p.id === stored)) {
       setPaletteState(stored);
       applyPalette(stored);

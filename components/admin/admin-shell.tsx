@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
-import { usePalette, PALETTES } from "@/components/palette-provider";
+import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
 
 interface AdminShellProps {
   role: string;
@@ -35,25 +35,29 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         <div className="p-3 border-t border-white/10 space-y-1">
           <AdminPwaInstall />
           {/* Palette picker */}
-          <div className="px-3 py-2">
-            <p className="text-xs text-white/40 mb-2">Цветовая тема</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {PALETTES.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPalette(p.id)}
-                  title={p.name}
-                  className={`w-5 h-5 rounded-full border-2 transition-all ${
-                    palette === p.id
-                      ? "border-white scale-110"
-                      : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
-                  }`}
-                  style={{
-                    background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                  }}
-                />
-              ))}
-            </div>
+          <div className="px-3 py-2 space-y-2">
+            {PALETTE_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs text-white/40 mb-1.5">{group.label}</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {group.palettes.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPalette(p.id)}
+                      title={p.name}
+                      className={`w-5 h-5 rounded-full border-2 transition-all ${
+                        palette === p.id
+                          ? "border-white scale-110"
+                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
+                      }`}
+                      style={{
+                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
           <button
@@ -119,25 +123,29 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         <div className="p-3 border-t border-white/10 space-y-1">
           <AdminPwaInstall />
           {/* Palette picker */}
-          <div className="px-3 py-2">
-            <p className="text-xs text-white/40 mb-2">Цветовая тема</p>
-            <div className="flex gap-1.5 flex-wrap">
-              {PALETTES.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPalette(p.id)}
-                  title={p.name}
-                  className={`w-5 h-5 rounded-full border-2 transition-all ${
-                    palette === p.id
-                      ? "border-white scale-110"
-                      : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
-                  }`}
-                  style={{
-                    background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                  }}
-                />
-              ))}
-            </div>
+          <div className="px-3 py-2 space-y-2">
+            {PALETTE_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs text-white/40 mb-1.5">{group.label}</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  {group.palettes.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setPalette(p.id)}
+                      title={p.name}
+                      className={`w-5 h-5 rounded-full border-2 transition-all ${
+                        palette === p.id
+                          ? "border-white scale-110"
+                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
+                      }`}
+                      style={{
+                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
           <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
           <button
