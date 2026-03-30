@@ -110,7 +110,7 @@ export const metadata: Metadata = {
 async function getData() {
   const [categories, featuredProducts, promotions, reviews] = await Promise.all([
     prisma.category.findMany({
-      where: { sortOrder: { lt: 900 } },
+      where: { showInMenu: true },
       orderBy: { sortOrder: "asc" },
       include: { _count: { select: { products: true } } },
       take: 6,

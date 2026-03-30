@@ -109,6 +109,7 @@ export default async function ProductPage({ params }: Props) {
                 fill
                 className="object-cover"
                 priority
+                unoptimized
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
@@ -128,7 +129,7 @@ export default async function ProductPage({ params }: Props) {
             <div className="flex gap-2 overflow-x-auto pb-1">
               {product.images.map((img, i) => (
                 <div key={i} className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-border cursor-pointer hover:border-primary transition-colors">
-                  <Image src={img} alt={`${product.name} ${i + 1}`} fill className="object-cover" />
+                  <Image src={img} alt={`${product.name} ${i + 1}`} fill className="object-cover" unoptimized />
                 </div>
               ))}
             </div>
