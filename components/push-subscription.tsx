@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array {
@@ -85,7 +85,66 @@ export function PushSubscription() {
     init();
   }, [session?.user?.id]); // перезапуск при логине/логауте
 
-  return null;
+  return <PushPromptBanner />;
+}
+
+// ── Smart Push Prompt Banner ──────────────────────────────────────────────────
+const BANNER_KEY = "push_prompt_dismissed_at";
+
+export function PushPromptBanner() {
+  const [show, setShow] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    if (!("Notification" in window) || !("PushManager" in window) || !("serviceWorker" in navigator)) return;
+    if (Notification.permission === "granted" || Notification.permission === "denied") return;
+    if (!process.env.NEXT_PUBLIC_VAPID_KEY) return;
+    const dismissed = localStorage.getItem(BANNER_KEY);
+    if (dismissed && (Date.now() - Number(dismissed)) < 7 * 86400000) return;
+    const t = setTimeout(() => setShow(true), 8000);
+    return () => clearTimeout(t);
+  }, []);
+
+  const dismiss = () => { localStorage.setItem(BANNER_KEY, String(Date.now())); setShow(false); };
+
+  const handleSubscribe = async () => {
+    setBusy(true);
+    try {
+      const ok = await requestPushPermission();
+      if (ok) { setDone(true); setTimeout(() => setShow(false), 2000); }
+      else dismiss();
+    } catch { dismiss(); } finally { setBusy(false); }
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed bottom-20 lg:bottom-6 left-4 right-4 lg:left-auto lg:right-6 lg:w-[360px] z-50" style={{animation:"slideUp .3s ease"}}>
+      <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <div className="bg-card border border-border rounded-2xl shadow-2xl p-4 relative">
+        {done ? (
+          <p className="text-sm font-medium text-emerald-600 py-1">✓ Уведомления включены!</p>
+        ) : (
+          <>
+            <button onClick={dismiss} className="absolute top-3 right-3 w-6 h-6 text-muted-foreground hover:text-foreground text-lg leading-none">×</button>
+            <div className="flex items-start gap-3 pr-6">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary text-lg">🔔</div>
+              <div><p className="font-semibold text-sm">Включите уведомления</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Статус заказов и акции — первыми</p></div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button onClick={handleSubscribe} disabled={busy}
+                className="flex-1 py-2 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60">
+                {busy ? "..." : "Включить"}
+              </button>
+              <button onClick={dismiss} className="py-2 px-3 rounded-xl text-xs text-muted-foreground hover:bg-muted">Не сейчас</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // Экспортируем функцию для вызова из PWA-баннера при явном запросе

@@ -17,7 +17,22 @@ import {
   Download,
   Users,
   Loader2,
+  Package,
 } from "lucide-react";
+
+function CartItemImage({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-2xl">
+        <Package className="w-8 h-8 text-muted-foreground/30" />
+      </div>
+    );
+  }
+  return (
+    <Image src={src} alt={alt} fill className="object-cover" unoptimized onError={() => setError(true)} />
+  );
+}
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -287,7 +302,7 @@ export default function CartPage() {
               {/* Image */}
               <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted shrink-0">
                 {item.productImage ? (
-                  <Image src={item.productImage} alt={item.productName} fill className="object-cover" />
+                  <CartItemImage src={item.productImage} alt={item.productName} />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-2xl">🪵</div>
                 )}

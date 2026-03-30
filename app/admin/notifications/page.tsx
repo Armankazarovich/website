@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity } from "lucide-react";
+import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity, Trash2 } from "lucide-react";
 import { requestPushPermission } from "@/components/push-subscription";
 
 const SEGMENTS = [
@@ -53,6 +53,8 @@ export default function NotificationsPage() {
   const [debugLoading, setDebugLoading] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [subscribeResult, setSubscribeResult] = useState<"ok" | "err" | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleanResult, setCleanResult] = useState<string | null>(null);
 
   const checkDebug = async () => {
     setDebugLoading(true);
@@ -87,6 +89,30 @@ export default function NotificationsPage() {
       setSubscribeResult("err");
     } finally {
       setSubscribing(false);
+    }
+  };
+
+  const handleCleanup = async () => {
+    setCleaning(true);
+    setCleanResult(null);
+    try {
+      const res = await fetch("/api/push/cleanup", { method: "POST" });
+      const data = await res.json();
+      setCleanResult(data.message || "Готово");
+      // Обновить список подписчиков
+      setSubs([]);
+      if (tab === "subscribers") {
+        setSubsLoading(true);
+        fetch("/api/push/subscribers")
+          .then((r) => r.json())
+          .then((d) => { if (Array.isArray(d)) setSubs(d); })
+          .finally(() => setSubsLoading(false));
+      }
+      if (debug) setTimeout(() => checkDebug(), 500);
+    } catch {
+      setCleanResult("Ошибка очистки");
+    } finally {
+      setCleaning(false);
     }
   };
 
@@ -183,7 +209,7 @@ export default function NotificationsPage() {
                 <Activity className="w-4 h-4 text-muted-foreground" />
                 Диагностика Push
               </h2>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={checkDebug}
@@ -201,6 +227,15 @@ export default function NotificationsPage() {
                 >
                   {subscribing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bell className="w-3 h-3" />}
                   Подписаться сейчас
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCleanup}
+                  disabled={cleaning}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {cleaning ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                  Очистить дубли
                 </button>
               </div>
             </div>

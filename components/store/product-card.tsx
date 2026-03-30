@@ -8,6 +8,29 @@ import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { WishlistButton } from "@/components/store/wishlist-button";
 import { flyToCart } from "@/lib/cart-fly";
+import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+
+const PUSH_TOAST_KEY = "push_cart_toast_shown";
+
+async function enablePushFromToast(): Promise<boolean> {
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
+  if (!vapidKey || !("Notification" in window) || !("PushManager" in window)) return false;
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") return false;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const b64 = (s: string) => { const p = "=".repeat((4-s.length%4)%4); const b=(s+p).replace(/-/g,"+").replace(/_/g,"/"); return Uint8Array.from([...atob(b)].map(c=>c.charCodeAt(0))); };
+    const sub = existing ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(vapidKey) as unknown as BufferSource });
+    const k = sub.getKey("p256dh"); const a = sub.getKey("auth");
+    if (k && a) {
+      const toB64 = (buf: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+      await fetch("/api/push/subscribe", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: toB64(k), auth: toB64(a) } }) });
+    }
+    return true;
+  } catch { return false; }
+}
 
 interface Variant {
   id: string;
@@ -37,6 +60,7 @@ export function ProductCard({
   id, slug, name, category, images, saleUnit, variants, featured,
 }: ProductCardProps) {
   const { addItem } = useCartStore();
+  const { toast } = useToast();
 
   const activeVariants = variants.filter((v) => v.inStock);
   const firstVariant = activeVariants[0] || variants[0];
@@ -74,6 +98,33 @@ export function ProductCard({
       price: Number(price),
     });
 
+    // Push-тост — один раз за сессию, только если ещё не подписан
+    if (
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "default" &&
+      !sessionStorage.getItem(PUSH_TOAST_KEY)
+    ) {
+      sessionStorage.setItem(PUSH_TOAST_KEY, "1");
+      setTimeout(() => {
+        toast({
+          title: "Товар добавлен в корзину 🛒",
+          description: "Включить уведомления об изменении цен и акциях?",
+          duration: 8000,
+          action: (
+            <ToastAction
+              altText="Включить уведомления"
+              onClick={async () => {
+                const ok = await enablePushFromToast();
+                if (ok) toast({ title: "✓ Уведомления включены!", duration: 3000 });
+              }}
+            >
+              Включить
+            </ToastAction>
+          ),
+        });
+      }, 1200);
+    }
   };
 
   /* Показываем первые 3 размера + счётчик остальных */

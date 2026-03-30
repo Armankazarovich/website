@@ -15,7 +15,7 @@ function getWebPush() {
 }
 
 async function sendToSubscriptions(
-  subscriptions: { endpoint: string; p256dh: string; auth: string }[],
+  subscriptions: { id: string; endpoint: string; p256dh: string; auth: string }[],
   payload: object
 ) {
   if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
@@ -30,8 +30,22 @@ async function sendToSubscriptions(
       )
     )
   );
-  const failed = results.filter((r) => r.status === "rejected").length;
-  return { sent: results.length - failed, failed };
+
+  // Удаляем мёртвые подписки (410/404)
+  const deadIds: string[] = [];
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      const status = result.reason?.statusCode;
+      if (status === 410 || status === 404) deadIds.push(subscriptions[i].id);
+    }
+  });
+  if (deadIds.length > 0) {
+    await prisma.pushSubscription.deleteMany({ where: { id: { in: deadIds } } });
+  }
+
+  const failedCount = results.filter((r) => r.status === "rejected").length - deadIds.length;
+  const sentCount = results.filter((r) => r.status === "fulfilled").length;
+  return { sent: sentCount, failed: failedCount, cleaned: deadIds.length };
 }
 
 export async function POST(req: NextRequest) {
@@ -47,7 +61,7 @@ export async function POST(req: NextRequest) {
   }
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  let subscriptions: { endpoint: string; p256dh: string; auth: string }[];
+  let subscriptions: { id: string; endpoint: string; p256dh: string; auth: string }[];
 
   if (segment === "all") {
     subscriptions = await prisma.pushSubscription.findMany();

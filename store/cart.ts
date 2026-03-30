@@ -45,7 +45,13 @@ export const useCartStore = create<CartStore>()(
           set((state) => ({
             items: state.items.map((i) =>
               i.id === id
-                ? { ...i, quantity: parseFloat((i.quantity + item.quantity).toFixed(1)) }
+                ? {
+                    ...i,
+                    quantity: parseFloat((i.quantity + item.quantity).toFixed(1)),
+                    // Обновляем фото если изменилось в админке
+                    productImage: item.productImage || i.productImage,
+                    price: item.price,
+                  }
                 : i
             ),
           }));

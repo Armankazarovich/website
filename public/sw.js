@@ -29,12 +29,21 @@ self.addEventListener('push', function(event) {
   };
 
   event.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(title, options).then(function() {
+      // Показать значок на иконке приложения (Badge API)
+      if (self.navigator && 'setAppBadge' in self.navigator) {
+        self.navigator.setAppBadge(1).catch(function() {});
+      }
+    })
   );
 });
 
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  // Сбросить значок при открытии уведомления
+  if (self.navigator && 'clearAppBadge' in self.navigator) {
+    self.navigator.clearAppBadge().catch(function() {});
+  }
 
   var url = '/';
   if (event.notification.data && event.notification.data.url) {

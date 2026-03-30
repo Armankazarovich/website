@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, User, LogOut, ChevronRight, LayoutDashboard } from "lucide-react";
+import { ShoppingBag, User, Bell, LogOut, ChevronRight, LayoutDashboard } from "lucide-react";
 import { signOut } from "next-auth/react";
 
 interface SidebarUser {
@@ -14,8 +14,9 @@ interface SidebarUser {
 }
 
 const NAV_ITEMS = [
-  { href: "/cabinet",          icon: ShoppingBag, label: "Мои заказы",  desc: "История и статусы" },
-  { href: "/cabinet/profile",  icon: User,        label: "Профиль",      desc: "Данные и настройки" },
+  { href: "/cabinet",                  icon: ShoppingBag, label: "Мои заказы",     desc: "История и статусы" },
+  { href: "/cabinet/profile",          icon: User,        label: "Профиль",         desc: "Данные и настройки" },
+  { href: "/cabinet/notifications",    icon: Bell,        label: "Уведомления",     desc: "Push-подписка" },
 ];
 
 function getInitials(name: string | null, email: string) {

@@ -8,6 +8,25 @@ import { X, ShoppingCart, Minus, Plus, Trash2, Package, ArrowRight } from "lucid
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 
+function CartImage({ src, alt }: { src: string; alt: string }) {
+  const [error, setError] = useState(false);
+  if (error) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Package className="w-7 h-7 text-muted-foreground/40" />
+      </div>
+    );
+  }
+  return (
+    <Image
+      src={src} alt={alt}
+      fill className="object-cover" sizes="64px"
+      unoptimized
+      onError={() => setError(true)}
+    />
+  );
+}
+
 export function CartDrawer() {
   const { cartOpen, setCartOpen, items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore();
   const [mounted, setMounted] = useState(false);
@@ -87,10 +106,7 @@ export function CartDrawer() {
                         className="relative w-16 h-16 rounded-xl overflow-hidden bg-muted shrink-0 hover:opacity-80 transition-opacity"
                       >
                         {item.productImage ? (
-                          <Image
-                            src={item.productImage} alt={item.productName}
-                            fill className="object-cover" sizes="64px"
-                          />
+                          <CartImage src={item.productImage} alt={item.productName} />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Package className="w-7 h-7 text-muted-foreground/40" />

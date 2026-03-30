@@ -140,6 +140,37 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [orderNum, setOrderNum] = useState<number | null>(null);
   const [orderPhone, setOrderPhone] = useState("");
+  const [pushState, setPushState] = useState<"idle" | "busy" | "done" | "denied" | "unsupported">("idle");
+
+  useEffect(() => {
+    if (!success) return;
+    if (!("Notification" in window) || !("PushManager" in window) || !("serviceWorker" in navigator)) {
+      setPushState("unsupported"); return;
+    }
+    if (Notification.permission === "granted") setPushState("done");
+    else if (Notification.permission === "denied") setPushState("denied");
+    else setPushState("idle");
+  }, [success]);
+
+  const handleEnablePush = async () => {
+    setPushState("busy");
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") { setPushState("denied"); return; }
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
+      if (!vapidKey) { setPushState("done"); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      const b64 = (s: string) => { const p = "=".repeat((4-s.length%4)%4); const b=(s+p).replace(/-/g,"+").replace(/_/g,"/"); return Uint8Array.from([...atob(b)].map(c=>c.charCodeAt(0))); };
+      const sub = existing ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(vapidKey) as unknown as BufferSource });
+      const k = sub.getKey("p256dh"); const a = sub.getKey("auth");
+      if (k && a) {
+        const toB64 = (buf: ArrayBuffer) => btoa(String.fromCharCode(...new Uint8Array(buf)));
+        await fetch("/api/push/subscribe", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ endpoint: sub.endpoint, keys: { p256dh: toB64(k), auth: toB64(a) } }) });
+      }
+      setPushState("done");
+    } catch { setPushState("idle"); }
+  };
   const [phoneValue, setPhoneValue] = useState("");
   const [clientType, setClientType] = useState<ClientType>("individual");
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
@@ -296,6 +327,38 @@ export default function CheckoutPage() {
           </svg>
           Отследить статус заказа
         </a>
+
+        {/* Push-уведомления — показываем если не подписан */}
+        {pushState !== "unsupported" && pushState !== "done" && (
+          <div className={`rounded-2xl p-4 mb-4 border ${pushState === "denied" ? "bg-muted/30 border-border" : "bg-primary/5 border-primary/20"}`}>
+            {pushState === "denied" ? (
+              <p className="text-xs text-muted-foreground text-center">
+                💡 Разрешите уведомления в настройках браузера — и мы пришлём статус заказа
+              </p>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">🔔</div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">Следите за заказом</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Пришлём уведомление когда заказ будет готов</p>
+                </div>
+                <button
+                  onClick={handleEnablePush}
+                  disabled={pushState === "busy"}
+                  className="shrink-0 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                >
+                  {pushState === "busy" ? "..." : "Включить"}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {pushState === "done" && (
+          <div className="rounded-2xl p-3 mb-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-center">
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">✓ Уведомления включены — пришлём статус заказа</p>
+          </div>
+        )}
 
         {/* Как ещё найти заказ */}
         <div className="bg-muted/50 rounded-2xl p-4 mb-6 text-sm text-muted-foreground space-y-2">

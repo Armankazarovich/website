@@ -34,6 +34,7 @@ export function PwaInstall() {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [showSteps, setShowSteps] = useState(false);
   const [pushState, setPushState] = useState<"idle" | "granted" | "denied">("idle");
+  const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
     const p = detectPlatform();
@@ -48,14 +49,18 @@ export function PwaInstall() {
       }
     } catch {}
 
-    // Инициализируем состояние push
+    // Проверяем установлен ли PWA через getInstalledRelatedApps (Chrome Android)
+    if ("getInstalledRelatedApps" in navigator) {
+      (navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
+        if (apps && apps.length > 0) setAlreadyInstalled(true);
+      }).catch(() => {});
+    }
+
     if (typeof Notification !== "undefined") {
       if (Notification.permission === "granted") setPushState("granted");
       else if (Notification.permission === "denied") setPushState("denied");
     }
 
-    // Умная задержка: если куки уже приняты — показываем через 5s
-    // Если нет — ждём событие cookies-accepted или 25s fallback
     const cookiesAccepted = localStorage.getItem("cookies-accepted");
     if (cookiesAccepted) {
       const t = setTimeout(() => setVisible(true), 5000);
@@ -100,7 +105,12 @@ export function PwaInstall() {
     }
   };
 
-  if (!visible || platform === "installed" || platform === null) return null;
+  // В PWA-режиме баннер не нужен — управление уведомлениями в /cabinet/notifications
+  if (platform === "installed") return null;
+  // Не показываем пока не пришло время
+  if (!visible) return null;
+  // Платформа не определена — не показываем
+  if (platform === null) return null;
 
   return (
     <AnimatePresence>
@@ -113,11 +123,9 @@ export function PwaInstall() {
           className="fixed right-4 bottom-[84px] lg:bottom-6 z-[150] w-[300px] sm:w-[320px]"
         >
           <div className="bg-card border border-border rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
-            {/* Brand accent stripe */}
             <div className="h-1 bg-gradient-to-r from-brand-orange to-brand-brown" />
 
             <div className="p-4">
-              {/* Header row */}
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-white border border-border/40 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
                   <img src="/logo.png" alt="ПилоРус" width={32} height={32} className="object-contain" />
@@ -125,7 +133,9 @@ export function PwaInstall() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm text-foreground leading-tight">ПилоРус — приложение</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {platform === "ios-other"
+                    {alreadyInstalled
+                      ? "Приложение установлено"
+                      : platform === "ios-other"
                       ? "Откройте в Safari для установки"
                       : platform === "desktop-other"
                       ? "Откройте в Chrome"
@@ -141,7 +151,6 @@ export function PwaInstall() {
                 </button>
               </div>
 
-              {/* iOS steps */}
               {showSteps && platform === "ios-safari" && (
                 <div className="mt-3 space-y-1.5">
                   {[
@@ -156,25 +165,37 @@ export function PwaInstall() {
                 </div>
               )}
 
-              {/* Action buttons */}
               {!showSteps && (
                 <>
                   <div className="mt-3 flex items-center gap-2">
-                    {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
-                      <button
-                        onClick={handleInstall}
-                        className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                    {alreadyInstalled ? (
+                      <a
+                        href={window.location.href}
+                        rel="noreferrer"
+                        className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90 text-center"
+                        onClick={dismiss}
                       >
-                        Установить
-                      </button>
-                    )}
-                    {platform === "ios-safari" && (
-                      <button
-                        onClick={handleInstall}
-                        className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
-                      >
-                        Как установить
-                      </button>
+                        Открыть в приложении
+                      </a>
+                    ) : (
+                      <>
+                        {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
+                          <button
+                            onClick={handleInstall}
+                            className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                          >
+                            Установить
+                          </button>
+                        )}
+                        {platform === "ios-safari" && (
+                          <button
+                            onClick={handleInstall}
+                            className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
+                          >
+                            Как установить
+                          </button>
+                        )}
+                      </>
                     )}
                     <button
                       onClick={dismiss}
@@ -184,26 +205,18 @@ export function PwaInstall() {
                     </button>
                   </div>
 
-                  {/* Push уведомления */}
-                  {"PushManager" in (typeof window !== "undefined" ? window : {}) && (
+                  {"PushManager" in (typeof window !== "undefined" ? window : {}) && pushState === "idle" && (
                     <div className="mt-2 pt-2 border-t border-border/50">
-                      {pushState === "idle" && (
-                        <button
-                          onClick={async () => {
-                            const ok = await requestPushPermission();
-                            setPushState(ok ? "granted" : "denied");
-                          }}
-                          className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-2 rounded-lg hover:bg-muted"
-                        >
-                          <Bell className="w-3.5 h-3.5 text-primary shrink-0" />
-                          <span>Уведомления о заказах и акциях</span>
-                        </button>
-                      )}
-                      {pushState === "granted" && (
-                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1.5 px-2 py-1.5">
-                          <Bell className="w-3 h-3 shrink-0" /> Уведомления включены ✓
-                        </p>
-                      )}
+                      <button
+                        onClick={async () => {
+                          const ok = await requestPushPermission();
+                          setPushState(ok ? "granted" : "denied");
+                        }}
+                        className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-2 rounded-lg hover:bg-muted"
+                      >
+                        <Bell className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span>Уведомления о заказах и акциях</span>
+                      </button>
                     </div>
                   )}
                 </>

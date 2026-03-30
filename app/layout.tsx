@@ -100,11 +100,7 @@ const organizationSchema = {
   "sameAs": ["https://pilmos.ru"]
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
