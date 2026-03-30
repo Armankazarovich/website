@@ -27,6 +27,7 @@ jobs:
           target: "/home/armankmb/pilo-rus/app/"
           overwrite: true
           rm: false
+          exclude: "node_modules,.next,*.log"
 
       - name: Build and restart on server
         uses: appleboy/ssh-action@v1.0.3
