@@ -10,8 +10,10 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { useTheme } from "next-themes";
+import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -49,6 +51,8 @@ function formatPhone(raw: string): string {
 export default function ProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const { palette, setPalette } = usePalette();
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -318,6 +322,75 @@ export default function ProfilePage() {
           ) : "Изменить пароль"}
         </Button>
       </form>
+
+      {/* Appearance */}
+      <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
+        <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+          <Palette className="w-5 h-5 text-primary" />
+          Оформление
+        </h2>
+
+        {/* Light / Dark */}
+        <div>
+          <p className="text-sm font-medium mb-2">Режим</p>
+          <div className="flex gap-2">
+            {[
+              { value: "light", label: "Светлая", icon: <Sun className="w-4 h-4" /> },
+              { value: "dark",  label: "Тёмная",  icon: <Moon className="w-4 h-4" /> },
+              { value: "system", label: "Авто",   icon: <span className="text-xs">A</span> },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setTheme(opt.value)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-all ${
+                  theme === opt.value
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                }`}
+              >
+                {opt.icon}
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Palette */}
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Цветовая тема</p>
+          {PALETTE_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="text-xs text-muted-foreground mb-2">{group.label}</p>
+              <div className="flex gap-2 flex-wrap">
+                {group.palettes.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setPalette(p.id)}
+                    title={p.name}
+                    className={`flex flex-col items-center gap-1 group`}
+                  >
+                    <span
+                      className={`w-8 h-8 rounded-full border-2 transition-all block ${
+                        palette === p.id
+                          ? "border-foreground scale-110 shadow-md"
+                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
+                      }`}
+                      style={{
+                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                      }}
+                    />
+                    <span className={`text-xs transition-colors ${
+                      palette === p.id ? "text-foreground font-medium" : "text-muted-foreground"
+                    }`}>
+                      {p.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
