@@ -85,7 +85,24 @@ async function main() {
     console.log("[data-migrate] ✓ Категория переименована в «Фанера, ДСП, МДФ, ОСБ»");
   }
 
-  // 7. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
+  // 7. Восстановить изображения категорий если были перезаписаны runtime-загрузкой
+  // Runtime-uploaded файлы теряются при деплое (не в git). Откатываем на стабильные пути.
+  const stableImages: Record<string, string> = {
+    "sosna-el":    "/images/categories/sosna-el.webp",
+    "listvennitsa":"/images/categories/listvennitsa.png",
+    "lipa-osina":  "/images/categories/lipa-osina.webp",
+    "fanera":      "/images/categories/fanera.webp",
+    "kedr":        "/images/categories/kedr.png",
+  };
+  for (const [slug, stablePath] of Object.entries(stableImages)) {
+    const cat = await prisma.category.findUnique({ where: { slug } });
+    if (cat && cat.image && cat.image.includes("upload-")) {
+      await prisma.category.update({ where: { slug }, data: { image: stablePath } });
+      console.log(`[data-migrate] ✓ Восстановлено фото ${slug}: ${stablePath}`);
+    }
+  }
+
+  // 8. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
   const knownRedirects = [
     { fromSlug: "kedr",        toSlug: null,     permanent: true },  // /catalog?category=kedr → /catalog
     { fromSlug: "dsp-mdf-osb", toSlug: "fanera", permanent: true },  // → /catalog?category=fanera
