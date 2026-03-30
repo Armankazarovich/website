@@ -22,15 +22,15 @@ export const PALETTE_GROUPS: { label: string; palettes: PaletteItem[] }[] = [
     ],
   },
   {
-    label: "Маркетплейсы",
+    label: "Цветовые темы",
     palettes: [
-      { id: "wildberries", name: "Wildberries",      sidebar: "#1C1230", accent: "#CB11AB" },
-      { id: "ozon",        name: "Ozon",             sidebar: "#001A66", accent: "#005BFF" },
-      { id: "yandex",      name: "Яндекс",           sidebar: "#1A1A1A", accent: "#FC3F1D" },
-      { id: "aliexpress",  name: "AliExpress",       sidebar: "#2D0000", accent: "#FF4010" },
-      { id: "amazon",      name: "Amazon",           sidebar: "#232F3E", accent: "#FF9900" },
-      { id: "avito",       name: "Авито",            sidebar: "#0A3D62", accent: "#00AAFF" },
-      { id: "sber",        name: "СберМегаМаркет",   sidebar: "#052E16", accent: "#21A038" },
+      { id: "wildberries", name: "Пурпур",    sidebar: "#1C1230", accent: "#CB11AB" },
+      { id: "ozon",        name: "Сапфир",    sidebar: "#001A66", accent: "#005BFF" },
+      { id: "yandex",      name: "Уголь",     sidebar: "#1A1A1A", accent: "#FC3F1D" },
+      { id: "aliexpress",  name: "Рубин",     sidebar: "#2D0000", accent: "#FF4010" },
+      { id: "amazon",      name: "Янтарь",    sidebar: "#232F3E", accent: "#FF9900" },
+      { id: "avito",       name: "Лазурь",    sidebar: "#0A3D62", accent: "#00AAFF" },
+      { id: "sber",        name: "Малахит",   sidebar: "#052E16", accent: "#21A038" },
     ],
   },
 ];

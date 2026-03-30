@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { PartnershipModal } from "@/components/store/partnership-modal";
 import { WishlistCount } from "@/components/store/wishlist-count";
 import { PhoneLinks, type PhoneItem } from "@/components/shared/phone-links";
+import { usePalette, PALETTE_GROUPS, PALETTES } from "@/components/palette-provider";
 
 export interface HeaderCategory {
   id: string;
@@ -132,9 +133,13 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const catalogRef = useRef<HTMLDivElement>(null);
+  const paletteRef = useRef<HTMLDivElement>(null);
   const closeTimeout = useRef<ReturnType<typeof setTimeout>>();
   const { theme, setTheme } = useTheme();
+  const { palette, setPalette } = usePalette();
+  const currentPalette = PALETTES.find((p) => p.id === palette) ?? PALETTES[0];
   const router = useRouter();
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
@@ -152,6 +157,18 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  // Закрываем palette picker при клике снаружи
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (paletteRef.current && !paletteRef.current.contains(e.target as Node)) {
+        setPaletteOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [paletteOpen]);
 
   // Блокируем скролл при открытом мобильном меню
   useEffect(() => {
@@ -481,6 +498,46 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
               <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </button>
 
+            {/* Palette picker */}
+            <div ref={paletteRef} className="relative">
+              <button
+                onClick={() => setPaletteOpen((o) => !o)}
+                aria-label="Цветовая тема"
+                title={`Тема: ${currentPalette.name}`}
+                className="w-9 h-9 rounded-xl border-2 border-border/60 hover:border-border transition-all overflow-hidden"
+                style={{
+                  background: `linear-gradient(135deg, ${currentPalette.sidebar} 50%, ${currentPalette.accent} 50%)`,
+                }}
+              />
+              {paletteOpen && (
+                <div className="absolute right-0 top-full mt-2 bg-card border border-border rounded-2xl shadow-2xl shadow-black/10 dark:shadow-black/40 p-3 z-50 w-52">
+                  <div className="h-0.5 bg-gradient-to-r from-brand-orange to-brand-brown -mx-3 -mt-3 mb-3 rounded-t-2xl" />
+                  {PALETTE_GROUPS.map((group) => (
+                    <div key={group.label} className="mb-2.5 last:mb-0">
+                      <p className="text-xs text-muted-foreground mb-1.5 font-medium">{group.label}</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {group.palettes.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => { setPalette(p.id); setPaletteOpen(false); }}
+                            title={p.name}
+                            className={`w-6 h-6 rounded-full border-2 transition-all ${
+                              palette === p.id
+                                ? "border-foreground scale-110"
+                                : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
+                            }`}
+                            style={{
+                              background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Cart */}
             <Link
               href="/cart"
@@ -738,6 +795,32 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                   </div>
                   {mounted ? (theme === "dark" ? "Светлая тема" : "Тёмная тема") : "Тема"}
                 </button>
+
+                {/* Palette picker mobile */}
+                <div className="px-3 py-1 space-y-2">
+                  {PALETTE_GROUPS.map((group) => (
+                    <div key={group.label}>
+                      <p className="text-xs text-muted-foreground mb-1.5">{group.label}</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {group.palettes.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => { setPalette(p.id); setMobileMenuOpen(false); }}
+                            title={p.name}
+                            className={`w-6 h-6 rounded-full border-2 transition-all ${
+                              palette === p.id
+                                ? "border-foreground scale-110"
+                                : "border-transparent opacity-60 hover:opacity-100"
+                            }`}
+                            style={{
+                              background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
                 {/* Кабинет */}
                 <Link
