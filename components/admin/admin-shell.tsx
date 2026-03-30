@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, LogOut } from "lucide-react";
+import { Menu, X, LogOut, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
@@ -15,6 +16,7 @@ interface AdminShellProps {
 
 export function AdminShell({ role, email, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="flex min-h-screen bg-muted/20">
@@ -31,6 +33,13 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         <div className="p-3 border-t border-white/10 space-y-1">
           <AdminPwaInstall />
           <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+          </button>
           <Link
             href="/"
             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
@@ -87,6 +96,13 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         <div className="p-3 border-t border-white/10 space-y-1">
           <AdminPwaInstall />
           <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+          </button>
           <Link
             href="/"
             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
