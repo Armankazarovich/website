@@ -45,13 +45,12 @@ function CategoryRow({
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [moving, setMoving] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hidden = isHidden(cat);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadFile = async (file: File) => {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
@@ -60,7 +59,20 @@ function CategoryRow({
     const data = await res.json();
     if (data.url) setImage(data.url);
     setUploading(false);
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) await uploadFile(file);
   };
 
   const handleSave = async () => {
@@ -108,28 +120,38 @@ function CategoryRow({
         </button>
       </div>
 
-      {/* Photo */}
+      {/* Photo — drag & drop zone */}
       <div className="shrink-0">
-        <div className="relative w-24 rounded-xl overflow-hidden bg-muted border border-border" style={{ height: "72px" }}>
-          {image ? (
+        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+        <div
+          className={`relative w-24 rounded-xl overflow-hidden border-2 border-dashed cursor-pointer transition-colors
+            ${dragOver ? "border-primary bg-primary/10" : "border-border bg-muted hover:border-primary/60 hover:bg-muted/80"}`}
+          style={{ height: "72px" }}
+          onClick={() => !uploading && fileInputRef.current?.click()}
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          title="Нажмите или перетащите фото"
+        >
+          {uploading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/60">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : image ? (
             <Image src={image} alt={name} fill className="object-cover" />
           ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              <ImageIcon className="w-6 h-6" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-1">
+              <Upload className="w-4 h-4" />
+              <span className="text-[10px]">Фото</span>
+            </div>
+          )}
+          {dragOver && (
+            <div className="absolute inset-0 flex items-center justify-center bg-primary/20 text-primary text-[10px] font-semibold">
+              Отпустить
             </div>
           )}
         </div>
-        <div className="flex gap-1 mt-2">
-          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex items-center gap-1 text-xs text-primary hover:underline"
-          >
-            {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-            Фото
-          </button>
-          <span className="text-muted-foreground">|</span>
+        <div className="flex gap-1 mt-1.5">
           <button onClick={() => setShowUrlInput(!showUrlInput)} className="text-xs text-muted-foreground hover:text-foreground">
             URL
           </button>

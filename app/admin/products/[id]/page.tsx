@@ -106,20 +106,31 @@ export default function AdminProductEditPage() {
     }
   }, [params.id, isNew]);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [dragOverPhoto, setDragOverPhoto] = useState(false);
+
+  const uploadPhotoFile = async (file: File) => {
     setUploadingPhoto(true);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("folder", "products");
     const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
     const data = await res.json();
-    if (data.url) {
-      setImages([data.url]);
-    }
+    if (data.url) setImages([data.url]);
     setUploadingPhoto(false);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadPhotoFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handlePhotoDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverPhoto(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith("image/")) await uploadPhotoFile(file);
   };
 
   const handleManualUrl = () => {
@@ -386,30 +397,37 @@ export default function AdminProductEditPage() {
               <h3 className="font-semibold">Загрузить новое фото</h3>
 
               <div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingPhoto}
-                  className="gap-2"
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                <div
+                  className={`relative rounded-2xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center gap-2 py-8
+                    ${dragOverPhoto
+                      ? "border-primary bg-primary/10 scale-[1.02]"
+                      : "border-border hover:border-primary/60 hover:bg-muted/50"
+                    }`}
+                  onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverPhoto(true); }}
+                  onDragLeave={() => setDragOverPhoto(false)}
+                  onDrop={handlePhotoDrop}
                 >
                   {uploadingPhoto ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Загрузка...
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <p className="text-sm text-muted-foreground">Загрузка и оптимизация...</p>
+                    </>
+                  ) : dragOverPhoto ? (
+                    <>
+                      <Upload className="w-8 h-8 text-primary" />
+                      <p className="text-sm font-semibold text-primary">Отпустите для загрузки</p>
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4" /> Выбрать файл
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Перетащите фото сюда</p>
+                      <p className="text-xs text-muted-foreground">или нажмите для выбора файла</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">JPG, PNG, WEBP → авто-сжатие в WebP</p>
                     </>
                   )}
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">JPG, PNG, WEBP — до 10 МБ</p>
+                </div>
               </div>
 
               <div>
