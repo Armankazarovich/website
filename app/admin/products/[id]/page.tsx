@@ -118,36 +118,25 @@ export default function AdminProductEditPage() {
   const handleRemoveBackground = async () => {
     if (!images[0]) return;
     setRemovingBg(true);
-    setBgRemoveProgress("Загружаем AI модель...");
+    setBgRemoveProgress("Скачиваем фото...");
     try {
-      const { removeBackground } = await import("@imgly/background-removal");
-
-      // Fetch the image and convert to blob
-      setBgRemoveProgress("Скачиваем фото...");
+      // Fetch the current image and send to server-side AI endpoint
       const response = await fetch(images[0]);
       const blob = await response.blob();
 
-      setBgRemoveProgress("AI обрабатывает фото...");
-      const resultBlob = await removeBackground(blob, {
-        progress: (key: string, current: number, total: number) => {
-          if (key.includes("fetch")) {
-            const pct = Math.round((current / total) * 100);
-            setBgRemoveProgress(`Загружаем модель: ${pct}%`);
-          }
-        },
-      });
-
-      // Upload the result
-      setBgRemoveProgress("Загружаем результат...");
+      setBgRemoveProgress("AI убирает фон...");
       const formData = new FormData();
-      formData.append("file", new File([resultBlob], "photo-nobg.png", { type: "image/png" }));
-      formData.append("folder", "products");
-      const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: formData });
-      const uploadData = await uploadRes.json();
-      if (uploadData.url) {
-        setImages([uploadData.url]);
+      formData.append("file", new File([blob], "photo.png", { type: blob.type }));
+
+      const res = await fetch("/api/admin/remove-bg", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.url) {
+        setImages([data.url]);
         setBgRemoveProgress("Готово!");
         setTimeout(() => setBgRemoveProgress(""), 2000);
+      } else {
+        throw new Error(data.error || "No URL returned");
       }
     } catch (e) {
       console.error(e);

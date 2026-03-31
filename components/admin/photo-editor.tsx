@@ -19,6 +19,8 @@ interface PhotoEditorProps {
   imageUrl: string;
   onSave: (newUrl: string) => void;
   onClose: () => void;
+  // Portrait canvas (4:5) like Wildberries — default false for backward compat
+  portraitMode?: boolean;
 }
 
 const BG_PRESETS = [
@@ -50,13 +52,14 @@ const FONT_PRESETS = [
   { label: "Современный", family: "Trebuchet MS", weight: "bold" as const },
 ];
 
-export function PhotoEditor({ imageUrl, onSave, onClose }: PhotoEditorProps) {
+export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }: PhotoEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fabricRef = useRef<{ canvas: any; lib: any } | null>(null);
   const [fabricLoaded, setFabricLoaded] = useState(false);
   const [activeTab, setActiveTab] = useState<"bg" | "text" | "advantages" | "logo">("bg");
   const [saving, setSaving] = useState(false);
+  const [applyingWm, setApplyingWm] = useState(false);
   const [selectedObj, setSelectedObj] = useState<boolean>(false);
   const [bgColor, setBgColor] = useState("#ffffff");
   const [customBg, setCustomBg] = useState("#ffffff");
@@ -75,9 +78,11 @@ export function PhotoEditor({ imageUrl, onSave, onClose }: PhotoEditorProps) {
     import("fabric").then((lib) => {
       if (!mounted || !canvasRef.current) return;
 
+      const canvasW = 800;
+      const canvasH = portraitMode ? 1000 : 800;
       canvas = new lib.Canvas(canvasRef.current, {
-        width: 800,
-        height: 800,
+        width: canvasW,
+        height: canvasH,
         backgroundColor: "#ffffff",
         preserveObjectStacking: true,
       });
@@ -86,10 +91,12 @@ export function PhotoEditor({ imageUrl, onSave, onClose }: PhotoEditorProps) {
       // Load product image
       lib.FabricImage.fromURL(imageUrl, { crossOrigin: "anonymous" }).then((img: any) => {
         if (!mounted || !img) return;
-        const scale = Math.min(700 / (img.width || 700), 700 / (img.height || 700));
+        const fitW = canvasW - 80;
+        const fitH = canvasH - 80;
+        const scale = Math.min(fitW / (img.width || fitW), fitH / (img.height || fitH));
         img.set({
-          left: 400,
-          top: 400,
+          left: canvasW / 2,
+          top: canvasH / 2,
           originX: "center",
           originY: "center",
           scaleX: scale,
@@ -229,6 +236,51 @@ export function PhotoEditor({ imageUrl, onSave, onClose }: PhotoEditorProps) {
     });
   }, []);
 
+  const applyWatermarkFromSettings = useCallback(async () => {
+    const fc = fabricRef.current;
+    if (!fc) return;
+    setApplyingWm(true);
+    try {
+      // Export current canvas as PNG, apply watermark on server, reload into canvas
+      const dataUrl = fc.canvas.toDataURL({ format: "png", multiplier: 1 });
+      const blob = await (await fetch(dataUrl)).blob();
+      const formData = new FormData();
+      formData.append("file", new File([blob], "canvas.png", { type: "image/png" }));
+      formData.append("folder", "products");
+      const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const uploaded = await uploadRes.json();
+      if (!uploaded.url) throw new Error("Upload failed");
+
+      const wmRes = await fetch("/api/admin/watermark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "apply", imageUrl: uploaded.url }),
+      });
+      const wmData = await wmRes.json();
+      if (!wmData.url) throw new Error(wmData.error || "Watermark failed");
+
+      // Reload result into canvas as a new image layer
+      const { lib, canvas } = fc;
+      lib.FabricImage.fromURL(wmData.url + "?t=" + Date.now(), { crossOrigin: "anonymous" }).then((img: any) => {
+        if (!img) return;
+        const cw = canvas.width || 800;
+        const ch = canvas.height || 800;
+        img.set({ left: cw / 2, top: ch / 2, originX: "center", originY: "center",
+          scaleX: cw / (img.width || cw), scaleY: ch / (img.height || ch) });
+        // Clear canvas and add watermarked image
+        canvas.clear();
+        canvas.set("backgroundColor", "#ffffff");
+        canvas.add(img);
+        canvas.sendObjectToBack(img);
+        canvas.renderAll();
+      });
+    } catch (e) {
+      console.error("Watermark error:", e);
+    } finally {
+      setApplyingWm(false);
+    }
+  }, []);
+
   const handleSave = useCallback(async () => {
     const fc = fabricRef.current;
     if (!fc) return;
@@ -266,6 +318,15 @@ export function PhotoEditor({ imageUrl, onSave, onClose }: PhotoEditorProps) {
             Редактор фото
           </h2>
           <div className="flex items-center gap-2">
+            <button
+              onClick={applyWatermarkFromSettings}
+              disabled={applyingWm}
+              title="Применить водяной знак из настроек"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border hover:bg-accent transition-colors disabled:opacity-50"
+            >
+              {applyingWm ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />}
+              Водяной знак
+            </button>
             <button
               onClick={undo}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border hover:bg-accent transition-colors"

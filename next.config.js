@@ -67,12 +67,15 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'pilo-rus.ru'],
     },
-    serverComponentsExternalPackages: ['@react-pdf/renderer', '@imgly/background-removal', 'onnxruntime-web'],
+    serverComponentsExternalPackages: [
+      '@react-pdf/renderer',
+      '@imgly/background-removal-node',
+      'onnxruntime-node',
+    ],
   },
   webpack: (config, { webpack }) => {
-    // @imgly/background-removal dynamically imports onnxruntime-web at runtime.
-    // Tell webpack to ignore these imports at bundle time — they will resolve
-    // via the package's own CDN/wasm loading mechanism in the browser.
+    // Prevent webpack from trying to bundle onnxruntime-web in the browser bundle.
+    // Background removal is done server-side via @imgly/background-removal-node.
     config.plugins.push(
       new webpack.IgnorePlugin({
         resourceRegExp: /^onnxruntime-web(\/.*)?$/,
