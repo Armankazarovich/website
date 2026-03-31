@@ -13,6 +13,7 @@ import {
   Loader2,
   PenTool,
   Wand2,
+  Crop,
 } from "lucide-react";
 
 interface PhotoEditorProps {
@@ -57,7 +58,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fabricRef = useRef<{ canvas: any; lib: any } | null>(null);
   const [fabricLoaded, setFabricLoaded] = useState(false);
-  const [activeTab, setActiveTab] = useState<"bg" | "text" | "advantages" | "logo">("bg");
+  const [activeTab, setActiveTab] = useState<"bg" | "text" | "advantages" | "logo" | "crop">("bg");
   const [saving, setSaving] = useState(false);
   const [applyingWm, setApplyingWm] = useState(false);
   const [selectedObj, setSelectedObj] = useState<boolean>(false);
@@ -69,6 +70,11 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
   const [fontPreset, setFontPreset] = useState(0);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const customAdvRef = useRef<HTMLInputElement>(null);
+  const [cropTop, setCropTop] = useState(0);
+  const [cropRight, setCropRight] = useState(0);
+  const [cropBottom, setCropBottom] = useState(0);
+  const [cropLeft, setCropLeft] = useState(0);
+  const [cropApplied, setCropApplied] = useState(false);
 
   // Load Fabric.js and init canvas
   useEffect(() => {
@@ -217,6 +223,33 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
       canvas.remove(objects[objects.length - 1]);
       canvas.renderAll();
     }
+  }, []);
+
+  const applyCrop = useCallback(() => {
+    const fc = fabricRef.current;
+    if (!fc) return;
+    const { canvas, lib } = fc;
+    const cw = canvas.width || 800;
+    const ch = canvas.height || 800;
+    const l = Math.max(0, cropLeft);
+    const t = Math.max(0, cropTop);
+    const w = Math.max(10, cw - l - Math.max(0, cropRight));
+    const h = Math.max(10, ch - t - Math.max(0, cropBottom));
+    canvas.clipPath = new lib.Rect({
+      left: l, top: t, width: w, height: h,
+      absolutePositioned: true,
+    });
+    setCropApplied(true);
+    canvas.renderAll();
+  }, [cropTop, cropRight, cropBottom, cropLeft]);
+
+  const resetCrop = useCallback(() => {
+    const fc = fabricRef.current;
+    if (!fc) return;
+    fc.canvas.clipPath = undefined;
+    setCropTop(0); setCropRight(0); setCropBottom(0); setCropLeft(0);
+    setCropApplied(false);
+    fc.canvas.renderAll();
   }, []);
 
   const handleLogoUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,6 +411,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
             <div className="flex border-b border-border shrink-0">
               {([
                 { id: "bg" as const, icon: Layers, label: "Фон" },
+                { id: "crop" as const, icon: Crop, label: "Обрезка" },
                 { id: "text" as const, icon: Type, label: "Текст" },
                 { id: "advantages" as const, icon: Wand2, label: "Плашки" },
                 { id: "logo" as const, icon: Award, label: "Лого" },
@@ -447,10 +481,79 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
                 </div>
               )}
 
+              {/* Crop tab */}
+              {activeTab === "crop" && (
+                <div className="space-y-4">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Обрезка фото</p>
+                  <p className="text-[11px] text-muted-foreground">Укажите сколько пикселей убрать с каждой стороны (canvas 800×800px)</p>
+
+                  {/* Visual crop preview */}
+                  <div className="relative mx-auto bg-muted rounded-lg overflow-hidden" style={{ width: 160, height: 160 }}>
+                    <div className="absolute inset-0 opacity-30"
+                      style={{
+                        backgroundImage: "repeating-conic-gradient(#aaa 0% 25%, transparent 0% 50%)",
+                        backgroundSize: "10px 10px",
+                      }}
+                    />
+                    <div
+                      className="absolute border-2 border-primary bg-primary/10"
+                      style={{
+                        top: `${(cropTop / 800) * 160}px`,
+                        left: `${(cropLeft / 800) * 160}px`,
+                        right: `${(cropRight / 800) * 160}px`,
+                        bottom: `${(cropBottom / 800) * 160}px`,
+                      }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {([
+                      { label: "Сверху", val: cropTop, set: setCropTop },
+                      { label: "Снизу", val: cropBottom, set: setCropBottom },
+                      { label: "Слева", val: cropLeft, set: setCropLeft },
+                      { label: "Справа", val: cropRight, set: setCropRight },
+                    ] as const).map(({ label, val, set }) => (
+                      <div key={label}>
+                        <label className="text-[11px] text-muted-foreground block mb-1">{label} (px)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={400}
+                          value={val}
+                          onChange={e => set(Number(e.target.value))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={applyCrop}
+                    className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    ✂️ Применить обрезку
+                  </button>
+
+                  {cropApplied && (
+                    <button
+                      onClick={resetCrop}
+                      className="w-full py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-accent transition-colors"
+                    >
+                      Сбросить обрезку
+                    </button>
+                  )}
+
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-400">
+                    💡 После обрезки нажмите <strong>Сохранить</strong> — обрезка применится к итоговому фото.
+                  </div>
+                </div>
+              )}
+
               {/* Text tab */}
               {activeTab === "text" && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Добавить текст</p>
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">⚠️ Выберите стиль и цвет ДО нажатия "+ Добавить"</p>
                   <textarea
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
