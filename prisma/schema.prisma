@@ -113,6 +113,7 @@ model ProductVariant {
   pricePerPiece Decimal?    @db.Decimal(10, 2)
   piecesPerCube Int?
   inStock       Boolean     @default(true)
+  stockQty      Int?        // null = не отслеживается; 0 = нет; ≥1 = в наличии
   orderItems    OrderItem[]
 }
 

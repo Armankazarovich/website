@@ -11,7 +11,13 @@ export default async function InventoryPage() {
   if (!session) redirect("/admin/login");
 
   const variants = await prisma.productVariant.findMany({
-    include: {
+    select: {
+      id: true,
+      size: true,
+      pricePerCube: true,
+      pricePerPiece: true,
+      inStock: true,
+      stockQty: true,
       product: {
         select: { id: true, name: true, slug: true, saleUnit: true, category: { select: { name: true } } },
       },
