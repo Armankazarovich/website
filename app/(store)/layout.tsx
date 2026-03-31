@@ -1,3 +1,4 @@
+import React from "react";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { MobileBottomNav } from "@/components/store/mobile-bottom-nav";
@@ -27,8 +28,10 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     getSiteSettings(),
   ]);
 
+  const photoAspect = getSetting(siteSettings, "photo_aspect_ratio") || "1/1";
+
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
       <Header categories={categories} phones={getPhones(siteSettings)} />
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />

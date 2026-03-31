@@ -19,18 +19,33 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { palettes_enabled } = await req.json();
-  if (typeof palettes_enabled !== "string") {
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  const body = await req.json();
+
+  const updates: Record<string, string> = {};
+
+  // Palettes
+  if (typeof body.palettes_enabled === "string") {
+    const ids = body.palettes_enabled.split(",").map((s: string) => s.trim()).filter(Boolean);
+    if (!ids.includes("timber")) ids.unshift("timber");
+    updates.palettes_enabled = ids.join(",");
   }
-  // Always ensure timber is included
-  const ids = palettes_enabled.split(",").map((s) => s.trim()).filter(Boolean);
-  if (!ids.includes("timber")) ids.unshift("timber");
-  const value = ids.join(",");
-  await prisma.siteSettings.upsert({
-    where: { key: "palettes_enabled" },
-    create: { key: "palettes_enabled", value },
-    update: { value },
-  });
-  return NextResponse.json({ ok: true, palettes_enabled: value });
+
+  // Photo aspect ratio
+  const VALID_RATIOS = ["1/1", "4/5", "3/4", "4/3"];
+  if (typeof body.photo_aspect_ratio === "string" && VALID_RATIOS.includes(body.photo_aspect_ratio)) {
+    updates.photo_aspect_ratio = body.photo_aspect_ratio;
+  }
+
+  // Save all updated keys
+  await Promise.all(
+    Object.entries(updates).map(([key, value]) =>
+      prisma.siteSettings.upsert({
+        where: { key },
+        create: { key, value },
+        update: { value },
+      })
+    )
+  );
+
+  return NextResponse.json({ ok: true, ...updates });
 }
