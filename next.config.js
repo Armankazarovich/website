@@ -19,7 +19,6 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['@react-pdf/renderer'],
   async redirects() {
     return [
       { source: '/contact', destination: '/contacts', permanent: true },
@@ -68,6 +67,18 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'pilo-rus.ru'],
     },
+    serverComponentsExternalPackages: ['@react-pdf/renderer', '@imgly/background-removal', 'onnxruntime-web'],
+  },
+  webpack: (config, { webpack }) => {
+    // @imgly/background-removal dynamically imports onnxruntime-web at runtime.
+    // Tell webpack to ignore these imports at bundle time — they will resolve
+    // via the package's own CDN/wasm loading mechanism in the browser.
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^onnxruntime-web(\/.*)?$/,
+      })
+    );
+    return config;
   },
   // Skip type checking and linting during build (already checked locally)
   typescript: {
