@@ -52,7 +52,7 @@ export default function ProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { palette, setPalette } = usePalette();
+  const { palette, setPalette, enabledIds } = usePalette();
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -358,11 +358,14 @@ export default function ProfilePage() {
         {/* Palette */}
         <div className="space-y-3">
           <p className="text-sm font-medium">Цветовая тема</p>
-          {PALETTE_GROUPS.map((group) => (
+          {PALETTE_GROUPS.map((group) => {
+            const visiblePalettes = group.palettes.filter((p) => enabledIds.includes(p.id));
+            if (visiblePalettes.length === 0) return null;
+            return (
             <div key={group.label}>
               <p className="text-xs text-muted-foreground mb-2">{group.label}</p>
               <div className="flex gap-2 flex-wrap">
-                {group.palettes.map((p) => (
+                {visiblePalettes.map((p) => (
                   <button
                     key={p.id}
                     onClick={() => setPalette(p.id)}
@@ -388,7 +391,8 @@ export default function ProfilePage() {
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

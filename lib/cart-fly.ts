@@ -7,13 +7,19 @@ export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
   const fromRect = fromElement.getBoundingClientRect();
   const toRect = cartIcon.getBoundingClientRect();
 
+  // Read current brand color from CSS variable (supports theme switching)
+  const hsl = getComputedStyle(document.documentElement)
+    .getPropertyValue("--brand-primary")
+    .trim();
+  const brandColor = hsl ? `hsl(${hsl})` : "#E8700A";
+
   const size = 40;
   const startX = fromRect.left + fromRect.width / 2 - size / 2;
   const startY = fromRect.top + fromRect.height / 2 - size / 2;
   const endX = toRect.left + toRect.width / 2 - size / 2;
   const endY = toRect.top + toRect.height / 2 - size / 2;
 
-  // Branded orange bubble — no dependency on product image loading state
+  // Branded bubble — color follows active palette
   const el = document.createElement("div");
   el.style.cssText = `
     position: fixed;
@@ -24,8 +30,8 @@ export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
     border-radius: 50%;
     left: ${startX}px;
     top: ${startY}px;
-    background: #E8700A;
-    box-shadow: 0 4px 20px rgba(232, 112, 10, 0.6), 0 0 0 0 rgba(232, 112, 10, 0.3);
+    background: ${brandColor};
+    box-shadow: 0 4px 20px ${brandColor}99, 0 0 0 0 ${brandColor}4D;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -84,6 +90,11 @@ function spawnBurst(toRect: DOMRect) {
   const cy = toRect.top + toRect.height / 2;
   const count = 6;
 
+  const hsl = getComputedStyle(document.documentElement)
+    .getPropertyValue("--brand-primary")
+    .trim();
+  const brandColor = hsl ? `hsl(${hsl})` : "#E8700A";
+
   for (let i = 0; i < count; i++) {
     const angle = (i / count) * Math.PI * 2;
     const p = document.createElement("div");
@@ -94,7 +105,7 @@ function spawnBurst(toRect: DOMRect) {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #E8700A;
+      background: ${brandColor};
       left: ${cx - 3}px;
       top: ${cy - 3}px;
       opacity: 1;

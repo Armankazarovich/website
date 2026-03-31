@@ -40,15 +40,18 @@ export const PALETTES: PaletteItem[] = PALETTE_GROUPS.flatMap((g) => g.palettes)
 export type PaletteId = string;
 
 const STORAGE_KEY = "color-palette";
+const ALL_IDS = PALETTES.map((p) => p.id);
 
 type PaletteContextType = {
   palette: PaletteId;
   setPalette: (id: PaletteId) => void;
+  enabledIds: string[];
 };
 
 const PaletteContext = createContext<PaletteContextType>({
   palette: "timber",
   setPalette: () => {},
+  enabledIds: ALL_IDS,
 });
 
 function applyPalette(id: PaletteId) {
@@ -60,25 +63,33 @@ function applyPalette(id: PaletteId) {
   }
 }
 
-export function PaletteProvider({ children }: { children: React.ReactNode }) {
+export function PaletteProvider({
+  children,
+  enabledIds,
+}: {
+  children: React.ReactNode;
+  enabledIds?: string[];
+}) {
+  const allowed = enabledIds && enabledIds.length > 0 ? enabledIds : ALL_IDS;
   const [palette, setPaletteState] = useState<PaletteId>("timber");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && PALETTES.find((p) => p.id === stored)) {
+    if (stored && PALETTES.find((p) => p.id === stored) && allowed.includes(stored)) {
       setPaletteState(stored);
       applyPalette(stored);
     }
   }, []);
 
   const setPalette = (id: PaletteId) => {
+    if (!allowed.includes(id)) return;
     setPaletteState(id);
     localStorage.setItem(STORAGE_KEY, id);
     applyPalette(id);
   };
 
   return (
-    <PaletteContext.Provider value={{ palette, setPalette }}>
+    <PaletteContext.Provider value={{ palette, setPalette, enabledIds: allowed }}>
       {children}
     </PaletteContext.Provider>
   );

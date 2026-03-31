@@ -32,6 +32,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   social_whatsapp: "+79859707133",
   seo_title: "ПилоРус — пиломатериалы от производителя в Химках",
   seo_description: "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1–3 дня. ☎ 8-985-970-71-33",
+  palettes_enabled: "timber,forest,ocean,midnight,slate,crimson,wildberries,ozon,yandex,aliexpress,amazon,avito,sber",
 };
 
 export function getSetting(settings: Record<string, string>, key: string): string {

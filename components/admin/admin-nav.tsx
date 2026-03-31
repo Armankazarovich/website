@@ -17,6 +17,7 @@ import {
   Bell,
   Truck,
   UserCircle,
+  Palette,
 } from "lucide-react";
 
 const allNavItems = [
@@ -29,6 +30,7 @@ const allNavItems = [
   { href: "/admin/reviews", label: "Отзывы", icon: Star, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/site", label: "Сайт", icon: Globe, roles: ["ADMIN"] },
   { href: "/admin/settings", label: "Настройки", icon: Settings, roles: ["ADMIN"] },
+  { href: "/admin/appearance", label: "Оформление", icon: Palette, roles: ["ADMIN"] },
   { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: ["ADMIN", "MANAGER"] },
   { href: "/admin/staff", label: "Команда", icon: Users, roles: ["ADMIN"] },
   { href: "/admin/notifications", label: "Уведомления", icon: Bell, roles: ["ADMIN"] },

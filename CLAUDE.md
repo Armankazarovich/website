@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 29.03.2026 (вечер)
+> Последнее обновление: 30.03.2026 (вечер)
 
 ---
 
@@ -107,6 +107,9 @@ D:\pilorus\                              ← ГЛАВНАЯ ПАПКА (всег
 - Build script: `"build": "prisma db push --accept-data-loss && next build"` — автомигрирует схему при каждом деплое
 - При изменении схемы Prisma НИКОГДА не использовать `migrate dev` (интерактивный), только `db push`
 - После пуша ждать ~2 мин до завершения деплоя
+- **SCP оптимизация**: `exclude: "node_modules,.next,*.log"` — деплой ~2 мин вместо 14+ мин (было 500MB → стало 5MB)
+- **concurrency**: `cancel-in-progress: true` — новый пуш отменяет предыдущий зависший деплой
+- ⚠️ Если деплой завис >5 мин — пушим пустой коммит или исправление, старый деплой отменится автоматически
 
 ---
 
@@ -149,6 +152,7 @@ app/
       clients-list.tsx   — Поиск, история заказов, сброс пароля, назначить роль, редактировать, удалить
     settings/page.tsx    — Синх Google Sheets + тест Telegram
     notifications/page.tsx — Push уведомления: рассылка + подписчики + диагностика
+                             Кнопка "Очистить дубли" → POST /api/push/cleanup
 
   api/
     admin/
@@ -184,16 +188,24 @@ app/
       route.ts           — Webhook: кнопки статусов, одобрение сотрудников, /help
                            при FINAL_STATUS → deleteMessage из группы
     push/
-      subscribe/route.ts — Сохранить подписку
-      send/route.ts      — Отправить по сегменту (all/registered/guests/inactive/no-orders)
-      debug/route.ts     — Диагностика VAPID + подписчики
+      subscribe/route.ts   — Сохранить подписку (гость или залогиненный)
+      send/route.ts        — Отправить по сегменту (all/registered/guests/inactive/no-orders)
+      debug/route.ts       — Диагностика VAPID + подписчики
+      cleanup/route.ts     — Дедупликация: оставляет макс 3 подписки на userId (DELETE старые)
+      unsubscribe/route.ts — Отписка по endpoint (DELETE из БД)
+
+  cabinet/
+    notifications/page.tsx — Управление push в личном кабинете клиента
+                             Статус (включены/выключены) + кнопка включить + список что приходит
 
 components/
   admin/
-    order-edit-panel.tsx — Редактирование заказа (поля клиента, items, deliveryCost, saleUnit)
-    admin-nav.tsx        — Навигация (включая /admin/clients для ADMIN/MANAGER)
-    order-status-select.tsx — Включает COMPLETED
-    auto-refresh.tsx     — Client component: router.refresh() каждые N мс
+    order-edit-panel.tsx     — Редактирование заказа (поля клиента, items, deliveryCost, saleUnit)
+    admin-nav.tsx            — Навигация (включая /admin/clients для ADMIN/MANAGER)
+    order-status-select.tsx  — Включает COMPLETED
+    auto-refresh.tsx         — Client component: router.refresh() каждые N мс
+    admin-push-prompt.tsx    — Кнопка "Подписаться на уведомления" в сайдбаре adminки
+                               показывает только если permission === "default"
 
 lib/
   invoice-pdf.tsx        — PDF счёт (@react-pdf/renderer, WOFF шрифты)
@@ -307,29 +319,57 @@ enum OrderStatus {
 ## Push-уведомления — как работает
 
 ### Архитектура
-- `public/sw.js` — Service Worker, слушает `push` событие, показывает notification
+- `public/sw.js` — Service Worker: push событие, Badge API (setAppBadge/clearAppBadge), notificationclick
 - `components/sw-register.tsx` — регистрирует SW на всех страницах сайта
-- `components/push-subscription.tsx` — подписывает браузер на push, сохраняет в БД
+- `components/push-subscription.tsx` — подписывает браузер на push + рендерит PushPromptBanner
+  - Залогиненным: авто-запрос через 3s
+  - Гостям: баннер через 8s (PushPromptBanner встроен в этот же файл)
 - `lib/push.ts` — sendPushToAll, sendPushToStaff, sendPushToUser
 - VAPID ключи: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_KEY`
 
 ### Автоматические push
-- Новый заказ → сотрудникам (`sendPushToStaff`)
-- Смена статуса → клиенту (`sendPushToUser`)
+- Новый заказ → сотрудникам (`sendPushToStaff`) + клиенту если залогинен
+- Смена статуса → клиенту (`sendPushToUser`) + сотрудникам
+- Push через Telegram callback (при смене статуса кнопками)
 
 ### Ручная рассылка
 - `/admin/notifications` → выбрать сегмент → заголовок + текст → отправить
+- Сегменты: все / зарегистрированные / гости / давно не заказывали / никогда не заказывали
+
+### Badge API (значок на иконке приложения)
+- При получении push → `self.navigator.setAppBadge(1)` → показывает "1" на иконке
+- При клике на уведомление → `self.navigator.clearAppBadge()` → убирает значок
+- Работает в Chrome Android и Edge (не поддерживается Safari/Firefox)
+
+### PushPromptBanner (баннер для гостей)
+- Показывается через 8s после открытия сайта
+- Только если `Notification.permission === "default"`
+- Не показывается 7 дней после dismiss (localStorage: `push_prompt_dismissed_at`)
+- Рендерится через `<PushSubscription />` в root layout → не требует изменений в layouts
+
+### PWA баннер (pwa-install.tsx)
+- В PWA-режиме (`platform === "installed"`) → return null (ничего не показывает)
+- В браузере: предлагает установить + опционально включить уведомления
+- После включения уведомлений → push-строка исчезает из баннера
+- "Уведомления включены ✓" нигде не показывается — управление только в `/cabinet/notifications`
+
+### Дедупликация подписок
+- `POST /api/push/cleanup` — оставляет макс 3 подписки на userId, удаляет старые
+- Кнопка "Очистить дубли" в `/admin/notifications` → Диагностика
+- Dead subscription cleanup: при 410/404 от push-сервиса → автоматически удаляется из БД
 
 ### Как подписать своё устройство
-1. Зайти на `pilo-rus.ru` (НЕ в админку) с телефона/браузера
-2. Браузер спросит "Разрешить уведомления" → нажать **Разрешить**
-3. Подписка сохраняется в БД, push будут приходить
+1. Зайти на `pilo-rus.ru` с телефона/браузера — через 8 сек появится баннер
+2. Нажать "Включить" → разрешить уведомления в браузере
+3. Придёт приветственное уведомление, подписка сохранится в БД
+4. Или: `/cabinet/notifications` → кнопка "Включить уведомления"
 
 ### Диагностика (admin/notifications)
 - "SW: X" — нет SW в текущем браузере (нажать "Подписаться сейчас" для починки)
 - "Подписка: X" — браузер не подписан
 - "VAPID ✓ Настроены" — ключи есть, отправка работает
 - "ошибок: 1" при отправке — одна подписка устарела (норма, браузеры сбрасывают)
+- Если уведомления заблокированы в браузере → Замочек в адресной строке → Уведомления → Разрешить
 
 ---
 
@@ -521,6 +561,25 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 30.03.2026 — Push + PWA + Тема админки
+- ✅ `components/push-subscription.tsx` — добавлен `PushPromptBanner` inline (гости теперь видят предложение)
+  - Баннер показывается через 8s, только если `Notification.permission === "default"`
+  - 7 дней не показывается после dismiss (localStorage: `push_prompt_dismissed_at`)
+  - Рендерится через `<PushSubscription />` в root layout — нет новых импортов в layouts
+- ✅ `components/store/pwa-install.tsx` — упрощена логика:
+  - В PWA-режиме (`platform === "installed"`) → `return null` немедленно (никакого баннера)
+  - "Уведомления включены ✓" убрана навсегда — управление только в `/cabinet/notifications`
+  - После включения push-строка исчезает из баннера
+- ✅ `public/sw.js` — Badge API (setAppBadge/clearAppBadge) добавлен ранее, задеплоен
+- ✅ `components/admin/admin-shell.tsx` — переключатель светлой/тёмной темы в сайдбаре
+  - Иконки Sun/Moon, `useTheme()` из next-themes, кнопка в desktop и mobile drawer
+- ✅ `.github/workflows/deploy.yml` — SCP оптимизация: `exclude: "node_modules,.next,*.log"`
+  - Деплой сократился с 14+ мин до ~2 мин
+- ✅ Webpack кэш баг: если dev-сервер показывает старые ошибки → `rm -rf .next/cache/webpack`
+- ⚠️ Двойной путь проекта: ПРАВИЛЬНЫЙ `D:\pilorus\website\` (латиница), НЕ `D:\ПилоРус\website\`
+  - `start-next.js` делает `process.chdir('D:/pilorus/website')` — всегда редактировать там
+- 🔧 Нужно вручную: "Очистить дубли" в `/admin/notifications` → Диагностика (~30 дублей)
+
 ### Сессия 29.03.2026 (вечер) — 3 телефона + клиент Беларусь
 - ✅ Добавлен 3-й телефон 8-977-606-80-20 (+79776068020) на весь сайт
 - ✅ Создан централизованный компонент `components/shared/phone-links.tsx` (PhoneLinks)
@@ -579,6 +638,32 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ---
 
+## Тема (светлая/тёмная) в админке
+
+**Файл:** `components/admin/admin-shell.tsx`
+**Где:** нижняя часть сайдбара (desktop + mobile drawer), над кнопкой "На сайт"
+
+**Реализация:**
+```tsx
+import { Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
+
+const { theme, setTheme } = useTheme();
+
+<button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors">
+  {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+  {theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+</button>
+```
+
+**Примечания:**
+- `next-themes` уже был в проекте (`ThemeProvider` в root layout)
+- Тема сохраняется в localStorage и применяется к сайту И к adminке
+- Кнопка видна в обоих вариантах сайдбара (desktop и mobile drawer)
+
+---
+
 ## AdminPwaInstall — как работает
 
 **Файл:** `components/admin/admin-pwa-install.tsx`
@@ -597,11 +682,9 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## На следующую сессию (план)
 
-### 0. Деплой накопленных изменений (приоритет: СРОЧНО)
-- Все изменения сессии сделаны локально, но НЕ задеплоены
-- git status: M header.tsx, footer.tsx, about, cart, catalog, layout, site-settings + ?? components/shared/
-- Команды: `git add . && git commit -m "feat: 3 phones + phone-links component + belarus client changes" && git push origin main`
-- После деплоя проверить pilo-rus.ru — 3 телефона везде, новые категории
+### 0. Ручные действия (пользователь)
+- Нажать "Очистить дубли" в `/admin/notifications` → Диагностика (~30 дублей Администратор)
+- Если push заблокированы в браузере → Замочек → Уведомления → Разрешить
 
 ### 1. Аналитика с фильтром дат (приоритет: высокий)
 - Дашборд → клиентский компонент с DatePicker (от/до)
@@ -624,6 +707,21 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ### 4. Удаление устаревших Push-подписок (приоритет: низкий)
 - При отправке push: если сервер вернул 410 (Gone) → удалять подписку из БД
 - Сейчас счётчик "ошибок" растёт из-за expired подписок
+
+### 5. PWA "Открыть в приложении" — доработка (приоритет: средний)
+- Файл: `components/store/pwa-install.tsx`
+- Standalone-детект и `getInstalledRelatedApps()` УЖЕ реализованы
+- Не доделано: кнопка "Открыть в приложении" использует `window.location.href` — не всегда открывает именно PWA-окно
+- Нужно: для Android Chrome использовать `intent://` URL схему; для desktop — `navigator.getInstalledRelatedApps()` + deep link
+- Также: рассмотреть добавление кнопки "Открыть в приложении" в шапку сайта когда PWA установлен
+
+### 6. Цветовые темы — оформление (сессия 31.03.2026) ✅ ГОТОВО
+- 13 тем: 6 собственных + 7 цветовых (Пурпур, Сапфир, Уголь, Рубин, Янтарь, Лазурь, Малахит)
+- `components/palette-provider.tsx` — PaletteProvider + enabledIds фильтрация
+- `app/admin/appearance/` — страница управления темами для ADMIN
+- `app/api/admin/appearance/` — GET/PATCH API
+- `lib/cart-fly.ts` — анимация корзины читает `--brand-primary` из CSS-переменной
+- `/cabinet/profile` — только разрешённые темы отображаются
 
 ---
 

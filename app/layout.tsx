@@ -6,6 +6,7 @@ import { PaletteProvider } from "@/components/palette-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushSubscription } from "@/components/push-subscription";
 import { SwRegister } from "@/components/sw-register";
+import { getSiteSettings, DEFAULT_SETTINGS } from "@/lib/site-settings";
 import "./globals.css";
 
 const inter = Inter({
@@ -101,7 +102,13 @@ const organizationSchema = {
   "sameAs": ["https://pilmos.ru"]
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getSiteSettings();
+  const enabledIds = (settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled)
+    .split(",")
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
@@ -121,7 +128,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem
           disableTransitionOnChange
         >
-          <PaletteProvider>
+          <PaletteProvider enabledIds={enabledIds}>
             {children}
             <Toaster />
             <SwRegister />

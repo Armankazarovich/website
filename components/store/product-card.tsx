@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ChevronRight, Minus, Plus } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { WishlistButton } from "@/components/store/wishlist-button";
@@ -59,39 +59,50 @@ const FALLBACK_GRADIENT =
 export function ProductCard({
   id, slug, name, category, images, saleUnit, variants, featured,
 }: ProductCardProps) {
-  const { addItem } = useCartStore();
+  const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
 
   const activeVariants = variants.filter((v) => v.inStock);
-  const firstVariant = activeVariants[0] || variants[0];
   const hasStock = activeVariants.length > 0;
 
-  const minPrice = variants.reduce((min, v) => {
-    const p = saleUnit === "PIECE" ? v.pricePerPiece : (v.pricePerCube ?? v.pricePerPiece);
-    return p && p < min ? p : min;
-  }, Infinity);
+  const defaultVariant = activeVariants[0] || variants[0];
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
+  // ID-based selection — avoids server/client hydration mismatch
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedVariant = selectedId
+    ? (variants.find((v) => v.id === selectedId) ?? defaultVariant)
+    : defaultVariant;
+
+  // Expand all sizes on "+N" click
+  const [showAllSizes, setShowAllSizes] = useState(false);
+
+  const unitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const selectedPrice = selectedVariant
+    ? Number(unitType === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
+    : null;
+
+  // Live quantity from cart store
+  const cartItemId = selectedVariant ? `${selectedVariant.id}-${unitType}` : null;
+  const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
+
+  const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (!firstVariant || !hasStock) return;
-    const unitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
-    const price = unitType === "CUBE" ? firstVariant.pricePerCube : firstVariant.pricePerPiece;
+    if (!selectedVariant || !hasStock) return;
+    const price = unitType === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
     if (!price) return;
 
-    // Fly to cart animation
     flyToCart(e.currentTarget as HTMLElement, images[0] ?? null);
 
-    // Haptic feedback like Telegram
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate(10);
     }
 
     addItem({
-      variantId: firstVariant.id,
+      variantId: selectedVariant.id,
       productId: id,
       productName: name,
       productSlug: slug,
-      variantSize: firstVariant.size,
+      variantSize: selectedVariant.size,
       productImage: images[0],
       unitType,
       quantity: 1,
@@ -127,9 +138,33 @@ export function ProductCard({
     }
   };
 
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!cartItemId) return;
+    if (cartQty === 0) {
+      // First add — use handleAdd logic but triggered from + button
+      const btn = e.currentTarget as HTMLElement;
+      if (!selectedVariant || !hasStock) return;
+      const price = unitType === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
+      if (!price) return;
+      flyToCart(btn, images[0] ?? null);
+      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+      addItem({ variantId: selectedVariant.id, productId: id, productName: name, productSlug: slug, variantSize: selectedVariant.size, productImage: images[0], unitType, quantity: 1, price: Number(price) });
+    } else {
+      updateQuantity(cartItemId, parseFloat((cartQty + 1).toFixed(1)));
+    }
+  };
+
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!cartItemId) return;
+    updateQuantity(cartItemId, parseFloat((cartQty - 1).toFixed(1)));
+  };
+
   /* Показываем первые 3 размера + счётчик остальных */
-  const shownSizes = variants.slice(0, 3);
-  const extraCount = variants.length - shownSizes.length;
+  const shownSizes = showAllSizes ? variants : variants.slice(0, 3);
+  const extraCount = showAllSizes ? 0 : variants.length - shownSizes.length;
+  const unit = saleUnit === "PIECE" ? "шт" : "м³";
 
   return (
     <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300">
@@ -195,7 +230,7 @@ export function ProductCard({
       </Link>
 
       {/* ── Контент ── */}
-      <div className="p-4">
+      <div className="p-3 sm:p-4">
         {/* Категория */}
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1.5">{category}</p>
 
@@ -206,59 +241,85 @@ export function ProductCard({
           </h3>
         </Link>
 
-        {/* Размеры-пилюли */}
+        {/* Размеры-пилюли — кликабельные */}
         {variants.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
             {shownSizes.map((v) => (
-              <span
+              <button
                 key={v.id}
-                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-colors ${
-                  v.inStock
-                    ? "border-border bg-muted text-foreground/70"
-                    : "border-border/40 bg-transparent text-muted-foreground/40 line-through"
+                onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); } }}
+                disabled={!v.inStock}
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-all ${
+                  selectedVariant?.id === v.id && v.inStock
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    : v.inStock
+                    ? "border-border bg-muted text-foreground/70 hover:border-primary/50 hover:bg-primary/5"
+                    : "border-border/40 bg-transparent text-muted-foreground/40 line-through cursor-not-allowed"
                 }`}
               >
                 {v.size}
-              </span>
+              </button>
             ))}
             {extraCount > 0 && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary">
+              <button
+                onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors active:scale-95"
+              >
                 +{extraCount}
-              </span>
+              </button>
             )}
           </div>
         )}
 
-        {/* Цена + кнопка */}
-        <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/60">
-          <div>
-            {minPrice !== Infinity ? (
-              <div className="flex items-baseline gap-1">
-                <span className="text-[10px] text-muted-foreground">от</span>
-                <span className="font-display font-bold text-lg text-primary leading-none">
-                  {formatPrice(minPrice)}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  / {saleUnit === "PIECE" ? "шт" : "м³"}
-                </span>
-              </div>
-            ) : (
-              <span className="text-sm text-muted-foreground">Уточняйте</span>
-            )}
-          </div>
+        {/* Кнопка / степпер */}
+        <div className="pt-3 border-t border-border/60">
+          {cartQty > 0 ? (
+            /* ── Степпер количества ── */
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDecrement}
+                className="flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
 
-          <button
-            onClick={handleQuickAdd}
-            disabled={!hasStock}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition-all duration-200 shrink-0 ${
-              hasStock
-                ? "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-sm hover:shadow-md"
-                : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
-            }`}
-          >
-            <ShoppingCart className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">В корзину</span>
-          </button>
+              <div className="flex-1 text-center">
+                <span className="font-display font-bold text-base tabular-nums">{cartQty}</span>
+                <span className="text-[10px] text-muted-foreground ml-0.5">{unit}</span>
+              </div>
+
+              <button
+                onClick={handleIncrement}
+                className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            /* ── Добавить в корзину ── */
+            <button
+              onClick={handleAdd}
+              disabled={!hasStock}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-95 ${
+                !hasStock
+                  ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-primary/30 hover:shadow-md"
+              }`}
+            >
+              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+              <span className="flex items-baseline gap-0.5 whitespace-nowrap">
+                {selectedPrice ? (
+                  <>
+                    <span className="font-display font-bold text-sm">{formatPrice(selectedPrice)}</span>
+                    <span className="text-[10px] opacity-80">/ {unit}</span>
+                  </>
+                ) : (
+                  <span className="text-sm">В корзину</span>
+                )}
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
+            </button>
+          )}
         </div>
       </div>
     </div>
