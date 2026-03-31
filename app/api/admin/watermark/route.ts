@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
     await prisma.siteSettings.upsert({
       where: { key: "watermark_logo_url" },
-      create: { key: "watermark_logo_url", value: url },
+      create: { id: "watermark_logo_url", key: "watermark_logo_url", value: url },
       update: { value: url },
     });
 
@@ -62,9 +62,9 @@ export async function POST(req: Request) {
 
   if (action === "save_settings") {
     await Promise.all([
-      prisma.siteSettings.upsert({ where: { key: "watermark_position" }, create: { key: "watermark_position", value: position }, update: { value: position } }),
-      prisma.siteSettings.upsert({ where: { key: "watermark_opacity" }, create: { key: "watermark_opacity", value: String(opacity) }, update: { value: String(opacity) } }),
-      prisma.siteSettings.upsert({ where: { key: "watermark_size_pct" }, create: { key: "watermark_size_pct", value: String(sizePct) }, update: { value: String(sizePct) } }),
+      prisma.siteSettings.upsert({ where: { key: "watermark_position" }, create: { id: "watermark_position", key: "watermark_position", value: position }, update: { value: position } }),
+      prisma.siteSettings.upsert({ where: { key: "watermark_opacity" }, create: { id: "watermark_opacity", key: "watermark_opacity", value: String(opacity) }, update: { value: String(opacity) } }),
+      prisma.siteSettings.upsert({ where: { key: "watermark_size_pct" }, create: { id: "watermark_size_pct", key: "watermark_size_pct", value: String(sizePct) }, update: { value: String(sizePct) } }),
     ]);
     return NextResponse.json({ ok: true });
   }

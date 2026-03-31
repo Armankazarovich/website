@@ -187,9 +187,12 @@ export function ProductCard({
     updateQuantity(cartItemId, parseFloat((cartQty - 1).toFixed(1)));
   };
 
-  /* Показываем первые 3 размера + счётчик остальных */
-  const shownSizes = showAllSizes ? variants : variants.slice(0, 3);
-  const extraCount = showAllSizes ? 0 : variants.length - shownSizes.length;
+  /* Responsive: mobile → 2 pills, desktop → 3 pills */
+  const MOBILE_LIMIT = 2;
+  const DESKTOP_LIMIT = 3;
+  const shownSizes = showAllSizes ? variants : variants.slice(0, DESKTOP_LIMIT);
+  const mobileExtra = showAllSizes ? 0 : Math.max(0, variants.length - MOBILE_LIMIT);
+  const desktopExtra = showAllSizes ? 0 : Math.max(0, variants.length - DESKTOP_LIMIT);
 
   return (
     <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300">
@@ -269,12 +272,14 @@ export function ProductCard({
         {/* Размеры-пилюли — кликабельные */}
         {variants.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
-            {shownSizes.map((v) => (
+            {shownSizes.map((v, idx) => (
               <button
                 key={v.id}
                 onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); setShowUnitPicker(false); } }}
                 disabled={!v.inStock}
                 className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-all ${
+                  idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
+                } ${
                   selectedVariant?.id === v.id && v.inStock
                     ? "border-primary bg-primary text-primary-foreground shadow-sm"
                     : v.inStock
@@ -285,12 +290,22 @@ export function ProductCard({
                 {v.size}
               </button>
             ))}
-            {extraCount > 0 && (
+            {/* Mobile: shows from position 2 onwards */}
+            {mobileExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors active:scale-95"
+                className="sm:hidden text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors active:scale-95"
               >
-                +{extraCount}
+                +{mobileExtra}
+              </button>
+            )}
+            {/* Desktop: shows from position 3 onwards */}
+            {desktopExtra > 0 && (
+              <button
+                onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
+                className="hidden sm:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors active:scale-95"
+              >
+                +{desktopExtra}
               </button>
             )}
           </div>

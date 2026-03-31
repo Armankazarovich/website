@@ -41,7 +41,7 @@ export async function PATCH(req: Request) {
     Object.entries(updates).map(([key, value]) =>
       prisma.siteSettings.upsert({
         where: { key },
-        create: { key, value },
+        create: { id: key, key, value },
         update: { value },
       })
     )

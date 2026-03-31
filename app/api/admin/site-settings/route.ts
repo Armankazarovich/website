@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   for (const [key, value] of Object.entries(body)) {
     await prisma.siteSettings.upsert({
       where: { key },
-      create: { key, value: String(value) },
+      create: { id: key, key, value: String(value) },
       update: { value: String(value) },
     });
   }
