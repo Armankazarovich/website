@@ -16,7 +16,9 @@ import {
   Loader2,
   Sparkles,
   Wand2,
+  PenTool,
 } from "lucide-react";
+import { PhotoEditor } from "@/components/admin/photo-editor";
 
 type Variant = {
   id?: string;
@@ -109,6 +111,7 @@ export default function AdminProductEditPage() {
   }, [params.id, isNew]);
 
   const [dragOverPhoto, setDragOverPhoto] = useState(false);
+  const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
   const [removingBg, setRemovingBg] = useState(false);
   const [bgRemoveProgress, setBgRemoveProgress] = useState("");
 
@@ -448,35 +451,56 @@ export default function AdminProductEditPage() {
                 <p className="text-xs text-muted-foreground mt-2 font-mono truncate max-w-xs">{images[0]}</p>
               )}
 
-              {/* AI Remove Background */}
+              {/* AI Tools */}
               {images[0] && (
-                <div className="mt-3">
-                  <button
-                    onClick={handleRemoveBackground}
-                    disabled={removingBg}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold hover:from-violet-600 hover:to-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-500/20 active:scale-95"
-                  >
-                    {removingBg ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                        <span>{bgRemoveProgress || "Обрабатываем..."}</span>
-                      </>
-                    ) : bgRemoveProgress === "Готово!" ? (
-                      <>
-                        <Check className="w-4 h-4 shrink-0" />
-                        <span>Фон удалён!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="w-4 h-4 shrink-0" />
-                        <span>✨ Убрать фон (AI)</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-xs text-muted-foreground mt-1.5">
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {/* Photo Editor */}
+                    <button
+                      onClick={() => setPhotoEditorOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md shadow-blue-500/20 active:scale-95"
+                    >
+                      <PenTool className="w-4 h-4 shrink-0" />
+                      <span>🎨 Редактор фото</span>
+                    </button>
+
+                    {/* AI Remove Background */}
+                    <button
+                      onClick={handleRemoveBackground}
+                      disabled={removingBg}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold hover:from-violet-600 hover:to-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-500/20 active:scale-95"
+                    >
+                      {removingBg ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                          <span>{bgRemoveProgress || "Обрабатываем..."}</span>
+                        </>
+                      ) : bgRemoveProgress === "Готово!" ? (
+                        <>
+                          <Check className="w-4 h-4 shrink-0" />
+                          <span>Фон удалён!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="w-4 h-4 shrink-0" />
+                          <span>✨ Убрать фон (AI)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
                     AI обрезает фон прямо в браузере — без сервисов, бесплатно
                   </p>
                 </div>
+              )}
+
+              {/* Photo Editor Modal */}
+              {photoEditorOpen && images[0] && (
+                <PhotoEditor
+                  imageUrl={images[0]}
+                  onSave={(newUrl) => setImages([newUrl])}
+                  onClose={() => setPhotoEditorOpen(false)}
+                />
               )}
             </div>
 
