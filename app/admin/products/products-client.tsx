@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import {
   Search, Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
+  CheckSquare, Square, Trash2, Tag,
 } from "lucide-react";
 
 type Product = {
@@ -34,13 +35,17 @@ export function ProductsClient({
   const [drawer, setDrawer] = useState<Product | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
+  /* bulk selection */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkCat, setBulkCat] = useState("");
+
   /* drawer state */
   const [dName, setDName] = useState("");
   const [dCat, setDCat] = useState("");
   const [dActive, setDActive] = useState(true);
   const [dFeatured, setDFeatured] = useState(false);
 
-  /* ── helpers ── */
   const minPrice = (p: Product) => {
     const min = p.variants.reduce((m, v) => {
       const price = Number(v.pricePerCube ?? v.pricePerPiece ?? 0);
@@ -60,6 +65,71 @@ export function ProductsClient({
     } finally { setSaving(null); }
   };
 
+  /* filtered */
+  const filtered = useMemo(() => products.filter(p => {
+    const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
+    const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchS;
+  }), [products, search, catFilter]);
+
+  /* ── selection helpers ── */
+  const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id));
+  const someSelected = selected.size > 0;
+
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(p => p.id)));
+    }
+  };
+
+  /* ── bulk actions ── */
+  const bulkSetActive = async (active: boolean) => {
+    const ids = Array.from(selected);
+    setProducts(ps => ps.map(p => selected.has(p.id) ? { ...p, active } : p));
+    setSelected(new Set());
+    setBulkSaving(true);
+    try {
+      await Promise.all(ids.map(id =>
+        fetch(`/api/admin/products/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ active }),
+        })
+      ));
+    } finally { setBulkSaving(false); }
+  };
+
+  const bulkSetCategory = async (categoryId: string) => {
+    if (!categoryId) return;
+    const cat = categories.find(c => c.id === categoryId);
+    const ids = Array.from(selected);
+    setProducts(ps => ps.map(p => selected.has(p.id)
+      ? { ...p, categoryId, category: cat ? { name: cat.name } : p.category }
+      : p
+    ));
+    setSelected(new Set());
+    setBulkSaving(true);
+    try {
+      await Promise.all(ids.map(id =>
+        fetch(`/api/admin/products/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ categoryId }),
+        })
+      ));
+    } finally { setBulkSaving(false); }
+  };
+
   /* ── quick toggle active ── */
   const toggleActive = async (p: Product, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -68,7 +138,7 @@ export function ProductsClient({
     await patch(p.id, { active: val });
   };
 
-  /* ── open drawer ── */
+  /* ── drawer ── */
   const openDrawer = (p: Product, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
     setDName(p.name); setDCat(p.categoryId);
@@ -76,7 +146,6 @@ export function ProductsClient({
     setDrawer(p);
   };
 
-  /* ── save drawer ── */
   const saveDrawer = async () => {
     if (!drawer) return;
     const cat = categories.find(c => c.id === dCat);
@@ -88,13 +157,6 @@ export function ProductsClient({
     await patch(drawer.id, { name: dName, categoryId: dCat, active: dActive, featured: dFeatured });
   };
 
-  /* ── filtered list ── */
-  const filtered = useMemo(() => products.filter(p => {
-    const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
-    const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchS;
-  }), [products, search, catFilter]);
-
   /* ── status badge ── */
   const StatusBadge = ({ p }: { p: Product }) => (
     <button
@@ -105,8 +167,7 @@ export function ProductsClient({
         ${saving === p.id ? "opacity-50 cursor-wait" : "cursor-pointer hover:opacity-80"}
         ${p.active
           ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
-          : "bg-muted text-muted-foreground border-border"
-        }`}
+          : "bg-muted text-muted-foreground border-border"}`}
     >
       {p.active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
       {p.active ? "Активен" : "Скрыт"}
@@ -141,39 +202,89 @@ export function ProductsClient({
         <span className="text-sm text-muted-foreground">{filtered.length} из {products.length}</span>
       </div>
 
+      {/* ── BULK ACTION BAR ── */}
+      {someSelected && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-2xl animate-in slide-in-from-top-2 duration-200">
+          <span className="text-sm font-semibold text-primary">
+            {selected.size} выбрано
+          </span>
+          <div className="flex flex-wrap gap-2 flex-1">
+            <button
+              onClick={() => bulkSetActive(true)}
+              disabled={bulkSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-300 text-xs font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+            >
+              <Eye className="w-3.5 h-3.5" /> Сделать активными
+            </button>
+            <button
+              onClick={() => bulkSetActive(false)}
+              disabled={bulkSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-muted-foreground border border-border text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50"
+            >
+              <EyeOff className="w-3.5 h-3.5" /> Скрыть
+            </button>
+            <div className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-muted-foreground" />
+              <select
+                value={bulkCat}
+                onChange={e => { setBulkCat(e.target.value); if (e.target.value) bulkSetCategory(e.target.value); }}
+                disabled={bulkSaving}
+                className="text-xs py-1.5 pl-2 pr-6 rounded-xl border border-border bg-background appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+              >
+                <option value="">Переместить в категорию…</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="p-1.5 rounded-lg hover:bg-accent transition-colors text-muted-foreground"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* ── MOBILE: cards ── */}
       <div className="sm:hidden space-y-2">
         {filtered.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            {products.length === 0 ? (
-              <Link href="/admin/products/new" className="text-primary hover:underline">Добавить первый товар</Link>
-            ) : "Ничего не найдено"}
+            {products.length === 0
+              ? <Link href="/admin/products/new" className="text-primary hover:underline">Добавить первый товар</Link>
+              : "Ничего не найдено"}
           </div>
         )}
         {filtered.map(p => (
-          <div key={p.id} className={`bg-card border border-border rounded-2xl p-4 transition-all ${!p.active ? "opacity-60" : ""}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-semibold text-sm line-clamp-1">{p.name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{p.category.name}</p>
+          <div
+            key={p.id}
+            className={`bg-card border rounded-2xl p-4 transition-all ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "border-primary bg-primary/3" : "border-border"}`}
+          >
+            <div className="flex items-start gap-3">
+              <button onClick={() => toggleSelect(p.id)} className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
+                {selected.has(p.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
+              </button>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold text-sm line-clamp-1">{p.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{p.category.name}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {p.featured && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />}
+                    <button onClick={(e) => openDrawer(p, e)} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{p.variants.length}</span>
+                    {minPrice(p) !== null && <span className="font-medium text-foreground">{formatPrice(minPrice(p)!)}</span>}
+                  </div>
+                  <StatusBadge p={p} />
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                {p.featured && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />}
-                <button
-                  onClick={(e) => openDrawer(p, e)}
-                  className="p-1.5 rounded-lg hover:bg-accent transition-colors"
-                >
-                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{p.variants.length} вар.</span>
-                {minPrice(p) !== null && <span className="font-medium text-foreground">{formatPrice(minPrice(p)!)}</span>}
-              </div>
-              <StatusBadge p={p} />
             </div>
           </div>
         ))}
@@ -185,6 +296,15 @@ export function ProductsClient({
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="px-4 py-3 w-10">
+                  <button onClick={toggleAll} className="text-muted-foreground hover:text-primary transition-colors">
+                    {allSelected
+                      ? <CheckSquare className="w-4 h-4 text-primary" />
+                      : someSelected
+                        ? <CheckSquare className="w-4 h-4 text-primary/50" />
+                        : <Square className="w-4 h-4" />}
+                  </button>
+                </th>
                 <th className="text-left px-4 py-3 font-semibold">Товар</th>
                 <th className="text-left px-4 py-3 font-semibold">Категория</th>
                 <th className="text-center px-4 py-3 font-semibold">Вариантов</th>
@@ -196,15 +316,23 @@ export function ProductsClient({
             <tbody className="divide-y divide-border">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-muted-foreground">
-                    {products.length === 0 ? (
-                      <Link href="/admin/products/new" className="text-primary hover:underline">Добавить первый товар</Link>
-                    ) : "Ничего не найдено"}
+                  <td colSpan={7} className="text-center py-12 text-muted-foreground">
+                    {products.length === 0
+                      ? <Link href="/admin/products/new" className="text-primary hover:underline">Добавить первый товар</Link>
+                      : "Ничего не найдено"}
                   </td>
                 </tr>
               )}
               {filtered.map(p => (
-                <tr key={p.id} className={`hover:bg-muted/30 transition-colors ${!p.active ? "opacity-60" : ""}`}>
+                <tr
+                  key={p.id}
+                  className={`hover:bg-muted/30 transition-colors ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "bg-primary/5" : ""}`}
+                >
+                  <td className="px-4 py-3">
+                    <button onClick={() => toggleSelect(p.id)} className="text-muted-foreground hover:text-primary transition-colors">
+                      {selected.has(p.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
+                    </button>
+                  </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {p.featured && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400 shrink-0" />}
@@ -239,14 +367,8 @@ export function ProductsClient({
       {/* ── QUICK-EDIT DRAWER ── */}
       {drawer && (
         <div className="fixed inset-0 z-50 flex">
-          {/* backdrop */}
-          <div
-            className="flex-1 bg-black/40 backdrop-blur-sm"
-            onClick={() => setDrawer(null)}
-          />
-          {/* panel */}
+          <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setDrawer(null)} />
           <div className="w-full max-w-sm bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            {/* header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
                 <h3 className="font-semibold">Быстрое редактирование</h3>
@@ -256,10 +378,7 @@ export function ProductsClient({
                 <X className="w-4 h-4" />
               </button>
             </div>
-
-            {/* fields */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {/* Name */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Название</label>
                 <input
@@ -268,8 +387,6 @@ export function ProductsClient({
                   className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-
-              {/* Category */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Категория</label>
                 <div className="relative mt-1.5">
@@ -283,18 +400,13 @@ export function ProductsClient({
                   <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
-
-              {/* Toggles */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Настройки</label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setDActive(v => !v)}
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all
-                      ${dActive
-                        ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700"
-                        : "border-border text-muted-foreground hover:bg-accent"
-                      }`}
+                      ${dActive ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700" : "border-border text-muted-foreground hover:bg-accent"}`}
                   >
                     {dActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
                     {dActive ? "Активен" : "Скрыт"}
@@ -302,25 +414,18 @@ export function ProductsClient({
                   <button
                     onClick={() => setDFeatured(v => !v)}
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-sm font-medium transition-all
-                      ${dFeatured
-                        ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-700"
-                        : "border-border text-muted-foreground hover:bg-accent"
-                      }`}
+                      ${dFeatured ? "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-700" : "border-border text-muted-foreground hover:bg-accent"}`}
                   >
                     <Star className={`w-4 h-4 ${dFeatured ? "fill-amber-500 text-amber-500" : ""}`} />
                     {dFeatured ? "Топ товар" : "Обычный"}
                   </button>
                 </div>
               </div>
-
-              {/* Info */}
               <div className="p-3 rounded-xl bg-muted/50 text-xs text-muted-foreground space-y-1">
                 <p>Вариантов: <span className="font-medium text-foreground">{drawer.variants.length}</span></p>
                 <p>Slug: <span className="font-mono text-foreground">{drawer.slug}</span></p>
               </div>
             </div>
-
-            {/* footer */}
             <div className="px-5 py-4 border-t border-border space-y-2">
               <button
                 onClick={saveDrawer}
@@ -333,8 +438,7 @@ export function ProductsClient({
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-accent transition-colors"
                 onClick={() => setDrawer(null)}
               >
-                Полное редактирование
-                <ArrowRight className="w-3.5 h-3.5" />
+                Полное редактирование <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           </div>
