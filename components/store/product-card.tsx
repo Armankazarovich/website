@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronRight, Minus, Plus } from "lucide-react";
-import { useCartStore } from "@/store/cart";
+import { ShoppingCart, ChevronRight, Minus, Plus, Boxes, Package, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useCartStore, type UnitType } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { WishlistButton } from "@/components/store/wishlist-button";
 import { flyToCart } from "@/lib/cart-fly";
@@ -76,26 +77,31 @@ export function ProductCard({
   // Expand all sizes on "+N" click
   const [showAllSizes, setShowAllSizes] = useState(false);
 
-  const unitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  // Unit type — for BOTH products starts null until user picks
+  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(
+    saleUnit === "BOTH" ? null : saleUnit === "PIECE" ? "PIECE" : "CUBE"
+  );
+  const [showUnitPicker, setShowUnitPicker] = useState(false);
+
+  const effectiveUnit: UnitType = selectedUnit ?? "CUBE";
+  const unit = effectiveUnit === "PIECE" ? "шт" : "м³";
+
   const selectedPrice = selectedVariant
-    ? Number(unitType === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
+    ? Number(effectiveUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
     : null;
 
-  // Live quantity from cart store
-  const cartItemId = selectedVariant ? `${selectedVariant.id}-${unitType}` : null;
+  // Live quantity from cart store — only tracked when unit is chosen
+  const cartItemId = selectedVariant && selectedUnit ? `${selectedVariant.id}-${selectedUnit}` : null;
   const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
 
-  const handleAdd = (e: React.MouseEvent) => {
-    e.preventDefault();
+  // Core add logic — reused by direct add and unit picker
+  const doAddToCart = (unit: UnitType, srcEl: HTMLElement) => {
     if (!selectedVariant || !hasStock) return;
-    const price = unitType === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
+    const price = unit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
     if (!price) return;
 
-    flyToCart(e.currentTarget as HTMLElement, images[0] ?? null);
-
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(10);
-    }
+    flyToCart(srcEl, images[0] ?? null);
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
 
     addItem({
       variantId: selectedVariant.id,
@@ -104,12 +110,12 @@ export function ProductCard({
       productSlug: slug,
       variantSize: selectedVariant.size,
       productImage: images[0],
-      unitType,
+      unitType: unit,
       quantity: 1,
       price: Number(price),
     });
 
-    // Push-тост — один раз за сессию, только если ещё не подписан
+    // Push-тост — один раз за сессию
     if (
       typeof window !== "undefined" &&
       "Notification" in window &&
@@ -138,18 +144,38 @@ export function ProductCard({
     }
   };
 
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!selectedVariant || !hasStock) return;
+
+    // For BOTH products with no unit chosen — show picker
+    if (saleUnit === "BOTH" && selectedUnit === null) {
+      setShowUnitPicker(true);
+      return;
+    }
+
+    doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
+  };
+
+  const handleUnitPick = (unit: UnitType, e: React.MouseEvent) => {
+    e.preventDefault();
+    setSelectedUnit(unit);
+    setShowUnitPicker(false);
+    doAddToCart(unit, e.currentTarget as HTMLElement);
+  };
+
   const handleIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
+
+    // For BOTH products with no unit chosen — show picker first
+    if (saleUnit === "BOTH" && selectedUnit === null) {
+      setShowUnitPicker(true);
+      return;
+    }
+
     if (!cartItemId) return;
     if (cartQty === 0) {
-      // First add — use handleAdd logic but triggered from + button
-      const btn = e.currentTarget as HTMLElement;
-      if (!selectedVariant || !hasStock) return;
-      const price = unitType === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
-      if (!price) return;
-      flyToCart(btn, images[0] ?? null);
-      if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
-      addItem({ variantId: selectedVariant.id, productId: id, productName: name, productSlug: slug, variantSize: selectedVariant.size, productImage: images[0], unitType, quantity: 1, price: Number(price) });
+      doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
     } else {
       updateQuantity(cartItemId, parseFloat((cartQty + 1).toFixed(1)));
     }
@@ -164,13 +190,12 @@ export function ProductCard({
   /* Показываем первые 3 размера + счётчик остальных */
   const shownSizes = showAllSizes ? variants : variants.slice(0, 3);
   const extraCount = showAllSizes ? 0 : variants.length - shownSizes.length;
-  const unit = saleUnit === "PIECE" ? "шт" : "м³";
 
   return (
     <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300">
 
       {/* ── Изображение ── */}
-      <Link href={`/product/${slug}`} className="block relative aspect-[4/3] overflow-hidden">
+      <Link href={`/product/${slug}`} className="block relative aspect-[3/4] overflow-hidden">
         {images[0] ? (
           <Image
             src={images[0]}
@@ -247,7 +272,7 @@ export function ProductCard({
             {shownSizes.map((v) => (
               <button
                 key={v.id}
-                onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); } }}
+                onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); setShowUnitPicker(false); } }}
                 disabled={!v.inStock}
                 className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-all ${
                   selectedVariant?.id === v.id && v.inStock
@@ -272,7 +297,7 @@ export function ProductCard({
         )}
 
         {/* Кнопка / степпер */}
-        <div className="pt-3 border-t border-border/60">
+        <div className="pt-3 border-t border-border/60 relative">
           {cartQty > 0 ? (
             /* ── Степпер количества ── */
             <div className="flex items-center gap-2">
@@ -308,7 +333,7 @@ export function ProductCard({
             >
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
               <span className="flex items-baseline gap-0.5 whitespace-nowrap">
-                {selectedPrice ? (
+                {selectedPrice && selectedUnit ? (
                   <>
                     <span className="font-display font-bold text-sm">{formatPrice(selectedPrice)}</span>
                     <span className="text-[10px] opacity-80">/ {unit}</span>
@@ -320,6 +345,76 @@ export function ProductCard({
               <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
             </button>
           )}
+
+          {/* ── Пикер единицы (для товаров с saleUnit=BOTH) ── */}
+          <AnimatePresence>
+            {showUnitPicker && (
+              <>
+                {/* Backdrop — закрывает пикер при клике мимо */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={(e) => { e.preventDefault(); setShowUnitPicker(false); }}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: "easeOut" }}
+                  className="absolute bottom-full left-0 right-0 mb-2 z-20 bg-card border border-border rounded-xl shadow-xl p-2.5"
+                >
+                  {/* Заголовок */}
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                      Как считать?
+                    </p>
+                    <button
+                      onClick={(e) => { e.preventDefault(); setShowUnitPicker(false); }}
+                      className="w-4 h-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Две опции */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {/* Кубометры */}
+                    <button
+                      onClick={(e) => handleUnitPick("CUBE", e)}
+                      className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border border-border bg-muted/50 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all active:scale-95"
+                    >
+                      <Boxes className="w-5 h-5 text-primary/70" />
+                      <span className="font-bold text-sm leading-none">м³</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">кубометр</span>
+                      {selectedVariant?.pricePerCube ? (
+                        <span className="text-[10px] font-semibold text-primary leading-none mt-0.5">
+                          {formatPrice(Number(selectedVariant.pricePerCube))}
+                        </span>
+                      ) : null}
+                    </button>
+
+                    {/* Штуки */}
+                    <button
+                      onClick={(e) => handleUnitPick("PIECE", e)}
+                      className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border border-border bg-muted/50 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all active:scale-95"
+                    >
+                      <Package className="w-5 h-5 text-primary/70" />
+                      <span className="font-bold text-sm leading-none">шт</span>
+                      <span className="text-[9px] text-muted-foreground leading-none">штука</span>
+                      {selectedVariant?.pricePerPiece ? (
+                        <span className="text-[10px] font-semibold text-primary leading-none mt-0.5">
+                          {formatPrice(Number(selectedVariant.pricePerPiece))}
+                        </span>
+                      ) : null}
+                    </button>
+                  </div>
+
+                  {/* Треугольник-указатель вниз */}
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-card border-r border-b border-border rotate-45" />
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>

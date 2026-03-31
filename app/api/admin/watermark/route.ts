@@ -106,8 +106,10 @@ async function applyWatermark(
     if (!logoSetting) return { url: imageUrl, error: "No watermark logo set" };
 
     const logoUrl = logoSetting.value;
-    const logoPath = join(process.cwd(), "public", logoUrl);
-    if (!existsSync(logoPath)) return { url: imageUrl, error: "Watermark file not found" };
+    // Strip leading slash so path.join doesn't treat it as absolute root
+    const logoRelative = logoUrl.replace(/^\/+/, "");
+    const logoPath = join(process.cwd(), "public", logoRelative);
+    if (!existsSync(logoPath)) return { url: imageUrl, error: `Watermark file not found: ${logoPath}` };
 
     // Fetch or read the product image
     const isExternal = imageUrl.startsWith("http");

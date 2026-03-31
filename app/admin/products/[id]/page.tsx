@@ -482,38 +482,38 @@ export default function AdminProductEditPage() {
                     {/* Photo Editor */}
                     <button
                       onClick={() => setPhotoEditorOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold hover:from-blue-600 hover:to-indigo-700 transition-all shadow-md shadow-blue-500/20 active:scale-95"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-accent transition-colors"
                     >
-                      <PenTool className="w-4 h-4 shrink-0" />
-                      <span>🎨 Редактор фото</span>
+                      <PenTool className="w-4 h-4 shrink-0 text-primary" />
+                      Редактор фото
                     </button>
 
                     {/* AI Remove Background */}
                     <button
                       onClick={handleRemoveBackground}
                       disabled={removingBg}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold hover:from-violet-600 hover:to-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-500/20 active:scale-95"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {removingBg ? (
                         <>
-                          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                          <Loader2 className="w-4 h-4 animate-spin shrink-0 text-primary" />
                           <span>{bgRemoveProgress || "Обрабатываем..."}</span>
                         </>
                       ) : bgRemoveProgress === "Готово!" ? (
                         <>
-                          <Check className="w-4 h-4 shrink-0" />
+                          <Check className="w-4 h-4 shrink-0 text-emerald-500" />
                           <span>Фон удалён!</span>
                         </>
                       ) : (
                         <>
-                          <Wand2 className="w-4 h-4 shrink-0" />
-                          <span>✨ Убрать фон (AI)</span>
+                          <Wand2 className="w-4 h-4 shrink-0 text-primary" />
+                          <span>Убрать фон (AI)</span>
                         </>
                       )}
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Сервер убирает фон через AI — без задержек в браузере
+                    AI убирает фон на сервере — ~20 сек при первом запуске
                   </p>
                 </div>
               )}

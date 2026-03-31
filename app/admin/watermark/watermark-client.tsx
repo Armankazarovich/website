@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap } from "lucide-react";
+import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap, AlertCircle } from "lucide-react";
 import Image from "next/image";
 
 const POSITIONS = [
@@ -25,6 +25,8 @@ export function WatermarkClient({ initialLogoUrl, initialPosition, initialOpacit
   const [opacity, setOpacity] = useState(initialOpacity);
   const [sizePct, setSizePct] = useState(initialSizePct);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadOk, setUploadOk] = useState(false);
   const [saving, setSaving] = useState(false);
   const [applying, setApplying] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
@@ -35,14 +37,28 @@ export function WatermarkClient({ initialLogoUrl, initialPosition, initialOpacit
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError(null);
+    setUploadOk(false);
     try {
       const formData = new FormData();
       formData.append("file", file);
       const res = await fetch("/api/admin/watermark", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.url) setLogoUrl(data.url);
+      if (!res.ok || data.error) {
+        setUploadError(data.error || `Ошибка ${res.status}`);
+        return;
+      }
+      if (data.url) {
+        setLogoUrl(data.url + "?t=" + Date.now()); // cache-bust
+        setUploadOk(true);
+        setTimeout(() => setUploadOk(false), 3000);
+      }
+    } catch (err) {
+      setUploadError("Не удалось подключиться к серверу");
     } finally {
       setUploading(false);
+      // reset input so same file can be re-uploaded
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
@@ -109,9 +125,20 @@ export function WatermarkClient({ initialLogoUrl, initialPosition, initialOpacit
               disabled={uploading}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
             >
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-              {uploading ? "Загружаем..." : logoUrl ? "Заменить логотип" : "Загрузить логотип"}
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : uploadOk ? <CheckCircle className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+              {uploading ? "Загружаем..." : uploadOk ? "Загружено!" : logoUrl ? "Заменить логотип" : "Загрузить логотип"}
             </button>
+            {uploadError && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                {uploadError}
+              </div>
+            )}
+            {uploadOk && (
+              <p className="mt-1.5 text-xs text-emerald-600 dark:text-emerald-400">
+                ✓ Логотип успешно загружен
+              </p>
+            )}
           </div>
         </div>
       </div>

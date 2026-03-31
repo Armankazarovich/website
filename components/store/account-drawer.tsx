@@ -9,13 +9,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import {
   X, User, LogOut, ShoppingBag, Settings, Eye, EyeOff,
-  Mail, Lock, Loader2, CheckCircle2, ArrowRight, Phone,
+  Mail, Lock, Loader2, CheckCircle2, ArrowRight, Phone, Sun, Moon, Palette,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { usePalette, PALETTES } from "@/components/palette-provider";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -332,6 +334,44 @@ function ProfilePanel() {
   );
 }
 
+// ── Palette footer (shown for all users) ─────────────────────────────────────
+function ThemePaletteBar() {
+  const { palette, setPalette, enabledIds } = usePalette();
+  const { theme, setTheme } = useTheme();
+  const visible = PALETTES.filter((p) => enabledIds.includes(p.id));
+
+  return (
+    <div className="px-5 py-3 border-t border-border shrink-0">
+      <div className="flex items-center gap-2 mb-2">
+        <Palette className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider">Цвет интерфейса</span>
+      </div>
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {visible.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setPalette(p.id)}
+            title={p.name}
+            className={`w-6 h-6 rounded-lg transition-all ${
+              palette === p.id
+                ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-110"
+                : "opacity-60 hover:opacity-100 hover:scale-105"
+            }`}
+            style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+          />
+        ))}
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+          className="w-6 h-6 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center transition-all ml-1"
+        >
+          {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Drawer ───────────────────────────────────────────────────────────────
 export function AccountDrawer() {
   const { open, setOpen } = useAccountDrawer();
@@ -388,6 +428,9 @@ export function AccountDrawer() {
                   : <RegisterPanel onSwitch={() => setMode("login")} />
               )}
             </div>
+
+            {/* Theme palette — always visible */}
+            <ThemePaletteBar />
           </motion.div>
         </div>
       )}

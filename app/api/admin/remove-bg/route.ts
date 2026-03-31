@@ -23,7 +23,8 @@ export async function POST(req: Request) {
   try {
     const { removeBackground } = await import("@imgly/background-removal-node");
 
-    const resultBlob = await removeBackground(inputBuffer);
+    // 'small' model downloads ~50MB (vs 100MB for medium) — faster on first run
+    const resultBlob = await removeBackground(inputBuffer, { model: "small" });
     const resultBuffer = Buffer.from(await resultBlob.arrayBuffer());
 
     // Save to /public/images/products/

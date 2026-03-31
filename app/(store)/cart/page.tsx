@@ -374,7 +374,7 @@ export default function CartPage() {
           ))}
 
           <div className="flex justify-between items-center pt-2">
-            <Button variant="ghost" onClick={clearCart} className="text-muted-foreground">
+            <Button variant="ghost" onClick={() => { clearCart(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-muted-foreground">
               <Trash2 className="w-4 h-4 mr-2" />
               Очистить корзину
             </Button>

@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
-import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
+import { usePalette, PALETTES } from "@/components/palette-provider";
 
 interface AdminShellProps {
   role: string;
@@ -34,39 +34,33 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         <AdminPushPrompt />
         <div className="p-3 border-t border-white/10 space-y-1">
           <AdminPwaInstall />
-          {/* Palette picker */}
-          <div className="px-3 py-2 space-y-2">
-            {PALETTE_GROUPS.map((group) => (
-              <div key={group.label}>
-                <p className="text-xs text-white/40 mb-1.5">{group.label}</p>
-                <div className="flex gap-1.5 flex-wrap">
-                  {group.palettes.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setPalette(p.id)}
-                      title={p.name}
-                      className={`w-5 h-5 rounded-full border-2 transition-all ${
-                        palette === p.id
-                          ? "border-white scale-110"
-                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
-                      }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+          {/* Compact palette + theme row */}
+          <div className="px-3 py-2">
+            <p className="text-[10px] text-white/35 uppercase tracking-wider mb-2">Тема</p>
+            <div className="flex items-center gap-1 flex-wrap">
+              {PALETTES.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPalette(p.id)}
+                  title={p.name}
+                  className={`w-5 h-5 rounded-md transition-all ${
+                    palette === p.id
+                      ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110"
+                      : "opacity-50 hover:opacity-90 hover:scale-105"
+                  }`}
+                  style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                />
+              ))}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+                className="w-5 h-5 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all opacity-60 hover:opacity-100"
+              >
+                {theme === "dark" ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
-          <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-          </button>
+          <div className="px-3 py-1 text-[11px] text-white/40 truncate">{email}</div>
           <Link
             href="/"
             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
@@ -122,39 +116,33 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         <AdminPushPrompt />
         <div className="p-3 border-t border-white/10 space-y-1">
           <AdminPwaInstall />
-          {/* Palette picker */}
-          <div className="px-3 py-2 space-y-2">
-            {PALETTE_GROUPS.map((group) => (
-              <div key={group.label}>
-                <p className="text-xs text-white/40 mb-1.5">{group.label}</p>
-                <div className="flex gap-1.5 flex-wrap">
-                  {group.palettes.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setPalette(p.id)}
-                      title={p.name}
-                      className={`w-5 h-5 rounded-full border-2 transition-all ${
-                        palette === p.id
-                          ? "border-white scale-110"
-                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
-                      }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+          {/* Compact palette + theme row */}
+          <div className="px-3 py-2">
+            <p className="text-[10px] text-white/35 uppercase tracking-wider mb-2">Тема</p>
+            <div className="flex items-center gap-1 flex-wrap">
+              {PALETTES.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPalette(p.id)}
+                  title={p.name}
+                  className={`w-5 h-5 rounded-md transition-all ${
+                    palette === p.id
+                      ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110"
+                      : "opacity-50 hover:opacity-90 hover:scale-105"
+                  }`}
+                  style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                />
+              ))}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+                className="w-5 h-5 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all opacity-60 hover:opacity-100"
+              >
+                {theme === "dark" ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
-          <div className="px-3 py-2 text-xs text-white/50 truncate">{email}</div>
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            {theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-          </button>
+          <div className="px-3 py-1 text-[11px] text-white/40 truncate">{email}</div>
           <Link
             href="/"
             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors"
