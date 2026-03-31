@@ -114,6 +114,9 @@ export default function AdminProductEditPage() {
   const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
   const [removingBg, setRemovingBg] = useState(false);
   const [bgRemoveProgress, setBgRemoveProgress] = useState("");
+  // Auto-pipeline: remove bg + apply watermark automatically on upload
+  const [autoPipeline, setAutoPipeline] = useState(false);
+  const [pipelineProgress, setPipelineProgress] = useState("");
 
   const handleRemoveBackground = async () => {
     if (!images[0]) return;
@@ -149,17 +152,49 @@ export default function AdminProductEditPage() {
 
   const uploadPhotoFile = async (file: File) => {
     setUploadingPhoto(true);
+    setPipelineProgress("");
     try {
+      // Step 1: Upload original
+      setPipelineProgress(autoPipeline ? "Загружаем фото..." : "");
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "products");
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.url) {
-        setImages([data.url]);
-      } else {
-        alert(data.error || "Ошибка загрузки фото");
+      if (!data.url) { alert(data.error || "Ошибка загрузки фото"); return; }
+
+      let finalUrl = data.url;
+
+      if (autoPipeline) {
+        // Step 2: Remove background
+        setPipelineProgress("AI убирает фон...");
+        try {
+          const imgRes = await fetch(finalUrl);
+          const blob = await imgRes.blob();
+          const bgForm = new FormData();
+          bgForm.append("file", new File([blob], "photo.png", { type: blob.type }));
+          const bgRes = await fetch("/api/admin/remove-bg", { method: "POST", body: bgForm });
+          const bgData = await bgRes.json();
+          if (bgData.url) finalUrl = bgData.url;
+        } catch { /* continue without bg removal */ }
+
+        // Step 3: Apply watermark
+        setPipelineProgress("Накладываем водяной знак...");
+        try {
+          const wmRes = await fetch("/api/admin/watermark", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "apply", imageUrl: finalUrl }),
+          });
+          const wmData = await wmRes.json();
+          if (wmData.url && !wmData.error) finalUrl = wmData.url;
+        } catch { /* continue without watermark */ }
+
+        setPipelineProgress("Готово! ✓");
+        setTimeout(() => setPipelineProgress(""), 2500);
       }
+
+      setImages([finalUrl]);
     } catch {
       alert("Ошибка загрузки фото");
     } finally {
@@ -478,7 +513,7 @@ export default function AdminProductEditPage() {
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    AI обрезает фон прямо в браузере — без сервисов, бесплатно
+                    Сервер убирает фон через AI — без задержек в браузере
                   </p>
                 </div>
               )}
@@ -494,7 +529,26 @@ export default function AdminProductEditPage() {
             </div>
 
             <div className="space-y-4">
-              <h3 className="font-semibold">Загрузить новое фото</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Загрузить новое фото</h3>
+                {/* Auto-pipeline toggle */}
+                <button
+                  onClick={() => setAutoPipeline((v) => !v)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    autoPipeline
+                      ? "bg-violet-500/15 border-violet-500/40 text-violet-500"
+                      : "border-border text-muted-foreground hover:bg-accent"
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${autoPipeline ? "bg-violet-500" : "bg-muted-foreground/40"}`} />
+                  Авто: убрать фон + лого
+                </button>
+              </div>
+              {autoPipeline && (
+                <p className="text-xs text-violet-400/80 -mt-2">
+                  ✨ При загрузке: AI уберёт фон → наложит водяной знак автоматически
+                </p>
+              )}
 
               <div>
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
@@ -512,7 +566,9 @@ export default function AdminProductEditPage() {
                   {uploadingPhoto ? (
                     <>
                       <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground">Загрузка и оптимизация...</p>
+                      <p className="text-sm text-muted-foreground">
+                        {pipelineProgress || "Загрузка и оптимизация..."}
+                      </p>
                     </>
                   ) : dragOverPhoto ? (
                     <>
