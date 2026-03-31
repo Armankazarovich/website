@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
+import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,13 +21,27 @@ import { useSearchDrawer } from "@/store/search-drawer";
 export function MobileBottomNav() {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
+  const totalPrice = useCartStore((s) => s.totalPrice());
   const { setCartOpen } = useCartStore();
   const [mounted, setMounted] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
+  const prevItemsRef = useRef(0);
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleFilters } = useFiltersDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (totalItems !== prevItemsRef.current) {
+      if (totalItems > prevItemsRef.current) {
+        setCartBounce(true);
+        setTimeout(() => setCartBounce(false), 600);
+      }
+      prevItemsRef.current = totalItems;
+    }
+  }, [totalItems, mounted]);
 
   const isOnCatalog = pathname === "/catalog" || pathname.startsWith("/catalog");
 
@@ -112,9 +127,20 @@ export function MobileBottomNav() {
 
               {/* Icon + badge */}
               <motion.div
-                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                animate={
+                  isCart && cartBounce
+                    ? { scale: [1, 1.35, 0.9, 1.15, 1] }
+                    : isActive
+                    ? { scale: 1.1 }
+                    : { scale: 1 }
+                }
+                transition={
+                  isCart && cartBounce
+                    ? { duration: 0.5, times: [0, 0.2, 0.4, 0.6, 1] }
+                    : { type: "spring", stiffness: 400, damping: 20 }
+                }
                 className={`relative ${hasCartItems && !isActive ? "text-brand-orange" : ""}`}
+                {...(isCart ? { "data-cart-icon": true } : {})}
               >
                 <Icon
                   className="w-[22px] h-[22px]"
@@ -127,15 +153,17 @@ export function MobileBottomNav() {
                 )}
               </motion.div>
 
-              <span className={`text-[10px] leading-none ${isActive ? "font-bold" : "font-medium"}`}>
-                {item.label}
+              <span className={`text-[10px] leading-none tabular-nums ${isActive ? "font-bold" : "font-medium"}`}>
+                {isCart && mounted && totalItems > 0
+                  ? formatPrice(totalPrice)
+                  : item.label}
               </span>
             </motion.div>
           );
 
           if (item.href) {
             return (
-              <Link key={item.id} href={item.href} onClick={haptic} {...(item.id === "cart" ? { "data-cart-icon": true } : {})}>
+              <Link key={item.id} href={item.href} onClick={haptic}>
                 {content}
               </Link>
             );

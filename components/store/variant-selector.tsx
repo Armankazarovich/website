@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Minus, Plus, ShoppingCart, Phone } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Minus, Plus, ShoppingCart, Phone, Check } from "lucide-react";
 import { useCartStore, type UnitType } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,9 @@ export function VariantSelector({
     saleUnit === "PIECE" ? "PIECE" : "CUBE"
   );
   const [quantity, setQuantity] = useState(saleUnit === "PIECE" ? 1 : 1);
+  const [justAdded, setJustAdded] = useState(false);
+  const [addedTotal, setAddedTotal] = useState(0);
+  const justAddedTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // Sync unit type with saleUnit
   useEffect(() => {
@@ -86,6 +89,12 @@ export function VariantSelector({
       quantity,
       price: Number(currentPrice),
     });
+
+    // Show confirmation state
+    setAddedTotal(quantity * Number(currentPrice));
+    setJustAdded(true);
+    clearTimeout(justAddedTimer.current);
+    justAddedTimer.current = setTimeout(() => setJustAdded(false), 2500);
   };
 
   const adjustQty = (delta: number) => {
@@ -226,12 +235,26 @@ export function VariantSelector({
       <div className="flex gap-3">
         <Button
           size="lg"
-          className="flex-1 text-base font-semibold"
+          className={cn(
+            "flex-1 text-base font-semibold transition-all duration-300",
+            justAdded && "bg-emerald-500 hover:bg-emerald-500 border-emerald-400 scale-[1.02]"
+          )}
           onClick={handleAdd}
           disabled={!selectedVariant?.inStock || !currentPrice}
         >
-          <ShoppingCart className="w-5 h-5 mr-2" />
-          {!selectedVariant?.inStock ? "Нет в наличии" : "В корзину"}
+          {justAdded ? (
+            <>
+              <Check className="w-5 h-5 mr-2 shrink-0" />
+              Добавлено · {formatPrice(addedTotal)}
+            </>
+          ) : !selectedVariant?.inStock ? (
+            "Нет в наличии"
+          ) : (
+            <>
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              В корзину
+            </>
+          )}
         </Button>
         <Button size="lg" variant="outline" asChild>
           <a href="tel:+79859707133">

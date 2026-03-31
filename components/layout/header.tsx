@@ -21,6 +21,7 @@ import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 import { cn } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PartnershipModal } from "@/components/store/partnership-modal";
 import { WishlistCount } from "@/components/store/wishlist-count";
@@ -138,8 +139,12 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
   const router = useRouter();
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
+  const totalPrice = useCartStore((s) => s.totalPrice());
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
+  const [showCartPreview, setShowCartPreview] = useState(false);
+  const prevTotalItemsRef = useRef(0);
+  const cartPreviewTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     setMounted(true);
@@ -147,6 +152,16 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (totalItems > prevTotalItemsRef.current) {
+      setShowCartPreview(true);
+      clearTimeout(cartPreviewTimer.current);
+      cartPreviewTimer.current = setTimeout(() => setShowCartPreview(false), 2500);
+    }
+    prevTotalItemsRef.current = totalItems;
+  }, [totalItems, mounted]);
 
   // Закрываем мобильное меню при смене страницы
   useEffect(() => {
@@ -484,24 +499,46 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
 
 
             {/* Cart */}
-            <Link
-              href="/cart"
-              data-cart-icon
-              aria-label="Корзина"
-              className={cn(
-                "relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200",
-                mounted && totalItems > 0
-                  ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 hover:border-brand-orange/70 hover:shadow-[0_0_14px_3px_rgba(232,112,10,0.25)]"
-                  : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-brand-orange hover:border-brand-orange/30 hover:shadow-[0_0_10px_2px_rgba(232,112,10,0.12)]"
-              )}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              {mounted && totalItems > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-brand-orange text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-bold shadow-sm">
-                  {totalItems > 9 ? "9+" : totalItems}
-                </span>
-              )}
-            </Link>
+            <div className="relative">
+              <Link
+                href="/cart"
+                data-cart-icon
+                aria-label="Корзина"
+                className={cn(
+                  "relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200",
+                  mounted && totalItems > 0
+                    ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 hover:border-brand-orange/70 hover:shadow-[0_0_14px_3px_rgba(232,112,10,0.25)]"
+                    : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-brand-orange hover:border-brand-orange/30 hover:shadow-[0_0_10px_2px_rgba(232,112,10,0.12)]"
+                )}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {mounted && totalItems > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-brand-orange text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-bold shadow-sm">
+                    {totalItems > 9 ? "9+" : totalItems}
+                  </span>
+                )}
+              </Link>
+
+              {/* Cart preview popup */}
+              <AnimatePresence>
+                {mounted && showCartPreview && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
+                    transition={{ duration: 0.18 }}
+                    className="absolute top-full right-0 mt-2.5 z-50 bg-card border border-border rounded-xl shadow-xl px-3.5 py-2.5 whitespace-nowrap pointer-events-none"
+                  >
+                    <p className="text-[11px] text-muted-foreground mb-0.5">Итого в корзине</p>
+                    <p className="font-display font-bold text-sm text-primary leading-none">
+                      {formatPrice(totalPrice)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{totalItems} поз.</p>
+                    <div className="absolute -top-1.5 right-3.5 w-3 h-3 bg-card border-l border-t border-border rotate-45" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* User — desktop only */}
             <button
