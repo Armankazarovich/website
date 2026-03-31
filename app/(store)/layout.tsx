@@ -16,7 +16,7 @@ import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const [categories, footerCategories, siteSettings] = await Promise.all([
     prisma.category.findMany({
-      where: { showInMenu: true },
+      where: { showInMenu: true, products: { some: { active: true } } },
       orderBy: { sortOrder: "asc" },
       include: { _count: { select: { products: { where: { active: true } } } } },
     }),
