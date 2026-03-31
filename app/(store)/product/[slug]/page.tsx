@@ -101,7 +101,7 @@ export default async function ProductPage({ params }: Props) {
         {/* Gallery */}
         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           {/* Main image */}
-          <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-muted border border-border">
+          <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-muted border border-border">
             {product.images[0] ? (
               <Image
                 src={product.images[0]}

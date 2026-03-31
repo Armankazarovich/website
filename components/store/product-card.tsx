@@ -195,7 +195,7 @@ export function ProductCard({
     <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300">
 
       {/* ── Изображение ── */}
-      <Link href={`/product/${slug}`} className="block relative aspect-[3/4] overflow-hidden">
+      <Link href={`/product/${slug}`} className="block relative aspect-[4/5] overflow-hidden">
         {images[0] ? (
           <Image
             src={images[0]}
