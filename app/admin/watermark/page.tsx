@@ -10,7 +10,7 @@ export default async function WatermarkPage() {
       <div>
         <h1 className="text-2xl font-display font-bold">Водяной знак</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Загрузите логотип — он будет автоматически накладываться на все фото товаров
+          Логотип или текст — накладывается на все фото товаров
         </p>
       </div>
       <WatermarkClient
@@ -18,6 +18,10 @@ export default async function WatermarkPage() {
         initialPosition={settings.watermark_position ?? "bottom-right"}
         initialOpacity={parseFloat(settings.watermark_opacity ?? "0.75")}
         initialSizePct={parseInt(settings.watermark_size_pct ?? "20")}
+        initialType={settings.watermark_type ?? "logo"}
+        initialText={settings.watermark_text ?? ""}
+        initialTextColor={settings.watermark_text_color ?? "#ffffff"}
+        initialBackupDate={settings.watermark_backup_date ?? ""}
       />
     </div>
   );

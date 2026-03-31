@@ -195,7 +195,7 @@ export function ProductCard({
   const desktopExtra = showAllSizes ? 0 : Math.max(0, variants.length - DESKTOP_LIMIT);
 
   return (
-    <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300">
+    <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300 flex flex-col">
 
       {/* ── Изображение ── */}
       <Link href={`/product/${slug}`} className="block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 1/1)" }}>
@@ -258,7 +258,7 @@ export function ProductCard({
       </Link>
 
       {/* ── Контент ── */}
-      <div className="p-3 sm:p-4">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col">
         {/* Категория */}
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1.5">{category}</p>
 
@@ -312,7 +312,7 @@ export function ProductCard({
         )}
 
         {/* Кнопка / степпер */}
-        <div className="pt-3 border-t border-border/60 relative">
+        <div className="mt-auto pt-3 border-t border-border/60 relative">
           {cartQty > 0 ? (
             /* ── Степпер количества ── */
             <div className="flex items-center gap-2">

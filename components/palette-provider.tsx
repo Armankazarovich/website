@@ -82,7 +82,8 @@ export function PaletteProvider({
   }, []);
 
   const setPalette = (id: PaletteId) => {
-    if (!allowed.includes(id)) return;
+    // Allow any valid palette (allowed restriction is for customer picker UI only)
+    if (!PALETTES.find((p) => p.id === id)) return;
     setPaletteState(id);
     localStorage.setItem(STORAGE_KEY, id);
     applyPalette(id);
