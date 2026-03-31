@@ -14,6 +14,8 @@ import {
   ImageIcon,
   Check,
   Loader2,
+  Sparkles,
+  Wand2,
 } from "lucide-react";
 
 type Variant = {
@@ -107,6 +109,51 @@ export default function AdminProductEditPage() {
   }, [params.id, isNew]);
 
   const [dragOverPhoto, setDragOverPhoto] = useState(false);
+  const [removingBg, setRemovingBg] = useState(false);
+  const [bgRemoveProgress, setBgRemoveProgress] = useState("");
+
+  const handleRemoveBackground = async () => {
+    if (!images[0]) return;
+    setRemovingBg(true);
+    setBgRemoveProgress("Загружаем AI модель...");
+    try {
+      const { removeBackground } = await import("@imgly/background-removal");
+
+      // Fetch the image and convert to blob
+      setBgRemoveProgress("Скачиваем фото...");
+      const response = await fetch(images[0]);
+      const blob = await response.blob();
+
+      setBgRemoveProgress("AI обрабатывает фото...");
+      const resultBlob = await removeBackground(blob, {
+        progress: (key: string, current: number, total: number) => {
+          if (key.includes("fetch")) {
+            const pct = Math.round((current / total) * 100);
+            setBgRemoveProgress(`Загружаем модель: ${pct}%`);
+          }
+        },
+      });
+
+      // Upload the result
+      setBgRemoveProgress("Загружаем результат...");
+      const formData = new FormData();
+      formData.append("file", new File([resultBlob], "photo-nobg.png", { type: "image/png" }));
+      formData.append("folder", "products");
+      const uploadRes = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const uploadData = await uploadRes.json();
+      if (uploadData.url) {
+        setImages([uploadData.url]);
+        setBgRemoveProgress("Готово!");
+        setTimeout(() => setBgRemoveProgress(""), 2000);
+      }
+    } catch (e) {
+      console.error(e);
+      setBgRemoveProgress("Ошибка обработки");
+      setTimeout(() => setBgRemoveProgress(""), 3000);
+    } finally {
+      setRemovingBg(false);
+    }
+  };
 
   const uploadPhotoFile = async (file: File) => {
     setUploadingPhoto(true);
@@ -398,7 +445,38 @@ export default function AdminProductEditPage() {
                 )}
               </div>
               {images[0] && (
-                <p className="text-xs text-muted-foreground mt-2 font-mono">{images[0]}</p>
+                <p className="text-xs text-muted-foreground mt-2 font-mono truncate max-w-xs">{images[0]}</p>
+              )}
+
+              {/* AI Remove Background */}
+              {images[0] && (
+                <div className="mt-3">
+                  <button
+                    onClick={handleRemoveBackground}
+                    disabled={removingBg}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-semibold hover:from-violet-600 hover:to-purple-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-md shadow-purple-500/20 active:scale-95"
+                  >
+                    {removingBg ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                        <span>{bgRemoveProgress || "Обрабатываем..."}</span>
+                      </>
+                    ) : bgRemoveProgress === "Готово!" ? (
+                      <>
+                        <Check className="w-4 h-4 shrink-0" />
+                        <span>Фон удалён!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4 shrink-0" />
+                        <span>✨ Убрать фон (AI)</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    AI обрезает фон прямо в браузере — без сервисов, бесплатно
+                  </p>
+                </div>
               )}
             </div>
 
