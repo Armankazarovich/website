@@ -56,12 +56,15 @@ model User {
   staffStatus  StaffStatus?
   customRole   String?
   address      String?
-  orders       Order[]
-  reviews      Review[]
-  pushSubs     PushSubscription[]
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  lastActiveAt DateTime?          // Последняя активность в системе
+  orders          Order[]
+  reviews         Review[]
+  pushSubs        PushSubscription[]
+  assignedTasks   Task[]           @relation("TaskAssignee")
+  createdTasks    Task[]           @relation("TaskCreator")
+  taskComments    TaskComment[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  lastActiveAt    DateTime?        // Последняя активность в системе
 }
 
 model Category {
@@ -133,6 +136,7 @@ model Order {
   deliveryAddress String?
   comment         String?
   items             OrderItem[]
+  tasks             Task[]
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
   deletedAt         DateTime?
@@ -240,4 +244,90 @@ model CostPrice {
   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
   costPerCube  Decimal? @db.Decimal(10, 2)  // себестоимость за м³
   costPerPiece Decimal? @db.Decimal(10, 2)  // себестоимость за шт
+}
+
+// ── Задачи и Канбан ────────────────────────────────────────────────────────────
+
+enum TaskStatus {
+  BACKLOG    // Очередь
+  TODO       // Сделать
+  IN_PROGRESS // В работе
+  REVIEW     // На проверке
+  DONE       // Готово
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(TODO)
+  priority    TaskPriority @default(MEDIUM)
+  sortOrder   Int          @default(0)
+
+  // Связи
+  assigneeId  String?
+  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById String?
+  createdBy   User?        @relation("TaskCreator", fields: [createdById], references: [id])
+
+  // Опциональная привязка к заказу
+  orderId     String?
+  order       Order?       @relation(fields: [orderId], references: [id])
+
+  // Даты
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  comments    TaskComment[]
+  tags        String[]     @default([])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+// ── Автоворкфлоу ──────────────────────────────────────────────────────────────
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  active      Boolean  @default(true)
+
+  // Триггер: order_created | order_status_changed | task_overdue | manual
+  trigger     String
+  // Условия в JSON: { "status": "NEW", "minAmount": 5000 }
+  conditions  Json     @default("{}")
+  // Действия в JSON: [{ "type": "create_task", "title": "...", "assigneeId": "..." }]
+  actions     Json     @default("[]")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  logs        WorkflowLog[]
+}
+
+model WorkflowLog {
+  id         String   @id @default(cuid())
+  workflowId String
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  trigger    String
+  payload    Json     @default("{}")
+  result     String   // "ok" | "error"
+  error      String?
+  createdAt  DateTime @default(now())
 }

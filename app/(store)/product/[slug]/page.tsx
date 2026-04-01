@@ -9,7 +9,8 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { Package, Phone, ArrowLeft, ExternalLink, Calculator } from "lucide-react";
+import { Package, Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
+import { auth } from "@/lib/auth";
 
 interface Props {
   params: { slug: string };
@@ -45,6 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
+  // Check if admin is viewing — to show edit button
+  const session = await auth();
+  const role = (session?.user as any)?.role;
+  const isAdmin = session && ["ADMIN", "MANAGER"].includes(role);
+
   const product = await prisma.product.findUnique({
     where: { slug: params.slug, active: true },
     include: {
@@ -136,6 +142,19 @@ export default async function ProductPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
       />
+
+      {/* ── Admin floating edit button ── */}
+      {isAdmin && (
+        <Link
+          href={`/admin/products/${product.id}`}
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl hover:bg-primary/90 hover:shadow-2xl transition-all duration-200 font-semibold text-sm group"
+          title="Редактировать товар в админке"
+        >
+          <Pencil className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+          <span>Редактировать</span>
+        </Link>
+      )}
+
       {/* Main product section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
         {/* Gallery */}

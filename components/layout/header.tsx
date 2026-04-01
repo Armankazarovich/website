@@ -404,15 +404,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
               </AnimatePresence>
             </div>
 
-            {/* Calculator button */}
-            <Link
-              href="/calculator"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-primary/15 to-primary/5 text-primary border border-primary/40 rounded-xl px-3 py-1.5 text-sm font-bold hover:from-primary hover:to-primary/80 hover:text-white hover:border-primary transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              <Calculator className="w-4 h-4" />
-              Калькулятор
-            </Link>
-
             {/* Info links */}
             {infoLinks.map((link) => (
               <Link

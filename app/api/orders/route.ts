@@ -8,6 +8,7 @@ import { sendTelegramOrderNotification } from "@/lib/telegram";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { runWorkflows } from "@/lib/workflow-engine";
 import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
 import nodemailer from "nodemailer";
@@ -217,6 +218,16 @@ export async function POST(req: NextRequest) {
       if (msgId) {
         prisma.order.update({ where: { id: order.id }, data: { telegramMessageId: msgId } }).catch(console.error);
       }
+    }).catch(console.error);
+
+    // ⚡ Запускаем автоворкфлоу
+    runWorkflows("order_created", {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      totalAmount: Number(order.totalAmount),
+      paymentMethod: order.paymentMethod,
     }).catch(console.error);
 
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });

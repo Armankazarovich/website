@@ -27,6 +27,8 @@ import {
   HeartPulse,
   TrendingUp,
   Wallet,
+  CheckSquare,
+  Zap,
 } from "lucide-react";
 
 type NavItem = {
@@ -44,6 +46,8 @@ const allNavItems: NavItem[] = [
 
   // ── Продажи ──
   { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
+  { href: "/admin/tasks", label: "Задачи", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
+  { href: "/admin/workflows", label: "Автоворкфлоу", icon: Zap, roles: ["ADMIN", "MANAGER"], group: "sales" },
   { href: "/admin/delivery", label: "Доставка", icon: Truck, roles: ["ADMIN", "MANAGER", "COURIER"], group: "sales" },
 
   // ── Товары ──
