@@ -1,26 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft,
-  Save,
-  Trash2,
-  Plus,
-  Upload,
-  ImageIcon,
-  Check,
-  Loader2,
-  Sparkles,
-  Wand2,
-  PenTool,
-  Images,
+  ArrowLeft, Save, Trash2, Plus, Upload, ImageIcon,
+  Check, Loader2, Wand2, PenTool, Images, ExternalLink,
+  ChevronLeft, ChevronRight, X, GripVertical,
 } from "lucide-react";
 import { PhotoEditor } from "@/components/admin/photo-editor";
 import { MediaPickerModal } from "@/app/admin/media/media-client";
+import { cn } from "@/lib/utils";
 
 type Variant = {
   id?: string;
@@ -61,11 +53,17 @@ export default function AdminProductEditPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allProductIds, setAllProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<"main" | "photo" | "variants">("main");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [pipelineProgress, setPipelineProgress] = useState("");
+  const [dragOverPhoto, setDragOverPhoto] = useState(false);
+  const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
+  const [removingBg, setRemovingBg] = useState(false);
+  const [autoPipeline, setAutoPipeline] = useState(false);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -78,12 +76,14 @@ export default function AdminProductEditPage() {
   const [active, setActive] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
-  const [manualImageUrl, setManualImageUrl] = useState("");
 
   useEffect(() => {
-    fetch("/api/admin/categories")
-      .then((r) => r.json())
-      .then(setCategories);
+    fetch("/api/admin/categories").then((r) => r.json()).then(setCategories);
+    // Get all product IDs for prev/next navigation
+    fetch("/api/admin/products?ids=1").then((r) => r.json()).then((data) => {
+      if (Array.isArray(data)) setAllProductIds(data.map((p: any) => p.id));
+    }).catch(() => {});
+
     if (!isNew && params.id) {
       fetch(`/api/admin/products/${params.id}`)
         .then((r) => r.json())
@@ -97,79 +97,50 @@ export default function AdminProductEditPage() {
           setSaleUnit(p.saleUnit);
           setActive(p.active);
           setFeatured(p.featured);
-          setVariants(
-            p.variants.map((v) => ({
-              id: v.id,
-              size: v.size,
-              pricePerCube: v.pricePerCube ? String(v.pricePerCube) : "",
-              pricePerPiece: v.pricePerPiece ? String(v.pricePerPiece) : "",
-              piecesPerCube: v.piecesPerCube ? String(v.piecesPerCube) : "",
-              inStock: v.inStock,
-            }))
-          );
+          setVariants(p.variants.map((v) => ({
+            id: v.id,
+            size: v.size,
+            pricePerCube: v.pricePerCube ? String(v.pricePerCube) : "",
+            pricePerPiece: v.pricePerPiece ? String(v.pricePerPiece) : "",
+            piecesPerCube: v.piecesPerCube ? String(v.piecesPerCube) : "",
+            inStock: v.inStock,
+          })));
           setLoading(false);
         });
     }
   }, [params.id, isNew]);
 
-  const [dragOverPhoto, setDragOverPhoto] = useState(false);
-  const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
-  const [removingBg, setRemovingBg] = useState(false);
-  const [bgRemoveProgress, setBgRemoveProgress] = useState("");
-  // Auto-pipeline: remove bg + apply watermark automatically on upload
-  const [autoPipeline, setAutoPipeline] = useState(false);
-  const [pipelineProgress, setPipelineProgress] = useState("");
-  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
-
-  const handleRemoveBackground = async () => {
-    if (!images[0]) return;
-    setRemovingBg(true);
-    setBgRemoveProgress("Скачиваем фото...");
-    try {
-      // Fetch the current image and send to server-side AI endpoint
-      const response = await fetch(images[0]);
-      const blob = await response.blob();
-
-      setBgRemoveProgress("AI убирает фон...");
-      const formData = new FormData();
-      formData.append("file", new File([blob], "photo.png", { type: blob.type }));
-
-      const res = await fetch("/api/admin/remove-bg", { method: "POST", body: formData });
-      const data = await res.json();
-
-      if (data.url) {
-        setImages([data.url]);
-        setBgRemoveProgress("Готово!");
-        setTimeout(() => setBgRemoveProgress(""), 2000);
-      } else {
-        throw new Error(data.error || "No URL returned");
+  // Ctrl+S save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
       }
-    } catch (e) {
-      console.error(e);
-      setBgRemoveProgress("Ошибка обработки");
-      setTimeout(() => setBgRemoveProgress(""), 3000);
-    } finally {
-      setRemovingBg(false);
-    }
-  };
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [name, slug, description, categoryId, images, saleUnit, active, featured, variants]);
+
+  // Prev / Next navigation
+  const currentIdx = allProductIds.indexOf(String(params.id));
+  const prevId = currentIdx > 0 ? allProductIds[currentIdx - 1] : null;
+  const nextId = currentIdx < allProductIds.length - 1 ? allProductIds[currentIdx + 1] : null;
 
   const uploadPhotoFile = async (file: File) => {
     setUploadingPhoto(true);
     setPipelineProgress("");
     try {
-      // Step 1: Upload original
-      setPipelineProgress(autoPipeline ? "Загружаем фото..." : "");
+      setPipelineProgress(autoPipeline ? "Загружаем..." : "");
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "products");
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (!data.url) { alert(data.error || "Ошибка загрузки фото"); return; }
-
+      if (!data.url) { alert(data.error || "Ошибка загрузки"); return; }
       let finalUrl = data.url;
 
       if (autoPipeline) {
-        // Step 2: Remove background
         setPipelineProgress("AI убирает фон...");
         try {
           const imgRes = await fetch(finalUrl);
@@ -179,10 +150,9 @@ export default function AdminProductEditPage() {
           const bgRes = await fetch("/api/admin/remove-bg", { method: "POST", body: bgForm });
           const bgData = await bgRes.json();
           if (bgData.url) finalUrl = bgData.url;
-        } catch { /* continue without bg removal */ }
+        } catch {}
 
-        // Step 3: Apply watermark
-        setPipelineProgress("Накладываем водяной знак...");
+        setPipelineProgress("Накладываем лого...");
         try {
           const wmRes = await fetch("/api/admin/watermark", {
             method: "POST",
@@ -191,12 +161,11 @@ export default function AdminProductEditPage() {
           });
           const wmData = await wmRes.json();
           if (wmData.url && !wmData.error) finalUrl = wmData.url;
-        } catch { /* continue without watermark */ }
+        } catch {}
 
         setPipelineProgress("Готово! ✓");
-        setTimeout(() => setPipelineProgress(""), 2500);
+        setTimeout(() => setPipelineProgress(""), 2000);
       }
-
       setImages([finalUrl]);
     } catch {
       alert("Ошибка загрузки фото");
@@ -205,63 +174,34 @@ export default function AdminProductEditPage() {
     }
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await uploadPhotoFile(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  const handleRemoveBackground = async () => {
+    if (!images[0]) return;
+    setRemovingBg(true);
+    try {
+      const response = await fetch(images[0]);
+      const blob = await response.blob();
+      const formData = new FormData();
+      formData.append("file", new File([blob], "photo.png", { type: blob.type }));
+      const res = await fetch("/api/admin/remove-bg", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.url) setImages([data.url]);
+    } catch {}
+    finally { setRemovingBg(false); }
   };
 
-  const handlePhotoDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverPhoto(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) await uploadPhotoFile(file);
-  };
-
-  const handleManualUrl = () => {
-    if (manualImageUrl.trim()) {
-      setImages([manualImageUrl.trim()]);
-      setManualImageUrl("");
-    }
-  };
-
-  const addVariant = () => {
-    setVariants((prev) => [
-      ...prev,
-      {
-        size: "",
-        pricePerCube: "",
-        pricePerPiece: "",
-        piecesPerCube: "",
-        inStock: true,
-        _tempId: `temp-${Date.now()}-${Math.random()}`,
-      },
-    ]);
-  };
-
-  const removeVariant = (idx: number) => {
-    setVariants((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  const updateVariant = (idx: number, field: keyof Variant, value: string | boolean) => {
-    setVariants((prev) => prev.map((v, i) => (i === idx ? { ...v, [field]: value } : v)));
-  };
-
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    if (saving) return;
     setSaving(true);
     const payload = { name, slug, description, categoryId, images, saleUnit, active, featured, variants };
     let res;
     if (isNew) {
       res = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     } else {
       res = await fetch(`/api/admin/products/${params.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     }
@@ -270,11 +210,9 @@ export default function AdminProductEditPage() {
     if (res.ok) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-      if (isNew && data.id) {
-        router.replace(`/admin/products/${data.id}`);
-      }
+      if (isNew && data.id) router.replace(`/admin/products/${data.id}`);
     }
-  };
+  }, [saving, name, slug, description, categoryId, images, saleUnit, active, featured, variants, isNew, params.id, router]);
 
   const handleDelete = async () => {
     if (!confirm("Удалить товар? Это действие нельзя отменить.")) return;
@@ -282,11 +220,15 @@ export default function AdminProductEditPage() {
     router.push("/admin/products");
   };
 
-  const tabs = [
-    { id: "main", label: "Основное" },
-    { id: "photo", label: "Фото" },
-    { id: "variants", label: `Варианты (${variants.length})` },
-  ] as const;
+  const addVariant = () => setVariants((prev) => [...prev, {
+    size: "", pricePerCube: "", pricePerPiece: "", piecesPerCube: "", inStock: true,
+    _tempId: `temp-${Date.now()}`,
+  }]);
+
+  const removeVariant = (idx: number) => setVariants((prev) => prev.filter((_, i) => i !== idx));
+
+  const updateVariant = (idx: number, field: keyof Variant, value: string | boolean) =>
+    setVariants((prev) => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
 
   if (loading) {
     return (
@@ -297,84 +239,223 @@ export default function AdminProductEditPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/products"
-            className="p-2 rounded-xl hover:bg-muted transition-colors"
-          >
+    <div className="space-y-5 max-w-5xl pb-24">
+
+      {/* ── Top bar ── */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Link href="/admin/products" className="p-2 rounded-xl hover:bg-muted transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
+          {/* Prev / Next */}
+          {!isNew && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => prevId && router.push(`/admin/products/${prevId}`)}
+                disabled={!prevId}
+                className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
+                title="Предыдущий товар"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => nextId && router.push(`/admin/products/${nextId}`)}
+                disabled={!nextId}
+                className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
+                title="Следующий товар"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           <div>
-            <h1 className="font-display font-bold text-2xl">
-              {isNew ? "Новый товар" : name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {isNew ? "Создание нового товара" : `/${slug}`}
-            </p>
+            <h1 className="font-display font-bold text-xl">{isNew ? "Новый товар" : name || "Редактирование"}</h1>
+            {!isNew && slug && <p className="text-xs text-muted-foreground">/{slug}</p>}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isNew && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDelete}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          {!isNew && slug && (
+            <a
+              href={`/product/${slug}`}
+              target="_blank"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-border hover:bg-muted transition-colors text-muted-foreground"
             >
+              <ExternalLink className="w-3.5 h-3.5" />
+              На сайте
+            </a>
+          )}
+          {!isNew && (
+            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
-          <Button onClick={handleSave} disabled={saving || saved} className="min-w-[120px]">
-            {saved ? (
-              <>
-                <Check className="w-4 h-4 mr-2" /> Сохранено
-              </>
-            ) : saving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" /> Сохранить
-              </>
-            )}
-          </Button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-xl w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === tab.id
-                ? "bg-card shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* ── 2-Column layout ── */}
+      <div className="grid lg:grid-cols-[320px_1fr] gap-5">
 
-      <div className="bg-card rounded-2xl border border-border p-6">
-        {/* TAB: Main */}
-        {activeTab === "main" && (
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-sm font-medium mb-1.5">Название товара *</label>
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Доска строганная сосна 1 сорт"
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
+        {/* ── LEFT: Photo ── */}
+        <div className="space-y-3">
+          {/* Photo preview */}
+          <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <div
+              className={cn(
+                "relative aspect-square cursor-pointer transition-all",
+                dragOverPhoto && "ring-2 ring-primary ring-inset"
+              )}
+              onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOverPhoto(true); }}
+              onDragLeave={() => setDragOverPhoto(false)}
+              onDrop={async (e) => {
+                e.preventDefault(); setDragOverPhoto(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file?.type.startsWith("image/")) await uploadPhotoFile(file);
+              }}
+            >
+              {images[0] ? (
+                <Image src={images[0]} alt={name} fill className="object-cover" unoptimized />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground bg-muted/30">
+                  <Upload className="w-10 h-10 opacity-40" />
+                  <p className="text-sm font-medium">Нажмите или перетащите фото</p>
+                  <p className="text-xs opacity-60">JPG, PNG, WEBP</p>
+                </div>
+              )}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center gap-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">{pipelineProgress || "Загружаем..."}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Photo actions */}
+            <div className="p-3 space-y-2">
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) { await uploadPhotoFile(file); if (fileInputRef.current) fileInputRef.current.value = ""; }
+              }} />
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-border text-xs font-medium text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Загрузить
+                </button>
+                <button
+                  onClick={() => setMediaPickerOpen(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  <Images className="w-3.5 h-3.5" /> Библиотека
+                </button>
+              </div>
+
+              {images[0] && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPhotoEditorOpen(true)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-muted transition-colors"
+                  >
+                    <PenTool className="w-3.5 h-3.5 text-primary" /> Редактор
+                  </button>
+                  <button
+                    onClick={handleRemoveBackground}
+                    disabled={removingBg}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors"
+                  >
+                    {removingBg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 text-violet-500" />}
+                    {removingBg ? "Убираем..." : "Убрать фон"}
+                  </button>
+                  <button onClick={() => setImages([])} className="p-2 rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Auto-pipeline */}
+              <button
+                onClick={() => setAutoPipeline((v) => !v)}
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-medium border transition-all",
+                  autoPipeline
+                    ? "bg-violet-500/10 border-violet-500/30 text-violet-600 dark:text-violet-400"
+                    : "border-border text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <span className={cn("w-2 h-2 rounded-full", autoPipeline ? "bg-violet-500" : "bg-muted-foreground/30")} />
+                {autoPipeline ? "✨ Авто: убрать фон + лого" : "Авто-обработка при загрузке"}
+              </button>
+            </div>
+          </div>
+
+          {/* Status card */}
+          <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+            <h3 className="text-sm font-semibold">Статус</h3>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm">Активен на сайте</span>
+              <button
+                onClick={() => setActive((v) => !v)}
+                className={cn(
+                  "relative w-11 h-6 rounded-full transition-colors",
+                  active ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <span className={cn(
+                  "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                  active && "translate-x-5"
+                )} />
+              </button>
+            </label>
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-sm">Рекомендуемый ⭐</span>
+              <button
+                onClick={() => setFeatured((v) => !v)}
+                className={cn(
+                  "relative w-11 h-6 rounded-full transition-colors",
+                  featured ? "bg-primary" : "bg-muted"
+                )}
+              >
+                <span className={cn(
+                  "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
+                  featured && "translate-x-5"
+                )} />
+              </button>
+            </label>
+          </div>
+        </div>
+
+        {/* ── RIGHT: Main info ── */}
+        <div className="space-y-4">
+
+          {/* Basic info */}
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Основная информация</h3>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5">Название товара *</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Доска строганная сосна 1 сорт"
+                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Категория *</label>
+                <select
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">— Выберите —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5">Slug (URL)</label>
@@ -382,23 +463,8 @@ export default function AdminProductEditPage() {
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="doska-stroganaya-sosna"
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Категория *</label>
-                <select
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                >
-                  <option value="">— Выберите категорию —</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
 
@@ -407,9 +473,9 @@ export default function AdminProductEditPage() {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-                placeholder="Описание товара, характеристики, особенности..."
-                className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                rows={3}
+                placeholder="Характеристики, особенности, применение..."
+                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
               />
             </div>
 
@@ -419,349 +485,146 @@ export default function AdminProductEditPage() {
                 {[
                   { value: "BOTH", label: "м³ и штуки" },
                   { value: "CUBE", label: "Только м³" },
-                  { value: "PIECE", label: "Только штуки" },
+                  { value: "PIECE", label: "Только шт" },
                 ].map((opt) => (
                   <button
                     key={opt.value}
                     onClick={() => setSaleUnit(opt.value)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-sm font-medium border transition-colors",
                       saleUnit === opt.value
                         ? "bg-primary text-primary-foreground border-primary"
                         : "bg-card border-border hover:bg-muted"
-                    }`}
+                    )}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
             </div>
-
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={active}
-                  onChange={(e) => setActive(e.target.checked)}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span className="text-sm font-medium">Активен (виден на сайте)</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={featured}
-                  onChange={(e) => setFeatured(e.target.checked)}
-                  className="w-4 h-4 accent-primary"
-                />
-                <span className="text-sm font-medium">Рекомендуемый (на главной)</span>
-              </label>
-            </div>
           </div>
-        )}
 
-        {/* TAB: Photo */}
-        {activeTab === "photo" && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold mb-4">Текущее фото</h3>
-              <div className="relative w-72 h-52 rounded-2xl overflow-hidden bg-muted border border-border">
-                {images[0] ? (
-                  <Image src={images[0]} alt={name} fill className="object-cover" unoptimized />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                    <ImageIcon className="w-12 h-12" />
-                    <span className="text-sm">Нет фото</span>
-                  </div>
-                )}
-              </div>
-              {images[0] && (
-                <p className="text-xs text-muted-foreground mt-2 font-mono truncate max-w-xs">{images[0]}</p>
-              )}
-
-              {/* AI Tools */}
-              {images[0] && (
-                <div className="mt-3 space-y-2">
-                  <div className="flex flex-wrap gap-2">
-                    {/* Photo Editor */}
-                    <button
-                      onClick={() => setPhotoEditorOpen(true)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-accent transition-colors"
-                    >
-                      <PenTool className="w-4 h-4 shrink-0 text-primary" />
-                      Редактор фото
-                    </button>
-                    <button
-                      onClick={() => setMediaPickerOpen(true)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-accent transition-colors"
-                    >
-                      <Images className="w-4 h-4 shrink-0 text-primary" />
-                      Из библиотеки
-                    </button>
-
-                    {/* AI Remove Background */}
-                    <button
-                      onClick={handleRemoveBackground}
-                      disabled={removingBg}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {removingBg ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin shrink-0 text-primary" />
-                          <span>{bgRemoveProgress || "Обрабатываем..."}</span>
-                        </>
-                      ) : bgRemoveProgress === "Готово!" ? (
-                        <>
-                          <Check className="w-4 h-4 shrink-0 text-emerald-500" />
-                          <span>Фон удалён!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Wand2 className="w-4 h-4 shrink-0 text-primary" />
-                          <span>Убрать фон (AI)</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    AI убирает фон на сервере — ~20 сек при первом запуске
-                  </p>
-                </div>
-              )}
-
-              {/* Photo Editor Modal */}
-              {photoEditorOpen && images[0] && (
-                <PhotoEditor
-                  imageUrl={images[0]}
-                  onSave={(newUrl) => setImages([newUrl])}
-                  onClose={() => setPhotoEditorOpen(false)}
-                />
-              )}
-            </div>
-
-            {/* Media picker modal */}
-            <MediaPickerModal
-              open={mediaPickerOpen}
-              onClose={() => setMediaPickerOpen(false)}
-              onPick={(url) => setImages([url])}
-            />
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Загрузить новое фото</h3>
-                {/* Auto-pipeline toggle */}
-                <button
-                  onClick={() => setAutoPipeline((v) => !v)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                    autoPipeline
-                      ? "bg-violet-500/15 border-violet-500/40 text-violet-500"
-                      : "border-border text-muted-foreground hover:bg-accent"
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${autoPipeline ? "bg-violet-500" : "bg-muted-foreground/40"}`} />
-                  Авто: убрать фон + лого
-                </button>
-              </div>
-              {autoPipeline && (
-                <p className="text-xs text-violet-400/80 -mt-2">
-                  ✨ При загрузке: AI уберёт фон → наложит водяной знак автоматически
-                </p>
-              )}
-
-              <div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
-                <div
-                  className={`relative rounded-2xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center gap-2 py-8
-                    ${dragOverPhoto
-                      ? "border-primary bg-primary/10 scale-[1.02]"
-                      : "border-border hover:border-primary/60 hover:bg-muted/50"
-                    }`}
-                  onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverPhoto(true); }}
-                  onDragLeave={() => setDragOverPhoto(false)}
-                  onDrop={handlePhotoDrop}
-                >
-                  {uploadingPhoto ? (
-                    <>
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                      <p className="text-sm text-muted-foreground">
-                        {pipelineProgress || "Загрузка и оптимизация..."}
-                      </p>
-                    </>
-                  ) : dragOverPhoto ? (
-                    <>
-                      <Upload className="w-8 h-8 text-primary" />
-                      <p className="text-sm font-semibold text-primary">Отпустите для загрузки</p>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-8 h-8 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Перетащите фото сюда</p>
-                      <p className="text-xs text-muted-foreground">или нажмите для выбора файла</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">JPG, PNG, WEBP → авто-сжатие в WebP</p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Или вставить URL</label>
-                <div className="flex gap-2">
-                  <input
-                    value={manualImageUrl}
-                    onChange={(e) => setManualImageUrl(e.target.value)}
-                    placeholder="https://example.com/photo.jpg"
-                    className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    onKeyDown={(e) => e.key === "Enter" && handleManualUrl()}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleManualUrl}
-                    disabled={!manualImageUrl.trim()}
-                  >
-                    Применить
-                  </Button>
-                </div>
-              </div>
-
-              {images[0] && (
-                <button
-                  onClick={() => setImages([])}
-                  className="text-sm text-destructive hover:underline"
-                >
-                  Удалить фото
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAB: Variants */}
-        {activeTab === "variants" && (
-          <div className="space-y-4">
+          {/* Variants */}
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Варианты товара</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Варианты / Цены ({variants.length})
+              </h3>
               <Button size="sm" variant="outline" onClick={addVariant}>
-                <Plus className="w-4 h-4 mr-1" /> Добавить
+                <Plus className="w-3.5 h-3.5 mr-1" /> Добавить
               </Button>
             </div>
 
-            {variants.length === 0 && (
-              <div className="text-center py-10 text-muted-foreground border-2 border-dashed border-border rounded-xl">
-                <p className="mb-3">Нет вариантов</p>
-                <Button size="sm" variant="outline" onClick={addVariant}>
-                  <Plus className="w-4 h-4 mr-1" /> Добавить вариант
-                </Button>
+            {variants.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-border rounded-xl">
+                <p className="text-sm mb-2">Нет вариантов</p>
+                <button onClick={addVariant} className="text-sm text-primary hover:underline">+ Добавить вариант</button>
               </div>
-            )}
-
-            <div className="space-y-3">
-              {variants.map((v, idx) => (
-                <div
-                  key={v.id || v._tempId}
-                  className="grid gap-3 p-4 bg-muted/30 rounded-xl border border-border"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground w-4">
-                      #{idx + 1}
-                    </span>
-                    <div className="flex-1">
-                      <label className="block text-xs text-muted-foreground mb-1">
-                        Размер / Сечение
-                      </label>
-                      <input
-                        value={v.size}
-                        onChange={(e) => updateVariant(idx, "size", e.target.value)}
-                        placeholder="50×150×6000"
-                        className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
+            ) : (
+              <div className="space-y-1">
+                {/* Table header */}
+                <div className="grid grid-cols-[1fr_100px_100px_80px_44px_32px] gap-2 px-2 pb-1">
+                  <span className="text-xs text-muted-foreground">Размер</span>
+                  <span className="text-xs text-muted-foreground">Цена м³</span>
+                  <span className="text-xs text-muted-foreground">Цена шт</span>
+                  <span className="text-xs text-muted-foreground">Шт/м³</span>
+                  <span className="text-xs text-muted-foreground">Нал.</span>
+                  <span />
+                </div>
+                {variants.map((v, idx) => (
+                  <div
+                    key={v.id || v._tempId}
+                    className={cn(
+                      "grid grid-cols-[1fr_100px_100px_80px_44px_32px] gap-2 items-center p-2 rounded-xl transition-colors",
+                      idx % 2 === 0 ? "bg-muted/30" : ""
+                    )}
+                  >
+                    <input
+                      value={v.size}
+                      onChange={(e) => updateVariant(idx, "size", e.target.value)}
+                      placeholder="50×150×6000"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
+                    />
+                    <input
+                      type="number"
+                      value={v.pricePerCube}
+                      onChange={(e) => updateVariant(idx, "pricePerCube", e.target.value)}
+                      placeholder="12000"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <input
+                      type="number"
+                      value={v.pricePerPiece}
+                      onChange={(e) => updateVariant(idx, "pricePerPiece", e.target.value)}
+                      placeholder="420"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <input
+                      type="number"
+                      value={v.piecesPerCube}
+                      onChange={(e) => updateVariant(idx, "piecesPerCube", e.target.value)}
+                      placeholder="28"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
                     <button
-                      onClick={() => removeVariant(idx)}
-                      className="ml-auto p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      onClick={() => updateVariant(idx, "inStock", !v.inStock)}
+                      className={cn(
+                        "w-9 h-5 rounded-full transition-colors relative",
+                        v.inStock ? "bg-emerald-500" : "bg-muted"
+                      )}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <span className={cn(
+                        "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform text-[8px] flex items-center justify-center",
+                        v.inStock && "translate-x-4"
+                      )} />
+                    </button>
+                    <button onClick={() => removeVariant(idx)} className="text-muted-foreground hover:text-destructive transition-colors">
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-3 ml-6">
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">
-                        Цена за м³ (₽)
-                      </label>
-                      <input
-                        type="number"
-                        value={v.pricePerCube}
-                        onChange={(e) => updateVariant(idx, "pricePerCube", e.target.value)}
-                        placeholder="12000"
-                        className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">
-                        Цена за штуку (₽)
-                      </label>
-                      <input
-                        type="number"
-                        value={v.pricePerPiece}
-                        onChange={(e) => updateVariant(idx, "pricePerPiece", e.target.value)}
-                        placeholder="420"
-                        className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Шт/м³</label>
-                      <input
-                        type="number"
-                        value={v.piecesPerCube}
-                        onChange={(e) => updateVariant(idx, "piecesPerCube", e.target.value)}
-                        placeholder="28"
-                        className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="ml-6">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={v.inStock}
-                        onChange={(e) => updateVariant(idx, "inStock", e.target.checked)}
-                        className="w-4 h-4 accent-primary"
-                      />
-                      <span className="text-sm">В наличии</span>
-                    </label>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Bottom save bar */}
-      <div className="flex items-center justify-between pt-2 pb-6">
-        <Link
-          href="/admin/products"
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Назад к товарам
-        </Link>
-        <Button onClick={handleSave} disabled={saving || saved} size="lg">
-          {saved ? (
-            <>
-              <Check className="w-4 h-4 mr-2" /> Сохранено!
-            </>
-          ) : saving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" /> Сохранить изменения
-            </>
-          )}
-        </Button>
+      {/* ── Sticky Save Bar ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-64">
+        <div className="bg-background/95 backdrop-blur border-t border-border px-6 py-3 flex items-center justify-between gap-4 max-w-5xl">
+          <p className="text-xs text-muted-foreground hidden sm:block">
+            {saved ? "✅ Сохранено" : "💡 Ctrl+S для быстрого сохранения"}
+          </p>
+          <div className="flex items-center gap-3 ml-auto">
+            <Link href="/admin/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              ← К списку
+            </Link>
+            <Button onClick={handleSave} disabled={saving || saved} size="sm" className="min-w-[140px]">
+              {saved ? (
+                <><Check className="w-4 h-4 mr-2" /> Сохранено!</>
+              ) : saving ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение...</>
+              ) : (
+                <><Save className="w-4 h-4 mr-2" /> Сохранить</>
+              )}
+            </Button>
+          </div>
+        </div>
       </div>
+
+      {/* Modals */}
+      {photoEditorOpen && images[0] && (
+        <PhotoEditor
+          imageUrl={images[0]}
+          onSave={(newUrl) => { setImages([newUrl]); setPhotoEditorOpen(false); }}
+          onClose={() => setPhotoEditorOpen(false)}
+        />
+      )}
+      <MediaPickerModal
+        open={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onPick={(url) => { setImages([url]); setMediaPickerOpen(false); }}
+      />
     </div>
   );
 }
