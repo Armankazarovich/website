@@ -21,6 +21,7 @@ import {
   Stamp,
   Warehouse,
   FileDown,
+  Images,
 } from "lucide-react";
 
 type NavItem = {
@@ -45,6 +46,7 @@ const allNavItems: NavItem[] = [
   { href: "/admin/categories", label: "Категории", icon: Tag, roles: ["ADMIN"], group: "products" },
   { href: "/admin/inventory", label: "Склад / Остатки", icon: Warehouse, roles: ["ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
   { href: "/admin/import", label: "Импорт / Экспорт", icon: FileDown, roles: ["ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/media", label: "Медиабиблиотека", icon: Images, roles: ["ADMIN", "MANAGER"], group: "products" },
 
   // ── Маркетинг ──
   { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: ["ADMIN", "MANAGER"], group: "marketing" },

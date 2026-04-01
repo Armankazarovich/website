@@ -17,8 +17,10 @@ import {
   Sparkles,
   Wand2,
   PenTool,
+  Images,
 } from "lucide-react";
 import { PhotoEditor } from "@/components/admin/photo-editor";
+import { MediaPickerModal } from "@/app/admin/media/media-client";
 
 type Variant = {
   id?: string;
@@ -117,6 +119,7 @@ export default function AdminProductEditPage() {
   // Auto-pipeline: remove bg + apply watermark automatically on upload
   const [autoPipeline, setAutoPipeline] = useState(false);
   const [pipelineProgress, setPipelineProgress] = useState("");
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   const handleRemoveBackground = async () => {
     if (!images[0]) return;
@@ -487,6 +490,13 @@ export default function AdminProductEditPage() {
                       <PenTool className="w-4 h-4 shrink-0 text-primary" />
                       Редактор фото
                     </button>
+                    <button
+                      onClick={() => setMediaPickerOpen(true)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-accent transition-colors"
+                    >
+                      <Images className="w-4 h-4 shrink-0 text-primary" />
+                      Из библиотеки
+                    </button>
 
                     {/* AI Remove Background */}
                     <button
@@ -527,6 +537,13 @@ export default function AdminProductEditPage() {
                 />
               )}
             </div>
+
+            {/* Media picker modal */}
+            <MediaPickerModal
+              open={mediaPickerOpen}
+              onClose={() => setMediaPickerOpen(false)}
+              onPick={(url) => setImages([url])}
+            />
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
