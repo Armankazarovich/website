@@ -26,6 +26,7 @@ import {
   Mail,
   HeartPulse,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 
 type NavItem = {
@@ -58,6 +59,9 @@ const allNavItems: NavItem[] = [
   { href: "/admin/email", label: "Email рассылка", icon: Mail, roles: ["ADMIN"], group: "marketing" },
   { href: "/admin/promotion", label: "Продвижение", icon: TrendingUp, roles: ["ADMIN", "MANAGER"], group: "marketing" },
 
+  // ── Финансы ──
+  { href: "/admin/finance", label: "Финансы", icon: Wallet, roles: ["ADMIN", "ACCOUNTANT"], group: "finance" },
+
   // ── Клиенты ──
   { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: ["ADMIN", "MANAGER"], group: "clients" },
 
@@ -79,6 +83,7 @@ const GROUP_LABELS: Record<string, string> = {
   sales: "Продажи",
   products: "Товары",
   marketing: "Маркетинг",
+  finance: "Финансы",
   clients: "Клиенты",
   settings: "Настройки",
   help: "",
