@@ -9,7 +9,7 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { Package, Phone, ArrowLeft } from "lucide-react";
+import { Package, Phone, ArrowLeft, ExternalLink } from "lucide-react";
 
 interface Props {
   params: { slug: string };
@@ -69,25 +69,65 @@ export default async function ProductPage({ params }: Props) {
     take: 4,
   });
 
-  const minVariant = product.variants.find(v => v.inStock && v.pricePerCube);
-  const schemaOrg = {
+  // Reviews for aggregateRating
+  const reviews = await prisma.review.findMany({
+    where: { approved: true },
+    select: { rating: true },
+  });
+
+  // Yandex Maps review URL from site settings
+  const yandexMapsSetting = await prisma.siteSettings.findUnique({
+    where: { key: "yandex_maps_review_url" },
+  });
+  const yandexMapsUrl = yandexMapsSetting?.value || "";
+
+  // Build schema.org structured data
+  const inStockVariants = product.variants.filter(v => v.inStock);
+  const allPricesCube = product.variants
+    .filter(v => v.pricePerCube)
+    .map(v => Number(v.pricePerCube));
+  const allPricesPiece = product.variants
+    .filter(v => v.pricePerPiece)
+    .map(v => Number(v.pricePerPiece));
+  const allPrices = [...allPricesCube, ...allPricesPiece];
+  const lowPrice = allPrices.length > 0 ? Math.min(...allPrices) : undefined;
+  const highPrice = allPrices.length > 0 ? Math.max(...allPrices) : undefined;
+
+  const avgRating =
+    reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : null;
+
+  const schemaOrg: Record<string, unknown> = {
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.name,
     "description": product.description || `${product.name} от производителя в Химках`,
-    "image": product.images,
+    "image": product.images.length > 0 ? product.images : undefined,
     "brand": { "@type": "Brand", "name": "ПилоРус" },
     "offers": {
-      "@type": "Offer",
+      "@type": "AggregateOffer",
       "url": `https://pilo-rus.ru/product/${product.slug}`,
       "priceCurrency": "RUB",
-      "price": minVariant ? Number(minVariant.pricePerCube) : undefined,
-      "availability": product.variants.some(v => v.inStock)
+      ...(lowPrice !== undefined ? { "lowPrice": lowPrice } : {}),
+      ...(highPrice !== undefined ? { "highPrice": highPrice } : {}),
+      "offerCount": product.variants.length,
+      "availability": inStockVariants.length > 0
         ? "https://schema.org/InStock"
         : "https://schema.org/OutOfStock",
       "seller": { "@type": "Organization", "name": "ООО ПИТИ (ПилоРус)" },
     },
   };
+
+  if (avgRating && reviews.length > 0) {
+    schemaOrg["aggregateRating"] = {
+      "@type": "AggregateRating",
+      "ratingValue": avgRating,
+      "reviewCount": reviews.length,
+      "bestRating": "5",
+      "worstRating": "1",
+    };
+  }
 
   return (
     <div className="container py-8">
@@ -268,6 +308,30 @@ export default async function ProductPage({ params }: Props) {
           description={product.description}
         />
       </section>
+
+      {/* Yandex Maps review widget */}
+      {yandexMapsUrl && (
+        <section className="mb-16">
+          <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-muted/30">
+            <div className="w-8 h-8 rounded-full bg-[#FC3F1D] flex items-center justify-center text-white text-xs font-bold shrink-0">
+              Я
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Оставьте отзыв в Яндекс Картах</p>
+              <p className="text-xs text-muted-foreground">Помогите другим покупателям выбрать нас</p>
+            </div>
+            <a
+              href={yandexMapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-xl bg-[#FC3F1D] text-white text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 inline-flex items-center gap-1"
+            >
+              Написать
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* Related products */}
       {related.length > 0 && (

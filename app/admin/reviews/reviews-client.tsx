@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Star, CheckCircle, Trash2, Loader2 } from "lucide-react";
+import { Star, CheckCircle, Trash2, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Review = {
@@ -18,6 +18,8 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
   const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED">("ALL");
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [starterLoading, setStarterLoading] = useState(false);
+  const [starterResult, setStarterResult] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -61,10 +63,50 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
     }
   };
 
+  const addStarterReviews = async () => {
+    if (!confirm("Добавить 6 стартовых отзывов? Они будут сразу опубликованы.")) return;
+    setStarterLoading(true);
+    setStarterResult(null);
+    try {
+      const res = await fetch("/api/admin/reviews/starter", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setStarterResult(`Добавлено ${data.created} отзывов. Обновите страницу, чтобы увидеть их.`);
+      } else {
+        setStarterResult("Ошибка при добавлении отзывов.");
+      }
+    } catch {
+      setStarterResult("Сетевая ошибка.");
+    } finally {
+      setStarterLoading(false);
+    }
+  };
+
   const pendingCount = reviews.filter((r) => !r.approved).length;
 
   return (
     <div className="space-y-5">
+      {/* Панель действий */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={addStarterReviews}
+          disabled={starterLoading}
+        >
+          {starterLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5" />
+          )}
+          Добавить стартовые отзывы
+        </Button>
+        {starterResult && (
+          <span className="text-sm text-muted-foreground">{starterResult}</span>
+        )}
+      </div>
+
       {/* Фильтры */}
       <div className="flex flex-wrap gap-3">
         {/* Статус */}
