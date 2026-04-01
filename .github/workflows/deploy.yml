@@ -27,6 +27,9 @@ jobs:
             APP_DIR="/home/armankmb/pilo-rus/app"
             PHOTOS_BACKUP="/home/armankmb/pilo-rus/photos_backup"
 
+            # Fix ownership issue (files owned by root from old SCP deploy)
+            git config --global --add safe.directory "$APP_DIR" || true
+
             if [ -d "$APP_DIR/.git" ]; then
               echo "🔄 Pulling latest code..."
               cd "$APP_DIR"
