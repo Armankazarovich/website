@@ -25,6 +25,7 @@ jobs:
             set -eo pipefail
             REPO="https://${{ secrets.GH_PAT }}@github.com/Armankazarovich/website.git"
             APP_DIR="/home/armankmb/pilo-rus/app"
+            PHOTOS_BACKUP="/home/armankmb/pilo-rus/photos_backup"
 
             if [ -d "$APP_DIR/.git" ]; then
               echo "🔄 Pulling latest code..."
@@ -33,9 +34,19 @@ jobs:
               git fetch origin main
               git reset --hard origin/main
             else
+              echo "💾 Backing up uploaded photos..."
+              mkdir -p "$PHOTOS_BACKUP"
+              [ -d "$APP_DIR/public/images" ] && cp -r "$APP_DIR/public/images/." "$PHOTOS_BACKUP/" || true
+
               echo "📥 First deploy — cloning repository..."
               rm -rf "$APP_DIR"
               git clone "$REPO" "$APP_DIR"
+
+              echo "♻️ Restoring uploaded photos..."
+              mkdir -p "$APP_DIR/public/images"
+              cp -r "$PHOTOS_BACKUP/." "$APP_DIR/public/images/" 2>/dev/null || true
+              echo "✅ Photos restored"
+
               cd "$APP_DIR"
             fi
 
