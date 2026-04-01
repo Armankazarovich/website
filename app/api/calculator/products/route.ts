@@ -10,6 +10,7 @@ export async function GET() {
         name: true,
         slug: true,
         saleUnit: true,
+        images: true,
         variants: {
           where: { inStock: true },
           select: {

@@ -29,6 +29,7 @@ interface Product {
   name: string;
   slug: string;
   saleUnit: string;
+  images: string[];
   variants: ProductVariant[];
 }
 
@@ -176,6 +177,7 @@ export default function CalculatorPage() {
       productId: selectedProduct.id,
       productName: selectedProduct.name,
       productSlug: selectedProduct.slug,
+      productImage: selectedProduct.images?.[0],
       variantSize: v.size,
       unitType: "CUBE",
       quantity: parseFloat(totalVolume.toFixed(4)),

@@ -217,7 +217,9 @@ export async function GET() {
       where: { key: "vapid_public" },
     });
     const subCount = await prisma.pushSubscription.count().catch(() => 0);
-    if (!vapidRow?.value) {
+    // Check both DB and environment variables
+    const vapidOk = !!(vapidRow?.value || process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_KEY);
+    if (!vapidOk) {
       checks.push({
         id: "push",
         name: "Push-уведомления",
