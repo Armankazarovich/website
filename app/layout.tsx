@@ -6,7 +6,8 @@ import { PaletteProvider } from "@/components/palette-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushSubscription } from "@/components/push-subscription";
 import { SwRegister } from "@/components/sw-register";
-import { getSiteSettings, DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { getSiteSettings, DEFAULT_SETTINGS, getSetting } from "@/lib/site-settings";
+import { Analytics } from "@/components/analytics";
 import "./globals.css";
 
 const inter = Inter({
@@ -104,6 +105,10 @@ const organizationSchema = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSiteSettings();
+  const yandexMetrikaId = getSetting(settings, "yandex_metrika_id");
+  const googleAnalyticsId = getSetting(settings, "google_analytics_id");
+  const yandexVerification = getSetting(settings, "yandex_verification");
+  const googleVerification = getSetting(settings, "google_verification");
   const enabledIds = (settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled)
     .split(",")
     .map((s: string) => s.trim())
@@ -116,6 +121,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
         <link rel="shortcut icon" href="/icons/icon-192x192.png" />
+        {yandexVerification && <meta name="yandex-verification" content={yandexVerification} />}
+        {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
@@ -133,6 +140,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <Toaster />
             <SwRegister />
             <PushSubscription />
+            <Analytics
+              yandexMetrikaId={yandexMetrikaId || undefined}
+              googleAnalyticsId={googleAnalyticsId || undefined}
+            />
           </PaletteProvider>
         </ThemeProvider>
       </body>

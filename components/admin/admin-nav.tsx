@@ -22,6 +22,7 @@ import {
   Warehouse,
   FileDown,
   Images,
+  BarChart2,
 } from "lucide-react";
 
 type NavItem = {
@@ -59,6 +60,7 @@ const allNavItems: NavItem[] = [
   { href: "/admin/site", label: "Сайт", icon: Globe, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/settings", label: "Настройки", icon: Settings, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/appearance", label: "Оформление", icon: Palette, roles: ["ADMIN"], group: "settings" },
+  { href: "/admin/analytics", label: "Аналитика", icon: BarChart2, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/watermark", label: "Водяной знак", icon: Stamp, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/staff", label: "Команда", icon: Users, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/notifications", label: "Уведомления", icon: Bell, roles: ["ADMIN"], group: "settings" },
