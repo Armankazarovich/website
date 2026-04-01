@@ -25,9 +25,10 @@ jobs:
             --exclude='./.next' \
             --exclude='./dist' \
             --exclude='./*.log' \
-            -czf /tmp/deploy.tar.gz \
-            -C ${{ github.workspace }} .
-          echo "Archive size: $(du -sh /tmp/deploy.tar.gz | cut -f1)"
+            --exclude='./deploy.tar.gz' \
+            -czf deploy.tar.gz \
+            .
+          echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
 
       - name: Copy archive to server
         uses: appleboy/scp-action@v0.1.7
@@ -35,7 +36,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "/tmp/deploy.tar.gz"
+          source: "deploy.tar.gz"
           target: "/home/armankmb/pilo-rus/"
           overwrite: true
 
