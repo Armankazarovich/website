@@ -25,6 +25,7 @@ import {
   BarChart2,
   Mail,
   HeartPulse,
+  TrendingUp,
 } from "lucide-react";
 
 type NavItem = {
@@ -55,6 +56,7 @@ const allNavItems: NavItem[] = [
   { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: ["ADMIN", "MANAGER"], group: "marketing" },
   { href: "/admin/reviews", label: "Отзывы", icon: Star, roles: ["ADMIN", "MANAGER"], group: "marketing" },
   { href: "/admin/email", label: "Email рассылка", icon: Mail, roles: ["ADMIN"], group: "marketing" },
+  { href: "/admin/promotion", label: "Продвижение", icon: TrendingUp, roles: ["ADMIN", "MANAGER"], group: "marketing" },
 
   // ── Клиенты ──
   { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: ["ADMIN", "MANAGER"], group: "clients" },
