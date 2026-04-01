@@ -8,16 +8,18 @@ export default async function AppearancePage() {
   const enabledRaw = settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled;
   const enabledIds = enabledRaw.split(",").map((s) => s.trim()).filter(Boolean);
   const photoAspect = settings.photo_aspect_ratio ?? DEFAULT_SETTINGS.photo_aspect_ratio;
+  const cardStyle = settings.card_style ?? DEFAULT_SETTINGS.card_style;
+  const defaultPalette = settings.default_palette ?? DEFAULT_SETTINGS.default_palette;
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
       <div>
         <h1 className="text-2xl font-display font-bold">Оформление</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Цветовые темы и формат фотографий товаров
+          Цветовые темы, стиль карточек и формат фотографий
         </p>
       </div>
-      <AppearanceClient initialEnabledIds={enabledIds} initialPhotoAspect={photoAspect} />
+      <AppearanceClient initialEnabledIds={enabledIds} initialPhotoAspect={photoAspect} initialCardStyle={cardStyle} initialDefaultPalette={defaultPalette} />
     </div>
   );
 }

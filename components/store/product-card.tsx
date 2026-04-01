@@ -11,6 +11,7 @@ import { WishlistButton } from "@/components/store/wishlist-button";
 import { flyToCart } from "@/lib/cart-fly";
 import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
+import { useStoreSettings } from "@/lib/store-settings-context";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -62,6 +63,7 @@ export function ProductCard({
 }: ProductCardProps) {
   const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
+  const { cardStyle } = useStoreSettings();
 
   const activeVariants = variants.filter((v) => v.inStock);
   const hasStock = activeVariants.length > 0;
@@ -194,8 +196,117 @@ export function ProductCard({
   const mobileExtra = showAllSizes ? 0 : Math.max(0, variants.length - MOBILE_LIMIT);
   const desktopExtra = showAllSizes ? 0 : Math.max(0, variants.length - DESKTOP_LIMIT);
 
+  // ── Style helpers ──
+  const isMinimal  = cardStyle === "minimal";
+  const isShowcase = cardStyle === "showcase";
+  const isVivid    = cardStyle === "vivid";
+  const isMagazine = cardStyle === "magazine";
+
+  const wrapperClass = isMagazine
+    ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 hover:-translate-y-0.5 transition-all duration-300 flex flex-col min-h-[280px]"
+    : isMinimal
+    ? "group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300 flex flex-col"
+    : isVivid
+    ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-primary/25 hover:-translate-y-0.5 transition-all duration-300 flex flex-col vivid-card"
+    : "group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300 flex flex-col";
+
+  // ── Magazine style — completely different layout ──
+  if (isMagazine) {
+    return (
+      <div className={wrapperClass}>
+        {/* Full-bleed image */}
+        <Link href={`/product/${slug}`} className="absolute inset-0">
+          {images[0] ? (
+            <Image src={images[0]} alt={name} fill
+              className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
+              sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px" unoptimized />
+          ) : (
+            <div className={`absolute inset-0 ${FALLBACK_GRADIENT}`} />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+        </Link>
+
+        {/* Top badges */}
+        <div className="relative z-10 p-2 flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            {featured && (
+              <span className="inline-flex items-center gap-1 h-6 bg-brand-orange text-white text-[10px] font-bold px-2 rounded-lg shadow-md uppercase tracking-wide">Хит</span>
+            )}
+            <span className={`inline-flex items-center gap-1 h-6 text-[10px] font-semibold px-2 rounded-lg shadow-md backdrop-blur-sm ${hasStock ? "bg-emerald-500/90 text-white" : "bg-black/50 text-white/70"}`}>
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "bg-white animate-pulse" : "bg-white/40"}`} />
+              {hasStock ? "В наличии" : "Нет"}
+            </span>
+          </div>
+          <WishlistButton size="sm" item={{ id, slug, name, category, images, saleUnit, variants }} />
+        </div>
+
+        {/* Bottom overlay content */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 p-3">
+          <p className="text-[10px] text-white/50 uppercase tracking-wider mb-0.5">{category}</p>
+          <Link href={`/product/${slug}`}>
+            <h3 className="font-display font-semibold text-sm text-white leading-snug line-clamp-2 mb-2 hover:text-white/80 transition-colors">
+              {name}
+            </h3>
+          </Link>
+
+          {/* Sizes */}
+          {variants.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {variants.slice(0, 3).map((v) => (
+                <button key={v.id} onClick={(e) => { e.preventDefault(); if (v.inStock) setSelectedId(v.id); }}
+                  disabled={!v.inStock}
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-all ${
+                    selectedVariant?.id === v.id && v.inStock
+                      ? "border-white bg-white text-black"
+                      : v.inStock
+                      ? "border-white/40 bg-white/10 text-white/80 hover:border-white/70"
+                      : "border-white/20 bg-transparent text-white/30 line-through cursor-not-allowed"
+                  }`}>{v.size}</button>
+              ))}
+            </div>
+          )}
+
+          {/* Cart button */}
+          <div className="relative">
+            {cartQty > 0 ? (
+              <div className="flex items-center gap-2">
+                <button onClick={handleDecrement} className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/30 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <div className="flex-1 text-center">
+                  <span className="font-display font-bold text-base text-white tabular-nums">{cartQty}</span>
+                  <span className="text-[10px] text-white/60 ml-0.5">{unit}</span>
+                </div>
+                <button onClick={handleIncrement} className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 shadow-sm">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleAdd} disabled={!hasStock}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-semibold transition-all duration-200 active:scale-95 text-sm ${
+                  !hasStock ? "bg-white/10 text-white/40 cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90 shadow-lg"
+                }`}>
+                <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
+                <span className="flex items-baseline gap-0.5">
+                  {selectedPrice && selectedUnit ? (
+                    <><span className="font-display font-bold">{formatPrice(selectedPrice)}</span><span className="text-[10px] opacity-80">/ {unit}</span></>
+                  ) : <span>В корзину</span>}
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300 flex flex-col">
+    <div className={wrapperClass}>
+      {/* Vivid animated bg — only shown for vivid style */}
+      {isVivid && (
+        <div className="absolute inset-0 vivid-bg" aria-hidden />
+      )}
 
       {/* ── Изображение ── */}
       <Link href={`/product/${slug}`} className="block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 1/1)" }}>
@@ -218,6 +329,18 @@ export function ProductCard({
               <rect x="2" y="18" width="20" height="3" rx="1" stroke="currentColor" strokeWidth="1.5"/>
             </svg>
           </div>
+        )}
+
+        {/* Showcase: gradient overlay + floating price badge */}
+        {isShowcase && (
+          <>
+            <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 to-transparent pointer-events-none z-[1]" />
+            {selectedPrice && selectedUnit && (
+              <div className="absolute top-2 right-10 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-md">
+                {formatPrice(selectedPrice)}/{unit}
+              </div>
+            )}
+          </>
         )}
 
         {/* Верхняя строка: бейджи слева + wishlist справа — одна высота */}
@@ -258,13 +381,13 @@ export function ProductCard({
       </Link>
 
       {/* ── Контент ── */}
-      <div className="p-3 sm:p-4 flex-1 flex flex-col">
+      <div className={`p-3 sm:p-4 flex-1 flex flex-col ${isVivid ? "bg-card/95 backdrop-blur-sm" : ""}`}>
         {/* Категория */}
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1.5">{category}</p>
 
         {/* Название */}
         <Link href={`/product/${slug}`}>
-          <h3 className="font-display font-semibold text-sm leading-snug hover:text-primary transition-colors line-clamp-2 mb-3">
+          <h3 className={`font-display font-semibold leading-snug hover:text-primary transition-colors line-clamp-2 mb-3 ${isMinimal ? "text-base" : "text-sm"}`}>
             {name}
           </h3>
         </Link>
@@ -312,7 +435,7 @@ export function ProductCard({
         )}
 
         {/* Кнопка / степпер */}
-        <div className="mt-auto pt-3 border-t border-border/60 relative">
+        <div className={`mt-auto relative ${isMinimal ? "pt-2" : "pt-3 border-t border-border/60"}`}>
           {cartQty > 0 ? (
             /* ── Степпер количества ── */
             <div className="flex items-center gap-2">

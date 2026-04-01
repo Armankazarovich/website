@@ -66,18 +66,26 @@ function applyPalette(id: PaletteId) {
 export function PaletteProvider({
   children,
   enabledIds,
+  defaultPalette = "timber",
 }: {
   children: React.ReactNode;
   enabledIds?: string[];
+  defaultPalette?: string;
 }) {
   const allowed = enabledIds && enabledIds.length > 0 ? enabledIds : ALL_IDS;
-  const [palette, setPaletteState] = useState<PaletteId>("timber");
+  const [palette, setPaletteState] = useState<PaletteId>(defaultPalette || "timber");
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored && PALETTES.find((p) => p.id === stored) && allowed.includes(stored)) {
+      // User has a saved preference — use it
       setPaletteState(stored);
       applyPalette(stored);
+    } else {
+      // No saved preference — apply the default palette set by admin
+      const def = defaultPalette || "timber";
+      setPaletteState(def);
+      applyPalette(def);
     }
   }, []);
 

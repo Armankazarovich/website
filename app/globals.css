@@ -483,6 +483,32 @@
   }
 }
 
+/* ── Vivid card style — animated gradient background ── */
+@keyframes vividShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.vivid-bg {
+  background: linear-gradient(
+    -45deg,
+    hsl(var(--primary) / 0.25),
+    hsl(var(--primary) / 0.08),
+    hsl(var(--primary) / 0.20),
+    hsl(var(--primary) / 0.05)
+  );
+  background-size: 400% 400%;
+  animation: vividShift 8s ease infinite;
+}
+.vivid-card {
+  background: hsl(var(--card));
+}
+.vivid-card .vivid-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Hero slow zoom animation */
 @keyframes heroZoom {
   0%, 100% { transform: scale(1); }

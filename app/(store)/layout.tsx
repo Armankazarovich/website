@@ -12,6 +12,7 @@ import { SearchDrawer } from "@/components/store/search-drawer";
 import { CartDrawer } from "@/components/store/cart-drawer";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
+import { StoreSettingsContext } from "@/lib/store-settings-context";
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const [categories, footerCategories, siteSettings] = await Promise.all([
@@ -29,12 +30,15 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   ]);
 
   const photoAspect = getSetting(siteSettings, "photo_aspect_ratio") || "1/1";
+  const cardStyle = getSetting(siteSettings, "card_style") || "classic";
 
   return (
+    <StoreSettingsContext.Provider value={{ cardStyle, photoAspect }}>
     <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
       <Header categories={categories} phones={getPhones(siteSettings)} />
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
+
       <MobileBottomNav />
       <CookieConsent />
       <PwaInstall />
@@ -55,5 +59,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         widgetLabel={getSetting(siteSettings, "widget_label") || "Связаться"}
       />
     </div>
+    </StoreSettingsContext.Provider>
   );
 }

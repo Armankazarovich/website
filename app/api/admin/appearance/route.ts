@@ -36,6 +36,18 @@ export async function PATCH(req: Request) {
     updates.photo_aspect_ratio = body.photo_aspect_ratio;
   }
 
+  // Card style
+  const VALID_STYLES = ["classic", "showcase", "vivid", "minimal", "magazine"];
+  if (typeof body.card_style === "string" && VALID_STYLES.includes(body.card_style)) {
+    updates.card_style = body.card_style;
+  }
+
+  // Default palette
+  const allPaletteIds = ["timber","forest","ocean","midnight","slate","crimson","wildberries","ozon","yandex","aliexpress","amazon","avito","sber"];
+  if (typeof body.default_palette === "string" && allPaletteIds.includes(body.default_palette)) {
+    updates.default_palette = body.default_palette;
+  }
+
   // Save all updated keys
   await Promise.all(
     Object.entries(updates).map(([key, value]) =>

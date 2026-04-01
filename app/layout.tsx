@@ -113,6 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     .split(",")
     .map((s: string) => s.trim())
     .filter(Boolean);
+  const defaultPalette = getSetting(settings, "default_palette") || "timber";
 
   return (
     <html lang="ru" suppressHydrationWarning>
@@ -135,7 +136,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           enableSystem
           disableTransitionOnChange
         >
-          <PaletteProvider enabledIds={enabledIds}>
+          <PaletteProvider enabledIds={enabledIds} defaultPalette={defaultPalette}>
             {children}
             <Toaster />
             <SwRegister />

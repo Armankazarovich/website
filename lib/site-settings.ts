@@ -34,6 +34,8 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   seo_description: "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1–3 дня. ☎ 8-985-970-71-33",
   palettes_enabled: "timber,forest,ocean,midnight,slate,crimson,wildberries,ozon,yandex,aliexpress,amazon,avito,sber",
   photo_aspect_ratio: "1/1",
+  card_style: "classic",
+  default_palette: "timber",
 };
 
 export function getSetting(settings: Record<string, string>, key: string): string {

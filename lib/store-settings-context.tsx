@@ -2,10 +2,8 @@
 
 import { createContext, useContext } from "react";
 
-export type CardStyle = "classic" | "showcase" | "vivid" | "minimal" | "magazine";
-
 type StoreSettings = {
-  cardStyle: CardStyle;
+  cardStyle: string;
   photoAspect: string;
 };
 
