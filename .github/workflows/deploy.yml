@@ -21,10 +21,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 15m
-          envs: GH_PAT
           script: |
             set -eo pipefail
-            REPO="https://${GH_PAT}@github.com/Armankazarovich/website.git"
+            REPO="https://${{ secrets.GH_PAT }}@github.com/Armankazarovich/website.git"
             APP_DIR="/home/armankmb/pilo-rus/app"
 
             if [ -d "$APP_DIR/.git" ]; then
@@ -54,5 +53,3 @@ jobs:
             pm2 save
 
             echo "✅ Deployed at $(date)"
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
