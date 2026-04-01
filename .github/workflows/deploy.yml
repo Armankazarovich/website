@@ -19,16 +19,18 @@ jobs:
 
       - name: Create deployment archive (no node_modules / .next)
         run: |
+          # Write to RUNNER_TEMP (outside workspace) to avoid "file changed as we read it"
           tar \
             --exclude='./.git' \
             --exclude='./node_modules' \
             --exclude='./.next' \
             --exclude='./dist' \
             --exclude='./*.log' \
-            --exclude='./deploy.tar.gz' \
-            -czf deploy.tar.gz \
+            -czf "$RUNNER_TEMP/deploy.tar.gz" \
             .
-          echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
+          # Copy back into workspace so scp-action Docker container can find it
+          cp "$RUNNER_TEMP/deploy.tar.gz" ./deploy.tar.gz
+          echo "Archive size: $(du -sh ./deploy.tar.gz | cut -f1)"
 
       - name: Copy archive to server
         uses: appleboy/scp-action@v0.1.7
