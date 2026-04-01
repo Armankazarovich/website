@@ -1,54 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, MessageCircle, Phone, Mail, Send } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Phone } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
-// ─── Типы каналов ────────────────────────────────────────────────────────────
-export type ChannelConfig = {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  href: string;
-  color: string;       // bg colour
-  textColor: string;   // text/icon colour
-};
-
-// ─── Иконки мессенджеров (SVG inline — не зависят от lucide) ─────────────────
+// ─── SVG Icons ────────────────────────────────────────────────────────────────
 const WhatsAppIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
   </svg>
 );
 
 const TelegramIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
     <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
   </svg>
 );
 
-const VkIcon = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-    <path d="M15.684 0H8.316C1.592 0 0 1.592 0 8.316v7.368C0 22.408 1.592 24 8.316 24h7.368C22.408 24 24 22.408 24 15.684V8.316C24 1.592 22.391 0 15.684 0zm3.692 17.123h-1.744c-.66 0-.864-.525-2.05-1.727-1.033-1-1.49-1.135-1.744-1.135-.356 0-.458.102-.458.593v1.575c0 .424-.135.678-1.253.678-1.846 0-3.896-1.118-5.335-3.202C4.624 10.857 4.03 8.57 4.03 8.096c0-.254.102-.491.593-.491h1.744c.44 0 .61.203.78.677.863 2.49 2.303 4.675 2.896 4.675.22 0 .322-.102.322-.66V9.721c-.068-1.186-.695-1.287-.695-1.71 0-.204.17-.407.44-.407h2.743c.373 0 .508.203.508.643v3.473c0 .372.17.508.271.508.22 0 .407-.136.813-.542 1.254-1.406 2.151-3.574 2.151-3.574.119-.254.322-.491.763-.491h1.744c.525 0 .644.27.525.643-.22 1.017-2.354 4.031-2.354 4.031-.186.305-.254.44 0 .78.186.254.796.779 1.203 1.253.745.847 1.32 1.558 1.473 2.05.17.49-.085.744-.576.744z"/>
-  </svg>
-);
-
-// ─── Карточка канала ──────────────────────────────────────────────────────────
-function ChannelButton({ channel, onClick }: { channel: ChannelConfig; onClick?: () => void }) {
-  return (
-    <a
-      href={channel.href}
-      target={channel.href.startsWith("tel:") || channel.href.startsWith("mailto:") ? undefined : "_blank"}
-      rel="noopener noreferrer"
-      onClick={onClick}
-      className={`flex items-center gap-3 w-full px-4 py-3 rounded-2xl transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-sm ${channel.color} ${channel.textColor}`}
-    >
-      <span className="shrink-0">{channel.icon}</span>
-      <span className="font-medium text-sm">{channel.label}</span>
-    </a>
-  );
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Channel {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  href: string;
+  bg: string;
+  shadow: string;
 }
 
-// ─── Основной виджет ──────────────────────────────────────────────────────────
 interface ContactWidgetProps {
   phone?: string;
   phoneLink?: string;
@@ -61,6 +39,85 @@ interface ContactWidgetProps {
   widgetLabel?: string;
 }
 
+// ─── Working hours check ──────────────────────────────────────────────────────
+function useIsOnline() {
+  const [online, setOnline] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      // Moscow time offset
+      const msk = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+      const h = msk.getHours();
+      const d = msk.getDay(); // 0=Sun, 6=Sat
+      const isWeekday = d >= 1 && d <= 5;
+      const isSat = d === 6;
+      if (isWeekday && h >= 9 && h < 20) { setOnline(true); return; }
+      if (isSat && h >= 9 && h < 18) { setOnline(true); return; }
+      setOnline(false);
+    };
+    check();
+    const t = setInterval(check, 60000);
+    return () => clearInterval(t);
+  }, []);
+  return online;
+}
+
+// ─── Single channel bubble ────────────────────────────────────────────────────
+function ChannelBubble({
+  channel, index, total, open,
+}: {
+  channel: Channel;
+  index: number;
+  total: number;
+  open: boolean;
+}) {
+  const [tooltip, setTooltip] = useState(false);
+
+  return (
+    <motion.div
+      initial={false}
+      animate={open
+        ? { opacity: 1, y: 0, scale: 1 }
+        : { opacity: 0, y: 20, scale: 0.6 }
+      }
+      transition={{
+        delay: open ? index * 0.06 : (total - 1 - index) * 0.04,
+        type: "spring", stiffness: 400, damping: 28,
+      }}
+      className="relative flex items-center group"
+    >
+      {/* Tooltip */}
+      <AnimatePresence>
+        {tooltip && (
+          <motion.div
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 8 }}
+            className="absolute right-full mr-3 whitespace-nowrap bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-xl pointer-events-none shadow-lg"
+          >
+            {channel.label}
+            <div className="absolute right-[-4px] top-1/2 -translate-y-1/2 w-2 h-2 bg-gray-900 rotate-45" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Button */}
+      <a
+        href={channel.href}
+        target={channel.href.startsWith("tel:") ? undefined : "_blank"}
+        rel="noopener noreferrer"
+        onMouseEnter={() => setTooltip(true)}
+        onMouseLeave={() => setTooltip(false)}
+        className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform duration-150 hover:scale-110 active:scale-95 ${channel.bg}`}
+        style={{ boxShadow: channel.shadow }}
+      >
+        {channel.icon}
+      </a>
+    </motion.div>
+  );
+}
+
+// ─── Main widget ──────────────────────────────────────────────────────────────
 export function ContactWidget({
   phone = "8-985-970-71-33",
   phoneLink = "+79859707133",
@@ -74,157 +131,184 @@ export function ContactWidget({
 }: ContactWidgetProps) {
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [pulse, setPulse] = useState(false);
+  const isOnline = useIsOnline();
+  const ref = useRef<HTMLDivElement>(null);
 
-  // Появляется через 2 сек после загрузки
+  // Появляется через 1.5 сек
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 2000);
+    const t = setTimeout(() => setVisible(true), 1500);
     return () => clearTimeout(t);
   }, []);
 
-  // Закрывать при клике вне виджета
+  // Пульс каждые 8 секунд для привлечения внимания
+  useEffect(() => {
+    if (!visible) return;
+    const pulse = () => {
+      setPulse(true);
+      setTimeout(() => setPulse(false), 1000);
+    };
+    pulse(); // сразу
+    const t = setInterval(pulse, 8000);
+    return () => clearInterval(t);
+  }, [visible]);
+
+  // Закрыть при клике вне
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const el = document.getElementById("contact-widget");
-      if (el && !el.contains(e.target as Node)) setOpen(false);
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, [open]);
 
   if (!widgetEnabled) return null;
 
-  // Формируем список активных каналов
-  const channels: ChannelConfig[] = [];
-
-  if (phoneLink || phone) {
-    channels.push({
-      id: "phone",
-      label: phone || phoneLink!,
-      icon: <Phone className="w-5 h-5" />,
-      href: `tel:${phoneLink || phone}`,
-      color: "bg-emerald-500 hover:bg-emerald-600",
-      textColor: "text-white",
-    });
-  }
+  // Channels
+  const channels: Channel[] = [];
 
   if (whatsapp) {
-    const waNum = whatsapp.replace(/\D/g, "");
+    const n = whatsapp.replace(/\D/g, "");
     channels.push({
-      id: "whatsapp",
-      label: "WhatsApp",
+      id: "whatsapp", label: "WhatsApp",
       icon: <WhatsAppIcon />,
-      href: `https://wa.me/${waNum}`,
-      color: "bg-[#25D366] hover:bg-[#20bd5a]",
-      textColor: "text-white",
+      href: `https://wa.me/${n}?text=Здравствуйте! Хочу узнать о пиломатериалах`,
+      bg: "bg-[#25D366] hover:bg-[#20bd5a]",
+      shadow: "0 4px 16px rgba(37,211,102,0.45)",
     });
   }
 
   if (telegram) {
     const tg = telegram.startsWith("@") ? telegram.slice(1) : telegram;
-    const tgLink = tg.startsWith("http") ? tg : `https://t.me/${tg}`;
+    const link = tg.startsWith("http") ? tg : `https://t.me/${tg}`;
     channels.push({
-      id: "telegram",
-      label: "Telegram",
+      id: "telegram", label: "Telegram",
       icon: <TelegramIcon />,
-      href: tgLink,
-      color: "bg-[#2AABEE] hover:bg-[#229ed9]",
-      textColor: "text-white",
+      href: link,
+      bg: "bg-[#2AABEE] hover:bg-[#229ed9]",
+      shadow: "0 4px 16px rgba(42,171,238,0.45)",
     });
   }
 
-  if (vk) {
+  if (phoneLink || phone) {
     channels.push({
-      id: "vk",
-      label: "ВКонтакте",
-      icon: <VkIcon />,
-      href: vk.startsWith("http") ? vk : `https://vk.com/${vk}`,
-      color: "bg-[#0077FF] hover:bg-[#0066dd]",
-      textColor: "text-white",
+      id: "phone", label: isOnline ? "Позвонить — сейчас работаем" : "Позвонить",
+      icon: <Phone className="w-6 h-6" />,
+      href: `tel:${phoneLink || phone}`,
+      bg: "bg-emerald-500 hover:bg-emerald-600",
+      shadow: "0 4px 16px rgba(16,185,129,0.45)",
     });
   }
 
-  if (email) {
-    channels.push({
-      id: "email",
-      label: email,
-      icon: <Mail className="w-5 h-5" />,
-      href: `mailto:${email}`,
-      color: "bg-muted hover:bg-muted/80 border border-border",
-      textColor: "text-foreground",
-    });
-  }
-
-  const positionClass = widgetPosition === "left"
-    ? "left-4 lg:left-6"
-    : "right-4 lg:right-6";
+  const side = widgetPosition === "left" ? "left-3 lg:left-5" : "right-3 lg:right-5";
 
   return (
-    <div
-      id="contact-widget"
-      className={`fixed bottom-20 lg:bottom-8 z-50 hidden lg:flex flex-col items-end gap-3 transition-all duration-500 pointer-events-none ${positionClass} ${
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-      } ${widgetPosition === "left" ? "items-start" : "items-end"}`}
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: widgetPosition === "left" ? -30 : 30 }}
+      animate={visible ? { opacity: 1, x: 0 } : {}}
+      transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.2 }}
+      className={`fixed z-50 flex flex-col items-end gap-3 ${side}`}
+      style={{ bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
     >
-      {/* Popup with channels */}
-      <div className={`transition-all duration-300 origin-bottom-right pointer-events-auto ${
-        widgetPosition === "left" ? "origin-bottom-left" : "origin-bottom-right"
-      } ${
-        open
-          ? "opacity-100 scale-100 translate-y-0"
-          : "opacity-0 scale-95 translate-y-2 pointer-events-none"
-      }`}>
-        <div className="bg-card border border-border rounded-3xl shadow-2xl p-3 w-64 space-y-2">
-          {/* Header */}
-          <div className="px-2 py-1.5 mb-1">
-            <p className="font-display font-bold text-base">Свяжитесь с нами</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Выберите удобный способ</p>
-          </div>
-
-          {/* Channels */}
-          {channels.map((ch) => (
-            <ChannelButton
-              key={ch.id}
-              channel={ch}
-              onClick={() => setOpen(false)}
-            />
-          ))}
-
-          {channels.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              Каналы связи не настроены
-            </p>
-          )}
-        </div>
-
-        {/* Notch pointer */}
-        <div className={`w-4 h-4 bg-card border-r border-b border-border rotate-45 mx-auto mt-[-9px] ${
-          widgetPosition === "left" ? "ml-6 mr-auto" : "mr-6 ml-auto"
-        }`} />
+      {/* Channel bubbles */}
+      <div className="flex flex-col items-end gap-2.5">
+        {channels.map((ch, i) => (
+          <ChannelBubble
+            key={ch.id}
+            channel={ch}
+            index={i}
+            total={channels.length}
+            open={open}
+          />
+        ))}
       </div>
 
-      {/* Main FAB button */}
-      <button
+      {/* Main FAB */}
+      <motion.button
         onClick={() => setOpen(!open)}
-        className={`pointer-events-auto group flex items-center gap-2.5 shadow-xl transition-all duration-300 hover:shadow-2xl active:scale-95 ${
-          open
-            ? "bg-muted border border-border text-foreground px-4 py-3 rounded-2xl"
-            : "bg-brand-orange text-white px-5 py-3.5 rounded-2xl hover:bg-brand-orange/90"
-        }`}
-        aria-label="Связаться с нами"
+        whileTap={{ scale: 0.88 }}
+        aria-label={open ? "Закрыть" : "Связаться с нами"}
+        className="relative w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl focus:outline-none overflow-visible"
+        style={{
+          background: open
+            ? "hsl(var(--muted))"
+            : "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)) 60%, hsl(var(--primary) / 0.8))",
+          boxShadow: open
+            ? "0 4px 20px rgba(0,0,0,0.15)"
+            : "0 4px 24px hsl(var(--primary) / 0.5), 0 0 0 0 hsl(var(--primary) / 0.4)",
+          color: open ? "hsl(var(--foreground))" : "white",
+        }}
       >
-        {open ? (
-          <>
-            <X className="w-5 h-5 shrink-0" />
-            <span className="text-sm font-medium">Закрыть</span>
-          </>
-        ) : (
-          <>
-            <MessageCircle className="w-5 h-5 shrink-0" />
-            <span className="text-sm font-semibold">{widgetLabel}</span>
-          </>
+        {/* Pulse ring */}
+        {!open && pulse && (
+          <motion.span
+            className="absolute inset-0 rounded-2xl"
+            initial={{ opacity: 0.6, scale: 1 }}
+            animate={{ opacity: 0, scale: 1.6 }}
+            transition={{ duration: 0.9, ease: "easeOut" }}
+            style={{ background: "hsl(var(--primary))", zIndex: -1 }}
+          />
         )}
-      </button>
-    </div>
+
+        {/* Online indicator */}
+        {!open && (
+          <span
+            className={`absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white transition-colors duration-500 ${
+              isOnline ? "bg-emerald-400" : "bg-gray-400"
+            }`}
+          />
+        )}
+
+        {/* Icon */}
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.span
+              key="close"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              <X className="w-6 h-6" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="chat"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+              transition={{ duration: 0.18 }}
+            >
+              {/* Custom chat icon */}
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* Status label — только когда закрыт */}
+      <AnimatePresence>
+        {!open && visible && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ delay: 0.6, type: "spring", stiffness: 400, damping: 30 }}
+            className="pointer-events-none"
+          >
+            <div className="bg-card border border-border rounded-xl px-2.5 py-1 shadow-md text-center">
+              <p className="text-[10px] font-bold text-foreground leading-none">{widgetLabel}</p>
+              <p className={`text-[9px] font-medium mt-0.5 leading-none ${isOnline ? "text-emerald-500" : "text-muted-foreground"}`}>
+                {isOnline ? "● Онлайн" : "○ Офлайн"}
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }
