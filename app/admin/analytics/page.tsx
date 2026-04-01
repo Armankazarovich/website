@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   BarChart2, CheckCircle2, Copy, ExternalLink, Loader2,
-  Search, Globe, ShoppingBag, Zap, Info, AlertCircle
+  Search, Globe, ShoppingBag, Zap, Info, AlertCircle, Rocket
 } from "lucide-react";
 
 function CopyBtn({ text }: { text: string }) {
@@ -29,6 +29,8 @@ export default function AnalyticsPage() {
   const [saving, setSaving] = useState(false);
   const [savedOk, setSavedOk] = useState(false);
   const [error, setError] = useState("");
+  const [seoLoading, setSeoLoading] = useState<string | null>(null);
+  const [seoResult, setSeoResult] = useState<string | null>(null);
 
   const siteUrl = settings.site_url || "https://pilo-rus.ru";
   const ymlUrl = `${siteUrl}/api/yml`;
@@ -41,6 +43,20 @@ export default function AnalyticsPage() {
         setLoading(false);
       });
   }, []);
+
+  async function seoAction(action: string) {
+    setSeoLoading(action); setSeoResult(null);
+    try {
+      const res = await fetch("/api/admin/seo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action }) });
+      const data = await res.json();
+      if (action === "ping_sitemap" && data.results) {
+        setSeoResult(data.results.map((r: any) => `${r.engine}: ${r.status}`).join(" · "));
+      } else if (data.updated !== undefined) {
+        setSeoResult(`✓ Обновлено описаний: ${data.updated}`);
+      }
+    } catch { setSeoResult("Ошибка соединения"); }
+    finally { setSeoLoading(null); }
+  }
 
   async function save() {
     setSaving(true); setError(""); setSavedOk(false);
@@ -201,6 +217,50 @@ export default function AnalyticsPage() {
         <p className="text-sm text-muted-foreground">
           Помощник по созданию рекламных кампаний — выбираете товары, указываете бюджет, получаете готовые объявления для вставки в Директ. В разработке.
         </p>
+      </div>
+
+      {/* ── Продвижение ── */}
+      <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <Rocket className="w-4 h-4 text-primary" />
+          <h2 className="font-semibold">🚀 Продвижение — 1 клик</h2>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => seoAction("ping_sitemap")}
+            disabled={seoLoading === "ping_sitemap"}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border bg-muted/50 hover:bg-muted text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {seoLoading === "ping_sitemap" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+            Отправить карту сайта в Яндекс и Google
+          </button>
+
+          <button
+            onClick={() => seoAction("auto_meta")}
+            disabled={seoLoading === "auto_meta"}
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border bg-muted/50 hover:bg-muted text-sm font-medium transition-colors disabled:opacity-50"
+          >
+            {seoLoading === "auto_meta" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            Авто-описания для товаров
+          </button>
+
+          <a
+            href={`${siteUrl}/sitemap.xml`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-border bg-muted/50 hover:bg-muted text-sm font-medium transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Открыть sitemap.xml
+          </a>
+        </div>
+
+        {seoResult && (
+          <p className="text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-xl px-4 py-2.5">
+            {seoResult}
+          </p>
+        )}
       </div>
 
       {/* Save */}
