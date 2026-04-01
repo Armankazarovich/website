@@ -7,6 +7,7 @@ import {
   Search, Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
+  ImageOff, Stamp,
 } from "lucide-react";
 
 type Product = {
@@ -16,6 +17,7 @@ type Product = {
   categoryId: string;
   active: boolean;
   featured: boolean;
+  images: string[];
   variants: { pricePerCube: unknown; pricePerPiece: unknown }[];
   category: { name: string };
 };
@@ -32,6 +34,7 @@ export function ProductsClient({
   const [products, setProducts] = useState(init);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
+  const [noPhotoOnly, setNoPhotoOnly] = useState(false);
   const [drawer, setDrawer] = useState<Product | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -41,6 +44,7 @@ export function ProductsClient({
   const [bulkCat, setBulkCat] = useState("");
   const [pricePercent, setPricePercent] = useState("");
   const [priceChanged, setPriceChanged] = useState(false);
+  const [wmSaving, setWmSaving] = useState(false);
 
   /* drawer state */
   const [dName, setDName] = useState("");
@@ -71,8 +75,8 @@ export function ProductsClient({
   const filtered = useMemo(() => products.filter(p => {
     const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
     const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchS;
-  }), [products, search, catFilter]);
+    return matchCat && matchS && (!noPhotoOnly || p.images.length === 0);
+  }), [products, search, catFilter, noPhotoOnly]);
 
   /* ── selection helpers ── */
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id));
@@ -151,6 +155,22 @@ export function ProductsClient({
     } finally { setBulkSaving(false); }
   };
 
+  const bulkWatermark = async () => {
+    const ids = Array.from(selected);
+    const withImages = products.filter(p => ids.includes(p.id) && p.images[0]);
+    if (!withImages.length) return;
+    setWmSaving(true);
+    try {
+      await Promise.all(withImages.map(p =>
+        fetch("/api/admin/watermark", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: p.id, imageUrl: p.images[0] }),
+        })
+      ));
+    } finally { setWmSaving(false); }
+  };
+
   /* ── quick toggle active ── */
   const toggleActive = async (p: Product, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
@@ -220,6 +240,13 @@ export function ProductsClient({
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
+        <button
+          onClick={() => setNoPhotoOnly(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700" : "border-border text-muted-foreground hover:bg-muted"}`}
+        >
+          <ImageOff className="w-4 h-4" />
+          Без фото {noPhotoOnly && `(${products.filter(p => p.images.length === 0).length})`}
+        </button>
         <span className="text-sm text-muted-foreground">{filtered.length} из {products.length}</span>
       </div>
 
@@ -243,6 +270,13 @@ export function ProductsClient({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-muted-foreground border border-border text-xs font-medium hover:bg-accent transition-colors disabled:opacity-50"
             >
               <EyeOff className="w-3.5 h-3.5" /> Скрыть
+            </button>
+            <button
+              onClick={bulkWatermark}
+              disabled={wmSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-700 border border-blue-300 text-xs font-medium hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+            >
+              <Stamp className="w-3.5 h-3.5" /> {wmSaving ? "Наносим..." : "Водяной знак"}
             </button>
             <div className="flex items-center gap-1.5">
               <Tag className="w-3.5 h-3.5 text-muted-foreground" />
@@ -318,6 +352,13 @@ export function ProductsClient({
               <button onClick={() => toggleSelect(p.id)} className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
                 {selected.has(p.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
               </button>
+              <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border shrink-0 flex items-center justify-center">
+                {p.images[0] ? (
+                  <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                ) : (
+                  <ImageOff className="w-5 h-5 text-muted-foreground/30" />
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -359,6 +400,7 @@ export function ProductsClient({
                         : <Square className="w-4 h-4" />}
                   </button>
                 </th>
+                <th className="px-3 py-3 w-14">Фото</th>
                 <th className="text-left px-4 py-3 font-semibold">Товар</th>
                 <th className="text-left px-4 py-3 font-semibold">Категория</th>
                 <th className="text-center px-4 py-3 font-semibold">Вариантов</th>
@@ -370,7 +412,7 @@ export function ProductsClient({
             <tbody className="divide-y divide-border">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-muted-foreground">
+                  <td colSpan={8} className="text-center py-12 text-muted-foreground">
                     {products.length === 0
                       ? <Link href="/admin/products/new" className="text-primary hover:underline">Добавить первый товар</Link>
                       : "Ничего не найдено"}
@@ -386,6 +428,15 @@ export function ProductsClient({
                     <button onClick={() => toggleSelect(p.id)} className="text-muted-foreground hover:text-primary transition-colors">
                       {selected.has(p.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
                     </button>
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center shrink-0">
+                      {p.images[0] ? (
+                        <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageOff className="w-4 h-4 text-muted-foreground/40" />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
