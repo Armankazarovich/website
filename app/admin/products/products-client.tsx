@@ -352,13 +352,13 @@ export function ProductsClient({
               <button onClick={() => toggleSelect(p.id)} className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
                 {selected.has(p.id) ? <CheckSquare className="w-4 h-4 text-primary" /> : <Square className="w-4 h-4" />}
               </button>
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border shrink-0 flex items-center justify-center">
+              <Link href={`/admin/products/${p.id}`} className="w-12 h-12 rounded-xl overflow-hidden bg-muted border border-border shrink-0 flex items-center justify-center hover:ring-2 hover:ring-primary/40 transition-all">
                 {p.images[0] ? (
                   <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
                 ) : (
                   <ImageOff className="w-5 h-5 text-muted-foreground/30" />
                 )}
-              </div>
+              </Link>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -430,13 +430,13 @@ export function ProductsClient({
                     </button>
                   </td>
                   <td className="px-3 py-3">
-                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center shrink-0">
+                    <Link href={`/admin/products/${p.id}`} className="w-10 h-10 rounded-lg overflow-hidden bg-muted border border-border flex items-center justify-center shrink-0 hover:ring-2 hover:ring-primary/40 transition-all">
                       {p.images[0] ? (
                         <img src={p.images[0]} alt={p.name} className="w-full h-full object-cover" />
                       ) : (
                         <ImageOff className="w-4 h-4 text-muted-foreground/40" />
                       )}
-                    </div>
+                    </Link>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

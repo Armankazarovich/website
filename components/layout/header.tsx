@@ -382,11 +382,21 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                         <span className="text-xs text-muted-foreground">
                           {categories.reduce((s, c) => s + (c._count?.products ?? 0), 0)} товаров в каталоге
                         </span>
-                        {(selectedType || selectedSize) && (
-                          <button onClick={() => { setSelectedType(""); setSelectedSize(""); }} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
-                            Сбросить
-                          </button>
-                        )}
+                        <div className="flex items-center gap-3">
+                          {(selectedType || selectedSize) && (
+                            <button onClick={() => { setSelectedType(""); setSelectedSize(""); }} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
+                              Сбросить
+                            </button>
+                          )}
+                          <Link
+                            href="/calculator"
+                            onClick={() => { setCatalogOpen(false); }}
+                            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                          >
+                            <Calculator className="w-3.5 h-3.5" />
+                            Рассчитать количество
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </motion.div>

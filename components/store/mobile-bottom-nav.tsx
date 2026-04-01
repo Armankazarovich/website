@@ -11,6 +11,7 @@ import {
   Search,
   User,
   SlidersHorizontal,
+  Calculator,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
@@ -64,6 +65,13 @@ export function MobileBottomNav() {
           },
         ]
       : []),
+    {
+      id: "calculator",
+      icon: Calculator,
+      label: "Калькулятор",
+      href: "/calculator",
+      action: null,
+    },
     {
       id: "cart",
       icon: ShoppingCart,
