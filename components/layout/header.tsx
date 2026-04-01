@@ -15,6 +15,7 @@ import {
   ChevronDown,
   ArrowRight,
   Handshake,
+  Calculator,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cart";
@@ -392,6 +393,15 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Calculator button */}
+            <Link
+              href="/calculator"
+              className="flex items-center gap-1.5 bg-primary/10 text-primary border border-primary/30 rounded-xl px-3 py-1.5 text-sm font-semibold hover:bg-primary/20 transition-colors"
+            >
+              <Calculator className="w-4 h-4" />
+              Калькулятор
+            </Link>
 
             {/* Info links */}
             {infoLinks.map((link) => (

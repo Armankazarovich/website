@@ -9,7 +9,7 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { Package, Phone, ArrowLeft, ExternalLink } from "lucide-react";
+import { Package, Phone, ArrowLeft, ExternalLink, Calculator } from "lucide-react";
 
 interface Props {
   params: { slug: string };
@@ -241,6 +241,12 @@ export default async function ProductPage({ params }: Props) {
               inStock: v.inStock,
             }))}
           />
+
+          {/* Calculator link */}
+          <Link href="/calculator" className="flex items-center gap-2 text-sm text-primary hover:underline mt-2">
+            <Calculator className="w-4 h-4" />
+            Рассчитать точное количество в калькуляторе
+          </Link>
 
           {/* Delivery info */}
           <div className="rounded-2xl border border-border bg-muted/20 overflow-hidden">

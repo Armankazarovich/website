@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
+import { Calculator, ArrowRight } from "lucide-react";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   if (searchParams.category) {
@@ -176,6 +177,16 @@ export default async function CatalogPage({
           {searchParams.category ? "Показаны товары категории" : "Все пиломатериалы в наличии"}
         </p>
       </div>
+
+      {/* ── Баннер-калькулятор ── */}
+      <Link href="/calculator" className="flex items-center gap-3 px-4 py-3 mb-4 bg-primary/5 border border-primary/20 rounded-2xl hover:bg-primary/10 transition-colors">
+        <Calculator className="w-5 h-5 text-primary shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold">Не знаете сколько нужно?</p>
+          <p className="text-xs text-muted-foreground">Калькулятор рассчитает м³ и стоимость за 30 секунд</p>
+        </div>
+        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+      </Link>
 
       {/* ── Sticky фильтр-полоса ── */}
       <CatalogTypeFilter
