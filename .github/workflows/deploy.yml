@@ -14,55 +14,32 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create deployment archive (no node_modules / .next)
-        run: |
-          # Write to RUNNER_TEMP (outside workspace) to avoid "file changed as we read it"
-          tar \
-            --exclude='./.git' \
-            --exclude='./node_modules' \
-            --exclude='./.next' \
-            --exclude='./dist' \
-            --exclude='./*.log' \
-            -czf "$RUNNER_TEMP/deploy.tar.gz" \
-            .
-          # Copy back into workspace so scp-action Docker container can find it
-          cp "$RUNNER_TEMP/deploy.tar.gz" ./deploy.tar.gz
-          echo "Archive size: $(du -sh ./deploy.tar.gz | cut -f1)"
-
-      - name: Copy archive to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deploy.tar.gz"
-          target: "/home/armankmb/pilo-rus/"
-          overwrite: true
-
-      - name: Extract, build and restart on server
+      - name: Deploy via SSH — git pull + build
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 10m
+          command_timeout: 15m
           script: |
             set -eo pipefail
-            echo "📂 Extracting archive..."
-            mkdir -p /home/armankmb/pilo-rus/app
-            tar -xzf /home/armankmb/pilo-rus/deploy.tar.gz -C /home/armankmb/pilo-rus/app
-            rm -f /home/armankmb/pilo-rus/deploy.tar.gz
             cd /home/armankmb/pilo-rus/app
+
+            echo "🔄 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
             echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
+
             echo "🗄️ Syncing database schema..."
             npx prisma db push --skip-generate
+
             echo "🔨 Building..."
             npm run build
+
             echo "🚀 Restarting pm2..."
             pm2 restart pilo-rus --update-env
             pm2 save
+
             echo "✅ Deployed at $(date)"
