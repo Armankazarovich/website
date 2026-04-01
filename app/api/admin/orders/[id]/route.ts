@@ -8,6 +8,7 @@ import { sendOrderStatusEmail } from "@/lib/email";
 import { sendTelegramStatusUpdate, sendTelegramOrderEdited, deleteTelegramMessage, FINAL_STATUSES } from "@/lib/telegram";
 import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { runWorkflows } from "@/lib/workflow-engine";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -111,6 +112,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: updateData,
     include: { items: true },
   });
+
+  // ⚡ Автоворкфлоу при смене статуса
+  if (status) {
+    runWorkflows("order_status_changed", {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      deliveryAddress: (order as any).deliveryAddress,
+      totalAmount: Number(order.items?.reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity), 0) ?? 0),
+      paymentMethod: (order as any).paymentMethod,
+    }).catch(console.error);
+  }
 
   // Push клиенту
   if (order.userId && statusLabels[status]) {

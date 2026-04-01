@@ -3,9 +3,8 @@
 import { useState, useEffect } from "react";
 import {
   Zap, Plus, Trash2, Play, Pause, ChevronRight,
-  ShoppingBag, Clock, CheckSquare, Bell, Mail,
-  Loader2, RefreshCw, CheckCircle2, AlertTriangle,
-  ArrowRight, Settings,
+  ShoppingBag, Clock, CheckSquare,
+  Loader2, RefreshCw, CheckCircle2,
 } from "lucide-react";
 
 type Workflow = {
@@ -336,6 +335,8 @@ export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedDone, setSeedDone] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -349,6 +350,18 @@ export default function WorkflowsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const installDefaults = async () => {
+    if (!confirm("Установить 6 готовых воронок для магазина пиломатериалов?")) return;
+    setSeeding(true);
+    try {
+      const res = await fetch("/api/admin/workflows/seed", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) { setSeedDone(true); await load(); }
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   const toggle = async (wf: Workflow) => {
     const res = await fetch(`/api/admin/workflows/${wf.id}`, {
@@ -405,6 +418,46 @@ export default function WorkflowsPage() {
         </div>
       </div>
 
+      {/* ── One-click install for lumber store ── */}
+      {!loading && (
+        <div className={`rounded-2xl border-2 p-5 transition-all ${seedDone ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20" : "border-primary/30 bg-primary/5"}`}>
+          {seedDone ? (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-emerald-700 dark:text-emerald-400">6 воронок установлены и активны!</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Теперь при каждом заказе задачи создаются автоматически</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-4 flex-col sm:flex-row sm:items-center">
+              <div className="flex-1">
+                <p className="font-bold flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-primary" />
+                  Готовые воронки для магазина пиломатериалов
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">Одна кнопка — и 6 воронок сразу активны:</p>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {["📞 Новый заказ → звонок", "🔥 Крупный заказ → срочно", "🏗️ В сборке → склад", "🚚 Готов → курьер", "📄 Счёт → бухгалтер", "⭐ Выполнен → отзыв"].map(t => (
+                    <span key={t} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-lg font-medium">{t}</span>
+                  ))}
+                </div>
+              </div>
+              <button
+                onClick={installDefaults}
+                disabled={seeding}
+                className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 disabled:opacity-60 transition-colors shadow-lg shadow-primary/30 text-sm"
+              >
+                {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                {seeding ? "Устанавливаем..." : "Установить всё"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Workflows */}
       {loading ? (
         <div className="flex items-center justify-center py-16 gap-3 text-muted-foreground">
@@ -412,17 +465,13 @@ export default function WorkflowsPage() {
           <span>Загрузка...</span>
         </div>
       ) : workflows.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center mb-5">
-            <Zap className="w-10 h-10 text-primary/50" />
-          </div>
-          <h2 className="font-semibold text-lg mb-2">Нет воркфлоу</h2>
-          <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-            Создай первое правило автоматизации — например, задача менеджеру при каждом новом заказе
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-sm text-muted-foreground">
+            Нажмите «Установить всё» выше или создайте воркфлоу вручную
           </p>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors">
+          <button onClick={() => setShowCreate(true)} className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm hover:bg-muted transition-colors">
             <Plus className="w-4 h-4" />
-            Создать первый воркфлоу
+            Создать вручную
           </button>
         </div>
       ) : (
