@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
-import { ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3, ArrowUpRight } from "lucide-react";
+import { ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3, ArrowUpRight, Shield } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 
@@ -248,6 +248,21 @@ export default async function AdminDashboard() {
           <Link href="/admin/reviews" className="text-sm text-primary font-medium hover:underline shrink-0">Модерировать →</Link>
         </div>
       )}
+
+      {/* Health check shortcut */}
+      <Link
+        href="/admin/health"
+        className="flex items-center gap-4 bg-card border border-border rounded-2xl p-4 hover:bg-muted/30 transition-colors group"
+      >
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Shield className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">Здоровье системы</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Проверить базу данных, email, SEO, уведомления и другие компоненты</p>
+        </div>
+        <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+      </Link>
     </div>
   );
 }

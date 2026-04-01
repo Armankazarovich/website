@@ -24,6 +24,7 @@ import {
   Images,
   BarChart2,
   Mail,
+  HeartPulse,
 } from "lucide-react";
 
 type NavItem = {
@@ -59,6 +60,7 @@ const allNavItems: NavItem[] = [
   { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: ["ADMIN", "MANAGER"], group: "clients" },
 
   // ── Настройки ──
+  { href: "/admin/health", label: "Здоровье системы", icon: HeartPulse, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/site", label: "Сайт", icon: Globe, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/settings", label: "Настройки", icon: Settings, roles: ["ADMIN"], group: "settings" },
   { href: "/admin/appearance", label: "Оформление", icon: Palette, roles: ["ADMIN"], group: "settings" },
