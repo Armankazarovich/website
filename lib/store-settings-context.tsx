@@ -13,3 +13,20 @@ export const StoreSettingsContext = createContext<StoreSettings>({
 });
 
 export const useStoreSettings = () => useContext(StoreSettingsContext);
+
+// ✅ Client Component wrapper — used by Server Component layouts
+export function StoreSettingsProvider({
+  children,
+  cardStyle,
+  photoAspect,
+}: {
+  children: React.ReactNode;
+  cardStyle: string;
+  photoAspect: string;
+}) {
+  return (
+    <StoreSettingsContext.Provider value={{ cardStyle, photoAspect }}>
+      {children}
+    </StoreSettingsContext.Provider>
+  );
+}

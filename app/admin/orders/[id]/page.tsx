@@ -8,6 +8,7 @@ import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { ArrowLeft, Phone, Mail, MapPin, CreditCard, MessageSquare, Package } from "lucide-react";
 import { DeleteOrderButton } from "./delete-button";
 import { OrderEditPanel } from "@/components/admin/order-edit-panel";
+import { TrackingLinkCard } from "@/components/admin/tracking-link-card";
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({
@@ -100,6 +101,9 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
           </p>
         </div>
       </div>
+
+      {/* Ссылка отслеживания */}
+      <TrackingLinkCard orderId={order.id} />
 
       {/* Детали доставки */}
       <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
