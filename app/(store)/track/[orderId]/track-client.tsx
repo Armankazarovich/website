@@ -627,7 +627,7 @@ export function TrackOrderClient({
             <div className="flex justify-between items-center">
               <span className="font-semibold">Итого:</span>
               <span className="font-display font-bold text-xl text-primary">
-                {formatPrice(order.totalAmount + order.deliveryCost)}
+                {formatPrice(order.totalAmount + (order.deliveryCost ?? 0))}
               </span>
             </div>
           </div>
