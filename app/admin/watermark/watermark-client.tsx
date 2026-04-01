@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap, AlertCircle, Type, RotateCcw, ShieldCheck } from "lucide-react";
+import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap, AlertCircle, Type, RotateCcw, ShieldCheck, WrenchIcon } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const POSITIONS = [
   { value: "bottom-right", label: "Правый низ" },
@@ -294,9 +295,16 @@ export function WatermarkClient({
           <strong className="text-amber-600">Сначала создайте резервную копию!</strong>
         </p>
         {!backupDate && (
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            Резервная копия не создана. Нажмите «Создать резервную копию» выше перед применением.
+          <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <div>
+              <p>Резервная копия не создана. Создайте копию выше перед применением.</p>
+              <p className="mt-1">Уже применили и хотите убрать?{" "}
+                <Link href="/admin/watermark/recovery" className="underline font-medium hover:text-amber-900">
+                  Инструмент восстановления →
+                </Link>
+              </p>
+            </div>
           </div>
         )}
         {applyResult && (
