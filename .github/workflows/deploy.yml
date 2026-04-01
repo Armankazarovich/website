@@ -17,19 +17,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy source to server
+      - name: Create deployment archive (no node_modules / .next)
+        run: |
+          tar \
+            --exclude='./.git' \
+            --exclude='./node_modules' \
+            --exclude='./.next' \
+            --exclude='./dist' \
+            --exclude='./*.log' \
+            -czf /tmp/deploy.tar.gz \
+            -C ${{ github.workspace }} .
+          echo "Archive size: $(du -sh /tmp/deploy.tar.gz | cut -f1)"
+
+      - name: Copy archive to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "."
-          target: "/home/armankmb/pilo-rus/app/"
+          source: "/tmp/deploy.tar.gz"
+          target: "/home/armankmb/pilo-rus/"
           overwrite: true
-          rm: false
-          exclude: "node_modules,.next,*.log"
 
-      - name: Build and restart on server
+      - name: Extract, build and restart on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -38,9 +48,11 @@ jobs:
           command_timeout: 10m
           script: |
             set -eo pipefail
+            echo "📂 Extracting archive..."
+            mkdir -p /home/armankmb/pilo-rus/app
+            tar -xzf /home/armankmb/pilo-rus/deploy.tar.gz -C /home/armankmb/pilo-rus/app
+            rm -f /home/armankmb/pilo-rus/deploy.tar.gz
             cd /home/armankmb/pilo-rus/app
-            echo "🧹 Removing stale server-only files..."
-            rm -rf worker/
             echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
             echo "🗄️ Syncing database schema..."
