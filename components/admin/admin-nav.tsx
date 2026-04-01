@@ -23,6 +23,7 @@ import {
   FileDown,
   Images,
   BarChart2,
+  Mail,
 } from "lucide-react";
 
 type NavItem = {
@@ -52,6 +53,7 @@ const allNavItems: NavItem[] = [
   // ── Маркетинг ──
   { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: ["ADMIN", "MANAGER"], group: "marketing" },
   { href: "/admin/reviews", label: "Отзывы", icon: Star, roles: ["ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/email", label: "Email рассылка", icon: Mail, roles: ["ADMIN"], group: "marketing" },
 
   // ── Клиенты ──
   { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: ["ADMIN", "MANAGER"], group: "clients" },
