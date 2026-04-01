@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap, AlertCircle, Type, RotateCcw, ShieldCheck, WrenchIcon } from "lucide-react";
+import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap, AlertCircle, Type, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -46,6 +46,7 @@ export function WatermarkClient({
   const [applying,   setApplying]   = useState(false);
   const [backing,    setBacking]    = useState(false);
   const [restoring,  setRestoring]  = useState(false);
+  const [cleaning,   setCleaning]   = useState(false);
   const [applyResult,setApplyResult]= useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -100,6 +101,16 @@ export function WatermarkClient({
       const data = await res.json();
       setApplyResult(data.ok ? `✅ Восстановлено: ${data.restored} товаров` : `❌ Ошибка: ${data.error}`);
     } finally { setRestoring(false); }
+  };
+
+  const cleanupOrphans = async () => {
+    if (!confirm("Удалить все неиспользуемые wm-* файлы? Файлы, на которые не ссылается ни один товар, будут удалены.")) return;
+    setCleaning(true); setApplyResult(null);
+    try {
+      const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cleanup_orphans" }) });
+      const data = await res.json();
+      setApplyResult(data.ok ? `🧹 Удалено дублей: ${data.deleted} файл(ов)` : `❌ Ошибка: ${data.error}`);
+    } finally { setCleaning(false); }
   };
 
   const applyToAll = async () => {
@@ -256,65 +267,56 @@ export function WatermarkClient({
         </button>
       </div>
 
-      {/* ── Резервная копия ── */}
-      <div className="bg-card border border-emerald-500/30 rounded-2xl p-5 space-y-3">
+      {/* ── Пакетное применение + авто-бэкап ── */}
+      <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <h3 className="font-semibold">Резервная копия фото</h3>
+          <Zap className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">Применить ко всем фото</h3>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Сохраните копию перед применением водяного знака — это позволит восстановить оригинальные фото.
-        </p>
-        {backupDate && (
-          <p className="text-xs text-emerald-600 font-medium">✓ Последняя копия: {backupDate}</p>
-        )}
-        <div className="flex gap-3 flex-wrap">
-          <button onClick={backupImages} disabled={backing}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
-            {backing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-            {backing ? "Создаём копию..." : "Создать резервную копию"}
-          </button>
-          {backupDate && (
-            <button onClick={restoreImages} disabled={restoring}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-destructive/40 text-destructive text-sm font-semibold hover:bg-destructive/10 disabled:opacity-50 transition-colors">
-              {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-              {restoring ? "Восстанавливаем..." : "Восстановить оригиналы"}
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* ── Пакетное применение ── */}
-      <div className="bg-card border border-amber-500/30 rounded-2xl p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-500" />
-          <h3 className="font-semibold">Пакетное применение</h3>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Применить водяной знак сразу ко всем фотографиям товаров.{" "}
-          <strong className="text-amber-600">Сначала создайте резервную копию!</strong>
-        </p>
-        {!backupDate && (
-          <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div>
-              <p>Резервная копия не создана. Создайте копию выше перед применением.</p>
-              <p className="mt-1">Уже применили и хотите убрать?{" "}
-                <Link href="/admin/watermark/recovery" className="underline font-medium hover:text-amber-900">
-                  Инструмент восстановления →
-                </Link>
-              </p>
-            </div>
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-sm">
+          <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Защита включена автоматически</p>
+            <p className="text-xs mt-0.5">Перед применением система сама сохраняет резервную копию всех фото. Отменить можно в любой момент.</p>
           </div>
+        </div>
+
+        {backupDate && (
+          <p className="text-xs text-muted-foreground">Последняя копия: {backupDate}</p>
         )}
+
         {applyResult && (
           <p className={`text-sm font-medium ${applyResult.startsWith("✅") ? "text-emerald-600" : "text-destructive"}`}>{applyResult}</p>
         )}
-        <button onClick={applyToAll} disabled={applying || (wmType === "logo" && !logoUrl) || (wmType === "text" && !wmText.trim())}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 disabled:opacity-50 transition-colors">
-          {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-          {applying ? "Применяем..." : "Применить ко всем фото"}
-        </button>
+
+        <div className="flex gap-3 flex-wrap">
+          <button onClick={applyToAll} disabled={applying || (wmType === "logo" && !logoUrl) || (wmType === "text" && !wmText.trim())}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
+            {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            {applying ? "Применяем..." : "Применить ко всем фото"}
+          </button>
+
+          {backupDate && (
+            <button onClick={restoreImages} disabled={restoring}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors">
+              {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              {restoring ? "Восстанавливаем..." : "Отменить — вернуть оригиналы"}
+            </button>
+          )}
+        </div>
+
+        {/* Cleanup orphaned duplicates */}
+        <div className="pt-3 border-t border-border/60">
+          <p className="text-xs text-muted-foreground mb-2">
+            Старые wm-файлы больше не нужны — теперь при повторном применении они перезаписываются автоматически (без дублей). Удалите накопившиеся старые файлы кнопкой ниже:
+          </p>
+          <button onClick={cleanupOrphans} disabled={cleaning}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 disabled:opacity-50 transition-colors">
+            {cleaning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            {cleaning ? "Очищаем..." : "Удалить дубли / неиспользуемые wm-файлы"}
+          </button>
+        </div>
       </div>
     </div>
   );

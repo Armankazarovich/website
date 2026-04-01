@@ -2,9 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { writeFile, mkdir, readFile } from "fs/promises";
-import { join } from "path";
+import { writeFile, mkdir, readFile, unlink } from "fs/promises";
+import { join, basename } from "path";
 import { existsSync } from "fs";
+import { createHash } from "crypto";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
 
@@ -120,6 +121,20 @@ export async function POST(req: Request) {
   if (action === "apply_all") {
     const { position = "bottom-right", opacity = 0.75, sizePct = 20, type = "logo", text = "", textColor = "#ffffff" } = body;
     const products = await prisma.product.findMany({ select: { id: true, images: true } });
+
+    // ✅ АВТО-БЭКАП перед применением — всегда, автоматически
+    const backup = products.map((p) => ({ id: p.id, images: p.images }));
+    await prisma.siteSettings.upsert({
+      where: { key: "watermark_backup" },
+      create: { id: "watermark_backup", key: "watermark_backup", value: JSON.stringify(backup) },
+      update: { value: JSON.stringify(backup) },
+    });
+    await prisma.siteSettings.upsert({
+      where: { key: "watermark_backup_date" },
+      create: { id: "watermark_backup_date", key: "watermark_backup_date", value: new Date().toISOString() },
+      update: { value: new Date().toISOString() },
+    });
+
     let count = 0;
     for (const product of products) {
       if (!product.images?.length) continue;
@@ -132,6 +147,34 @@ export async function POST(req: Request) {
       count++;
     }
     return NextResponse.json({ ok: true, count });
+  }
+
+  // ── Cleanup orphaned wm- files ──
+  if (action === "cleanup_orphans") {
+    const { readdir } = await import("fs/promises");
+    const productsDir = join(process.cwd(), "public", "images", "products");
+
+    // Collect all wm-* filenames on disk
+    let diskFiles: string[] = [];
+    try {
+      const all = await readdir(productsDir);
+      diskFiles = all.filter((f) => f.startsWith("wm-"));
+    } catch { return NextResponse.json({ ok: true, deleted: 0 }); }
+
+    // Collect all image URLs referenced by products
+    const products = await prisma.product.findMany({ select: { images: true } });
+    const usedUrls = new Set<string>();
+    for (const p of products) for (const img of p.images) usedUrls.add(img);
+
+    // Delete wm- files not referenced by any product
+    let deleted = 0;
+    for (const file of diskFiles) {
+      const url = `/images/products/${file}`;
+      if (!usedUrls.has(url)) {
+        try { await unlink(join(productsDir, file)); deleted++; } catch { /* skip */ }
+      }
+    }
+    return NextResponse.json({ ok: true, deleted });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
@@ -223,12 +266,25 @@ async function applyWatermark(
       .png()
       .toBuffer();
 
-    // Save result
+    // Save result — deterministic filename prevents duplicates:
+    // same source image → same wm-*.png, re-apply overwrites instead of creating a new file
     const uploadsDir = join(process.cwd(), "public", "images", "products");
     if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true });
 
-    const filename = `wm-${Date.now()}-${Math.random().toString(36).slice(2)}.png`;
-    await writeFile(join(uploadsDir, filename), resultBuffer);
+    const sourceHash = createHash("md5").update(imageUrl).digest("hex").slice(0, 10);
+    const sourceBase = basename(imageUrl).replace(/\.[^.]+$/, "").replace(/^wm-[a-f0-9]+-/, "").slice(0, 30);
+    const filename = `wm-${sourceBase}-${sourceHash}.png`;
+    const outPath = join(uploadsDir, filename);
+
+    // If source was itself a wm-* file (re-applying), delete the old orphan after writing new
+    const isOldWm = imageUrl.startsWith("/images/products/wm-") && !imageUrl.endsWith(filename);
+
+    await writeFile(outPath, resultBuffer);
+
+    if (isOldWm) {
+      const oldPath = join(process.cwd(), "public", imageUrl.replace(/^\/+/, ""));
+      try { await unlink(oldPath); } catch { /* already gone */ }
+    }
 
     return { url: `/images/products/${filename}` };
   } catch (err: any) {
