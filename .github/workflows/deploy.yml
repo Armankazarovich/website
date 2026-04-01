@@ -21,13 +21,24 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 15m
+          envs: GH_PAT
           script: |
             set -eo pipefail
-            cd /home/armankmb/pilo-rus/app
+            REPO="https://${GH_PAT}@github.com/Armankazarovich/website.git"
+            APP_DIR="/home/armankmb/pilo-rus/app"
 
-            echo "🔄 Pulling latest code..."
-            git fetch origin main
-            git reset --hard origin/main
+            if [ -d "$APP_DIR/.git" ]; then
+              echo "🔄 Pulling latest code..."
+              cd "$APP_DIR"
+              git remote set-url origin "$REPO"
+              git fetch origin main
+              git reset --hard origin/main
+            else
+              echo "📥 First deploy — cloning repository..."
+              rm -rf "$APP_DIR"
+              git clone "$REPO" "$APP_DIR"
+              cd "$APP_DIR"
+            fi
 
             echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
@@ -43,3 +54,5 @@ jobs:
             pm2 save
 
             echo "✅ Deployed at $(date)"
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
