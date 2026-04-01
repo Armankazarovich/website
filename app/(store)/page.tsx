@@ -639,6 +639,34 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ===== CALCULATOR CTA ===== */}
+      <section className="bg-primary/5 border-y border-primary/10">
+        <div className="container mx-auto px-4 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-primary" stroke="currentColor" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="3" strokeLinejoin="round"/>
+                <path d="M7 7h4M7 12h10M7 17h7" strokeLinecap="round"/>
+                <path d="M15 7h2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-display font-bold">Калькулятор пиломатериалов</h2>
+              <p className="text-muted-foreground text-sm mt-0.5">
+                Рассчитайте точное количество и стоимость за 30 секунд
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/calculator"
+            className="shrink-0 inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            Открыть калькулятор
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      </section>
+
       {/* ===== ABOUT PRODUCTION ===== */}
       <section className="py-20 relative overflow-hidden text-white">
         <div className="absolute inset-0">
