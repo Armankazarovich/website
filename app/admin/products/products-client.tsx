@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import {
   Search, Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
-  CheckSquare, Square, Trash2, Tag,
+  CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
 } from "lucide-react";
 
 type Product = {
@@ -39,6 +39,8 @@ export function ProductsClient({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkCat, setBulkCat] = useState("");
+  const [pricePercent, setPricePercent] = useState("");
+  const [priceChanged, setPriceChanged] = useState(false);
 
   /* drawer state */
   const [dName, setDName] = useState("");
@@ -106,6 +108,25 @@ export function ProductsClient({
           body: JSON.stringify({ active }),
         })
       ));
+    } finally { setBulkSaving(false); }
+  };
+
+  const bulkChangePrice = async () => {
+    const pct = parseFloat(pricePercent);
+    if (isNaN(pct) || pct === 0) return;
+    const ids = Array.from(selected);
+    setBulkSaving(true);
+    try {
+      const res = await fetch("/api/admin/products/bulk-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: ids, percent: pct }),
+      });
+      if (res.ok) {
+        setPriceChanged(true);
+        setPricePercent("");
+        setTimeout(() => setPriceChanged(false), 2000);
+      }
     } finally { setBulkSaving(false); }
   };
 
@@ -234,6 +255,39 @@ export function ProductsClient({
                 <option value="">Переместить в категорию…</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+            </div>
+
+            {/* Bulk price change */}
+            <div className="flex items-center gap-1">
+              {priceChanged ? (
+                <span className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-xl">
+                  <Check className="w-3.5 h-3.5" /> Цены обновлены
+                </span>
+              ) : (
+                <>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={pricePercent}
+                      onChange={e => setPricePercent(e.target.value)}
+                      placeholder="±%"
+                      disabled={bulkSaving}
+                      className="w-20 text-xs py-1.5 pl-2 pr-1 rounded-l-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                    />
+                  </div>
+                  <button
+                    onClick={bulkChangePrice}
+                    disabled={bulkSaving || !pricePercent}
+                    title="Изменить цены на % для выбранных"
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-r-xl border border-l-0 border-border bg-background text-xs font-medium hover:bg-accent transition-colors disabled:opacity-40"
+                  >
+                    {parseFloat(pricePercent) < 0
+                      ? <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                      : <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
+                    Цены
+                  </button>
+                </>
+              )}
             </div>
           </div>
           <button
