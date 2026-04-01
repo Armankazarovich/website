@@ -23,8 +23,8 @@ jobs:
             --exclude='./node_modules' \
             --exclude='./.git' \
             --exclude='./public/images' \
-            --exclude='./deploy.tar.gz' \
-            -czf deploy.tar.gz .
+            -czf "$RUNNER_TEMP/deploy.tar.gz" .
+          cp "$RUNNER_TEMP/deploy.tar.gz" ./deploy.tar.gz
           echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
 
       - name: Upload archive to server
