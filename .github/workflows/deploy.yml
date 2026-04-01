@@ -14,7 +14,29 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH — git pull + build
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment archive (no node_modules, no .git, no uploaded photos)
+        run: |
+          tar \
+            --exclude='./node_modules' \
+            --exclude='./.git' \
+            --exclude='./public/images' \
+            --exclude='./deploy.tar.gz' \
+            -czf deploy.tar.gz .
+          echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
+
+      - name: Upload archive to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "deploy.tar.gz"
+          target: "/home/armankmb/pilo-rus/"
+
+      - name: Extract and build on server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -23,35 +45,15 @@ jobs:
           command_timeout: 15m
           script: |
             set -eo pipefail
-            REPO="https://x-access-token:${{ secrets.GH_PAT }}@github.com/Armankazarovich/website.git"
             APP_DIR="/home/armankmb/pilo-rus/app"
-            PHOTOS_BACKUP="/home/armankmb/pilo-rus/photos_backup"
+            ARCHIVE="/home/armankmb/pilo-rus/deploy.tar.gz"
 
-            # Fix ownership issue (files owned by root from old SCP deploy)
-            git config --global --add safe.directory "$APP_DIR" || true
+            echo "📂 Extracting code..."
+            mkdir -p "$APP_DIR"
+            tar -xzf "$ARCHIVE" -C "$APP_DIR"
+            rm -f "$ARCHIVE"
 
-            if [ -d "$APP_DIR/.git" ]; then
-              echo "🔄 Pulling latest code..."
-              cd "$APP_DIR"
-              git remote set-url origin "$REPO"
-              git fetch origin main
-              git reset --hard origin/main
-            else
-              echo "💾 Backing up uploaded photos..."
-              mkdir -p "$PHOTOS_BACKUP"
-              [ -d "$APP_DIR/public/images" ] && cp -r "$APP_DIR/public/images/." "$PHOTOS_BACKUP/" || true
-
-              echo "📥 First deploy — cloning repository..."
-              rm -rf "$APP_DIR"
-              git clone "$REPO" "$APP_DIR"
-
-              echo "♻️ Restoring uploaded photos..."
-              mkdir -p "$APP_DIR/public/images"
-              cp -r "$PHOTOS_BACKUP/." "$APP_DIR/public/images/" 2>/dev/null || true
-              echo "✅ Photos restored"
-
-              cd "$APP_DIR"
-            fi
+            cd "$APP_DIR"
 
             echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
