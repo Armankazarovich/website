@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       try {
         // First pass — streaming
         const st = anthropic.messages.stream({
-          model: "claude-sonnet-4-5",
+          model: "claude-sonnet-4-6",
           max_tokens: 1500,
           system: systemPrompt,
           messages: formattedMessages,
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
           }
 
           const st2 = anthropic.messages.stream({
-            model: "claude-sonnet-4-5",
+            model: "claude-sonnet-4-6",
             max_tokens: 1500,
             system: systemPrompt,
             messages: [

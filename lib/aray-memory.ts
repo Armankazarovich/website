@@ -87,7 +87,7 @@ export async function extractAndUpdateMemory(
       .join("\n");
 
     const extraction = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-6",
       max_tokens: 400,
       system: `Ты извлекаешь факты о пользователе из диалога с ИИ-ассистентом магазина пиломатериалов.
 
