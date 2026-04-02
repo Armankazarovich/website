@@ -7,6 +7,7 @@ import { MobileBottomNav } from "@/components/store/mobile-bottom-nav";
 import { CookieConsent } from "@/components/store/cookie-consent";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { ContactWidget } from "@/components/store/contact-widget";
+import { ArayWidget } from "@/components/store/aray-widget";
 import { PwaInstall } from "@/components/store/pwa-install";
 import { AccountDrawer } from "@/components/store/account-drawer";
 import { FiltersDrawer } from "@/components/store/filters-drawer";
@@ -49,6 +50,9 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SearchDrawer />
       <CartDrawer />
       <ScrollToTop />
+      <ArayWidget
+        enabled={getSetting(siteSettings, "aray_enabled") !== "false"}
+      />
       <ContactWidget
         phone={getSetting(siteSettings, "phone")}
         phoneLink={getSetting(siteSettings, "phone_link")}

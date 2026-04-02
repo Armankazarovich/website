@@ -1,0 +1,529 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { X, Send, Loader2, Minimize2, ChevronDown } from "lucide-react";
+import Image from "next/image";
+
+// ─── Типы ─────────────────────────────────────────────────────────────────────
+
+type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+};
+
+type ArayMode = "business_trainer" | "business_helper";
+
+interface ArayWidgetProps {
+  page?: string;
+  productName?: string;
+  cartTotal?: number;
+  enabled?: boolean;
+}
+
+// ─── Приветствия по роли ──────────────────────────────────────────────────────
+
+const GREETINGS = {
+  business_trainer: [
+    "Привет! Я Арай — твой бизнес-тренер. 🌟 Помогу разобраться с системой, улучшить работу с клиентами и вырасти в своей роли. С чего начнём?",
+    "Готов помочь тебе работать эффективнее! Спрашивай по заказам, CRM, клиентам — объясню всё.",
+  ],
+  business_helper: [
+    "Здравствуйте! Я Арай — ваш деловой помощник. ✨ Помогу с анализом, стратегией и управлением бизнесом. Чем могу быть полезен?",
+    "Добрый день! Готов помочь с бизнес-задачами: анализ, команда, продажи, автоматизация. Что важно прямо сейчас?",
+  ],
+  customer: [
+    "Привет! Я Арай — ваш персональный консультант. 💡 Помогу подобрать нужный материал, рассчитать количество и ответить на любые вопросы.",
+    "Здравствуйте! Расскажите о вашем проекте — подберём лучшее решение вместе.",
+  ],
+};
+
+// ─── Быстрые вопросы ──────────────────────────────────────────────────────────
+
+const QUICK_QUESTIONS = {
+  customer: [
+    "Как рассчитать кубатуру?",
+    "Какой брус лучше для дома?",
+    "Условия доставки?",
+    "Как оформить заказ?",
+  ],
+  staff: [
+    "Как работать с заказом?",
+    "Скрипт для клиента",
+    "Помощь с CRM",
+    "Что такое ARAY?",
+  ],
+  admin: [
+    "Аналитика продаж",
+    "Как автоматизировать?",
+    "Состояние команды",
+    "Идеи для роста",
+  ],
+};
+
+// ─── Анимированная кнопка ─────────────────────────────────────────────────────
+
+function ArayButton({ onClick, hasNewMessage }: { onClick: () => void; hasNewMessage: boolean }) {
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPulse(true);
+      setTimeout(() => setPulse(false), 1500);
+    }, 6000);
+    setTimeout(() => { setPulse(true); setTimeout(() => setPulse(false), 1500); }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Открыть Арай — световой ассистент"
+      className="relative w-14 h-14 rounded-2xl flex items-center justify-center focus:outline-none"
+      style={{
+        background: "linear-gradient(135deg, #0a1628 0%, #0d2550 40%, #0a3d7a 70%, #1a6bb5 100%)",
+        boxShadow: "0 0 24px rgba(30, 120, 220, 0.6), 0 0 48px rgba(30, 80, 180, 0.3), inset 0 1px 0 rgba(100,180,255,0.2)",
+      }}
+    >
+      {/* Пульсирующее свечение */}
+      {pulse && (
+        <span
+          className="absolute inset-0 rounded-2xl animate-ping"
+          style={{ background: "rgba(30, 120, 255, 0.3)", animationDuration: "1.2s" }}
+        />
+      )}
+
+      {/* Золотое кольцо */}
+      <span
+        className="absolute inset-0 rounded-2xl"
+        style={{
+          background: "conic-gradient(from 0deg, transparent 0%, rgba(255,200,50,0.4) 25%, transparent 50%, rgba(30,150,255,0.3) 75%, transparent 100%)",
+          animation: "spin 8s linear infinite",
+        }}
+      />
+
+      {/* Аватарка */}
+      <div className="relative w-10 h-10 rounded-xl overflow-hidden z-10">
+        <Image
+          src="/images/aray-avatar.jpg"
+          alt="Арай"
+          fill
+          className="object-cover object-top"
+          sizes="40px"
+        />
+      </div>
+
+      {/* Индикатор нового сообщения */}
+      {hasNewMessage && (
+        <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-background flex items-center justify-center">
+          <span className="w-1.5 h-1.5 bg-white rounded-full" />
+        </span>
+      )}
+
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </button>
+  );
+}
+
+// ─── Пузырь сообщения ─────────────────────────────────────────────────────────
+
+function MessageBubble({ message }: { message: Message }) {
+  const isUser = message.role === "user";
+
+  return (
+    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3`}>
+      {!isUser && (
+        <div className="w-7 h-7 rounded-xl overflow-hidden shrink-0 mt-0.5">
+          <Image src="/images/aray-avatar.jpg" alt="Арай" width={28} height={28} className="object-cover object-top" />
+        </div>
+      )}
+      <div
+        className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
+          isUser
+            ? "bg-primary text-white rounded-tr-sm"
+            : "rounded-tl-sm text-foreground"
+        }`}
+        style={
+          !isUser
+            ? {
+                background: "linear-gradient(135deg, rgba(10,30,80,0.8) 0%, rgba(15,50,120,0.6) 100%)",
+                border: "1px solid rgba(30,120,255,0.25)",
+                color: "#e8f4ff",
+              }
+            : {}
+        }
+      >
+        {message.content.split("\n").map((line, i) => (
+          <span key={i}>
+            {line}
+            {i < message.content.split("\n").length - 1 && <br />}
+          </span>
+        ))}
+        <span className={`text-[10px] block mt-1 ${isUser ? "text-white/60 text-right" : "opacity-50"}`}>
+          {message.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Главный виджет ───────────────────────────────────────────────────────────
+
+export function ArayWidget({ page, productName, cartTotal, enabled = true }: ArayWidgetProps) {
+  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [mode, setMode] = useState<ArayMode | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [hasNew, setHasNew] = useState(false);
+  const [hiddenForKeyboard, setHiddenForKeyboard] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Появляется через 3 секунды
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Скрыть когда клавиатура открыта (но НЕ когда открыт сам чат)
+  useEffect(() => {
+    if (open) return;
+    const onFocusIn = (e: FocusEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") setHiddenForKeyboard(true);
+    };
+    const onFocusOut = () => setTimeout(() => setHiddenForKeyboard(false), 400);
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => { document.removeEventListener("focusin", onFocusIn); document.removeEventListener("focusout", onFocusOut); };
+  }, [open]);
+
+  // Автоскролл
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleOpen = () => {
+    setOpen(true);
+    setHasNew(false);
+    if (!mode) {
+      // Покажем выбор роли
+    }
+  };
+
+  const selectMode = (selectedMode: ArayMode) => {
+    setMode(selectedMode);
+    const greetingList = selectedMode === "business_trainer"
+      ? GREETINGS.business_trainer
+      : GREETINGS.business_helper;
+    const greeting = greetingList[Math.floor(Math.random() * greetingList.length)];
+
+    setMessages([{
+      id: "welcome",
+      role: "assistant",
+      content: greeting,
+      timestamp: new Date(),
+    }]);
+  };
+
+  const sendMessage = async (text?: string) => {
+    const messageText = (text || input).trim();
+    if (!messageText || loading) return;
+
+    setInput("");
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: messageText,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content })),
+          context: { page, productName, cartTotal, mode },
+        }),
+      });
+
+      const data = await res.json();
+
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.message || data.error || "Произошла ошибка. Попробуйте ещё раз.",
+        timestamp: new Date(),
+      }]);
+
+      if (!open) setHasNew(true);
+    } catch {
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: "Временно недоступен. Попробуйте через минуту. 🙏",
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!enabled) return null;
+  if (!visible) return null;
+  if (hiddenForKeyboard && !open) return null;
+
+  const quickQ = mode === "business_trainer" ? QUICK_QUESTIONS.staff
+    : mode === "business_helper" ? QUICK_QUESTIONS.admin
+    : QUICK_QUESTIONS.customer;
+
+  return (
+    <>
+      {/* Кнопка */}
+      {!open && (
+        <div
+          className="fixed z-50 flex flex-col items-end gap-2"
+          style={{
+            bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+            right: "1rem",
+          }}
+        >
+          {/* Подпись */}
+          <div
+            className="pointer-events-none text-center rounded-xl px-2.5 py-1"
+            style={{ background: "rgba(10,25,60,0.85)", border: "1px solid rgba(30,120,255,0.3)" }}
+          >
+            <p className="text-[10px] font-bold text-blue-200 leading-none">ARAY</p>
+            <p className="text-[9px] text-blue-400/80 leading-none mt-0.5">Световой агент</p>
+          </div>
+
+          <ArayButton onClick={handleOpen} hasNewMessage={hasNew} />
+        </div>
+      )}
+
+      {/* Чат-панель */}
+      {open && (
+        <div
+          className="fixed z-50 flex flex-col"
+          style={{
+            bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
+            right: "1rem",
+            width: "min(360px, calc(100vw - 2rem))",
+            height: "min(560px, calc(100vh - 8rem))",
+            borderRadius: "20px",
+            overflow: "hidden",
+            boxShadow: "0 0 40px rgba(20, 80, 200, 0.5), 0 20px 60px rgba(0,0,0,0.5)",
+            border: "1px solid rgba(40, 130, 255, 0.3)",
+            background: "linear-gradient(180deg, #050d1f 0%, #081530 50%, #060e20 100%)",
+          }}
+        >
+          {/* Шапка */}
+          <div
+            className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+            style={{
+              background: "linear-gradient(135deg, #070f25 0%, #0d2050 100%)",
+              borderBottom: "1px solid rgba(30, 120, 255, 0.2)",
+            }}
+          >
+            <div className="w-9 h-9 rounded-xl overflow-hidden ring-2 ring-blue-500/40">
+              <Image src="/images/aray-avatar.jpg" alt="Арай" width={36} height={36} className="object-cover object-top" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-blue-100">Арай</p>
+              <p className="text-[10px] text-blue-400">
+                {mode === "business_trainer" ? "🎓 Бизнес-тренер"
+                  : mode === "business_helper" ? "💼 Помощник бизнесмена"
+                  : "✨ ARAY PRODUCTIONS"}
+              </p>
+            </div>
+            {mode && (
+              <button
+                onClick={() => { setMode(null); setMessages([]); }}
+                className="text-[10px] text-blue-400 hover:text-blue-200 transition-colors px-2 py-1 rounded-lg hover:bg-blue-900/30"
+              >
+                Сменить роль
+              </button>
+            )}
+            <button
+              onClick={() => setOpen(false)}
+              className="w-7 h-7 rounded-xl flex items-center justify-center hover:bg-blue-900/40 transition-colors"
+            >
+              <X className="w-4 h-4 text-blue-300" />
+            </button>
+          </div>
+
+          {/* Выбор режима */}
+          {!mode && (
+            <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4 ring-2 ring-amber-400/40"
+                style={{ boxShadow: "0 0 30px rgba(30,120,255,0.5)" }}>
+                <Image src="/images/aray-avatar.jpg" alt="Арай" width={80} height={80} className="object-cover object-top" />
+              </div>
+              <p className="text-lg font-bold text-blue-100 mb-1">Привет! Я Арай</p>
+              <p className="text-xs text-blue-400 text-center mb-6">
+                Световой ИИ-ассистент от ARAY PRODUCTIONS.<br />Как мне лучше помочь вам?
+              </p>
+
+              <div className="w-full space-y-3">
+                <button
+                  onClick={() => selectMode("business_trainer")}
+                  className="w-full px-4 py-3 rounded-2xl text-left transition-all hover:scale-[1.02]"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(10,40,100,0.8), rgba(20,80,180,0.6))",
+                    border: "1px solid rgba(40,130,255,0.4)",
+                  }}
+                >
+                  <p className="text-sm font-bold text-blue-100">🎓 Бизнес-тренер</p>
+                  <p className="text-xs text-blue-400 mt-0.5">Обучение, скрипты, работа с системой</p>
+                </button>
+
+                <button
+                  onClick={() => selectMode("business_helper")}
+                  className="w-full px-4 py-3 rounded-2xl text-left transition-all hover:scale-[1.02]"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(20,50,10,0.8), rgba(30,100,40,0.6))",
+                    border: "1px solid rgba(40,200,100,0.3)",
+                  }}
+                >
+                  <p className="text-sm font-bold text-green-100">💼 Помощник бизнесмена</p>
+                  <p className="text-xs text-green-400 mt-0.5">Аналитика, стратегия, управление</p>
+                </button>
+
+                <button
+                  onClick={() => { setMode(null); selectMode("business_trainer"); }}
+                  className="w-full px-4 py-2.5 rounded-2xl text-left transition-all hover:scale-[1.02]"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(40,10,80,0.8), rgba(80,20,160,0.6))",
+                    border: "1px solid rgba(150,60,255,0.3)",
+                  }}
+                  onClick={() => {
+                    setMessages([{
+                      id: "welcome",
+                      role: "assistant",
+                      content: "Привет! Я Арай — помогу подобрать нужный материал, рассчитать количество и ответить на вопросы. Расскажите о вашем проекте! 💡",
+                      timestamp: new Date(),
+                    }]);
+                    setMode("business_trainer");
+                  }}
+                >
+                  <p className="text-sm font-bold text-purple-100">🛒 Помощник покупателя</p>
+                  <p className="text-xs text-purple-400 mt-0.5">Подбор товара, расчёт, консультация</p>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Сообщения */}
+          {mode && (
+            <>
+              <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+                {messages.map(msg => (
+                  <MessageBubble key={msg.id} message={msg} />
+                ))}
+                {loading && (
+                  <div className="flex gap-2.5 mb-3">
+                    <div className="w-7 h-7 rounded-xl overflow-hidden shrink-0">
+                      <Image src="/images/aray-avatar.jpg" alt="Арай" width={28} height={28} className="object-cover object-top" />
+                    </div>
+                    <div className="px-3 py-2.5 rounded-2xl rounded-tl-sm" style={{ background: "rgba(15,40,100,0.6)", border: "1px solid rgba(30,120,255,0.2)" }}>
+                      <div className="flex gap-1 items-center h-4">
+                        {[0, 1, 2].map(i => (
+                          <span
+                            key={i}
+                            className="w-1.5 h-1.5 rounded-full bg-blue-400"
+                            style={{ animation: `bounce 1.2s ease-in-out ${i * 0.2}s infinite` }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Быстрые вопросы */}
+              {messages.length <= 1 && (
+                <div className="px-3 pb-2 flex gap-1.5 flex-wrap">
+                  {quickQ.slice(0, 3).map(q => (
+                    <button
+                      key={q}
+                      onClick={() => sendMessage(q)}
+                      className="text-[10px] px-2.5 py-1.5 rounded-xl transition-all hover:scale-[1.02]"
+                      style={{
+                        background: "rgba(15,50,120,0.5)",
+                        border: "1px solid rgba(40,130,255,0.3)",
+                        color: "#90c0ff",
+                      }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Ввод */}
+              <div
+                className="px-3 py-3 flex-shrink-0 flex gap-2 items-end"
+                style={{ borderTop: "1px solid rgba(30,120,255,0.2)" }}
+              >
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                  }}
+                  rows={1}
+                  placeholder="Написать Araю..."
+                  className="flex-1 resize-none text-sm rounded-xl px-3 py-2.5 focus:outline-none"
+                  style={{
+                    background: "rgba(10,30,80,0.6)",
+                    border: "1px solid rgba(40,130,255,0.3)",
+                    color: "#d0e8ff",
+                    maxHeight: "80px",
+                  }}
+                />
+                <button
+                  onClick={() => sendMessage()}
+                  disabled={loading || !input.trim()}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-40"
+                  style={{
+                    background: loading || !input.trim()
+                      ? "rgba(30,80,160,0.3)"
+                      : "linear-gradient(135deg, #1a5cc8, #2a8eff)",
+                    boxShadow: input.trim() ? "0 0 12px rgba(30,120,255,0.5)" : "none",
+                  }}
+                >
+                  {loading
+                    ? <Loader2 className="w-4 h-4 text-blue-300 animate-spin" />
+                    : <Send className="w-4 h-4 text-white" />
+                  }
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
+    </>
+  );
+}
