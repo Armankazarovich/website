@@ -38,11 +38,14 @@ jobs:
 
       - name: Extract and build on server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 15m
+          envs: ANTHROPIC_API_KEY
           script: |
             set -eo pipefail
             APP_DIR="/home/armankmb/pilo-rus/app"
@@ -54,6 +57,16 @@ jobs:
             rm -f "$ARCHIVE"
 
             cd "$APP_DIR"
+
+            echo "🔑 Injecting secrets into .env..."
+            if [ -n "$ANTHROPIC_API_KEY" ]; then
+              if grep -q "^ANTHROPIC_API_KEY=" .env 2>/dev/null; then
+                sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=\"$ANTHROPIC_API_KEY\"|" .env
+              else
+                echo "ANTHROPIC_API_KEY=\"$ANTHROPIC_API_KEY\"" >> .env
+              fi
+              echo "✅ ANTHROPIC_API_KEY set"
+            fi
 
             echo "📦 Installing dependencies..."
             npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
