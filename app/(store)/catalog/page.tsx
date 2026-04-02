@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
+import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
+import { InstockToggle } from "@/components/store/instock-toggle";
 import { Calculator, ArrowRight } from "lucide-react";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
@@ -195,6 +197,20 @@ export default async function CatalogPage({
         availableTypes={availableTypes}
       />
 
+      {/* ── Мобильная строка фильтров (только на мобильном) ── */}
+      <div className="flex lg:hidden items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        <CatalogMobileFilter
+          categories={categories}
+          sizes={crossSections}
+          availableTypes={availableTypes}
+          currentCategory={searchParams.category}
+          currentSize={currentSize}
+          currentType={currentType}
+          currentInStock={searchParams.instock === "1"}
+        />
+        <InstockToggle active={searchParams.instock === "1"} />
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Sidebar */}
         <aside className="hidden lg:block lg:w-64 shrink-0">
@@ -293,7 +309,10 @@ export default async function CatalogPage({
                 : "Все пиломатериалы"}
             </h2>
 
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="hidden lg:block">
+                <InstockToggle active={searchParams.instock === "1"} />
+              </div>
               <span className="text-sm text-muted-foreground hidden sm:block mr-1">Сортировка:</span>
               {[
                 { value: "", label: "Новые" },

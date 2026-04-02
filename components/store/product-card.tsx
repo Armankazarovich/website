@@ -309,7 +309,7 @@ export function ProductCard({
       )}
 
       {/* ── Изображение ── */}
-      <Link href={`/product/${slug}`} className="block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 1/1)" }}>
+      <Link href={`/product/${slug}`} className="block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}>
         {images[0] ? (
           <Image
             src={images[0]}

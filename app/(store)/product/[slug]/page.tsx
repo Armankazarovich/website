@@ -9,7 +9,8 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { Package, Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
+import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
+import { ProductGallery } from "@/components/store/product-gallery";
 import { auth } from "@/lib/auth";
 
 interface Props {
@@ -158,41 +159,12 @@ export default async function ProductPage({ params }: Props) {
       {/* Main product section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
         {/* Gallery */}
-        <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          {/* Main image */}
-          <div className="relative rounded-2xl overflow-hidden bg-muted border border-border" style={{ aspectRatio: "var(--photo-aspect, 1/1)" }}>
-            {product.images[0] ? (
-              <Image
-                src={product.images[0]}
-                alt={product.name}
-                fill
-                className="object-cover"
-                priority
-                unoptimized
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                <Package className="w-16 h-16 opacity-30" />
-              </div>
-            )}
-            {product.variants.some((v) => v.inStock) && (
-              <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                В наличии
-              </span>
-            )}
-          </div>
-
-          {/* Thumbnail strip */}
-          {product.images.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {product.images.map((img, i) => (
-                <div key={i} className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border border-border cursor-pointer hover:border-primary transition-colors">
-                  <Image src={img} alt={`${product.name} ${i + 1}`} fill className="object-cover" unoptimized />
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="lg:sticky lg:top-24 lg:self-start">
+          <ProductGallery
+            images={product.images}
+            name={product.name}
+            inStock={product.variants.some(v => v.inStock)}
+          />
         </div>
 
         {/* Product info + variant selector */}
