@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   // Get email subscribers (users with email + orders)
   const [users, orders] = await Promise.all([
     prisma.user.findMany({ select: { id: true, name: true, email: true, createdAt: true } }),
-    prisma.order.findMany({ select: { customerEmail: true, customerName: true, createdAt: true } }),
+    prisma.order.findMany({ select: { guestEmail: true, guestName: true, createdAt: true } }),
   ]);
 
   // Build unique email list
@@ -40,8 +40,8 @@ export async function GET(req: Request) {
     if (u.email) emailMap.set(u.email, { name: u.name || "", source: "registered", date: u.createdAt });
   }
   for (const o of orders) {
-    if (o.customerEmail && !emailMap.has(o.customerEmail)) {
-      emailMap.set(o.customerEmail, { name: o.customerName || "", source: "order", date: o.createdAt });
+    if (o.guestEmail && !emailMap.has(o.guestEmail)) {
+      emailMap.set(o.guestEmail, { name: o.guestName || "", source: "order", date: o.createdAt });
     }
   }
 

@@ -104,7 +104,7 @@ function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messa
   inputRef: React.RefObject<HTMLTextAreaElement>;
 }) {
   const { listening, start, stop } = useVoiceInput((text) => {
-    setInput(prev => prev ? prev + " " + text : text);
+    setInput(input ? input + " " + text : text);
     inputRef.current?.focus();
   });
 
@@ -425,7 +425,7 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
       {/* Карточка уровня */}
       <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg,rgba(10,30,80,0.8),rgba(15,50,130,0.6))", border: "1px solid rgba(40,130,255,0.2)" }}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden ring-2 shrink-0" style={{ ringColor: userInfo.levelInfo?.color || "#60a5fa" }}>
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0" style={{ outline: `2px solid ${userInfo.levelInfo?.color || "#60a5fa"}`, outlineOffset: "2px" }}>
             <Image src="/aray/aray-avatar.jpg" alt="Арай" width={56} height={56} className="object-cover object-top" />
           </div>
           <div className="flex-1 min-w-0">

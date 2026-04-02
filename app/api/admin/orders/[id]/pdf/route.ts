@@ -43,7 +43,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const buffer = await generateInvoicePdf(pdfOrder);
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="schet-${order.orderNumber}.pdf"`,

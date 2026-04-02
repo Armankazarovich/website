@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const base64url = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64url);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  const arr = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) arr[i] = rawData.charCodeAt(i);
+  return arr;
 }
 
 function bufferToBase64(buffer: ArrayBuffer): string {

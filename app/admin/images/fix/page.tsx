@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   ScanSearch, CheckCircle2, AlertTriangle, XCircle,
-  Trash2, Wrench, RefreshCw, ImageOff, Copy2, Layers,
+  Trash2, Wrench, RefreshCw, ImageOff, Copy, Layers,
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
