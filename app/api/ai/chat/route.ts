@@ -201,6 +201,9 @@ export async function POST(req: NextRequest) {
     if (err?.status === 401 || err?.message?.includes("401")) {
       return NextResponse.json({ error: "Неверный API ключ Anthropic. Проверь настройки." }, { status: 401 });
     }
+    if (err?.message?.includes("credit balance is too low") || err?.message?.includes("billing")) {
+      return NextResponse.json({ error: "На счёте Anthropic закончились кредиты. Пополни баланс на console.anthropic.com 💳" }, { status: 503 });
+    }
     if (err?.status === 529 || err?.message?.includes("overloaded")) {
       return NextResponse.json({ error: "Anthropic перегружен, попробуй через минуту 🙏" }, { status: 503 });
     }
@@ -208,8 +211,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Нет связи с Anthropic. Проверь интернет на сервере." }, { status: 503 });
     }
 
+    const devMsg = process.env.NODE_ENV === "development" ? ` [${err?.message}]` : "";
     return NextResponse.json(
-      { error: `Арай временно недоступен. Попробуй через минуту.`, debug: err?.message || String(err), stack: err?.stack?.split("\n").slice(0, 5) },
+      { error: `Арай временно недоступен${devMsg}. Попробуй через минуту.` },
       { status: 500 }
     );
   }
