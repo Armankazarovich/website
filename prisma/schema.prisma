@@ -65,6 +65,7 @@ model User {
   taskComments    TaskComment[]
   assignedLeads   Lead[]           @relation("LeadAssignee")
   leadActivities  LeadActivity[]   @relation("LeadActivityUser")
+  arayMemory      ArayMemory?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   lastActiveAt    DateTime?        // Последняя активность в системе
@@ -409,4 +410,37 @@ model WorkflowLog {
   result     String   // "ok" | "error"
   error      String?
   createdAt  DateTime @default(now())
+}
+
+// ── Арай — Память о людях ─────────────────────────────────────────────────────
+
+enum ArayLevel {
+  NOVICE      // Новичок (1-2 заказа)
+  BUILDER     // Строитель (3-9 заказов)
+  MASTER      // Мастер (10-24 заказа)
+  PARTNER     // Партнёр ARAY (25+)
+}
+
+model ArayMemory {
+  id          String     @id @default(cuid())
+
+  // Идентификация — userId для авторизованных, sessionId для гостей
+  userId      String?    @unique
+  sessionId   String?    @unique
+  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Факты о человеке — автоматически извлекаются из диалогов
+  facts       Json       @default("{}")
+  // Резюме истории общения (сжатая память)
+  summary     String     @default("")
+  // Последние 10 сообщений для контекста
+  lastMessages Json      @default("[]")
+
+  // Геймификация
+  level       ArayLevel  @default(NOVICE)
+  totalChats  Int        @default(0)
+  totalPoints Int        @default(0)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
