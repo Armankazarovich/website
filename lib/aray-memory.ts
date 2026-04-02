@@ -112,11 +112,11 @@ export async function extractAndUpdateMemory(
     if (!jsonMatch) return;
 
     const newFacts = JSON.parse(jsonMatch[0]) as ArayFacts;
-    if (Object.keys(newFacts).length === 0) return;
+    const updatedFacts = Object.keys(newFacts).length > 0
+      ? { ...existingFacts, ...newFacts }
+      : existingFacts;
 
-    // Обновляем память
-    const updatedFacts = { ...existingFacts, ...newFacts };
-
+    // Обновляем память — totalChats всегда растёт, факты только если есть новые
     await prisma.arayMemory.update({
       where: { id: memoryId },
       data: {

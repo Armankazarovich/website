@@ -86,12 +86,19 @@ export async function POST(req: NextRequest) {
     const systemPrompt = basePrompt + memoryContext;
 
     // ── Форматируем сообщения ─────────────────────────────────────────────────
-    const formattedMessages = messages
+    type ChatMessage = { role: "user" | "assistant"; content: string };
+
+    const rawMessages: ChatMessage[] = messages
       .slice(-20) // Не больше 20 сообщений в контексте
       .map((m: { role: string; content: string }) => ({
         role: m.role as "user" | "assistant",
         content: m.content,
       }));
+
+    // Anthropic требует: первое сообщение всегда user
+    // Срезаем ведущие assistant-сообщения (локальные приветствия виджета)
+    const firstUserIdx = rawMessages.findIndex(m => m.role === "user");
+    const formattedMessages: ChatMessage[] = firstUserIdx >= 0 ? rawMessages.slice(firstUserIdx) : rawMessages;
 
     // ── Вызов Claude ──────────────────────────────────────────────────────────
     const response = await anthropic.messages.create({
