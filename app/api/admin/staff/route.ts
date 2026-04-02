@@ -6,12 +6,18 @@ import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
 
-const VALID_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 const VALID_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"];
 
 async function checkAdmin() {
   const session = await auth();
-  return session && (session.user as any).role === "ADMIN";
+  const role = (session?.user as any)?.role;
+  return session && (role === "ADMIN" || role === "SUPER_ADMIN");
+}
+
+async function checkSuperAdmin() {
+  const session = await auth();
+  return session && (session.user as any)?.role === "SUPER_ADMIN";
 }
 
 // GET — list all non-USER staff
@@ -55,6 +61,10 @@ export async function POST(req: NextRequest) {
 
     if (!VALID_ROLES.includes(role))
       return NextResponse.json({ error: "Недопустимая роль" }, { status: 400 });
+
+    // Only SUPER_ADMIN can create other SUPER_ADMIN accounts
+    if (role === "SUPER_ADMIN" && !(await checkSuperAdmin()))
+      return NextResponse.json({ error: "Только Супер Администратор может создавать другие SUPER_ADMIN аккаунты" }, { status: 403 });
 
     if (password.length < 6)
       return NextResponse.json({ error: "Пароль минимум 6 символов" }, { status: 400 });

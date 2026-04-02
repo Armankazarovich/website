@@ -132,6 +132,7 @@ export function ContactWidget({
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [pulse, setPulse] = useState(false);
+  const [hiddenForKeyboard, setHiddenForKeyboard] = useState(false);
   const isOnline = useIsOnline();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -139,6 +140,26 @@ export function ContactWidget({
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 1500);
     return () => clearTimeout(t);
+  }, []);
+
+  // Скрыть когда открыта клавиатура на мобильном (активен input/textarea)
+  useEffect(() => {
+    const onFocusIn = (e: FocusEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") {
+        setHiddenForKeyboard(true);
+        setOpen(false);
+      }
+    };
+    const onFocusOut = () => {
+      setTimeout(() => setHiddenForKeyboard(false), 400);
+    };
+    document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
+    };
   }, []);
 
   // Пульс каждые 8 секунд для привлечения внимания
@@ -164,6 +185,7 @@ export function ContactWidget({
   }, [open]);
 
   if (!widgetEnabled) return null;
+  if (hiddenForKeyboard) return null;
 
   // Channels
   const channels: Channel[] = [];

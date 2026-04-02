@@ -4,15 +4,28 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Save, Trash2, Plus, Upload, ImageIcon,
   Check, Loader2, Wand2, PenTool, Images, ExternalLink,
-  ChevronLeft, ChevronRight, X, GripVertical,
+  ChevronLeft, ChevronRight, X, GripVertical, Search,
 } from "lucide-react";
-import { PhotoEditor } from "@/components/admin/photo-editor";
-import { MediaPickerModal } from "@/app/admin/media/media-client";
 import { cn } from "@/lib/utils";
+
+// Lazy-load heavy modals — загружаются только при первом открытии
+const PhotoEditor = dynamic(
+  () => import("@/components/admin/photo-editor").then((m) => ({ default: m.PhotoEditor })),
+  { ssr: false, loading: () => null }
+);
+const MediaPickerModal = dynamic(
+  () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
+  { ssr: false, loading: () => null }
+);
+const PhotoSearch = dynamic(
+  () => import("@/components/admin/photo-search").then((m) => ({ default: m.PhotoSearch })),
+  { ssr: false, loading: () => null }
+);
 
 type Variant = {
   id?: string;
@@ -64,6 +77,7 @@ export default function AdminProductEditPage() {
   const [removingBg, setRemovingBg] = useState(false);
   const [autoPipeline, setAutoPipeline] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+  const [photoSearchOpen, setPhotoSearchOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -352,6 +366,16 @@ export default function AdminProductEditPage() {
                 </button>
               </div>
 
+              {!isNew && (
+                <button
+                  onClick={() => setPhotoSearchOpen(true)}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-emerald-300 dark:border-emerald-700 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  Найти бесплатное фото (Pixabay)
+                </button>
+              )}
+
               {images[0] && (
                 <div className="flex gap-2">
                   <button
@@ -521,7 +545,8 @@ export default function AdminProductEditPage() {
                 <button onClick={addVariant} className="text-sm text-primary hover:underline">+ Добавить вариант</button>
               </div>
             ) : (
-              <div className="space-y-1">
+              <div className="overflow-x-auto -mx-5 px-5">
+              <div className="min-w-[560px] space-y-1">
                 {/* Table header */}
                 <div className="grid grid-cols-[1fr_100px_100px_80px_44px_32px] gap-2 px-2 pb-1">
                   <span className="text-xs text-muted-foreground">Размер</span>
@@ -543,46 +568,47 @@ export default function AdminProductEditPage() {
                       value={v.size}
                       onChange={(e) => updateVariant(idx, "size", e.target.value)}
                       placeholder="50×150×6000"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
+                      className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
                     />
                     <input
                       type="number"
                       value={v.pricePerCube}
                       onChange={(e) => updateVariant(idx, "pricePerCube", e.target.value)}
                       placeholder="12000"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <input
                       type="number"
                       value={v.pricePerPiece}
                       onChange={(e) => updateVariant(idx, "pricePerPiece", e.target.value)}
                       placeholder="420"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <input
                       type="number"
                       value={v.piecesPerCube}
                       onChange={(e) => updateVariant(idx, "piecesPerCube", e.target.value)}
                       placeholder="28"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <button
                       onClick={() => updateVariant(idx, "inStock", !v.inStock)}
                       className={cn(
-                        "w-9 h-5 rounded-full transition-colors relative",
+                        "w-10 h-6 rounded-full transition-colors relative shrink-0",
                         v.inStock ? "bg-emerald-500" : "bg-muted"
                       )}
                     >
                       <span className={cn(
-                        "absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform text-[8px] flex items-center justify-center",
+                        "absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform",
                         v.inStock && "translate-x-4"
                       )} />
                     </button>
-                    <button onClick={() => removeVariant(idx)} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <button onClick={() => removeVariant(idx)} className="p-1 text-muted-foreground hover:text-destructive transition-colors">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}
+              </div>
               </div>
             )}
           </div>
@@ -625,6 +651,16 @@ export default function AdminProductEditPage() {
         onClose={() => setMediaPickerOpen(false)}
         onPick={(url) => { setImages([url]); setMediaPickerOpen(false); }}
       />
+      {photoSearchOpen && (
+        <PhotoSearch
+          productId={String(params.id)}
+          productName={name || "товар"}
+          onPhotoAdded={(url) => {
+            setImages(prev => prev.includes(url) ? prev : [url, ...prev]);
+          }}
+          onClose={() => setPhotoSearchOpen(false)}
+        />
+      )}
     </div>
   );
 }

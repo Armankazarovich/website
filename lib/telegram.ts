@@ -246,10 +246,43 @@ export async function sendTelegramStatusUpdate(order: {
   guestName?: string | null;
   status: string;
   totalAmount: number;
+  telegramMessageId?: string | null; // если есть — редактируем, иначе новое сообщение
 }) {
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+
   const emoji = STATUS_EMOJI[order.status] || "🔄";
   const label = ORDER_STATUS_LABELS[order.status] || order.status;
+  const reply_markup = buildOrderKeyboard(order.id, order.status);
+
+  // Если есть сохранённый message_id — редактируем существующее сообщение
+  if (order.telegramMessageId) {
+    const text = [
+      `${emoji} *Статус: ${label}*`,
+      `🛒 *Заказ #${order.orderNumber}*`,
+      ``,
+      `👤 *Клиент:* ${order.guestName || "—"}`,
+      `💰 *Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽*`,
+      ``,
+      `✏️ _Изменено в ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })}_`,
+    ].join("\n");
+
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        message_id: Number(order.telegramMessageId),
+        text,
+        parse_mode: "Markdown",
+        reply_markup,
+      }),
+    }).catch(() => {
+      // Если не удалось отредактировать (слишком старое) — отправляем новое
+    });
+    return;
+  }
+
+  // Нет message_id — отправляем новое сообщение
   const text = [
     `${emoji} *Статус изменён — Заказ #${order.orderNumber}*`,
     ``,
@@ -257,8 +290,6 @@ export async function sendTelegramStatusUpdate(order: {
     `Новый статус: *${label}*`,
     `Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽`,
   ].join("\n");
-
-  const reply_markup = buildOrderKeyboard(order.id, order.status);
 
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
     method: "POST",

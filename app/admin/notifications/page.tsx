@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity, Trash2 } from "lucide-react";
+import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity, Trash2, Bot, Wifi, WifiOff, RefreshCw, AlertTriangle } from "lucide-react";
 import { requestPushPermission } from "@/components/push-subscription";
 
 const SEGMENTS = [
@@ -55,6 +55,54 @@ export default function NotificationsPage() {
   const [subscribeResult, setSubscribeResult] = useState<"ok" | "err" | null>(null);
   const [cleaning, setCleaning] = useState(false);
   const [cleanResult, setCleanResult] = useState<string | null>(null);
+
+  // ── Telegram webhook state ───────────────────────────────────────────────
+  type TgStatus = {
+    configured: boolean; correct?: boolean; webhookUrl?: string; expectedUrl?: string;
+    pendingUpdateCount?: number; lastErrorDate?: string | null; lastErrorMessage?: string | null;
+    error?: string;
+  };
+  const [tgStatus, setTgStatus] = useState<TgStatus | null>(null);
+  const [tgLoading, setTgLoading] = useState(false);
+  const [tgSetting, setTgSetting] = useState(false);
+  const [tgTesting, setTgTesting] = useState(false);
+  const [tgResult, setTgResult] = useState<{ ok: boolean; message?: string; error?: string } | null>(null);
+
+  const checkTelegram = async () => {
+    setTgLoading(true);
+    setTgResult(null);
+    const res = await fetch("/api/admin/notifications/telegram-setup");
+    const data = await res.json();
+    setTgStatus(data);
+    setTgLoading(false);
+  };
+
+  const setupTelegram = async () => {
+    setTgSetting(true);
+    setTgResult(null);
+    const res = await fetch("/api/admin/notifications/telegram-setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "setup" }),
+    });
+    const data = await res.json();
+    setTgResult(data);
+    setTgSetting(false);
+    if (data.ok) checkTelegram();
+  };
+
+  const testTelegram = async () => {
+    setTgTesting(true);
+    setTgResult(null);
+    const res = await fetch("/api/admin/notifications/telegram-setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "test" }),
+    });
+    const data = await res.json();
+    setTgResult(data);
+    setTgTesting(false);
+  };
 
   const checkDebug = async () => {
     setDebugLoading(true);
@@ -441,6 +489,124 @@ export default function NotificationsPage() {
           </div>
         </div>
       )}
+      {/* ── Telegram Bot Section ── */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h2 className="font-semibold text-base">Telegram Бот</h2>
+              <p className="text-xs text-muted-foreground">Настройка вебхука и проверка соединения</p>
+            </div>
+          </div>
+          <button
+            onClick={checkTelegram}
+            disabled={tgLoading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${tgLoading ? "animate-spin" : ""}`} />
+            Проверить
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Status display */}
+          {tgStatus === null && !tgLoading && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-muted/50 border border-border">
+              <Bot className="w-5 h-5 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Нажмите "Проверить" чтобы узнать статус вебхука</p>
+            </div>
+          )}
+
+          {tgStatus && (
+            <div className={`flex items-start gap-3 p-4 rounded-xl border ${
+              tgStatus.error ? "bg-destructive/5 border-destructive/20" :
+              tgStatus.correct ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800" :
+              tgStatus.configured ? "bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800" :
+              "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800"
+            }`}>
+              {tgStatus.correct ? (
+                <Wifi className="w-5 h-5 text-emerald-500 mt-0.5 shrink-0" />
+              ) : (
+                <WifiOff className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm">
+                  {tgStatus.error ? `❌ ${tgStatus.error}` :
+                   tgStatus.correct ? "✅ Вебхук настроен корректно" :
+                   tgStatus.configured ? "⚠️ Вебхук настроен на другой URL" :
+                   "❌ Вебхук не настроен — кнопки в Telegram не работают!"}
+                </p>
+                {tgStatus.webhookUrl && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate">URL: {tgStatus.webhookUrl}</p>
+                )}
+                {tgStatus.pendingUpdateCount !== undefined && tgStatus.pendingUpdateCount > 0 && (
+                  <p className="text-xs text-yellow-600 mt-1">⚡ {tgStatus.pendingUpdateCount} необработанных обновлений в очереди</p>
+                )}
+                {tgStatus.lastErrorMessage && (
+                  <p className="text-xs text-destructive mt-1">Последняя ошибка ({tgStatus.lastErrorDate}): {tgStatus.lastErrorMessage}</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={setupTelegram}
+              disabled={tgSetting}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {tgSetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
+              {tgStatus?.correct ? "Переустановить вебхук" : "Настроить вебхук"}
+            </button>
+            <button
+              onClick={testTelegram}
+              disabled={tgTesting}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border hover:bg-muted text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {tgTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Отправить тест
+            </button>
+          </div>
+
+          {/* Result message */}
+          {tgResult && (
+            <div className={`flex items-center gap-2 p-3 rounded-xl text-sm font-medium ${
+              tgResult.ok
+                ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                : "bg-destructive/5 text-destructive border border-destructive/20"
+            }`}>
+              {tgResult.ok ? <CheckCircle className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+              {tgResult.message || tgResult.error}
+            </div>
+          )}
+
+          {/* Setup instructions */}
+          <details className="group">
+            <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none list-none flex items-center gap-1.5">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Как получить TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID?
+            </summary>
+            <div className="mt-3 p-4 rounded-xl bg-muted/50 border border-border space-y-2 text-xs text-muted-foreground">
+              <p><strong className="text-foreground">1. TELEGRAM_BOT_TOKEN</strong></p>
+              <p>• Открыть Telegram → найти @BotFather → /newbot</p>
+              <p>• Придумать имя и username для бота</p>
+              <p>• Скопировать токен вида: <code className="bg-muted px-1 py-0.5 rounded">1234567890:AABBcc...</code></p>
+              <p className="pt-1"><strong className="text-foreground">2. TELEGRAM_CHAT_ID</strong></p>
+              <p>• Добавить бота в нужную группу (или личный чат)</p>
+              <p>• Написать /start в группе</p>
+              <p>• Открыть: <code className="bg-muted px-1 py-0.5 rounded">https://api.telegram.org/bot&#123;TOKEN&#125;/getUpdates</code></p>
+              <p>• Найти поле <code className="bg-muted px-1 py-0.5 rounded">chat.id</code> — это и есть CHAT_ID (для групп отрицательное число)</p>
+              <p className="pt-1"><strong className="text-foreground">3. Добавить в Vercel</strong></p>
+              <p>• Dashboard → Settings → Environment Variables → добавить обе переменные → Redeploy</p>
+            </div>
+          </details>
+        </div>
+      </div>
+
     </div>
   );
 }

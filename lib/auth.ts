@@ -71,8 +71,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.passwordHash);
         if (!valid) return null;
 
-        // Block pending/suspended staff from logging in
-        if (user.role !== "USER" && (user as any).staffStatus && (user as any).staffStatus !== "ACTIVE") {
+        // Block pending/suspended staff from logging in (SUPER_ADMIN always allowed)
+        if (user.role !== "USER" && user.role !== "SUPER_ADMIN" && (user as any).staffStatus && (user as any).staffStatus !== "ACTIVE") {
           return null;
         }
 

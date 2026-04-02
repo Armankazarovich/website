@@ -71,6 +71,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   viewportFit: "cover",
+  interactiveWidget: "resizes-visual", // клавиатура не сжимает layout — fixed элементы не прыгают
 };
 
 const organizationSchema = {

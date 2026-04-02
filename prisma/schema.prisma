@@ -9,6 +9,7 @@ datasource db {
 
 enum Role {
   USER
+  SUPER_ADMIN  // Владелец системы — все права
   ADMIN
   MANAGER     // Менеджер по продажам
   COURIER     // Курьер
@@ -62,6 +63,8 @@ model User {
   assignedTasks   Task[]           @relation("TaskAssignee")
   createdTasks    Task[]           @relation("TaskCreator")
   taskComments    TaskComment[]
+  assignedLeads   Lead[]           @relation("LeadAssignee")
+  leadActivities  LeadActivity[]   @relation("LeadActivityUser")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   lastActiveAt    DateTime?        // Последняя активность в системе
@@ -299,6 +302,82 @@ model TaskComment {
   user      User?    @relation(fields: [userId], references: [id])
   text      String
   createdAt DateTime @default(now())
+}
+
+// ── CRM — Лиды и Воронка продаж ───────────────────────────────────────────────
+
+enum LeadSource {
+  WEBSITE    // Форма на сайте
+  TELEGRAM   // Telegram
+  PHONE      // Звонок
+  REFERRAL   // Рекомендация
+  PARTNER    // Партнёр
+  OTHER      // Другое
+}
+
+enum LeadStage {
+  NEW           // Новый лид
+  CONTACTED     // Связались
+  QUALIFIED     // Квалифицирован
+  MEETING       // Встреча/замер
+  PROPOSAL      // КП отправлено
+  NEGOTIATION   // Переговоры
+  WON           // Успех / Оплата
+  LOST          // Отказ
+}
+
+enum LeadActivityType {
+  NOTE        // Заметка
+  CALL        // Звонок
+  EMAIL       // Email
+  MEETING     // Встреча
+  TASK        // Задача
+  STAGE_CHANGE // Смена этапа
+  SYSTEM      // Системное
+}
+
+model Lead {
+  id          String      @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  company     String?
+  source      LeadSource  @default(WEBSITE)
+  stage       LeadStage   @default(NEW)
+  value       Decimal?    @db.Decimal(10, 2)   // Сумма сделки
+  currency    String      @default("RUB")
+  comment     String?
+  tags        String[]    @default([])
+
+  // Ответственный
+  assigneeId  String?
+  assignee    User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
+
+  // Связанный заказ (если конвертирован)
+  convertedOrderId String?
+  convertedAt      DateTime?
+
+  // Позиция в колонке Kanban
+  sortOrder   Int         @default(0)
+
+  activities  LeadActivity[]
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+}
+
+model LeadActivity {
+  id          String           @id @default(cuid())
+  leadId      String
+  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type        LeadActivityType @default(NOTE)
+  text        String
+  scheduledFor DateTime?       // Для задач/встреч
+  completedAt  DateTime?
+  userId      String?
+  user        User?            @relation("LeadActivityUser", fields: [userId], references: [id])
+  createdAt   DateTime         @default(now())
 }
 
 // ── Автоворкфлоу ──────────────────────────────────────────────────────────────

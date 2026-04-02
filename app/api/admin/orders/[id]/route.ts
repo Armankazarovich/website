@@ -32,7 +32,7 @@ const statusDescriptions: Record<string, string> = {
   CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
 };
 
-const STAFF_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
@@ -150,6 +150,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       guestName: order.guestName,
       status,
       totalAmount: Number(order.totalAmount),
+      telegramMessageId: order.telegramMessageId ?? null, // редактируем существующее, не создаём новое
     }).catch(console.error);
     sendPushToStaff({
       title: `Заказ #${order.orderNumber} — ${statusLabels[status]}`,

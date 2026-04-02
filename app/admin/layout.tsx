@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -10,7 +12,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const staffStatus = (session?.user as any)?.staffStatus;
   const userId = (session?.user as any)?.id;
   const isStaff = role && role !== "USER";
-  const isBlocked = staffStatus === "PENDING" || staffStatus === "SUSPENDED";
+  const isSuperAdmin = role === "SUPER_ADMIN";
+  const isBlocked = (staffStatus === "PENDING" || staffStatus === "SUSPENDED") && !isSuperAdmin;
 
   if (!session || !isStaff || isBlocked) {
     redirect("/login");

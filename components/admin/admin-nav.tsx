@@ -29,6 +29,7 @@ import {
   Wallet,
   CheckSquare,
   Zap,
+  Target,
 } from "lucide-react";
 
 type NavItem = {
@@ -40,47 +41,50 @@ type NavItem = {
   group: string;
 };
 
+const SA = "SUPER_ADMIN";
+
 const allNavItems: NavItem[] = [
   // ── Главная ──
-  { href: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "main" },
+  { href: "/admin", label: "Дашборд", icon: LayoutDashboard, exact: true, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "main" },
 
   // ── Продажи ──
-  { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
-  { href: "/admin/tasks", label: "Задачи", icon: CheckSquare, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
-  { href: "/admin/workflows", label: "Автоворкфлоу", icon: Zap, roles: ["ADMIN", "MANAGER"], group: "sales" },
-  { href: "/admin/delivery", label: "Доставка", icon: Truck, roles: ["ADMIN", "MANAGER", "COURIER"], group: "sales" },
+  { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
+  { href: "/admin/crm", label: "CRM — Лиды", icon: Target, roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/tasks", label: "Задачи", icon: CheckSquare, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
+  { href: "/admin/workflows", label: "Автоворкфлоу", icon: Zap, roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
+  { href: "/admin/delivery", label: "Доставка", icon: Truck, roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
 
   // ── Товары ──
-  { href: "/admin/products", label: "Каталог товаров", icon: Package, roles: ["ADMIN", "MANAGER", "WAREHOUSE", "SELLER"], group: "products" },
-  { href: "/admin/categories", label: "Категории", icon: Tag, roles: ["ADMIN"], group: "products" },
-  { href: "/admin/inventory", label: "Склад / Остатки", icon: Warehouse, roles: ["ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
-  { href: "/admin/import", label: "Импорт / Экспорт", icon: FileDown, roles: ["ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
-  { href: "/admin/media", label: "Медиабиблиотека", icon: Images, roles: ["ADMIN", "MANAGER"], group: "products" },
+  { href: "/admin/products", label: "Каталог товаров", icon: Package, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"], group: "products" },
+  { href: "/admin/categories", label: "Категории", icon: Tag, roles: [SA, "ADMIN"], group: "products" },
+  { href: "/admin/inventory", label: "Склад / Остатки", icon: Warehouse, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/import", label: "Импорт / Экспорт", icon: FileDown, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/media", label: "Медиабиблиотека", icon: Images, roles: [SA, "ADMIN", "MANAGER"], group: "products" },
 
   // ── Маркетинг ──
-  { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: ["ADMIN", "MANAGER"], group: "marketing" },
-  { href: "/admin/reviews", label: "Отзывы", icon: Star, roles: ["ADMIN", "MANAGER"], group: "marketing" },
-  { href: "/admin/email", label: "Email рассылка", icon: Mail, roles: ["ADMIN"], group: "marketing" },
-  { href: "/admin/promotion", label: "Продвижение", icon: TrendingUp, roles: ["ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/promotions", label: "Акции", icon: Megaphone, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/reviews", label: "Отзывы", icon: Star, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/email", label: "Email рассылка", icon: Mail, roles: [SA, "ADMIN"], group: "marketing" },
+  { href: "/admin/promotion", label: "Продвижение", icon: TrendingUp, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
 
   // ── Финансы ──
-  { href: "/admin/finance", label: "Финансы", icon: Wallet, roles: ["ADMIN", "ACCOUNTANT"], group: "finance" },
+  { href: "/admin/finance", label: "Финансы", icon: Wallet, roles: [SA, "ADMIN", "ACCOUNTANT"], group: "finance" },
 
   // ── Клиенты ──
-  { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: ["ADMIN", "MANAGER"], group: "clients" },
+  { href: "/admin/clients", label: "Клиенты", icon: UserCircle, roles: [SA, "ADMIN", "MANAGER"], group: "clients" },
 
   // ── Настройки ──
-  { href: "/admin/health", label: "Здоровье системы", icon: HeartPulse, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/site", label: "Сайт", icon: Globe, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/settings", label: "Настройки", icon: Settings, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/appearance", label: "Оформление", icon: Palette, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/analytics", label: "Аналитика", icon: BarChart2, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/watermark", label: "Водяной знак", icon: Stamp, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/staff", label: "Команда", icon: Users, roles: ["ADMIN"], group: "settings" },
-  { href: "/admin/notifications", label: "Уведомления", icon: Bell, roles: ["ADMIN"], group: "settings" },
+  { href: "/admin/health", label: "Здоровье системы", icon: HeartPulse, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/site", label: "Сайт", icon: Globe, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/settings", label: "Настройки", icon: Settings, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/appearance", label: "Оформление", icon: Palette, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/analytics", label: "Аналитика", icon: BarChart2, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/watermark", label: "Водяной знак", icon: Stamp, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/staff", label: "Команда", icon: Users, roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/notifications", label: "Уведомления", icon: Bell, roles: [SA, "ADMIN"], group: "settings" },
 
   // ── Помощь ──
-  { href: "/admin/help", label: "Помощь", icon: HelpCircle, roles: ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "help" },
+  { href: "/admin/help", label: "Помощь", icon: HelpCircle, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "help" },
 ];
 
 const GROUP_LABELS: Record<string, string> = {

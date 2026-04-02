@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   XCircle,
   Shuffle,
+  Check,
+  X,
 } from "lucide-react";
 
 // ─── Role definitions ───────────────────────────────────────────────────────
@@ -34,6 +36,15 @@ const ROLE_DEFINITIONS: Record<
     defaultPassword: string;
   }
 > = {
+  SUPER_ADMIN: {
+    label: "Супер Администратор",
+    color: "bg-orange-500/15 text-orange-700 dark:text-orange-400",
+    dot: "bg-orange-500",
+    avatarBg: "bg-orange-500/20 text-orange-700 dark:text-orange-300",
+    description: "Владелец системы — неограниченный доступ ко всему",
+    sections: ["Всё без ограничений", "Управление ADMIN аккаунтами"],
+    defaultPassword: "superadmin123",
+  },
   ADMIN: {
     label: "Администратор",
     color: "bg-red-500/15 text-red-700 dark:text-red-400",
@@ -90,7 +101,7 @@ const ROLE_DEFINITIONS: Record<
   },
 };
 
-const ALL_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "ADMIN"];
+const ALL_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "ADMIN", "SUPER_ADMIN"];
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -296,6 +307,12 @@ export default function StaffPage() {
     if (data.user) updateMember(data.user);
   }
 
+  // ── Approve / Reject PENDING ────────────────────────────────────────────────
+  async function handleSetStatus(userId: string, staffStatus: "ACTIVE" | "SUSPENDED") {
+    const data = await apiPost({ action: "set_status", userId, staffStatus });
+    if (data.user) updateMember(data.user);
+  }
+
   // ── Delete ──────────────────────────────────────────────────────────────────
   async function handleDelete(userId: string) {
     setPanelLoading(true);
@@ -398,6 +415,29 @@ export default function StaffPage() {
             )}
           </div>
         </div>
+
+        {/* ── Approve / Reject buttons for PENDING ── */}
+        {member.staffStatus === "PENDING" && (
+          <div className="border-t border-yellow-200 dark:border-yellow-900/40 bg-yellow-50/50 dark:bg-yellow-900/10 px-4 py-3">
+            <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium mb-2.5">
+              ⏳ Сотрудник ожидает подтверждения. Одобрите или отклоните заявку:
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSetStatus(member.id, "ACTIVE")}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors shadow-sm"
+              >
+                <Check className="w-4 h-4" /> Одобрить
+              </button>
+              <button
+                onClick={() => handleSetStatus(member.id, "SUSPENDED")}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-destructive/40 bg-destructive/5 hover:bg-destructive/10 text-destructive text-sm font-semibold transition-colors"
+              >
+                <X className="w-4 h-4" /> Отклонить
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Inline panels */}
         {isActive && panel?.type === "role" && (
