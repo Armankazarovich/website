@@ -763,3 +763,29 @@ canvas,
   height: 1px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE KEYBOARD FIX — Фиксация при появлении виртуальной клавиатуры
+   iOS Safari игнорирует interactiveWidget — используем dvh + GPU-слои
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* dvh (dynamic viewport height) — правильно учитывает клавиатуру */
+.h-screen { height: 100dvh !important; }
+.min-h-screen { min-height: 100dvh !important; }
+
+/* Все fixed элементы — стабилизируем через GPU-слой чтобы не прыгали */
+.fixed {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* iOS Safari only: min-height через -webkit-fill-available */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
+  /* Модалки используют dvh */
+  [role="dialog"] {
+    max-height: 100dvh;
+  }
+}
+

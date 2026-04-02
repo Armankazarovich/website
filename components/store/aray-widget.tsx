@@ -143,6 +143,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const [hasNew, setHasNew] = useState(false);
   const [hiddenForKeyboard, setHiddenForKeyboard] = useState(false);
   const [proactiveBubble, setProactiveBubble] = useState<string | null>(null);
+  // Keyboard-aware positioning — компенсируем виртуальную клавиатуру на iOS/Android
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -199,17 +201,30 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     return () => window.removeEventListener("aray:open", handler);
   }, [startChat]);
 
-  // Скрыть при активной клавиатуре (только кнопку, не чат)
+  // VisualViewport — отслеживаем клавиатуру на iOS и Android
   useEffect(() => {
-    if (open) return;
-    const onFocusIn = (e: FocusEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") setHiddenForKeyboard(true);
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+
+    const update = () => {
+      // Разница между layout viewport и visual viewport = высота клавиатуры
+      const layoutH = window.innerHeight;
+      const visualH = vv.height;
+      const offset = Math.max(0, layoutH - visualH - vv.offsetTop);
+      setKeyboardOffset(offset);
+
+      // Скрыть плавающую кнопку когда клавиатура открыта (не сам чат)
+      if (!open) {
+        setHiddenForKeyboard(offset > 50);
+      }
     };
-    const onFocusOut = () => setTimeout(() => setHiddenForKeyboard(false), 400);
-    document.addEventListener("focusin", onFocusIn);
-    document.addEventListener("focusout", onFocusOut);
-    return () => { document.removeEventListener("focusin", onFocusIn); document.removeEventListener("focusout", onFocusOut); };
+
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, [open]);
 
   // Автоскролл
@@ -314,16 +329,31 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       {open && (
         <div
           className="fixed z-50 flex flex-col"
-          style={{
+          style={keyboardOffset > 0 ? {
+            // ── Клавиатура открыта: прячемся над ней ──
+            bottom: keyboardOffset,
+            left: 0,
+            right: 0,
+            width: "100%",
+            height: `calc(100dvh - ${keyboardOffset}px - 3.5rem)`,
+            borderRadius: "20px 20px 0 0",
+            overflow: "hidden",
+            boxShadow: "0 0 50px rgba(20,80,200,0.5), 0 24px 64px rgba(0,0,0,0.6)",
+            border: "1px solid rgba(40,130,255,0.3)",
+            background: "linear-gradient(180deg, #050d1f 0%, #081530 50%, #060e20 100%)",
+            transition: "bottom 0.18s ease, height 0.18s ease",
+          } : {
+            // ── Нормальный режим: плавающая панель ──
             bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
             right: "1rem",
             width: "min(370px, calc(100vw - 1.5rem))",
-            height: "min(580px, calc(100vh - 7rem))",
+            height: "min(580px, calc(100dvh - 7rem))",
             borderRadius: "20px",
             overflow: "hidden",
             boxShadow: "0 0 50px rgba(20,80,200,0.5), 0 24px 64px rgba(0,0,0,0.6)",
             border: "1px solid rgba(40,130,255,0.3)",
             background: "linear-gradient(180deg, #050d1f 0%, #081530 50%, #060e20 100%)",
+            transition: "bottom 0.18s ease, height 0.18s ease",
           }}
         >
           {/* Шапка */}
