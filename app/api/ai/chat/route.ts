@@ -208,9 +208,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Нет связи с Anthropic. Проверь интернет на сервере." }, { status: 503 });
     }
 
-    const devMsg = process.env.NODE_ENV === "development" ? ` [${err?.message}]` : "";
     return NextResponse.json(
-      { error: `Арай временно недоступен${devMsg}. Попробуй через минуту.` },
+      { error: `Арай временно недоступен. Попробуй через минуту.`, debug: err?.message || String(err), stack: err?.stack?.split("\n").slice(0, 5) },
       { status: 500 }
     );
   }
