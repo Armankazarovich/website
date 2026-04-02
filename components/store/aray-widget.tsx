@@ -478,6 +478,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
+  const cartItemsCount = useCartStore((s) => s.totalItems());
 
   const pageCtx = { page, productName, cartTotal };
   const chips = buildArayChips(pageCtx);
@@ -637,7 +638,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const tabs: { id: Tab; icon: React.ReactNode; label: string; badge?: number }[] = [
     { id: "chat", icon: <MessageCircle className="w-5 h-5" />, label: "Чат" },
     { id: "cart", icon: <ShoppingCart className="w-5 h-5" />, label: "Корзина",
-      badge: useCartStore.getState().totalItems() || undefined },
+      badge: cartItemsCount || undefined },
     { id: "calc", icon: <Calculator className="w-5 h-5" />, label: "Расчёт" },
     { id: "profile", icon: <User className="w-5 h-5" />, label: "Профиль" },
   ];
