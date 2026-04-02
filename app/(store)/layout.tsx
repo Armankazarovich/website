@@ -6,7 +6,6 @@ import { Footer } from "@/components/layout/footer";
 import { MobileBottomNav } from "@/components/store/mobile-bottom-nav";
 import { CookieConsent } from "@/components/store/cookie-consent";
 import { ScrollToTop } from "@/components/ui/scroll-to-top";
-import { ContactWidget } from "@/components/store/contact-widget";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { PwaInstall } from "@/components/store/pwa-install";
 import { AccountDrawer } from "@/components/store/account-drawer";
@@ -52,17 +51,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <ScrollToTop />
       <ArayWidget
         enabled={getSetting(siteSettings, "aray_enabled") !== "false"}
-      />
-      <ContactWidget
-        phone={getSetting(siteSettings, "phone")}
-        phoneLink={getSetting(siteSettings, "phone_link")}
-        email={getSetting(siteSettings, "widget_show_email") === "true" ? getSetting(siteSettings, "email") : undefined}
-        whatsapp={getSetting(siteSettings, "social_whatsapp")}
-        telegram={getSetting(siteSettings, "social_telegram") || undefined}
-        vk={getSetting(siteSettings, "social_vk") || undefined}
-        widgetEnabled={getSetting(siteSettings, "widget_enabled") !== "false"}
-        widgetPosition={(getSetting(siteSettings, "widget_position") as "left" | "right") || "right"}
-        widgetLabel={getSetting(siteSettings, "widget_label") || "Связаться"}
       />
     </div>
     </StoreSettingsProvider>

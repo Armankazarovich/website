@@ -193,6 +193,17 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     return () => clearTimeout(t);
   }, []);
 
+  // Слушаем событие открытия из мобильного навбара
+  useEffect(() => {
+    const handler = () => {
+      setVisible(true);
+      setOpen(true);
+      setHasNew(false);
+    };
+    window.addEventListener("aray:open", handler);
+    return () => window.removeEventListener("aray:open", handler);
+  }, []);
+
   // Скрыть когда клавиатура открыта (но НЕ когда открыт сам чат)
   useEffect(() => {
     if (open) return;
@@ -292,13 +303,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   return (
     <>
-      {/* Кнопка */}
+      {/* Кнопка — только на десктопе (на мобиле она в нижнем навбаре) */}
       {!open && (
         <div
-          className="fixed z-50 flex flex-col items-end gap-2"
+          className="hidden lg:flex fixed z-50 flex-col items-end gap-2"
           style={{
-            bottom: "calc(5rem + env(safe-area-inset-bottom, 0px))",
-            right: "1rem",
+            bottom: "2rem",
+            right: "1.5rem",
           }}
         >
           {/* Подпись */}

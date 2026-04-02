@@ -715,6 +715,42 @@ canvas,
   animation: neonPulse 2.5s ease-in-out infinite;
 }
 
+/* ── Дышащая кнопка Arай — центр мобильного навбара ── */
+@keyframes arayBreath {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(30, 110, 255, 0.55),
+      0 0 28px rgba(20, 80, 210, 0.28),
+      0 6px 24px rgba(0, 0, 0, 0.45);
+    transform: scale(1) translateY(0px);
+  }
+  50% {
+    box-shadow:
+      0 0 22px rgba(30, 130, 255, 0.80),
+      0 0 50px rgba(20, 90, 220, 0.45),
+      0 0 80px rgba(15, 60, 200, 0.18),
+      0 6px 32px rgba(0, 0, 0, 0.5);
+    transform: scale(1.045) translateY(-2px);
+  }
+}
+.aray-center-btn {
+  animation: arayBreath 3.5s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+/* Вырез (нотч) в навбаре под центральную кнопку */
+.aray-nav-notch {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 36px;
+  background: inherit;
+  border-radius: 50% 50% 0 0;
+  pointer-events: none;
+}
+
 /* ── Разделители групп в навигации ── */
 .aray-nav-divider {
   background: linear-gradient(
