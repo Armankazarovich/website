@@ -719,23 +719,53 @@ canvas,
 @keyframes arayBreath {
   0%, 100% {
     box-shadow:
-      0 0 10px rgba(30, 110, 255, 0.55),
-      0 0 28px rgba(20, 80, 210, 0.28),
-      0 6px 24px rgba(0, 0, 0, 0.45);
+      0 0 0   2px  rgba(30, 120, 255, 0.20),
+      0 0 12px 4px rgba(30, 110, 255, 0.50),
+      0 0 30px 8px rgba(20, 80,  210, 0.22),
+      0 6px 24px   rgba(0,   0,   0,  0.55);
     transform: scale(1) translateY(0px);
   }
-  50% {
+  35% {
     box-shadow:
-      0 0 22px rgba(30, 130, 255, 0.80),
-      0 0 50px rgba(20, 90, 220, 0.45),
-      0 0 80px rgba(15, 60, 200, 0.18),
-      0 6px 32px rgba(0, 0, 0, 0.5);
-    transform: scale(1.045) translateY(-2px);
+      0 0 0   3px  rgba(80, 180, 255, 0.30),
+      0 0 18px 6px rgba(30, 140, 255, 0.70),
+      0 0 45px 12px rgba(20, 90, 230, 0.35),
+      0 0 80px 20px rgba(10, 55, 200, 0.12),
+      0 8px 32px   rgba(0,   0,   0,  0.60);
+    transform: scale(1.06) translateY(-3px);
+  }
+  70% {
+    box-shadow:
+      0 0 0   2px  rgba(255, 200, 50, 0.18),
+      0 0 14px 4px rgba(30, 130, 255, 0.60),
+      0 0 35px 10px rgba(20, 85, 215, 0.28),
+      0 7px 28px   rgba(0,   0,   0,  0.58);
+    transform: scale(1.03) translateY(-1px);
   }
 }
+
+/* Внешнее постоянное кольцо-пульс */
+@keyframes arayRingPulse {
+  0%, 100% { opacity: 0.0; transform: scale(1.0); }
+  50%       { opacity: 0.5; transform: scale(1.18); }
+}
+
 .aray-center-btn {
-  animation: arayBreath 3.5s ease-in-out infinite;
+  animation: arayBreath 4s ease-in-out infinite;
   will-change: transform, box-shadow;
+  position: relative;
+}
+
+/* Постоянное свечение вокруг кнопки */
+.aray-center-btn::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: transparent;
+  border: 2px solid rgba(60, 150, 255, 0.40);
+  animation: arayRingPulse 3s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* Вырез (нотч) в навбаре под центральную кнопку */
