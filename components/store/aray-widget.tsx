@@ -65,7 +65,7 @@ function ArayButton({ onClick, hasNewMessage }: { onClick: () => void; hasNewMes
       {/* Аватарка */}
       <div className="relative w-10 h-10 rounded-xl overflow-hidden z-10">
         <Image
-          src="/aray/avatar.svg"
+          src="/aray/aray-avatar.jpg"
           alt="Арай"
           fill
           className="object-cover object-top"
@@ -99,7 +99,7 @@ function MessageBubble({ message }: { message: Message }) {
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3`}>
       {!isUser && (
         <div className="w-7 h-7 rounded-xl overflow-hidden shrink-0 mt-0.5">
-          <Image src="/aray/avatar.svg" alt="Арай" width={28} height={28} className="object-cover object-top" />
+          <Image src="/aray/aray-avatar.jpg" alt="Арай" width={28} height={28} className="object-cover object-top" />
         </div>
       )}
       <div
@@ -360,7 +360,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
           <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #070f25 0%, #0d2050 100%)", borderBottom: "1px solid rgba(30,120,255,0.2)" }}>
             <div className="w-9 h-9 rounded-xl overflow-hidden ring-2 ring-blue-500/40">
-              <Image src="/aray/avatar.svg" alt="Арай" width={36} height={36} className="object-cover object-top" />
+              <Image src="/aray/aray-avatar.jpg" alt="Арай" width={36} height={36} className="object-cover object-top" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-bold text-blue-100">Арай</p>
@@ -390,7 +390,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             {loading && (
               <div className="flex gap-2.5 mb-3">
                 <div className="w-7 h-7 rounded-xl overflow-hidden shrink-0">
-                  <Image src="/aray/avatar.svg" alt="Арай" width={28} height={28} className="object-cover object-top" />
+                  <Image src="/aray/aray-avatar.jpg" alt="Арай" width={28} height={28} className="object-cover object-top" />
                 </div>
                 <div className="px-3 py-2.5 rounded-2xl rounded-tl-sm"
                   style={{ background: "rgba(15,40,100,0.6)", border: "1px solid rgba(30,120,255,0.2)" }}>

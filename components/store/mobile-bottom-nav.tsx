@@ -207,7 +207,7 @@ export function MobileBottomNav() {
               {/* Аватар */}
               <div className="relative w-10 h-10 rounded-xl overflow-hidden z-10">
                 <Image
-                  src="/aray/avatar.svg"
+                  src="/aray/aray-avatar.jpg"
                   alt="Арай"
                   fill
                   className="object-cover object-top"
