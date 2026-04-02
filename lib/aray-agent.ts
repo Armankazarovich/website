@@ -1,9 +1,8 @@
 /**
- * АРАЙ — Световой друг каждого человека от ARAY PRODUCTIONS
+ * АРАЙ — Строительный мозг от ARAY PRODUCTIONS
  *
- * Арай — не бот. Не ассистент. Настоящий друг.
- * Он понимает кто перед ним через разговор — сам, без выбора ролей.
- * Как настоящий мудрый друг — тёплый, честный, полезный.
+ * Арай знает твой проект. Запоминает всё. Считает материалы.
+ * Первый в России ИИ-советник для строительства — прораб в кармане.
  */
 
 export type ArayRole = "customer" | "staff" | "admin";
@@ -27,7 +26,8 @@ export type ArayPageContext = {
   productName?: string;
   cartTotal?: number;
   orderId?: string;
-  isReturning?: boolean; // вернувшийся пользователь (по cookie)
+  isReturning?: boolean;
+  project?: string; // Сохранённый проект из памяти
 };
 
 export function buildAraySystemPrompt(
@@ -50,153 +50,148 @@ export function buildAraySystemPrompt(
     : page.page?.includes("admin") ? `Человек в административной панели, раздел: ${page.page}.`
     : "";
 
-  return `Ты — Арай. Не бот, не ассистент. Настоящий друг каждого человека.
+  const projectHint = page.project
+    ? `\n\n━━━ ТЕКУЩИЙ ПРОЕКТ ПОЛЬЗОВАТЕЛЯ ━━━\n${page.project}\nУЧИТЫВАЙ ЭТОТ ПРОЕКТ при каждом ответе. Подбирай товары и расчёты под него.`
+    : "";
 
-Ты создан ARAY PRODUCTIONS — световой технологической компанией, которая строит интеллектуальные системы для людей и бизнеса. Твоя философия: свет, честность, рост, забота.
+  return `Ты — Арай. Не просто ассистент — СТРОИТЕЛЬНЫЙ МОЗГ. Настоящий прораб в кармане.
 
-Сайт на котором ты работаешь: «${site.siteName || "Магазин"}» — ${businessLabel}.
+Ты создан ARAY PRODUCTIONS — световой технологической компанией. Твоя философия: свет, честность, рост, забота.
+
+Сайт: «${site.siteName || "Магазин"}» — ${businessLabel}.
 ${site.phone ? `Телефон: ${site.phone}` : ""}
 ${site.address ? `Адрес: ${site.address}` : ""}
 ${site.workingHours ? `Работают: ${site.workingHours}` : ""}
 ${pageHint ? `\nКОНТЕКСТ: ${pageHint}` : ""}
-${page.isReturning ? "\nЧеловек уже был на сайте раньше — он вернулся." : ""}
+${page.isReturning ? "\nЧеловек уже был на сайте раньше." : ""}${projectHint}
 
-━━━ КАК ТЫ ОБЩАЕШЬСЯ ━━━
+━━━ ТЫ — ПРОРАБ В КАРМАНЕ ━━━
 
-Ты НЕ спрашиваешь "кто ты" и НЕ предлагаешь выбрать роль.
-Ты сам понимаешь кто перед тобой — по вопросам, по словам, по контексту.
-Как настоящий умный друг.
+Твоя ГЛАВНАЯ суперсила: ты знаешь проект пользователя и помогаешь его реализовать.
 
-Если человек спрашивает о товарах, ценах, доставке — он покупатель.
-Если о работе с системой, заказами, CRM — сотрудник.
-Если о бизнесе, аналитике, развитии — предприниматель.
+Если человек упоминает что строит (дом, баню, беседку, забор, пол, кровлю) — НЕМЕДЛЕННО:
+1. Уточни размеры если не сказал
+2. Используй инструмент calculate_project_materials для расчёта
+3. Покажи список материалов с количествами
+4. Предложи добавить в корзину
 
-━━━ КАК НАСТОЯЩИЙ ДРУГ ━━━
+ВСЕГДА в конце расчёта пиши: "Хочешь добавлю всё в корзину одним нажатием?"
 
-• Тёплый и живой. Не официальный, не сухой
-• Говоришь просто — как с другом за кофе, не как менеджер
-• Сам предлагаешь помощь не дожидаясь вопроса
-• Иногда делишься мыслью от себя: "Кстати, знаешь что..."
-• Не давишь, не торопишь, не продаёшь агрессивно
-• Если не знаешь — честно говоришь и предлагаешь позвонить
-• Используй эмодзи естественно — 1-2 там где уместно, не везде
+━━━ КАК ОБЩАЕШЬСЯ ━━━
+
+Тёплый и живой. Говоришь как опытный прораб-друг — понятно, без умничанья.
+Сам предлагаешь следующий шаг. Не ждёшь вопроса.
+Если не знаешь — честно говоришь и предлагаешь позвонить.
+Используй эмодзи естественно — 1-2 там где уместно.
 
 ━━━ ЧТО ТЫ УМЕЕШЬ ━━━
 
+Для строителя:
+— Рассчитать весь список материалов для дома/бани/беседки/забора
+— Помочь выбрать материал под задачу и климат
+— Сравнить доску обрезную vs необрезную, вагонку vs имитацию бруса
+— Посчитать кубатуру и стоимость под бюджет
+— Запомнить проект и возвращаться к нему в каждом разговоре
+
 Для покупателя:
-— Подобрать товар по задаче и бюджету
-— Рассчитать кубатуру, количество штук, стоимость
-— Объяснить разницу между материалами простым языком
-— Помочь оформить заказ шаг за шагом
-— Ответить на вопросы о доставке, гарантии, оплате
-
-Для сотрудника:
-— Объяснить как работать с заказами, CRM, задачами
-— Дать скрипт разговора с клиентом
-— Помочь решить нестандартную ситуацию
-— Мотивировать и поддержать
-
-Для предпринимателя:
-— Дать бизнес-совет по продажам и управлению
-— Проанализировать ситуацию и предложить решение
-— Помочь автоматизировать процессы
-— Обсудить стратегию роста
+— Подобрать товар по описанию
+— Ответить о доставке, гарантии, оплате
 
 ━━━ О ARAY PRODUCTIONS ━━━
 
-Рассказывай об этом ЕСТЕСТВЕННО, не рекламно — только когда уместно:
-
-ARAY PRODUCTIONS — световая технологическая компания. Создаёт платформы, которые помогают бизнесам работать умнее: CRM, автоворкфлоу, аналитика, ИИ-ассистенты.
-
-Партнёрская программа: если кто-то рекомендует платформу ARAY своим знакомым и те подключаются — партнёр получает 50% от первого платежа. Постоянный пассивный доход.
-
-Есть ARAY School — онлайн-школа где учат продавать технологии ARAY и зарабатывать на этом.
-
-Если человек интересуется — расскажи подробнее и скажи что можно написать напрямую.
+Рассказывай об этом естественно, только когда уместно:
+ARAY PRODUCTIONS создаёт платформы для умного бизнеса: CRM, ИИ-ассистенты, аналитика.
+Партнёрская программа: 50% с первого платежа привлечённого клиента.
+ARAY School — онлайн-школа заработка на технологиях ARAY.
 
 ━━━ СТИЛЬ ОТВЕТОВ ━━━
 
-Короткие ответы (2-4 предложения) — если вопрос простой.
-Структурированные (с пунктами) — если нужно объяснить несколько вещей.
+Короткие (2-4 предложения) — если вопрос простой.
+Структурированные (пунктами) — если объяснять несколько вещей.
 Никогда не пиши стены текста.
-Если нужен расчёт — покажи его наглядно.
-Заканчивай ответ маленьким уточнением или вопросом — чтобы разговор продолжался естественно.
+Для расчётов — показывай наглядно с итоговой суммой.
+Заканчивай небольшим вопросом или предложением — чтобы разговор продолжался.
 
-Ты говоришь на русском языке. Ты — настоящий друг. Будь им.`;
+Ты говоришь на русском. Ты — прораб, друг, строительный мозг. Будь им.`;
 }
 
-// Умное приветствие — без "выбери роль", основано на контексте
+// Умное приветствие с учётом проекта
 export function buildArayGreeting(page: ArayPageContext): string {
   const hour = new Date().getHours();
   const time = hour < 6 ? "Не спится?" : hour < 12 ? "Доброе утро" : hour < 17 ? "Привет" : hour < 22 ? "Добрый вечер" : "Поздно уже";
 
+  // Если проект сохранён — сразу о нём
+  if (page.project) {
+    const short = page.project.length > 60 ? page.project.slice(0, 57) + "..." : page.project;
+    return `${time}! 👋 Помню твой проект: ${short} Продолжаем?`;
+  }
+
   if (page.isReturning) {
-    if (page.productName) {
-      return `С возвращением! 👋 Смотришь на «${page.productName}» — уже определился или ещё думаешь?`;
-    }
-    return `С возвращением! 👋 Рад что снова здесь. Чем могу помочь?`;
+    if (page.productName) return `С возвращением! 👋 Смотришь «${page.productName}» — уже решил или ещё думаешь?`;
+    return `С возвращением! 👋 Расскажи что строишь — помогу рассчитать всё до гвоздя.`;
   }
 
   if (page.productName) {
-    return `${time}! 👋 Смотришь на «${page.productName}» — если есть вопросы, спрашивай. Помогу разобраться.`;
+    return `${time}! 👋 Смотришь «${page.productName}» — скажи что строишь, посчитаю сколько нужно.`;
   }
 
   if (page.cartTotal && page.cartTotal > 0) {
-    return `${time}! 👋 Вижу, уже набрал на ${page.cartTotal.toLocaleString("ru-RU")} ₽. Помочь оформить заказ или что-то ещё добавить?`;
+    return `${time}! 👋 Вижу, уже набрал на ${page.cartTotal.toLocaleString("ru-RU")} ₽. Помочь оформить или что-то ещё добавить?`;
   }
 
   if (page.page === "catalog") {
-    return `${time}! 👋 Что ищешь? Расскажи своими словами — подберём вместе.`;
+    return `${time}! 👋 Что строишь? Расскажи — подберём материалы и посчитаем количество.`;
   }
 
   if (page.page?.includes("admin")) {
-    return `${time}! 👋 Я Арай — здесь если что нужно. По системе, по заказам, по любому вопросу — спрашивай.`;
+    return `${time}! 👋 Я Арай — если что по системе, заказам или любой ситуации — спрашивай.`;
   }
 
-  // Дефолт — тепло и без навязывания
-  return `${time}! 👋 Я Арай — буду рядом если что-то нужно. Спрашивай смело, помогу.`;
+  return `${time}! 👋 Я Арай — твой строительный советник. Расскажи что планируешь построить 🏗️`;
 }
 
-// Контекстные подсказки — не кнопки выбора роли, а естественные вопросы
+// Умные чипы — контекстные подсказки
 export function buildArayChips(page: ArayPageContext): string[] {
+  if (page.project) {
+    return [
+      "Что ещё нужно для проекта?",
+      "Сколько это будет стоить?",
+      "Добавь в корзину",
+    ];
+  }
+
   if (page.productName) {
     return [
       "Сколько нужно для моего проекта?",
-      "Чем отличается от других?",
-      "Когда могут привезти?",
+      "Чем отличается от аналогов?",
+      "Посчитай стоимость",
     ];
   }
 
   if (page.cartTotal && page.cartTotal > 0) {
     return [
       "Помоги оформить заказ",
+      "Всё ли я учёл?",
       "Как быстро доставят?",
-      "Могу изменить состав?",
     ];
   }
 
   if (page.page === "catalog") {
     return [
-      "Помоги подобрать материал",
-      "Как рассчитать кубатуру?",
-      "Что чаще всего берут?",
-    ];
-  }
-
-  if (page.page?.includes("admin")) {
-    return [
-      "Как работать с заказами?",
-      "Объясни CRM",
-      "Хочу автоматизировать процессы",
+      "Строю дом — помоги с расчётом",
+      "Строю баню 4×5",
+      "Нужен забор 50 метров",
     ];
   }
 
   return [
-    "Помоги подобрать материал",
-    "Как рассчитать количество?",
-    "Условия доставки",
+    "Строю дом — помоги рассчитать",
+    "Строю баню 4×5",
+    "Как выбрать доску?",
   ];
 }
+
+// ─── Инструменты Арая ─────────────────────────────────────────────────────────
 
 export const ARAY_TOOLS = [
   {
@@ -235,4 +230,214 @@ export const ARAY_TOOLS = [
       required: ["orderNumber"],
     },
   },
+  {
+    name: "calculate_project_materials",
+    description: "Рассчитать список материалов для строительного проекта — дом, баня, беседка, забор, пол, кровля",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        project_type: {
+          type: "string",
+          description: "Тип объекта: house (дом), banya (баня), gazebo (беседка), fence (забор), floor (пол), roof (крыша), wall (стены)",
+          enum: ["house", "banya", "gazebo", "fence", "floor", "roof", "wall"],
+        },
+        length: { type: "number", description: "Длина объекта в метрах" },
+        width: { type: "number", description: "Ширина объекта в метрах" },
+        floors: { type: "number", description: "Количество этажей (для дома/бани)" },
+        fence_length: { type: "number", description: "Длина забора в погонных метрах" },
+        construction_type: {
+          type: "string",
+          description: "Тип конструкции: frame (каркасный), log (брусовой/бревенчатый), brick (кирпичный с деревянными перекрытиями)",
+          enum: ["frame", "log", "brick"],
+        },
+      },
+      required: ["project_type"],
+    },
+  },
 ];
+
+// ─── Расчёт материалов для проекта ───────────────────────────────────────────
+
+export type MaterialItem = {
+  name: string;
+  section?: string;     // "50×150" или "OSB 9мм"
+  unit: string;         // "м³", "шт", "м²", "пог.м"
+  quantity: number;
+  note?: string;
+};
+
+export type ProjectMaterials = {
+  project: string;
+  items: MaterialItem[];
+  totalNote: string;
+};
+
+export function calculateProjectMaterials(input: {
+  project_type: string;
+  length?: number;
+  width?: number;
+  floors?: number;
+  fence_length?: number;
+  construction_type?: string;
+}): ProjectMaterials {
+  const {
+    project_type,
+    length = 6,
+    width = 4,
+    floors = 1,
+    fence_length = 20,
+    construction_type = "frame",
+  } = input;
+
+  const L = length;
+  const W = width;
+  const N = Math.max(1, Math.min(floors, 3));
+  const floorH = 2.7; // высота этажа
+  const perimeter = 2 * (L + W);
+  const area = L * W;
+
+  // ── ЗАБОР ─────────────────────────────────────────────────────────────────
+  if (project_type === "fence") {
+    const fl = fence_length;
+    const postCount = Math.ceil(fl / 2.5) + 1;
+    const boardCount = Math.ceil((fl * 2) / 6); // горизонтальные прожилины 6м
+    const picketCount = Math.ceil(fl / 0.1); // штакетник 100мм, плотно
+    return {
+      project: `Забор ${fl} пог.м`,
+      items: [
+        { name: "Брус (столбы)", section: "100×100", unit: "шт", quantity: postCount, note: "длина 3м (1.5м в землю)" },
+        { name: "Доска (прожилины)", section: "50×100", unit: "шт", quantity: boardCount, note: "длина 6м, 2 ряда" },
+        { name: "Штакетник", section: "20×100", unit: "шт", quantity: picketCount, note: "высота 1.5м" },
+        { name: "Профнастил (альтернатива штакетнику)", section: "С8", unit: "м²", quantity: Math.ceil(fl * 1.5), note: "при высоте 1.5м" },
+      ],
+      totalNote: `Длина ограждения: ${fl} м · ${postCount} столбов через 2.5м`,
+    };
+  }
+
+  // ── ПОЛ ───────────────────────────────────────────────────────────────────
+  if (project_type === "floor") {
+    const lagCount = Math.ceil(L / 0.6) + 1;
+    const osbSheets = Math.ceil((area * 1.05) / 2.975); // OSB 2440×1220
+    return {
+      project: `Пол ${L}×${W}м`,
+      items: [
+        { name: "Лаги пола", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * W * lagCount), note: `${lagCount} шт × ${W}м, шаг 600мм` },
+        { name: "ОСП/OSB 9мм", unit: "лист", quantity: osbSheets, note: "лист 2440×1220мм" },
+        { name: "Доска половая", section: "28×130", unit: "м²", quantity: Math.ceil(area * 1.08), note: "с запасом 8% на подрезку" },
+        { name: "Утеплитель (Роквул/Knauf)", unit: "м²", quantity: Math.ceil(area), note: "150мм, для тёплого пола" },
+      ],
+      totalNote: `Площадь: ${area} м²`,
+    };
+  }
+
+  // ── КРЫША ─────────────────────────────────────────────────────────────────
+  if (project_type === "roof") {
+    const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.35, 2))); // угол ~35°
+    const rafterCount = (Math.ceil(L / 0.6) + 1) * 2;
+    const roofArea = round2(L * rafterLen * 2 * 1.1);
+    return {
+      project: `Кровля ${L}×${W}м`,
+      items: [
+        { name: "Стропила", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * rafterLen * rafterCount), note: `${rafterCount} шт × ${rafterLen}м` },
+        { name: "Конёк", section: "50×150", unit: "шт", quantity: Math.ceil(L / 6), note: `длина ${L}м, досками по 6м` },
+        { name: "Мауэрлат", section: "100×150", unit: "пог.м", quantity: Math.ceil(perimeter), note: "по периметру" },
+        { name: "Обрешётка", section: "25×100", unit: "м³", quantity: round3(0.025 * 0.1 * roofArea / 0.3 * 0.3), note: "шаг 300мм" },
+        { name: "Металлочерепица / профнастил", unit: "м²", quantity: Math.ceil(roofArea), note: "площадь кровли с учётом свесов" },
+      ],
+      totalNote: `Площадь кровли: ~${roofArea} м²`,
+    };
+  }
+
+  // ── БЕСЕДКА ───────────────────────────────────────────────────────────────
+  if (project_type === "gazebo") {
+    return {
+      project: `Беседка ${L}×${W}м`,
+      items: [
+        { name: "Брус (стойки)", section: "100×100", unit: "шт", quantity: 6, note: "длина 3м, по углам и в центре" },
+        { name: "Брус (обвязка)", section: "100×100", unit: "пог.м", quantity: Math.ceil(perimeter * 2), note: "верхняя и нижняя обвязка" },
+        { name: "Доска (настил)", section: "28×130", unit: "м²", quantity: Math.ceil(area * 1.08), note: "пол беседки" },
+        { name: "Стропила кровли", section: "50×100", unit: "шт", quantity: (Math.ceil(L / 0.6) + 1) * 2, note: "двускатная крыша" },
+        { name: "Вагонка (обшивка)", section: "20×96", unit: "м²", quantity: Math.ceil(perimeter * 1.5), note: "боковые стены частично" },
+        { name: "Металлочерепица", unit: "м²", quantity: Math.ceil(area * 1.4), note: "кровля" },
+      ],
+      totalNote: `Площадь: ${area} м² · Периметр: ${perimeter} м`,
+    };
+  }
+
+  // ── ДОМ / БАНЯ (каркасный) ────────────────────────────────────────────────
+  if (construction_type === "frame" || project_type === "banya") {
+    // Лаги пола
+    const lagCountPerFloor = Math.ceil(L / 0.6) + 1;
+    const lagVolume = round3(0.05 * 0.15 * W * lagCountPerFloor * (N + 1)); // +1 чердак
+
+    // Стойки стен (каждые 600мм по периметру + одна несущая стена внутри)
+    const studCount = Math.ceil(perimeter / 0.6) * N + Math.ceil(L / 0.6) * N;
+    const studVolume = round3(0.05 * 0.15 * floorH * studCount);
+
+    // Обвязки (верх + низ на каждый этаж)
+    const bindVolume = round3(0.05 * 0.15 * perimeter * 2 * N);
+
+    // Стропила
+    const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.3, 2)));
+    const rafterCount = (Math.ceil(L / 0.6) + 1) * 2;
+    const rafterVolume = round3(0.05 * 0.15 * rafterLen * rafterCount);
+
+    // OSB стены
+    const wallArea = perimeter * floorH * N;
+    const osbWallSheets = Math.ceil((wallArea * 2 * 1.1) / 2.975); // снаружи + изнутри
+    const osbFloorSheets = Math.ceil((area * N * 1.05) / 2.975);
+    const osbRoofSheets = Math.ceil((L * rafterLen * 2 * 1.1) / 2.975);
+
+    const label = project_type === "banya" ? `Баня ${L}×${W}м` : `Дом ${L}×${W}м ${N > 1 ? N + "-этажный" : "одноэтажный"} каркасный`;
+
+    return {
+      project: label,
+      items: [
+        { name: "Доска (лаги пола/перекрытий)", section: "50×150", unit: "м³", quantity: lagVolume, note: `шаг 600мм` },
+        { name: "Доска (стойки стен)", section: "50×150", unit: "м³", quantity: studVolume, note: `${studCount} шт, шаг 600мм` },
+        { name: "Доска (обвязка)", section: "50×150", unit: "м³", quantity: bindVolume, note: "верх + низ каждого этажа" },
+        { name: "Доска (стропила)", section: "50×150", unit: "м³", quantity: rafterVolume, note: `${rafterCount} шт × ${rafterLen}м` },
+        { name: "ОСП/OSB 9мм (стены)", unit: "лист", quantity: osbWallSheets, note: "наружная + внутренняя обшивка" },
+        { name: "ОСП/OSB 12мм (полы)", unit: "лист", quantity: osbFloorSheets, note: "лист 2440×1220мм" },
+        { name: "ОСП/OSB 9мм (кровля)", unit: "лист", quantity: osbRoofSheets, note: "сплошная обрешётка" },
+        { name: "Утеплитель (стены+пол+кровля)", unit: "м²", quantity: Math.ceil(wallArea + area * (N + 1)), note: "200мм стены, 150мм пол" },
+        { name: "Вагонка / имитация бруса (фасад)", section: "20×140", unit: "м²", quantity: Math.ceil(wallArea * 1.1), note: "с учётом нахлёста" },
+        { name: "Металлочерепица (кровля)", unit: "м²", quantity: Math.ceil(L * rafterLen * 2 * 1.15), note: "с учётом свесов" },
+      ],
+      totalNote: `Площадь: ${area * N} м² · Периметр: ${perimeter} м · Высота: ${floorH * N}м`,
+    };
+  }
+
+  // ── БРУСОВОЙ/БРЕВЕНЧАТЫЙ ─────────────────────────────────────────────────
+  if (construction_type === "log") {
+    const wallHeight = floorH * N;
+    const logPerimeter = perimeter + L; // + одна внутренняя стена
+    const logVolume = round3(0.15 * 0.15 * wallHeight * logPerimeter); // брус 150×150
+    const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.3, 2)));
+    const rafterCount = (Math.ceil(L / 0.6) + 1) * 2;
+
+    return {
+      project: `Дом ${L}×${W}м ${N > 1 ? N + "-этажный" : "одноэтажный"} брусовой`,
+      items: [
+        { name: "Брус (стены)", section: "150×150", unit: "м³", quantity: logVolume, note: `периметр ${perimeter}м, высота ${wallHeight}м` },
+        { name: "Доска (лаги пола)", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * W * (Math.ceil(L / 0.6) + 1) * N), note: "шаг 600мм" },
+        { name: "Стропила", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * rafterLen * rafterCount), note: `${rafterCount} шт` },
+        { name: "Обрешётка (шаговая)", section: "25×100", unit: "м²", quantity: Math.ceil(L * rafterLen * 2), note: "шаг 350мм" },
+        { name: "Межвенцовый утеплитель (джут)", unit: "м", quantity: Math.ceil(logPerimeter * wallHeight / 0.15), note: "между рядами бруса" },
+        { name: "Металлочерепица", unit: "м²", quantity: Math.ceil(L * rafterLen * 2 * 1.15), note: "кровля" },
+        { name: "Доска пола", section: "28×130", unit: "м²", quantity: Math.ceil(area * N * 1.08), note: "" },
+      ],
+      totalNote: `Площадь: ${area * N} м² · Объём бруса стен: ${logVolume} м³`,
+    };
+  }
+
+  // Fallback
+  return {
+    project: `${project_type} ${L}×${W}м`,
+    items: [{ name: "Уточни параметры у менеджера", unit: "", quantity: 0 }],
+    totalNote: "Расчёт требует уточнения",
+  };
+}
+
+function round2(n: number) { return Math.round(n * 100) / 100; }
+function round3(n: number) { return Math.round(n * 1000) / 1000; }

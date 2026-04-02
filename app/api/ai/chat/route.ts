@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
-import { buildAraySystemPrompt, ArayRole, ARAY_TOOLS } from "@/lib/aray-agent";
+import { buildAraySystemPrompt, ArayRole, ARAY_TOOLS, calculateProjectMaterials } from "@/lib/aray-agent";
 import {
   getOrCreateMemory,
   formatMemoryForPrompt,
@@ -72,6 +72,14 @@ export async function POST(req: NextRequest) {
     const address = getSetting(siteSettings, "address") || "";
     const businessType = getSetting(siteSettings, "business_type") || "lumber";
 
+    // ── Проект из памяти — передаём Арaю контекст ────────────────────────────
+    const memoryFacts = memory?.facts as Record<string, string | number | boolean> | null;
+    const savedProject = memoryFacts?.проект
+      ? String(memoryFacts.проект)
+      : memoryFacts?.project
+      ? String(memoryFacts.project)
+      : undefined;
+
     // ── Системный промпт с памятью ────────────────────────────────────────────
     const basePrompt = buildAraySystemPrompt(
       { siteName, businessType, phone, address },
@@ -80,6 +88,7 @@ export async function POST(req: NextRequest) {
         page: context?.page,
         productName: context?.productName,
         cartTotal: context?.cartTotal,
+        project: savedProject,
       }
     );
 
@@ -252,6 +261,18 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         totalVolume: Math.round(totalVolume * 1000) / 1000,
         formula: `${length}м × ${width}м × ${height}м × ${count}шт = ${totalVolume.toFixed(3)} м³`,
       };
+    }
+
+    if (name === "calculate_project_materials") {
+      const result = calculateProjectMaterials({
+        project_type: String(input.project_type || "house"),
+        length: input.length ? Number(input.length) : undefined,
+        width: input.width ? Number(input.width) : undefined,
+        floors: input.floors ? Number(input.floors) : undefined,
+        fence_length: input.fence_length ? Number(input.fence_length) : undefined,
+        construction_type: input.construction_type ? String(input.construction_type) : undefined,
+      });
+      return result;
     }
 
     if (name === "get_order_status") {
