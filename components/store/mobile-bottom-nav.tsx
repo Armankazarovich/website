@@ -186,43 +186,37 @@ export function MobileBottomNav() {
               }}
             />
 
-            {/* Основная кнопка — световой шар */}
-            <div
-              className="aray-center-btn relative w-14 h-14 rounded-2xl flex items-center justify-center"
+            {/* Основная кнопка — SVG шар */}
+            <div className="aray-center-btn relative w-14 h-14 rounded-2xl flex items-center justify-center"
               style={{
-                background: "linear-gradient(145deg, #1a0800, #3d1206, #7c2d12)",
-                border: "1px solid rgba(245,158,11,0.3)",
-                boxShadow: "0 0 20px rgba(232,112,10,0.55), 0 0 40px rgba(232,112,10,0.18)",
-              }}
-            >
-              {/* Живой шар */}
-              <div className="relative w-11 h-11 rounded-xl overflow-hidden">
-                {/* Базовый градиент */}
-                <div className="absolute inset-0" style={{
-                  background: "radial-gradient(circle at 38% 32%, #fffbf0 0%, #fde68a 15%, #f59e0b 35%, #e8700a 58%, #7c2d12 80%, #1a0800 100%)",
-                }} />
-                {/* Вращающийся световой конус */}
-                <div className="absolute inset-0" style={{
-                  background: "conic-gradient(from 0deg, rgba(255,220,80,0.0) 0%, rgba(255,230,100,0.65) 18%, rgba(255,150,20,0.0) 38%, rgba(255,100,0,0.5) 58%, rgba(255,220,80,0.0) 78%, rgba(255,240,130,0.55) 92%, rgba(255,220,80,0.0) 100%)",
-                  animation: "arayNavSpin 5s linear infinite",
-                  mixBlendMode: "overlay",
-                }} />
-                {/* Блик */}
-                <div className="absolute inset-0" style={{
-                  background: "radial-gradient(ellipse at 28% 22%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.25) 28%, transparent 60%)",
-                }} />
-                {/* Внутренняя тень */}
-                <div className="absolute inset-0" style={{
-                  boxShadow: "inset 0 0 14px rgba(0,0,0,0.4)",
-                }} />
-              </div>
+                background: "linear-gradient(145deg,#1a0800,#3d1206,#7c2d12)",
+                border: "1px solid rgba(245,158,11,0.28)",
+                boxShadow: "0 0 20px rgba(232,112,10,0.5),0 0 40px rgba(232,112,10,0.15)",
+              }}>
+              {/* SVG сфера */}
+              <svg width="42" height="42" viewBox="0 0 100 100" className="relative z-10">
+                <defs>
+                  <radialGradient id="navOrbG" cx="38%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#fff3c0"/>
+                    <stop offset="20%" stopColor="#fbbf24"/>
+                    <stop offset="50%" stopColor="#e8700a"/>
+                    <stop offset="80%" stopColor="#9a3412"/>
+                    <stop offset="100%" stopColor="#431407"/>
+                  </radialGradient>
+                  <radialGradient id="navOrbHL" cx="32%" cy="25%" r="45%">
+                    <stop offset="0%" stopColor="white" stopOpacity="0.9"/>
+                    <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                  </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="46" fill="url(#navOrbG)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#navOrbHL)"/>
+                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,80,0.2)" strokeWidth="1"/>
+              </svg>
 
               {/* Бейдж корзины */}
               {mounted && totalItems > 0 && (
-                <span
-                  className="absolute -top-1 -right-1 z-20 text-white text-[9px] min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center font-bold leading-none"
-                  style={{ background: "linear-gradient(135deg, #e8700a, #f59e0b)", boxShadow: "0 0 8px rgba(232,112,10,0.7)" }}
-                >
+                <span className="absolute -top-1 -right-1 z-20 text-white text-[9px] min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center font-bold leading-none"
+                  style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)", boxShadow: "0 0 8px rgba(232,112,10,0.7)" }}>
                   {totalItems > 9 ? "9+" : totalItems}
                 </span>
               )}
@@ -230,19 +224,9 @@ export function MobileBottomNav() {
           </motion.button>
 
           {/* Подпись */}
-          <span
-            className="text-[9px] font-bold mt-1 tracking-wider"
-            style={{ color: "rgba(245,158,11,0.8)" }}
-          >
+          <span className="text-[9px] font-bold mt-1 tracking-wider" style={{ color: "rgba(245,158,11,0.75)" }}>
             АРАЙ
           </span>
-
-          <style jsx>{`
-            @keyframes arayNavSpin {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
         </div>
 
         {/* Правые пункты */}

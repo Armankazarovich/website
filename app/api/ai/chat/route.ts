@@ -51,8 +51,13 @@ export async function POST(req: NextRequest) {
     const isNewSession = !sessionId && !userId;
     if (!sessionId) sessionId = generateSessionId();
 
-    // ── Память Арая ───────────────────────────────────────────────────────────
-    const memory = await getOrCreateMemory(userId, userId ? null : sessionId);
+    // ── Память Арая (graceful — не ломаем чат при ошибке БД) ─────────────────
+    let memory = null;
+    try {
+      memory = await getOrCreateMemory(userId, userId ? null : sessionId);
+    } catch (memErr) {
+      console.error("[Aray] Memory error (non-fatal):", memErr);
+    }
     const memoryContext = formatMemoryForPrompt(memory);
 
     // ── Роль пользователя ─────────────────────────────────────────────────────
@@ -175,14 +180,21 @@ export async function POST(req: NextRequest) {
     return responseData;
 
   } catch (err: any) {
-    console.error("[Aray API error]", err);
+    console.error("[Aray API error]", err?.message || err);
 
-    if (err?.status === 401) {
-      return NextResponse.json({ error: "Неверный API ключ Арая" }, { status: 401 });
+    if (err?.status === 401 || err?.message?.includes("401")) {
+      return NextResponse.json({ error: "Неверный API ключ Anthropic. Проверь настройки." }, { status: 401 });
+    }
+    if (err?.status === 529 || err?.message?.includes("overloaded")) {
+      return NextResponse.json({ error: "Anthropic перегружен, попробуй через минуту 🙏" }, { status: 503 });
+    }
+    if (err?.message?.includes("fetch") || err?.code === "ECONNREFUSED") {
+      return NextResponse.json({ error: "Нет связи с Anthropic. Проверь интернет на сервере." }, { status: 503 });
     }
 
+    const devMsg = process.env.NODE_ENV === "development" ? ` [${err?.message}]` : "";
     return NextResponse.json(
-      { error: "Арай временно недоступен. Попробуйте через минуту." },
+      { error: `Арай временно недоступен${devMsg}. Попробуй через минуту.` },
       { status: 500 }
     );
   }
