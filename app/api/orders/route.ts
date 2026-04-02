@@ -230,6 +230,21 @@ export async function POST(req: NextRequest) {
       paymentMethod: order.paymentMethod,
     }).catch(console.error);
 
+    // 🎯 Авто-создание лида в CRM при новом заказе
+    prisma.lead.create({
+      data: {
+        name: name,
+        phone: phone || null,
+        email: email || null,
+        source: "WEBSITE",
+        stage: "NEW",
+        value: totalAmount,
+        comment: `Заказ #${order.orderNumber} — ${items.map(i => `${i.productName} ${i.variantSize}`).join(", ")}`,
+        tags: ["Заказ"],
+        convertedOrderId: order.id,
+      },
+    }).catch(console.error);
+
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });
   } catch (err) {
     console.error("Order creation error:", err);

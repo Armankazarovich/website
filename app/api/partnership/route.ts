@@ -90,6 +90,19 @@ export async function POST(req: Request) {
       data: { name, company: company || null, phone, message: message || null },
     });
 
+    // 🎯 Авто-создание лида в CRM при заявке на сотрудничество
+    prisma.lead.create({
+      data: {
+        name,
+        company: company || null,
+        phone,
+        source: "PARTNER",
+        stage: "NEW",
+        comment: message || null,
+        tags: ["Партнёрство"],
+      },
+    }).catch(console.error);
+
     // Уведомления — не блокируем ответ
     sendPartnershipTelegram({ name, company, phone, message }).catch(console.error);
     sendPartnershipEmail({ name, company, phone, message }).catch(console.error);

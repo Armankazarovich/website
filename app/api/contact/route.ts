@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -69,6 +70,18 @@ export async function POST(req: NextRequest) {
         })
         .catch(console.error);
     }
+
+    // 🎯 Авто-создание лида в CRM при заявке с формы контактов
+    prisma.lead.create({
+      data: {
+        name: name || phone,
+        phone,
+        source: "WEBSITE",
+        stage: "NEW",
+        comment: message || null,
+        tags: ["Контакт"],
+      },
+    }).catch(console.error);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
