@@ -750,6 +750,11 @@ canvas,
   50%       { opacity: 0.5; transform: scale(1.18); }
 }
 
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
 .aray-center-btn {
   animation: arayBreath 4s ease-in-out infinite;
   will-change: transform, box-shadow;
