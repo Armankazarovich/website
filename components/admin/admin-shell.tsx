@@ -21,9 +21,9 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
   const { palette, setPalette } = usePalette();
 
   return (
-    <div className="flex min-h-screen bg-muted/20">
+    <div className="flex min-h-screen aray-admin-bg">
       {/* Desktop sidebar */}
-      <aside className="hidden lg:flex w-60 shrink-0 bg-brand-brown text-white flex-col fixed top-0 left-0 h-screen z-30">
+      <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30 relative">
         <div className="p-4 border-b border-white/10">
           <Link href="/" className="flex items-center gap-2">
             <span className="font-display font-bold text-xl text-white">ПилоРус</span>
@@ -72,7 +72,7 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
       </aside>
 
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-brand-brown text-white flex items-center px-4 h-14 shadow-md">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 aray-sidebar text-white flex items-center px-4 h-14 shadow-md">
         <button
           onClick={() => setOpen(true)}
           className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
@@ -96,7 +96,7 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
 
       {/* Mobile drawer */}
       <div
-        className={`lg:hidden fixed top-0 left-0 h-full w-64 z-50 bg-brand-brown text-white flex flex-col transform transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-0 left-0 h-full w-64 z-50 aray-sidebar text-white flex flex-col transform transition-transform duration-300 ease-in-out relative ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

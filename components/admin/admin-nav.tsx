@@ -119,28 +119,32 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
           <div key={item.href}>
             {/* Group separator */}
             {showDivider && GROUP_LABELS[item.group] !== undefined && (
-              <div className="flex items-center gap-2 px-3 pt-4 pb-1.5 first:pt-2">
-                <span className="text-[9px] font-bold uppercase tracking-[0.15em] text-white/30 whitespace-nowrap">
-                  {GROUP_LABELS[item.group]}
-                </span>
-                <div className="flex-1 h-px bg-white/10" />
+              <div className="flex items-center gap-2 px-3 pt-4 pb-1.5">
+                {GROUP_LABELS[item.group] && (
+                  <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/35 whitespace-nowrap">
+                    {GROUP_LABELS[item.group]}
+                  </span>
+                )}
+                <div className="flex-1 aray-nav-divider" />
               </div>
             )}
 
             <Link
               href={item.href}
               onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group mb-0.5 ${
+              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden ${
                 isActive
-                  ? "bg-white/15 text-white"
-                  : "text-white/70 hover:text-white hover:bg-white/10"
+                  ? "aray-nav-active text-white"
+                  : "text-white/65 hover:text-white hover:bg-white/[0.07]"
               }`}
             >
-              <item.icon className="w-4 h-4 shrink-0" />
-              {item.label}
+              <item.icon className={`w-4 h-4 shrink-0 transition-colors duration-200 ${
+                isActive ? "text-primary" : "text-white/60 group-hover:text-white/90"
+              }`} />
+              <span className="flex-1">{item.label}</span>
               <ChevronRight
-                className={`w-3 h-3 ml-auto transition-opacity ${
-                  isActive ? "opacity-70" : "opacity-0 group-hover:opacity-100"
+                className={`w-3 h-3 transition-all duration-200 ${
+                  isActive ? "opacity-60 text-primary" : "opacity-0 group-hover:opacity-50"
                 }`}
               />
             </Link>
