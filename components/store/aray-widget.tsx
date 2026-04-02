@@ -5,9 +5,8 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import {
   X, Send, Loader2, MessageCircle, ShoppingCart,
   Calculator, User, RotateCcw, Plus, Minus, Trash2,
-  ChevronRight, Star, Zap, LogIn, Package, Mic, MicOff
+  ChevronRight, LogIn, Package, Mic, MicOff
 } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { useCartStore } from "@/store/cart";
@@ -28,37 +27,88 @@ interface ArayWidgetProps {
   page?: string; productName?: string; cartTotal?: number; enabled?: boolean;
 }
 
-// ─── Уровень клиента ──────────────────────────────────────────────────────────
+// ─── Уровни ───────────────────────────────────────────────────────────────────
 
 const LEVEL_ICONS: Record<string, string> = {
   NOVICE: "🌱", BUILDER: "🏗️", MASTER: "⭐", PARTNER: "💎",
 };
+
+// ─── Световой шар Арай ────────────────────────────────────────────────────────
+// Анимированный плазменный шар — без фото, только свет
+
+function ArayOrb({ size = 40, glow = true }: { size?: number; glow?: boolean }) {
+  return (
+    <div
+      className="relative rounded-full flex-shrink-0 overflow-hidden"
+      style={{
+        width: size,
+        height: size,
+        boxShadow: glow
+          ? `0 0 ${size * 0.5}px rgba(232,112,10,0.7), 0 0 ${size}px rgba(232,112,10,0.25)`
+          : "none",
+      }}
+    >
+      {/* Базовый градиент — тёплое ядро */}
+      <div className="absolute inset-0 rounded-full" style={{
+        background: "radial-gradient(circle at 38% 32%, #fffbf0 0%, #fde68a 15%, #f59e0b 35%, #e8700a 58%, #7c2d12 80%, #1a0800 100%)",
+      }} />
+
+      {/* Вращающийся световой конус */}
+      <div className="absolute inset-0 rounded-full" style={{
+        background: "conic-gradient(from 0deg, rgba(255,220,80,0.0) 0%, rgba(255,230,100,0.65) 18%, rgba(255,150,20,0.0) 38%, rgba(255,100,0,0.5) 58%, rgba(255,220,80,0.0) 78%, rgba(255,240,130,0.55) 92%, rgba(255,220,80,0.0) 100%)",
+        animation: "arayOrbSpin 5s linear infinite",
+        mixBlendMode: "overlay",
+      }} />
+
+      {/* Движущийся блик */}
+      <div className="absolute inset-0 rounded-full" style={{
+        background: "radial-gradient(ellipse at 28% 22%, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.28) 28%, transparent 60%)",
+        animation: "arayHighlight 6s ease-in-out infinite",
+      }} />
+
+      {/* Внутренняя тень для глубины */}
+      <div className="absolute inset-0 rounded-full" style={{
+        boxShadow: "inset 0 0 18px rgba(0,0,0,0.45), inset 0 -6px 12px rgba(0,0,0,0.3)",
+      }} />
+    </div>
+  );
+}
+
+// ─── Аватар в сообщении (маленький шар) ───────────────────────────────────────
+
+function ArayAvatar() {
+  return (
+    <div className="w-7 h-7 shrink-0 mt-0.5 rounded-full" style={{
+      background: "radial-gradient(circle at 38% 32%, #fde68a 0%, #f59e0b 35%, #e8700a 65%, #7c2d12 90%)",
+      boxShadow: "0 0 8px rgba(232,112,10,0.6)",
+    }} />
+  );
+}
 
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
 
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
   return (
-    <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3`}>
-      {!isUser && (
-        <div className="w-7 h-7 rounded-xl overflow-hidden shrink-0 mt-0.5 ring-1 ring-blue-500/30">
-          <Image src="/aray/aray-avatar.jpg" alt="Арай" width={28} height={28} className="object-cover object-top" />
-        </div>
-      )}
-      <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${isUser ? "bg-primary text-white rounded-tr-sm" : "rounded-tl-sm"}`}
-        style={!isUser ? { background: "linear-gradient(135deg,rgba(10,30,80,0.9),rgba(15,50,120,0.7))", border: "1px solid rgba(30,120,255,0.2)", color: "#e8f4ff" } : {}}>
+    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3`}>
+      {!isUser && <ArayAvatar />}
+      <div
+        className={`max-w-[80%] px-3.5 py-2.5 text-sm leading-relaxed ${isUser ? "rounded-2xl rounded-tr-md" : "rounded-2xl rounded-tl-md"}`}
+        style={isUser
+          ? { background: "linear-gradient(135deg, #e8700a, #f59e0b)", color: "#fff" }
+          : { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)", color: "#e8eaf0" }
+        }
+      >
         {message.content.split("\n").map((line, i, arr) => (
           <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
         ))}
-        <span className={`text-[10px] block mt-1 ${isUser ? "text-white/60 text-right" : "opacity-40"}`}>
+        <span className={`text-[10px] block mt-1.5 ${isUser ? "text-white/55 text-right" : "text-white/30"}`}>
           {message.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
     </div>
   );
 }
-
-// ─── Вкладка: Чат ─────────────────────────────────────────────────────────────
 
 // ─── Хук голосового ввода ─────────────────────────────────────────────────────
 
@@ -89,10 +139,7 @@ function useVoiceInput(onResult: (text: string) => void) {
     setListening(false);
   }, []);
 
-  const supported = typeof window !== "undefined" &&
-    !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition;
-
-  return { listening, start, stop, supported };
+  return { listening, start, stop };
 }
 
 // ─── Вкладка: Чат ─────────────────────────────────────────────────────────────
@@ -113,16 +160,15 @@ function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messa
       {/* Сообщения */}
       <div className="flex-1 overflow-y-auto px-4 py-3 overscroll-contain">
         {messages.map(m => <MessageBubble key={m.id} message={m} />)}
+
         {loading && (
-          <div className="flex gap-2 mb-3">
-            <div className="w-7 h-7 rounded-xl overflow-hidden shrink-0 ring-1 ring-blue-500/30">
-              <Image src="/aray/aray-avatar.jpg" alt="Арай" width={28} height={28} className="object-cover object-top" />
-            </div>
-            <div className="px-3 py-2.5 rounded-2xl rounded-tl-sm" style={{ background: "rgba(15,40,100,0.6)", border: "1px solid rgba(30,120,255,0.2)" }}>
-              <div className="flex gap-1 items-center h-4">
+          <div className="flex gap-2.5 mb-3">
+            <ArayAvatar />
+            <div className="px-3.5 py-3 rounded-2xl rounded-tl-md" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}>
+              <div className="flex gap-1.5 items-center h-4">
                 {[0, 1, 2].map(i => (
-                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-blue-400"
-                    style={{ animation: `arayBounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+                  <span key={i} className="w-1.5 h-1.5 rounded-full"
+                    style={{ background: "#e8700a", animation: `arayBounce 1.2s ease-in-out ${i * 0.2}s infinite` }} />
                 ))}
               </div>
             </div>
@@ -136,8 +182,8 @@ function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messa
         <div className="px-4 pb-2 flex gap-2 flex-wrap">
           {chips.map(q => (
             <button key={q} onClick={() => sendMessage(q)}
-              className="text-[11px] px-3 py-1.5 rounded-xl transition-all active:scale-95"
-              style={{ background: "rgba(15,50,120,0.5)", border: "1px solid rgba(40,130,255,0.3)", color: "#90c0ff" }}>
+              className="text-[11px] px-3 py-1.5 rounded-xl transition-all active:scale-95 whitespace-nowrap"
+              style={{ background: "rgba(232,112,10,0.12)", border: "1px solid rgba(232,112,10,0.25)", color: "#f59e0b" }}>
               {q}
             </button>
           ))}
@@ -146,27 +192,22 @@ function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messa
 
       {/* Ввод */}
       <div className="px-4 py-3 flex gap-2 items-end flex-shrink-0"
-        style={{ borderTop: "1px solid rgba(30,120,255,0.15)" }}>
-        {/* Кнопка микрофона */}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+
+        {/* Микрофон */}
         <button
           onClick={listening ? stop : start}
           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 relative"
           style={{
-            background: listening
-              ? "linear-gradient(135deg,#ef4444,#b91c1c)"
-              : "rgba(20,60,150,0.4)",
-            border: listening ? "none" : "1px solid rgba(40,130,255,0.25)",
-            boxShadow: listening ? "0 0 16px rgba(239,68,68,0.6)" : "none",
+            background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.07)",
+            border: listening ? "none" : "1px solid rgba(255,255,255,0.1)",
+            boxShadow: listening ? "0 0 16px rgba(239,68,68,0.5)" : "none",
           }}
-          title={listening ? "Остановить запись" : "Голосовой ввод"}
         >
-          {listening && (
-            <span className="absolute inset-0 rounded-xl animate-ping"
-              style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />
-          )}
+          {listening && <span className="absolute inset-0 rounded-xl animate-ping" style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
           {listening
             ? <MicOff className="w-4 h-4 text-white relative z-10" />
-            : <Mic className="w-4 h-4 text-blue-400 relative z-10" />
+            : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.45)" }} />
           }
         </button>
 
@@ -174,17 +215,22 @@ function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messa
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
           rows={1}
           placeholder={listening ? "🎤 Слушаю..." : "Написать Araю..."}
-          className="flex-1 resize-none text-sm rounded-xl px-3 py-2.5 focus:outline-none transition-all"
+          className="flex-1 resize-none text-sm rounded-xl px-3.5 py-2.5 focus:outline-none transition-all placeholder:text-white/25"
           style={{
-            background: listening ? "rgba(30,10,10,0.6)" : "rgba(10,30,80,0.6)",
-            border: listening ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(40,130,255,0.25)",
-            color: "#d0e8ff", maxHeight: "80px",
+            background: "rgba(255,255,255,0.06)",
+            border: listening ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.1)",
+            color: "#e8eaf0",
+            maxHeight: "80px",
           }} />
 
         <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
-          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 shrink-0"
-          style={{ background: loading || !input.trim() ? "rgba(30,80,160,0.3)" : "linear-gradient(135deg,#1a5cc8,#2a8eff)", boxShadow: input.trim() ? "0 0 14px rgba(30,120,255,0.5)" : "none" }}>
-          {loading ? <Loader2 className="w-4 h-4 text-blue-300 animate-spin" /> : <Send className="w-4 h-4 text-white" />}
+          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 disabled:opacity-30"
+          style={{
+            background: input.trim() ? "linear-gradient(135deg,#e8700a,#f59e0b)" : "rgba(255,255,255,0.07)",
+            border: input.trim() ? "none" : "1px solid rgba(255,255,255,0.1)",
+            boxShadow: input.trim() ? "0 0 16px rgba(232,112,10,0.5)" : "none",
+          }}>
+          {loading ? <Loader2 className="w-4 h-4 text-orange-300 animate-spin" /> : <Send className="w-4 h-4 text-white" />}
         </button>
       </div>
     </>
@@ -202,14 +248,14 @@ function CartTab() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
         <div className="w-20 h-20 rounded-2xl flex items-center justify-center"
-          style={{ background: "rgba(20,60,150,0.3)", border: "1px solid rgba(30,120,255,0.2)" }}>
-          <ShoppingCart className="w-10 h-10 text-blue-400 opacity-50" />
+          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <ShoppingCart className="w-10 h-10 opacity-20" />
         </div>
-        <p className="text-blue-200 text-center text-sm">Корзина пуста</p>
-        <p className="text-blue-400/60 text-xs text-center">Добавь товары из каталога или спроси Арая помочь с выбором</p>
+        <p className="text-white/70 text-center text-sm">Корзина пуста</p>
+        <p className="text-white/35 text-xs text-center">Добавь товары или спроси Арая помочь с выбором</p>
         <Link href="/catalog"
           className="px-5 py-2.5 rounded-xl text-sm font-medium text-white transition-all active:scale-95"
-          style={{ background: "linear-gradient(135deg,#1a5cc8,#2a8eff)" }}>
+          style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)" }}>
           Перейти в каталог
         </Link>
       </div>
@@ -218,42 +264,37 @@ function CartTab() {
 
   return (
     <>
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 overscroll-contain">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5 overscroll-contain">
         {items.map(item => (
-          <div key={item.id} className="flex gap-3 p-3 rounded-xl"
-            style={{ background: "rgba(10,30,80,0.5)", border: "1px solid rgba(30,120,255,0.15)" }}>
-            {/* Фото */}
-            <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-blue-950/50">
-              {item.productImage ? (
-                <Image src={item.productImage} alt={item.productName} width={56} height={56} className="object-cover w-full h-full" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Package className="w-6 h-6 text-blue-500/40" />
-                </div>
-              )}
+          <div key={item.id} className="flex gap-3 p-3 rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0"
+              style={{ background: "rgba(255,255,255,0.06)" }}>
+              {item.productImage
+                ? <img src={item.productImage} alt={item.productName} className="object-cover w-full h-full" />
+                : <div className="w-full h-full flex items-center justify-center"><Package className="w-6 h-6 opacity-20" /></div>
+              }
             </div>
-            {/* Инфо */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-blue-100 font-medium leading-tight truncate">{item.productName}</p>
-              <p className="text-xs text-blue-400/70 mt-0.5">{item.variantSize} · {item.unitType === "CUBE" ? "м³" : "шт"}</p>
-              <p className="text-sm font-bold text-blue-300 mt-1">{formatPrice(item.price * item.quantity)}</p>
+              <p className="text-sm text-white/90 font-medium leading-tight truncate">{item.productName}</p>
+              <p className="text-xs text-white/40 mt-0.5">{item.variantSize} · {item.unitType === "CUBE" ? "м³" : "шт"}</p>
+              <p className="text-sm font-bold mt-1" style={{ color: "#f59e0b" }}>{formatPrice(item.price * item.quantity)}</p>
             </div>
-            {/* Количество */}
             <div className="flex flex-col items-end justify-between gap-1">
-              <button onClick={() => removeItem(item.id)} className="p-1 rounded-lg hover:bg-red-500/20 transition-colors">
-                <Trash2 className="w-3.5 h-3.5 text-red-400/60" />
+              <button onClick={() => removeItem(item.id)} className="p-1 rounded-lg transition-colors hover:bg-red-500/15">
+                <Trash2 className="w-3.5 h-3.5 text-red-400/50" />
               </button>
               <div className="flex items-center gap-2">
                 <button onClick={() => updateQuantity(item.id, Math.max(0.001, item.quantity - (item.unitType === "CUBE" ? 0.5 : 1)))}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center"
-                  style={{ background: "rgba(30,80,180,0.4)", border: "1px solid rgba(40,120,255,0.3)" }}>
-                  <Minus className="w-3 h-3 text-blue-300" />
+                  className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Minus className="w-3 h-3 text-white/60" />
                 </button>
-                <span className="text-xs text-blue-200 min-w-[28px] text-center tabular-nums">{item.quantity}</span>
+                <span className="text-xs text-white/80 min-w-[28px] text-center tabular-nums">{item.quantity}</span>
                 <button onClick={() => updateQuantity(item.id, item.quantity + (item.unitType === "CUBE" ? 0.5 : 1))}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center"
-                  style={{ background: "rgba(30,80,180,0.4)", border: "1px solid rgba(40,120,255,0.3)" }}>
-                  <Plus className="w-3 h-3 text-blue-300" />
+                  className="w-7 h-7 rounded-xl flex items-center justify-center"
+                  style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Plus className="w-3 h-3 text-white/60" />
                 </button>
               </div>
             </div>
@@ -261,17 +302,15 @@ function CartTab() {
         ))}
       </div>
 
-      {/* Итог + кнопка */}
-      <div className="px-4 pb-6 pt-3 flex-shrink-0 space-y-3" style={{ borderTop: "1px solid rgba(30,120,255,0.15)" }}>
+      <div className="px-4 pb-6 pt-3 flex-shrink-0 space-y-3" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         <div className="flex items-center justify-between">
-          <span className="text-blue-300 text-sm">{count} позиций</span>
+          <span className="text-white/50 text-sm">{count} позиций</span>
           <span className="text-xl font-bold text-white">{formatPrice(total)}</span>
         </div>
         <Link href="/checkout"
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-semibold text-base transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg,#1a5cc8,#2a8eff)", boxShadow: "0 0 24px rgba(30,120,255,0.4)" }}>
-          Оформить заказ
-          <ChevronRight className="w-4 h-4" />
+          style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)", boxShadow: "0 0 28px rgba(232,112,10,0.4)" }}>
+          Оформить заказ <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
     </>
@@ -293,8 +332,10 @@ function CalcTab({ onAskAray }: { onAskAray: (text: string) => void }) {
   const volume = L > 0 && W > 0 && H > 0 ? L * W * H * C : 0;
 
   const inputStyle = {
-    background: "rgba(10,30,80,0.6)", border: "1px solid rgba(40,130,255,0.25)",
-    color: "#d0e8ff", borderRadius: "12px",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    color: "#e8eaf0",
+    borderRadius: "12px",
   };
 
   const fields = [
@@ -307,50 +348,47 @@ function CalcTab({ onAskAray }: { onAskAray: (text: string) => void }) {
   return (
     <div className="flex-1 flex flex-col px-4 py-4 gap-4 overflow-y-auto">
       <div>
-        <p className="text-blue-300/70 text-xs font-medium uppercase tracking-wider mb-3">Размеры пиломатериала</p>
+        <p className="text-white/40 text-xs font-medium uppercase tracking-wider mb-3">Размеры пиломатериала</p>
         <div className="grid grid-cols-2 gap-3">
           {fields.map(f => (
             <div key={f.label}>
-              <label className="text-[11px] text-blue-400/70 block mb-1">{f.label}</label>
+              <label className="text-[11px] text-white/40 block mb-1">{f.label}</label>
               <input type="number" value={f.val} onChange={e => f.set(e.target.value)}
                 placeholder={f.placeholder} inputMode="decimal"
-                className="w-full px-3 py-2.5 text-sm focus:outline-none"
+                className="w-full px-3 py-2.5 text-sm focus:outline-none placeholder:text-white/20"
                 style={inputStyle} />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Результат */}
-      <div className="rounded-2xl p-4" style={{ background: volume > 0 ? "rgba(10,40,120,0.6)" : "rgba(10,25,60,0.4)", border: `1px solid ${volume > 0 ? "rgba(40,150,255,0.4)" : "rgba(30,80,160,0.2)"}`, transition: "all 0.3s" }}>
-        <p className="text-blue-400/70 text-xs mb-1">Кубатура</p>
-        <p className="text-4xl font-bold tabular-nums" style={{ color: volume > 0 ? "#60c0ff" : "rgba(60,120,255,0.3)" }}>
+      <div className="rounded-2xl p-4 transition-all" style={{
+        background: volume > 0 ? "rgba(232,112,10,0.12)" : "rgba(255,255,255,0.04)",
+        border: volume > 0 ? "1px solid rgba(232,112,10,0.35)" : "1px solid rgba(255,255,255,0.07)",
+      }}>
+        <p className="text-white/40 text-xs mb-1">Кубатура</p>
+        <p className="text-4xl font-bold tabular-nums" style={{ color: volume > 0 ? "#f59e0b" : "rgba(255,255,255,0.15)" }}>
           {volume > 0 ? volume.toFixed(3) : "0.000"}
-          <span className="text-lg ml-2" style={{ color: "rgba(100,160,255,0.6)" }}>м³</span>
+          <span className="text-lg ml-2 opacity-60">м³</span>
         </p>
         {volume > 0 && (
-          <p className="text-xs text-blue-400/60 mt-1">
-            {L}м × {W}м × {H}м × {C}шт = {volume.toFixed(3)} м³
-          </p>
+          <p className="text-xs text-white/35 mt-1">{L}м × {W}м × {H}м × {C}шт</p>
         )}
       </div>
 
       {volume > 0 && (
         <button
-          onClick={() => onAskAray(`Сколько стоит ${volume.toFixed(3)} м³ пиломатериала? Помоги подобрать подходящий вариант.`)}
+          onClick={() => onAskAray(`Сколько стоит ${volume.toFixed(3)} м³ пиломатериала? Помоги подобрать.`)}
           className="w-full py-3 rounded-2xl text-sm font-medium text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg,#1a5cc8,#2a8eff)" }}>
+          style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)", boxShadow: "0 0 20px rgba(232,112,10,0.35)" }}>
           <MessageCircle className="w-4 h-4" />
           Спросить Арая о цене
         </button>
       )}
 
-      <div className="text-center">
-        <p className="text-[11px] text-blue-400/40">
-          Арай умеет считать сам — просто напиши<br />
-          "сколько нужно на дом 8×6"
-        </p>
-      </div>
+      <p className="text-center text-[11px] text-white/25">
+        Арай умеет считать сам — просто напиши<br />"сколько нужно на дом 8×6"
+      </p>
     </div>
   );
 }
@@ -361,7 +399,7 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
   if (!userInfo) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+        <Loader2 className="w-6 h-6 opacity-30 animate-spin" />
       </div>
     );
   }
@@ -379,17 +417,15 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
   if (!userInfo.authenticated) {
     return (
       <div className="flex-1 flex flex-col px-5 py-6 gap-5 overflow-y-auto">
-        {/* Гость */}
-        <div className="text-center">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-4 ring-2 ring-blue-500/30">
-            <Image src="/aray/aray-avatar.jpg" alt="Арай" width={80} height={80} className="object-cover object-top" />
+        <div className="text-center py-4">
+          <div className="flex justify-center mb-5">
+            <ArayOrb size={72} glow />
           </div>
-          <p className="text-lg font-bold text-blue-100">Войди — и Арай запомнит всё</p>
-          <p className="text-sm text-blue-400/70 mt-1">История заказов, уровень, персональные советы</p>
+          <p className="text-lg font-semibold text-white">Войди — и Арай запомнит всё</p>
+          <p className="text-sm text-white/40 mt-1.5">История заказов, уровень, персональные советы</p>
         </div>
 
-        {/* Преимущества */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {[
             { icon: "🧠", text: "Арай помнит тебя на всех устройствах" },
             { icon: "📦", text: "История всех заказов в одном месте" },
@@ -397,22 +433,22 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
             { icon: "💎", text: "Партнёр ARAY — 50% с рекомендаций" },
           ].map(item => (
             <div key={item.text} className="flex items-center gap-3 px-3 py-2.5 rounded-xl"
-              style={{ background: "rgba(10,30,80,0.4)", border: "1px solid rgba(30,120,255,0.15)" }}>
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
               <span className="text-xl shrink-0">{item.icon}</span>
-              <span className="text-sm text-blue-200">{item.text}</span>
+              <span className="text-sm text-white/70">{item.text}</span>
             </div>
           ))}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           <Link href="/login"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-white font-semibold text-sm"
-            style={{ background: "linear-gradient(135deg,#1a5cc8,#2a8eff)", boxShadow: "0 0 20px rgba(30,120,255,0.35)" }}>
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white font-semibold text-sm"
+            style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)", boxShadow: "0 0 24px rgba(232,112,10,0.4)" }}>
             <LogIn className="w-4 h-4" /> Войти в аккаунт
           </Link>
           <Link href="/register"
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-blue-300 font-medium text-sm"
-            style={{ border: "1px solid rgba(40,130,255,0.3)" }}>
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white/70 font-medium text-sm"
+            style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
             Создать аккаунт
           </Link>
         </div>
@@ -422,68 +458,61 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
 
   return (
     <div className="flex-1 flex flex-col px-4 py-4 gap-4 overflow-y-auto overscroll-contain">
-      {/* Карточка уровня */}
-      <div className="rounded-2xl p-4" style={{ background: "linear-gradient(135deg,rgba(10,30,80,0.8),rgba(15,50,130,0.6))", border: "1px solid rgba(40,130,255,0.2)" }}>
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-14 h-14 rounded-2xl overflow-hidden shrink-0" style={{ outline: `2px solid ${userInfo.levelInfo?.color || "#60a5fa"}`, outlineOffset: "2px" }}>
-            <Image src="/aray/aray-avatar.jpg" alt="Арай" width={56} height={56} className="object-cover object-top" />
-          </div>
+      {/* Карточка пользователя */}
+      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <ArayOrb size={52} glow />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="font-bold text-white text-base truncate">
-                {userInfo.name || "Гость"}
-              </p>
+            <div className="flex items-center gap-2 mb-1">
+              <p className="font-bold text-white text-base truncate">{userInfo.name || "Гость"}</p>
               {!userInfo.name && (
-                <button onClick={onAskName} className="text-[10px] px-2 py-0.5 rounded-lg text-blue-300"
-                  style={{ border: "1px solid rgba(40,130,255,0.4)" }}>
+                <button onClick={onAskName} className="text-[10px] px-2 py-0.5 rounded-lg text-white/50"
+                  style={{ border: "1px solid rgba(255,255,255,0.15)" }}>
                   + имя
                 </button>
               )}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-lg">{LEVEL_ICONS[userInfo.level]}</span>
-              <span className="text-sm font-medium" style={{ color: userInfo.levelInfo?.color || "#60a5fa" }}>
+              <span className="text-base">{LEVEL_ICONS[userInfo.level]}</span>
+              <span className="text-sm font-medium" style={{ color: userInfo.levelInfo?.color || "#f59e0b" }}>
                 {userInfo.levelInfo?.label}
               </span>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xl font-bold text-white">{userInfo.totalPoints}</p>
-            <p className="text-[10px] text-blue-400/60">баллов</p>
+            <p className="text-2xl font-bold text-white">{userInfo.totalPoints}</p>
+            <p className="text-[10px] text-white/35 mt-0.5">баллов</p>
           </div>
         </div>
 
-        {/* Прогресс */}
         {userInfo.level !== "PARTNER" && (
           <div>
-            <div className="flex justify-between text-[10px] text-blue-400/60 mb-1">
+            <div className="flex justify-between text-[10px] text-white/35 mb-1.5">
               <span>{userInfo.levelInfo?.label}</span>
               <span>→ {userInfo.levelInfo?.next}</span>
             </div>
-            <div className="h-1.5 rounded-full bg-blue-900/50">
+            <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
               <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${progressPct}%`, background: `linear-gradient(90deg, ${userInfo.levelInfo?.color || "#60a5fa"}, #2a8eff)` }} />
+                style={{ width: `${progressPct}%`, background: `linear-gradient(90deg, #e8700a, ${userInfo.levelInfo?.color || "#f59e0b"})` }} />
             </div>
           </div>
         )}
         {userInfo.level === "PARTNER" && (
-          <div className="text-center text-xs text-purple-300 mt-1">
-            💎 Максимальный уровень — Партнёр ARAY PRODUCTIONS
-          </div>
+          <p className="text-center text-xs text-white/40 mt-1">💎 Максимальный уровень — Партнёр ARAY PRODUCTIONS</p>
         )}
       </div>
 
       {/* Статистика */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         {[
           { label: "Диалогов с Araем", value: userInfo.totalChats, icon: <MessageCircle className="w-4 h-4" /> },
           { label: "Заказов", value: userInfo.recentOrders.length, icon: <Package className="w-4 h-4" /> },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl p-3 text-center"
-            style={{ background: "rgba(10,25,70,0.5)", border: "1px solid rgba(30,100,255,0.15)" }}>
-            <div className="flex items-center justify-center mb-1 text-blue-400">{stat.icon}</div>
+          <div key={stat.label} className="rounded-2xl p-3 text-center"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="flex items-center justify-center mb-1 text-white/30">{stat.icon}</div>
             <p className="text-2xl font-bold text-white">{stat.value}</p>
-            <p className="text-[10px] text-blue-400/60 mt-0.5">{stat.label}</p>
+            <p className="text-[10px] text-white/35 mt-0.5">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -491,19 +520,19 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
       {/* Последние заказы */}
       {userInfo.recentOrders.length > 0 && (
         <div>
-          <p className="text-[11px] text-blue-400/60 uppercase tracking-wider font-medium mb-2">Последние заказы</p>
+          <p className="text-[11px] text-white/30 uppercase tracking-wider font-medium mb-2">Последние заказы</p>
           <div className="space-y-2">
             {userInfo.recentOrders.map(order => (
               <Link key={order.id} href={`/account/orders/${order.orderNumber}`}
                 className="flex items-center justify-between px-3 py-2.5 rounded-xl transition-all active:scale-[0.98]"
-                style={{ background: "rgba(10,25,70,0.5)", border: "1px solid rgba(30,100,255,0.15)" }}>
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
                 <div>
-                  <p className="text-sm text-blue-200 font-medium">Заказ №{order.orderNumber}</p>
-                  <p className="text-[11px] text-blue-400/60">{statusLabels[order.status] || order.status}</p>
+                  <p className="text-sm text-white/80 font-medium">Заказ №{order.orderNumber}</p>
+                  <p className="text-[11px] text-white/35">{statusLabels[order.status] || order.status}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-blue-300">{formatPrice(order.totalAmount)}</span>
-                  <ChevronRight className="w-4 h-4 text-blue-500/40" />
+                  <span className="text-sm font-bold" style={{ color: "#f59e0b" }}>{formatPrice(order.totalAmount)}</span>
+                  <ChevronRight className="w-4 h-4 text-white/20" />
                 </div>
               </Link>
             ))}
@@ -519,10 +548,10 @@ function ProfileTab({ userInfo, onAskName }: { userInfo: UserInfo | null; onAskN
         ].map(link => (
           <Link key={link.href} href={link.href}
             className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all"
-            style={{ background: "rgba(10,25,70,0.4)", border: "1px solid rgba(30,100,255,0.12)" }}>
-            <span className="text-blue-400">{link.icon}</span>
-            <span className="text-sm text-blue-200 flex-1">{link.label}</span>
-            <ChevronRight className="w-4 h-4 text-blue-500/40" />
+            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="text-white/30">{link.icon}</span>
+            <span className="text-sm text-white/65 flex-1">{link.label}</span>
+            <ChevronRight className="w-4 h-4 text-white/20" />
           </Link>
         ))}
       </div>
@@ -565,7 +594,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     return () => clearTimeout(t);
   }, []);
 
-  // Пульс кнопки каждые 8 секунд
+  // Пульс кнопки
   useEffect(() => {
     const t = setInterval(() => { setPulse(true); setTimeout(() => setPulse(false), 1500); }, 8000);
     setTimeout(() => { setPulse(true); setTimeout(() => setPulse(false), 1500); }, 3000);
@@ -593,7 +622,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     const name = userInfo?.name;
     let greeting = buildArayGreeting({ ...pageCtx, isReturning });
 
-    // Персонализируем если знаем имя
     if (name) {
       const hour = new Date().getHours();
       const time = hour < 12 ? "Доброе утро" : hour < 17 ? "Привет" : hour < 22 ? "Добрый вечер" : "Поздно уже";
@@ -604,7 +632,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     document.cookie = "aray_visited=1; max-age=2592000; path=/";
   }, [messages.length, userInfo?.name, page, productName, cartTotal]);
 
-  // Слушаем событие открытия (из мобильного навбара)
+  // Событие открытия из навбара
   useEffect(() => {
     const handler = () => {
       setVisible(true);
@@ -617,7 +645,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     return () => window.removeEventListener("aray:open", handler);
   }, [startChat]);
 
-  // Проактивный пузырь через 15 секунд
+  // Проактивный пузырь
   useEffect(() => {
     if (!visible) return;
     const t = setTimeout(() => {
@@ -625,8 +653,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         const name = userInfo?.name;
         const msg = name
           ? `${name}, помочь с чем-нибудь? 👋`
-          : productName
-          ? `Смотришь «${productName}»? Помогу выбрать 👋`
+          : productName ? `Смотришь «${productName}»? Помогу выбрать 👋`
           : "Если есть вопросы — я рядом 😊";
         setProactiveBubble(msg);
         setTimeout(() => setProactiveBubble(null), 5000);
@@ -648,15 +675,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     startChat();
   };
 
-  const handleAskAray = (text: string) => {
-    setTab("chat");
-    sendMessage(text);
-  };
+  const handleAskAray = (text: string) => { setTab("chat"); sendMessage(text); };
 
   const handleAskName = () => {
     setTab("chat");
-    const msg = "Как тебя зовут? Хочу обращаться по имени 😊";
-    setTimeout(() => sendMessage(msg), 100);
+    setTimeout(() => sendMessage("Как тебя зовут? Хочу обращаться по имени 😊"), 100);
   };
 
   const sendMessage = async (text?: string) => {
@@ -680,7 +703,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       });
       const data = await res.json();
 
-      // Если Арай узнал имя — обновляем userInfo
       if (data.message?.toLowerCase().includes("звать") || data.message?.toLowerCase().includes("имя")) {
         fetch("/api/ai/me").then(r => r.json()).then(setUserInfo).catch(() => {});
       }
@@ -694,7 +716,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     } catch {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(), role: "assistant",
-        content: "Временно недоступен. Попробуй через минуту 🙏",
+        content: "Нет связи. Проверь интернет и попробуй снова 🙏",
         timestamp: new Date(),
       }]);
     } finally {
@@ -705,19 +727,19 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   if (!enabled || !visible) return null;
   if (hiddenForKeyboard && !open) return null;
 
-  // ── Конфиг вкладок ──────────────────────────────────────────────────────────
+  // Вкладки
   const tabs: { id: Tab; icon: React.ReactNode; label: string; badge?: number }[] = [
     { id: "chat", icon: <MessageCircle className="w-5 h-5" />, label: "Чат" },
-    { id: "cart", icon: <ShoppingCart className="w-5 h-5" />, label: "Корзина",
-      badge: cartItemsCount || undefined },
+    { id: "cart", icon: <ShoppingCart className="w-5 h-5" />, label: "Корзина", badge: cartItemsCount || undefined },
     { id: "calc", icon: <Calculator className="w-5 h-5" />, label: "Расчёт" },
     { id: "profile", icon: <User className="w-5 h-5" />, label: "Профиль" },
   ];
 
+  // Цвета панели — глубокий тёмный, минималистичный
   const panelStyle = {
-    background: "linear-gradient(180deg, #030b1a 0%, #050e22 60%, #040c1e 100%)",
-    border: "1px solid rgba(40,130,255,0.18)",
-    boxShadow: "0 0 60px rgba(20,80,220,0.35), 0 -4px 40px rgba(0,0,0,0.5)",
+    background: "linear-gradient(180deg, #0c0c14 0%, #0f0f1a 50%, #0a0a12 100%)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow: "0 -8px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(232,112,10,0.08)",
   };
 
   return (
@@ -726,33 +748,50 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       {!open && (
         <div className="hidden lg:flex fixed z-50 flex-col items-end gap-2"
           style={{ bottom: "2rem", right: "1.5rem" }}>
+
           {proactiveBubble && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-              className="max-w-[220px] px-3 py-2 rounded-2xl text-xs text-blue-100 cursor-pointer relative"
-              style={{ background: "rgba(8,20,60,0.95)", border: "1px solid rgba(40,120,255,0.4)", boxShadow: "0 4px 20px rgba(20,80,200,0.3)" }}
+              className="max-w-[220px] px-3.5 py-2.5 rounded-2xl text-xs text-white/80 cursor-pointer"
+              style={{ background: "rgba(12,12,20,0.97)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
               onClick={handleOpen}>
               {proactiveBubble}
             </motion.div>
           )}
-          <div className="text-center rounded-xl px-2.5 py-1 pointer-events-none"
-            style={{ background: "rgba(10,25,60,0.9)", border: "1px solid rgba(30,120,255,0.3)" }}>
-            <p className="text-[10px] font-bold text-blue-200 leading-none">АРАЙ</p>
-            <p className="text-[9px] text-blue-400/70 mt-0.5">Световой друг</p>
+
+          {/* Подпись */}
+          <div className="text-center px-3 py-1.5 rounded-xl pointer-events-none"
+            style={{ background: "rgba(12,12,20,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <p className="text-[10px] font-bold text-white/80 leading-none tracking-widest">АРАЙ</p>
+            <p className="text-[9px] text-white/30 mt-0.5">Световой друг</p>
           </div>
+
+          {/* Кнопка-шар */}
           <button onClick={handleOpen} aria-label="Открыть Арай"
-            className="relative w-14 h-14 rounded-2xl flex items-center justify-center focus:outline-none"
-            style={{ background: "linear-gradient(145deg,#0a1628,#0d2550,#0a3d7a,#1055aa)", boxShadow: "0 0 24px rgba(30,120,220,0.6),0 0 48px rgba(30,80,180,0.3),inset 0 1px 0 rgba(100,180,255,0.2)" }}>
-            {pulse && <span className="absolute inset-0 rounded-2xl animate-ping" style={{ background: "rgba(30,120,255,0.25)", animationDuration: "1.2s" }} />}
-            <span className="absolute inset-0 rounded-2xl" style={{ background: "conic-gradient(from 0deg,transparent 0%,rgba(255,200,50,0.35) 25%,transparent 50%,rgba(30,150,255,0.25) 75%,transparent 100%)", animation: "spin 8s linear infinite" }} />
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden z-10">
-              <Image src="/aray/aray-avatar.jpg" alt="Арай" fill className="object-cover object-top" sizes="40px" />
+            className="relative flex items-center justify-center focus:outline-none"
+            style={{ width: 56, height: 56 }}>
+            {/* Внешнее свечение при пульсе */}
+            {pulse && (
+              <span className="absolute inset-0 rounded-2xl animate-ping"
+                style={{ background: "rgba(232,112,10,0.2)", animationDuration: "1.2s" }} />
+            )}
+            {/* Фоновый контейнер */}
+            <div className="absolute inset-0 rounded-2xl" style={{
+              background: "linear-gradient(145deg, #1a0800, #3d1206, #7c2d12)",
+              border: "1px solid rgba(245,158,11,0.3)",
+              boxShadow: "0 0 24px rgba(232,112,10,0.5), 0 0 48px rgba(232,112,10,0.15)",
+            }} />
+            {/* Шар */}
+            <div className="relative z-10">
+              <ArayOrb size={42} glow={false} />
             </div>
-            {hasNew && <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400 rounded-full border-2 border-background" />}
+            {/* Новое сообщение */}
+            {hasNew && <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-background"
+              style={{ background: "#e8700a" }} />}
           </button>
         </div>
       )}
 
-      {/* ── Полноэкранный суперэкран ── */}
+      {/* ── Полноэкранный виджет ── */}
       <AnimatePresence>
         {open && (
           <>
@@ -761,7 +800,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[60]"
-              style={{ background: "rgba(0,5,20,0.65)", backdropFilter: "blur(6px)" }}
+              style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}
               onClick={() => setOpen(false)}
             />
 
@@ -770,55 +809,51 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               initial={{ y: "100%" }}
               animate={{ y: keyboardOffset > 0 ? -keyboardOffset : 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 30, stiffness: 320 }}
+              transition={{ type: "spring", damping: 32, stiffness: 340 }}
               drag="y"
               dragControls={dragControls}
               dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={{ top: 0, bottom: 0.3 }}
               onDragEnd={(_, info) => { if (info.offset.y > 120) setOpen(false); }}
               className="fixed bottom-0 left-0 right-0 z-[61] flex flex-col"
-              style={{
-                height: "92dvh",
-                borderRadius: "28px 28px 0 0",
-                ...panelStyle,
-              }}
+              style={{ height: "92dvh", borderRadius: "24px 24px 0 0", ...panelStyle }}
             >
-              {/* Ручка для свайпа */}
+              {/* Ручка */}
               <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing shrink-0"
                 onPointerDown={e => dragControls.start(e)}>
-                <div className="w-10 h-1 rounded-full" style={{ background: "rgba(60,130,255,0.35)" }} />
+                <div className="w-9 h-1 rounded-full" style={{ background: "rgba(255,255,255,0.15)" }} />
               </div>
 
               {/* Шапка */}
               <div className="flex items-center gap-3 px-5 py-3 flex-shrink-0"
-                style={{ borderBottom: "1px solid rgba(30,120,255,0.12)" }}>
-                <div className="w-10 h-10 rounded-2xl overflow-hidden ring-2 ring-blue-500/30 shrink-0">
-                  <Image src="/aray/aray-avatar.jpg" alt="Арай" width={40} height={40} className="object-cover object-top" />
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div className="shrink-0">
+                  <ArayOrb size={38} glow />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-blue-100">Арай</p>
+                    <p className="text-sm font-semibold text-white">Арай</p>
                     {userInfo?.name && (
-                      <span className="text-xs px-2 py-0.5 rounded-lg font-medium"
-                        style={{ background: "rgba(30,100,255,0.2)", color: userInfo.levelInfo?.color || "#60a5fa", border: `1px solid ${userInfo.levelInfo?.color || "#60a5fa"}40` }}>
+                      <span className="text-[11px] px-2 py-0.5 rounded-lg font-medium"
+                        style={{ background: "rgba(232,112,10,0.15)", color: "#f59e0b", border: "1px solid rgba(232,112,10,0.25)" }}>
                         {LEVEL_ICONS[userInfo.level]} {userInfo.levelInfo?.label}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] flex items-center gap-1" style={{ color: "rgba(100,160,255,0.7)" }}>
+                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
                     {userInfo?.name ? `Привет, ${userInfo.name}!` : "Онлайн · ARAY PRODUCTIONS"}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => { setMessages([]); startChat(); }}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-blue-900/40"
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-white/8"
                     title="Начать заново">
-                    <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                    <RotateCcw className="w-3.5 h-3.5 text-white/30" />
                   </button>
                   <button onClick={() => setOpen(false)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-blue-900/40">
-                    <X className="w-4 h-4 text-blue-300" />
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors hover:bg-white/8">
+                    <X className="w-4 h-4 text-white/40" />
                   </button>
                 </div>
               </div>
@@ -826,8 +861,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               {/* Контент вкладки */}
               <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <AnimatePresence mode="wait">
-                  <motion.div key={tab} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.18 }}
+                  <motion.div key={tab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.15 }}
                     className="flex-1 flex flex-col min-h-0 overflow-hidden">
                     {tab === "chat" && (
                       <ChatTab messages={messages} loading={loading} input={input} setInput={setInput}
@@ -842,22 +877,26 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
               {/* Таббар */}
               <div className="flex-shrink-0 flex items-stretch"
-                style={{ borderTop: "1px solid rgba(30,120,255,0.12)", paddingBottom: "env(safe-area-inset-bottom, 0px)", background: "rgba(3,10,28,0.95)" }}>
+                style={{
+                  borderTop: "1px solid rgba(255,255,255,0.07)",
+                  paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                  background: "rgba(8,8,14,0.98)",
+                }}>
                 {tabs.map(t => {
                   const isActive = tab === t.id;
                   return (
                     <button key={t.id} onClick={() => setTab(t.id)}
                       className="flex-1 flex flex-col items-center justify-center gap-1 py-3 relative transition-all"
-                      style={{ color: isActive ? "#60a5fa" : "rgba(100,150,255,0.45)" }}>
+                      style={{ color: isActive ? "#f59e0b" : "rgba(255,255,255,0.28)" }}>
                       {isActive && (
                         <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full"
-                          style={{ background: "linear-gradient(90deg,transparent,#60a5fa,transparent)" }} />
+                          style={{ background: "linear-gradient(90deg, transparent, #e8700a, transparent)" }} />
                       )}
                       <div className="relative">
                         {t.icon}
                         {t.badge && t.badge > 0 && (
                           <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
-                            style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}>
+                            style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)" }}>
                             {t.badge > 9 ? "9+" : t.badge}
                           </span>
                         )}
@@ -872,14 +911,20 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         )}
       </AnimatePresence>
 
+      {/* ── CSS анимации ── */}
       <style jsx global>{`
+        @keyframes arayOrbSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes arayHighlight {
+          0%, 100% { opacity: 0.82; transform: translateX(0) translateY(0); }
+          33% { opacity: 0.6; transform: translateX(15%) translateY(8%); }
+          66% { opacity: 0.9; transform: translateX(-8%) translateY(15%); }
+        }
         @keyframes arayBounce {
           0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
           40% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
         }
       `}</style>
     </>
