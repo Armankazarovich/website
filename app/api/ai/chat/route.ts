@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
 
     // ── Вызов Claude ──────────────────────────────────────────────────────────
     const response = await anthropic.messages.create({
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-sonnet-4-5",
       max_tokens: 1024,
       system: systemPrompt,
       messages: formattedMessages,
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
       }));
 
       const followUp = await anthropic.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-sonnet-4-5",
         max_tokens: 1024,
         system: systemPrompt,
         messages: [
