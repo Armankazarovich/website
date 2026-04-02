@@ -5,7 +5,7 @@ import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import {
   X, Send, Loader2, MessageCircle, ShoppingCart,
   Calculator, User, RotateCcw, Plus, Minus, Trash2,
-  ChevronRight, Star, Zap, LogIn, Package
+  ChevronRight, Star, Zap, LogIn, Package, Mic, MicOff
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -60,12 +60,54 @@ function MessageBubble({ message }: { message: Message }) {
 
 // ─── Вкладка: Чат ─────────────────────────────────────────────────────────────
 
+// ─── Хук голосового ввода ─────────────────────────────────────────────────────
+
+function useVoiceInput(onResult: (text: string) => void) {
+  const [listening, setListening] = useState(false);
+  const recogRef = useRef<any>(null);
+
+  const start = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = "ru-RU";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onstart = () => setListening(true);
+    r.onend = () => setListening(false);
+    r.onerror = () => setListening(false);
+    r.onresult = (e: any) => {
+      const text = e.results[0]?.[0]?.transcript || "";
+      if (text) onResult(text);
+    };
+    r.start();
+    recogRef.current = r;
+  }, [onResult]);
+
+  const stop = useCallback(() => {
+    recogRef.current?.stop();
+    setListening(false);
+  }, []);
+
+  const supported = typeof window !== "undefined" &&
+    !!(window as any).SpeechRecognition || !!(window as any).webkitSpeechRecognition;
+
+  return { listening, start, stop, supported };
+}
+
+// ─── Вкладка: Чат ─────────────────────────────────────────────────────────────
+
 function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messagesEndRef, inputRef }: {
   messages: Message[]; loading: boolean; input: string;
   setInput: (v: string) => void; sendMessage: (t?: string) => void;
   chips: string[]; messagesEndRef: React.RefObject<HTMLDivElement>;
   inputRef: React.RefObject<HTMLTextAreaElement>;
 }) {
+  const { listening, start, stop } = useVoiceInput((text) => {
+    setInput(prev => prev ? prev + " " + text : text);
+    inputRef.current?.focus();
+  });
+
   return (
     <>
       {/* Сообщения */}
@@ -105,11 +147,40 @@ function ChatTab({ messages, loading, input, setInput, sendMessage, chips, messa
       {/* Ввод */}
       <div className="px-4 py-3 flex gap-2 items-end flex-shrink-0"
         style={{ borderTop: "1px solid rgba(30,120,255,0.15)" }}>
+        {/* Кнопка микрофона */}
+        <button
+          onClick={listening ? stop : start}
+          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 relative"
+          style={{
+            background: listening
+              ? "linear-gradient(135deg,#ef4444,#b91c1c)"
+              : "rgba(20,60,150,0.4)",
+            border: listening ? "none" : "1px solid rgba(40,130,255,0.25)",
+            boxShadow: listening ? "0 0 16px rgba(239,68,68,0.6)" : "none",
+          }}
+          title={listening ? "Остановить запись" : "Голосовой ввод"}
+        >
+          {listening && (
+            <span className="absolute inset-0 rounded-xl animate-ping"
+              style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />
+          )}
+          {listening
+            ? <MicOff className="w-4 h-4 text-white relative z-10" />
+            : <Mic className="w-4 h-4 text-blue-400 relative z-10" />
+          }
+        </button>
+
         <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-          rows={1} placeholder="Написать Araю..."
-          className="flex-1 resize-none text-sm rounded-xl px-3 py-2.5 focus:outline-none"
-          style={{ background: "rgba(10,30,80,0.6)", border: "1px solid rgba(40,130,255,0.25)", color: "#d0e8ff", maxHeight: "80px" }} />
+          rows={1}
+          placeholder={listening ? "🎤 Слушаю..." : "Написать Araю..."}
+          className="flex-1 resize-none text-sm rounded-xl px-3 py-2.5 focus:outline-none transition-all"
+          style={{
+            background: listening ? "rgba(30,10,10,0.6)" : "rgba(10,30,80,0.6)",
+            border: listening ? "1px solid rgba(239,68,68,0.4)" : "1px solid rgba(40,130,255,0.25)",
+            color: "#d0e8ff", maxHeight: "80px",
+          }} />
+
         <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
           className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 shrink-0"
           style={{ background: loading || !input.trim() ? "rgba(30,80,160,0.3)" : "linear-gradient(135deg,#1a5cc8,#2a8eff)", boxShadow: input.trim() ? "0 0 14px rgba(30,120,255,0.5)" : "none" }}>
