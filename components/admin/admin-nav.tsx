@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -99,6 +100,22 @@ const GROUP_LABELS: Record<string, string> = {
 
 export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Fetch pending staff count (ADMIN / SUPER_ADMIN only)
+  useEffect(() => {
+    if (!role || !["SUPER_ADMIN", "ADMIN"].includes(role)) return;
+    fetch("/api/admin/staff")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        const members: { staffStatus?: string }[] = data.members || data;
+        const count = members.filter((m) => m.staffStatus === "PENDING").length;
+        setPendingCount(count);
+      })
+      .catch(() => {});
+  }, [role]);
+
   const visibleItems = allNavItems.filter(
     (item) => !item.roles || item.roles.includes(role || "")
   );
@@ -142,6 +159,12 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
                 isActive ? "text-primary" : "text-white/60 group-hover:text-white/90"
               }`} />
               <span className="flex-1">{item.label}</span>
+              {/* Pending badge for staff page */}
+              {item.href === "/admin/staff" && pendingCount > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-[9px] font-bold text-black flex items-center justify-center leading-none">
+                  {pendingCount > 9 ? "9+" : pendingCount}
+                </span>
+              )}
               <ChevronRight
                 className={`w-3 h-3 transition-all duration-200 ${
                   isActive ? "opacity-60 text-primary" : "opacity-0 group-hover:opacity-50"
