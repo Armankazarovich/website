@@ -7,7 +7,9 @@ import {
   TrendingUp, Clock, Search, Filter, Users, Zap,
   CheckCircle2, XCircle, MoreHorizontal, ArrowRight,
   Banknote, Star, AlertCircle, RefreshCw, Loader2,
+  ShoppingBag, Download, ExternalLink,
 } from "lucide-react";
+import Link from "next/link";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -816,9 +818,262 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
   );
 }
 
+// ─── Orders Kanban (заказы по статусам) ───────────────────────────────────────
+
+const ORDER_STAGES = [
+  { key: "NEW",          label: "Новый",         color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",    border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400",   emoji: "🆕" },
+  { key: "CONFIRMED",    label: "Подтверждён",   color: "bg-blue-500",    light: "bg-blue-50 dark:bg-blue-900/20",      border: "border-blue-200 dark:border-blue-800",     dot: "bg-blue-400",    emoji: "✅" },
+  { key: "PROCESSING",   label: "В комплектации",color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20",  border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400",  emoji: "⚙️" },
+  { key: "SHIPPED",      label: "Отгружен",      color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",    border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400",   emoji: "🚚" },
+  { key: "IN_DELIVERY",  label: "Доставляется",  color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400",  emoji: "🛵" },
+  { key: "READY_PICKUP", label: "Готов к выдаче",color: "bg-cyan-500",    light: "bg-cyan-50 dark:bg-cyan-900/20",      border: "border-cyan-200 dark:border-cyan-800",     dot: "bg-cyan-400",    emoji: "📦" },
+  { key: "DELIVERED",    label: "Доставлен ✓",   color: "bg-emerald-500", light: "bg-emerald-50 dark:bg-emerald-900/20",border: "border-emerald-200 dark:border-emerald-800",dot: "bg-emerald-400", emoji: "🎉" },
+  { key: "COMPLETED",    label: "Завершён ✓",    color: "bg-green-600",   light: "bg-green-50 dark:bg-green-900/20",    border: "border-green-200 dark:border-green-800",   dot: "bg-green-500",   emoji: "🏁" },
+  { key: "CANCELLED",    label: "Отменён",       color: "bg-gray-400",    light: "bg-gray-50 dark:bg-gray-900/20",      border: "border-gray-200 dark:border-gray-700",     dot: "bg-gray-400",    emoji: "❌" },
+];
+
+type OrderCard = {
+  id: string;
+  orderNumber: number;
+  guestName?: string | null;
+  guestPhone?: string | null;
+  guestEmail?: string | null;
+  status: string;
+  totalAmount: number;
+  deliveryCost?: number;
+  paymentMethod: string;
+  deliveryAddress?: string | null;
+  comment?: string | null;
+  createdAt: string;
+  items: Array<{ productName: string; variantSize: string; quantity: number; price: number; unitType: string }>;
+};
+
+function OrderKanbanCard({
+  order, onDragStart, onDragEnd,
+}: {
+  order: OrderCard;
+  onDragStart: (e: React.DragEvent, order: OrderCard) => void;
+  onDragEnd: (e: React.DragEvent) => void;
+}) {
+  const itemsSummary = order.items.slice(0, 2).map(i => `${i.productName} ${i.variantSize}`).join(", ");
+  const hasMore = order.items.length > 2;
+
+  return (
+    <Link
+      href={`/admin/orders/${order.id}`}
+      draggable
+      onDragStart={(e) => onDragStart(e, order)}
+      onDragEnd={onDragEnd}
+      className="block bg-card border border-border rounded-xl p-3 hover:shadow-md hover:border-primary/30 transition-all duration-150 group select-none"
+    >
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-primary">#{order.orderNumber}</span>
+            <span className="text-xs text-muted-foreground truncate">{order.guestName || "Клиент"}</span>
+          </div>
+          {order.guestPhone && (
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Phone className="w-2.5 h-2.5" />{order.guestPhone}
+            </p>
+          )}
+        </div>
+        <span className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-lg whitespace-nowrap">
+          {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
+        </span>
+      </div>
+
+      {itemsSummary && (
+        <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5">
+          📦 {itemsSummary}{hasMore ? `... +${order.items.length - 2}` : ""}
+        </p>
+      )}
+
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-muted-foreground">
+          {order.paymentMethod === "Наличные" ? "💵 Нал" : "🏦 Безнал"}
+        </span>
+        <span className="text-[10px] text-muted-foreground">{timeAgo(order.createdAt)}</span>
+      </div>
+    </Link>
+  );
+}
+
+function OrdersKanban({ search }: { search: string }) {
+  const [orders, setOrders] = useState<OrderCard[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const dragOrderRef = useRef<OrderCard | null>(null);
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch(`/api/admin/crm/orders-kanban${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+    const data = await res.json();
+    setOrders(data.orders || []);
+    setLoading(false);
+  }, [search]);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  const handleSyncToLeads = async () => {
+    setSyncing(true);
+    const res = await fetch("/api/admin/crm/sync-orders", { method: "POST" });
+    const data = await res.json();
+    setSyncResult(data.message || `Импортировано ${data.imported} заказов`);
+    setSyncing(false);
+    setTimeout(() => setSyncResult(null), 4000);
+  };
+
+  const handleDragStart = (e: React.DragEvent, order: OrderCard) => {
+    dragOrderRef.current = order;
+    e.dataTransfer.effectAllowed = "move";
+    (e.currentTarget as HTMLElement).style.opacity = "0.5";
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    (e.currentTarget as HTMLElement).style.opacity = "1";
+    setDragOverStage(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const order = dragOrderRef.current;
+    if (!order || order.status === newStatus) return;
+
+    // Оптимистичное обновление
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
+
+    await fetch("/api/admin/crm/orders-kanban", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId: order.id, status: newStatus }),
+    });
+  };
+
+  const ordersByStatus = ORDER_STAGES.reduce((acc, s) => {
+    acc[s.key] = orders.filter(o => o.status === s.key);
+    return acc;
+  }, {} as Record<string, OrderCard[]>);
+
+  const totalRevenue = orders
+    .filter(o => ["DELIVERED", "COMPLETED"].includes(o.status))
+    .reduce((s, o) => s + Number(o.totalAmount), 0);
+
+  const activeOrders = orders.filter(o => !["DELIVERED", "COMPLETED", "CANCELLED"].includes(o.status)).length;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Статистика */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 border-b border-border flex-shrink-0">
+        {[
+          { label: "Всего заказов", value: orders.length, icon: ShoppingBag, color: "text-blue-500" },
+          { label: "Активных", value: activeOrders, icon: TrendingUp, color: "text-amber-500" },
+          { label: "Завершённых", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length, icon: CheckCircle2, color: "text-emerald-500" },
+          { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, color: "text-violet-500" },
+        ].map(stat => (
+          <div key={stat.label} className="flex items-center gap-3 bg-card border border-border rounded-xl px-3 py-2.5">
+            <stat.icon className={`w-4 h-4 ${stat.color} shrink-0`} />
+            <div>
+              <p className="text-xs text-muted-foreground leading-none mb-0.5">{stat.label}</p>
+              <p className="font-bold text-sm text-foreground">{stat.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Синхронизация */}
+      <div className="px-4 py-2 border-b border-border flex items-center gap-3 flex-shrink-0">
+        <button
+          onClick={handleSyncToLeads}
+          disabled={syncing}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+        >
+          {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          Синхронизировать с лидами
+        </button>
+        {syncResult && (
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ {syncResult}</span>
+        )}
+        <span className="text-xs text-muted-foreground ml-auto">
+          Перетащите карточку чтобы изменить статус заказа
+        </span>
+      </div>
+
+      {/* Kanban */}
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : (
+        <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
+          <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 240}px` }}>
+            {ORDER_STAGES.map(stage => {
+              const stageOrders = ordersByStatus[stage.key] || [];
+              const stageTotal = stageOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
+              const isOver = dragOverStage === stage.key;
+
+              return (
+                <div
+                  key={stage.key}
+                  className={`flex flex-col rounded-2xl border-2 transition-all duration-150 min-w-[230px] max-w-[250px] ${
+                    isOver ? "border-primary/50 bg-primary/5 shadow-lg" : `${stage.border} ${stage.light}`
+                  }`}
+                  onDrop={(e) => handleDrop(e, stage.key)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.key); }}
+                  onDragLeave={() => setDragOverStage(null)}
+                >
+                  {/* Заголовок колонки */}
+                  <div className="px-3 pt-3 pb-2 flex-shrink-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm">{stage.emoji}</span>
+                      <span className="text-xs font-bold text-foreground">{stage.label}</span>
+                      <span className="text-xs text-muted-foreground bg-background/60 px-1.5 py-0.5 rounded-lg font-medium ml-auto">
+                        {stageOrders.length}
+                      </span>
+                    </div>
+                    {stageTotal > 0 && (
+                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        {stageTotal.toLocaleString("ru-RU")} ₽
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Карточки */}
+                  <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 max-h-[calc(100vh-320px)] scrollbar-thin">
+                    {stageOrders.map(order => (
+                      <OrderKanbanCard
+                        key={order.id}
+                        order={order}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                      />
+                    ))}
+                    {isOver && stageOrders.length === 0 && (
+                      <div className="border-2 border-dashed border-primary/40 rounded-xl h-16 flex items-center justify-center text-xs text-primary/60">
+                        Перетащить сюда
+                      </div>
+                    )}
+                    {stageOrders.length === 0 && !isOver && (
+                      <p className="text-xs text-muted-foreground text-center py-4 opacity-50">Пусто</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function CrmClient() {
+  const [tab, setTab] = useState<"orders" | "leads">("orders");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -920,28 +1175,60 @@ export function CrmClient() {
     <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
       {/* Топ-бар */}
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h1 className="text-xl font-bold text-foreground">CRM — Воронка продаж</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Перетаскивайте карточки между этапами</p>
+            <h1 className="text-xl font-bold text-foreground">CRM</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {tab === "orders" ? "Заказы по статусам — перетаскивайте для смены статуса" : "Воронка продаж — перетаскивайте карточки между этапами"}
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setShowPresets(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground">
-              <Zap className="w-4 h-4" />
-              <span className="hidden sm:inline">Пресеты</span>
-            </button>
-            <button onClick={fetchLeads}
-              className="w-9 h-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
-              <RefreshCw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleAddLead("NEW")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" />
-              Новый лид
-            </button>
+            {tab === "leads" && (
+              <>
+                <button onClick={() => setShowPresets(true)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground">
+                  <Zap className="w-4 h-4" />
+                  <span className="hidden sm:inline">Пресеты</span>
+                </button>
+                <button onClick={fetchLeads}
+                  className="w-9 h-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleAddLead("NEW")}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
+                  <Plus className="w-4 h-4" />
+                  Новый лид
+                </button>
+              </>
+            )}
           </div>
+        </div>
+
+        {/* Таб-переключатель */}
+        <div className="flex items-center gap-1 mb-3 p-1 bg-muted rounded-xl w-fit">
+          <button
+            onClick={() => setTab("orders")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tab === "orders"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ShoppingBag className="w-4 h-4" />
+            Заказы по статусам
+          </button>
+          <button
+            onClick={() => setTab("leads")}
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              tab === "leads"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Воронка лидов
+          </button>
         </div>
 
         {/* Поиск */}
@@ -951,45 +1238,52 @@ export function CrmClient() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            placeholder="Поиск по имени, телефону, компании..."
+            placeholder={tab === "orders" ? "Поиск по имени, телефону клиента..." : "Поиск по имени, телефону, компании..."}
           />
         </div>
       </div>
 
-      {/* Статистика */}
-      <CrmStats leads={leads} />
-
-      {/* Kanban */}
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+      {/* Контент */}
+      {tab === "orders" ? (
+        <OrdersKanban search={search} />
       ) : (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
-          <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 280}px` }}>
-            {STAGES.map(stage => {
-              const stageleads = leadsByStage[stage.key] || [];
-              const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
-              return (
-                <StageColumn
-                  key={stage.key}
-                  stage={stage}
-                  leads={stageleads}
-                  staff={staff}
-                  total={stageleads.length}
-                  totalValue={totalValue}
-                  onLeadClick={setSelectedLead}
-                  onAddLead={handleAddLead}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDrop={handleDrop}
-                  onDragOver={handleDragOver}
-                  isDragOver={dragOverStage === stage.key}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <>
+          {/* Статистика лидов */}
+          <CrmStats leads={leads} />
+
+          {/* Kanban лидов */}
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
+              <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 280}px` }}>
+                {STAGES.map(stage => {
+                  const stageleads = leadsByStage[stage.key] || [];
+                  const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
+                  return (
+                    <StageColumn
+                      key={stage.key}
+                      stage={stage}
+                      leads={stageleads}
+                      staff={staff}
+                      total={stageleads.length}
+                      totalValue={totalValue}
+                      onLeadClick={setSelectedLead}
+                      onAddLead={handleAddLead}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      isDragOver={dragOverStage === stage.key}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Формы и панели */}
