@@ -90,7 +90,7 @@ import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { ArayWidget } from "@/components/store/aray-widget";
+import { AdminAray } from "@/components/admin/admin-aray";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
 
@@ -188,6 +188,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
         {/* Push prompt */}
         <AdminPushPrompt />
+
+        {/* ARAY Ассистент */}
+        <AdminAray staffName={email?.split("@")[0] || "Коллега"} />
 
         {/* Низ — тема + выход */}
         <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
@@ -394,8 +397,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </main>
 
-      {/* ─── Арай в Админке ───────────────────────────────────── */}
-      <ArayWidget page="admin" enabled={true} />
+      {/* ArayWidget убран — используем AdminAray в сайдбаре */}
     </div>
   );
 }
