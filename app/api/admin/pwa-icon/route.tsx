@@ -1,13 +1,13 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const s = Number(req.nextUrl.searchParams.get("s") ?? 512);
-  const r = s * 0.42; // радиус шара
-  const cx = s / 2;
-  const cy = s / 2;
+  const r = Math.round(s * 0.42);
+  const cx = Math.round(s / 2);
+  const cy = Math.round(s / 2);
 
   return new ImageResponse(
     (
@@ -19,89 +19,86 @@ export async function GET(req: NextRequest) {
           alignItems: "center",
           justifyContent: "center",
           background: "radial-gradient(ellipse at 30% 20%, #1A1035 0%, #080C1E 60%, #04060F 100%)",
-          borderRadius: s * 0.22,
+          borderRadius: Math.round(s * 0.22),
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Фоновое свечение */}
+        {/* Glow behind ball */}
         <div
           style={{
             position: "absolute",
-            width: s * 0.9,
-            height: s * 0.9,
+            width: Math.round(s * 0.88),
+            height: Math.round(s * 0.88),
             borderRadius: "50%",
-            background: "radial-gradient(circle at 50% 50%, rgba(232,112,10,0.18) 0%, transparent 70%)",
-            top: s * 0.05,
-            left: s * 0.05,
+            background: "radial-gradient(circle at 50% 50%, rgba(232,112,10,0.22) 0%, transparent 70%)",
+            top: Math.round(s * 0.06),
+            left: Math.round(s * 0.06),
+            display: "flex",
           }}
         />
 
-        {/* Оранжевый шар */}
+        {/* Orange ball */}
         <div
           style={{
             position: "absolute",
             width: r * 2,
             height: r * 2,
             borderRadius: "50%",
-            top: cx - r,
-            left: cy - r,
-            background:
-              "radial-gradient(circle at 36% 30%, #FFBB6B 0%, #FF8C2A 22%, #E8700A 48%, #C45500 72%, #8B3200 100%)",
-            boxShadow: `
-              0 0 ${s * 0.06}px rgba(232,112,10,0.9),
-              0 0 ${s * 0.12}px rgba(232,112,10,0.55),
-              0 0 ${s * 0.22}px rgba(232,112,10,0.28),
-              inset 0 ${s * -0.04}px ${s * 0.06}px rgba(0,0,0,0.35)
-            `,
+            top: cy - r,
+            left: cx - r,
+            background: "radial-gradient(circle at 36% 30%, #FFBB6B 0%, #FF8C2A 22%, #E8700A 48%, #C45500 72%, #8B3200 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          {/* Блик */}
+          {/* Main shine */}
           <div
             style={{
               position: "absolute",
-              top: "13%",
-              left: "18%",
-              width: "36%",
-              height: "28%",
+              top: "12%",
+              left: "16%",
+              width: "38%",
+              height: "30%",
               borderRadius: "50%",
-              background:
-                "radial-gradient(ellipse at 40% 35%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 40%, transparent 100%)",
-              transform: "rotate(-25deg)",
+              background: "radial-gradient(ellipse at 40% 35%, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.20) 40%, transparent 100%)",
+              display: "flex",
             }}
           />
-          {/* Маленький блик */}
+          {/* Small bright spot */}
           <div
             style={{
               position: "absolute",
-              top: "22%",
-              left: "26%",
-              width: "14%",
-              height: "10%",
+              top: "20%",
+              left: "24%",
+              width: "15%",
+              height: "11%",
               borderRadius: "50%",
-              background: "rgba(255,255,255,0.70)",
-              filter: `blur(${s * 0.005}px)`,
+              background: "rgba(255,255,255,0.72)",
+              display: "flex",
             }}
           />
         </div>
 
-        {/* Буква А */}
+        {/* ARAY label */}
         <div
           style={{
             position: "absolute",
-            bottom: s * 0.08,
+            bottom: Math.round(s * 0.07),
             left: 0,
             right: 0,
             textAlign: "center",
-            fontSize: s * 0.085,
+            fontSize: Math.round(s * 0.082),
             fontWeight: 700,
-            color: "rgba(255,255,255,0.55)",
+            color: "rgba(255,255,255,0.50)",
             fontFamily: "sans-serif",
-            letterSpacing: s * 0.025,
-            textTransform: "uppercase",
+            letterSpacing: Math.round(s * 0.022),
+            display: "flex",
+            justifyContent: "center",
           }}
         >
-          АРАЙ
+          ARAY
         </div>
       </div>
     ),
