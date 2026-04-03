@@ -606,13 +606,17 @@ canvas,
    Иконки и кнопки НЕ трогаем — они сами знают свои цвета.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── ТЁМНАЯ ТЕМА: тёмный glass rgba(5,8,20) ── */
+/* ── ЕДИНЫЙ DARK GLASS — все карточки в обоих темах ── */
 .aray-nature-mode .bg-card,
-.aray-nature-mode .bg-popover {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.48) !important;
+.aray-nature-mode .bg-popover,
+.aray-nature-mode .bg-background,
+.aray-nature-mode .bg-white,
+.aray-nature-mode .aray-stat-card {
+  backdrop-filter: blur(22px) saturate(180%) brightness(0.78) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.78) !important;
+  background: rgba(5, 8, 20, 0.62) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.30), 0 1px 0 rgba(255,255,255,0.07) inset !important;
 }
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
@@ -636,9 +640,9 @@ canvas,
 .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
 .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
 .aray-nature-mode [class*="bg-stone-"][class*="rounded"] {
-  backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.45) !important;
+  backdrop-filter: blur(18px) saturate(160%) brightness(0.78) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.78) !important;
+  background: rgba(5, 8, 20, 0.58) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
 /* Текст в тёмных карточках — белый (только p/h, не иконки) */
@@ -648,92 +652,20 @@ canvas,
 .aray-nature-mode .bg-card h3,
 .aray-nature-mode .bg-card h4,
 .aray-nature-mode .bg-card .text-foreground,
-.aray-nature-mode .bg-card strong {
+.aray-nature-mode .bg-card strong,
+.aray-nature-mode .aray-stat-card p,
+.aray-nature-mode .aray-stat-card h1,
+.aray-nature-mode .aray-stat-card h2,
+.aray-nature-mode .aray-stat-card h3,
+.aray-nature-mode .aray-stat-card h4,
+.aray-nature-mode .aray-stat-card .text-foreground,
+.aray-nature-mode .aray-stat-card strong {
   color: rgba(255, 255, 255, 0.90) !important;
 }
 .aray-nature-mode .bg-card .text-muted-foreground,
+.aray-nature-mode .aray-stat-card .text-muted-foreground,
 .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.48) !important;
-}
-
-/* ── СВЕТЛАЯ ТЕМА: такое же тёмное glass (единый стиль с тёмной темой) ── */
-.light .aray-nature-mode .bg-card,
-[data-theme="light"] .aray-nature-mode .bg-card,
-.light .aray-nature-mode .bg-popover,
-[data-theme="light"] .aray-nature-mode .bg-popover {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.48) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: none !important;
-}
-.light .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-green-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-emerald-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-violet-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-slate-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-amber-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-red-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-indigo-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-gray-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-rose-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-purple-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-pink-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-sky-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-lime-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
-.light .aray-nature-mode [class*="bg-stone-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-green-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-emerald-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-violet-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-slate-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-amber-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-red-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-indigo-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-gray-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-rose-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-purple-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-pink-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-sky-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-lime-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-stone-"][class*="rounded"] {
-  backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-}
-/* Светлая тема — текст тоже белый (единый стиль) */
-.light .aray-nature-mode .bg-card p,
-[data-theme="light"] .aray-nature-mode .bg-card p,
-.light .aray-nature-mode .bg-card h1,
-.light .aray-nature-mode .bg-card h2,
-.light .aray-nature-mode .bg-card h3,
-.light .aray-nature-mode .bg-card .text-foreground,
-.light .aray-nature-mode .bg-card strong,
-[data-theme="light"] .aray-nature-mode .bg-card h1,
-[data-theme="light"] .aray-nature-mode .bg-card h2,
-[data-theme="light"] .aray-nature-mode .bg-card .text-foreground {
-  color: rgba(255, 255, 255, 0.90) !important;
-}
-.light .aray-nature-mode .bg-card .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode .bg-card .text-muted-foreground,
-.light .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.48) !important;
+  color: rgba(255, 255, 255, 0.50) !important;
 }
 
 /* ── Система масштабирования шрифтов (--aray-font-scale устанавливается JS) ── */
@@ -806,25 +738,9 @@ canvas,
   border-color: rgba(255, 255, 255, 0.14) !important;
   color: rgba(255, 255, 255, 0.90) !important;
 }
-/* Светлая тема: тот же тёмный стиль, белый текст */
-.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.light .aray-nature-mode textarea,
-[data-theme="light"] .aray-nature-mode textarea,
-.light .aray-nature-mode select,
-[data-theme="light"] .aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: rgba(255, 255, 255, 0.90) !important;
-}
-
 /* Разделители таблиц — тонкие и прозрачные */
 .aray-nature-mode .divide-border > * + * {
   border-color: rgba(255, 255, 255, 0.08) !important;
-}
-.light .aray-nature-mode .divide-border > * + *,
-[data-theme="light"] .aray-nature-mode .divide-border > * + * {
-  border-color: rgba(0, 0, 0, 0.06) !important;
 }
 
 /* ── ОСОБЕННЫЙ GLASSMORPHISM — многослойный blur из будущего ── */
@@ -861,17 +777,15 @@ canvas,
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* Светлая тема — белое матовое стекло */
+/* Светлая тема — тот же тёмный glass (единый стиль) */
 .light .aray-nature-card,
 [data-theme="light"] .aray-nature-card {
-  backdrop-filter: blur(28px) saturate(160%) brightness(1.12);
-  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(1.12);
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.95) inset;
-  color: rgba(10, 10, 20, 0.90);
+  backdrop-filter: blur(22px) saturate(180%) brightness(0.78);
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.78);
+  background: rgba(5, 8, 20, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.30), 0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  color: rgba(255, 255, 255, 0.90);
 }
 
 /* Overlay на фото: тёмная тема — затемнение, светлая — осветление */
