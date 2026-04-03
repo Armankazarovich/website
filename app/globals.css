@@ -617,6 +617,7 @@ canvas,
   background: rgba(5, 8, 20, 0.52) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  color: rgba(255, 255, 255, 0.88) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -645,6 +646,7 @@ canvas,
   -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
   background: rgba(5, 8, 20, 0.45) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
 }
 /* Текст в тёмных карточках — белый (только p/h/span, не иконки) */
 .aray-nature-mode .bg-card p,
@@ -700,6 +702,7 @@ canvas,
   background: rgba(5, 8, 20, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
+  color: rgba(255, 255, 255, 0.88) !important;
 }
 /* Светлая тема — то же исключение для маленьких иконок w-8/h-8 */
 .light .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -750,6 +753,7 @@ canvas,
   -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
   background: rgba(5, 8, 20, 0.45) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
 }
 /* Светлая тема — текст тоже белый (единый стиль) */
 .light .aray-nature-mode .bg-card p,
