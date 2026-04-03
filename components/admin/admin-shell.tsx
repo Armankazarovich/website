@@ -94,7 +94,6 @@ import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
 import { AdminAmbientSound } from "@/components/admin/admin-ambient-sound";
-import { PageTransition as AdminPageTransition } from "@/components/layout/page-transition";
 
 interface AdminShellProps {
   role: string;
@@ -419,7 +418,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
         {/* Отступ сверху под мобильный хедер + десктопный топбар; снизу под таббар */}
         <div className="pt-14 lg:pb-0" style={{ paddingBottom: "calc(96px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
-          <div className="p-4 lg:p-6"><AdminPageTransition>{children}</AdminPageTransition></div>
+          <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>
 
