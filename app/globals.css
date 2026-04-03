@@ -605,14 +605,14 @@ canvas,
   background: rgba(5, 8, 20, 0.50) !important;
 }
 
-/* Светлая тема — белое матовое стекло */
+/* Светлая тема — лёгкое молочное стекло (не слишком белое) */
 .light .aray-nature-mode .bg-card,
 [data-theme="light"] .aray-nature-mode .bg-card,
 .light .aray-nature-mode .bg-popover,
 [data-theme="light"] .aray-nature-mode .bg-popover {
-  backdrop-filter: blur(28px) saturate(155%) brightness(1.10) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(155%) brightness(1.10) !important;
-  background: rgba(255, 255, 255, 0.74) !important;
+  backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
+  background: rgba(235, 242, 255, 0.52) !important; /* прохладный тон, пропускает фото */
 }
 
 /* Границы — полупрозрачные в обоих темах */
@@ -743,17 +743,93 @@ canvas,
 
 /* dark class is the default — no override needed */
 
-/* ── БЫСТРЫЙ ДОСТУП — кнопки тоже стекло ── */
-.aray-nature-mode .aray-icon-spin {
+/* ── БЫСТРЫЙ ДОСТУП — только кнопки (не nav-ссылки!) ── */
+.aray-nature-mode button.aray-icon-spin,
+.aray-nature-mode .aray-icon-spin:not(a) {
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   background: rgba(5, 8, 20, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-.light .aray-nature-mode .aray-icon-spin,
-[data-theme="light"] .aray-nature-mode .aray-icon-spin {
+.light .aray-nature-mode button.aray-icon-spin,
+.light .aray-nature-mode .aray-icon-spin:not(a),
+[data-theme="light"] .aray-nature-mode button.aray-icon-spin,
+[data-theme="light"] .aray-nature-mode .aray-icon-spin:not(a) {
   background: rgba(255, 255, 255, 0.50) !important;
   border-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   МОКРОЕ СТЕКЛО — кликабельные элементы (после дождя ✨)
+   Яркий блик сверху + чуть больше opacity = различимы визуально
+   ══════════════════════════════════════════════════════════════ */
+
+/* Тёмная тема — мокрое тёмное стекло */
+.aray-nature-mode a.bg-card,
+.aray-nature-mode button.bg-card,
+.aray-nature-mode a.aray-nature-card,
+.aray-nature-mode button.aray-nature-card {
+  background: rgba(14, 20, 48, 0.56) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,   /* мокрый блик сверху */
+    0 0 0 1px rgba(255, 255, 255, 0.09) inset;
+  transition: box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease !important;
+}
+.aray-nature-mode a.bg-card:hover,
+.aray-nature-mode button.bg-card:hover,
+.aray-nature-mode a.aray-nature-card:hover,
+.aray-nature-mode button.aray-nature-card:hover {
+  background: rgba(20, 30, 62, 0.68) !important;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.30),
+    0 1px 0 rgba(255, 255, 255, 0.28) inset,   /* блик ярче на hover */
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset;
+  transform: translateY(-1px);
+}
+
+/* Светлая тема — мокрое белое стекло */
+.light .aray-nature-mode a.bg-card,
+.light .aray-nature-mode button.bg-card,
+.light .aray-nature-mode a.aray-nature-card,
+.light .aray-nature-mode button.aray-nature-card,
+[data-theme="light"] .aray-nature-mode a.bg-card,
+[data-theme="light"] .aray-nature-mode button.bg-card {
+  background: rgba(225, 238, 255, 0.68) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,   /* чистый белый блик = после дождя */
+    0 -1px 0 rgba(180, 210, 255, 0.25) inset;
+  transition: box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease !important;
+}
+.light .aray-nature-mode a.bg-card:hover,
+.light .aray-nature-mode button.bg-card:hover,
+.light .aray-nature-mode a.aray-nature-card:hover,
+.light .aray-nature-mode button.aray-nature-card:hover,
+[data-theme="light"] .aray-nature-mode a.bg-card:hover,
+[data-theme="light"] .aray-nature-mode button.bg-card:hover {
+  background: rgba(215, 232, 255, 0.80) !important;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.12),
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 -1px 0 rgba(160, 200, 255, 0.35) inset;
+  transform: translateY(-1px);
+}
+
+/* ── NAV-ссылки — тонкий контур, без фона ── */
+.aray-nature-mode .aray-sidebar a.aray-icon-spin {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.aray-nature-mode .aray-sidebar a.aray-icon-spin:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.aray-nature-mode .aray-sidebar a.aray-nav-active {
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  background: rgba(255, 255, 255, 0.10) !important;
 }
 
 /* ── SIDEBAR GLASS в nature-режиме ── */
