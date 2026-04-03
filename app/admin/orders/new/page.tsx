@@ -456,7 +456,7 @@ export default function NewPhoneOrderPage() {
                   <div>
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Количество</p>
                     <div className="flex items-center gap-1">
-                      <button type="button" onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
+                      <button type="button" onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
                         className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted text-lg font-bold">−</button>
                       <input
                         type="number"
