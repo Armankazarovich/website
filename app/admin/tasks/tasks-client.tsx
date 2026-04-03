@@ -626,7 +626,7 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
   return (
     <div className="h-full flex flex-col">
       {/* Top bar */}
-      <div className="px-6 py-4 border-b border-border bg-background/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="px-6 py-4 border-b border-border bg-card sticky top-0 z-10 aray-topbar">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <h1 className="font-display font-bold text-xl">Задачи</h1>

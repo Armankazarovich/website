@@ -859,7 +859,7 @@ canvas,
   background: rgba(255, 255, 255, 0.09) !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
   color: rgba(255, 255, 255, 0.90) !important;
-  colorScheme: dark !important;
+  color-scheme: dark !important;
 }
 /* Placeholder */
 .aray-nature-mode input::placeholder,
@@ -880,6 +880,21 @@ canvas,
 .aray-nature-mode select option {
   background: rgb(12, 16, 36) !important;
   color: rgba(255, 255, 255, 0.90) !important;
+}
+
+/* bg-background с opacity — sticky заголовки страниц (bg-background/80, /60 и т.д.) */
+.aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
+  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
+  background: rgba(5, 8, 20, 0.50) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+.light .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]),
+[data-theme="light"] .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
+  backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
+  background: rgba(5, 8, 20, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Разделители таблиц — тонкие и прозрачные */
