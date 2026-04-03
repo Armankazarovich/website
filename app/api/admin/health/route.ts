@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import os from "os";
 
 async function checkAdmin() {
   const session = await auth();
@@ -66,19 +67,21 @@ export async function GET() {
     detail: "Next.js 14+ App Router с Server Components и Server Actions",
   });
 
-  // 3. Memory usage
+  // 3. Memory usage (реальный RAM сервера, не V8 heap)
   const mem = process.memoryUsage();
-  const heapMb = Math.round(mem.heapUsed / 1024 / 1024);
-  const heapTotalMb = Math.round(mem.heapTotal / 1024 / 1024);
-  const memPercent = Math.round((heapMb / heapTotalMb) * 100);
+  const rssMb = Math.round(mem.rss / 1024 / 1024);
+  const totalRamMb = Math.round(os.totalmem() / 1024 / 1024);
+  const freeRamMb = Math.round(os.freemem() / 1024 / 1024);
+  const usedRamMb = totalRamMb - freeRamMb;
+  const ramPercent = Math.round((usedRamMb / totalRamMb) * 100);
   checks.push({
     id: "memory",
     name: "Память (RAM)",
     category: "infrastructure",
-    status: memPercent < 70 ? "ok" : memPercent < 90 ? "warn" : "error",
-    message: `Использовано ${heapMb} МБ из ${heapTotalMb} МБ (${memPercent}%)`,
-    detail: `RSS: ${Math.round(mem.rss / 1024 / 1024)} МБ · External: ${Math.round(mem.external / 1024 / 1024)} МБ`,
-    fix: memPercent >= 70 ? "Перезапустите PM2: `pm2 restart pilo-rus --update-env` или оптимизируйте тяжёлые запросы" : undefined,
+    status: ramPercent < 75 ? "ok" : ramPercent < 90 ? "warn" : "error",
+    message: `Сервер: ${usedRamMb} МБ из ${totalRamMb} МБ (${ramPercent}%)`,
+    detail: `Процесс RSS: ${rssMb} МБ · Heap: ${Math.round(mem.heapUsed / 1024 / 1024)} МБ`,
+    fix: ramPercent >= 90 ? "Перезапустите PM2: `pm2 restart pilo-rus --update-env` или оптимизируйте тяжёлые запросы" : undefined,
   });
 
   // 4. Database connectivity + stats
