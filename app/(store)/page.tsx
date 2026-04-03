@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Phone, Star, MapPin } from "lucide-react";
 import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
 import { CategoryCard } from "@/components/store/category-card";
+import { SubscribeSection } from "@/components/store/subscribe-section";
 
 const AVATAR_COLORS = [
   "bg-brand-orange",
@@ -904,6 +905,9 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ===== SUBSCRIBE ===== */}
+      <SubscribeSection />
 
       {/* ===== CTA ===== */}
       <section className="py-24 relative overflow-hidden text-white">
