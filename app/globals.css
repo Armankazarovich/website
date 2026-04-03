@@ -625,7 +625,17 @@ canvas,
 .aray-nature-mode [class*="bg-red-"][class*="rounded"],
 .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
 .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
-.aray-nature-mode [class*="bg-indigo-"][class*="rounded"] {
+.aray-nature-mode [class*="bg-indigo-"][class*="rounded"],
+.aray-nature-mode [class*="bg-gray-"][class*="rounded"],
+.aray-nature-mode [class*="bg-rose-"][class*="rounded"],
+.aray-nature-mode [class*="bg-purple-"][class*="rounded"],
+.aray-nature-mode [class*="bg-pink-"][class*="rounded"],
+.aray-nature-mode [class*="bg-sky-"][class*="rounded"],
+.aray-nature-mode [class*="bg-lime-"][class*="rounded"],
+.aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"],
+.aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
+.aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
+.aray-nature-mode [class*="bg-stone-"][class*="rounded"] {
   backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
   -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
   background: rgba(5, 8, 20, 0.45) !important;
@@ -669,11 +679,38 @@ canvas,
 .light .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
 .light .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
 .light .aray-nature-mode [class*="bg-indigo-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-gray-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-rose-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-purple-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-pink-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-sky-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-lime-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-stone-"][class*="rounded"],
 [data-theme="light"] .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 [data-theme="light"] .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
 [data-theme="light"] .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
 [data-theme="light"] .aray-nature-mode [class*="bg-green-"][class*="rounded"],
-[data-theme="light"] .aray-nature-mode [class*="bg-violet-"][class*="rounded"] {
+[data-theme="light"] .aray-nature-mode [class*="bg-emerald-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-violet-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-slate-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-amber-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-red-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-indigo-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-gray-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-rose-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-purple-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-pink-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-sky-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-lime-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-stone-"][class*="rounded"] {
   backdrop-filter: blur(18px) saturate(160%) brightness(1.08) !important;
   -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(1.08) !important;
   background: rgba(255, 255, 255, 0.65) !important;
@@ -704,30 +741,37 @@ canvas,
 .aray-nature-mode .aray-section-title {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px 5px 6px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  background: hsl(var(--brand-sidebar) / 0.52);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
-  color: rgba(255, 255, 255, 0.78) !important;
+  gap: 7px;
+  padding: 6px 12px 6px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(5, 8, 20, 0.55);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.10) inset;
+  color: rgba(255, 255, 255, 0.88) !important;
   text-shadow: none;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
   line-height: 1;
-  /* Иконка внутри (первый svg) — крупнее, без анимации */
 }
+/* Светлая тема — тот же тёмный стиль (контраст на белом фросте) */
+.light .aray-nature-mode .aray-section-title,
+[data-theme="light"] .aray-nature-mode .aray-section-title {
+  background: rgba(5, 8, 20, 0.52);
+  border-color: rgba(255, 255, 255, 0.20);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.12) inset;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+/* Иконка внутри — чуть крупнее, акцентный цвет, БЕЗ hover-анимации */
 .aray-nature-mode .aray-section-title svg {
-  width: 14px !important;
-  height: 14px !important;
-  opacity: 0.75;
-  /* НЕТ transform при hover — намеренно */
-  transition: none !important;
+  width: 15px !important;
+  height: 15px !important;
+  opacity: 1;
   flex-shrink: 0;
+  transition: none !important;
 }
 .aray-nature-mode .aray-section-title:hover svg {
   transform: none !important;
