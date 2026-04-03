@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { PALETTE_GROUPS } from "@/components/palette-provider";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft } from "lucide-react";
+import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft, Eye } from "lucide-react";
+
+function applyPalettePreview(id: string) {
+  const root = document.documentElement;
+  if (id === "timber") {
+    root.removeAttribute("data-palette");
+  } else {
+    root.setAttribute("data-palette", id);
+  }
+}
 
 const CARD_STYLES = [
   {
@@ -161,7 +170,22 @@ export function AppearanceClient({
     requireComment: false,
   });
   const [saving, setSaving] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const revertTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { toast } = useToast();
+
+  const handlePaletteHover = useCallback((id: string) => {
+    if (revertTimerRef.current) clearTimeout(revertTimerRef.current);
+    setPreviewId(id);
+    applyPalettePreview(id);
+  }, []);
+
+  const handlePaletteLeave = useCallback(() => {
+    setPreviewId(null);
+    revertTimerRef.current = setTimeout(() => {
+      applyPalettePreview(defaultPalette);
+    }, 120);
+  }, [defaultPalette]);
 
   const toggle = (id: string) => {
     if (id === "timber") return;
@@ -411,19 +435,45 @@ export function AppearanceClient({
               {group.palettes.map((p) => {
                 const isOn = enabled.has(p.id);
                 const isDefault = defaultPalette === p.id;
+                const isPreviewing = previewId === p.id;
                 return (
                   <div
                     key={p.id}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                      isOn ? "border-primary/40 bg-primary/5" : "border-border bg-muted/30 opacity-50"
+                    onMouseEnter={() => handlePaletteHover(p.id)}
+                    onMouseLeave={handlePaletteLeave}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-default ${
+                      isPreviewing
+                        ? "border-primary/60 bg-primary/8 scale-[1.01] shadow-sm"
+                        : isOn
+                        ? "border-primary/40 bg-primary/5"
+                        : "border-border bg-muted/30 opacity-50"
                     }`}
                   >
+                    {/* Цветовой круг — клик для включения/выключения */}
                     <span
-                      className="w-9 h-9 rounded-full shrink-0 border-2 border-white/20 shadow cursor-pointer"
-                      style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                      className="w-9 h-9 rounded-full shrink-0 border-2 border-white/20 shadow cursor-pointer ring-offset-1 transition-all"
+                      style={{
+                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                        ringColor: isPreviewing ? p.accent : "transparent",
+                        boxShadow: isPreviewing ? `0 0 0 2px ${p.accent}55, 0 2px 8px ${p.accent}40` : undefined,
+                      }}
                       onClick={() => toggle(p.id)}
                     />
-                    <span className="flex-1 font-medium text-sm" onClick={() => toggle(p.id)} style={{cursor: isOn || p.id === "timber" ? "default" : "pointer"}}>{p.name}</span>
+                    <span
+                      className="flex-1 font-medium text-sm"
+                      onClick={() => toggle(p.id)}
+                      style={{ cursor: isOn || p.id === "timber" ? "default" : "pointer" }}
+                    >
+                      {p.name}
+                    </span>
+
+                    {/* Превью-индикатор */}
+                    {isPreviewing && (
+                      <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground animate-in fade-in duration-150 shrink-0">
+                        <Eye className="w-3 h-3" />
+                        предпросмотр
+                      </span>
+                    )}
 
                     {/* Default badge / button */}
                     {isDefault ? (
