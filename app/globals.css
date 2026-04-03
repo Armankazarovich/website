@@ -828,3 +828,17 @@ canvas,
   }
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ICON HOVER ROTATION — лёгкий поворот иконок (только .aray-icon-spin)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.aray-icon-spin svg {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.aray-icon-spin:hover svg {
+  transform: rotate(10deg) scale(1.12);
+}
+.aray-icon-spin:active svg {
+  transform: rotate(0deg) scale(0.9);
+}

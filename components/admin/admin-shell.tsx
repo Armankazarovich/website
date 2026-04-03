@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LogOut, Sun, Moon, Bell, Search } from "lucide-react";
+import { Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react";
+import { AdminSearch } from "@/components/admin/admin-search";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
@@ -64,6 +66,20 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
+
+  // Swipe-to-open drawer
+  const touchStartX = useRef(0);
+  useEffect(() => {
+    const onTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+    const onTouchEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      if (touchStartX.current < 32 && dx > 60) setOpen(true);   // edge swipe right → open
+      if (open && dx < -60) setOpen(false);                      // swipe left → close
+    };
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => { document.removeEventListener("touchstart", onTouchStart); document.removeEventListener("touchend", onTouchEnd); };
+  }, [open]);
 
   return (
     <div className="flex min-h-screen aray-admin-bg">
@@ -136,21 +152,23 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
       </aside>
 
       {/* ─── Mobile header ────────────────────────────────────── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-3 px-4 h-14 aray-sidebar text-white"
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-2 px-3 h-14 aray-sidebar text-white"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}>
         <button
           onClick={() => setOpen(true)}
-          className="p-2 rounded-xl hover:bg-white/10 transition-colors -ml-1"
+          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0 aray-icon-spin"
           aria-label="Меню"
         >
           <Menu className="w-5 h-5" />
         </button>
         <Link href="/admin" className="flex-1 min-w-0">
-          <span className="font-display font-bold text-lg leading-none">ПилоРус</span>
-          <span className="text-[11px] text-white/50 ml-2">{pageTitle}</span>
+          <span className="font-display font-bold text-base leading-none">ПилоРус</span>
+          <span className="text-[10px] text-white/50 ml-1.5">{pageTitle}</span>
         </Link>
-        <button className="p-2 rounded-xl hover:bg-white/10 transition-colors opacity-60">
-          <Bell className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+        {/* Мобильный поиск */}
+        <AdminSearch />
+        <button className="p-2 rounded-xl hover:bg-white/10 transition-colors opacity-60 shrink-0 aray-icon-spin">
+          <Bell className="w-[18px] h-[18px]" />
         </button>
       </header>
 
@@ -165,13 +183,8 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         {/* Заголовок текущей страницы */}
         <h1 className="text-base font-semibold text-foreground flex-1 truncate">{pageTitle}</h1>
 
-        {/* Поиск (декоративный / будущий) */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm text-muted-foreground"
-          style={{ background: "hsl(var(--muted) / 0.6)", border: "1px solid hsl(var(--border) / 0.5)" }}>
-          <Search className="w-3.5 h-3.5" />
-          <span className="text-xs hidden xl:block">Поиск...</span>
-          <kbd className="hidden xl:block text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono">⌘K</kbd>
-        </div>
+        {/* Живой поиск */}
+        <AdminSearch />
 
         {/* Уведомления */}
         <button className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative">
@@ -275,10 +288,17 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         </div>
       </div>
 
+      {/* ─── Mobile bottom tab bar ────────────────────────────── */}
+      <AdminMobileBottomNav
+        role={role}
+        onMenuOpen={() => setOpen(true)}
+        menuOpen={open}
+      />
+
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60">
-        {/* Отступ сверху под мобильный хедер + десктопный топбар */}
-        <div className="pt-14">
+        {/* Отступ сверху под мобильный хедер + десктопный топбар; снизу под таббар */}
+        <div className="pt-14 lg:pb-0 pb-16" style={{ paddingBottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}>
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>

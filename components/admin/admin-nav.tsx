@@ -149,7 +149,7 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
             <Link
               href={item.href}
               onClick={onNavigate}
-              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden ${
+              className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden aray-icon-spin ${
                 isActive
                   ? "aray-nav-active text-white"
                   : "text-white/65 hover:text-white hover:bg-white/[0.07]"

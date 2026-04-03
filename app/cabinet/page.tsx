@@ -111,7 +111,7 @@ export default async function CabinetDashboard() {
             <Link
               key={action.href + action.label}
               href={action.href}
-              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 p-3 min-h-[72px] active:scale-[0.95] transition-transform ${action.bg}`}
+              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 p-3 min-h-[72px] active:scale-[0.95] transition-transform aray-icon-spin ${action.bg}`}
             >
               <action.icon className={`w-5 h-5 ${action.color}`} />
               <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
