@@ -283,14 +283,17 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   // ── Общие стили панели ────────────────────────────────────────────────────
   const panelBg = {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
+    background: "rgba(8, 12, 28, 0.80)",
+    backdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
+    WebkitBackdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
+    border: "1px solid rgba(255, 255, 255, 0.12)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset",
   } as React.CSSProperties;
 
   // ── Шапка ─────────────────────────────────────────────────────────────────
   const Header = () => (
     <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-      style={{ borderBottom: "1px solid hsl(var(--border))" }}>
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
       <ArayIcon size={32} />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground))" }}>Арай</p>
@@ -331,7 +334,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         <div className="flex gap-2.5 mb-3">
           <ArayIcon size={24} />
           <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
-            style={{ background: "hsl(var(--muted))", border: "1px solid hsl(var(--border))" }}>
+            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
             <div className="flex gap-1.5 items-center h-4">
               {[0, 1, 2].map(i => (
                 <span key={i} className="w-1.5 h-1.5 rounded-full"
@@ -367,7 +370,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   // ── Поле ввода ────────────────────────────────────────────────────────────
   const InputBar = () => (
     <div className="px-4 py-3 flex gap-2 items-end flex-shrink-0"
-      style={{ borderTop: "1px solid hsl(var(--border))" }}>
+      style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
       {/* Голос */}
       <button onClick={listening ? stopVoice : startVoice}
         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
@@ -391,9 +394,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         rows={1} placeholder={listening ? "🎤 Слушаю..." : "Написать Арaю..."}
         className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
         style={{
-          background: "hsl(var(--muted))",
-          border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "hsl(var(--border))"}`,
-          color: "hsl(var(--foreground))",
+          background: "rgba(255,255,255,0.07)",
+          border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
+          color: "rgba(255,255,255,0.90)",
           maxHeight: "100px",
         }}
       />

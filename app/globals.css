@@ -764,43 +764,61 @@ canvas,
    Яркий блик сверху + чуть больше opacity = различимы визуально
    ══════════════════════════════════════════════════════════════ */
 
-/* Тёмная тема — мокрое тёмное стекло */
+/* Тёмная тема — МОКРОЕ стекло, градиент с ярким бликом */
 .aray-nature-mode a.bg-card,
 .aray-nature-mode button.bg-card,
 .aray-nature-mode a.aray-nature-card,
 .aray-nature-mode button.aray-nature-card {
-  background: rgba(14, 20, 48, 0.56) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,    /* яркий блик сверху — как мокрое стекло */
+    rgba(255, 255, 255, 0.06) 6%,    /* быстро уходит */
+    rgba(10, 16, 40, 0.62) 14%,      /* тёмное стекло */
+    rgba(6, 10, 28, 0.58) 100%
+  ) !important;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.22),
-    0 1px 0 rgba(255, 255, 255, 0.18) inset,   /* мокрый блик сверху */
-    0 0 0 1px rgba(255, 255, 255, 0.09) inset;
-  transition: box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease !important;
+    0 6px 24px rgba(0, 0, 0, 0.30),
+    0 1px 0 rgba(255, 255, 255, 0.30) inset;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  transition: all 0.2s ease !important;
 }
 .aray-nature-mode a.bg-card:hover,
 .aray-nature-mode button.bg-card:hover,
 .aray-nature-mode a.aray-nature-card:hover,
 .aray-nature-mode button.aray-nature-card:hover {
-  background: rgba(20, 30, 62, 0.68) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35) 0%,    /* ещё ярче на hover */
+    rgba(255, 255, 255, 0.10) 6%,
+    rgba(14, 22, 55, 0.72) 14%,
+    rgba(8, 14, 38, 0.68) 100%
+  ) !important;
   box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.30),
-    0 1px 0 rgba(255, 255, 255, 0.28) inset,   /* блик ярче на hover */
-    0 0 0 1px rgba(255, 255, 255, 0.14) inset;
-  transform: translateY(-1px);
+    0 10px 36px rgba(0, 0, 0, 0.38),
+    0 1px 0 rgba(255, 255, 255, 0.45) inset;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  transform: translateY(-2px);
 }
 
-/* Светлая тема — мокрое белое стекло */
+/* Светлая тема — мокрое светлое стекло */
 .light .aray-nature-mode a.bg-card,
 .light .aray-nature-mode button.bg-card,
 .light .aray-nature-mode a.aray-nature-card,
 .light .aray-nature-mode button.aray-nature-card,
 [data-theme="light"] .aray-nature-mode a.bg-card,
 [data-theme="light"] .aray-nature-mode button.bg-card {
-  background: rgba(225, 238, 255, 0.68) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1.00) 0%,    /* чисто белый блик — капля воды */
+    rgba(255, 255, 255, 0.85) 5%,
+    rgba(220, 235, 255, 0.72) 100%
+  ) !important;
   box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.95) inset,   /* чистый белый блик = после дождя */
-    0 -1px 0 rgba(180, 210, 255, 0.25) inset;
-  transition: box-shadow 0.2s ease, background 0.2s ease, transform 0.15s ease !important;
+    0 6px 20px rgba(0, 0, 0, 0.10),
+    0 1px 0 rgba(255, 255, 255, 1) inset,
+    0 -1px 0 rgba(160, 200, 255, 0.30) inset;
+  border: 1px solid rgba(255, 255, 255, 0.90) !important;
+  transition: all 0.2s ease !important;
 }
 .light .aray-nature-mode a.bg-card:hover,
 .light .aray-nature-mode button.bg-card:hover,
@@ -808,12 +826,17 @@ canvas,
 .light .aray-nature-mode button.aray-nature-card:hover,
 [data-theme="light"] .aray-nature-mode a.bg-card:hover,
 [data-theme="light"] .aray-nature-mode button.bg-card:hover {
-  background: rgba(215, 232, 255, 0.80) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1.00) 0%,
+    rgba(255, 255, 255, 0.92) 5%,
+    rgba(210, 228, 255, 0.82) 100%
+  ) !important;
   box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.12),
+    0 10px 32px rgba(0, 0, 0, 0.14),
     0 1px 0 rgba(255, 255, 255, 1) inset,
-    0 -1px 0 rgba(160, 200, 255, 0.35) inset;
-  transform: translateY(-1px);
+    0 -1px 0 rgba(140, 185, 255, 0.40) inset;
+  transform: translateY(-2px);
 }
 
 /* ── NAV-ссылки — тонкий контур, без фона ── */
@@ -1081,9 +1104,12 @@ canvas,
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   ICON HOVER ROTATION — лёгкий поворот иконок (только .aray-icon-spin)
+   ICON HOVER ROTATION — единый стиль SVG анимаций
+   .aray-icon-spin — ручная метка (topbar, быстрые действия, навигация)
+   .aray-nature-mode — авто для всех кнопок в природном режиме
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Элементы с ручной меткой — чуть активнее (10°) */
 .aray-icon-spin svg {
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1092,4 +1118,19 @@ canvas,
 }
 .aray-icon-spin:active svg {
   transform: rotate(0deg) scale(0.9);
+}
+
+/* Все кнопки в природном режиме — мягкая анимация (без фанатизма)
+   Исключаем: анимированные SVG (спиннеры, лоадеры), элементы без иконок */
+.aray-nature-mode button:not(.aray-icon-spin) svg:not(.animate-spin):not(.animate-bounce):not(.animate-pulse),
+.aray-nature-mode a:not(.aray-icon-spin) svg:not(.animate-spin):not(.animate-bounce):not(.animate-pulse) {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.aray-nature-mode button:not(.aray-icon-spin):hover svg:not(.animate-spin):not(.animate-bounce),
+.aray-nature-mode a:not(.aray-icon-spin):hover svg:not(.animate-spin):not(.animate-bounce) {
+  transform: scale(1.08);
+}
+.aray-nature-mode button:not(.aray-icon-spin):active svg:not(.animate-spin),
+.aray-nature-mode a:not(.aray-icon-spin):active svg:not(.animate-spin) {
+  transform: scale(0.90);
 }
