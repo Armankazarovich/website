@@ -127,13 +127,13 @@ function MessageBubble({ msg }: { msg: Message }) {
         <div className="px-3.5 py-2.5 text-sm leading-relaxed" style={
           isUser
             ? { background: "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)", color: "#fff", borderRadius: "16px 16px 4px 16px" }
-            : { background: "hsl(var(--muted))", color: "hsl(var(--foreground))", borderRadius: "16px 16px 16px 4px", border: "1px solid hsl(var(--border))" }
+            : { background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.90)", borderRadius: "16px 16px 16px 4px", border: "1px solid rgba(255,255,255,0.10)" }
         }>
           {msg.content.split("\n").map((line, i, arr) => (
             <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
           ))}
         </div>
-        <span className="text-[10px] px-1" style={{ color: "hsl(var(--muted-foreground))", opacity: 0.5 }}>
+        <span className="text-[10px] px-1" style={{ color: "rgba(255,255,255,0.38)" }}>
           {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
@@ -296,8 +296,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
       <ArayIcon size={32} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: "hsl(var(--foreground))" }}>Арай</p>
-        <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "hsl(var(--muted-foreground))" }}>
+        <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
+        <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
           {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
         </p>
@@ -314,13 +314,19 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       )}
       <div className="flex gap-0.5">
         <button onClick={() => { setMessages([]); startChat(); }}
-          className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted transition-colors"
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+          style={{ color: "rgba(255,255,255,0.40)" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           title="Новый чат">
-          <RotateCcw className="w-3.5 h-3.5" style={{ color: "hsl(var(--muted-foreground))" }} />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
         <button onClick={() => setOpen(false)}
-          className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted transition-colors">
-          <X className="w-4 h-4" style={{ color: "hsl(var(--muted-foreground))" }} />
+          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+          style={{ color: "rgba(255,255,255,0.40)" }}
+          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+          <X className="w-4 h-4" />
         </button>
       </div>
     </div>
@@ -375,15 +381,15 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       <button onClick={listening ? stopVoice : startVoice}
         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
         style={{
-          background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "hsl(var(--muted))",
-          border: `1px solid ${listening ? "transparent" : "hsl(var(--border))"}`,
+          background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
+          border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
           boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
         }}>
         {listening && <span className="absolute inset-0 rounded-full animate-ping"
           style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
         {listening
           ? <MicOff className="w-4 h-4 text-white relative z-10" />
-          : <Mic className="w-4 h-4 relative z-10" style={{ color: "hsl(var(--muted-foreground))" }} />}
+          : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
       </button>
 
       {/* Текст */}
