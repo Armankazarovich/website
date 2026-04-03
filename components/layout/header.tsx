@@ -534,18 +534,36 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
               <AnimatePresence>
                 {mounted && showCartPreview && (
                   <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                    initial={{ opacity: 0, y: -8, scale: 0.92 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                    transition={{ duration: 0.18 }}
-                    className="absolute top-full right-0 mt-2.5 z-50 bg-card border border-border rounded-xl shadow-xl px-3.5 py-2.5 whitespace-nowrap pointer-events-none"
+                    exit={{ opacity: 0, y: -4, scale: 0.94 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                    className="absolute top-full right-0 mt-2.5 z-50 whitespace-nowrap pointer-events-none"
+                    style={{
+                      background: "linear-gradient(135deg, rgba(232,112,10,0.12) 0%, var(--card) 60%)",
+                      border: "1px solid rgba(232,112,10,0.30)",
+                      borderRadius: 14,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(232,112,10,0.08)",
+                      padding: "10px 14px",
+                      backdropFilter: "blur(12px)",
+                    }}
                   >
-                    <p className="text-[11px] text-muted-foreground mb-0.5">Итого в корзине</p>
-                    <p className="font-display font-bold text-sm text-primary leading-none">
-                      {formatPrice(totalPrice)}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{totalItems} поз.</p>
-                    <div className="absolute -top-1.5 right-3.5 w-3 h-3 bg-card border-l border-t border-border rotate-45" />
+                    {/* Стрелочка */}
+                    <div className="absolute -top-[7px] right-3.5 w-3.5 h-3.5 rotate-45"
+                      style={{ background: "linear-gradient(135deg, rgba(232,112,10,0.25), transparent)", border: "1px solid rgba(232,112,10,0.28)", borderRight: "none", borderBottom: "none" }} />
+                    {/* Контент */}
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ background: "rgba(232,112,10,0.15)" }}>
+                        <ShoppingCart className="w-3.5 h-3.5 text-brand-orange" />
+                      </div>
+                      <div>
+                        <p className="font-display font-bold text-[15px] text-brand-orange leading-none">
+                          {formatPrice(totalPrice)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{totalItems} {totalItems === 1 ? "позиция" : totalItems < 5 ? "позиции" : "позиций"} в корзине</p>
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

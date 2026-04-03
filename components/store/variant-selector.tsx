@@ -237,16 +237,20 @@ export function VariantSelector({
           size="lg"
           className={cn(
             "flex-1 text-base font-semibold transition-all duration-300",
-            justAdded && "bg-emerald-500 hover:bg-emerald-500 border-emerald-400 scale-[1.02]"
+            justAdded
+              ? "bg-emerald-500 hover:bg-emerald-500 border-emerald-400 scale-[1.02] shadow-[0_0_20px_rgba(16,185,129,0.40)]"
+              : ""
           )}
           onClick={handleAdd}
-          disabled={!selectedVariant?.inStock || !currentPrice}
+          disabled={!selectedVariant?.inStock || !currentPrice || justAdded}
         >
           {justAdded ? (
-            <>
-              <Check className="w-5 h-5 mr-2 shrink-0" />
-              Добавлено · {formatPrice(addedTotal)}
-            </>
+            <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
+              <Check className="w-5 h-5 shrink-0" />
+              <span className="truncate">
+                {quantity} {unitType === "CUBE" ? "м³" : "шт"} · {formatPrice(addedTotal)}
+              </span>
+            </span>
           ) : !selectedVariant?.inStock ? (
             "Нет в наличии"
           ) : (
