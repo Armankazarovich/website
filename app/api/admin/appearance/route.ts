@@ -48,6 +48,11 @@ export async function PATCH(req: Request) {
     updates.default_palette = body.default_palette;
   }
 
+  // Aray assistant toggle
+  if (typeof body.aray_enabled === "string" && ["true", "false"].includes(body.aray_enabled)) {
+    updates.aray_enabled = body.aray_enabled;
+  }
+
   // Save all updated keys
   await Promise.all(
     Object.entries(updates).map(([key, value]) =>

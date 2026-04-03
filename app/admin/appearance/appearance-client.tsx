@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PALETTE_GROUPS } from "@/components/palette-provider";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Image as ImageIcon, LayoutGrid } from "lucide-react";
+import { Lock, Image as ImageIcon, LayoutGrid, Bot } from "lucide-react";
 
 const CARD_STYLES = [
   {
@@ -115,16 +115,19 @@ export function AppearanceClient({
   initialPhotoAspect,
   initialCardStyle,
   initialDefaultPalette,
+  initialArayEnabled,
 }: {
   initialEnabledIds: string[];
   initialPhotoAspect: string;
   initialCardStyle: string;
   initialDefaultPalette: string;
+  initialArayEnabled: boolean;
 }) {
   const [enabled, setEnabled] = useState<Set<string>>(new Set(initialEnabledIds));
   const [photoAspect, setPhotoAspect] = useState(initialPhotoAspect || "1/1");
   const [cardStyle, setCardStyle] = useState(initialCardStyle || "classic");
   const [defaultPalette, setDefaultPalette] = useState(initialDefaultPalette || "timber");
+  const [arayEnabled, setArayEnabled] = useState(initialArayEnabled);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -149,6 +152,7 @@ export function AppearanceClient({
           photo_aspect_ratio: photoAspect,
           card_style: cardStyle,
           default_palette: defaultPalette,
+          aray_enabled: arayEnabled ? "true" : "false",
         }),
       });
       if (!res.ok) throw new Error();
@@ -162,6 +166,38 @@ export function AppearanceClient({
 
   return (
     <div className="space-y-4">
+
+      {/* ── Арай ассистент ── */}
+      <div className="bg-card border border-border rounded-2xl p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-amber-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-sm">Арай — ИИ ассистент</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {arayEnabled ? "Виджет виден покупателям на сайте" : "Виджет скрыт от покупателей"}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setArayEnabled(!arayEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              arayEnabled ? "bg-amber-500" : "bg-muted-foreground/30"
+            }`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+              arayEnabled ? "translate-x-6" : "translate-x-1"
+            }`} />
+          </button>
+        </div>
+        {!arayEnabled && (
+          <p className="mt-3 text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2">
+            Включите когда пополните баланс Anthropic — ассистент заработает сразу без передеплоя
+          </p>
+        )}
+      </div>
 
       {/* ── Стиль карточек ── */}
       <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
