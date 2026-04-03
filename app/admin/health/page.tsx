@@ -22,12 +22,19 @@ type CheckResult = {
   message: string;
   fix?: string;
   autoFixable?: boolean;
+  category?: string;
+  detail?: string;
 };
 
 type HealthData = {
   checks: CheckResult[];
   summary: { ok: number; warn: number; error: number };
   checkedAt: string;
+  nodeVersion?: string;
+  nextVersion?: string;
+  platform?: string;
+  memoryMb?: number;
+  memoryTotalMb?: number;
 };
 
 const FIX_LINKS: Record<string, { href: string; label: string; external?: boolean }> = {
@@ -36,11 +43,24 @@ const FIX_LINKS: Record<string, { href: string; label: string; external?: boolea
   sitemap:          { href: "https://pilo-rus.ru/sitemap.xml", label: "Открыть Sitemap", external: true },
   yml:              { href: "/admin/analytics",     label: "Аналитика" },
   push:             { href: "/admin/notifications", label: "Уведомления" },
+  telegram:         { href: "/admin/notifications", label: "Настроить Telegram" },
   watermark_backup: { href: "/admin/watermark",     label: "Водяной знак" },
   stale_orders:     { href: "/admin/orders",        label: "Заказы" },
   product_images:   { href: "/admin/products",      label: "Каталог товаров" },
   product_prices:   { href: "/admin/products",      label: "Каталог товаров" },
 };
+
+const CATEGORY_LABELS: Record<string, string> = {
+  infrastructure: "Инфраструктура",
+  seo:            "SEO и фиды",
+  analytics:      "Аналитика",
+  notifications:  "Уведомления",
+  catalog:        "Каталог",
+  sales:          "Продажи",
+  media:          "Медиа",
+};
+
+const CATEGORY_ORDER = ["infrastructure","seo","analytics","notifications","catalog","sales","media"];
 
 function StatusIcon({ status, size = "md" }: { status: "ok" | "warn" | "error"; size?: "sm" | "md" | "lg" }) {
   const sizeClass = size === "lg" ? "w-8 h-8" : size === "sm" ? "w-4 h-4" : "w-5 h-5";
@@ -77,6 +97,7 @@ export default function HealthPage() {
   const [loading, setLoading] = useState(true);
   const [loaded, setLoaded]   = useState(0);
   const [error, setError]     = useState<string | null>(null);
+  const TOTAL_CHECKS = 15;
 
   const runChecks = useCallback(async () => {
     setLoading(true);
@@ -86,8 +107,8 @@ export default function HealthPage() {
 
     // Simulate incremental progress while fetch runs
     const interval = setInterval(() => {
-      setLoaded((prev) => (prev < 9 ? prev + 1 : prev));
-    }, 400);
+      setLoaded((prev) => (prev < TOTAL_CHECKS - 1 ? prev + 1 : prev));
+    }, 350);
 
     try {
       const res = await fetch("/api/admin/health");
@@ -191,23 +212,23 @@ export default function HealthPage() {
         <div>
           <p className="font-semibold text-base">Проверяем систему…</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Проверено {loaded} из 10 компонентов
+            Проверено {loaded} из {TOTAL_CHECKS} компонентов
           </p>
         </div>
         <div className="max-w-xs mx-auto">
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
               className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${(loaded / 10) * 100}%` }}
+              style={{ width: `${(loaded / TOTAL_CHECKS) * 100}%` }}
             />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
-            <span>База данных</span>
-            <span>Заказы</span>
+            <span>Инфраструктура</span>
+            <span>Продажи</span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Тестируем подключения — это займёт несколько секунд
+          Тестируем 15 компонентов — это займёт несколько секунд
         </p>
       </div>
     );
@@ -248,6 +269,11 @@ export default function HealthPage() {
                 {check.status === "ok" ? "OK" : check.status === "warn" ? "Внимание" : "Ошибка"}
               </span>
             </div>
+
+            {/* Detail info (version, count, etc.) */}
+            {check.detail && (
+              <p className="text-[11px] text-muted-foreground/70 mt-1 font-mono">{check.detail}</p>
+            )}
 
             {/* Fix instructions */}
             {isNotOk && check.fix && (
@@ -315,10 +341,21 @@ export default function HealthPage() {
     );
   }
 
-  /* ─── Group checks by importance ─── */
+  /* ─── Group checks by status ─── */
   const errors  = data?.checks.filter(c => c.status === "error") ?? [];
   const warns   = data?.checks.filter(c => c.status === "warn")  ?? [];
   const oks     = data?.checks.filter(c => c.status === "ok")    ?? [];
+
+  /* ─── Group checks by category ─── */
+  const byCategory = CATEGORY_ORDER.map(cat => ({
+    cat,
+    label: CATEGORY_LABELS[cat] || cat,
+    checks: data?.checks.filter(c => c.category === cat) ?? [],
+  })).filter(g => g.checks.length > 0);
+
+  const memPct = data?.memoryMb && data?.memoryTotalMb
+    ? Math.round((data.memoryMb / data.memoryTotalMb) * 100)
+    : null;
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -377,7 +414,45 @@ export default function HealthPage() {
           {/* Stats counters */}
           <StatsRow />
 
-          {/* Errors section */}
+          {/* Version + Memory info bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {data.nodeVersion && (
+              <div className="bg-card border border-border rounded-2xl p-3 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Node.js</p>
+                <p className="font-mono font-bold text-sm">{data.nodeVersion}</p>
+              </div>
+            )}
+            {data.nextVersion && (
+              <div className="bg-card border border-border rounded-2xl p-3 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Next.js</p>
+                <p className="font-mono font-bold text-sm">{data.nextVersion}</p>
+              </div>
+            )}
+            {data.platform && (
+              <div className="bg-card border border-border rounded-2xl p-3 text-center">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Платформа</p>
+                <p className="font-mono font-bold text-sm">{data.platform}</p>
+              </div>
+            )}
+            {memPct !== null && (
+              <div className="bg-card border border-border rounded-2xl p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5">
+                  Память — {data.memoryMb} / {data.memoryTotalMb} MB
+                </p>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      memPct > 85 ? "bg-red-500" : memPct > 70 ? "bg-amber-500" : "bg-emerald-500"
+                    }`}
+                    style={{ width: `${memPct}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">{memPct}% использовано</p>
+              </div>
+            )}
+          </div>
+
+          {/* Priority sections: errors first, then warnings */}
           {errors.length > 0 && (
             <section className="space-y-2">
               <div className="flex items-center gap-2 px-1">
@@ -390,7 +465,6 @@ export default function HealthPage() {
             </section>
           )}
 
-          {/* Warnings section */}
           {warns.length > 0 && (
             <section className="space-y-2">
               <div className="flex items-center gap-2 px-1">
@@ -403,25 +477,43 @@ export default function HealthPage() {
             </section>
           )}
 
-          {/* OK section */}
-          {oks.length > 0 && (
-            <section className="space-y-2">
-              <div className="flex items-center gap-2 px-1">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                <h2 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide">
-                  Работает нормально — {oks.length}
-                </h2>
-              </div>
-              {oks.map(c => <CheckCard key={c.id} check={c} />)}
-            </section>
-          )}
+          {/* By category */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 px-1 pt-2">
+              <Shield className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                По разделам
+              </h2>
+            </div>
+          </div>
+          {byCategory.map(({ cat, label, checks }) => {
+            const hasIssue = checks.some(c => c.status !== "ok");
+            return (
+              <section key={cat} className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <span className={`text-[11px] font-bold uppercase tracking-wide ${
+                    hasIssue ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
+                  }`}>
+                    {label}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                    hasIssue ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                             : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                  }`}>
+                    {checks.filter(c => c.status === "ok").length}/{checks.length} OK
+                  </span>
+                </div>
+                {checks.map(c => <CheckCard key={c.id} check={c} />)}
+              </section>
+            );
+          })}
 
           {/* Footer tip */}
           <div className="bg-muted/40 border border-border rounded-2xl p-4 flex items-start gap-3">
             <Zap className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Эта страница проверяет все ключевые компоненты сайта в реальном времени.
-              Нажмите «Перепроверить всё» после внесения изменений, чтобы убедиться что проблема устранена.
+              15 проверок в реальном времени: инфраструктура, SEO, аналитика, уведомления, каталог, продажи, медиа.
+              Нажмите «Перепроверить всё» после изменений.
             </p>
           </div>
         </>
