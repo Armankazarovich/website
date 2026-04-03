@@ -609,11 +609,14 @@ canvas,
 /* ── ТЁМНАЯ ТЕМА: тёмный glass rgba(5,8,20) ── */
 .aray-nature-mode .bg-card,
 .aray-nature-mode .bg-popover,
+.aray-nature-mode .bg-background,
+.aray-nature-mode .bg-white,
 .aray-nature-mode .aray-stat-card {
   backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.48) !important;
+  background: rgba(5, 8, 20, 0.52) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
 }
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
@@ -650,6 +653,12 @@ canvas,
 .aray-nature-mode .bg-card h4,
 .aray-nature-mode .bg-card .text-foreground,
 .aray-nature-mode .bg-card strong,
+.aray-nature-mode .bg-white p,
+.aray-nature-mode .bg-white h1,
+.aray-nature-mode .bg-white h2,
+.aray-nature-mode .bg-white h3,
+.aray-nature-mode .bg-white .text-foreground,
+.aray-nature-mode .bg-white strong,
 .aray-nature-mode .aray-stat-card p,
 .aray-nature-mode .aray-stat-card h1,
 .aray-nature-mode .aray-stat-card h2,
@@ -660,6 +669,7 @@ canvas,
   color: rgba(255, 255, 255, 0.90) !important;
 }
 .aray-nature-mode .bg-card .text-muted-foreground,
+.aray-nature-mode .bg-white .text-muted-foreground,
 .aray-nature-mode .aray-stat-card .text-muted-foreground,
 .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
   color: rgba(255, 255, 255, 0.48) !important;
@@ -669,12 +679,18 @@ canvas,
 .light .aray-nature-mode .bg-card,
 [data-theme="light"] .aray-nature-mode .bg-card,
 .light .aray-nature-mode .bg-popover,
-[data-theme="light"] .aray-nature-mode .bg-popover {
+[data-theme="light"] .aray-nature-mode .bg-popover,
+.light .aray-nature-mode .bg-background,
+[data-theme="light"] .aray-nature-mode .bg-background,
+.light .aray-nature-mode .bg-white,
+[data-theme="light"] .aray-nature-mode .bg-white,
+.light .aray-nature-mode .aray-stat-card,
+[data-theme="light"] .aray-nature-mode .aray-stat-card {
   backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.48) !important;
+  background: rgba(5, 8, 20, 0.52) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: none !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
 }
 .light .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 .light .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
@@ -727,19 +743,40 @@ canvas,
 }
 /* Светлая тема — текст тоже белый (единый стиль) */
 .light .aray-nature-mode .bg-card p,
-[data-theme="light"] .aray-nature-mode .bg-card p,
 .light .aray-nature-mode .bg-card h1,
 .light .aray-nature-mode .bg-card h2,
 .light .aray-nature-mode .bg-card h3,
 .light .aray-nature-mode .bg-card .text-foreground,
 .light .aray-nature-mode .bg-card strong,
+.light .aray-nature-mode .bg-white p,
+.light .aray-nature-mode .bg-white h1,
+.light .aray-nature-mode .bg-white h2,
+.light .aray-nature-mode .bg-white h3,
+.light .aray-nature-mode .bg-white .text-foreground,
+.light .aray-nature-mode .bg-white strong,
+.light .aray-nature-mode .aray-stat-card p,
+.light .aray-nature-mode .aray-stat-card h1,
+.light .aray-nature-mode .aray-stat-card h2,
+.light .aray-nature-mode .aray-stat-card h3,
+.light .aray-nature-mode .aray-stat-card .text-foreground,
+.light .aray-nature-mode .aray-stat-card strong,
+[data-theme="light"] .aray-nature-mode .bg-card p,
 [data-theme="light"] .aray-nature-mode .bg-card h1,
 [data-theme="light"] .aray-nature-mode .bg-card h2,
-[data-theme="light"] .aray-nature-mode .bg-card .text-foreground {
+[data-theme="light"] .aray-nature-mode .bg-card h3,
+[data-theme="light"] .aray-nature-mode .bg-card .text-foreground,
+[data-theme="light"] .aray-nature-mode .bg-white p,
+[data-theme="light"] .aray-nature-mode .bg-white .text-foreground,
+[data-theme="light"] .aray-nature-mode .aray-stat-card p,
+[data-theme="light"] .aray-nature-mode .aray-stat-card .text-foreground {
   color: rgba(255, 255, 255, 0.90) !important;
 }
 .light .aray-nature-mode .bg-card .text-muted-foreground,
+.light .aray-nature-mode .bg-white .text-muted-foreground,
+.light .aray-nature-mode .aray-stat-card .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode .bg-card .text-muted-foreground,
+[data-theme="light"] .aray-nature-mode .bg-white .text-muted-foreground,
+[data-theme="light"] .aray-nature-mode .aray-stat-card .text-muted-foreground,
 .light .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
   color: rgba(255, 255, 255, 0.48) !important;
@@ -870,17 +907,17 @@ canvas,
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* Светлая тема — белое матовое стекло */
+/* Светлая тема — тот же тёмный glass (единый стиль!) */
 .light .aray-nature-card,
 [data-theme="light"] .aray-nature-card {
-  backdrop-filter: blur(28px) saturate(160%) brightness(1.12);
-  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(1.12);
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
+  background: rgba(5, 8, 20, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.08),
-    0 1px 0 rgba(255, 255, 255, 0.95) inset;
-  color: rgba(10, 10, 20, 0.90);
+    0 4px 28px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 /* Overlay на фото: тёмная тема — затемнение, светлая — осветление */
