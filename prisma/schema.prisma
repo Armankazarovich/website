@@ -145,6 +145,10 @@ model Order {
   updatedAt         DateTime    @updatedAt
   deletedAt         DateTime?
   telegramMessageId String?     // ID сообщения в Telegram группе для авто-удаления
+  promoCode         String?     // применённый промокод
+  discountAmount    Decimal     @default(0) @db.Decimal(10, 2) // сумма скидки
+  contactMethod     String?     // Телефон | WhatsApp | Telegram | SMS
+  contactUsername   String?     // @username для Telegram/WhatsApp
 }
 
 model OrderItem {
@@ -161,14 +165,17 @@ model OrderItem {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  name      String
-  rating    Int
-  text      String
-  approved  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  name       String
+  rating     Int
+  text       String
+  approved   Boolean  @default(false)
+  source     String   @default("internal") // internal | google | yandex | vk | 2gis
+  sourceUrl  String?  // ссылка на оригинальный отзыв
+  externalId String?  // ID отзыва на платформе (для дедупликации)
+  createdAt  DateTime @default(now())
 }
 
 model Promotion {
@@ -205,6 +212,34 @@ model SiteSettings {
   id    String @id @default("default")
   key   String @unique
   value String
+}
+
+// Явные подписчики с сайта (opt-in email/push/telegram)
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  pushEnabled  Boolean  @default(false)
+  telegramChat String?  // chat_id если подписался через бота
+  source       String   @default("site") // site | checkout | import
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+
+// Промокоды и скидки
+model PromoCode {
+  id           String    @id @default(cuid())
+  code         String    @unique  // PILORUS10, SUMMER2026
+  type         String    // percent | fixed | free_delivery
+  value        Int       // 10 = 10% или 1000 = 1000₽
+  minAmount    Int       @default(0)  // минимальная сумма заказа
+  maxUses      Int?      // null = безлимит
+  usedCount    Int       @default(0)
+  active       Boolean   @default(true)
+  validFrom    DateTime?
+  validUntil   DateTime?
+  description  String?
+  createdAt    DateTime  @default(now())
 }
 
 model PartnershipLead {
