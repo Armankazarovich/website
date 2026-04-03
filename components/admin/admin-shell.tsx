@@ -5,9 +5,32 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react";
 
+// ── Звук нового заказа (Web Audio API, без файлов) ───────────────────────────
+function playOrderChime() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Нота 1 — высокая
+    const o1 = ctx.createOscillator(); const g1 = ctx.createGain();
+    o1.connect(g1); g1.connect(ctx.destination);
+    o1.type = "sine"; o1.frequency.value = 1046;
+    g1.gain.setValueAtTime(0.25, ctx.currentTime);
+    g1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    o1.start(ctx.currentTime); o1.stop(ctx.currentTime + 0.4);
+    // Нота 2 — низкая (через 0.15с)
+    const o2 = ctx.createOscillator(); const g2 = ctx.createGain();
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.type = "sine"; o2.frequency.value = 784;
+    g2.gain.setValueAtTime(0, ctx.currentTime + 0.15);
+    g2.gain.setValueAtTime(0.20, ctx.currentTime + 0.15);
+    g2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    o2.start(ctx.currentTime + 0.15); o2.stop(ctx.currentTime + 0.6);
+  } catch {}
+}
+
 // ── Живой колокольчик с бейджем уведомлений ──────────────────────────────────
 function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   const [count, setCount] = useState(0);
+  const prevOrderCount = useRef<number | null>(null);
 
   useEffect(() => {
     async function fetchCount() {
@@ -15,12 +38,19 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
         const res = await fetch("/api/admin/notifications/count");
         if (res.ok) {
           const data = await res.json();
-          setCount(data.total ?? 0);
+          const newOrders = data.newOrders ?? 0;
+          const total = data.total ?? 0;
+          // Звук только при увеличении числа новых заказов
+          if (prevOrderCount.current !== null && newOrders > prevOrderCount.current) {
+            playOrderChime();
+          }
+          prevOrderCount.current = newOrders;
+          setCount(total);
         }
       } catch {}
     }
     fetchCount();
-    const interval = setInterval(fetchCount, 60000);
+    const interval = setInterval(fetchCount, 30000); // каждые 30с
     return () => clearInterval(interval);
   }, []);
 
@@ -224,48 +254,51 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       </header>
 
       {/* ─── Desktop top bar ──────────────────────────────────── */}
-      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-6 gap-4 aray-topbar"
+      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar"
         style={{
-          background: "hsl(var(--background) / 0.75)",
-          backdropFilter: "blur(24px) saturate(180%)",
-          WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          borderBottom: "1px solid hsl(var(--border) / 0.4)",
+          background: "linear-gradient(90deg, hsl(var(--primary)/0.06) 0%, transparent 40%), hsl(var(--background)/0.80)",
+          backdropFilter: "blur(28px) saturate(200%)",
+          WebkitBackdropFilter: "blur(28px) saturate(200%)",
+          borderBottom: "1px solid hsl(var(--primary)/0.15)",
+          boxShadow: "0 1px 0 hsl(var(--primary)/0.08)",
         }}>
+
+        {/* Акцент-полоска слева */}
+        <div className="w-0.5 h-5 rounded-full shrink-0" style={{ background: "linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary)/0.3))" }} />
+
         {/* Заголовок текущей страницы */}
-        <h1 className="text-base font-semibold text-foreground flex-1 truncate">{pageTitle}</h1>
+        <h1 className="text-sm font-bold text-foreground flex-1 truncate tracking-tight">{pageTitle}</h1>
 
-        {/* Живой поиск */}
-        <AdminSearch />
+        {/* ── Правая группа иконок ── */}
+        <div className="flex items-center gap-1">
+          {/* Живой поиск */}
+          <AdminSearch />
+          {/* Язык */}
+          <AdminLangPicker />
+          {/* Размер шрифта */}
+          <AdminFontPicker />
+          {/* Планировщик дня */}
+          <AdminDayPlanner />
+          {/* Уведомления */}
+          <AdminNotificationBell />
+          {/* Тема */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors aray-icon-spin"
+            title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+          >
+            {theme === "dark" ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
+          </button>
+        </div>
 
-        {/* Язык */}
-        <AdminLangPicker />
-
-        {/* Размер шрифта */}
-        <AdminFontPicker />
-
-        {/* Планировщик дня */}
-        <AdminDayPlanner />
-
-        {/* Уведомления */}
-        <AdminNotificationBell />
-
-        {/* Тема */}
-        <button
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors aray-icon-spin"
-          title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-        >
-          {theme === "dark" ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
-        </button>
-
-        {/* Аватар */}
-        <div className="flex items-center gap-2.5 pl-2 border-l border-border">
-          <div className="w-7 h-7 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shrink-0"
+        {/* Аватар — отдельная группа с разделителем */}
+        <div className="flex items-center gap-2.5 pl-3 border-l border-border/60">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shrink-0 aray-neon-sm"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
             {email ? email[0].toUpperCase() : "A"}
           </div>
           <div className="hidden xl:block">
-            <p className="text-[11px] font-medium text-foreground leading-none truncate max-w-[120px]">{email}</p>
+            <p className="text-[11px] font-semibold text-foreground leading-none truncate max-w-[130px]">{email}</p>
             <p className="text-[10px] text-muted-foreground leading-none mt-0.5 capitalize">{role?.toLowerCase()}</p>
           </div>
         </div>
