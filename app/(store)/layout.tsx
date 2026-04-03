@@ -33,6 +33,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
 
   const photoAspect = getSetting(siteSettings, "photo_aspect_ratio") || "1/1";
   const cardStyle = getSetting(siteSettings, "card_style") || "classic";
+  const arayEnabled = getSetting(siteSettings, "aray_enabled") !== "false";
 
   return (
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
@@ -41,7 +42,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
 
-      <MobileBottomNav />
+      <MobileBottomNav arayEnabled={arayEnabled} />
       <CookieConsent />
       <PwaInstall />
       <AccountDrawer />

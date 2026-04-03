@@ -15,7 +15,7 @@ import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 
-export function MobileBottomNav() {
+export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean }) {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
   const totalPrice = useCartStore((s) => s.totalPrice());
@@ -162,7 +162,7 @@ export function MobileBottomNav() {
         </div>
 
         {/* ─── ARАЙ — центральная поднятая кнопка ─── */}
-        <div className="flex flex-col items-center relative" style={{ marginTop: "-20px", minWidth: "72px" }}>
+        {arayEnabled && <div className="flex flex-col items-center relative" style={{ marginTop: "-20px", minWidth: "72px" }}>
           <motion.button
             whileTap={{ scale: 0.88 }}
             transition={{ type: "spring", stiffness: 400, damping: 16 }}
@@ -174,37 +174,64 @@ export function MobileBottomNav() {
             <span
               className={`absolute inset-0 rounded-2xl ${arayPulse ? "animate-ping" : ""}`}
               style={{
-                background: "rgba(30, 120, 255, 0.25)",
+                background: "rgba(232, 112, 10, 0.25)",
                 animationDuration: "0.8s",
               }}
             />
 
             {/* Основная кнопка — SVG шар */}
-            <div className="aray-center-btn relative w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{
-                background: "linear-gradient(145deg,#1a0800,#3d1206,#7c2d12)",
-                border: "1px solid rgba(245,158,11,0.28)",
-                boxShadow: "0 0 20px rgba(232,112,10,0.5),0 0 40px rgba(232,112,10,0.15)",
-              }}>
+            <div className="aray-center-btn relative w-14 h-14 rounded-2xl flex items-center justify-center">
               {/* SVG сфера */}
-              <svg width="42" height="42" viewBox="0 0 100 100" className="relative z-10">
+              <svg width="46" height="46" viewBox="0 0 100 100" className="relative z-10 drop-shadow-lg">
                 <defs>
-                  <radialGradient id="navOrbG" cx="38%" cy="30%" r="70%">
-                    <stop offset="0%" stopColor="#fff3c0"/>
-                    <stop offset="20%" stopColor="#fbbf24"/>
-                    <stop offset="50%" stopColor="#e8700a"/>
-                    <stop offset="80%" stopColor="#9a3412"/>
-                    <stop offset="100%" stopColor="#431407"/>
+                  {/* Основной объём шара — глубокий оранжево-коричневый */}
+                  <radialGradient id="navOrbG" cx="33%" cy="26%" r="75%">
+                    <stop offset="0%"   stopColor="#fff8dc"/>
+                    <stop offset="12%"  stopColor="#ffd166"/>
+                    <stop offset="30%"  stopColor="#f4820a"/>
+                    <stop offset="55%"  stopColor="#c44b00"/>
+                    <stop offset="78%"  stopColor="#7a1c00"/>
+                    <stop offset="100%" stopColor="#2d0800"/>
                   </radialGradient>
-                  <radialGradient id="navOrbHL" cx="32%" cy="25%" r="45%">
-                    <stop offset="0%" stopColor="white" stopOpacity="0.9"/>
+                  {/* Тень тёмной стороны */}
+                  <radialGradient id="navOrbShadow" cx="74%" cy="76%" r="58%">
+                    <stop offset="0%"   stopColor="#0d0000" stopOpacity="0.75"/>
+                    <stop offset="60%"  stopColor="#200500" stopOpacity="0.35"/>
+                    <stop offset="100%" stopColor="#0d0000" stopOpacity="0"/>
+                  </radialGradient>
+                  {/* Яркий блик — главный световой зайчик */}
+                  <radialGradient id="navOrbHL" cx="28%" cy="20%" r="36%">
+                    <stop offset="0%"   stopColor="white" stopOpacity="0.98"/>
+                    <stop offset="40%"  stopColor="white" stopOpacity="0.45"/>
                     <stop offset="100%" stopColor="white" stopOpacity="0"/>
                   </radialGradient>
+                  {/* Ободок — rim light снизу-справа */}
+                  <radialGradient id="navOrbRim" cx="50%" cy="50%" r="50%">
+                    <stop offset="72%"  stopColor="transparent"  stopOpacity="0"/>
+                    <stop offset="88%"  stopColor="#ff8c00"       stopOpacity="0.45"/>
+                    <stop offset="100%" stopColor="#ffb830"       stopOpacity="0.65"/>
+                  </radialGradient>
                 </defs>
+                {/* Слои шара */}
                 <circle cx="50" cy="50" r="46" fill="url(#navOrbG)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#navOrbShadow)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#navOrbRim)"/>
                 <circle cx="50" cy="50" r="46" fill="url(#navOrbHL)"/>
-                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,80,0.2)" strokeWidth="1"/>
+                {/* Тонкий контур */}
+                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.18)" strokeWidth="1.5"/>
               </svg>
+
+              {/* Вращающийся световой эффект поверх шара */}
+              <div
+                className="absolute rounded-full overflow-hidden pointer-events-none z-[11]"
+                style={{
+                  width: "46px",
+                  height: "46px",
+                  animation: "orbLightSpin 6s linear infinite",
+                  background: "conic-gradient(from 0deg at 32% 28%, rgba(255,240,160,0.22) 0deg, transparent 70deg, rgba(120,30,0,0.18) 180deg, transparent 260deg, rgba(255,180,60,0.14) 320deg, transparent 360deg)",
+                  borderRadius: "50%",
+                }}
+              />
 
               {/* Бейдж корзины */}
               {mounted && totalItems > 0 && (
@@ -220,7 +247,7 @@ export function MobileBottomNav() {
           <span className="text-[9px] font-bold mt-1 tracking-wider" style={{ color: "rgba(245,158,11,0.75)" }}>
             АРАЙ
           </span>
-        </div>
+        </div>}
 
         {/* Правые пункты */}
         <div className="flex items-center justify-around flex-1 pt-1">
