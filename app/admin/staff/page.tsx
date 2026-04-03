@@ -21,6 +21,7 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 
 // ─── Role definitions ───────────────────────────────────────────────────────
 
@@ -786,14 +787,16 @@ export default function StaffPage() {
           {/* Pending */}
           {pending.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-4 h-4 text-yellow-500" />
-                <h2 className="font-semibold text-sm">Ожидают подтверждения</h2>
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/15 text-yellow-700 dark:text-yellow-400 text-[10px] font-bold">
-                  {pending.length}
-                </span>
-                <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-              </div>
+              <AdminSectionTitle
+                icon={Clock}
+                title="Ожидают подтверждения"
+                action={
+                  <span className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-bold">{pending.length}</span>
+                    <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                  </span>
+                }
+              />
               <div className="space-y-2">{pending.map(renderCard)}</div>
             </section>
           )}
@@ -801,13 +804,13 @@ export default function StaffPage() {
           {/* Active */}
           {active.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                <h2 className="font-semibold text-sm">Активные сотрудники</h2>
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/15 text-green-700 dark:text-green-400 text-[10px] font-bold">
-                  {active.length}
-                </span>
-              </div>
+              <AdminSectionTitle
+                icon={CheckCircle2}
+                title="Активные сотрудники"
+                action={
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold">{active.length}</span>
+                }
+              />
               <div className="space-y-2">{active.map(renderCard)}</div>
             </section>
           )}
@@ -815,13 +818,13 @@ export default function StaffPage() {
           {/* Suspended */}
           {suspended.length > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-3">
-                <XCircle className="w-4 h-4 text-red-500" />
-                <h2 className="font-semibold text-sm">Заблокированы</h2>
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/15 text-red-700 dark:text-red-400 text-[10px] font-bold">
-                  {suspended.length}
-                </span>
-              </div>
+              <AdminSectionTitle
+                icon={XCircle}
+                title="Заблокированы"
+                action={
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold">{suspended.length}</span>
+                }
+              />
               <div className="space-y-2">{suspended.map(renderCard)}</div>
             </section>
           )}

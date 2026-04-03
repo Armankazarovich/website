@@ -794,17 +794,24 @@ canvas,
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Input, Select, Textarea — тонкое стекло (одинаково в обоих темах) */
+/* Input, Select, Textarea — тёмная тема: полупрозрачное стекло */
 .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 .aray-nature-mode textarea,
-.aray-nature-mode select,
-.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.light .aray-nature-mode textarea,
-[data-theme="light"] .aray-nature-mode textarea {
+.aray-nature-mode select {
   background: rgba(255, 255, 255, 0.08) !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
   color: rgba(255, 255, 255, 0.90) !important;
+}
+/* Светлая тема: белее, текст тёмный */
+.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+.light .aray-nature-mode textarea,
+[data-theme="light"] .aray-nature-mode textarea,
+.light .aray-nature-mode select,
+[data-theme="light"] .aray-nature-mode select {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.60) !important;
+  color: rgba(0, 0, 0, 0.80) !important;
 }
 
 /* Разделители таблиц — тонкие и прозрачные */

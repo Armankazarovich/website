@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback } from "react";
 import {
   TrendingUp, TrendingDown, DollarSign, ShoppingBag,
   Plus, Trash2, ReceiptText, PiggyBank, Percent,
-  ChevronDown, AlertCircle, RefreshCw, Calendar,
+  ChevronDown, AlertCircle, RefreshCw, Calendar, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 
 const EXPENSE_CATEGORIES = [
   "Аренда", "Зарплата", "Транспорт", "Реклама", "Коммунальные",
@@ -220,7 +221,7 @@ export default function FinancePage() {
       {/* Revenue chart (bar) */}
       {data && Object.keys(data.revenueByDay).length > 0 && (
         <div className="rounded-2xl border bg-card p-4">
-          <h2 className="font-semibold text-sm mb-4">Выручка по дням</h2>
+          <AdminSectionTitle icon={BarChart3} title="Выручка по дням" className="mb-4" />
           <RevenueChart data={data.revenueByDay} />
         </div>
       )}
@@ -228,7 +229,7 @@ export default function FinancePage() {
       <div className="grid lg:grid-cols-2 gap-4">
         {/* Expenses by category */}
         <div className="rounded-2xl border bg-card p-4">
-          <h2 className="font-semibold text-sm mb-3">Расходы по категориям</h2>
+          <AdminSectionTitle icon={PiggyBank} title="Расходы по категориям" className="mb-3" />
           {data && Object.keys(data.expensesByCategory).length > 0 ? (
             <div className="space-y-2">
               {Object.entries(data.expensesByCategory)
@@ -257,7 +258,7 @@ export default function FinancePage() {
 
         {/* P&L Summary */}
         <div className="rounded-2xl border bg-card p-4">
-          <h2 className="font-semibold text-sm mb-3">Отчёт P&L</h2>
+          <AdminSectionTitle icon={ReceiptText} title="Отчёт P&L" className="mb-3" />
           {data && (
             <div className="space-y-2 text-sm">
               <Row label="Выручка" value={data.revenue} />
@@ -282,7 +283,7 @@ export default function FinancePage() {
       {/* Expenses list */}
       <div className="rounded-2xl border bg-card">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-semibold">Расходы</h2>
+          <AdminSectionTitle icon={Trash2} title="Расходы" className="mb-0" />
           <Button size="sm" onClick={() => setShowAddExpense((v) => !v)}>
             <Plus className="w-4 h-4 mr-1.5" />
             Добавить
