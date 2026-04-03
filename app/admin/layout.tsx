@@ -9,14 +9,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const session = await auth();
 
   const role = (session?.user as any)?.role;
-  const staffStatus = (session?.user as any)?.staffStatus;
   const userId = (session?.user as any)?.id;
   const isStaff = role && role !== "USER";
   const isSuperAdmin = role === "SUPER_ADMIN";
-  const isBlocked = (staffStatus === "PENDING" || staffStatus === "SUSPENDED") && !isSuperAdmin;
 
-  if (!session || !isStaff || isBlocked) {
+  if (!session || !isStaff) {
     redirect("/login");
+  }
+
+  // Всегда проверяем свежий статус из БД — чтобы блокировка/разблокировка работала мгновенно
+  if (userId && !isSuperAdmin) {
+    const freshUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { staffStatus: true },
+    }).catch(() => null);
+
+    if (freshUser?.staffStatus === "PENDING" || freshUser?.staffStatus === "SUSPENDED") {
+      redirect("/login");
+    }
   }
 
   // Обновляем lastActiveAt асинхронно (не блокируем рендер)
