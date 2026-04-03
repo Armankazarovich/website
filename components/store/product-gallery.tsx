@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -12,24 +12,46 @@ interface ProductGalleryProps {
 }
 
 export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
-  const [active, setActive] = useState(0);
-  const [touchStartX, setTouchStartX] = useState(0);
+  const [active, setActive]     = useState(0);
+  const [dir, setDir]           = useState<"left" | "right" | null>(null);
+  const [animating, setAnimating] = useState(false);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
 
-  const prev = useCallback(() => setActive(i => Math.max(i - 1, 0)), []);
-  const next = useCallback(() => setActive(i => Math.min(i + 1, images.length - 1)), [images.length]);
+  const go = useCallback((idx: number) => {
+    if (animating || idx === active || idx < 0 || idx >= images.length) return;
+    setDir(idx > active ? "left" : "right");
+    setAnimating(true);
+    setTimeout(() => {
+      setActive(idx);
+      setDir(null);
+      setAnimating(false);
+    }, 280);
+  }, [active, animating, images.length]);
+
+  const prev = useCallback(() => go(active - 1), [go, active]);
+  const next = useCallback(() => go(active + 1), [go, active]);
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchStartX(e.touches[0].clientX);
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
-    const delta = touchStartX - e.changedTouches[0].clientX;
-    if (delta > 50) next();
-    else if (delta < -50) prev();
+    const dx = touchStartX.current - e.changedTouches[0].clientX;
+    const dy = Math.abs(touchStartY.current - e.changedTouches[0].clientY);
+    if (dy > 40) return; // вертикальный скролл — не трогаем
+    if (dx > 45) next();
+    else if (dx < -45) prev();
   };
+
+  // Slide animation classes
+  const slideIn  = dir === "left"  ? "translate-x-full"  : dir === "right" ? "-translate-x-full" : "";
+  const slideOut = dir === "left"  ? "-translate-x-full" : dir === "right" ? "translate-x-full"  : "";
 
   return (
     <div className="space-y-3">
-      {/* Main image */}
+
+      {/* ── Главное фото ── */}
       <div
         className="relative rounded-2xl overflow-hidden bg-muted border border-border select-none"
         style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}
@@ -38,50 +60,82 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
       >
         {images.length > 0 ? (
           <>
-            <Image
-              key={active}
-              src={images[active]}
-              alt={`${name} — фото ${active + 1}`}
-              fill
-              className="object-cover transition-opacity duration-200"
-              priority={active === 0}
-              unoptimized
-            />
+            {/* Уходящее фото */}
+            {animating && (
+              <div
+                className={cn(
+                  "absolute inset-0 transition-transform duration-[280ms] ease-in-out",
+                  slideOut
+                )}
+              >
+                <Image
+                  src={images[active]}
+                  alt={name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+            )}
 
-            {/* In stock badge */}
+            {/* Приходящее / текущее фото */}
+            <div
+              className={cn(
+                "absolute inset-0 transition-transform duration-[280ms] ease-in-out",
+                animating ? slideIn : "translate-x-0"
+              )}
+              style={{ transitionProperty: "transform" }}
+            >
+              <Image
+                src={images[active]}
+                alt={`${name} — фото ${active + 1}`}
+                fill
+                className="object-cover"
+                priority={active === 0}
+                unoptimized
+              />
+            </div>
+
+            {/* В наличии */}
             {inStock && (
-              <span className="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-lg">
+              <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-xl shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 В наличии
               </span>
             )}
 
-            {/* Counter badge */}
+            {/* Счётчик */}
             {images.length > 1 && (
-              <span className="absolute bottom-3 right-3 z-10 bg-black/50 text-white text-xs px-2 py-1 rounded-lg backdrop-blur-sm">
+              <span className="absolute bottom-3 right-3 z-10 bg-black/50 text-white text-xs px-2.5 py-1 rounded-xl backdrop-blur-sm font-medium tabular-nums">
                 {active + 1} / {images.length}
               </span>
             )}
 
-            {/* Prev / Next arrows */}
+            {/* Стрелки (только десктоп) */}
             {images.length > 1 && (
               <>
                 <button
                   onClick={prev}
                   disabled={active === 0}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white flex items-center justify-center disabled:opacity-0 transition-all"
-                  aria-label="Предыдущее фото"
+                  className="hidden sm:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-xl bg-black/40 hover:bg-black/65 backdrop-blur-sm text-white items-center justify-center disabled:opacity-0 transition-all"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={next}
                   disabled={active === images.length - 1}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-xl bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white flex items-center justify-center disabled:opacity-0 transition-all"
-                  aria-label="Следующее фото"
+                  className="hidden sm:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-xl bg-black/40 hover:bg-black/65 backdrop-blur-sm text-white items-center justify-center disabled:opacity-0 transition-all"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
+              </>
+            )}
+
+            {/* Зоны свайпа — визуальная подсказка (только мобильный) */}
+            {images.length > 1 && (
+              <>
+                <div className="sm:hidden absolute left-0 top-0 w-1/4 h-full z-[5]" onClick={prev} />
+                <div className="sm:hidden absolute right-0 top-0 w-1/4 h-full z-[5]" onClick={next} />
               </>
             )}
           </>
@@ -92,45 +146,41 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
         )}
       </div>
 
-      {/* Thumbnail strip */}
+      {/* ── Точки (мобильный) ── */}
       {images.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {images.map((img, i) => (
+        <div className="flex justify-center items-center gap-1.5 sm:hidden">
+          {images.map((_, i) => (
             <button
               key={i}
-              onClick={() => setActive(i)}
+              onClick={() => go(i)}
               className={cn(
-                "relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all",
+                "rounded-full transition-all duration-200",
                 i === active
-                  ? "border-primary shadow-sm shadow-primary/30"
-                  : "border-border opacity-60 hover:opacity-100 hover:border-primary/40"
+                  ? "w-5 h-1.5 bg-primary"
+                  : "w-1.5 h-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/60"
               )}
-              aria-label={`Фото ${i + 1}`}
-            >
-              <Image
-                src={img}
-                alt={`${name} — миниатюра ${i + 1}`}
-                fill
-                className="object-cover"
-                unoptimized
-              />
-            </button>
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            />
           ))}
         </div>
       )}
 
-      {/* Dot indicators for mobile */}
+      {/* ── Миниатюры (десктоп) ── */}
       {images.length > 1 && (
-        <div className="flex justify-center gap-1.5 sm:hidden">
-          {images.map((_, i) => (
+        <div className="hidden sm:flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {images.map((img, i) => (
             <button
               key={i}
-              onClick={() => setActive(i)}
+              onClick={() => go(i)}
               className={cn(
-                "rounded-full transition-all",
-                i === active ? "w-4 h-1.5 bg-primary" : "w-1.5 h-1.5 bg-muted-foreground/30"
+                "relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all",
+                i === active
+                  ? "border-primary shadow-sm shadow-primary/30 scale-105"
+                  : "border-border opacity-55 hover:opacity-100 hover:border-primary/40 hover:scale-105"
               )}
-            />
+            >
+              <Image src={img} alt={`${name} ${i + 1}`} fill className="object-cover" unoptimized />
+            </button>
           ))}
         </div>
       )}

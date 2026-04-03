@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
@@ -34,6 +34,7 @@ export function CatalogMobileFilter({
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(true);
   const [sizeOpen, setSizeOpen] = useState(true);
+  const dragStartY = useRef(0);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -117,9 +118,16 @@ export function CatalogMobileFilter({
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
             >
-              {/* Handle */}
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+              {/* Handle — свайп вниз = закрыть */}
+              <div
+                className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing"
+                onTouchStart={(e) => { dragStartY.current = e.touches[0].clientY; }}
+                onTouchEnd={(e) => {
+                  const dy = e.changedTouches[0].clientY - dragStartY.current;
+                  if (dy > 60) setOpen(false);
+                }}
+              >
+                <div className="w-12 h-1.5 rounded-full bg-muted-foreground/25 active:bg-muted-foreground/50 transition-colors" />
               </div>
 
               {/* Header */}
