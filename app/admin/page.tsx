@@ -214,36 +214,44 @@ export default async function AdminDashboard() {
       {/* ── ГЛАВНЫЕ МЕТРИКИ (владелец/менеджер) ── */}
       {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
         <div className="grid grid-cols-2 gap-3">
-          <Link href="/admin/finance" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5">
-              <TrendingUp className="w-4 h-4 text-primary" />
+          {/* Выручка 30 дн */}
+          <Link href="/admin/finance" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-primary/30">
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary)/0.25))" }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "hsl(var(--primary)/0.14)" }}>
+              <TrendingUp className="w-[18px] h-[18px] text-primary" />
             </div>
-            <p className="text-lg font-display font-bold leading-tight">{formatPrice(revenue30total)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Выручка за 30 дн.</p>
+            <p className="text-2xl font-display font-bold leading-tight">{formatPrice(revenue30total)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Выручка за 30 дн.</p>
           </Link>
 
-          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center mb-2.5">
-              <BarChart3 className="w-4 h-4 text-green-600" />
+          {/* Выручка сегодня */}
+          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-emerald-500/30">
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, rgb(34,197,94), rgba(34,197,94,0.2))" }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "rgba(34,197,94,0.12)" }}>
+              <BarChart3 className="w-[18px] h-[18px]" style={{ color: "rgb(22,163,74)" }} />
             </div>
-            <p className="text-lg font-display font-bold leading-tight">{formatPrice(revenueTodayTotal)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Сегодня</p>
+            <p className="text-2xl font-display font-bold leading-tight">{formatPrice(revenueTodayTotal)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Сегодня</p>
           </Link>
 
-          <Link href="/admin/orders" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center mb-2.5">
-              <Clock className="w-4 h-4 text-orange-600" />
+          {/* Новых заказов */}
+          <Link href="/admin/orders" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-orange-500/30">
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, rgb(249,115,22), rgba(249,115,22,0.2))" }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "rgba(249,115,22,0.12)" }}>
+              <Clock className="w-[18px] h-[18px]" style={{ color: "rgb(234,88,12)" }} />
             </div>
-            <p className="text-lg font-display font-bold leading-tight">{newOrders}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Новых заказов</p>
+            <p className="text-2xl font-display font-bold leading-tight">{newOrders}</p>
+            <p className="text-xs text-muted-foreground mt-1">Новых заказов</p>
           </Link>
 
-          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center mb-2.5">
-              <ArrowUpRight className="w-4 h-4 text-blue-600" />
+          {/* Средний чек */}
+          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-blue-500/30">
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, rgb(59,130,246), rgba(59,130,246,0.2))" }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "rgba(59,130,246,0.12)" }}>
+              <ArrowUpRight className="w-[18px] h-[18px]" style={{ color: "rgb(37,99,235)" }} />
             </div>
-            <p className="text-lg font-display font-bold leading-tight">{formatPrice(avgOrder)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Средний чек</p>
+            <p className="text-2xl font-display font-bold leading-tight">{formatPrice(avgOrder)}</p>
+            <p className="text-xs text-muted-foreground mt-1">Средний чек</p>
           </Link>
         </div>
       )}
@@ -251,19 +259,21 @@ export default async function AdminDashboard() {
       {/* ── КУРЬЕР: его доставки ── */}
       {roleGroup === "courier" && (
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center mb-2.5">
-              <Clock className="w-4 h-4 text-orange-600" />
+          <div className="bg-card rounded-2xl border border-border p-4 relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, rgb(249,115,22), rgba(249,115,22,0.2))" }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "rgba(249,115,22,0.12)" }}>
+              <Clock className="w-[18px] h-[18px]" style={{ color: "rgb(234,88,12)" }} />
             </div>
-            <p className="text-lg font-display font-bold leading-tight">{newOrders}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Новых заказов</p>
+            <p className="text-2xl font-display font-bold leading-tight">{newOrders}</p>
+            <p className="text-xs text-muted-foreground mt-1">Новых заказов</p>
           </div>
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center mb-2.5">
-              <Truck className="w-4 h-4 text-green-600" />
+          <div className="bg-card rounded-2xl border border-border p-4 relative overflow-hidden">
+            <div className="absolute inset-x-0 top-0 h-[2px] rounded-t-2xl" style={{ background: "linear-gradient(90deg, rgb(34,197,94), rgba(34,197,94,0.2))" }} />
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "rgba(34,197,94,0.12)" }}>
+              <Truck className="w-[18px] h-[18px]" style={{ color: "rgb(22,163,74)" }} />
             </div>
-            <p className="text-lg font-display font-bold leading-tight">{todayOrders}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">Заказов сегодня</p>
+            <p className="text-2xl font-display font-bold leading-tight">{todayOrders}</p>
+            <p className="text-xs text-muted-foreground mt-1">Заказов сегодня</p>
           </div>
         </div>
       )}
@@ -276,7 +286,7 @@ export default async function AdminDashboard() {
             <Link
               key={action.href}
               href={action.href}
-              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 p-3 min-h-[72px] active:scale-[0.95] transition-transform aray-icon-spin ${action.bg}`}
+              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 p-3 min-h-[72px] active:scale-[0.95] transition-all aray-icon-spin hover:border-border hover:scale-[1.03] ${action.bg}`}
             >
               <action.icon className={`w-5 h-5 ${action.color}`} />
               <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
@@ -296,9 +306,9 @@ export default async function AdminDashboard() {
             { label: "Товаров", value: totalProducts, href: "/admin/products", icon: Package },
             { label: "7 дней", value: formatPrice(revenue7total), href: "/admin/analytics", icon: TrendingUp },
           ].map((s) => (
-            <Link key={s.label} href={s.href} className="bg-card rounded-2xl border border-border p-3 text-center active:scale-[0.97] transition-transform">
-              <s.icon className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
-              <p className="text-base font-bold leading-tight">{s.value}</p>
+            <Link key={s.label} href={s.href} className="bg-card rounded-2xl border border-border p-3 text-center active:scale-[0.97] transition-all hover:border-primary/25 group">
+              <s.icon className="w-3.5 h-3.5 text-primary/50 mx-auto mb-1.5 transition-transform group-hover:scale-110" />
+              <p className="text-[15px] font-bold leading-tight">{s.value}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
             </Link>
           ))}
