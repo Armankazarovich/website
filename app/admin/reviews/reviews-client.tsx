@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Star, CheckCircle, Trash2, Loader2, Sparkles } from "lucide-react";
+import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Review = {
@@ -11,7 +11,138 @@ type Review = {
   text: string;
   approved: boolean;
   createdAt: Date;
+  source?: string;
 };
+
+const PLATFORMS = [
+  {
+    key: "google",
+    name: "Google Карты",
+    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    borderColor: "border-blue-200 dark:border-blue-800/40",
+    badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+    icon: "🌐",
+    href: "https://maps.google.com/?cid=YOUR_CID",
+    instruction: "Откройте Google Мой Бизнес → Отзывы → скопируйте нужные и добавьте вручную",
+    status: "manual",
+  },
+  {
+    key: "yandex",
+    name: "Яндекс Карты",
+    color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    borderColor: "border-amber-200 dark:border-amber-800/40",
+    badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+    icon: "🗺️",
+    href: "https://business.yandex.ru/",
+    instruction: "Откройте Яндекс Бизнес → Репутация → скопируйте отзывы для публикации",
+    status: "manual",
+  },
+  {
+    key: "2gis",
+    name: "2GIS",
+    color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    borderColor: "border-green-200 dark:border-green-800/40",
+    badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+    icon: "📍",
+    href: "https://account.2gis.com/",
+    instruction: "Авторизуйтесь в 2GIS для бизнеса → Отзывы → скопируйте лучшие",
+    status: "manual",
+  },
+  {
+    key: "vk",
+    name: "ВКонтакте",
+    color: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+    borderColor: "border-sky-200 dark:border-sky-800/40",
+    badge: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
+    icon: "💬",
+    href: "https://vk.com/",
+    instruction: "Перейдите в группу ВК → раздел «Отзывы» → скопируйте нужные комментарии",
+    status: "manual",
+  },
+];
+
+/* ─── Форма добавления отзыва вручную ─── */
+function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">) => void; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [rating, setRating] = useState(5);
+  const [text, setText] = useState("");
+  const [source, setSource] = useState("google");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async () => {
+    if (!name.trim() || !text.trim()) { setError("Заполните имя и текст"); return; }
+    setLoading(true); setError("");
+    try {
+      const res = await fetch("/api/admin/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), rating, text: text.trim(), source, approved: true }),
+      });
+      if (res.ok) {
+        const r = await res.json();
+        onAdd(r);
+      } else {
+        setError("Ошибка при сохранении");
+      }
+    } catch { setError("Нет соединения"); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="space-y-3 p-4 bg-card border border-border rounded-2xl">
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Имя автора</label>
+          <input value={name} onChange={e => setName(e.target.value)}
+            placeholder="Иван Петров"
+            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Оценка</label>
+          <div className="flex gap-1 py-2">
+            {[1,2,3,4,5].map(s => (
+              <button key={s} onClick={() => setRating(s)}>
+                <Star className={`w-5 h-5 ${s <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-muted-foreground mb-1 block">Источник</label>
+        <div className="flex gap-2 flex-wrap">
+          {PLATFORMS.map(p => (
+            <button key={p.key} onClick={() => setSource(p.key)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                source === p.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+              }`}>
+              {p.icon} {p.name}
+            </button>
+          ))}
+          <button onClick={() => setSource("site")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+              source === "site" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+            }`}>
+            💻 Сайт
+          </button>
+        </div>
+      </div>
+      <div>
+        <label className="text-xs font-medium text-muted-foreground mb-1 block">Текст отзыва</label>
+        <textarea value={text} onChange={e => setText(e.target.value)} rows={3}
+          placeholder="Отличный материал, всё понравилось..."
+          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      <button onClick={submit} disabled={loading}
+        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+        Добавить отзыв
+      </button>
+    </div>
+  );
+}
 
 export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
   const [reviews, setReviews] = useState(initial);
@@ -20,6 +151,8 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [starterLoading, setStarterLoading] = useState(false);
   const [starterResult, setStarterResult] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showPlatforms, setShowPlatforms] = useState(false);
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -84,10 +217,15 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
 
   const pendingCount = reviews.filter((r) => !r.approved).length;
 
+  const handleAdd = (r: any) => {
+    setReviews(prev => [{ ...r, id: r.id || Math.random().toString(), createdAt: new Date(), approved: true }, ...prev]);
+    setShowAddForm(false);
+  };
+
   return (
     <div className="space-y-5">
       {/* Панель действий */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -95,17 +233,85 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
           onClick={addStarterReviews}
           disabled={starterLoading}
         >
-          {starterLoading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="w-3.5 h-3.5" />
-          )}
-          Добавить стартовые отзывы
+          {starterLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          Стартовые отзывы
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => { setShowAddForm(v => !v); setShowPlatforms(false); }}
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Добавить вручную
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          onClick={() => { setShowPlatforms(v => !v); setShowAddForm(false); }}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          Внешние платформы
+          {showPlatforms ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
         </Button>
         {starterResult && (
           <span className="text-sm text-muted-foreground">{starterResult}</span>
         )}
       </div>
+
+      {/* Форма добавления */}
+      {showAddForm && (
+        <AddReviewForm
+          onAdd={handleAdd}
+          onClose={() => setShowAddForm(false)}
+        />
+      )}
+
+      {/* Внешние платформы */}
+      {showPlatforms && (
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-sm">Внешние платформы</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Соберите лучшие отзывы с внешних площадок и добавьте на сайт</p>
+            </div>
+            <button onClick={() => setShowPlatforms(false)}>
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {PLATFORMS.map(p => (
+              <div key={p.key} className={`border ${p.borderColor} rounded-xl p-3 space-y-2`}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{p.icon}</span>
+                  <span className="font-semibold text-sm">{p.name}</span>
+                  <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${p.badge}`}>Ручной импорт</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{p.instruction}</p>
+                <div className="flex gap-2">
+                  <a href={p.href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    <ExternalLink className="w-3 h-3" />
+                    Открыть площадку
+                  </a>
+                  <button
+                    onClick={() => { setShowAddForm(true); setShowPlatforms(false); }}
+                    className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+                    <Download className="w-3 h-3" />
+                    Добавить отзыв
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="p-3 bg-muted/40 rounded-xl">
+            <p className="text-xs text-muted-foreground">
+              💡 <strong>Совет:</strong> Попросите клиентов оставить отзыв в Google и Яндекс — это улучшает SEO и видимость в поиске. Лучшие отзывы оттуда добавляйте на сайт кнопкой «Добавить вручную».
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Фильтры */}
       <div className="flex flex-wrap gap-3">
@@ -192,6 +398,14 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
                     >
                       {review.approved ? "Опубликован" : "На проверке"}
                     </span>
+                    {review.source && review.source !== "site" && (() => {
+                      const pl = PLATFORMS.find(p => p.key === review.source);
+                      return pl ? (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${pl.badge}`}>
+                          {pl.icon} {pl.name}
+                        </span>
+                      ) : null;
+                    })()}
                     <span className="text-[11px] text-muted-foreground">
                       {new Date(review.createdAt).toLocaleDateString("ru-RU")}
                     </span>
