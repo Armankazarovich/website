@@ -612,12 +612,12 @@ canvas,
 .aray-nature-mode .bg-background,
 .aray-nature-mode .bg-white,
 .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(5, 8, 20, 0.52) !important;
+  backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.30) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32) !important;
-  color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -642,11 +642,11 @@ canvas,
 .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
-  backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 55%), rgba(5, 8, 20, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(5, 8, 20, 0.26) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
-  color: rgba(255, 255, 255, 0.88) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Текст в тёмных карточках — белый (только p/h/span, не иконки) */
 .aray-nature-mode .bg-card p,
@@ -697,10 +697,10 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(32px) saturate(220%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.08) !important;
-  background: rgba(255, 255, 255, 0.48) !important;
-  border-color: rgba(255, 255, 255, 0.70) !important;
+  backdrop-filter: blur(32px) saturate(220%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.06) !important;
+  background: rgba(255, 255, 255, 0.28) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
   color: rgba(0, 0, 0, 0.82) !important;
 }
@@ -749,9 +749,9 @@ canvas,
 [data-theme="light"] .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 [data-theme="light"] .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 [data-theme="light"] .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
-  backdrop-filter: blur(20px) saturate(180%) brightness(1.10) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(1.10) !important;
-  background: rgba(255, 255, 255, 0.62) !important;
+  backdrop-filter: blur(22px) saturate(200%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(200%) brightness(1.06) !important;
+  background: rgba(255, 255, 255, 0.32) !important;
   border-color: rgba(0, 0, 0, 0.06) !important;
   color: rgba(0, 0, 0, 0.82) !important;
 }
