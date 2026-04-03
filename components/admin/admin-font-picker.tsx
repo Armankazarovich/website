@@ -4,12 +4,19 @@ import { useState, useEffect, useRef } from "react";
 import { ALargeSmall } from "lucide-react";
 
 const SIZES = [
-  { id: "sm", label: "Меньше", px: "13px",   preview: "A" },
-  { id: "md", label: "Обычный", px: "14px",  preview: "A" },
-  { id: "lg", label: "Крупнее", px: "15.5px", preview: "A" },
+  { id: "sm", label: "Компакт",  px: "13px",   preview: "A" },
+  { id: "md", label: "Обычный",  px: "14px",   preview: "A" },
+  { id: "lg", label: "Крупнее",  px: "15.5px", preview: "A" },
 ];
 
 const LS_KEY = "aray-font-size";
+
+function getDeviceDefault(): string {
+  const w = window.innerWidth;
+  if (w < 768)  return "sm"; // телефон — компактнее
+  if (w < 1280) return "md"; // планшет/ноутбук — стандарт
+  return "lg";               // большой монитор — крупнее
+}
 
 function apply(px: string) {
   document.documentElement.style.setProperty("font-size", px);
@@ -18,12 +25,15 @@ function apply(px: string) {
 export function AdminFontPicker() {
   const [open, setOpen]   = useState(false);
   const [active, setActive] = useState("md");
+  const [isAuto, setIsAuto] = useState(true);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem(LS_KEY) || "md";
-    setActive(saved);
-    const px = SIZES.find(s => s.id === saved)?.px || "14px";
+    const saved = localStorage.getItem(LS_KEY);
+    const id = saved ?? getDeviceDefault();
+    setActive(id);
+    setIsAuto(!saved);
+    const px = SIZES.find(s => s.id === id)?.px || "14px";
     apply(px);
   }, []);
 
@@ -38,7 +48,18 @@ export function AdminFontPicker() {
   function pick(id: string) {
     const px = SIZES.find(s => s.id === id)!.px;
     setActive(id);
+    setIsAuto(false);
     localStorage.setItem(LS_KEY, id);
+    apply(px);
+    setOpen(false);
+  }
+
+  function resetToAuto() {
+    localStorage.removeItem(LS_KEY);
+    const id = getDeviceDefault();
+    setActive(id);
+    setIsAuto(true);
+    const px = SIZES.find(s => s.id === id)!.px || "14px";
     apply(px);
     setOpen(false);
   }
@@ -57,7 +78,7 @@ export function AdminFontPicker() {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-50
           bg-card border border-border rounded-xl shadow-lg overflow-hidden p-1.5
-          animate-in slide-in-from-top-2 fade-in duration-150 w-36">
+          animate-in slide-in-from-top-2 fade-in duration-150 w-40">
           {SIZES.map(s => (
             <button
               key={s.id}
@@ -72,6 +93,15 @@ export function AdminFontPicker() {
               <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 700 }}>{s.preview}</span>
             </button>
           ))}
+          <div className="border-t border-border mt-1 pt-1">
+            <button
+              onClick={resetToAuto}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <span className="text-xs">Авто по устройству</span>
+              {isAuto && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+            </button>
+          </div>
         </div>
       )}
     </div>
