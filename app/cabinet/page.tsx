@@ -99,14 +99,14 @@ export default async function CabinetDashboard() {
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Быстрый доступ</p>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { href: "/catalog",          label: "Каталог",    icon: Package,       color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+            { href: "/catalog",          label: "Каталог",    icon: Package,       color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
             { href: "/checkout",         label: "Заказать",   icon: ShoppingBag,   color: "text-primary",    bg: "bg-primary/8" },
-            { href: "/track",            label: "Трекинг",    icon: MapPin,        color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-950/50" },
-            { href: "/calculator",       label: "Калькулятор",icon: Calculator,    color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/50" },
-            { href: "/cabinet/profile",  label: "Профиль",    icon: User,          color: "text-slate-600",  bg: "bg-slate-50 dark:bg-slate-800/50" },
-            { href: "/cabinet",          label: "Заказы",     icon: ReceiptText,   color: "text-emerald-600",bg: "bg-emerald-50 dark:bg-emerald-950/50" },
-            { href: "tel:+79859707133",  label: "Позвонить",  icon: Phone,         color: "text-green-600",  bg: "bg-green-50 dark:bg-green-950/50" },
-            { href: "/reviews",          label: "Отзывы",     icon: Star,          color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-950/50" },
+            { href: "/track",            label: "Трекинг",    icon: MapPin,        color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-white/[0.04]" },
+            { href: "/calculator",       label: "Калькулятор",icon: Calculator,    color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-white/[0.04]" },
+            { href: "/cabinet/profile",  label: "Профиль",    icon: User,          color: "text-slate-600 dark:text-slate-300",  bg: "bg-slate-50 dark:bg-white/[0.04]" },
+            { href: "/cabinet",          label: "Заказы",     icon: ReceiptText,   color: "text-emerald-600 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-white/[0.04]" },
+            { href: "tel:+79859707133",  label: "Позвонить",  icon: Phone,         color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-white/[0.04]" },
+            { href: "/reviews",          label: "Отзывы",     icon: Star,          color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-white/[0.04]" },
           ].map((action) => (
             <Link
               key={action.href + action.label}
