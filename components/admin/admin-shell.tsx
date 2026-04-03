@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
+import { AdminFontPicker } from "@/components/admin/admin-font-picker";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
@@ -188,6 +189,9 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
 
         {/* Живой поиск */}
         <AdminSearch />
+
+        {/* Размер шрифта */}
+        <AdminFontPicker />
 
         {/* Уведомления */}
         <button className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative">
