@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 
 // ── Email Templates ──────────────────────────────────────────────
-const makeBase = (header: string, headerBg: string, body: string) => `<!DOCTYPE html>
+const makeBase = (header: { title: string; sub?: string }, headerBg: string, body: string) => `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5}
 .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}

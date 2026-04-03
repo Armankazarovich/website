@@ -51,7 +51,7 @@ export async function GET() {
   let nextOk = false;
   try {
     const pkg = await import("../../../../package.json").then(m => m.default).catch(() => null);
-    nextVersion = pkg?.dependencies?.next || pkg?.devDependencies?.next || "неизвестно";
+    nextVersion = (pkg?.dependencies as Record<string, string>)?.next || (pkg?.devDependencies as Record<string, string>)?.next || "неизвестно";
     const major = parseInt(nextVersion.replace(/[^\d]/, "").split(".")[0]);
     nextOk = major >= 14;
   } catch {}
