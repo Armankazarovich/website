@@ -743,21 +743,24 @@ canvas,
 
 /* dark class is the default — no override needed */
 
-/* ── БЫСТРЫЙ ДОСТУП — только кнопки (не nav-ссылки!) ── */
+/* ── БЫСТРЫЙ ДОСТУП — кнопки И ссылки с классом ── */
 .aray-nature-mode button.aray-icon-spin,
-.aray-nature-mode .aray-icon-spin:not(a) {
+.aray-nature-mode a.aray-icon-spin,
+.aray-nature-mode .aray-icon-spin:not(a):not(button) {
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   background: rgba(5, 8, 20, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
 .light .aray-nature-mode button.aray-icon-spin,
-.light .aray-nature-mode .aray-icon-spin:not(a),
+.light .aray-nature-mode a.aray-icon-spin,
 [data-theme="light"] .aray-nature-mode button.aray-icon-spin,
-[data-theme="light"] .aray-nature-mode .aray-icon-spin:not(a) {
+[data-theme="light"] .aray-nature-mode a.aray-icon-spin {
   background: rgba(255, 255, 255, 0.50) !important;
   border-color: rgba(255, 255, 255, 0.65) !important;
 }
+
+/* Sidebar nav-ссылки — ПЕРЕОПРЕДЕЛЕНИЕ: прозрачные (навигация не нужно выделять) */
 
 /* ══════════════════════════════════════════════════════════════
    МОКРОЕ СТЕКЛО — кликабельные элементы (после дождя ✨)
