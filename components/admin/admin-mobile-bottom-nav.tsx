@@ -98,35 +98,33 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
           const badgeCount = tab.href === "/admin/orders" ? newOrdersCount : 0;
 
           const content = (
-            <div
-              className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 min-w-0 relative transition-all duration-150 active:scale-90 ${
-                isActive ? "opacity-100" : "opacity-50"
-              }`}
-            >
-              <div className="relative">
-                <tab.icon
-                  className="w-5 h-5 transition-colors"
-                  style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.9)" }}
-                />
-                {badgeCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-[14px] px-0.5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center leading-none">
-                    {badgeCount > 9 ? "9+" : badgeCount}
-                  </span>
-                )}
-              </div>
-              <span
-                className="text-[9px] font-semibold leading-none truncate max-w-full px-1"
-                style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.7)" }}
+            <div className="flex-1 flex flex-col items-center justify-center py-2 min-w-0 transition-all duration-200 active:scale-90">
+              {/* Pill-highlight на активной вкладке — iOS стиль */}
+              <div
+                className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all duration-200"
+                style={isActive ? {
+                  background: "hsl(var(--primary) / 0.18)",
+                  boxShadow: "0 0 12px hsl(var(--primary) / 0.25)",
+                } : {}}
               >
-                {tab.label}
-              </span>
-              {/* Active indicator dot */}
-              {isActive && (
+                <div className="relative">
+                  <tab.icon
+                    className="w-[22px] h-[22px] transition-all duration-200"
+                    style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.65)" }}
+                  />
+                  {badgeCount > 0 && (
+                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-0.5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center leading-none shadow-sm">
+                      {badgeCount > 9 ? "9+" : badgeCount}
+                    </span>
+                  )}
+                </div>
                 <span
-                  className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
-                  style={{ background: "hsl(var(--primary))" }}
-                />
-              )}
+                  className="text-[9px] font-bold leading-none truncate max-w-full transition-all duration-200"
+                  style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }}
+                >
+                  {tab.label}
+                </span>
+              </div>
             </div>
           );
 
