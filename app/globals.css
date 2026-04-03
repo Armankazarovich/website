@@ -616,15 +616,31 @@ canvas,
 
 /* ── ПРИРОДНЫЙ СТЕКЛО-ЭФФЕКТ — для карточек в nature-режиме ── */
 .aray-nature-card {
-  backdrop-filter: blur(18px) saturate(160%) brightness(1.04);
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(1.04);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(8, 12, 28, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.20),
-    0 1px 0 rgba(255, 255, 255, 0.10) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.10) inset;
-  color: #ffffff;
+    0 4px 24px rgba(0, 0, 0, 0.30),
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+/* Ken Burns — медленный зум */
+@keyframes kenburns-in {
+  from { transform: scale(1.0) translate(0,   0); }
+  to   { transform: scale(1.08) translate(-1%, 0.5%); }
+}
+@keyframes kenburns-out {
+  from { transform: scale(1.08) translate(-1%, 0.5%); }
+  to   { transform: scale(1.0) translate(0,   0); }
+}
+@keyframes kenburns-2 {
+  from { transform: scale(1.0)  translate(0.5%, 0); }
+  to   { transform: scale(1.07) translate(-0.5%, -0.5%); }
+}
+@keyframes kenburns-3 {
+  from { transform: scale(1.06) translate(-0.5%, -0.3%); }
+  to   { transform: scale(1.0)  translate(0.5%, 0.3%); }
 }
 
 .dark .aray-nature-card {
