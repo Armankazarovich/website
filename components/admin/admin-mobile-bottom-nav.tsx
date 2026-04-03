@@ -76,15 +76,25 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
 
   return (
     <nav
-      className="lg:hidden fixed bottom-0 left-0 right-0 z-40 aray-sidebar"
+      className="lg:hidden fixed z-40"
       style={{
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        bottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+        left: 12,
+        right: 12,
       }}
     >
-      <div className="flex items-stretch">
+      {/* Floating glass dock */}
+      <div
+        className="flex items-stretch rounded-[26px] overflow-hidden"
+        style={{
+          background: "rgba(5, 8, 20, 0.60)",
+          backdropFilter: "blur(32px) saturate(200%) brightness(0.85)",
+          WebkitBackdropFilter: "blur(32px) saturate(200%) brightness(0.85)",
+          border: "1px solid rgba(255,255,255,0.13)",
+          boxShadow:
+            "0 12px 40px rgba(0,0,0,0.50), 0 1px 0 rgba(255,255,255,0.08) inset, 0 -1px 0 rgba(255,255,255,0.04) inset",
+        }}
+      >
         {tabs.map((tab, i) => {
           const isMenuTab = tab.action === "menu";
           const isActive = isMenuTab
@@ -98,46 +108,76 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
           const badgeCount = tab.href === "/admin/orders" ? newOrdersCount : 0;
 
           const content = (
-            <div className="flex-1 flex flex-col items-center justify-center py-2 min-w-0 transition-all duration-200 active:scale-90">
-              {/* Pill-highlight на активной вкладке — iOS стиль */}
-              <div
-                className="relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all duration-200"
-                style={isActive ? {
-                  background: "hsl(var(--primary) / 0.18)",
-                  boxShadow: "0 0 12px hsl(var(--primary) / 0.25)",
-                } : {}}
-              >
-                <div className="relative">
-                  <tab.icon
-                    className="w-[22px] h-[22px] transition-all duration-200"
-                    style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.65)" }}
-                  />
-                  {badgeCount > 0 && (
-                    <span className="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-0.5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center leading-none shadow-sm">
-                      {badgeCount > 9 ? "9+" : badgeCount}
-                    </span>
-                  )}
-                </div>
-                <span
-                  className="text-[9px] font-bold leading-none truncate max-w-full transition-all duration-200"
-                  style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }}
-                >
-                  {tab.label}
-                </span>
+            <div
+              className="flex-1 flex flex-col items-center justify-center py-3 px-2 min-w-0 relative transition-all duration-200 active:scale-90 select-none"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              {/* Active pill glow */}
+              {isActive && (
+                <div
+                  className="absolute inset-x-1.5 inset-y-1.5 rounded-[18px]"
+                  style={{
+                    background: "hsl(var(--primary) / 0.20)",
+                    boxShadow: "0 0 16px hsl(var(--primary) / 0.30)",
+                  }}
+                />
+              )}
+
+              {/* Icon */}
+              <div className="relative z-10">
+                <tab.icon
+                  className="w-[22px] h-[22px] transition-all duration-200"
+                  style={{
+                    color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.58)",
+                    filter: isActive ? "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))" : "none",
+                  }}
+                />
+                {badgeCount > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-0.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none"
+                    style={{
+                      background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                      boxShadow: "0 2px 6px rgba(239,68,68,0.5)",
+                    }}
+                  >
+                    {badgeCount > 9 ? "9+" : badgeCount}
+                  </span>
+                )}
               </div>
+
+              {/* Label */}
+              <span
+                className="text-[9px] font-bold leading-none mt-1.5 z-10 transition-all duration-200"
+                style={{
+                  color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.42)",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {tab.label}
+              </span>
             </div>
           );
 
           if (isMenuTab) {
             return (
-              <button key={i} onClick={onMenuOpen} className="flex-1 focus:outline-none">
+              <button
+                key={i}
+                onClick={onMenuOpen}
+                className="flex-1 focus:outline-none"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
                 {content}
               </button>
             );
           }
 
           return (
-            <Link key={i} href={tab.href!} className="flex-1">
+            <Link
+              key={i}
+              href={tab.href!}
+              className="flex-1"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
               {content}
             </Link>
           );

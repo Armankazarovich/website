@@ -251,6 +251,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </Link>
         {/* Мобильный поиск */}
         <AdminSearch />
+        {/* Природные звуки — мобильный */}
+        <AdminAmbientSound />
         <AdminNotificationBell mobile={true} />
       </header>
 
@@ -392,7 +394,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
         {/* Отступ сверху под мобильный хедер + десктопный топбар; снизу под таббар */}
-        <div className="pt-14 lg:pb-0 pb-16" style={{ paddingBottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="pt-14 lg:pb-0" style={{ paddingBottom: "calc(96px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>
