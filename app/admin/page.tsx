@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
+import { AdminDashboardWidgets } from "@/components/admin/admin-dashboard-widgets";
 
 // ── Быстрые действия по ролям ──────────────────────────────────────────────
 const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType; color: string; bg: string }[]> = {
@@ -172,6 +173,9 @@ export default async function AdminDashboard() {
           </p>
         </div>
       </div>
+
+      {/* ── ЧАСЫ + КАЛЕНДАРЬ + АФОРИЗМ ── */}
+      <AdminDashboardWidgets />
 
       {/* ── АЛЕРТЫ ── */}
       {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (
