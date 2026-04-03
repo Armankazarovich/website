@@ -614,38 +614,78 @@ canvas,
     0 1px 0 rgba(255, 255, 255, 0.12) inset;
 }
 
-/* ── ПРИРОДНЫЙ СТЕКЛО-ЭФФЕКТ — для карточек в nature-режиме ── */
+/* ── ПРИРОДНЫЙ СТЕКЛО-ЭФФЕКТ — тёмная тема (по умолчанию) ── */
 .aray-nature-card {
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  background: rgba(8, 12, 28, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
+  background: rgba(5, 8, 20, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.30),
-    0 1px 0 rgba(255, 255, 255, 0.08) inset;
+    0 4px 28px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.07) inset;
+  color: rgba(255, 255, 255, 0.92);
 }
 
-/* Ken Burns — медленный зум */
+/* Светлая тема — белое матовое стекло */
+.light .aray-nature-card,
+[data-theme="light"] .aray-nature-card {
+  backdrop-filter: blur(28px) saturate(160%) brightness(1.12);
+  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(1.12);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  color: rgba(10, 10, 20, 0.90);
+}
+
+/* Overlay на фото: тёмная тема — затемнение, светлая — осветление */
+.aray-nature-mode .aray-photo-overlay-dark {
+  display: block;
+}
+.aray-nature-mode .aray-photo-overlay-light {
+  display: none;
+}
+.light .aray-nature-mode .aray-photo-overlay-dark,
+[data-theme="light"] .aray-nature-mode .aray-photo-overlay-dark {
+  display: none;
+}
+.light .aray-nature-mode .aray-photo-overlay-light,
+[data-theme="light"] .aray-nature-mode .aray-photo-overlay-light {
+  display: block;
+}
+
+/* Ken Burns — очень медленный, едва заметный зум */
 @keyframes kenburns-in {
-  from { transform: scale(1.0) translate(0,   0); }
-  to   { transform: scale(1.08) translate(-1%, 0.5%); }
+  from { transform: scale(1.0)  translate(0,     0); }
+  to   { transform: scale(1.04) translate(-0.5%, 0.3%); }
 }
 @keyframes kenburns-out {
-  from { transform: scale(1.08) translate(-1%, 0.5%); }
-  to   { transform: scale(1.0) translate(0,   0); }
+  from { transform: scale(1.04) translate(-0.5%, 0.3%); }
+  to   { transform: scale(1.0)  translate(0,     0); }
 }
 @keyframes kenburns-2 {
-  from { transform: scale(1.0)  translate(0.5%, 0); }
-  to   { transform: scale(1.07) translate(-0.5%, -0.5%); }
+  from { transform: scale(1.0)  translate(0.3%, 0); }
+  to   { transform: scale(1.04) translate(-0.3%, -0.3%); }
 }
 @keyframes kenburns-3 {
-  from { transform: scale(1.06) translate(-0.5%, -0.3%); }
-  to   { transform: scale(1.0)  translate(0.5%, 0.3%); }
+  from { transform: scale(1.03) translate(-0.3%, -0.2%); }
+  to   { transform: scale(1.0)  translate(0.3%,  0.2%); }
 }
 
-.dark .aray-nature-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.08);
+/* dark class is the default — no override needed */
+
+/* ── БЫСТРЫЙ ДОСТУП — кнопки тоже стекло ── */
+.aray-nature-mode .aray-icon-spin {
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: rgba(5, 8, 20, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+.light .aray-nature-mode .aray-icon-spin,
+[data-theme="light"] .aray-nature-mode .aray-icon-spin {
+  background: rgba(255, 255, 255, 0.50) !important;
+  border-color: rgba(255, 255, 255, 0.65) !important;
 }
 
 /* ── SIDEBAR GLASS в nature-режиме ── */
@@ -667,6 +707,11 @@ canvas,
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+.light .aray-nature-mode .aray-topbar,
+[data-theme="light"] .aray-nature-mode .aray-topbar {
+  background: rgba(255, 255, 255, 0.70) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.80) !important;
 }
 
 /* ── Неоновое свечение (адаптируется к палитре) ── */

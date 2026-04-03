@@ -31,8 +31,8 @@ const PHOTOS = [
   },
 ];
 
-const SHOW_MS = 12_000; // 12 сек на каждое фото
-const FADE_MS =  2_000; // 2 сек crossfade
+const SHOW_MS = 20_000; // 20 сек на каждое фото — дольше, спокойнее
+const FADE_MS =  4_000; // 4 сек crossfade — очень плавно
 
 export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const [cur,  setCur]  = useState(0);
@@ -94,14 +94,16 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         </div>
       )}
 
-      {/* Тёмный overlay — читабельность */}
-      <div className="absolute inset-0 bg-black/50" />
-      {/* Виньетка снизу */}
+      {/* ТЁМНАЯ ТЕМА — тёмное затемнение поверх фото */}
+      <div className="aray-photo-overlay-dark absolute inset-0 bg-black/48" />
+      {/* СВЕТЛАЯ ТЕМА — белый туман поверх фото */}
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(240,245,255,0.45)" }} />
+      {/* Виньетка снизу (обе темы) */}
       <div className="absolute inset-0"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.60) 0%, rgba(0,0,0,0.10) 40%, transparent 65%)" }} />
-      {/* Виньетка сверху (шапка) */}
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.08) 40%, transparent 65%)" }} />
+      {/* Виньетка сверху */}
       <div className="absolute inset-0"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 22%)" }} />
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, transparent 22%)" }} />
 
       {/* Лейбл */}
       <div className="absolute bottom-3 right-5 flex items-center gap-1.5 opacity-25">
