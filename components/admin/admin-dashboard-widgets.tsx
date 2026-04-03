@@ -42,7 +42,13 @@ const QUOTES = [
 
 type DayTask = { id: string; text: string; time: string; done: boolean; priority: string };
 
-function dateKey(d: Date) { return d.toISOString().slice(0, 10); }
+function dateKey(d: Date) {
+  // Используем локальную дату, не UTC (важно для часовых поясов UTC+3 и выше)
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 // ── Утилиты хранилища ──────────────────────────────────────────────────────────
 function loadNotes(key: string): string {

@@ -656,16 +656,16 @@ canvas,
   color: rgba(255, 255, 255, 0.48) !important;
 }
 
-/* ── СВЕТЛАЯ ТЕМА: белый фростед glass ── */
+/* ── СВЕТЛАЯ ТЕМА: такое же тёмное glass (единый стиль с тёмной темой) ── */
 .light .aray-nature-mode .bg-card,
 [data-theme="light"] .aray-nature-mode .bg-card,
 .light .aray-nature-mode .bg-popover,
 [data-theme="light"] .aray-nature-mode .bg-popover {
-  backdrop-filter: blur(22px) saturate(180%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(1.08) !important;
-  background: rgba(255, 255, 255, 0.68) !important;
-  border-color: rgba(255, 255, 255, 0.80) !important;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset !important;
+  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
+  background: rgba(5, 8, 20, 0.48) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: none !important;
 }
 .light .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 .light .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
@@ -711,12 +711,12 @@ canvas,
 [data-theme="light"] .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
 [data-theme="light"] .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
 [data-theme="light"] .aray-nature-mode [class*="bg-stone-"][class*="rounded"] {
-  backdrop-filter: blur(18px) saturate(160%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(1.08) !important;
-  background: rgba(255, 255, 255, 0.65) !important;
-  border-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
+  background: rgba(5, 8, 20, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
 }
-/* Текст в светлых карточках — тёмный (natural, убираем белый override) */
+/* Светлая тема — текст тоже белый (единый стиль) */
 .light .aray-nature-mode .bg-card p,
 [data-theme="light"] .aray-nature-mode .bg-card p,
 .light .aray-nature-mode .bg-card h1,
@@ -727,13 +727,13 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-card h1,
 [data-theme="light"] .aray-nature-mode .bg-card h2,
 [data-theme="light"] .aray-nature-mode .bg-card .text-foreground {
-  color: unset !important;
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 .light .aray-nature-mode .bg-card .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode .bg-card .text-muted-foreground,
 .light .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
-  color: unset !important;
+  color: rgba(255, 255, 255, 0.48) !important;
 }
 
 /* ── Система масштабирования шрифтов (--aray-font-scale устанавливается JS) ── */
@@ -806,16 +806,16 @@ canvas,
   border-color: rgba(255, 255, 255, 0.14) !important;
   color: rgba(255, 255, 255, 0.90) !important;
 }
-/* Светлая тема: белее, текст тёмный */
+/* Светлая тема: тот же тёмный стиль, белый текст */
 .light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 .light .aray-nature-mode textarea,
 [data-theme="light"] .aray-nature-mode textarea,
 .light .aray-nature-mode select,
 [data-theme="light"] .aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.55) !important;
-  border-color: rgba(255, 255, 255, 0.60) !important;
-  color: rgba(0, 0, 0, 0.80) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 
 /* Разделители таблиц — тонкие и прозрачные */
