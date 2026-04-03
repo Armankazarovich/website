@@ -96,8 +96,8 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
 
       {/* ТЁМНАЯ ТЕМА — тёмное затемнение поверх фото */}
       <div className="aray-photo-overlay-dark absolute inset-0 bg-black/48" />
-      {/* СВЕТЛАЯ ТЕМА — очень лёгкий туман (почти прозрачный) */}
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(255,255,255,0.18)" }} />
+      {/* СВЕТЛАЯ ТЕМА — лёгкое затемнение чтобы витражный цвет читался */}
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(0,0,0,0.12)" }} />
       {/* Виньетка снизу — тёмная тема тёмная, светлая тема светлее */}
       <div className="aray-photo-overlay-dark absolute inset-0"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 40%, transparent 65%)" }} />
