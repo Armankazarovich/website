@@ -378,7 +378,7 @@ export function AdminDashboardWidgets() {
   const selLabel = isToday ? null : selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 
   const quote   = QUOTES[quoteIdx];
-  const glass   = "rounded-2xl border border-white/10 p-4 bg-[rgba(5,8,20,0.45)] backdrop-blur-xl";
+  const glass   = "rounded-2xl border border-border p-4 bg-card backdrop-blur-xl";
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
