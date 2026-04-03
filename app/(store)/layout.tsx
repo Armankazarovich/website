@@ -12,6 +12,7 @@ import { AccountDrawer } from "@/components/store/account-drawer";
 import { FiltersDrawer } from "@/components/store/filters-drawer";
 import { SearchDrawer } from "@/components/store/search-drawer";
 import { CartDrawer } from "@/components/store/cart-drawer";
+import { PageTransition } from "@/components/layout/page-transition";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
@@ -39,7 +40,9 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
     <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
       <Header categories={categories} phones={getPhones(siteSettings)} />
-      <main className="flex-1 pb-16 lg:pb-0">{children}</main>
+      <main className="flex-1 pb-16 lg:pb-0">
+        <PageTransition>{children}</PageTransition>
+      </main>
       <Footer settings={siteSettings} categories={footerCategories} />
 
       <MobileBottomNav arayEnabled={arayEnabled} />
