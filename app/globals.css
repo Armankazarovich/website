@@ -1123,46 +1123,20 @@ canvas,
   transform: rotate(0deg) scale(0.9);
 }
 
-/* Все кнопки в природном режиме — мягкая анимация (без фанатизма)
-   Исключаем: анимированные SVG (спиннеры, лоадеры), элементы без иконок */
-.aray-nature-mode button:not(.aray-icon-spin) svg:not(.animate-spin):not(.animate-bounce):not(.animate-pulse),
-.aray-nature-mode a:not(.aray-icon-spin) svg:not(.animate-spin):not(.animate-bounce):not(.animate-pulse) {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.aray-nature-mode button:not(.aray-icon-spin):hover svg:not(.animate-spin):not(.animate-bounce),
-.aray-nature-mode a:not(.aray-icon-spin):hover svg:not(.animate-spin):not(.animate-bounce) {
-  transform: scale(1.08);
-}
-.aray-nature-mode button:not(.aray-icon-spin):active svg:not(.animate-spin),
-.aray-nature-mode a:not(.aray-icon-spin):active svg:not(.animate-spin) {
-  transform: scale(0.90);
-}
+/* Кнопки с классом aray-icon-spin уже имеют анимацию выше.
+   Глобальная анимация намеренно НЕ применяется — только через ручную метку. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   UNIFIED PAGE HEADINGS — единый стиль заголовков всех страниц админки
-   Применяется без правки каждого файла
+   ЧИТАБЕЛЬНОСТЬ ТЕКСТА в природном режиме
+   Только там где нужно — не переопределяем цвета сильно
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* h1 страниц — font-display если нет, жирный, правильный цвет */
-.aray-nature-mode main h1 {
-  font-family: var(--font-display, var(--font-sans, inherit));
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.30);
+/* Таблицы — строки без фона (bg-white/bg-gray) получают прозрачность */
+.aray-nature-mode tr.bg-white,
+.aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span):not(input) {
+  background: rgba(5, 8, 20, 0.30) !important;
 }
-.light .aray-nature-mode main h1,
-[data-theme="light"] .aray-nature-mode main h1 {
-  color: hsl(var(--foreground));
-  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.50);
-}
-
-/* h2 — чуть тише */
-.aray-nature-mode main h2 {
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
-}
-.light .aray-nature-mode main h2,
-[data-theme="light"] .aray-nature-mode main h2 {
-  color: hsl(var(--foreground));
+.light .aray-nature-mode tr.bg-white,
+[data-theme="light"] .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span) {
+  background: rgba(255, 255, 255, 0.65) !important;
 }
