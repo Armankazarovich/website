@@ -54,7 +54,7 @@ export function AdminNatureBg({ enabled }: Props) {
   const allFailed = videoFailed.every(Boolean);
 
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none select-none" aria-hidden>
+    <div className="fixed inset-0 z-[0] overflow-hidden pointer-events-none select-none" aria-hidden>
 
       {/* ── ВИДЕО или CSS-фон ── */}
       {NATURE_VIDEOS.map((v, i) => {
@@ -85,20 +85,17 @@ export function AdminNatureBg({ enabled }: Props) {
         );
       })}
 
-      {/* ── МНОГОСЛОЙНОЕ ЗАТЕМНЕНИЕ ── */}
-      {/* Слой 1: основное затемнение */}
-      <div className="absolute inset-0 z-10 bg-black/40" />
-      {/* Слой 2: снизу тяжелее — текст на нижних блоках лучше читается */}
-      <div className="absolute inset-0 z-10"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.05) 100%)" }}
+      {/* ── МНОГОСЛОЙНОЕ ЗАТЕМНЕНИЕ (z-[2..4] — ниже контента) ── */}
+      <div className="absolute inset-0 z-[2] bg-black/40" />
+      <div className="absolute inset-0 z-[3]"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.50) 0%, rgba(0,0,0,0.10) 40%, transparent 100%)" }}
       />
-      {/* Слой 3: сверху лёгкий для шапки */}
-      <div className="absolute inset-0 z-10"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 20%)" }}
+      <div className="absolute inset-0 z-[3]"
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.20) 0%, transparent 18%)" }}
       />
 
       {/* ── ЛЕЙБЛ СЦЕНЫ ── */}
-      <div className="absolute bottom-3 right-4 z-20 flex items-center gap-1.5"
+      <div className="absolute bottom-3 right-4 z-[4] flex items-center gap-1.5"
         style={{ opacity: 0.3 }}>
         <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
         <span className="text-white text-[9px] font-semibold tracking-[0.2em] uppercase">

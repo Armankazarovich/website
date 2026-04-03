@@ -84,8 +84,8 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
   }, [open]);
 
   return (
-    <div className="flex min-h-screen aray-admin-bg aray-nature-mode">
-      {/* ─── Природный видео фон ──────────────────────────────── */}
+    <div className="flex min-h-screen aray-admin-bg aray-nature-mode relative">
+      {/* ─── Природный видео фон (z-0, за всем) ─────────────── */}
       <AdminNatureBg enabled={true} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
