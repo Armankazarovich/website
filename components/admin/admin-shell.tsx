@@ -312,8 +312,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Mobile drawer overlay ────────────────────────────── */}
       {open && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 z-[49] bg-black/50 backdrop-blur-sm"
           onClick={() => setOpen(false)}
+          onTouchEnd={(e) => { e.preventDefault(); setOpen(false); }}
         />
       )}
 
@@ -332,7 +333,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+            onTouchEnd={(e) => { e.stopPropagation(); setOpen(false); }}
+            className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
+            style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <X className="w-5 h-5" />
           </button>
