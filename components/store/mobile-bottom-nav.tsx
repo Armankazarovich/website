@@ -172,7 +172,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
           >
             {/* Внешнее дыхающее кольцо */}
             <span
-              className={`absolute inset-0 rounded-2xl ${arayPulse ? "animate-ping" : ""}`}
+              className={`absolute inset-0 rounded-full ${arayPulse ? "animate-ping" : ""}`}
               style={{
                 background: "rgba(232, 112, 10, 0.25)",
                 animationDuration: "0.8s",
@@ -180,7 +180,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             />
 
             {/* Основная кнопка — SVG шар */}
-            <div className="aray-center-btn relative w-14 h-14 rounded-2xl flex items-center justify-center">
+            <div className="aray-center-btn relative w-14 h-14 rounded-full flex items-center justify-center">
               {/* SVG сфера */}
               <svg width="46" height="46" viewBox="0 0 100 100" className="relative z-10 drop-shadow-lg">
                 <defs>

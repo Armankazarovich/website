@@ -71,19 +71,30 @@ export function CatalogMobileFilter({
 
   return (
     <>
-      {/* Trigger button */}
+      {/* Floating trigger — sticky left side, middle of screen */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors relative"
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-40 lg:hidden flex flex-col items-center justify-center gap-1 py-3 px-2.5 rounded-r-2xl shadow-xl transition-all active:scale-95"
+        style={{
+          background: "var(--mobile-nav-bg, rgba(20,20,20,0.92))",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(255,255,255,0.1)",
+          borderRight: "1px solid rgba(255,255,255,0.1)",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+        }}
+        aria-label="Открыть фильтры"
       >
-        <SlidersHorizontal className="w-4 h-4" />
-        Фильтры
+        <SlidersHorizontal className="w-4 h-4 text-foreground" />
         {activeCount > 0 && (
-          <span className="absolute -top-2 -right-2 z-10 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+          <span className="w-5 h-5 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
             {activeCount}
           </span>
         )}
       </button>
+
+      {/* Spacer — placeholder where inline button was (keeps InstockToggle row intact) */}
+      <div className="shrink-0 w-0" />
 
       <AnimatePresence>
         {open && (

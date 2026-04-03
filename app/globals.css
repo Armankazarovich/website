@@ -762,14 +762,15 @@ canvas,
   animation: arayBreath 4s ease-in-out infinite;
   will-change: transform, box-shadow;
   position: relative;
+  border-radius: 50%;
 }
 
-/* Оранжевое свечение вокруг шара */
+/* Оранжевое свечение вокруг шара — только круг */
 .aray-center-btn::after {
   content: "";
   position: absolute;
   inset: -5px;
-  border-radius: inherit;
+  border-radius: 50%;
   background: transparent;
   box-shadow: 0 0 18px rgba(232, 112, 10, 0.55), 0 0 36px rgba(232, 112, 10, 0.20);
   animation: arayRingPulse 3s ease-in-out infinite;
