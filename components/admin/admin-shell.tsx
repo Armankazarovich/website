@@ -90,8 +90,6 @@ import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { AdminAray } from "@/components/admin/admin-aray";
-import { AdminBgPicker } from "@/components/admin/admin-bg-picker";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
@@ -146,7 +144,6 @@ function usePageTitle() {
 
 function AdminShellInner({ role, email, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
-  const [userBgPhotos, setUserBgPhotos] = useState<string[] | undefined>(undefined);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
@@ -168,7 +165,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   return (
     <div className="flex min-h-screen aray-admin-bg aray-nature-mode relative" style={{ backgroundColor: "rgb(8, 12, 30)" }}>
       {/* ─── Природный видео фон (z-0, за всем) ─────────────── */}
-      <AdminNatureBg enabled={true} customPhotos={userBgPhotos} />
+      <AdminNatureBg enabled={true} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
@@ -191,9 +188,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
         {/* Push prompt */}
         <AdminPushPrompt />
-
-        {/* ARAY Ассистент */}
-        <AdminAray staffName={email?.split("@")[0] || "Коллега"} />
 
         {/* Низ — тема + выход */}
         <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
@@ -285,8 +279,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           <AdminFontPicker />
           {/* Планировщик дня */}
           <AdminDayPlanner />
-          {/* Фон рабочего места */}
-          <AdminBgPicker onPhotosChange={(photos) => setUserBgPhotos(photos.length > 0 ? photos : [])} />
           {/* Уведомления */}
           <AdminNotificationBell />
           {/* Тема */}
