@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react";
 import { AdminSearch } from "@/components/admin/admin-search";
+import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
@@ -82,7 +83,9 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
   }, [open]);
 
   return (
-    <div className="flex min-h-screen aray-admin-bg">
+    <div className="flex min-h-screen aray-admin-bg aray-nature-mode">
+      {/* ─── Природный видео фон ──────────────────────────────── */}
+      <AdminNatureBg enabled={true} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
@@ -173,12 +176,12 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
       </header>
 
       {/* ─── Desktop top bar ──────────────────────────────────── */}
-      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-6 gap-4"
+      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-6 gap-4 aray-topbar"
         style={{
-          background: "hsl(var(--background) / 0.85)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
-          borderBottom: "1px solid hsl(var(--border) / 0.5)",
+          background: "hsl(var(--background) / 0.75)",
+          backdropFilter: "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: "blur(24px) saturate(180%)",
+          borderBottom: "1px solid hsl(var(--border) / 0.4)",
         }}>
         {/* Заголовок текущей страницы */}
         <h1 className="text-base font-semibold text-foreground flex-1 truncate">{pageTitle}</h1>

@@ -379,7 +379,7 @@ export default async function AdminDashboard() {
       {/* ── СИСТЕМНЫЕ ССЫЛКИ (только владелец) ── */}
       {isOwner && (
         <div className="grid grid-cols-2 gap-2">
-          <Link href="/admin/health" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+          <Link href="/admin/health" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
             <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <Shield className="w-4 h-4 text-primary" />
             </div>
@@ -388,7 +388,7 @@ export default async function AdminDashboard() {
               <p className="text-[10px] text-muted-foreground">системы</p>
             </div>
           </Link>
-          <Link href="/admin/staff" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+          <Link href="/admin/staff" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
               <Users className="w-4 h-4 text-blue-600" />
             </div>
@@ -397,7 +397,7 @@ export default async function AdminDashboard() {
               <p className="text-[10px] text-muted-foreground">{pendingStaff > 0 ? `${pendingStaff} ждут` : "сотрудники"}</p>
             </div>
           </Link>
-          <Link href="/admin/site" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+          <Link href="/admin/site" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
             <div className="w-8 h-8 rounded-xl bg-slate-500/10 flex items-center justify-center shrink-0">
               <Globe className="w-4 h-4 text-slate-600" />
             </div>
@@ -406,7 +406,7 @@ export default async function AdminDashboard() {
               <p className="text-[10px] text-muted-foreground">настройки</p>
             </div>
           </Link>
-          <Link href="/admin/appearance" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+          <Link href="/admin/appearance" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
             <div className="w-8 h-8 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
               <Zap className="w-4 h-4 text-violet-600" />
             </div>
