@@ -26,6 +26,11 @@ import {
   Search,
   X,
   ShoppingBag,
+  Globe,
+  Handshake,
+  FileText,
+  LayoutGrid,
+  ScanLine,
 } from "lucide-react";
 
 // ── Email Templates ──────────────────────────────────────────────
@@ -162,6 +167,93 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 <a href="https://pilo-rus.ru" class="btn">Подробнее на сайте</a>`
     ),
   },
+  {
+    key: "partnership",
+    icon: Handshake,
+    label: "Партнёрство",
+    desc: "B2B приглашение к сотрудничеству",
+    subject: "Предложение о сотрудничестве — ПилоРус (поставщик пиломатериалов)",
+    html: () => makeBase(
+      { title: "Предложение о сотрудничестве", sub: "Оптовые поставки пиломатериалов" },
+      "linear-gradient(135deg,#1e3a5f,#2563eb)",
+      `<p>Добрый день!</p>
+<p>Меня зовут Арман, я представляю компанию <b>ПилоРус</b> — прямого поставщика пиломатериалов из Химок (МО).</p>
+<p>Мы работаем с оптовыми покупателями, строительными компаниями и подрядчиками. Предлагаем:</p>
+<ul style="color:#444;line-height:2;padding-left:20px">
+<li><b>Доска обрезная, брус, вагонка, блок-хаус</b> — от производителя</li>
+<li>Цены на 15–25% ниже розницы при объёмах от 3 м³</li>
+<li>Доставка по Москве и МО за 1–3 дня</li>
+<li>Официальные документы: счёт, УПД, договор поставки</li>
+<li>Персональный менеджер и гибкие условия оплаты</li>
+</ul>
+<p>Если вам интересно сотрудничество — я готов выслать актуальный прайс-лист и ответить на вопросы.</p>
+<a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог и цены</a>
+<p style="color:#666;font-size:13px">Если вы не заинтересованы — просто проигнорируйте это письмо. Повторно писать не буду.</p>
+<p><b>Арман Казарович</b><br>ПилоРус — пиломатериалы от производителя<br>📞 8-985-970-71-33 | 📧 info@pilo-rus.ru</p>`
+    ),
+  },
+  {
+    key: "pricelist",
+    icon: FileText,
+    label: "Прайс-лист",
+    desc: "Актуальные цены на основные позиции",
+    subject: "Актуальный прайс-лист ПилоРус — пиломатериалы от производителя",
+    html: () => makeBase(
+      { title: "Актуальный прайс-лист", sub: "Апрель 2026 · Химки, МО" },
+      "linear-gradient(135deg,#065f46,#059669)",
+      `<p>Добрый день!</p>
+<p>Высылаем актуальные цены на основные позиции нашего склада:</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:16px 0">
+  <thead>
+    <tr style="background:#f0fdf4">
+      <th style="padding:10px 12px;text-align:left;font-size:13px;color:#065f46;border-bottom:2px solid #bbf7d0">Наименование</th>
+      <th style="padding:10px 12px;text-align:right;font-size:13px;color:#065f46;border-bottom:2px solid #bbf7d0">Цена м³</th>
+      <th style="padding:10px 12px;text-align:center;font-size:13px;color:#065f46;border-bottom:2px solid #bbf7d0">Наличие</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f0fdf4">Доска обрезная 25×150 (сосна, 1-2 сорт)</td><td style="padding:9px 12px;font-size:13px;text-align:right;font-weight:700;color:#059669">от 18 000 ₽</td><td style="padding:9px 12px;text-align:center;font-size:12px">✅</td></tr>
+    <tr style="background:#fafafa"><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f0fdf4">Доска обрезная 50×150 (сосна)</td><td style="padding:9px 12px;font-size:13px;text-align:right;font-weight:700;color:#059669">от 16 000 ₽</td><td style="padding:9px 12px;text-align:center;font-size:12px">✅</td></tr>
+    <tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f0fdf4">Брус 100×100 (сосна)</td><td style="padding:9px 12px;font-size:13px;text-align:right;font-weight:700;color:#059669">от 20 000 ₽</td><td style="padding:9px 12px;text-align:center;font-size:12px">✅</td></tr>
+    <tr style="background:#fafafa"><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f0fdf4">Вагонка штиль (ольха, класс A)</td><td style="padding:9px 12px;font-size:13px;text-align:right;font-weight:700;color:#059669">от 35 000 ₽</td><td style="padding:9px 12px;text-align:center;font-size:12px">✅</td></tr>
+    <tr><td style="padding:9px 12px;font-size:13px">Блок-хаус (сосна, 36×136)</td><td style="padding:9px 12px;font-size:13px;text-align:right;font-weight:700;color:#059669">от 28 000 ₽</td><td style="padding:9px 12px;text-align:center;font-size:12px">✅</td></tr>
+  </tbody>
+</table>
+<p style="font-size:12px;color:#666">* Цены указаны за 1 м³ с НДС. Окончательная цена зависит от объёма и условий доставки.</p>
+<a href="https://pilo-rus.ru/catalog" class="btn">Полный каталог с ценами</a>
+<p>Для расчёта стоимости вашего заказа — позвоните или напишите:<br><b>📞 8-985-970-71-33</b> | 📧 info@pilo-rus.ru</p>`
+    ),
+  },
+  {
+    key: "categories",
+    icon: LayoutGrid,
+    label: "Категории",
+    desc: "Обзор всех категорий товаров",
+    subject: "Весь ассортимент ПилоРус — доска, брус, вагонка и не только",
+    html: () => makeBase(
+      { title: "Наш ассортимент", sub: "Пиломатериалы на любой проект" },
+      "linear-gradient(135deg,#7c2d12,#ea580c)",
+      `<p>Добрый день!</p>
+<p>Рады напомнить о полном ассортименте нашего склада. Мы предлагаем всё для строительства и отделки:</p>
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0">
+  ${[
+    ["🌲 Доска обрезная", "Конструкционный материал для каркасов, перекрытий, заборов", "https://pilo-rus.ru/catalog?category=doska-obreznaya"],
+    ["🏗️ Брус", "Строительный и профилированный брус для домов и бань", "https://pilo-rus.ru/catalog?category=brus"],
+    ["🏠 Вагонка", "Отделочная вагонка из хвои и лиственных пород", "https://pilo-rus.ru/catalog?category=vagonka"],
+    ["🪵 Блок-хаус", "Имитация бревна для фасадов и интерьеров", "https://pilo-rus.ru/catalog?category=blok-haus"],
+    ["📐 Планкен", "Фасадная доска для современного облика", "https://pilo-rus.ru/catalog?category=planken"],
+  ].map(([name, desc, link]) => `<tr>
+    <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;vertical-align:top">
+      <p style="margin:0;font-size:15px;font-weight:700;color:#111">${name}</p>
+      <p style="margin:4px 0 8px;font-size:13px;color:#666">${desc}</p>
+      <a href="${link}" style="font-size:13px;color:#e8700a;font-weight:600;text-decoration:none">Смотреть →</a>
+    </td>
+  </tr>`).join("")}
+</table>
+<a href="https://pilo-rus.ru/catalog" class="btn">Весь каталог с ценами</a>
+<p>Склад в Химках работает <b>Пн–Вс 09:00–20:00</b>. Доставка по Москве и МО.</p>`
+    ),
+  },
 ];
 
 type Subscriber = {
@@ -242,6 +334,16 @@ export default function EmailPage() {
   const [importText, setImportText] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+
+  // Scanner state
+  const [scanUrl, setScanUrl] = useState("");
+  const [scanDeep, setScanDeep] = useState(true);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<{ emails: string[]; pages: number } | null>(null);
+  const [scanError, setScanError] = useState("");
+  const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
+  const [addingScanned, setAddingScanned] = useState(false);
+  const [scanAdded, setScanAdded] = useState("");
 
   // Product insert
   const [showProductPicker, setShowProductPicker] = useState(false);
@@ -377,6 +479,53 @@ export default function EmailPage() {
       setSmtpTestResult(data);
     } finally {
       setSmtpTesting(false);
+    }
+  };
+
+  // Website scanner
+  const handleScan = async () => {
+    if (!scanUrl.trim()) return;
+    setScanning(true);
+    setScanResult(null);
+    setScanError("");
+    setScanAdded("");
+    setSelectedEmails(new Set());
+    try {
+      const res = await fetch("/api/admin/email/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: scanUrl.trim(), depth: scanDeep ? 1 : 0 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка сканирования");
+      setScanResult(data);
+      setSelectedEmails(new Set(data.emails));
+    } catch (e: any) {
+      setScanError(e.message);
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleAddScanned = async () => {
+    if (selectedEmails.size === 0) return;
+    setAddingScanned(true);
+    try {
+      const res = await fetch("/api/admin/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "import_emails", emails: [...selectedEmails] }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setScanAdded(`Добавлено: ${data.count}`);
+        setSelectedEmails(new Set());
+        setScanResult(null);
+        setScanUrl("");
+        await loadSubscribers();
+      }
+    } finally {
+      setAddingScanned(false);
     }
   };
 
@@ -892,6 +1041,98 @@ export default function EmailPage() {
           </div>
 
           {/* Import */}
+          {/* Website scanner */}
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <ScanLine className="w-4 h-4 text-primary" />
+              Сканировать сайт — найти emails
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Введите URL сайта конкурента или партнёра — система найдёт все email-адреса автоматически
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="https://example.ru или example.ru"
+                value={scanUrl}
+                onChange={(e) => setScanUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleScan()}
+                className="flex-1"
+              />
+              <Button onClick={handleScan} disabled={scanning || !scanUrl.trim()} className="shrink-0">
+                {scanning ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Сканирую...</> : <><Globe className="w-4 h-4 mr-1.5" />Сканировать</>}
+              </Button>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={scanDeep}
+                onChange={(e) => setScanDeep(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-xs text-muted-foreground">Глубокое сканирование (до 6 страниц)</span>
+            </label>
+            {scanError && (
+              <div className="flex items-center gap-2 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4" /> {scanError}
+              </div>
+            )}
+            {scanResult && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    Найдено {scanResult.emails.length} email{scanResult.emails.length !== 1 ? "ов" : ""} на {scanResult.pages} стр.
+                  </p>
+                  <div className="flex gap-2 text-xs">
+                    <button onClick={() => setSelectedEmails(new Set(scanResult.emails))} className="text-primary hover:underline">Выбрать все</button>
+                    <span className="text-muted-foreground">·</span>
+                    <button onClick={() => setSelectedEmails(new Set())} className="text-muted-foreground hover:underline">Снять</button>
+                  </div>
+                </div>
+                {scanResult.emails.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Emails не найдены на этом сайте</p>
+                ) : (
+                  <div className="max-h-48 overflow-y-auto rounded-xl border border-border divide-y divide-border">
+                    {scanResult.emails.map((email) => (
+                      <label key={email} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedEmails.has(email)}
+                          onChange={(e) => {
+                            const next = new Set(selectedEmails);
+                            if (e.target.checked) next.add(email); else next.delete(email);
+                            setSelectedEmails(next);
+                          }}
+                        />
+                        <span className="text-sm font-mono">{email}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {scanResult.emails.length > 0 && (
+                  <Button
+                    onClick={handleAddScanned}
+                    disabled={addingScanned || selectedEmails.size === 0}
+                    className="w-full"
+                  >
+                    {addingScanned
+                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Добавляю...</>
+                      : <><Upload className="w-4 h-4 mr-2" />Добавить выбранные ({selectedEmails.size})</>
+                    }
+                  </Button>
+                )}
+              </div>
+            )}
+            {scanAdded && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="w-4 h-4" /> {scanAdded}
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
+              ⚠️ Используйте для B2B аутрича — персональные приглашения к сотрудничеству. Массовая рассылка без согласия нарушает ФЗ-38.
+            </p>
+          </div>
+
+          {/* Import manually */}
           <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
             <h3 className="font-semibold flex items-center gap-2">
               <Upload className="w-4 h-4 text-muted-foreground" />
