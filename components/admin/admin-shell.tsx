@@ -93,6 +93,7 @@ import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
+import { AdminAmbientSound } from "@/components/admin/admin-ambient-sound";
 
 interface AdminShellProps {
   role: string;
@@ -279,6 +280,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           <AdminFontPicker />
           {/* Планировщик дня */}
           <AdminDayPlanner />
+          {/* Природные звуки */}
+          <AdminAmbientSound />
           {/* Уведомления */}
           <AdminNotificationBell />
           {/* Тема */}
