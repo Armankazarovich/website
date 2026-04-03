@@ -1,9 +1,26 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Панель управления | ПилоРус",
+    template: "%s | Панель ПилоРус",
+  },
+  manifest: "/admin-manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Арай",
+  },
+  icons: {
+    apple: "/api/admin/pwa-icon?s=180",
+  },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
