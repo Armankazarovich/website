@@ -8,6 +8,7 @@ import { PushSubscription } from "@/components/push-subscription";
 import { SwRegister } from "@/components/sw-register";
 import { getSiteSettings, DEFAULT_SETTINGS, getSetting } from "@/lib/site-settings";
 import { Analytics } from "@/components/analytics";
+import { HapticInit } from "@/components/haptic-init";
 import "./globals.css";
 
 const inter = Inter({
@@ -140,6 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PaletteProvider enabledIds={enabledIds} defaultPalette={defaultPalette}>
             {children}
             <Toaster />
+            <HapticInit />
             <SwRegister />
             <PushSubscription />
             <Analytics

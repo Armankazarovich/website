@@ -7,6 +7,7 @@ import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
+import { haptic } from "@/lib/haptic";
 
 interface Variant {
   id: string;
@@ -73,10 +74,7 @@ export function VariantSelector({
     if (!selectedVariant || !currentPrice) return;
 
     flyToCart(e.currentTarget, productImage ?? null);
-
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate(10);
-    }
+    haptic("success"); // двойной пульс — подтверждение добавления
 
     addItem({
       variantId: selectedVariant.id,
