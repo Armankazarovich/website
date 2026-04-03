@@ -612,9 +612,9 @@ canvas,
 .aray-nature-mode .bg-background,
 .aray-nature-mode .bg-white,
 .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.78) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.78) !important;
-  background: rgba(5, 8, 20, 0.62) !important;
+  backdrop-filter: blur(22px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+  background: rgba(5, 8, 20, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
   box-shadow: 0 4px 24px rgba(0,0,0,0.30), 0 1px 0 rgba(255,255,255,0.07) inset !important;
 }
@@ -640,9 +640,9 @@ canvas,
 .aray-nature-mode [class*="bg-zinc-"][class*="rounded"],
 .aray-nature-mode [class*="bg-neutral-"][class*="rounded"],
 .aray-nature-mode [class*="bg-stone-"][class*="rounded"] {
-  backdrop-filter: blur(18px) saturate(160%) brightness(0.78) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.78) !important;
-  background: rgba(5, 8, 20, 0.58) !important;
+  backdrop-filter: blur(18px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) !important;
+  background: rgba(5, 8, 20, 0.82) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
 /* Текст в тёмных карточках — белый (только p/h, не иконки) */
@@ -843,84 +843,27 @@ canvas,
 
 /* Sidebar nav-ссылки — ПЕРЕОПРЕДЕЛЕНИЕ: прозрачные (навигация не нужно выделять) */
 
-/* ══════════════════════════════════════════════════════════════
-   МОКРОЕ СТЕКЛО — кликабельные элементы (после дождя ✨)
-   Яркий блик сверху + чуть больше opacity = различимы визуально
-   ══════════════════════════════════════════════════════════════ */
-
-/* Тёмная тема — МОКРОЕ стекло, градиент с ярким бликом */
+/* ── Кликабельные карточки — тот же единый dark glass, hover с подъёмом ── */
 .aray-nature-mode a.bg-card,
 .aray-nature-mode button.bg-card,
 .aray-nature-mode a.aray-nature-card,
-.aray-nature-mode button.aray-nature-card {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.22) 0%,    /* яркий блик сверху — как мокрое стекло */
-    rgba(255, 255, 255, 0.06) 6%,    /* быстро уходит */
-    rgba(10, 16, 40, 0.62) 14%,      /* тёмное стекло */
-    rgba(6, 10, 28, 0.58) 100%
-  ) !important;
-  box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.30),
-    0 1px 0 rgba(255, 255, 255, 0.30) inset;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+.aray-nature-mode button.aray-nature-card,
+.light .aray-nature-mode a.bg-card,
+.light .aray-nature-mode button.bg-card,
+[data-theme="light"] .aray-nature-mode a.bg-card,
+[data-theme="light"] .aray-nature-mode button.bg-card {
+  background: rgba(5, 8, 20, 0.82) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   transition: all 0.2s ease !important;
 }
 .aray-nature-mode a.bg-card:hover,
 .aray-nature-mode button.bg-card:hover,
 .aray-nature-mode a.aray-nature-card:hover,
 .aray-nature-mode button.aray-nature-card:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.35) 0%,    /* ещё ярче на hover */
-    rgba(255, 255, 255, 0.10) 6%,
-    rgba(14, 22, 55, 0.72) 14%,
-    rgba(8, 14, 38, 0.68) 100%
-  ) !important;
-  box-shadow:
-    0 10px 36px rgba(0, 0, 0, 0.38),
-    0 1px 0 rgba(255, 255, 255, 0.45) inset;
-  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: rgba(8, 14, 36, 0.90) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
   transform: translateY(-2px);
-}
-
-/* Светлая тема — мокрое светлое стекло */
-.light .aray-nature-mode a.bg-card,
-.light .aray-nature-mode button.bg-card,
-.light .aray-nature-mode a.aray-nature-card,
-.light .aray-nature-mode button.aray-nature-card,
-[data-theme="light"] .aray-nature-mode a.bg-card,
-[data-theme="light"] .aray-nature-mode button.bg-card {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 1.00) 0%,    /* чисто белый блик — капля воды */
-    rgba(255, 255, 255, 0.85) 5%,
-    rgba(220, 235, 255, 0.72) 100%
-  ) !important;
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.10),
-    0 1px 0 rgba(255, 255, 255, 1) inset,
-    0 -1px 0 rgba(160, 200, 255, 0.30) inset;
-  border: 1px solid rgba(255, 255, 255, 0.90) !important;
-  transition: all 0.2s ease !important;
-}
-.light .aray-nature-mode a.bg-card:hover,
-.light .aray-nature-mode button.bg-card:hover,
-.light .aray-nature-mode a.aray-nature-card:hover,
-.light .aray-nature-mode button.aray-nature-card:hover,
-[data-theme="light"] .aray-nature-mode a.bg-card:hover,
-[data-theme="light"] .aray-nature-mode button.bg-card:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 1.00) 0%,
-    rgba(255, 255, 255, 0.92) 5%,
-    rgba(210, 228, 255, 0.82) 100%
-  ) !important;
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.14),
-    0 1px 0 rgba(255, 255, 255, 1) inset,
-    0 -1px 0 rgba(140, 185, 255, 0.40) inset;
-  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.40) !important;
 }
 
 /* ── NAV-ссылки — тонкий контур, без фона ── */
