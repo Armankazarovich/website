@@ -2,14 +2,58 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
-import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart } from "lucide-react";
+import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone } from "lucide-react";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
+import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
-type Message = { id: string; role: "user" | "assistant"; content: string; timestamp: Date };
+export type ArayAction = {
+  type: "navigate" | "spotlight" | "highlight" | "call";
+  url?: string;
+  label: string;
+  icon?: string;
+  hint?: string;
+  spotX?: number;
+  spotY?: number;
+};
+
+type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  actions?: ArayAction[];
+};
+
+// ─── Парсим ARAY_ACTIONS из текста ответа ────────────────────────────────────
+function parseMessageActions(raw: string): { text: string; actions: ArayAction[] } {
+  const marker = "ARAY_ACTIONS:";
+  const idx = raw.indexOf(marker);
+  if (idx === -1) return { text: raw, actions: [] };
+  const text = raw.slice(0, idx).trim();
+  try {
+    const jsonStr = raw.slice(idx + marker.length).trim();
+    const actions = JSON.parse(jsonStr) as ArayAction[];
+    return { text, actions };
+  } catch {
+    return { text: raw, actions: [] };
+  }
+}
+
+// ─── Иконка для action-кнопки ─────────────────────────────────────────────────
+function ActionIcon({ icon }: { icon?: string }) {
+  const cls = "w-3.5 h-3.5 shrink-0";
+  switch (icon) {
+    case "catalog": return <LayoutGrid className={cls} />;
+    case "product": return <Package className={cls} />;
+    case "map":     return <MapPin className={cls} />;
+    case "phone":   return <Phone className={cls} />;
+    default:        return <ExternalLink className={cls} />;
+  }
+}
 interface ArayWidgetProps { page?: string; productName?: string; cartTotal?: number; enabled?: boolean; }
 
 // ─── Живой SVG-шар — без фона снаружи, анимация внутри ───────────────────────
@@ -116,14 +160,14 @@ function useVoiceInput(onResult: (text: string) => void) {
 
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
 
-function MessageBubble({ msg }: { msg: Message }) {
+function MessageBubble({ msg, onAction }: { msg: Message; onAction?: (a: ArayAction) => void }) {
   const isUser = msg.role === "user";
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3.5`}>
       {!isUser && (
         <div className="shrink-0 mt-0.5"><ArayIcon size={24} /></div>
       )}
-      <div className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"} max-w-[82%]`}>
+      <div className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
         <div className="px-3.5 py-2.5 text-sm leading-relaxed" style={
           isUser
             ? { background: "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)", color: "#fff", borderRadius: "16px 16px 4px 16px" }
@@ -133,6 +177,43 @@ function MessageBubble({ msg }: { msg: Message }) {
             <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
           ))}
         </div>
+
+        {/* ── Action cards — кнопки от Арая ── */}
+        {!isUser && msg.actions && msg.actions.length > 0 && (
+          <div className="flex flex-col gap-1.5 w-full">
+            {msg.actions.map((action, i) => (
+              <motion.button
+                key={i}
+                onClick={() => onAction?.(action)}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.08 }}
+                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-left transition-all active:scale-[0.97]"
+                style={{
+                  background: "rgba(232,112,10,0.10)",
+                  border: "1px solid rgba(232,112,10,0.25)",
+                  color: "rgba(255,255,255,0.90)",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = "rgba(232,112,10,0.18)";
+                  e.currentTarget.style.borderColor = "rgba(232,112,10,0.45)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = "rgba(232,112,10,0.10)";
+                  e.currentTarget.style.borderColor = "rgba(232,112,10,0.25)";
+                }}
+              >
+                <span className="flex items-center justify-center w-7 h-7 rounded-xl shrink-0"
+                  style={{ background: "rgba(232,112,10,0.20)" }}>
+                  <ActionIcon icon={action.icon} />
+                </span>
+                <span className="flex-1 leading-tight">{action.label}</span>
+                <span className="text-xs opacity-50">→</span>
+              </motion.button>
+            ))}
+          </div>
+        )}
+
         <span className="text-[10px] px-1" style={{ color: "rgba(255,255,255,0.38)" }}>
           {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
         </span>
@@ -156,6 +237,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   // Клавиатура на мобильном
   const [mobileH, setMobileH] = useState<number | null>(null);
   const [mobileBottom, setMobileBottom] = useState(0);
+  // Встроенный браузер Арая
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserUrl, setBrowserUrl] = useState("/");
+  const [browserAction, setBrowserAction] = useState<ArayBrowserAction | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -260,9 +345,17 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       if (data.message?.includes("звать") || data.message?.includes("имя")) {
         fetch("/api/ai/me").then(r => r.json()).then(d => { if (d.name) setUserName(d.name); }).catch(() => {});
       }
+      const raw = data.message || data.error || "Не получилось 🙏";
+      const { text, actions } = parseMessageActions(raw);
+      // Если первое действие — навигация, сразу открываем браузер
+      if (actions.length > 0 && actions[0].type === "navigate" && actions[0].url) {
+        setBrowserUrl(actions[0].url);
+        setBrowserOpen(true);
+      }
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(), role: "assistant",
-        content: data.message || data.error || "Не получилось 🙏",
+        content: text,
+        actions,
         timestamp: new Date(),
       }]);
       if (!open) setHasNew(true);
@@ -332,10 +425,26 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     </div>
   );
 
+  // ── Обработчик кнопок-действий от Арая ───────────────────────────────────
+  const handleAction = useCallback((action: ArayAction) => {
+    if (action.type === "navigate" && action.url) {
+      setBrowserUrl(action.url);
+      setBrowserOpen(true);
+    }
+    if ((action.type === "spotlight" || action.type === "highlight") && action.spotX !== undefined) {
+      setBrowserAction({ type: action.type, spotX: action.spotX, spotY: action.spotY, hint: action.hint });
+      if (!browserOpen) setBrowserOpen(true);
+      setTimeout(() => setBrowserAction(null), 5500);
+    }
+    if (action.type === "call" && action.url) {
+      window.location.href = action.url;
+    }
+  }, [browserOpen]);
+
   // ── Чат-область ───────────────────────────────────────────────────────────
   const ChatBody = () => (
     <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
-      {messages.map(m => <MessageBubble key={m.id} msg={m} />)}
+      {messages.map(m => <MessageBubble key={m.id} msg={m} onAction={handleAction} />)}
       {loading && (
         <div className="flex gap-2.5 mb-3">
           <ArayIcon size={24} />
@@ -424,6 +533,18 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   return (
     <>
+      {/* ══ Встроенный браузер Арая ══ */}
+      <AnimatePresence>
+        {browserOpen && (
+          <ArayBrowser
+            initialUrl={browserUrl}
+            onClose={() => setBrowserOpen(false)}
+            pendingAction={browserAction}
+            isMobile={isMobile}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ══ КНОПКА — чистая сфера, без тёмного фона ══ */}
       {!open && (
         <div className="hidden lg:flex fixed z-50 flex-col items-end gap-2.5"
