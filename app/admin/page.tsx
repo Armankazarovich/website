@@ -1,29 +1,111 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
-import { ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3, ArrowUpRight, Shield } from "lucide-react";
+import {
+  ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3,
+  ArrowUpRight, Shield, Truck, Warehouse, Target, Mail, Bell,
+  Settings, Wallet, BarChart2, Globe, HeartPulse, CheckSquare,
+  Megaphone, UserCircle, FileDown, ChevronRight, Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 
+// ── Быстрые действия по ролям ──────────────────────────────────────────────
+const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType; color: string; bg: string }[]> = {
+  owner: [
+    { href: "/admin/orders",       label: "Заказы",        icon: ShoppingBag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+    { href: "/admin/clients",      label: "Клиенты",       icon: UserCircle,  color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-950/50" },
+    { href: "/admin/analytics",    label: "Аналитика",     icon: BarChart2,   color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/50" },
+    { href: "/admin/finance",      label: "Финансы",       icon: Wallet,      color: "text-emerald-600",bg: "bg-emerald-50 dark:bg-emerald-950/50" },
+    { href: "/admin/products",     label: "Каталог",       icon: Package,     color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-950/50" },
+    { href: "/admin/email",        label: "Email",         icon: Mail,        color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/50" },
+    { href: "/admin/notifications",label: "Уведомления",   icon: Bell,        color: "text-cyan-600",   bg: "bg-cyan-50 dark:bg-cyan-950/50" },
+    { href: "/admin/settings",     label: "Настройки",     icon: Settings,    color: "text-slate-600",  bg: "bg-slate-50 dark:bg-slate-800/50" },
+  ],
+  manager: [
+    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-950/50" },
+    { href: "/admin/crm",       label: "CRM",       icon: Target,      color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/50" },
+    { href: "/admin/delivery",  label: "Доставка",  icon: Truck,       color: "text-green-600",  bg: "bg-green-50 dark:bg-green-950/50" },
+    { href: "/admin/products",  label: "Каталог",   icon: Package,     color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-950/50" },
+    { href: "/admin/reviews",   label: "Отзывы",    icon: Star,        color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-950/50" },
+    { href: "/admin/tasks",     label: "Задачи",    icon: CheckSquare, color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-950/50" },
+    { href: "/admin/inventory", label: "Склад",     icon: Warehouse,   color: "text-slate-600",  bg: "bg-slate-50 dark:bg-slate-800/50" },
+  ],
+  courier: [
+    { href: "/admin/delivery", label: "Мои доставки", icon: Truck,       color: "text-green-600",  bg: "bg-green-50 dark:bg-green-950/50" },
+    { href: "/admin/orders",   label: "Заказы",       icon: ShoppingBag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+    { href: "/admin/tasks",    label: "Задачи",       icon: CheckSquare, color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-950/50" },
+    { href: "/admin/help",     label: "Помощь",       icon: HeartPulse,  color: "text-red-600",    bg: "bg-red-50 dark:bg-red-950/50" },
+  ],
+  accountant: [
+    { href: "/admin/finance",   label: "Финансы",   icon: Wallet,      color: "text-emerald-600",bg: "bg-emerald-50 dark:bg-emerald-950/50" },
+    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2,   color: "text-violet-600", bg: "bg-violet-50 dark:bg-violet-950/50" },
+    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-950/50" },
+  ],
+  warehouse: [
+    { href: "/admin/inventory", label: "Склад",    icon: Warehouse,   color: "text-slate-600",  bg: "bg-slate-50 dark:bg-slate-800/50" },
+    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-950/50" },
+    { href: "/admin/import",    label: "Импорт",   icon: FileDown,    color: "text-cyan-600",   bg: "bg-cyan-50 dark:bg-cyan-950/50" },
+    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+  ],
+  seller: [
+    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-950/50" },
+    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950/50" },
+    { href: "/admin/clients",   label: "Клиенты",  icon: UserCircle,  color: "text-blue-600",   bg: "bg-blue-50 dark:bg-blue-950/50" },
+    { href: "/admin/reviews",   label: "Отзывы",   icon: Star,        color: "text-yellow-600", bg: "bg-yellow-50 dark:bg-yellow-950/50" },
+  ],
+};
+
+const ROLE_GREETINGS: Record<string, string> = {
+  SUPER_ADMIN: "Владелец платформы",
+  ADMIN: "Администратор",
+  MANAGER: "Менеджер",
+  COURIER: "Курьер",
+  ACCOUNTANT: "Бухгалтер",
+  WAREHOUSE: "Кладовщик",
+  SELLER: "Продавец",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  SUPER_ADMIN: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
+  ADMIN: "bg-primary/10 text-primary",
+  MANAGER: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  COURIER: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  ACCOUNTANT: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+  WAREHOUSE: "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200",
+  SELLER: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200",
+};
+
+function getRoleGroup(role: string): string {
+  if (role === "SUPER_ADMIN" || role === "ADMIN") return "owner";
+  if (role === "MANAGER") return "manager";
+  if (role === "COURIER") return "courier";
+  if (role === "ACCOUNTANT") return "accountant";
+  if (role === "WAREHOUSE") return "warehouse";
+  if (role === "SELLER") return "seller";
+  return "manager";
+}
+
 export default async function AdminDashboard() {
+  const session = await auth();
+  const role = (session?.user as any)?.role || "MANAGER";
+  const userName = session?.user?.name || "Добро пожаловать";
+  const roleGroup = getRoleGroup(role);
+  const isOwner = roleGroup === "owner";
+  const quickActions = QUICK_ACTIONS[roleGroup] || QUICK_ACTIONS.manager;
+
   const now = new Date();
   const today = new Date(now); today.setHours(0, 0, 0, 0);
-  const days7ago = new Date(now); days7ago.setDate(days7ago.getDate() - 6); days7ago.setHours(0, 0, 0, 0);
-  const days30ago = new Date(now); days30ago.setDate(days30ago.getDate() - 29); days30ago.setHours(0, 0, 0, 0);
+  const days7ago = new Date(now); days7ago.setDate(now.getDate() - 6); days7ago.setHours(0, 0, 0, 0);
+  const days30ago = new Date(now); days30ago.setDate(now.getDate() - 29); days30ago.setHours(0, 0, 0, 0);
 
   const [
-    totalOrders,
-    newOrders,
-    todayOrders,
-    totalProducts,
-    pendingReviews,
-    recentOrders,
-    revenue30,
-    revenue7,
-    revenueToday,
-    allOrdersForChart,
-    topItems,
-    statusCounts,
+    totalOrders, newOrders, todayOrders, totalProducts,
+    pendingReviews, recentOrders, revenue30, revenue7, revenueToday,
+    allOrdersForChart, topItems, statusCounts, pendingStaff,
   ] = await Promise.all([
     prisma.order.count({ where: { deletedAt: null } }),
     prisma.order.count({ where: { status: "NEW", deletedAt: null } }),
@@ -33,34 +115,23 @@ export default async function AdminDashboard() {
     prisma.order.findMany({
       where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
-      take: 6,
-      select: { id: true, orderNumber: true, guestName: true, totalAmount: true, status: true, createdAt: true, items: { select: { id: true } } },
+      take: 5,
+      select: { id: true, orderNumber: true, guestName: true, totalAmount: true, status: true, createdAt: true },
     }),
-    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
-    prisma.order.findMany({
-      where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null },
-      select: { createdAt: true, totalAmount: true },
-      orderBy: { createdAt: "asc" },
-    }),
-    prisma.orderItem.groupBy({
-      by: ["productName"],
-      _sum: { price: true },
-      _count: { _all: true },
-    }),
-    prisma.order.groupBy({
-      by: ["status"],
-      where: { deletedAt: null },
-      _count: { _all: true },
-    }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.findMany({ where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null }, select: { createdAt: true, totalAmount: true }, orderBy: { createdAt: "asc" } }),
+    prisma.orderItem.groupBy({ by: ["productName"], _sum: { price: true }, _count: { _all: true } }),
+    prisma.order.groupBy({ by: ["status"], where: { deletedAt: null }, _count: { _all: true } }),
+    prisma.user.count({ where: { staffStatus: "PENDING" } }).catch(() => 0),
   ]);
 
-  // Build 7-day chart data
+  // Chart
   const chartDays: { label: string; amount: number; date: Date }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
-    chartDays.push({ label: d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" }), amount: 0, date: d });
+    chartDays.push({ label: d.toLocaleDateString("ru-RU", { weekday: "short" }), amount: 0, date: d });
   }
   for (const o of allOrdersForChart) {
     const d = new Date(o.createdAt); d.setHours(0, 0, 0, 0);
@@ -69,200 +140,283 @@ export default async function AdminDashboard() {
   }
   const maxAmount = Math.max(...chartDays.map(d => d.amount), 1);
 
-  // Top items — sort by sum in JS, take 5
-  const topItemsSorted = [...topItems]
-    .sort((a, b) => Number(b._sum.price || 0) - Number(a._sum.price || 0))
-    .slice(0, 5);
-
-  // Status breakdown
+  const topItemsSorted = [...topItems].sort((a, b) => Number(b._sum.price || 0) - Number(a._sum.price || 0)).slice(0, 5);
   const statusMap: Record<string, number> = {};
   for (const s of statusCounts) statusMap[s.status] = s._count._all;
-  const statusOrder = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED", "COMPLETED", "CANCELLED"];
-  const statusData = statusOrder.map(s => ({ status: s, count: statusMap[s] || 0 })).filter(s => s.count > 0);
 
-  // Average order value (30 days)
   const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
-  const cancelledCount30 = await prisma.order.count({ where: { status: "CANCELLED", createdAt: { gte: days30ago }, deletedAt: null } });
-
-  // Суммируем выручку + доставку
-  const revenue30total = Number(revenue30._sum.totalAmount || 0) + Number((revenue30._sum as any).deliveryCost || 0);
-  const revenue7total = Number(revenue7._sum.totalAmount || 0) + Number((revenue7._sum as any).deliveryCost || 0);
-  const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0) + Number((revenueToday._sum as any).deliveryCost || 0);
+  const revenue30total = Number(revenue30._sum.totalAmount || 0);
+  const revenue7total = Number(revenue7._sum.totalAmount || 0);
+  const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0);
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
 
+  const greetingHour = now.getHours();
+  const greeting = greetingHour < 12 ? "Доброе утро" : greetingHour < 17 ? "Добрый день" : "Добрый вечер";
+
   return (
-    <div className="space-y-5">
-      {/* Автообновление каждые 60 секунд */}
+    <div className="space-y-4 pb-6">
       <AutoRefresh intervalMs={60000} />
+
+      {/* ── ШАПКА ── */}
       <div className="flex items-center justify-between">
-        <h1 className="font-display font-bold text-2xl">Дашборд</h1>
-        <p className="text-sm text-muted-foreground">{now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}</p>
+        <div>
+          <p className="text-xs text-muted-foreground">{greeting},</p>
+          <h1 className="font-display font-bold text-xl leading-tight">{userName.split(" ")[0]}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
+            {ROLE_GREETINGS[role] || role}
+          </span>
+          <p className="text-xs text-muted-foreground hidden sm:block">
+            {now.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
+          </p>
+        </div>
       </div>
 
-      {/* Main stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: "Выручка за 30 дн.", value: formatPrice(revenue30total), icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Выручка сегодня", value: formatPrice(revenueTodayTotal), icon: BarChart3, color: "text-green-600", bg: "bg-green-50 dark:bg-green-950" },
-          { label: "Средний чек", value: formatPrice(avgOrder), icon: ArrowUpRight, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950" },
-          { label: "Новых заказов", value: newOrders, icon: Clock, color: "text-orange-600", bg: "bg-orange-50 dark:bg-orange-950" },
-        ].map((s) => (
-          <div key={s.label} className="bg-card rounded-2xl border border-border p-4">
-            <div className={`w-9 h-9 rounded-xl ${s.bg} flex items-center justify-center mb-3`}>
-              <s.icon className={`w-4 h-4 ${s.color}`} />
+      {/* ── АЛЕРТЫ ── */}
+      {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (
+        <div className="flex flex-col gap-2">
+          {newOrders > 0 && (
+            <Link href="/admin/orders?status=NEW" className="flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                <span className="text-sm font-semibold text-orange-800 dark:text-orange-200">{newOrders} новых заказов</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-orange-500" />
+            </Link>
+          )}
+          {pendingReviews > 0 && isOwner && (
+            <Link href="/admin/reviews" className="flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-2xl">
+              <div className="flex items-center gap-2.5">
+                <Star className="w-4 h-4 text-yellow-600" />
+                <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">{pendingReviews} отзывов ждут модерации</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-yellow-500" />
+            </Link>
+          )}
+          {pendingStaff > 0 && isOwner && (
+            <Link href="/admin/staff" className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl">
+              <div className="flex items-center gap-2.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">{pendingStaff} сотрудников ждут одобрения</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-blue-500" />
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* ── ГЛАВНЫЕ МЕТРИКИ (владелец/менеджер) ── */}
+      {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
+        <div className="grid grid-cols-2 gap-3">
+          <Link href="/admin/finance" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center mb-2.5">
+              <TrendingUp className="w-4 h-4 text-primary" />
             </div>
-            <p className="text-xl font-display font-bold">{s.value}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+            <p className="text-lg font-display font-bold leading-tight">{formatPrice(revenue30total)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Выручка за 30 дн.</p>
+          </Link>
+
+          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center mb-2.5">
+              <BarChart3 className="w-4 h-4 text-green-600" />
+            </div>
+            <p className="text-lg font-display font-bold leading-tight">{formatPrice(revenueTodayTotal)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Сегодня</p>
+          </Link>
+
+          <Link href="/admin/orders" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center mb-2.5">
+              <Clock className="w-4 h-4 text-orange-600" />
+            </div>
+            <p className="text-lg font-display font-bold leading-tight">{newOrders}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Новых заказов</p>
+          </Link>
+
+          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center mb-2.5">
+              <ArrowUpRight className="w-4 h-4 text-blue-600" />
+            </div>
+            <p className="text-lg font-display font-bold leading-tight">{formatPrice(avgOrder)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Средний чек</p>
+          </Link>
+        </div>
+      )}
+
+      {/* ── КУРЬЕР: его доставки ── */}
+      {roleGroup === "courier" && (
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-card rounded-2xl border border-border p-4">
+            <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center mb-2.5">
+              <Clock className="w-4 h-4 text-orange-600" />
+            </div>
+            <p className="text-2xl font-bold">{newOrders}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Новых заказов</p>
           </div>
-        ))}
+          <div className="bg-card rounded-2xl border border-border p-4">
+            <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center mb-2.5">
+              <Truck className="w-4 h-4 text-green-600" />
+            </div>
+            <p className="text-2xl font-bold">{todayOrders}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Заказов сегодня</p>
+          </div>
+        </div>
+      )}
+
+      {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Быстрый доступ</p>
+        <div className="grid grid-cols-4 gap-2">
+          {quickActions.map((action) => (
+            <Link
+              key={action.href}
+              href={action.href}
+              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 p-3 min-h-[72px] active:scale-[0.95] transition-transform ${action.bg}`}
+            >
+              <action.icon className={`w-5 h-5 ${action.color}`} />
+              <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
+                {action.label}
+              </span>
+            </Link>
+          ))}
+        </div>
       </div>
 
-      {/* Secondary stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <div className="bg-card rounded-2xl border border-border p-4 text-center">
-          <ShoppingBag className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-          <p className="text-xl font-bold">{totalOrders}</p>
-          <p className="text-xs text-muted-foreground">Всего заказов</p>
+      {/* ── ВТОРИЧНЫЕ МЕТРИКИ ── */}
+      {isOwner && (
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: "Всего", value: totalOrders, href: "/admin/orders", icon: ShoppingBag },
+            { label: "Сегодня", value: todayOrders, href: "/admin/orders", icon: Users },
+            { label: "Товаров", value: totalProducts, href: "/admin/products", icon: Package },
+            { label: "7 дней", value: formatPrice(revenue7total), href: "/admin/analytics", icon: TrendingUp },
+          ].map((s) => (
+            <Link key={s.label} href={s.href} className="bg-card rounded-2xl border border-border p-3 text-center active:scale-[0.97] transition-transform">
+              <s.icon className="w-3.5 h-3.5 text-muted-foreground mx-auto mb-1" />
+              <p className="text-base font-bold leading-tight">{s.value}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+            </Link>
+          ))}
         </div>
-        <div className="bg-card rounded-2xl border border-border p-4 text-center">
-          <Users className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-          <p className="text-xl font-bold">{todayOrders}</p>
-          <p className="text-xs text-muted-foreground">Заказов сегодня</p>
-        </div>
-        <div className="bg-card rounded-2xl border border-border p-4 text-center">
-          <Package className="w-4 h-4 text-muted-foreground mx-auto mb-1" />
-          <p className="text-xl font-bold">{totalProducts}</p>
-          <p className="text-xs text-muted-foreground">Активных товаров</p>
-        </div>
-        <div className="bg-card rounded-2xl border border-border p-4 text-center">
-          <div className="w-4 h-4 text-red-500 mx-auto mb-1 text-xs font-bold">✕</div>
-          <p className="text-xl font-bold text-red-500">{cancelledCount30}</p>
-          <p className="text-xs text-muted-foreground">Отменено (30 дн.)</p>
-        </div>
-      </div>
+      )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Revenue chart (7 days) */}
-        <div className="bg-card rounded-2xl border border-border p-5">
-          <h2 className="font-semibold text-sm mb-4">Выручка за 7 дней</h2>
-          <div className="flex items-end gap-1.5 h-28">
+      {/* ── ГРАФИК 7 ДНЕЙ ── */}
+      {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
+        <Link href="/admin/analytics" className="block bg-card rounded-2xl border border-border p-5 active:scale-[0.99] transition-transform">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-sm">Выручка — 7 дней</h2>
+            <span className="text-xs text-primary flex items-center gap-1">Аналитика <ChevronRight className="w-3 h-3" /></span>
+          </div>
+          <div className="flex items-end gap-1.5 h-24">
             {chartDays.map((d) => {
-              const pct = maxAmount > 0 ? Math.max((d.amount / maxAmount) * 100, d.amount > 0 ? 5 : 0) : 0;
+              const pct = Math.max((d.amount / maxAmount) * 100, d.amount > 0 ? 5 : 0);
               return (
-                <div key={d.label} className="flex-1 flex flex-col items-center gap-1 group">
+                <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
                   <div className="relative flex-1 w-full flex items-end">
                     <div
-                      className="w-full bg-primary/20 hover:bg-primary/40 rounded-t-md transition-colors cursor-default"
+                      className="w-full bg-primary/25 hover:bg-primary/50 rounded-t-lg transition-colors"
                       style={{ height: `${pct}%`, minHeight: d.amount > 0 ? "4px" : "0" }}
-                      title={formatPrice(d.amount)}
                     />
                   </div>
-                  <span className="text-[10px] text-muted-foreground">{d.label}</span>
+                  <span className="text-[9px] text-muted-foreground">{d.label}</span>
                 </div>
               );
             })}
           </div>
           <div className="mt-3 pt-3 border-t border-border flex justify-between text-xs text-muted-foreground">
-            <span>7 дней: <strong className="text-foreground">{formatPrice(revenue7total)}</strong></span>
-            <span>30 дней: <strong className="text-foreground">{formatPrice(revenue30total)}</strong></span>
+            <span>7 дн: <strong className="text-foreground">{formatPrice(revenue7total)}</strong></span>
+            <span>30 дн: <strong className="text-foreground">{formatPrice(revenue30total)}</strong></span>
           </div>
-        </div>
+        </Link>
+      )}
 
-        {/* Order statuses breakdown */}
-        <div className="bg-card rounded-2xl border border-border p-5">
-          <h2 className="font-semibold text-sm mb-4">Статусы заказов</h2>
-          <div className="space-y-2">
-            {statusData.slice(0, 6).map(({ status, count }) => {
-              const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0;
-              const colorClass = ORDER_STATUS_COLORS[status] || "bg-gray-100 text-gray-800";
-              const label = ORDER_STATUS_LABELS[status] || status;
-              return (
-                <div key={status}>
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-semibold">{count} <span className="text-muted-foreground font-normal">({pct}%)</span></span>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary/60 rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
+      {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ ── */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+          <h2 className="font-semibold text-sm">Последние заказы</h2>
+          <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5">Все <ChevronRight className="w-3 h-3" /></Link>
+        </div>
+        <div className="divide-y divide-border">
+          {recentOrders.map((order) => {
+            const color = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
+            const label = ORDER_STATUS_LABELS[order.status] || order.status;
+            return (
+              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/30 active:bg-muted/50 transition-colors">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
+                  <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>
                 </div>
-              );
-            })}
-            {statusData.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">Нет данных</p>}
-          </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <p className="text-sm font-bold">{formatPrice(Number(order.totalAmount))}</p>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
+                </div>
+              </Link>
+            );
+          })}
+          {recentOrders.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Заказов ещё нет</p>}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Top products */}
-        <div className="bg-card rounded-2xl border border-border">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="font-semibold text-sm">Топ товаров (выручка)</h2>
+      {/* ── ТОП ТОВАРОВ ── */}
+      {(isOwner || roleGroup === "manager" || roleGroup === "seller") && topItemsSorted.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+            <h2 className="font-semibold text-sm">Топ товаров</h2>
+            <Link href="/admin/analytics" className="text-xs text-primary flex items-center gap-0.5">Подробнее <ChevronRight className="w-3 h-3" /></Link>
           </div>
           <div className="divide-y divide-border">
             {topItemsSorted.map((item, i) => (
               <div key={item.productName} className="flex items-center gap-3 px-5 py-3">
-                <span className="w-5 text-center text-xs font-bold text-muted-foreground">{i + 1}</span>
+                <span className="w-5 text-center text-xs font-bold text-muted-foreground/60">{i + 1}</span>
                 <p className="flex-1 text-sm font-medium truncate">{item.productName}</p>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-bold">{formatPrice(Number(item._sum.price || 0))}</p>
-                  <p className="text-xs text-muted-foreground">{item._count._all} позиций</p>
-                </div>
+                <p className="text-sm font-bold shrink-0 text-primary">{formatPrice(Number(item._sum.price || 0))}</p>
               </div>
             ))}
-            {topItemsSorted.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Нет данных</p>}
           </div>
-        </div>
-
-        {/* Recent orders */}
-        <div className="bg-card rounded-2xl border border-border">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="font-semibold text-sm">Последние заказы</h2>
-            <Link href="/admin/orders" className="text-xs text-primary hover:underline">Все →</Link>
-          </div>
-          <div className="divide-y divide-border">
-            {recentOrders.map((order) => {
-              const color = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
-              const label = ORDER_STATUS_LABELS[order.status] || order.status;
-              return (
-                <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors">
-                  <div>
-                    <p className="text-sm font-medium">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
-                    <span className={`inline-block mt-0.5 px-2 py-0.5 rounded text-xs font-medium ${color}`}>{label}</span>
-                  </div>
-                  <p className="text-sm font-bold shrink-0">{formatPrice(Number(order.totalAmount))}</p>
-                </Link>
-              );
-            })}
-            {recentOrders.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Заказов ещё нет</p>}
-          </div>
-        </div>
-      </div>
-
-      {pendingReviews > 0 && (
-        <div className="bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Star className="w-5 h-5 text-yellow-600 shrink-0" />
-            <p className="text-sm font-medium">{pendingReviews} отзыв(ов) ожидают модерации</p>
-          </div>
-          <Link href="/admin/reviews" className="text-sm text-primary font-medium hover:underline shrink-0">Модерировать →</Link>
         </div>
       )}
 
-      {/* Health check shortcut */}
-      <Link
-        href="/admin/health"
-        className="flex items-center gap-4 bg-card border border-border rounded-2xl p-4 hover:bg-muted/30 transition-colors group"
-      >
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Shield className="w-5 h-5 text-primary" />
+      {/* ── СИСТЕМНЫЕ ССЫЛКИ (только владелец) ── */}
+      {isOwner && (
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/admin/health" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold leading-tight">Здоровье</p>
+              <p className="text-[10px] text-muted-foreground">системы</p>
+            </div>
+          </Link>
+          <Link href="/admin/staff" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold leading-tight">Команда</p>
+              <p className="text-[10px] text-muted-foreground">{pendingStaff > 0 ? `${pendingStaff} ждут` : "сотрудники"}</p>
+            </div>
+          </Link>
+          <Link href="/admin/site" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-slate-500/10 flex items-center justify-center shrink-0">
+              <Globe className="w-4 h-4 text-slate-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold leading-tight">Сайт</p>
+              <p className="text-[10px] text-muted-foreground">настройки</p>
+            </div>
+          </Link>
+          <Link href="/admin/appearance" className="flex items-center gap-3 bg-card border border-border rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
+            <div className="w-8 h-8 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4 text-violet-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold leading-tight">Оформление</p>
+              <p className="text-[10px] text-muted-foreground">стили, цвета</p>
+            </div>
+          </Link>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold">Здоровье системы</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Проверить базу данных, email, SEO, уведомления и другие компоненты</p>
-        </div>
-        <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-      </Link>
+      )}
     </div>
   );
 }
