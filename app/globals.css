@@ -697,11 +697,11 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(28px) saturate(200%) brightness(1.12) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.12) !important;
-  background: rgba(255, 255, 255, 0.72) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10) !important;
+  backdrop-filter: blur(32px) saturate(220%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(220%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.48) !important;
+  border-color: rgba(255, 255, 255, 0.70) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
   color: rgba(0, 0, 0, 0.82) !important;
 }
 /* Светлая тема — то же исключение для маленьких иконок w-8/h-8 */
