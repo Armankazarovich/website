@@ -198,7 +198,7 @@ export default async function CatalogPage({
       />
 
       {/* ── Мобильная строка фильтров (только на мобильном) ── */}
-      <div className="flex lg:hidden items-center gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+      <div className="flex lg:hidden items-center gap-2 mb-4 pb-1 scrollbar-hide" style={{ overflowX: "auto", overflowY: "visible" }}>
         <CatalogMobileFilter
           categories={categories}
           sizes={crossSections}

@@ -39,8 +39,8 @@ export function CatalogMobileFilter({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Count active filters
-  const activeCount = [currentCategory, currentSize, currentType, currentInStock].filter(Boolean).length;
+  // Count active filters (instock excluded — has its own separate toggle button)
+  const activeCount = [currentCategory, currentSize, currentType].filter(Boolean).length;
 
   const setParam = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -79,7 +79,7 @@ export function CatalogMobileFilter({
         <SlidersHorizontal className="w-4 h-4" />
         Фильтры
         {activeCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute -top-2 -right-2 z-10 w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
             {activeCount}
           </span>
         )}
