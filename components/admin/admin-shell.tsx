@@ -92,6 +92,7 @@ import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { AdminAray } from "@/components/admin/admin-aray";
 import { AdminBgPicker } from "@/components/admin/admin-bg-picker";
+import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
 
@@ -401,7 +402,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </main>
 
-      {/* ArayWidget убран — используем AdminAray в сайдбаре */}
+      {/* ─── Оранжевый шар Арай (десктоп, снизу справа) ─────── */}
+      <ArayWidget page="admin" enabled={true} />
     </div>
   );
 }
