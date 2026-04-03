@@ -687,11 +687,11 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.52) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.32), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
+  background: rgba(5, 8, 20, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.08) inset !important;
 }
 /* Светлая тема — то же исключение для маленьких иконок w-8/h-8 */
 .light .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -846,23 +846,39 @@ canvas,
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Input, Select, Textarea — тёмная тема: полупрозрачное стекло */
+/* Input, Select, Textarea — тёмная и светлая тема: полупрозрачное стекло */
 .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 .aray-nature-mode textarea,
-.aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  color: rgba(255, 255, 255, 0.90) !important;
-}
-/* Светлая тема: тот же тёмный стиль, белый текст */
+.aray-nature-mode select,
 .light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 .light .aray-nature-mode textarea,
 [data-theme="light"] .aray-nature-mode textarea,
 .light .aray-nature-mode select,
 [data-theme="light"] .aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
   border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  colorScheme: dark !important;
+}
+/* Placeholder */
+.aray-nature-mode input::placeholder,
+.aray-nature-mode textarea::placeholder,
+.light .aray-nature-mode input::placeholder,
+.light .aray-nature-mode textarea::placeholder,
+[data-theme="light"] .aray-nature-mode input::placeholder,
+[data-theme="light"] .aray-nature-mode textarea::placeholder {
+  color: rgba(255, 255, 255, 0.32) !important;
+}
+/* Select — принудительно тёмная цветовая схема для дропдауна ОС */
+.aray-nature-mode select,
+.light .aray-nature-mode select,
+[data-theme="light"] .aray-nature-mode select {
+  color-scheme: dark !important;
+}
+/* Select option — насколько браузер позволяет */
+.aray-nature-mode select option {
+  background: rgb(12, 16, 36) !important;
   color: rgba(255, 255, 255, 0.90) !important;
 }
 

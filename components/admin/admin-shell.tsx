@@ -4,6 +4,52 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react";
+
+// ── Живой колокольчик с бейджем уведомлений ──────────────────────────────────
+function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/admin/notifications/count");
+        if (res.ok) {
+          const data = await res.json();
+          setCount(data.total ?? 0);
+        }
+      } catch {}
+    }
+    fetchCount();
+    const interval = setInterval(fetchCount, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (mobile) {
+    return (
+      <button className="p-2 rounded-xl hover:bg-white/10 transition-colors opacity-60 shrink-0 aray-icon-spin relative">
+        <Bell className="w-[18px] h-[18px]" />
+        {count > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1"
+            style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
+            {count > 99 ? "99+" : count}
+          </span>
+        )}
+      </button>
+    );
+  }
+
+  return (
+    <button className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative aray-icon-spin">
+      <Bell className="w-4 h-4 text-muted-foreground" />
+      {count > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1"
+          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
+          {count > 99 ? "99+" : count}
+        </span>
+      )}
+    </button>
+  );
+}
 import { AdminSearch } from "@/components/admin/admin-search";
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
 import { AdminFontPicker } from "@/components/admin/admin-font-picker";
@@ -174,9 +220,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </Link>
         {/* Мобильный поиск */}
         <AdminSearch />
-        <button className="p-2 rounded-xl hover:bg-white/10 transition-colors opacity-60 shrink-0 aray-icon-spin">
-          <Bell className="w-[18px] h-[18px]" />
-        </button>
+        <AdminNotificationBell mobile={true} />
       </header>
 
       {/* ─── Desktop top bar ──────────────────────────────────── */}
@@ -203,9 +247,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         <AdminDayPlanner />
 
         {/* Уведомления */}
-        <button className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative aray-icon-spin">
-          <Bell className="w-4 h-4 text-muted-foreground" />
-        </button>
+        <AdminNotificationBell />
 
         {/* Тема */}
         <button
