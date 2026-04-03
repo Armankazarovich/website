@@ -1,0 +1,21 @@
+name: Restart PM2 (Emergency)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart PM2 on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 2m
+          script: |
+            echo "🔄 Restarting PM2..."
+            pm2 restart pilo-rus --update-env || pm2 start /home/armankmb/pilo-rus/app/ecosystem.config.js || pm2 start npm --name "pilo-rus" -- start --prefix /home/armankmb/pilo-rus/app
+            pm2 save
+            echo "✅ Done: $(pm2 list | grep pilo-rus)"
