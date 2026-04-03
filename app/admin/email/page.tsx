@@ -16,7 +16,153 @@ import {
   ChevronDown,
   ChevronUp,
   Upload,
+  Sparkles,
+  Tag,
+  Package,
+  Sun,
+  Clock,
+  Heart,
+  Newspaper,
+  Search,
+  X,
+  ShoppingBag,
 } from "lucide-react";
+
+// ── Email Templates ──────────────────────────────────────────────
+const makeBase = (header: string, headerBg: string, body: string) => `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5}
+.wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}
+.header{background:${headerBg};padding:32px 40px;text-align:center}
+.header h1{color:#fff;margin:0;font-size:24px;font-weight:700;letter-spacing:-0.5px}
+.header p{color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px}
+.body{padding:32px 40px}
+.body p{color:#444;line-height:1.7;margin:0 0 16px}
+.btn{display:inline-block;background:${headerBg};color:#fff!important;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;margin:8px 0 24px}
+.footer{background:#f9f9f9;padding:20px 40px;border-top:1px solid #eee;text-align:center}
+.footer p{color:#999;font-size:12px;margin:0}
+@media(max-width:600px){.body,.header,.footer{padding-left:20px;padding-right:20px}.header h1{font-size:20px}}
+</style></head>
+<body><div style="padding:20px 0">
+<div class="wrap">
+<div class="header"><h1>${header.title}</h1>${header.sub ? `<p>${header.sub}</p>` : ''}</div>
+<div class="body">${body}</div>
+<div class="footer"><p>ПилоРус — Пиломатериалы в Химках · <a href="https://pilo-rus.ru" style="color:#e8700a">pilo-rus.ru</a> · 8-985-970-71-33</p></div>
+</div></div></body></html>`;
+
+const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; desc: string; subject: string; html: () => string }[] = [
+  {
+    key: "promo",
+    icon: Tag,
+    label: "Акция",
+    desc: "Скидка или специальное предложение",
+    subject: "Специальное предложение от ПилоРус 🎁",
+    html: () => makeBase(
+      { title: "Специальное предложение", sub: "Только для наших клиентов" },
+      "linear-gradient(135deg,#e8700a,#f59e0b)",
+      `<p>Добрый день!</p>
+<p>Хотим сообщить вам о нашем специальном предложении. В этом месяце мы подготовили для вас выгодные условия на пиломатериалы высшего качества.</p>
+<p><b>🔥 Скидка 10% на доску обрезную</b> при заказе от 3 м³</p>
+<p><b>🚚 Бесплатная доставка</b> при заказе от 10 м³ по Москве и МО</p>
+<a href="https://pilo-rus.ru/catalog" class="btn">Смотреть каталог</a>
+<p>Предложение действует до конца месяца. Свяжитесь с нашим менеджером для расчёта стоимости.</p>`
+    ),
+  },
+  {
+    key: "new_product",
+    icon: Package,
+    label: "Новинки",
+    desc: "Анонс новых товаров в каталоге",
+    subject: "Новые поступления в ПилоРус 📦",
+    html: () => makeBase(
+      { title: "Новые поступления", sub: "Свежая партия прямо с производства" },
+      "linear-gradient(135deg,#059669,#10b981)",
+      `<p>Добрый день!</p>
+<p>Рады сообщить о новых поступлениях на склад. Мы регулярно обновляем ассортимент и следим за качеством каждой партии.</p>
+<p><b>В наличии:</b></p>
+<ul style="color:#444;line-height:2;padding-left:20px">
+<li>Доска обрезная 50×150 — сосна, 1-2 сорт</li>
+<li>Брус 100×100 — лиственница, камерная сушка</li>
+<li>Вагонка штиль — ольха, класс A</li>
+</ul>
+<a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог</a>
+<p>Наш склад работает Пн-Сб 09:00–20:00, Вс 09:00–18:00</p>`
+    ),
+  },
+  {
+    key: "seasonal",
+    icon: Sun,
+    label: "Сезонное",
+    desc: "Сезонное предложение (весна/лето)",
+    subject: "Строительный сезон открыт! Подготовьтесь заранее 🌿",
+    html: () => makeBase(
+      { title: "Строительный сезон открыт!", sub: "Лучшее время для закупки материалов" },
+      "linear-gradient(135deg,#0ea5e9,#38bdf8)",
+      `<p>Добрый день!</p>
+<p>Строительный сезон набирает обороты. Самое время позаботиться о запасе качественных пиломатериалов для вашего проекта.</p>
+<p>Мы рекомендуем заказывать заранее — спрос растёт, а склад ограничен. Успейте зафиксировать цены!</p>
+<p><b>Почему ПилоРус?</b></p>
+<ul style="color:#444;line-height:2;padding-left:20px">
+<li>Собственный склад в Химках — всегда в наличии</li>
+<li>Доставка по Москве и МО — от 1 дня</li>
+<li>Официальные документы — счёт, УПД, договор</li>
+</ul>
+<a href="https://pilo-rus.ru/catalog" class="btn">Рассчитать заказ</a>`
+    ),
+  },
+  {
+    key: "reminder",
+    icon: Clock,
+    label: "Напоминание",
+    desc: "Клиент не заказывал давно",
+    subject: "Скучаем по вам! Пора пополнить запасы 😊",
+    html: () => makeBase(
+      { title: "Давно не виделись!", sub: "Готовы помочь с вашим следующим проектом" },
+      "linear-gradient(135deg,#7c3aed,#a78bfa)",
+      `<p>Добрый день!</p>
+<p>Заметили, что вы давно не заглядывали в наш каталог. Надеемся, что ваши проекты идут успешно!</p>
+<p>Если вы планируете новое строительство или ремонт — мы здесь и готовы помочь с подбором материалов и расчётом стоимости.</p>
+<p><b>Актуальные цены и ассортимент — на сайте:</b></p>
+<a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог</a>
+<p>Звоните: <b>8-985-970-71-33</b> — менеджер ответит и поможет подобрать нужное.</p>`
+    ),
+  },
+  {
+    key: "thanks",
+    icon: Heart,
+    label: "Спасибо",
+    desc: "Благодарность за заказ/сотрудничество",
+    subject: "Спасибо, что выбрали ПилоРус! ❤️",
+    html: () => makeBase(
+      { title: "Спасибо за доверие!", sub: "Ваш отзыв очень важен для нас" },
+      "linear-gradient(135deg,#dc2626,#f87171)",
+      `<p>Добрый день!</p>
+<p>Благодарим вас за сотрудничество с ПилоРус! Надеемся, что наши пиломатериалы полностью оправдали ваши ожидания.</p>
+<p>Если у вас есть пара минут — нам очень важно ваше мнение. Оставьте отзыв о нашей работе:</p>
+<a href="https://pilo-rus.ru" class="btn">Оставить отзыв</a>
+<p>Ваш отзыв поможет другим покупателям сделать правильный выбор. Спасибо!</p>
+<p>Будем рады видеть вас снова 🌲</p>`
+    ),
+  },
+  {
+    key: "news",
+    icon: Newspaper,
+    label: "Новости",
+    desc: "Новости компании / важные изменения",
+    subject: "Новости ПилоРус",
+    html: () => makeBase(
+      { title: "Новости компании", sub: "Апрель 2026" },
+      "linear-gradient(135deg,#374151,#6b7280)",
+      `<p>Добрый день!</p>
+<p>Делимся важными новостями и обновлениями от ПилоРус.</p>
+<p><b>📢 Расширяем ассортимент</b></p>
+<p>В этом месяце добавили новые позиции в каталог...</p>
+<p><b>🕐 Изменение режима работы</b></p>
+<p>С мая работаем без выходных...</p>
+<a href="https://pilo-rus.ru" class="btn">Подробнее на сайте</a>`
+    ),
+  },
+];
 
 type Subscriber = {
   email: string;
@@ -71,6 +217,7 @@ export default function EmailPage() {
   const [subject, setSubject] = useState("");
   const [html, setHtml] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ sent: number; errors: string[] } | null>(null);
   const [sendError, setSendError] = useState("");
@@ -95,6 +242,11 @@ export default function EmailPage() {
   const [importText, setImportText] = useState("");
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+
+  // Product insert
+  const [showProductPicker, setShowProductPicker] = useState(false);
+  const [productList, setProductList] = useState<{ id: string; name: string; slug: string; variants: { pricePerCube: number | null; pricePerPiece: number | null }[] }[]>([]);
+  const [productSearch, setProductSearch] = useState("");
 
   // Load subscribers
   const loadSubscribers = async () => {
@@ -131,6 +283,31 @@ export default function EmailPage() {
   useEffect(() => {
     if (tab === "smtp" && !smtpLoaded) loadSmtp();
   }, [tab]);
+
+  // Load products for inserting into email
+  const loadProducts = async () => {
+    if (productList.length > 0) return;
+    const res = await fetch("/api/admin/products").catch(() => null);
+    if (res?.ok) { const d = await res.json(); setProductList(Array.isArray(d) ? d : []); }
+  };
+
+  const insertProduct = (p: typeof productList[0]) => {
+    const price = p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerPiece ?? 0;
+    const priceStr = price > 0 ? `от ${price.toLocaleString("ru-RU")} ₽` : "Цена по запросу";
+    const block = `\n<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+  <tr>
+    <td style="padding:14px 16px;background:#fafafa">
+      <p style="margin:0;font-size:15px;font-weight:700;color:#111">${p.name}</p>
+      <p style="margin:4px 0 10px;font-size:13px;color:#666">Пиломатериалы ПилоРус</p>
+      <p style="margin:0 0 12px;font-size:18px;font-weight:800;color:#e8700a">${priceStr}</p>
+      <a href="https://pilo-rus.ru/product/${p.slug}" style="display:inline-block;background:#e8700a;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600">Смотреть товар →</a>
+    </td>
+  </tr>
+</table>\n`;
+    setHtml((prev) => prev + block);
+    setShowProductPicker(false);
+    setProductSearch("");
+  };
 
   // Filtered recipients
   const filteredSubscribers =
@@ -318,6 +495,110 @@ export default function EmailPage() {
               onChange={(e) => setSubject(e.target.value)}
               disabled={sending}
             />
+          </div>
+
+          {/* Templates picker */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowTemplates((v) => !v)}
+              className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors mb-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Шаблоны писем
+              {showTemplates ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            {showTemplates && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
+                {EMAIL_TEMPLATES.map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.key}
+                      type="button"
+                      onClick={() => {
+                        setSubject(t.subject);
+                        setHtml(t.html());
+                        setShowTemplates(false);
+                      }}
+                      className="flex items-center gap-2 p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/60 text-left transition-all active:scale-[0.98]"
+                    >
+                      <Icon className="w-4 h-4 text-primary shrink-0" />
+                      <div>
+                        <p className="text-xs font-semibold">{t.label}</p>
+                        <p className="text-[10px] text-muted-foreground">{t.desc}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Product insert */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => { setShowProductPicker((v) => !v); if (!showProductPicker) loadProducts(); }}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-2"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Вставить товар или категорию в письмо
+              {showProductPicker ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+            {showProductPicker && (
+              <div className="mb-3 border border-border rounded-xl overflow-hidden bg-card shadow-lg">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Поиск товара..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="flex-1 bg-transparent text-sm outline-none"
+                    autoFocus
+                  />
+                  <button onClick={() => { setShowProductPicker(false); setProductSearch(""); }}
+                    className="text-muted-foreground hover:text-foreground">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="max-h-52 overflow-y-auto divide-y divide-border">
+                  {productList.length === 0 && (
+                    <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Загрузка...
+                    </div>
+                  )}
+                  {productList
+                    .filter((p) => !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                    .slice(0, 20)
+                    .map((p) => {
+                      const price = p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerPiece ?? 0;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => insertProduct(p)}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Package className="w-4 h-4 text-primary shrink-0" />
+                            <span className="text-sm font-medium">{p.name}</span>
+                          </div>
+                          {price > 0 && (
+                            <span className="text-xs text-primary font-semibold shrink-0 ml-3">
+                              от {price.toLocaleString("ru-RU")} ₽
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                </div>
+                <div className="px-4 py-2 bg-muted/30 border-t border-border text-[10px] text-muted-foreground">
+                  Выберите товар — HTML-карточка вставится в конец письма
+                </div>
+              </div>
+            )}
           </div>
 
           {/* HTML Body */}

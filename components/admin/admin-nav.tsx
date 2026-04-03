@@ -52,7 +52,7 @@ const allNavItems: NavItem[] = [
   { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
   { href: "/admin/crm", label: "CRM — Лиды", icon: Target, roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
   { href: "/admin/tasks", label: "Задачи", icon: CheckSquare, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
-  { href: "/admin/workflows", label: "Автоворкфлоу", icon: Zap, roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
+  // { href: "/admin/workflows", label: "Автоворкфлоу", icon: Zap, roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
   { href: "/admin/delivery", label: "Доставка", icon: Truck, roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
 
   // ── Товары ──

@@ -234,13 +234,15 @@ function CategoryModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-lg w-[calc(100vw-2rem)] flex flex-col p-0 gap-0 max-h-[90dvh] overflow-hidden">
+        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Settings2 className="w-4 h-4" />
             {cat ? cat.name : "Новая категория"}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
 
         {/* Фото + Основные поля */}
         <div className="flex gap-4">
@@ -384,8 +386,10 @@ function CategoryModal({
           </div>
         </div>
 
-        {/* Кнопки */}
-        <div className="flex gap-2 justify-end pt-1 border-t">
+        </div>{/* end scroll area */}
+
+        {/* Кнопки — fixed at bottom */}
+        <div className="flex gap-2 justify-end px-5 py-4 border-t border-border shrink-0 bg-card">
           <Button variant="ghost" onClick={onClose}>Отмена</Button>
           <Button onClick={handleSave} disabled={saving || saved || !name || !slug}>
             {saved

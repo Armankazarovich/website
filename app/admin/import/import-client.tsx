@@ -5,6 +5,8 @@ import {
   FileDown, Upload, FileSpreadsheet, CheckCircle2,
   AlertCircle, Loader2, Info, Download, Table2, CloudUpload,
   ChevronDown, ChevronUp, Copy, ExternalLink, Settings,
+  Globe, RefreshCw, ShoppingBag, Package, Zap, Clock, ArrowRight,
+  Building2, BarChart3, Link as LinkIcon,
 } from "lucide-react";
 
 // ─── Copy button ─────────────────────────────────────────────────────────────
@@ -426,6 +428,332 @@ export function ImportClient() {
           <p><strong className="text-foreground">Slug:</strong> Автоматически генерируется из названия на латинице. Используется как ключ для upsert.</p>
           <p><strong className="text-foreground">Apps Script:</strong> При изменении цены в Google Таблице — сайт обновляется в течение секунд.</p>
         </div>
+      </div>
+
+      {/* ── Маркетплейсы ── */}
+      <MarketplacesSection />
+
+      {/* ── Перенос сайта ── */}
+      <SiteMigrationSection />
+    </div>
+  );
+}
+
+// ── Маркетплейсы ──────────────────────────────────────────────────────────────
+const MARKETPLACES = [
+  {
+    name: "Wildberries",
+    logo: "WB",
+    color: "bg-purple-600",
+    desc: "Товары, цены, остатки, заказы",
+    ready: false,
+    category: "marketplace",
+  },
+  {
+    name: "Ozon",
+    logo: "OZ",
+    color: "bg-blue-500",
+    desc: "Синхронизация каталога и FBO/FBS",
+    ready: false,
+    category: "marketplace",
+  },
+  {
+    name: "Яндекс.Маркет",
+    logo: "ЯМ",
+    color: "bg-yellow-500",
+    desc: "Прайс-лист и заказы",
+    ready: false,
+    category: "marketplace",
+  },
+  {
+    name: "Авито",
+    logo: "AV",
+    color: "bg-emerald-500",
+    desc: "Объявления и цены",
+    ready: false,
+    category: "marketplace",
+  },
+  {
+    name: "Aliexpress",
+    logo: "AE",
+    color: "bg-red-500",
+    desc: "Экспорт каталога",
+    ready: false,
+    category: "marketplace",
+  },
+  {
+    name: "СберМегаМаркет",
+    logo: "СМ",
+    color: "bg-green-600",
+    desc: "Товары и заказы",
+    ready: false,
+    category: "marketplace",
+  },
+];
+
+const CMS_SYSTEMS = [
+  {
+    name: "1С: Предприятие",
+    logo: "1C",
+    color: "bg-orange-500",
+    desc: "Двусторонняя синхронизация товаров, заказов и остатков",
+    ready: false,
+    category: "erp",
+  },
+  {
+    name: "МойСклад",
+    logo: "МС",
+    color: "bg-cyan-500",
+    desc: "Складской учёт и заказы в реальном времени",
+    ready: false,
+    category: "erp",
+  },
+  {
+    name: "Битрикс24",
+    logo: "Б24",
+    color: "bg-blue-600",
+    desc: "CRM лиды и сделки из заказов",
+    ready: false,
+    category: "crm",
+  },
+  {
+    name: "AmoCRM",
+    logo: "Амо",
+    color: "bg-indigo-500",
+    desc: "Воронка продаж и клиенты",
+    ready: false,
+    category: "crm",
+  },
+  {
+    name: "WooCommerce",
+    logo: "WC",
+    color: "bg-purple-500",
+    desc: "Перенос товаров из WordPress",
+    ready: false,
+    category: "cms",
+  },
+  {
+    name: "Shopify",
+    logo: "SH",
+    color: "bg-green-500",
+    desc: "Перенос каталога и клиентов",
+    ready: false,
+    category: "cms",
+  },
+];
+
+function MarketplacesSection() {
+  const [activeTab, setActiveTab] = useState<"marketplace" | "erp" | "crm" | "cms">("marketplace");
+
+  const TABS = [
+    { key: "marketplace" as const, label: "Маркетплейсы", icon: ShoppingBag },
+    { key: "erp" as const, label: "Учётные системы", icon: Building2 },
+    { key: "crm" as const, label: "CRM", icon: BarChart3 },
+    { key: "cms" as const, label: "CMS / Движки", icon: Globe },
+  ];
+
+  const allItems = [...MARKETPLACES, ...CMS_SYSTEMS];
+  const filtered = allItems.filter((i) => i.category === activeTab);
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
+        <div className="flex items-center gap-2 mb-1">
+          <RefreshCw className="w-5 h-5 text-primary" />
+          <h2 className="font-semibold text-lg">Синхронизация с платформами</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Автоматическая синхронизация товаров, цен и заказов с маркетплейсами и учётными системами
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 px-4 py-2 border-b border-border overflow-x-auto">
+        {TABS.map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors ${
+                activeTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {filtered.map((item) => (
+          <div key={item.name} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20 hover:border-primary/30 transition-colors">
+            <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+              {item.logo}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold">{item.name}</p>
+              <p className="text-[11px] text-muted-foreground">{item.desc}</p>
+            </div>
+            {item.ready ? (
+              <button className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                <LinkIcon className="w-3 h-3" />
+                Подключить
+              </button>
+            ) : (
+              <span className="shrink-0 flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-muted border border-border text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                Скоро
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="px-4 pb-4">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
+          <Zap className="w-4 h-4 text-primary shrink-0" />
+          <span>
+            <strong className="text-foreground">Уже сейчас работает:</strong> Google Таблицы (двусторонняя), Excel/CSV (импорт).
+            Остальные интеграции запускаются поэтапно.
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Перенос сайта ─────────────────────────────────────────────────────────────
+function SiteMigrationSection() {
+  const [domain, setDomain] = useState("");
+  const [platform, setPlatform] = useState("pilorus");
+  const [migrating, setMigrating] = useState(false);
+  const [step, setStep] = useState<null | "analyzing" | "importing" | "done">(null);
+  const [progress, setProgress] = useState(0);
+
+  const PLATFORMS = [
+    { value: "pilorus", label: "Другой сайт ПилоРус (клонировать)" },
+    { value: "woocommerce", label: "WooCommerce / WordPress" },
+    { value: "shopify", label: "Shopify" },
+    { value: "excel", label: "Excel / Google Таблицы" },
+    { value: "tilda", label: "Tilda" },
+    { value: "bitrix", label: "1С-Битрикс" },
+  ];
+
+  const handleMigrate = async () => {
+    if (!domain.trim()) return;
+    setMigrating(true);
+    setStep("analyzing");
+    setProgress(10);
+    // Simulation of progress
+    await new Promise((r) => setTimeout(r, 1200));
+    setProgress(35);
+    setStep("importing");
+    await new Promise((r) => setTimeout(r, 1800));
+    setProgress(80);
+    await new Promise((r) => setTimeout(r, 1000));
+    setProgress(100);
+    setStep("done");
+    setMigrating(false);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-border">
+        <div className="flex items-center gap-2 mb-1">
+          <Globe className="w-5 h-5 text-primary" />
+          <h2 className="font-semibold text-lg">Перенос сайта в один клик</h2>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 border border-amber-500/20 font-semibold">Бета</span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Укажите источник — товары, категории и настройки перенесутся автоматически
+        </p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        {step !== "done" ? (
+          <>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Откуда переносим</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {PLATFORMS.map((p) => (
+                  <label key={p.value} className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${platform === p.value ? "border-primary/50 bg-primary/5" : "border-border bg-muted/20 hover:border-primary/30"}`}>
+                    <input type="radio" name="platform" value={p.value} checked={platform === p.value} onChange={() => setPlatform(p.value)} className="accent-primary" />
+                    <span className="text-sm">{p.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                {platform === "pilorus" ? "Домен сайта-источника" : "URL или файл"}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  placeholder={platform === "pilorus" ? "example.pilo-rus.ru" : "https://myshop.ru"}
+                  className="flex-1 px-3 py-2.5 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+                <button
+                  onClick={handleMigrate}
+                  disabled={!domain.trim() || migrating}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 whitespace-nowrap"
+                >
+                  {migrating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                  {migrating ? "Переносим..." : "Перенести"}
+                </button>
+              </div>
+            </div>
+
+            {migrating && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{step === "analyzing" ? "🔍 Анализируем источник..." : "📦 Импортируем товары и категории..."}</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2 text-center">
+              {[
+                { label: "Товары", icon: "📦" },
+                { label: "Категории", icon: "🗂️" },
+                { label: "Изображения", icon: "🖼️" },
+              ].map((item) => (
+                <div key={item.label} className="p-2.5 rounded-xl border border-border bg-muted/20">
+                  <p className="text-lg">{item.icon}</p>
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-6 space-y-3">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+            </div>
+            <div>
+              <p className="font-semibold text-lg">Перенос завершён!</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Демонстрация — в продакшн интеграция реализуется поэтапно
+              </p>
+            </div>
+            <button onClick={() => { setStep(null); setDomain(""); setProgress(0); }}
+              className="text-xs text-primary hover:underline">
+              Перенести ещё раз
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
