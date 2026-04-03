@@ -10,11 +10,9 @@ import {
   ShoppingCart,
   Search,
   User,
-  SlidersHorizontal,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
-import { useFiltersDrawer } from "@/store/filters-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 
 export function MobileBottomNav() {
@@ -27,7 +25,6 @@ export function MobileBottomNav() {
   const [arayPulse, setArayPulse] = useState(false);
   const prevItemsRef = useRef(0);
   const { toggle: toggleAccount } = useAccountDrawer();
-  const { toggle: toggleFilters } = useFiltersDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
 
   useEffect(() => { setMounted(true); }, []);
@@ -46,7 +43,6 @@ export function MobileBottomNav() {
     }
   }, [totalItems, mounted]);
 
-  const isOnCatalog = pathname === "/catalog" || pathname.startsWith("/catalog");
 
   const haptic = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.vibrate) {
@@ -68,10 +64,7 @@ export function MobileBottomNav() {
       href: "/catalog",
       action: null,
     },
-    ...(isOnCatalog
-      ? [{ id: "filters", icon: SlidersHorizontal, label: "Фильтры", href: null, action: () => toggleFilters() }]
-      : [{ id: "search", icon: Search, label: "Поиск", href: null, action: () => toggleSearch() }]
-    ),
+    { id: "search", icon: Search, label: "Поиск", href: null, action: () => toggleSearch() },
   ];
 
   // Правые пункты
