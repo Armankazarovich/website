@@ -254,41 +254,46 @@ export async function sendTelegramStatusUpdate(order: {
   const label = ORDER_STATUS_LABELS[order.status] || order.status;
   const reply_markup = buildOrderKeyboard(order.id, order.status);
 
-  // Если есть сохранённый message_id — редактируем существующее сообщение
+  const timeStr = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" });
+
+  // Если есть сохранённый message_id — пробуем отредактировать
   if (order.telegramMessageId) {
-    const text = [
+    const editText = [
       `${emoji} *Статус: ${label}*`,
       `🛒 *Заказ #${order.orderNumber}*`,
       ``,
       `👤 *Клиент:* ${order.guestName || "—"}`,
       `💰 *Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽*`,
       ``,
-      `✏️ _Изменено в ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow", hour: "2-digit", minute: "2-digit" })}_`,
+      `✏️ _Изменено в ${timeStr}_`,
     ].join("\n");
 
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+    const editRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
         message_id: Number(order.telegramMessageId),
-        text,
+        text: editText,
         parse_mode: "Markdown",
         reply_markup,
       }),
-    }).catch(() => {
-      // Если не удалось отредактировать (слишком старое) — отправляем новое
-    });
-    return;
+    }).catch(() => null);
+
+    const editData = editRes ? await editRes.json().catch(() => ({})) : {};
+    if (editData?.ok) return; // успешно отредактировали
+    // Иначе — падаем вниз и отправляем новое сообщение
   }
 
-  // Нет message_id — отправляем новое сообщение
+  // Нет message_id или редактирование не удалось — отправляем новое сообщение
   const text = [
     `${emoji} *Статус изменён — Заказ #${order.orderNumber}*`,
     ``,
-    `Клиент: ${order.guestName || "—"}`,
-    `Новый статус: *${label}*`,
-    `Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽`,
+    `👤 Клиент: ${order.guestName || "—"}`,
+    `📋 Новый статус: *${label}*`,
+    `💰 Сумма: ${order.totalAmount.toLocaleString("ru-RU")} ₽`,
+    ``,
+    `🕐 _${timeStr}_`,
   ].join("\n");
 
   await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
