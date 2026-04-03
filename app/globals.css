@@ -1134,3 +1134,32 @@ canvas,
 .aray-nature-mode a:not(.aray-icon-spin):active svg:not(.animate-spin) {
   transform: scale(0.90);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   UNIFIED PAGE HEADINGS — единый стиль заголовков всех страниц админки
+   Применяется без правки каждого файла
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* h1 страниц — font-display если нет, жирный, правильный цвет */
+.aray-nature-mode main h1 {
+  font-family: var(--font-display, var(--font-sans, inherit));
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.30);
+}
+.light .aray-nature-mode main h1,
+[data-theme="light"] .aray-nature-mode main h1 {
+  color: hsl(var(--foreground));
+  text-shadow: 0 1px 4px rgba(255, 255, 255, 0.50);
+}
+
+/* h2 — чуть тише */
+.aray-nature-mode main h2 {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+}
+.light .aray-nature-mode main h2,
+[data-theme="light"] .aray-nature-mode main h2 {
+  color: hsl(var(--foreground));
+}

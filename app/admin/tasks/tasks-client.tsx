@@ -496,7 +496,7 @@ function Column({
 
   return (
     <div
-      className={`flex flex-col min-h-[200px] w-72 shrink-0 rounded-2xl transition-all ${col.bg} ${isOver ? "ring-2 ring-primary shadow-lg" : ""}`}
+      className={`flex flex-col min-h-[200px] w-72 shrink-0 rounded-2xl transition-all backdrop-blur-md ${col.bg} ${isOver ? "ring-2 ring-primary shadow-lg" : ""}`}
       onDragOver={e => { e.preventDefault(); onDragOver(col.id); }}
       onDrop={e => { e.preventDefault(); onDrop(col.id); }}
     >
