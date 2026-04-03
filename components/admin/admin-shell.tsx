@@ -321,9 +321,10 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Mobile drawer overlay ────────────────────────────── */}
       {open && (
         <div
-          className="lg:hidden fixed inset-0 z-[49] bg-black/50 backdrop-blur-sm"
-          onClick={() => setOpen(false)}
-          onTouchEnd={(e) => { e.preventDefault(); setOpen(false); }}
+          className="lg:hidden fixed inset-0 z-[49]"
+          style={{ background: "rgba(0,0,0,0.55)", WebkitTapHighlightColor: "transparent" }}
+          onPointerDown={() => setOpen(false)}
+          onTouchStart={() => setOpen(false)}
         />
       )}
 
