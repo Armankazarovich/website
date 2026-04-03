@@ -592,6 +592,74 @@ canvas,
   background: transparent !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ГЛОБАЛЬНЫЙ GLASS — все карточки на всех страницах админки
+   Работает автоматически, не нужно трогать каждую страницу
+   ══════════════════════════════════════════════════════════════ */
+
+/* Тёмная тема — тёмное матовое стекло */
+.aray-nature-mode .bg-card,
+.aray-nature-mode .bg-popover {
+  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
+  background: rgba(5, 8, 20, 0.50) !important;
+}
+
+/* Светлая тема — белое матовое стекло */
+.light .aray-nature-mode .bg-card,
+[data-theme="light"] .aray-nature-mode .bg-card,
+.light .aray-nature-mode .bg-popover,
+[data-theme="light"] .aray-nature-mode .bg-popover {
+  backdrop-filter: blur(28px) saturate(155%) brightness(1.10) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(155%) brightness(1.10) !important;
+  background: rgba(255, 255, 255, 0.74) !important;
+}
+
+/* Границы — полупрозрачные в обоих темах */
+.aray-nature-mode .border-border,
+.aray-nature-mode .border {
+  border-color: rgba(255, 255, 255, 0.10) !important;
+}
+.light .aray-nature-mode .border-border,
+[data-theme="light"] .aray-nature-mode .border-border,
+.light .aray-nature-mode .border,
+[data-theme="light"] .aray-nature-mode .border {
+  border-color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Muted фон (таблицы, hover-строки) — чуть светлее стекло */
+.aray-nature-mode .bg-muted {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+.light .aray-nature-mode .bg-muted,
+[data-theme="light"] .aray-nature-mode .bg-muted {
+  background: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Input, Select, Textarea — тонкое стекло */
+.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+.aray-nature-mode textarea,
+.aray-nature-mode select {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+.light .aray-nature-mode textarea,
+[data-theme="light"] .aray-nature-mode textarea {
+  background: rgba(255, 255, 255, 0.60) !important;
+  border-color: rgba(255, 255, 255, 0.70) !important;
+}
+
+/* Разделители таблиц — тонкие и прозрачные */
+.aray-nature-mode .divide-border > * + * {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.light .aray-nature-mode .divide-border > * + *,
+[data-theme="light"] .aray-nature-mode .divide-border > * + * {
+  border-color: rgba(0, 0, 0, 0.06) !important;
+}
+
 /* ── ОСОБЕННЫЙ GLASSMORPHISM — многослойный blur из будущего ── */
 .aray-glass {
   backdrop-filter: blur(20px) saturate(180%) brightness(1.05);

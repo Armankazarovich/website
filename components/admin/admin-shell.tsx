@@ -7,6 +7,7 @@ import { Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
 import { AdminFontPicker } from "@/components/admin/admin-font-picker";
+import { AdminLangPicker } from "@/components/admin/admin-lang-picker";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
@@ -14,6 +15,7 @@ import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
+import { AdminLangProvider } from "@/lib/admin-lang-context";
 
 interface AdminShellProps {
   role: string;
@@ -63,7 +65,7 @@ function usePageTitle() {
   return "Панель управления";
 }
 
-export function AdminShell({ role, email, children }: AdminShellProps) {
+function AdminShellInner({ role, email, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
@@ -190,6 +192,9 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
         {/* Живой поиск */}
         <AdminSearch />
 
+        {/* Язык */}
+        <AdminLangPicker />
+
         {/* Размер шрифта */}
         <AdminFontPicker />
 
@@ -313,5 +318,13 @@ export function AdminShell({ role, email, children }: AdminShellProps) {
       {/* ─── Арай в Админке ───────────────────────────────────── */}
       <ArayWidget page="admin" enabled={true} />
     </div>
+  );
+}
+
+export function AdminShell(props: AdminShellProps) {
+  return (
+    <AdminLangProvider>
+      <AdminShellInner {...props} />
+    </AdminLangProvider>
   );
 }
