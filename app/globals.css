@@ -597,59 +597,103 @@ canvas,
    Работает автоматически, не нужно трогать каждую страницу
    ══════════════════════════════════════════════════════════════ */
 
-/* Тёмная тема — тёмное матовое стекло */
+/* ══ УНИВЕРСАЛЬНЫЙ GLASS — работает в ОБОИХ темах одинаково ══
+   Всё в природном режиме → тёмное матовое стекло, тема не важна.
+   Фотофон всегда виден. Единый стиль как в "Быстрый доступ".
+   ══════════════════════════════════════════════════════════════ */
+
+/* bg-card / bg-popover */
 .aray-nature-mode .bg-card,
-.aray-nature-mode .bg-popover {
+.aray-nature-mode .bg-popover,
+.light .aray-nature-mode .bg-card,
+[data-theme="light"] .aray-nature-mode .bg-card,
+.light .aray-nature-mode .bg-popover,
+[data-theme="light"] .aray-nature-mode .bg-popover {
   backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   background: rgba(5, 8, 20, 0.50) !important;
 }
 
-/* Светлая тема — тёмное стекло (как тёмная тема, чтобы фото просвечивало) */
-.light .aray-nature-mode .bg-card,
-[data-theme="light"] .aray-nature-mode .bg-card,
-.light .aray-nature-mode .bg-popover,
-[data-theme="light"] .aray-nature-mode .bg-popover {
-  backdrop-filter: blur(22px) saturate(160%) brightness(0.85) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(0.85) !important;
-  background: rgba(8, 12, 30, 0.48) !important; /* тёмное стекло — фото всегда видно */
-  color: rgba(255, 255, 255, 0.90) !important;
+/* Алерт-карточки (bg-orange-*, bg-blue-*, bg-yellow-* и т.д.) — тоже тёмное стекло */
+.aray-nature-mode [class*="bg-orange-"][class*="rounded"],
+.aray-nature-mode [class*="bg-blue-"][class*="rounded"],
+.aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
+.aray-nature-mode [class*="bg-green-"][class*="rounded"],
+.aray-nature-mode [class*="bg-emerald-"][class*="rounded"],
+.aray-nature-mode [class*="bg-violet-"][class*="rounded"],
+.aray-nature-mode [class*="bg-slate-"][class*="rounded"],
+.aray-nature-mode [class*="bg-amber-"][class*="rounded"],
+.aray-nature-mode [class*="bg-red-"][class*="rounded"],
+.aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
+.aray-nature-mode [class*="bg-teal-"][class*="rounded"],
+.aray-nature-mode [class*="bg-indigo-"][class*="rounded"] {
+  backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
+  background: rgba(5, 8, 20, 0.48) !important;
 }
 
-/* Границы — полупрозрачные в обоих темах */
-.aray-nature-mode .border-border,
-.aray-nature-mode .border {
-  border-color: rgba(255, 255, 255, 0.10) !important;
+/* Текст внутри — всегда белый в природном режиме */
+.aray-nature-mode .bg-card *,
+.aray-nature-mode [class*="bg-orange-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-blue-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-yellow-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-green-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-emerald-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-violet-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-slate-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-amber-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-red-"][class*="rounded"] *,
+.aray-nature-mode [class*="bg-cyan-"][class*="rounded"] * {
+  color: rgba(255, 255, 255, 0.88) !important;
 }
+/* Вторичный текст (muted) — чуть приглушённее */
+.aray-nature-mode .bg-card .text-muted-foreground,
+.aray-nature-mode [class*="bg-orange-"][class*="rounded"] .text-muted-foreground,
+.aray-nature-mode [class*="bg-blue-"][class*="rounded"] .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.52) !important;
+}
+/* Акцентный цвет (primary) — сохраняем */
+.aray-nature-mode .bg-card .text-primary,
+.aray-nature-mode .bg-card [class*="text-orange-"],
+.aray-nature-mode .bg-card [class*="text-blue-"],
+.aray-nature-mode .bg-card [class*="text-green-"],
+.aray-nature-mode .bg-card [class*="text-emerald-"],
+.aray-nature-mode .bg-card [class*="text-violet-"],
+.aray-nature-mode .bg-card [class*="text-amber-"],
+.aray-nature-mode .bg-card [class*="text-red-"],
+.aray-nature-mode .bg-card [class*="text-cyan-"],
+.aray-nature-mode .bg-card [class*="text-teal-"] {
+  color: unset !important;
+}
+
+/* Границы — всегда полупрозрачные белые в природном режиме */
+.aray-nature-mode .border-border,
+.aray-nature-mode .border,
 .light .aray-nature-mode .border-border,
 [data-theme="light"] .aray-nature-mode .border-border,
 .light .aray-nature-mode .border,
 [data-theme="light"] .aray-nature-mode .border {
-  border-color: rgba(255, 255, 255, 0.75) !important;
-}
-
-/* Muted фон (таблицы, hover-строки) — чуть светлее стекло */
-.aray-nature-mode .bg-muted {
-  background: rgba(255, 255, 255, 0.06) !important;
-}
-.light .aray-nature-mode .bg-muted,
-[data-theme="light"] .aray-nature-mode .bg-muted {
-  background: rgba(255, 255, 255, 0.45) !important;
-}
-
-/* Input, Select, Textarea — тонкое стекло */
-.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.aray-nature-mode textarea,
-.aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.07) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
+
+/* Muted фон (таблицы, hover-строки) — одинаково в обоих темах */
+.aray-nature-mode .bg-muted,
+.light .aray-nature-mode .bg-muted,
+[data-theme="light"] .aray-nature-mode .bg-muted {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Input, Select, Textarea — тонкое стекло (одинаково в обоих темах) */
+.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+.aray-nature-mode textarea,
+.aray-nature-mode select,
 .light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 .light .aray-nature-mode textarea,
 [data-theme="light"] .aray-nature-mode textarea {
-  background: rgba(255, 255, 255, 0.60) !important;
-  border-color: rgba(255, 255, 255, 0.70) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 
 /* Разделители таблиц — тонкие и прозрачные */
