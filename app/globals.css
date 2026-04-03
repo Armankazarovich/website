@@ -646,7 +646,7 @@ canvas,
   background: rgba(5, 8, 20, 0.45) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-/* Текст в тёмных карточках — белый (только p/h, не иконки) */
+/* Текст в тёмных карточках — белый (только p/h/span, не иконки) */
 .aray-nature-mode .bg-card p,
 .aray-nature-mode .bg-card h1,
 .aray-nature-mode .bg-card h2,
@@ -660,6 +660,13 @@ canvas,
 .aray-nature-mode .bg-white h3,
 .aray-nature-mode .bg-white .text-foreground,
 .aray-nature-mode .bg-white strong,
+.aray-nature-mode .bg-background p,
+.aray-nature-mode .bg-background h1,
+.aray-nature-mode .bg-background h2,
+.aray-nature-mode .bg-background h3,
+.aray-nature-mode .bg-background h4,
+.aray-nature-mode .bg-background .text-foreground,
+.aray-nature-mode .bg-background strong,
 .aray-nature-mode .aray-stat-card p,
 .aray-nature-mode .aray-stat-card h1,
 .aray-nature-mode .aray-stat-card h2,
@@ -671,6 +678,7 @@ canvas,
 }
 .aray-nature-mode .bg-card .text-muted-foreground,
 .aray-nature-mode .bg-white .text-muted-foreground,
+.aray-nature-mode .bg-background .text-muted-foreground,
 .aray-nature-mode .aray-stat-card .text-muted-foreground,
 .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
   color: rgba(255, 255, 255, 0.48) !important;
@@ -756,6 +764,12 @@ canvas,
 .light .aray-nature-mode .bg-white h3,
 .light .aray-nature-mode .bg-white .text-foreground,
 .light .aray-nature-mode .bg-white strong,
+.light .aray-nature-mode .bg-background p,
+.light .aray-nature-mode .bg-background h1,
+.light .aray-nature-mode .bg-background h2,
+.light .aray-nature-mode .bg-background h3,
+.light .aray-nature-mode .bg-background .text-foreground,
+.light .aray-nature-mode .bg-background strong,
 .light .aray-nature-mode .aray-stat-card p,
 .light .aray-nature-mode .aray-stat-card h1,
 .light .aray-nature-mode .aray-stat-card h2,
@@ -769,15 +783,22 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-card .text-foreground,
 [data-theme="light"] .aray-nature-mode .bg-white p,
 [data-theme="light"] .aray-nature-mode .bg-white .text-foreground,
+[data-theme="light"] .aray-nature-mode .bg-background p,
+[data-theme="light"] .aray-nature-mode .bg-background h1,
+[data-theme="light"] .aray-nature-mode .bg-background h2,
+[data-theme="light"] .aray-nature-mode .bg-background h3,
+[data-theme="light"] .aray-nature-mode .bg-background .text-foreground,
 [data-theme="light"] .aray-nature-mode .aray-stat-card p,
 [data-theme="light"] .aray-nature-mode .aray-stat-card .text-foreground {
   color: rgba(255, 255, 255, 0.90) !important;
 }
 .light .aray-nature-mode .bg-card .text-muted-foreground,
 .light .aray-nature-mode .bg-white .text-muted-foreground,
+.light .aray-nature-mode .bg-background .text-muted-foreground,
 .light .aray-nature-mode .aray-stat-card .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode .bg-card .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode .bg-white .text-muted-foreground,
+[data-theme="light"] .aray-nature-mode .bg-background .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode .aray-stat-card .text-muted-foreground,
 .light .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
@@ -880,6 +901,16 @@ canvas,
 .aray-nature-mode select option {
   background: rgb(12, 16, 36) !important;
   color: rgba(255, 255, 255, 0.90) !important;
+}
+
+/* Email preview — явно белый фон (исключение из glass системы) */
+.aray-nature-mode .aray-email-preview,
+.light .aray-nature-mode .aray-email-preview,
+[data-theme="light"] .aray-nature-mode .aray-email-preview {
+  background: #ffffff !important;
+  color: #111827 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* bg-background с opacity — sticky заголовки страниц (bg-background/80, /60 и т.д.) */

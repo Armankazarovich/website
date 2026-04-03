@@ -786,7 +786,7 @@ export default function EmailPage() {
                     Предпросмотр: <span className="font-medium text-foreground">{subject || "(без темы)"}</span>
                   </div>
                   <div
-                    className="p-4 bg-white text-gray-900 text-sm leading-relaxed"
+                    className="p-4 bg-white text-gray-900 text-sm leading-relaxed aray-email-preview"
                     dangerouslySetInnerHTML={{ __html: html }}
                   />
                 </div>
