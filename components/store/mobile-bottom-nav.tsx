@@ -182,7 +182,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             {/* Основная кнопка — SVG шар */}
             <div className="aray-center-btn relative w-14 h-14 rounded-full flex items-center justify-center">
               {/* SVG сфера */}
-              <svg width="46" height="46" viewBox="0 0 100 100" className="relative z-10 drop-shadow-lg">
+              <svg width="46" height="46" viewBox="0 0 100 100" className="relative z-10">
                 <defs>
                   {/* Основной объём шара — глубокий оранжево-коричневый */}
                   <radialGradient id="navOrbG" cx="33%" cy="26%" r="75%">
