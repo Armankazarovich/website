@@ -4,11 +4,12 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Plus, Trash2, Loader2, Phone, Search, Calculator,
+  Plus, Trash2, Loader2, Phone, Search, Calculator,
   ChevronDown, ChevronRight, User, MessageSquare, X, ShoppingCart,
   CreditCard, Banknote, Building2, Check, AlertCircle, Zap, BookOpen,
   ChevronUp, MapPin, Truck, Package, Star, Info,
 } from "lucide-react";
+import { AdminBack } from "@/components/admin/admin-back";
 
 type Variant = {
   id: string;
@@ -274,9 +275,7 @@ export default function NewPhoneOrderPage() {
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-3">
-          <Link href="/admin/orders" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
+          <AdminBack />
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-primary" />
             <span className="font-semibold text-base">Заказ по телефону</span>

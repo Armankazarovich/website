@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { CheckCircle2, RotateCcw, AlertCircle, Loader2, ArrowLeft, Zap, Eye } from "lucide-react";
+import { CheckCircle2, RotateCcw, AlertCircle, Loader2, Zap, Eye } from "lucide-react";
 import Link from "next/link";
+import { AdminBack } from "@/components/admin/admin-back";
 
 type Product = { id: string; name: string; slug: string; images: string[] };
 type MatchItem = { productId: string; productName: string; images: string[] };
@@ -113,9 +114,7 @@ export default function WatermarkRecoveryPage() {
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/admin/watermark" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-4 h-4" /> Назад
-        </Link>
+        <AdminBack />
       </div>
       <div>
         <h1 className="text-2xl font-display font-bold">Восстановление оригинальных фото</h1>

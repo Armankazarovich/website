@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import {
   ScanSearch, CheckCircle2, AlertTriangle, XCircle,
   Trash2, Wrench, RefreshCw, ImageOff, Copy, Layers,
-  ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { AdminBack } from "@/components/admin/admin-back";
 
 type ProductReport = {
   id: string;
@@ -88,12 +88,7 @@ export default function ImageFixPage() {
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
-        <Link
-          href="/admin/media"
-          className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
+        <AdminBack />
         <div>
           <h1 className="font-display font-bold text-2xl flex items-center gap-2">
             <ScanSearch className="w-6 h-6 text-primary" />

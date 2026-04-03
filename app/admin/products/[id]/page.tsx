@@ -7,11 +7,12 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowLeft, Save, Trash2, Plus, Upload, ImageIcon,
+  Save, Trash2, Plus, Upload, ImageIcon,
   Check, Loader2, Wand2, PenTool, Images, ExternalLink,
   ChevronLeft, ChevronRight, X, GripVertical, Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdminBack } from "@/components/admin/admin-back";
 
 // Lazy-load heavy modals — загружаются только при первом открытии
 const PhotoEditor = dynamic(
@@ -258,9 +259,7 @@ export default function AdminProductEditPage() {
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <Link href="/admin/products" className="p-2 rounded-xl hover:bg-muted transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+          <AdminBack />
           {/* Prev / Next */}
           {!isNew && (
             <div className="flex items-center gap-1">
