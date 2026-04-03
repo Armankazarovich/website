@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 import { AdminDashboardWidgets } from "@/components/admin/admin-dashboard-widgets";
+import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 
 // ── Быстрые действия по ролям ──────────────────────────────────────────────
 const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType; color: string; bg: string }[]> = {
@@ -269,7 +270,7 @@ export default async function AdminDashboard() {
 
       {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Быстрый доступ</p>
+        <AdminSectionTitle icon={Zap} title="Быстрый доступ" />
         <div className="grid grid-cols-4 gap-2">
           {quickActions.map((action) => (
             <Link
@@ -308,7 +309,7 @@ export default async function AdminDashboard() {
       {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
         <Link href="/admin/analytics" className="block bg-card rounded-2xl border border-border p-5 active:scale-[0.99] transition-transform">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-sm">Выручка — 7 дней</h2>
+            <AdminSectionTitle icon={BarChart3} title="Выручка — 7 дней" className="mb-0" />
             <span className="text-xs text-primary flex items-center gap-1">Аналитика <ChevronRight className="w-3 h-3" /></span>
           </div>
           <div className="flex items-end gap-1.5 h-24">
@@ -337,7 +338,7 @@ export default async function AdminDashboard() {
       {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ ── */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-          <h2 className="font-semibold text-sm">Последние заказы</h2>
+          <AdminSectionTitle icon={ShoppingBag} title="Последние заказы" className="mb-0" />
           <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5">Все <ChevronRight className="w-3 h-3" /></Link>
         </div>
         <div className="divide-y divide-border">
@@ -365,7 +366,7 @@ export default async function AdminDashboard() {
       {(isOwner || roleGroup === "manager" || roleGroup === "seller") && topItemsSorted.length > 0 && (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-            <h2 className="font-semibold text-sm">Топ товаров</h2>
+            <AdminSectionTitle icon={Package} title="Топ товаров" className="mb-0" />
             <Link href="/admin/analytics" className="text-xs text-primary flex items-center gap-0.5">Подробнее <ChevronRight className="w-3 h-3" /></Link>
           </div>
           <div className="divide-y divide-border">

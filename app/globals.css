@@ -602,19 +602,25 @@ canvas,
    Фотофон всегда виден. Единый стиль как в "Быстрый доступ".
    ══════════════════════════════════════════════════════════════ */
 
-/* bg-card / bg-popover */
+/* ══ ПАЛИТРО-АДАПТИВНОЕ СТЕКЛО ══
+   Цвет стекла меняется с палитрой: лес→зелёный, океан→синий и т.д.
+   --brand-sidebar содержит тёмный цвет активной палитры (H S L).
+   ══════════════════════════════════════════════════════════════ */
+
+/* bg-card / bg-popover — тёмное стекло цвета палитры */
 .aray-nature-mode .bg-card,
 .aray-nature-mode .bg-popover,
 .light .aray-nature-mode .bg-card,
 [data-theme="light"] .aray-nature-mode .bg-card,
 .light .aray-nature-mode .bg-popover,
 [data-theme="light"] .aray-nature-mode .bg-popover {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.50) !important;
+  backdrop-filter: blur(22px) saturate(190%) brightness(0.80) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(190%) brightness(0.80) !important;
+  background: hsl(var(--brand-sidebar) / 0.60) !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
 }
 
-/* Алерт-карточки (bg-orange-*, bg-blue-*, bg-yellow-* и т.д.) — тоже тёмное стекло */
+/* Алерт-карточки (bg-orange-*, bg-blue-* и т.д.) — та же палитровая тонировка */
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
 .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
@@ -627,12 +633,13 @@ canvas,
 .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
 .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
 .aray-nature-mode [class*="bg-indigo-"][class*="rounded"] {
-  backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.48) !important;
+  backdrop-filter: blur(18px) saturate(170%) brightness(0.80) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(170%) brightness(0.80) !important;
+  background: hsl(var(--brand-sidebar) / 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
 }
 
-/* Текст внутри — всегда белый в природном режиме */
+/* Текст внутри карточек — всегда белый */
 .aray-nature-mode .bg-card *,
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"] *,
 .aray-nature-mode [class*="bg-blue-"][class*="rounded"] *,
@@ -644,15 +651,14 @@ canvas,
 .aray-nature-mode [class*="bg-amber-"][class*="rounded"] *,
 .aray-nature-mode [class*="bg-red-"][class*="rounded"] *,
 .aray-nature-mode [class*="bg-cyan-"][class*="rounded"] * {
-  color: rgba(255, 255, 255, 0.88) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
 }
-/* Вторичный текст (muted) — чуть приглушённее */
+/* Вторичный текст — чуть приглушённее */
 .aray-nature-mode .bg-card .text-muted-foreground,
-.aray-nature-mode [class*="bg-orange-"][class*="rounded"] .text-muted-foreground,
-.aray-nature-mode [class*="bg-blue-"][class*="rounded"] .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.52) !important;
+.aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.50) !important;
 }
-/* Акцентный цвет (primary) — сохраняем */
+/* Акцентный / цветной текст — сохраняем, убираем override */
 .aray-nature-mode .bg-card .text-primary,
 .aray-nature-mode .bg-card [class*="text-orange-"],
 .aray-nature-mode .bg-card [class*="text-blue-"],
@@ -662,8 +668,43 @@ canvas,
 .aray-nature-mode .bg-card [class*="text-amber-"],
 .aray-nature-mode .bg-card [class*="text-red-"],
 .aray-nature-mode .bg-card [class*="text-cyan-"],
-.aray-nature-mode .bg-card [class*="text-teal-"] {
+.aray-nature-mode .bg-card [class*="text-teal-"],
+.aray-nature-mode .bg-card [class*="text-yellow-"] {
   color: unset !important;
+}
+
+/* ── ЗАГОЛОВКИ СЕКЦИЙ — стеклянная пилюля (как кнопка) ── */
+/* Используй класс .aray-section-title на p/h2 элементах-заголовках */
+.aray-nature-mode .aray-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: hsl(var(--brand-sidebar) / 0.52);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+  color: rgba(255, 255, 255, 0.78) !important;
+  text-shadow: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1;
+  /* Иконка внутри (первый svg) — крупнее, без анимации */
+}
+.aray-nature-mode .aray-section-title svg {
+  width: 14px !important;
+  height: 14px !important;
+  opacity: 0.75;
+  /* НЕТ transform при hover — намеренно */
+  transition: none !important;
+  flex-shrink: 0;
+}
+.aray-nature-mode .aray-section-title:hover svg {
+  transform: none !important;
 }
 
 /* Границы — всегда полупрозрачные белые в природном режиме */
@@ -916,17 +957,39 @@ canvas,
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* ── TOPBAR GLASS в nature-режиме ── */
-.aray-nature-mode .aray-topbar {
-  background: rgba(0, 0, 0, 0.25) !important;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
-}
+/* ── TOPBAR GLASS — единый стиль в обоих темах ── */
+.aray-nature-mode .aray-topbar,
 .light .aray-nature-mode .aray-topbar,
 [data-theme="light"] .aray-nature-mode .aray-topbar {
-  background: rgba(255, 255, 255, 0.70) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.80) !important;
+  background: hsl(var(--brand-sidebar) / 0.35) !important;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+/* Текст в топбаре — белый в природном режиме */
+.aray-nature-mode .aray-topbar * {
+  color: rgba(255, 255, 255, 0.88);
+}
+.aray-nature-mode .aray-topbar .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+/* Поиск, инпуты в топбаре */
+.aray-nature-mode .aray-topbar input {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+.aray-nature-mode .aray-topbar input::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+/* Кнопки-иконки в топбаре */
+.aray-nature-mode .aray-topbar button,
+.aray-nature-mode .aray-topbar [role="button"] {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+.aray-nature-mode .aray-topbar button:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
 /* ── Неоновое свечение (адаптируется к палитре) ── */
