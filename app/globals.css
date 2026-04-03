@@ -597,25 +597,23 @@ canvas,
    Работает автоматически, не нужно трогать каждую страницу
    ══════════════════════════════════════════════════════════════ */
 
-/* ══ ЕДИНЫЙ ТЁМНЫЙ GLASS — природный режим (обе темы) ══
-   Один цвет, как виджеты часов/календаря: rgba(5,8,20,0.48).
-   Никакого разнобоя. Иконки и кнопки — НЕ трогаем, они сохраняют свои цвета.
+/* ══════════════════════════════════════════════════════════════
+   ДВА СТИЛЯ СТЕКЛА — тёмная и светлая тема разные!
+
+   🌑 ТЁМНАЯ ТЕМА → тёмное матовое стекло (как виджеты часов)
+   ☀️ СВЕТЛАЯ ТЕМА → белое фростед стекло с прозрачностью
+
+   Иконки и кнопки НЕ трогаем — они сами знают свои цвета.
    ══════════════════════════════════════════════════════════════ */
 
-/* bg-card / bg-popover — тёмный glass */
+/* ── ТЁМНАЯ ТЕМА: тёмный glass rgba(5,8,20) ── */
 .aray-nature-mode .bg-card,
-.aray-nature-mode .bg-popover,
-.light .aray-nature-mode .bg-card,
-[data-theme="light"] .aray-nature-mode .bg-card,
-.light .aray-nature-mode .bg-popover,
-[data-theme="light"] .aray-nature-mode .bg-popover {
+.aray-nature-mode .bg-popover {
   backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   background: rgba(5, 8, 20, 0.48) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-
-/* Алерт и цветные карточки — тот же единый glass */
 .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
 .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
 .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
@@ -633,29 +631,72 @@ canvas,
   background: rgba(5, 8, 20, 0.45) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-
-/* Текст на тёмном glass — белый только для текстовых элементов.
-   SVG иконки и элементы с explicit text-* классами НЕ трогаем! */
+/* Текст в тёмных карточках — белый (только p/h, не иконки) */
 .aray-nature-mode .bg-card p,
 .aray-nature-mode .bg-card h1,
 .aray-nature-mode .bg-card h2,
 .aray-nature-mode .bg-card h3,
 .aray-nature-mode .bg-card h4,
 .aray-nature-mode .bg-card .text-foreground,
-.aray-nature-mode [class*="bg-orange-"][class*="rounded"] p,
-.aray-nature-mode [class*="bg-blue-"][class*="rounded"] p,
-.aray-nature-mode [class*="bg-yellow-"][class*="rounded"] p {
+.aray-nature-mode .bg-card strong {
   color: rgba(255, 255, 255, 0.90) !important;
 }
-/* Вторичный текст — приглушённый белый */
 .aray-nature-mode .bg-card .text-muted-foreground,
 .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
   color: rgba(255, 255, 255, 0.48) !important;
 }
-/* Числа и заголовки-значения прямо в карточках */
-.aray-nature-mode .bg-card .text-foreground,
-.aray-nature-mode .bg-card strong {
-  color: rgba(255, 255, 255, 0.95) !important;
+
+/* ── СВЕТЛАЯ ТЕМА: белый фростед glass ── */
+.light .aray-nature-mode .bg-card,
+[data-theme="light"] .aray-nature-mode .bg-card,
+.light .aray-nature-mode .bg-popover,
+[data-theme="light"] .aray-nature-mode .bg-popover {
+  backdrop-filter: blur(22px) saturate(180%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
+  border-color: rgba(255, 255, 255, 0.80) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset !important;
+}
+.light .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-green-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-emerald-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-violet-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-slate-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-amber-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-red-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-cyan-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-teal-"][class*="rounded"],
+.light .aray-nature-mode [class*="bg-indigo-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-orange-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-blue-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-yellow-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-green-"][class*="rounded"],
+[data-theme="light"] .aray-nature-mode [class*="bg-violet-"][class*="rounded"] {
+  backdrop-filter: blur(18px) saturate(160%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  border-color: rgba(255, 255, 255, 0.78) !important;
+}
+/* Текст в светлых карточках — тёмный (natural, убираем белый override) */
+.light .aray-nature-mode .bg-card p,
+[data-theme="light"] .aray-nature-mode .bg-card p,
+.light .aray-nature-mode .bg-card h1,
+.light .aray-nature-mode .bg-card h2,
+.light .aray-nature-mode .bg-card h3,
+.light .aray-nature-mode .bg-card .text-foreground,
+.light .aray-nature-mode .bg-card strong,
+[data-theme="light"] .aray-nature-mode .bg-card h1,
+[data-theme="light"] .aray-nature-mode .bg-card h2,
+[data-theme="light"] .aray-nature-mode .bg-card .text-foreground {
+  color: unset !important;
+}
+.light .aray-nature-mode .bg-card .text-muted-foreground,
+[data-theme="light"] .aray-nature-mode .bg-card .text-muted-foreground,
+.light .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground,
+[data-theme="light"] .aray-nature-mode [class*="bg-"][class*="rounded"] .text-muted-foreground {
+  color: unset !important;
 }
 
 /* ── ЗАГОЛОВКИ СЕКЦИЙ — стеклянная пилюля (как кнопка) ── */
