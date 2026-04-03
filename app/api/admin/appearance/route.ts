@@ -53,6 +53,24 @@ export async function PATCH(req: Request) {
     updates.aray_enabled = body.aray_enabled;
   }
 
+  // Product page settings
+  const boolKeys = [
+    "product_page_show_reviews",
+    "product_page_show_related",
+    "product_page_show_calculator",
+    "product_page_show_breadcrumbs",
+    "checkout_allow_pickup",
+    "checkout_allow_delivery",
+    "checkout_show_promo",
+    "checkout_allow_guest",
+    "checkout_require_comment",
+  ];
+  for (const key of boolKeys) {
+    if (typeof body[key] === "string" && ["true", "false"].includes(body[key])) {
+      updates[key] = body[key];
+    }
+  }
+
   // Save all updated keys
   await Promise.all(
     Object.entries(updates).map(([key, value]) =>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PALETTE_GROUPS } from "@/components/palette-provider";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Image as ImageIcon, LayoutGrid, Bot } from "lucide-react";
+import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft } from "lucide-react";
 
 const CARD_STYLES = [
   {
@@ -110,24 +110,56 @@ const ASPECT_OPTIONS = [
   },
 ];
 
+type ProductPageSettings = {
+  showReviews: boolean;
+  showRelated: boolean;
+  showCalculator: boolean;
+  showBreadcrumbs: boolean;
+};
+
+type CheckoutSettings = {
+  allowPickup: boolean;
+  allowDelivery: boolean;
+  showPromo: boolean;
+  allowGuest: boolean;
+  requireComment: boolean;
+};
+
 export function AppearanceClient({
   initialEnabledIds,
   initialPhotoAspect,
   initialCardStyle,
   initialDefaultPalette,
   initialArayEnabled,
+  initialProductPage,
+  initialCheckout,
 }: {
   initialEnabledIds: string[];
   initialPhotoAspect: string;
   initialCardStyle: string;
   initialDefaultPalette: string;
   initialArayEnabled: boolean;
+  initialProductPage?: ProductPageSettings;
+  initialCheckout?: CheckoutSettings;
 }) {
   const [enabled, setEnabled] = useState<Set<string>>(new Set(initialEnabledIds));
   const [photoAspect, setPhotoAspect] = useState(initialPhotoAspect || "1/1");
   const [cardStyle, setCardStyle] = useState(initialCardStyle || "classic");
   const [defaultPalette, setDefaultPalette] = useState(initialDefaultPalette || "timber");
   const [arayEnabled, setArayEnabled] = useState(initialArayEnabled);
+  const [productPage, setProductPage] = useState<ProductPageSettings>(initialProductPage ?? {
+    showReviews: true,
+    showRelated: true,
+    showCalculator: true,
+    showBreadcrumbs: true,
+  });
+  const [checkout, setCheckout] = useState<CheckoutSettings>(initialCheckout ?? {
+    allowPickup: true,
+    allowDelivery: true,
+    showPromo: true,
+    allowGuest: true,
+    requireComment: false,
+  });
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -153,6 +185,15 @@ export function AppearanceClient({
           card_style: cardStyle,
           default_palette: defaultPalette,
           aray_enabled: arayEnabled ? "true" : "false",
+          product_page_show_reviews: productPage.showReviews ? "true" : "false",
+          product_page_show_related: productPage.showRelated ? "true" : "false",
+          product_page_show_calculator: productPage.showCalculator ? "true" : "false",
+          product_page_show_breadcrumbs: productPage.showBreadcrumbs ? "true" : "false",
+          checkout_allow_pickup: checkout.allowPickup ? "true" : "false",
+          checkout_allow_delivery: checkout.allowDelivery ? "true" : "false",
+          checkout_show_promo: checkout.showPromo ? "true" : "false",
+          checkout_allow_guest: checkout.allowGuest ? "true" : "false",
+          checkout_require_comment: checkout.requireComment ? "true" : "false",
         }),
       });
       if (!res.ok) throw new Error();
@@ -279,6 +320,73 @@ export function AppearanceClient({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* ── Страница товара ── */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">Страница товара</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">Что показывать на карточке товара</p>
+        <div className="space-y-3">
+          {([
+            { key: "showReviews",     icon: <Star className="w-4 h-4" />,       label: "Блок отзывов",          desc: "Отзывы покупателей под описанием" },
+            { key: "showRelated",     icon: <LayoutGrid className="w-4 h-4" />, label: "Похожие товары",        desc: "Рекомендации внизу страницы" },
+            { key: "showCalculator",  icon: <Calculator className="w-4 h-4" />, label: "Калькулятор",           desc: "Виджет расчёта объёма/количества" },
+            { key: "showBreadcrumbs", icon: <AlignLeft className="w-4 h-4" />,  label: "Хлебные крошки",        desc: "Навигация: Главная / Каталог / Товар" },
+          ] as { key: keyof ProductPageSettings; icon: React.ReactNode; label: string; desc: string }[]).map((item) => (
+            <div key={item.key} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-muted-foreground">{item.icon}</span>
+                <div>
+                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setProductPage(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${productPage[item.key] ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${productPage[item.key] ? "translate-x-4" : "translate-x-1"}`} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Корзина и оформление заказа ── */}
+      <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <ShoppingCart className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">Корзина и оформление заказа</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">Настройки формы заказа</p>
+        <div className="space-y-3">
+          {([
+            { key: "allowPickup",      icon: <MapPin className="w-4 h-4" />,         label: "Самовывоз",             desc: "Клиент может выбрать самовывоз со склада" },
+            { key: "allowDelivery",    icon: <Truck className="w-4 h-4" />,           label: "Доставка",              desc: "Клиент может выбрать доставку" },
+            { key: "showPromo",        icon: <Tag className="w-4 h-4" />,             label: "Поле промокода",        desc: "Ввод промокода при оформлении" },
+            { key: "allowGuest",       icon: <MessageSquare className="w-4 h-4" />,   label: "Заказ без регистрации", desc: "Гости могут оформить заказ без аккаунта" },
+            { key: "requireComment",   icon: <AlignLeft className="w-4 h-4" />,       label: "Обязательный комментарий", desc: "Клиент должен написать комментарий к заказу" },
+          ] as { key: keyof CheckoutSettings; icon: React.ReactNode; label: string; desc: string }[]).map((item) => (
+            <div key={item.key} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/50">
+              <div className="flex items-center gap-3">
+                <span className="text-muted-foreground">{item.icon}</span>
+                <div>
+                  <p className="text-sm font-medium">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCheckout(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0 ${checkout[item.key] ? "bg-primary" : "bg-muted-foreground/30"}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${checkout[item.key] ? "translate-x-4" : "translate-x-1"}`} />
+              </button>
+            </div>
+          ))}
         </div>
       </div>
 
