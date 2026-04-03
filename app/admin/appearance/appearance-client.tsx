@@ -182,7 +182,16 @@ export function AppearanceClient({
             </div>
           </div>
           <button
-            onClick={() => setArayEnabled(!arayEnabled)}
+            onClick={async () => {
+              const next = !arayEnabled;
+              setArayEnabled(next);
+              await fetch("/api/admin/appearance", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ aray_enabled: next ? "true" : "false" }),
+              });
+              toast({ title: next ? "Арай включён ✓" : "Арай скрыт ✓", description: next ? "Виджет появится на сайте" : "Виджет скрыт от покупателей" });
+            }}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
               arayEnabled ? "bg-amber-500" : "bg-muted-foreground/30"
             }`}
