@@ -736,6 +736,9 @@ canvas,
   color: unset !important;
 }
 
+/* ── Система масштабирования шрифтов (--aray-font-scale устанавливается JS) ── */
+:root { --aray-font-scale: 1; }
+
 /* ── ЗАГОЛОВКИ СЕКЦИЙ — стеклянная пилюля (как кнопка) ── */
 /* Используй класс .aray-section-title на p/h2 элементах-заголовках */
 .aray-nature-mode .aray-section-title {
@@ -751,7 +754,8 @@ canvas,
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.28), 0 1px 0 rgba(255, 255, 255, 0.10) inset;
   color: rgba(255, 255, 255, 0.88) !important;
   text-shadow: none;
-  font-size: 11px;
+  /* Масштабируется с системой шрифтов */
+  font-size: calc(11px * var(--aray-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.10em;
   text-transform: uppercase;

@@ -4,9 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { ALargeSmall } from "lucide-react";
 
 const SIZES = [
-  { id: "sm", label: "Компакт",  px: "13px",   preview: "A" },
-  { id: "md", label: "Обычный",  px: "14px",   preview: "A" },
-  { id: "lg", label: "Крупнее",  px: "15.5px", preview: "A" },
+  { id: "xs", label: "Мини",      px: "12px",  scale: "0.857", preview: "A" },
+  { id: "sm", label: "Компакт",   px: "13px",  scale: "0.929", preview: "A" },
+  { id: "md", label: "Обычный",   px: "14px",  scale: "1",     preview: "A" },
+  { id: "lg", label: "Крупнее",   px: "15.5px",scale: "1.107", preview: "A" },
+  { id: "xl", label: "Максимум",  px: "17px",  scale: "1.214", preview: "A" },
 ];
 
 const LS_KEY = "aray-font-size";
@@ -18,8 +20,11 @@ function getDeviceDefault(): string {
   return "lg";               // большой монитор — крупнее
 }
 
-function apply(px: string) {
-  document.documentElement.style.setProperty("font-size", px);
+function apply(size: typeof SIZES[0]) {
+  // Корневой размер шрифта — масштабирует все rem значения
+  document.documentElement.style.setProperty("font-size", size.px);
+  // CSS переменная для масштабирования элементов с px размерами
+  document.documentElement.style.setProperty("--aray-font-scale", size.scale);
 }
 
 export function AdminFontPicker() {
@@ -33,8 +38,8 @@ export function AdminFontPicker() {
     const id = saved ?? getDeviceDefault();
     setActive(id);
     setIsAuto(!saved);
-    const px = SIZES.find(s => s.id === id)?.px || "14px";
-    apply(px);
+    const size = SIZES.find(s => s.id === id) ?? SIZES[2];
+    apply(size);
   }, []);
 
   useEffect(() => {
@@ -46,11 +51,11 @@ export function AdminFontPicker() {
   }, []);
 
   function pick(id: string) {
-    const px = SIZES.find(s => s.id === id)!.px;
+    const size = SIZES.find(s => s.id === id)!;
     setActive(id);
     setIsAuto(false);
     localStorage.setItem(LS_KEY, id);
-    apply(px);
+    apply(size);
     setOpen(false);
   }
 
@@ -59,8 +64,8 @@ export function AdminFontPicker() {
     const id = getDeviceDefault();
     setActive(id);
     setIsAuto(true);
-    const px = SIZES.find(s => s.id === id)!.px || "14px";
-    apply(px);
+    const size = SIZES.find(s => s.id === id) ?? SIZES[2];
+    apply(size);
     setOpen(false);
   }
 
@@ -77,28 +82,42 @@ export function AdminFontPicker() {
 
       {open && (
         <div className="absolute top-full right-0 mt-2 z-50
-          bg-card border border-border rounded-xl shadow-lg overflow-hidden p-1.5
-          animate-in slide-in-from-top-2 fade-in duration-150 w-40">
-          {SIZES.map(s => (
-            <button
-              key={s.id}
-              onClick={() => pick(s.id)}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-left
-                ${active === s.id
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+          bg-card border border-border rounded-2xl shadow-xl overflow-hidden p-2
+          animate-in slide-in-from-top-2 fade-in duration-150 w-44">
+          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground px-2 pt-1 pb-2">
+            Размер шрифта
+          </p>
+          {/* Визуальные кнопки размера — горизонтальный ряд */}
+          <div className="flex items-end justify-between gap-1 px-2 pb-3">
+            {SIZES.map(s => (
+              <button
+                key={s.id}
+                onClick={() => pick(s.id)}
+                title={s.label}
+                className={`flex flex-col items-center gap-1 flex-1 py-1.5 rounded-xl transition-all ${
+                  active === s.id
+                    ? "bg-primary/15 ring-1 ring-primary/40"
+                    : "hover:bg-muted/60"
                 }`}
-            >
-              <span className="text-xs font-medium">{s.label}</span>
-              <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 700 }}>{s.preview}</span>
-            </button>
-          ))}
-          <div className="border-t border-border mt-1 pt-1">
+              >
+                <span
+                  style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}
+                  className={active === s.id ? "text-primary" : "text-muted-foreground"}
+                >
+                  A
+                </span>
+                <span className="text-[8px] font-medium text-muted-foreground leading-none">
+                  {s.label.slice(0, 4)}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="border-t border-border/50 pt-1.5">
             <button
               onClick={resetToAuto}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-left hover:bg-muted/60 transition-colors"
             >
-              <span className="text-xs">Авто по устройству</span>
+              <span className="text-xs text-muted-foreground">Авто по устройству</span>
               {isAuto && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
             </button>
           </div>
