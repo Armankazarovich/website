@@ -272,8 +272,15 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         {/* Заголовок текущей страницы */}
         <h1 className="text-sm font-bold text-foreground flex-1 truncate tracking-tight">{pageTitle}</h1>
 
-        {/* ── Правая группа иконок ── */}
-        <div className="flex items-center gap-1">
+        {/* ── Правая группа иконок — стеклянная пилюля ── */}
+        <div
+          className="flex items-center gap-0.5 px-1.5 py-1 rounded-2xl aray-topbar-pill"
+          style={{
+            background: "rgba(255,255,255,0.07)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
           {/* Живой поиск */}
           <AdminSearch />
           {/* Язык */}
@@ -289,10 +296,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           {/* Тема */}
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors aray-icon-spin"
+            className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors aray-icon-spin"
             title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
           >
-            {theme === "dark" ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
+            {theme === "dark"
+              ? <Sun className="w-4 h-4 text-white/70" />
+              : <Moon className="w-4 h-4 text-white/70" />}
           </button>
         </div>
 
