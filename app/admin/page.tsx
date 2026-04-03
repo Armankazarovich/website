@@ -255,14 +255,14 @@ export default async function AdminDashboard() {
             <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center mb-2.5">
               <Clock className="w-4 h-4 text-orange-600" />
             </div>
-            <p className="text-2xl font-bold">{newOrders}</p>
+            <p className="text-lg font-display font-bold leading-tight">{newOrders}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Новых заказов</p>
           </div>
           <div className="bg-card rounded-2xl border border-border p-4">
             <div className="w-8 h-8 rounded-xl bg-green-500/10 flex items-center justify-center mb-2.5">
               <Truck className="w-4 h-4 text-green-600" />
             </div>
-            <p className="text-2xl font-bold">{todayOrders}</p>
+            <p className="text-lg font-display font-bold leading-tight">{todayOrders}</p>
             <p className="text-xs text-muted-foreground mt-0.5">Заказов сегодня</p>
           </div>
         </div>

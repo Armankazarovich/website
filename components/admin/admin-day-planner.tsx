@@ -113,7 +113,7 @@ function TaskRow({
       <button
         onClick={onToggleReminder}
         title={task.reminder ? "Отключить напоминание" : "Включить напоминание"}
-        className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0
+        className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 aray-icon-spin
           ${task.reminder ? "text-primary bg-primary/15" : "text-white/25 opacity-0 group-hover:opacity-100"}`}
       >
         {task.reminder ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
@@ -122,7 +122,7 @@ function TaskRow({
       {/* Удалить */}
       <button
         onClick={onDelete}
-        className="w-6 h-6 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+        className="w-6 h-6 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0 aray-icon-spin"
       >
         <Trash2 className="w-3 h-3" />
       </button>

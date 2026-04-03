@@ -210,7 +210,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         {/* Тема */}
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors"
+          className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors aray-icon-spin"
           title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
         >
           {theme === "dark" ? <Sun className="w-4 h-4 text-muted-foreground" /> : <Moon className="w-4 h-4 text-muted-foreground" />}
