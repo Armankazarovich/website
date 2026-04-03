@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Quote, Clock4, CalendarDays, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Quote, Clock4, CalendarDays, RefreshCw, StickyNote } from "lucide-react";
+
+const NOTES_KEY = "aray_dashboard_notes_v1";
 
 // ── Бизнес-афоризмы и советы ──────────────────────────────────────────────────
 const QUOTES = [
@@ -79,8 +81,10 @@ function MiniCalendar({ now }: { now: Date }) {
 
 // ── Главный компонент ──────────────────────────────────────────────────────────
 export function AdminDashboardWidgets() {
-  const [now, setNow]         = useState<Date | null>(null);
+  const [now, setNow]           = useState<Date | null>(null);
   const [quoteIdx, setQuoteIdx] = useState(0);
+  const [notes, setNotes]       = useState("");
+  const saveRef                 = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Часы — обновляем каждую секунду
   useEffect(() => {
@@ -92,7 +96,15 @@ export function AdminDashboardWidgets() {
   // Случайная цитата при загрузке + кнопка обновить
   useEffect(() => {
     setQuoteIdx(Math.floor(Math.random() * QUOTES.length));
+    setNotes(localStorage.getItem(NOTES_KEY) ?? "");
   }, []);
+
+  // Автосохранение заметок (debounce 800ms)
+  const handleNotes = (val: string) => {
+    setNotes(val);
+    if (saveRef.current) clearTimeout(saveRef.current);
+    saveRef.current = setTimeout(() => localStorage.setItem(NOTES_KEY, val), 800);
+  };
 
   if (!now) return null;
 
@@ -133,8 +145,9 @@ export function AdminDashboardWidgets() {
         <MiniCalendar now={now} />
       </div>
 
-      {/* ── Афоризм ── */}
+      {/* ── Афоризм + Заметки ── */}
       <div className={`${glassCard} ${glassDark} relative`}>
+        {/* Цитата */}
         <div className="flex items-center justify-between text-white/40 mb-1">
           <div className="flex items-center gap-1.5">
             <Quote className="w-3 h-3" />
@@ -149,15 +162,36 @@ export function AdminDashboardWidgets() {
           </button>
         </div>
 
-        {/* Большая кавычка */}
         <span className="absolute top-3 right-4 text-5xl font-serif text-white/[0.06] select-none leading-none">"</span>
 
-        <p className="text-[12px] text-white/75 leading-relaxed italic flex-1">
+        <p className="text-[11px] text-white/70 leading-relaxed italic">
           {quote.text}
         </p>
-        <p className="text-[10px] text-primary/70 font-semibold mt-1">
+        <p className="text-[10px] text-primary/70 font-semibold mt-0.5 mb-3">
           — {quote.author}
         </p>
+
+        {/* Разделитель */}
+        <div className="border-t border-white/[0.07] mb-3" />
+
+        {/* Заметки */}
+        <div className="flex items-center gap-1.5 text-white/35 mb-1.5">
+          <StickyNote className="w-3 h-3" />
+          <span className="text-[10px] font-bold uppercase tracking-widest">Заметки</span>
+        </div>
+        <textarea
+          value={notes}
+          onChange={e => handleNotes(e.target.value)}
+          placeholder="Быстрые заметки на сегодня..."
+          rows={3}
+          className="w-full resize-none text-[12px] rounded-xl px-3 py-2 outline-none transition-all"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            color: "rgba(255,255,255,0.75)",
+          }}
+        />
+        <p className="text-[9px] text-white/20 mt-1">Сохраняется автоматически</p>
       </div>
 
     </div>

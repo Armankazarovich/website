@@ -605,14 +605,15 @@ canvas,
   background: rgba(5, 8, 20, 0.50) !important;
 }
 
-/* Светлая тема — лёгкое молочное стекло (не слишком белое) */
+/* Светлая тема — тёмное стекло (как тёмная тема, чтобы фото просвечивало) */
 .light .aray-nature-mode .bg-card,
 [data-theme="light"] .aray-nature-mode .bg-card,
 .light .aray-nature-mode .bg-popover,
 [data-theme="light"] .aray-nature-mode .bg-popover {
-  backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
-  background: rgba(235, 242, 255, 0.52) !important; /* прохладный тон, пропускает фото */
+  backdrop-filter: blur(22px) saturate(160%) brightness(0.85) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(0.85) !important;
+  background: rgba(8, 12, 30, 0.48) !important; /* тёмное стекло — фото всегда видно */
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 
 /* Границы — полупрозрачные в обоих темах */
@@ -1139,4 +1140,39 @@ canvas,
 .light .aray-nature-mode tr.bg-white,
 [data-theme="light"] .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span) {
   background: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ── ФИЛЬТР-ПИЛЮЛИ — тёмное стекло (bg-muted/40, bg-muted/60 и т.д.) ── */
+/* Кнопки фильтрации заказов, CRM, клиентов — видны на фото ✓ */
+.aray-nature-mode button[class*="bg-muted"],
+.aray-nature-mode a[class*="bg-muted"] {
+  background: rgba(5, 8, 20, 0.52) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+.aray-nature-mode button[class*="bg-muted"]:hover,
+.aray-nature-mode a[class*="bg-muted"]:hover {
+  background: rgba(12, 18, 50, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+/* Иконки в этих кнопках — светлее */
+.aray-nature-mode button[class*="bg-muted"] svg,
+.aray-nature-mode a[class*="bg-muted"] svg {
+  opacity: 0.85;
+}
+
+/* ── СЕКЦИОННЫЕ ЗАГОЛОВКИ — читабельность на природном фоне ── */
+/* p и span с tracking-wider/tracking-widest (section labels) */
+.aray-nature-mode p[class*="tracking-wider"],
+.aray-nature-mode p[class*="tracking-widest"] {
+  color: rgba(255, 255, 255, 0.72) !important;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.55);
+}
+.aray-nature-mode h2[class*="font-semibold"],
+.aray-nature-mode h3[class*="font-semibold"] {
+  color: rgba(255, 255, 255, 0.92) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.40);
 }

@@ -16,6 +16,7 @@ import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
+import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
 
 interface AdminShellProps {
   role: string;
@@ -198,8 +199,11 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         {/* Размер шрифта */}
         <AdminFontPicker />
 
+        {/* Планировщик дня */}
+        <AdminDayPlanner />
+
         {/* Уведомления */}
-        <button className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative">
+        <button className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative aray-icon-spin">
           <Bell className="w-4 h-4 text-muted-foreground" />
         </button>
 
