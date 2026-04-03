@@ -149,18 +149,29 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
 
-  // Swipe-to-open drawer
+  // Swipe-to-open + tap-outside-to-close
   const touchStartX = useRef(0);
+  const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
     const onTouchEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - touchStartX.current;
-      if (touchStartX.current < 32 && dx > 60) setOpen(true);   // edge swipe right → open
-      if (open && dx < -60) setOpen(false);                      // swipe left → close
+      // Свайп от левого края → открыть
+      if (!open && touchStartX.current < 32 && dx > 60) { setOpen(true); return; }
+      // Свайп влево → закрыть
+      if (open && dx < -60) { setOpen(false); return; }
+      // Тап снаружи дравера → закрыть
+      if (open && drawerRef.current) {
+        const target = e.target as Node;
+        if (!drawerRef.current.contains(target)) setOpen(false);
+      }
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => { document.removeEventListener("touchstart", onTouchStart); document.removeEventListener("touchend", onTouchEnd); };
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
   }, [open]);
 
   return (
@@ -322,14 +333,13 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {open && (
         <div
           className="lg:hidden fixed inset-0 z-[49]"
-          style={{ background: "rgba(0,0,0,0.55)", WebkitTapHighlightColor: "transparent" }}
-          onPointerDown={() => setOpen(false)}
-          onTouchStart={() => setOpen(false)}
+          style={{ background: "rgba(0,0,0,0.55)" }}
         />
       )}
 
       {/* ─── Mobile drawer ────────────────────────────────────── */}
       <div
+        ref={drawerRef}
         className={`lg:hidden fixed top-0 left-0 h-full w-72 z-50 aray-sidebar text-white flex flex-col transform transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
