@@ -87,7 +87,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   }, [open]);
 
   return (
-    <div className="flex min-h-screen aray-admin-bg aray-nature-mode relative">
+    <div className="flex min-h-screen aray-admin-bg aray-nature-mode relative" style={{ backgroundColor: "rgb(8, 12, 30)" }}>
       {/* ─── Природный видео фон (z-0, за всем) ─────────────── */}
       <AdminNatureBg enabled={true} />
 
