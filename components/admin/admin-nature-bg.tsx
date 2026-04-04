@@ -3,73 +3,68 @@
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "next-themes";
 
-// ── 8 кинематографичных дневных фото ─────────────────────────────────────────
+// ── 12 дневных фото: природа + города ────────────────────────────────────────
 const DAY: { url: string; label: string }[] = [
   { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=85&auto=format&fit=crop", label: "Горные вершины" },
   { url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85&auto=format&fit=crop", label: "Дремучий лес" },
-  { url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=85&auto=format&fit=crop", label: "Океан" },
-  { url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=85&auto=format&fit=crop", label: "Альпы" },
+  { url: "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=1920&q=85&auto=format&fit=crop", label: "Париж днём" },
   { url: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1920&q=85&auto=format&fit=crop", label: "Водопад" },
-  { url: "https://images.unsplash.com/photo-1491555103944-7c89fc6e1e65?w=1920&q=85&auto=format&fit=crop", label: "Снежные горы" },
-  { url: "https://images.unsplash.com/photo-1476673479940-e2f5bf9239be?w=1920&q=85&auto=format&fit=crop", label: "Морские волны" },
+  { url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=85&auto=format&fit=crop", label: "Город в облаках" },
+  { url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=85&auto=format&fit=crop", label: "Альпы" },
+  { url: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1920&q=85&auto=format&fit=crop", label: "Лондон" },
+  { url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=85&auto=format&fit=crop", label: "Океан" },
   { url: "https://images.unsplash.com/photo-1448375240703-89f2b795f098?w=1920&q=85&auto=format&fit=crop", label: "Туманный лес" },
+  { url: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1920&q=85&auto=format&fit=crop", label: "Нью-Йорк" },
+  { url: "https://images.unsplash.com/photo-1491555103944-7c89fc6e1e65?w=1920&q=85&auto=format&fit=crop", label: "Снежные горы" },
+  { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=85&auto=format&fit=crop", label: "Токио" },
 ];
 
-// ── 8 кинематографичных ночных фото ──────────────────────────────────────────
+// ── 12 ночных фото: природа + ночные города ──────────────────────────────────
 const NIGHT: { url: string; label: string }[] = [
   { url: "https://images.unsplash.com/photo-1419242902344-4b9f4c242d08?w=1920&q=85&auto=format&fit=crop", label: "Млечный путь" },
-  { url: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1920&q=85&auto=format&fit=crop", label: "Звёздное небо" },
+  { url: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1920&q=85&auto=format&fit=crop", label: "Токио ночью" },
   { url: "https://images.unsplash.com/photo-1480497490-fa5c5aff5051?w=1920&q=85&auto=format&fit=crop", label: "Горный закат" },
-  { url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=85&auto=format&fit=crop", label: "Ночной пляж" },
-  { url: "https://images.unsplash.com/photo-1445905595283-21f8ae8a33d2?w=1920&q=85&auto=format&fit=crop", label: "Ночные горы" },
-  { url: "https://images.unsplash.com/photo-1458668383970-8ddd3927deed?w=1920&q=85&auto=format&fit=crop", label: "Горное озеро" },
-  { url: "https://images.unsplash.com/photo-1455218873509-8ef305a30235?w=1920&q=85&auto=format&fit=crop", label: "Закат над горами" },
+  { url: "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=1920&q=85&auto=format&fit=crop&sat=-100&bri=-20", label: "Ночной Париж" },
   { url: "https://images.unsplash.com/photo-1516912799-8f4ec627d5f4?w=1920&q=85&auto=format&fit=crop", label: "Северное сияние" },
+  { url: "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1920&q=85&auto=format&fit=crop", label: "Огни города" },
+  { url: "https://images.unsplash.com/photo-1445905595283-21f8ae8a33d2?w=1920&q=85&auto=format&fit=crop", label: "Ночные горы" },
+  { url: "https://images.unsplash.com/photo-1538970272646-f61fabb3bfab?w=1920&q=85&auto=format&fit=crop", label: "Нью-Йорк ночью" },
+  { url: "https://images.unsplash.com/photo-1458668383970-8ddd3927deed?w=1920&q=85&auto=format&fit=crop", label: "Горное озеро" },
+  { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=85&auto=format&fit=crop&bri=-30", label: "Ночные вершины" },
+  { url: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1920&q=85&auto=format&fit=crop", label: "Звёздное небо" },
+  { url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=85&auto=format&fit=crop", label: "Ночной горизонт" },
 ];
 
 const ANIMS = ["kenburns-in", "kenburns-2", "kenburns-3"];
 const SHOW_MS = 22_000; // 22 сек — достаточно долго чтобы насладиться
 const FADE_MS =  4_000; // 4 сек crossfade — кинематографично
 
-// Определяем время суток по часам (6:00–20:00 = день)
-function getIsDay() {
-  const h = new Date().getHours();
-  return h >= 6 && h < 20;
-}
-
 export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
-  // Фото по реальному времени суток
-  const [isDay, setIsDay] = useState(getIsDay);
-  const PHOTOS = isDay ? DAY : NIGHT;
+  // Тема = день/ночь: светлая тема → дневные фото, тёмная → ночные. Мгновенно!
+  const PHOTOS = isDark ? NIGHT : DAY;
 
   const [cur,    setCur]    = useState(0);
   const [next,   setNext]   = useState(1);
   const [fading, setFading] = useState(false);
   const [failed, setFailed] = useState<Set<number>>(new Set());
-  const prevIsDay = useRef(isDay);
+  const prevIsDark = useRef(isDark);
 
-  // Проверяем время каждую минуту — при смене суток плавно переходим
+  // При смене темы — плавный переход и сброс на первое фото
   useEffect(() => {
-    const tick = () => {
-      const nowIsDay = getIsDay();
-      if (nowIsDay !== prevIsDay.current) {
-        prevIsDay.current = nowIsDay;
-        setFading(true);
-        setTimeout(() => {
-          setIsDay(nowIsDay);
-          setCur(0);
-          setNext(1);
-          setFailed(new Set());
-          setFading(false);
-        }, FADE_MS);
-      }
-    };
-    const interval = setInterval(tick, 60_000); // каждую минуту
-    return () => clearInterval(interval);
-  }, []);
+    if (isDark !== prevIsDark.current) {
+      prevIsDark.current = isDark;
+      setFading(true);
+      setTimeout(() => {
+        setCur(0);
+        setNext(1);
+        setFailed(new Set());
+        setFading(false);
+      }, FADE_MS);
+    }
+  }, [isDark]);
 
   // Автоматическая смена фото
   useEffect(() => {
@@ -136,9 +131,9 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       <div className="aray-photo-overlay-dark  absolute inset-0"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, transparent 28%)" }} />
 
-      {/* Лейбл — реальное время суток */}
+      {/* Лейбл — тема как день/ночь */}
       <div className="absolute bottom-3 right-5 flex items-center gap-2" style={{ opacity: 0.28 }}>
-        <span className="text-white text-[9px]">{isDay ? "☀️" : "🌙"}</span>
+        <span className="text-white text-[9px]">{isDark ? "🌙" : "☀️"}</span>
         <span className="w-px h-3 bg-white/60" />
         <span className="text-white text-[9px] tracking-[0.24em] uppercase font-light">
           {PHOTOS[cur]?.label}
