@@ -154,7 +154,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
       {/* Блик сверху */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
-      <div className="flex items-end justify-around px-1 pt-1 pb-2.5 relative">
+      <div className="flex items-end justify-around px-1 pt-1 relative" style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}>
 
         {/* Левые пункты */}
         <div className="flex items-center justify-around flex-1 pt-1">
