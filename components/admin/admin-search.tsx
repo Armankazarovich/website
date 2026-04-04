@@ -212,7 +212,8 @@ export function AdminDesktopSearch() {
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Поиск заказов, товаров, клиентов..."
-          className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35 min-w-0"
+          className="flex-1 bg-transparent text-white outline-none placeholder:text-white/35 min-w-0"
+          style={{ fontSize: "16px" }}
         />
         {loading
           ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
@@ -297,17 +298,18 @@ export function AdminSearch() {
 
       {open && (
         <>
-          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md" onClick={() => setOpen(false)} />
-          <div className="fixed inset-x-0 top-[8%] z-[61] flex justify-center px-4 pointer-events-none">
+          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          {/* Прижат к верху экрана — клавиатура не перекрывает */}
+          <div className="fixed inset-x-0 top-0 z-[61] flex justify-center px-3 pt-3 pointer-events-none">
             <div className="w-full max-w-2xl pointer-events-auto rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(10,14,30,0.92)",
+                background: "rgba(10,14,30,0.96)",
                 backdropFilter: "blur(32px) saturate(200%)",
                 WebkitBackdropFilter: "blur(32px) saturate(200%)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset",
               }}>
-              <div className="flex items-center gap-3 px-5 py-4"
+              <div className="flex items-center gap-3 px-4 py-3.5"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <Search className="w-5 h-5 text-blue-400/70 shrink-0" />
                 <input
@@ -315,8 +317,9 @@ export function AdminSearch() {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={handleKey}
-                  placeholder="Поиск заказов, товаров, клиентов, страниц..."
-                  className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/30"
+                  placeholder="Поиск заказов, товаров, клиентов..."
+                  className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30"
+                  style={{ fontSize: "16px" /* предотвращает зум на iOS */ }}
                 />
                 {loading && (
                   <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />

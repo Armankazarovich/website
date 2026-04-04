@@ -199,7 +199,6 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
 
 import { AdminDesktopSearch, AdminSearch } from "@/components/admin/admin-search";
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
-import { AdminFontPicker } from "@/components/admin/admin-font-picker";
 import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
@@ -209,7 +208,118 @@ import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
-import { AdminDayPlanner } from "@/components/admin/admin-day-planner";
+
+// ── Десктопная панель настроек (тот же стиль что и мобильная) ───────────────
+function AdminDesktopSettings() {
+  const [open, setOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const { palette, setPalette } = usePalette();
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Настройки отображения"
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all group ${open ? "bg-white/15" : "hover:bg-white/10"}`}
+      >
+        <Settings className={`w-4 h-4 text-white/65 transition-transform duration-300 ${open ? "rotate-45" : "group-hover:rotate-45"}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-2 z-[70] w-72 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-150"
+          style={{
+            background: "rgba(10,14,30,0.97)",
+            backdropFilter: "blur(32px) saturate(200%)",
+            WebkitBackdropFilter: "blur(32px) saturate(200%)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset",
+          }}>
+
+          {/* Заголовок панели */}
+          <div className="px-4 py-3 flex items-center gap-2.5"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            <div className="w-7 h-7 rounded-xl flex items-center justify-center"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.08))" }}>
+              <Settings className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-white/85">Настройки</p>
+          </div>
+
+          {/* Контент */}
+          <div className="p-4 space-y-5 max-h-[72vh] overflow-y-auto">
+
+            {/* Язык */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Язык / Language</p>
+              <AdminLangPickerInline />
+            </div>
+
+            {/* Шрифт */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Размер шрифта</p>
+              <MobileFontControl />
+            </div>
+
+            {/* Тема */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Тема оформления</p>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all hover:bg-white/[0.06]"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.08)" }}>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
+                  {theme === "dark"
+                    ? <Sun className="w-4 h-4 text-violet-400" />
+                    : <Moon className="w-4 h-4 text-violet-400" />}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white/80">{theme === "dark" ? "Тёмная тема" : "Светлая тема"}</p>
+                  <p className="text-[11px] text-white/30">Нажми для переключения</p>
+                </div>
+                <div className="relative w-10 h-[22px] rounded-full flex-shrink-0"
+                  style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div className="absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200"
+                    style={{ background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)", left: theme === "dark" ? "calc(100% - 19px)" : "3px" }} />
+                </div>
+              </button>
+            </div>
+
+            {/* Палитра */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Цветовая палитра</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {PALETTES.map((p) => (
+                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                    className="flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all"
+                    style={
+                      palette === p.id
+                        ? { border: "2px solid rgba(255,255,255,0.85)", background: "rgba(255,255,255,0.10)" }
+                        : { border: "1.5px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)" }
+                    }>
+                    <div className="w-6 h-6 rounded-lg"
+                      style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
+                    <span className="text-[9px] font-medium text-white/40 truncate w-full text-center px-0.5">{p.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface AdminShellProps {
   role: string;
@@ -394,64 +504,35 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       </header>
 
       {/* ─── Desktop top bar ──────────────────────────────────── */}
-      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar"
-        style={{
-          background: "linear-gradient(90deg, hsl(var(--primary)/0.06) 0%, transparent 40%), hsl(var(--background)/0.80)",
-          backdropFilter: "blur(28px) saturate(200%)",
-          WebkitBackdropFilter: "blur(28px) saturate(200%)",
-          borderBottom: "1px solid hsl(var(--primary)/0.15)",
-          boxShadow: "0 1px 0 hsl(var(--primary)/0.08)",
-        }}>
+      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar">
 
         {/* Акцент-полоска слева */}
         <div className="w-0.5 h-6 rounded-full shrink-0"
           style={{ background: "linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary)/0.3))" }} />
 
-        {/* Заголовок страницы — крупнее, без тени, автоцвет */}
-        <h1 className="text-lg font-bold text-foreground tracking-tight leading-none shrink-0">{pageTitle}</h1>
+        {/* Заголовок страницы */}
+        <h1 className="text-lg font-bold tracking-tight leading-none shrink-0">{pageTitle}</h1>
 
-        {/* Inline desktop search — занимает свободное место */}
+        {/* Inline поиск — занимает свободное место */}
         <div className="flex-1 flex items-center">
           <AdminDesktopSearch />
         </div>
 
-        {/* ── Правая группа — стеклянная пилюля ── */}
-        <div className="flex items-center gap-0.5 px-1.5 py-1 rounded-2xl shrink-0"
-          style={{
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            backdropFilter: "blur(12px)",
-          }}>
-          {/* Язык — флаг */}
-          <AdminLangPicker />
-          {/* Размер шрифта */}
-          <AdminFontPicker />
-          {/* Планировщик дня */}
-          <AdminDayPlanner />
-          {/* Уведомления */}
-          <AdminNotificationBell />
-          {/* Тема — фиолетовая */}
-          <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-violet-500/15 transition-all group relative"
-            title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-          >
-            {theme === "dark"
-              ? <Sun className="w-4 h-4 text-violet-400 group-hover:rotate-90 group-hover:scale-110 transition-transform duration-300" />
-              : <Moon className="w-4 h-4 text-violet-400 group-hover:-rotate-12 group-hover:scale-110 transition-transform duration-300" />}
-            <span className="absolute inset-0 rounded-xl group-hover:ring-2 ring-violet-400/20 transition-all" />
-          </button>
-        </div>
+        {/* Уведомления */}
+        <AdminNotificationBell />
 
-        {/* Аватар */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-border/60 shrink-0">
+        {/* Настройки (язык, шрифт, тема, палитра) */}
+        <AdminDesktopSettings />
+
+        {/* Разделитель + Аватар */}
+        <div className="flex items-center gap-2.5 pl-3 border-l border-white/15 shrink-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shrink-0 aray-neon-sm"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
             {email ? email[0].toUpperCase() : "A"}
           </div>
           <div className="hidden xl:block">
-            <p className="text-[11px] font-semibold text-foreground leading-none truncate max-w-[130px]">{email}</p>
-            <p className="text-[10px] text-muted-foreground leading-none mt-0.5 capitalize">{role?.toLowerCase()}</p>
+            <p className="text-[11px] font-semibold leading-none truncate max-w-[130px]">{email}</p>
+            <p className="text-[10px] leading-none mt-0.5 capitalize" style={{ opacity: 0.55 }}>{role?.toLowerCase()}</p>
           </div>
         </div>
       </div>
@@ -620,6 +701,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               <LogOut className="w-4 h-4 text-white/45" />
               <span className="text-sm text-white/60">Перейти на сайт</span>
             </Link>
+
+            <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
 
           </div>
         </SheetContent>
