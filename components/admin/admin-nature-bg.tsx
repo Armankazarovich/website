@@ -39,11 +39,24 @@ const ANIMS = ["kenburns-in", "kenburns-2", "kenburns-3"];
 const SHOW_MS = 22_000; // 22 сек — достаточно долго чтобы насладиться
 const FADE_MS =  4_000; // 4 сек crossfade — кинематографично
 
+// Предугадываем тему ДО гидрации — читаем из localStorage напрямую
+function guessIsDark(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const stored = localStorage.getItem("theme");
+    if (stored === "light") return false;
+    if (stored === "dark")  return true;
+    // system preference
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  } catch { return true; }
+}
+
 export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
+  const [mounted, setMounted] = useState(false);
 
-  // Тема = день/ночь: светлая тема → дневные фото, тёмная → ночные. Мгновенно!
+  // До гидрации — угадываем тему из localStorage, чтобы не было мигания
+  const isDark = mounted ? resolvedTheme !== "light" : guessIsDark();
   const PHOTOS = isDark ? NIGHT : DAY;
 
   const [cur,    setCur]    = useState(0);
@@ -52,8 +65,11 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const [failed, setFailed] = useState<Set<number>>(new Set());
   const prevIsDark = useRef(isDark);
 
+  useEffect(() => { setMounted(true); }, []);
+
   // При смене темы — плавный переход и сброс на первое фото
   useEffect(() => {
+    if (!mounted) return;
     if (isDark !== prevIsDark.current) {
       prevIsDark.current = isDark;
       setFading(true);
@@ -64,7 +80,7 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         setFading(false);
       }, FADE_MS);
     }
-  }, [isDark]);
+  }, [isDark, mounted]);
 
   // Автоматическая смена фото
   useEffect(() => {
@@ -89,6 +105,8 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
           style={{ opacity: fading ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}>
           <img
             src={PHOTOS[cur].url} alt=""
+            fetchPriority="high"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
             style={{ animation: `${ANIMS[cur % 3]} ${SHOW_MS}ms ease-in-out forwards`, willChange: "transform" }}
             onError={() => setFailed(f => new Set([...f, cur]))}
@@ -96,18 +114,30 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         </div>
       )}
 
-      {/* Следующее фото — предзагрузка */}
+      {/* Следующее фото — предзагрузка в фоне */}
       {!failed.has(next) && (
         <div className="absolute inset-0 transition-opacity"
           style={{ opacity: fading ? 1 : 0, transitionDuration: `${FADE_MS}ms` }}>
           <img
             src={PHOTOS[next].url} alt=""
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
             style={{ animation: `${ANIMS[next % 3]} ${SHOW_MS}ms ease-in-out forwards`, willChange: "transform" }}
             onError={() => setFailed(f => new Set([...f, next]))}
           />
         </div>
       )}
+
+      {/* Скрытая предзагрузка СЛЕДУЮЩЕГО следующего фото */}
+      {(() => {
+        const preload = (cur + 2) % PHOTOS.length;
+        return !failed.has(preload) ? (
+          <img key={preload} src={PHOTOS[preload].url} alt=""
+            decoding="async" fetchPriority="low"
+            className="absolute opacity-0 w-0 h-0 pointer-events-none"
+          />
+        ) : null;
+      })()}
 
       {/* ── Оверлеи ────────────────────────────────────────────── */}
 
