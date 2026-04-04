@@ -126,6 +126,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="shortcut icon" href="/icons/icon-192x192.png" />
         {yandexVerification && <meta name="yandex-verification" content={yandexVerification} />}
         {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
+        {/* Anti-flash: синхронно применяем палитру ДО гидратации React */}
+        <script dangerouslySetInnerHTML={{ __html: `
+(function(){try{
+  var p=localStorage.getItem('color-palette');
+  if(p&&p!=='timber')document.documentElement.setAttribute('data-palette',p);
+}catch(e){}}());
+        `}} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
