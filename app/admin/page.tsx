@@ -324,7 +324,7 @@ export default async function AdminDashboard() {
                       style={{ height: `${pct}%`, minHeight: d.amount > 0 ? "4px" : "0" }}
                     />
                   </div>
-                  <span className="text-[9px] text-muted-foreground">{d.label}</span>
+                  <span className="text-[10px] text-muted-foreground">{d.label}</span>
                 </div>
               );
             })}

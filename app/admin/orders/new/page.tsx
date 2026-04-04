@@ -740,7 +740,7 @@ export default function NewPhoneOrderPage() {
         {showScripts && (
           <div className="absolute inset-0 z-50 flex items-stretch pointer-events-none">
             <div className="flex-1" onClick={() => setShowScripts(false)} style={{ pointerEvents: "auto" }} />
-            <div className="w-96 bg-card border-l border-border shadow-2xl flex flex-col overflow-hidden pointer-events-auto">
+            <div className="w-96 bg-card border-l border-border shadow-lg flex flex-col overflow-hidden pointer-events-auto">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-primary" />

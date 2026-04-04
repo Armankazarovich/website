@@ -473,7 +473,7 @@ export function ProductsClient({
       {drawer && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setDrawer(null)} />
-          <div className="w-full max-w-sm bg-card border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="w-full max-w-sm bg-card border-l border-border shadow-lg flex flex-col animate-in slide-in-from-right duration-300">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div>
                 <h3 className="font-semibold">Быстрое редактирование</h3>

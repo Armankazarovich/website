@@ -520,7 +520,7 @@ function LeadDetailPanel({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border-l border-border w-full max-w-lg h-full overflow-y-auto shadow-2xl flex flex-col">
+      <div className="relative bg-card border-l border-border w-full max-w-lg h-full overflow-y-auto shadow-lg flex flex-col">
 
         {/* Заголовок */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card z-10">

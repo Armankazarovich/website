@@ -199,7 +199,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
           {/* Палитра + тема */}
           <div className="px-3 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/30 mb-2">Тема</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55 mb-2">Тема</p>
             <div className="flex items-center gap-1 flex-wrap">
               {PALETTES.map((p) => (
                 <button
@@ -225,7 +225,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           </div>
 
           {/* Email */}
-          <div className="px-3 py-1 text-[11px] text-white/35 truncate">{email}</div>
+          <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
 
           {/* На сайт */}
           <Link
@@ -357,7 +357,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
             <AdminPwaInstall />
             <div className="px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/30 mb-2">Тема</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55 mb-2">Тема</p>
               <div className="flex items-center gap-1.5 flex-wrap">
                 {PALETTES.map((p) => (
                   <button
@@ -380,7 +380,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
                 </button>
               </div>
             </div>
-            <div className="px-3 py-1 text-[11px] text-white/35 truncate">{email}</div>
+            <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
             <Link
               href="/"
               className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors"
