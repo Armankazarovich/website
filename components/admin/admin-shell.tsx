@@ -149,7 +149,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
 
-  // Swipe-to-open + tap-outside-to-close
+  // Swipe-to-open + swipe-to-close (tap-outside через overlay)
   const touchStartX = useRef(0);
   const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -160,11 +160,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       if (!open && touchStartX.current < 32 && dx > 60) { setOpen(true); return; }
       // Свайп влево → закрыть
       if (open && dx < -60) { setOpen(false); return; }
-      // Тап снаружи дравера → закрыть
-      if (open && drawerRef.current) {
-        const target = e.target as Node;
-        if (!drawerRef.current.contains(target)) setOpen(false);
-      }
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchend", onTouchEnd, { passive: true });
@@ -329,13 +324,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </div>
 
-      {/* ─── Mobile drawer overlay — тап закрывает меню ─────── */}
+      {/* ─── Mobile drawer overlay — любое касание снаружи закрывает ── */}
       {open && (
         <div
           className="lg:hidden fixed inset-0 z-[49]"
-          style={{ background: "rgba(0,0,0,0.55)", cursor: "pointer" }}
-          onClick={() => setOpen(false)}
-          onTouchEnd={(e) => { e.preventDefault(); setOpen(false); }}
+          style={{ background: "rgba(0,0,0,0.55)" }}
+          onPointerDown={() => setOpen(false)}
         />
       )}
 
@@ -345,7 +339,10 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         className={`lg:hidden fixed top-0 left-0 h-full w-72 z-50 aray-sidebar text-white flex flex-col transform transition-transform duration-300 ease-in-out ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
-        style={{ boxShadow: open ? "4px 0 32px rgba(0,0,0,0.4)" : "none" }}
+        style={{
+          boxShadow: open ? "4px 0 32px rgba(0,0,0,0.4)" : "none",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+        }}
       >
         {/* Шапка дравера */}
         <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
