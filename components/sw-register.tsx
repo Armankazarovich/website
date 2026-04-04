@@ -26,14 +26,10 @@ export function SwRegister() {
           });
         });
 
-        // Обновляем страницу когда новый SW взял управление
-        let refreshing = false;
-        navigator.serviceWorker.addEventListener("controllerchange", () => {
-          if (!refreshing) {
-            refreshing = true;
-            window.location.reload();
-          }
-        });
+        // НЕ делаем reload при controllerchange — это вызывает мерцание.
+        // Новый SW уже взял управление (SKIP_WAITING выше).
+        // HTML страницы используют NetworkFirst стратегию → всегда свежие.
+        // Следующий переход/открытие уже через новый SW.
       } catch {
         // Тихо — dev-режим, HTTP, блокировщики и т.д.
       }

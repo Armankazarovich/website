@@ -2,7 +2,7 @@
 // Стратегии: CacheFirst для статики, NetworkFirst для HTML/API
 // Версия: меняй CACHE_VERSION при каждом деплое для сброса кэша
 
-var CACHE_VERSION = 'aray-v3';
+var CACHE_VERSION = 'aray-v4';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var IMAGE_CACHE   = CACHE_VERSION + '-images';
 var PAGE_CACHE    = CACHE_VERSION + '-pages';
