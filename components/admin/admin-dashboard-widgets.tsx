@@ -141,19 +141,19 @@ function MiniCalendar({
     <div>
       {/* Шапка месяца с навигацией */}
       <div className="flex items-center justify-between mb-2">
-        <button onClick={prevMonth} className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors aray-icon-spin">
-          <ChevronLeft className="w-3 h-3 text-white/40" />
+        <button onClick={prevMonth} className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+          <ChevronLeft className="w-3 h-3 text-foreground/40" />
         </button>
-        <p className="text-[11px] font-semibold text-white/50 capitalize tracking-wide">{monthName}</p>
-        <button onClick={nextMonth} className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors aray-icon-spin">
-          <ChevronRight className="w-3 h-3 text-white/40" />
+        <p className="text-[11px] font-semibold text-foreground/55 capitalize tracking-wide">{monthName}</p>
+        <button onClick={nextMonth} className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-black/10 dark:hover:bg-white/10 transition-colors">
+          <ChevronRight className="w-3 h-3 text-foreground/40" />
         </button>
       </div>
 
       {/* Дни недели */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {weekDays.map(d => (
-          <div key={d} className="text-[9px] text-center font-bold text-white/30 uppercase">{d}</div>
+          <div key={d} className="text-[9px] text-center font-bold text-foreground/35 uppercase">{d}</div>
         ))}
       </div>
 
@@ -174,12 +174,12 @@ function MiniCalendar({
                 ${isToday && isSelected
                   ? "bg-primary text-white font-bold shadow-sm shadow-primary/40"
                   : isSelected
-                    ? "bg-white/20 text-white ring-1 ring-white/40"
+                    ? "bg-foreground/15 text-foreground ring-1 ring-foreground/30"
                     : isToday
                       ? "ring-1 ring-primary/60 text-primary"
                       : isFuture
-                        ? "text-white/15 cursor-not-allowed"
-                        : "text-white/60 hover:bg-white/10 cursor-pointer"
+                        ? "text-foreground/20 cursor-not-allowed"
+                        : "text-foreground/65 hover:bg-foreground/10 cursor-pointer"
                 }
               `}
             >
@@ -219,12 +219,12 @@ function DayTasks({ dateStr, isToday }: { dateStr: string; isToday: boolean }) {
           </span>
         </div>
         {tasks.length > 0 && (
-          <span className="text-[10px] text-white/30">{done}/{tasks.length}</span>
+          <span className="text-[10px] text-foreground/35">{done}/{tasks.length}</span>
         )}
       </div>
 
       {tasks.length > 0 && (
-        <div className="h-0.5 rounded-full bg-white/10 mb-2 overflow-hidden">
+        <div className="h-0.5 rounded-full bg-foreground/10 mb-2 overflow-hidden">
           <div
             className="h-full rounded-full bg-primary transition-all duration-500"
             style={{ width: tasks.length ? `${(done / tasks.length) * 100}%` : "0%" }}
@@ -233,7 +233,7 @@ function DayTasks({ dateStr, isToday }: { dateStr: string; isToday: boolean }) {
       )}
 
       {tasks.length === 0 ? (
-        <p className="text-[10px] text-white/25">
+        <p className="text-[10px] text-foreground/30">
           {isToday ? "Добавьте задачи через планировщик ↗" : "Нет записей за этот день"}
         </p>
       ) : (
@@ -248,17 +248,17 @@ function DayTasks({ dateStr, isToday }: { dateStr: string; isToday: boolean }) {
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[task.priority] ?? "bg-slate-400"}`} />
               {task.done
                 ? <CheckCircle2 className="w-3.5 h-3.5 text-primary/70 shrink-0" />
-                : <Circle className={`w-3.5 h-3.5 shrink-0 transition-colors ${isToday ? "text-white/25 group-hover:text-white/50" : "text-white/20"}`} />
+                : <Circle className={`w-3.5 h-3.5 shrink-0 transition-colors ${isToday ? "text-foreground/30 group-hover:text-foreground/55" : "text-foreground/25"}`} />
               }
               <span className={`text-[11px] leading-tight flex-1 truncate ${
-                task.done ? "line-through text-white/30" : "text-white/70"
+                task.done ? "line-through text-foreground/35" : "text-foreground/70"
               }`}>
-                {task.time && <span className="text-white/35 mr-1">{task.time}</span>}
+                {task.time && <span className="text-foreground/40 mr-1">{task.time}</span>}
                 {task.text}
               </span>
             </button>
           ))}
-          {remaining > 0 && <p className="text-[10px] text-white/25 pl-6">+{remaining} ещё</p>}
+          {remaining > 0 && <p className="text-[10px] text-foreground/30 pl-6">+{remaining} ещё</p>}
         </div>
       )}
     </div>
@@ -304,16 +304,16 @@ function SmartNotes({ dateStr, isToday }: { dateStr: string; isToday: boolean })
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 text-white/35">
+        <div className="flex items-center gap-1.5 text-foreground/40">
           <StickyNote className="w-3 h-3" />
           <span className="text-[10px] font-bold uppercase tracking-widest">Заметки</span>
         </div>
         <div className="flex items-center gap-0.5">
-          <button onClick={copy} title="Копировать" className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors aray-icon-spin">
-            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-white/30" />}
+          <button onClick={copy} title="Копировать" className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-foreground/10 transition-colors">
+            {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-foreground/30" />}
           </button>
-          <button onClick={share} title="Поделиться" className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors aray-icon-spin">
-            <Share2 className="w-3 h-3 text-white/30" />
+          <button onClick={share} title="Поделиться" className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-foreground/10 transition-colors">
+            <Share2 className="w-3 h-3 text-foreground/30" />
           </button>
         </div>
       </div>
@@ -324,21 +324,16 @@ function SmartNotes({ dateStr, isToday }: { dateStr: string; isToday: boolean })
         placeholder={isToday ? "Быстрые заметки на сегодня..." : "Нет заметок за этот день"}
         readOnly={!isToday}
         rows={4}
-        className="w-full resize-none text-[12px] rounded-xl px-3 py-2.5 outline-none transition-all leading-relaxed"
-        style={{
-          background: isToday ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          color: "rgba(255,255,255,0.75)",
-          cursor: isToday ? "text" : "default",
-        }}
+        className="w-full resize-none text-[12px] rounded-xl px-3 py-2.5 outline-none transition-all leading-relaxed bg-foreground/[0.04] border border-foreground/10 text-foreground/80 placeholder:text-foreground/30"
+        style={{ cursor: isToday ? "text" : "default" }}
       />
 
       <div className="flex items-center justify-between mt-1">
-        <span className="text-[9px] text-white/20">
+        <span className="text-[9px] text-foreground/25">
           {!isToday ? "Только чтение" : savedAt ? `Сохранено в ${savedAt}` : "Автосохранение"}
         </span>
         {notes.length > 0 && (
-          <span className={`text-[9px] tabular-nums ${notes.length > 400 ? "text-amber-400/60" : "text-white/20"}`}>
+          <span className={`text-[9px] tabular-nums ${notes.length > 400 ? "text-amber-400/60" : "text-foreground/25"}`}>
             {notes.length} симв.
           </span>
         )}
@@ -385,20 +380,20 @@ export function AdminDashboardWidgets() {
 
       {/* ── Часы ── */}
       <div className={glass + " flex flex-col gap-2"}>
-        <div className="flex items-center gap-1.5 text-white/40 mb-1">
+        <div className="flex items-center gap-1.5 text-foreground/40 mb-1">
           <Clock4 className="w-3 h-3" />
           <span className="text-[10px] font-bold uppercase tracking-widest">Время</span>
         </div>
         <div className="flex items-end gap-1.5">
-          <span className="font-display font-bold text-4xl text-white leading-none tracking-tight">{timeStr}</span>
-          <span className="font-mono text-xl text-white/30 leading-none mb-0.5">{secsStr}</span>
+          <span className="font-display font-bold text-4xl text-foreground leading-none tracking-tight">{timeStr}</span>
+          <span className="font-mono text-xl text-foreground/30 leading-none mb-0.5">{secsStr}</span>
         </div>
-        <p className="text-[11px] text-white/45 capitalize mt-1">{dateStr}</p>
+        <p className="text-[11px] text-foreground/45 capitalize mt-1">{dateStr}</p>
       </div>
 
       {/* ── Календарь + Задачи ── */}
       <div className={glass + " flex flex-col gap-2"}>
-        <div className="flex items-center justify-between text-white/40 mb-1">
+        <div className="flex items-center justify-between text-foreground/40 mb-1">
           <div className="flex items-center gap-1.5">
             <CalendarDays className="w-3 h-3" />
             <span className="text-[10px] font-bold uppercase tracking-widest">Календарь</span>
@@ -406,7 +401,7 @@ export function AdminDashboardWidgets() {
           {selLabel && (
             <button
               onClick={() => setSelected(today)}
-              className="text-[9px] text-primary/70 hover:text-primary px-2 py-0.5 rounded-lg hover:bg-white/10 transition-colors"
+              className="text-[9px] text-primary/70 hover:text-primary px-2 py-0.5 rounded-lg hover:bg-foreground/10 transition-colors"
             >
               Сегодня
             </button>
@@ -428,24 +423,24 @@ export function AdminDashboardWidgets() {
       {/* ── Совет дня + Заметки ── */}
       <div className={glass + " relative flex flex-col gap-2"}>
         {/* Цитата */}
-        <div className="flex items-center justify-between text-white/40 mb-1">
+        <div className="flex items-center justify-between text-foreground/40 mb-1">
           <div className="flex items-center gap-1.5">
             <Quote className="w-3 h-3" />
             <span className="text-[10px] font-bold uppercase tracking-widest">Совет дня</span>
           </div>
           <button
             onClick={() => setQuoteIdx(i => (i + 1) % QUOTES.length)}
-            className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors aray-icon-spin"
+            className="w-5 h-5 flex items-center justify-center rounded-lg hover:bg-foreground/10 transition-colors"
             title="Следующий"
           >
-            <RefreshCw className="w-3 h-3 text-white/40" />
+            <RefreshCw className="w-3 h-3 text-foreground/40" />
           </button>
         </div>
-        <span className="absolute top-3 right-4 text-5xl font-serif text-white/[0.06] select-none leading-none">"</span>
-        <p className="text-[11px] text-white/70 leading-relaxed italic">{quote.text}</p>
+        <span className="absolute top-3 right-4 text-5xl font-serif text-foreground/[0.06] select-none leading-none">"</span>
+        <p className="text-[11px] text-foreground/70 leading-relaxed italic">{quote.text}</p>
         <p className="text-[10px] text-primary/70 font-semibold mb-2">— {quote.author}</p>
 
-        <div className="border-t border-white/[0.07] mb-1" />
+        <div className="border-t border-foreground/[0.07] mb-1" />
 
         <SmartNotes dateStr={selKey} isToday={isToday} />
       </div>
