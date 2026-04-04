@@ -189,25 +189,34 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         </div>
       )}
 
-      {/* ТЁМНАЯ ТЕМА — больше затемнение */}
-      <div className="aray-photo-overlay-dark absolute inset-0 bg-black/62" />
+      {/* ТЁМНАЯ ТЕМА — затемнение */}
+      <div className="aray-photo-overlay-dark absolute inset-0 bg-black/58" />
       {/* СВЕТЛАЯ ТЕМА — лёгкое затемнение */}
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(0,0,0,0.12)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(0,0,0,0.10)" }} />
+
+      {/* 🎨 ЦВЕТНОЙ ТИНТ ПАЛИТРЫ — лёгкий цветной отлив поверх фото */}
+      <div className="aray-photo-overlay-dark absolute inset-0"
+        style={{ background: "hsl(var(--primary)/0.18)", mixBlendMode: "color" }} />
+      <div className="aray-photo-overlay-light absolute inset-0"
+        style={{ background: "hsl(var(--primary)/0.10)", mixBlendMode: "color" }} />
+
       {/* Виньетка снизу */}
       <div className="aray-photo-overlay-dark absolute inset-0"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.10) 40%, transparent 65%)" }} />
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.12) 40%, transparent 65%)" }} />
       <div className="aray-photo-overlay-light absolute inset-0"
-        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.30) 0%, transparent 50%)" }} />
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.28) 0%, transparent 50%)" }} />
       {/* Виньетка сверху — только в тёмной теме */}
       <div className="aray-photo-overlay-dark absolute inset-0"
-        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, transparent 22%)" }} />
+        style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.42) 0%, transparent 25%)" }} />
 
-      {/* Лейбл */}
-      <div className="absolute bottom-3 right-5 flex items-center gap-1.5 opacity-25">
-        <span className="w-1 h-1 rounded-full bg-white" style={{ animation: "pulse 3s ease-in-out infinite" }} />
-        <span className="text-white text-[9px] tracking-[0.25em] uppercase font-light">
+      {/* Лейбл — погода + время суток */}
+      <div className="absolute bottom-3 right-5 flex items-center gap-2 opacity-30">
+        <span className="text-white text-[9px]">{isDark ? "🌙" : "☀️"}</span>
+        <span className="w-px h-3 bg-white/50" />
+        <span className="text-white text-[9px] tracking-[0.22em] uppercase font-light">
           {PHOTOS[cur].label}
         </span>
+        <span className="w-1 h-1 rounded-full bg-white" style={{ animation: "pulse 3s ease-in-out infinite" }} />
       </div>
     </div>
   );
