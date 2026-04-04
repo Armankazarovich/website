@@ -22,8 +22,8 @@ self.addEventListener('push', function(event) {
   var title = data.title || 'ПилоРус';
   var options = {
     body: data.body || '',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
+    icon: '/icons/aray-192.png',
+    badge: '/icons/aray-72.png',
     data: { url: data.url || '/' },
     vibrate: [200, 100, 200]
   };
