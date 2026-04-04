@@ -149,21 +149,43 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
 
-  // Только свайп-жесты — закрытие через overlay напрямую
+  // Свайп-жесты + capture закрытие (работает на iOS/Android/Windows/Mac)
   const touchStartX = useRef(0);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  // Свайп жесты
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
     const onTouchEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - touchStartX.current;
-      if (!open && touchStartX.current < 32 && dx > 60) setOpen(true);  // свайп → открыть
-      if (open && dx < -60) setOpen(false);                              // свайп влево → закрыть
+      if (!open && touchStartX.current < 32 && dx > 60) setOpen(true);
+      if (open && dx < -60) setOpen(false);
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchend", onTouchEnd, { passive: true });
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [open]);
+
+  // Закрытие по тапу/клику снаружи — capture фазa перехватывает ВСЁ
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    // 50мс задержка чтобы не поймать тот же клик что открыл меню
+    const t = setTimeout(() => {
+      document.addEventListener("mousedown", close, true);
+      document.addEventListener("touchstart", close, true);
+    }, 50);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener("mousedown", close, true);
+      document.removeEventListener("touchstart", close, true);
     };
   }, [open]);
 
@@ -322,14 +344,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </div>
 
-      {/* ─── Mobile drawer overlay ────────────────────────────── */}
+      {/* ─── Mobile drawer overlay — только визуал, закрытие через capture ── */}
       {open && (
-        <div
-          className="fixed inset-0 z-[49]"
-          style={{ background: "rgba(0,0,0,0.55)" }}
-          onTouchStart={() => setOpen(false)}
-          onMouseDown={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 z-[49]" style={{ background: "rgba(0,0,0,0.55)" }} />
       )}
 
       {/* ─── Mobile drawer ────────────────────────────────────── */}
