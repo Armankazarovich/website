@@ -1177,47 +1177,38 @@ canvas,
   transform: scale(0.93);
 }
 
-/* ── TOPBAR: светлая тема — светлый фон, тёмный заголовок ── */
-.light .aray-nature-mode .aray-topbar,
-[data-theme="light"] .aray-nature-mode .aray-topbar {
-  background: linear-gradient(90deg, hsl(var(--primary)/0.06) 0%, rgba(255,252,248,0.95) 50%) !important;
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-bottom: 1px solid hsl(var(--primary)/0.14) !important;
-  box-shadow: 0 1px 0 hsl(var(--primary)/0.08), 0 2px 12px rgba(0,0,0,0.05) !important;
+/* ── TOPBAR: светлая тема (next-themes не добавляет .light, только убирает .dark) ── */
+html:not(.dark) .aray-nature-mode .aray-topbar {
+  background: linear-gradient(90deg, hsl(var(--primary)/0.07) 0%, rgba(255,252,248,0.96) 45%) !important;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-bottom: 1px solid hsl(var(--primary)/0.16) !important;
+  box-shadow: 0 1px 0 hsl(var(--primary)/0.10), 0 3px 16px rgba(0,0,0,0.06) !important;
 }
 /* Текст в светлой теме — тёмный */
-.light .aray-nature-mode .aray-topbar *,
-[data-theme="light"] .aray-nature-mode .aray-topbar * {
+html:not(.dark) .aray-nature-mode .aray-topbar * {
   color: hsl(var(--foreground)) !important;
 }
-.light .aray-nature-mode .aray-topbar .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode .aray-topbar .text-muted-foreground {
+html:not(.dark) .aray-nature-mode .aray-topbar .text-muted-foreground {
   color: hsl(var(--muted-foreground)) !important;
 }
-.light .aray-nature-mode .aray-topbar input,
-[data-theme="light"] .aray-nature-mode .aray-topbar input {
-  background: hsl(var(--muted)/0.6) !important;
+html:not(.dark) .aray-nature-mode .aray-topbar input {
+  background: hsl(var(--muted)/0.55) !important;
   border-color: hsl(var(--border)) !important;
   color: hsl(var(--foreground)) !important;
 }
-.light .aray-nature-mode .aray-topbar input::placeholder,
-[data-theme="light"] .aray-nature-mode .aray-topbar input::placeholder {
-  color: hsl(var(--muted-foreground)/0.6) !important;
+html:not(.dark) .aray-nature-mode .aray-topbar input::placeholder {
+  color: hsl(var(--muted-foreground)/0.55) !important;
 }
-.light .aray-nature-mode .aray-topbar button,
-[data-theme="light"] .aray-nature-mode .aray-topbar button,
-.light .aray-nature-mode .aray-topbar [role="button"],
-[data-theme="light"] .aray-nature-mode .aray-topbar [role="button"] {
-  color: hsl(var(--foreground)/0.75) !important;
+html:not(.dark) .aray-nature-mode .aray-topbar button,
+html:not(.dark) .aray-nature-mode .aray-topbar [role="button"] {
+  color: hsl(var(--foreground)/0.70) !important;
 }
-.light .aray-nature-mode .aray-topbar button:hover,
-[data-theme="light"] .aray-nature-mode .aray-topbar button:hover {
-  background: hsl(var(--muted)/0.8) !important;
+html:not(.dark) .aray-nature-mode .aray-topbar button:hover {
+  background: hsl(var(--muted)/0.85) !important;
   color: hsl(var(--foreground)) !important;
 }
-.light .aray-nature-mode .aray-topbar button:active,
-[data-theme="light"] .aray-nature-mode .aray-topbar button:active {
+html:not(.dark) .aray-nature-mode .aray-topbar button:active {
   background: hsl(var(--muted)) !important;
   transform: scale(0.93);
 }
@@ -1228,8 +1219,7 @@ canvas,
   border: 1px solid rgba(255, 255, 255, 0.13) !important;
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset !important;
 }
-.light .aray-nature-mode .aray-topbar-pill,
-[data-theme="light"] .aray-nature-mode .aray-topbar-pill {
+html:not(.dark) .aray-nature-mode .aray-topbar-pill {
   background: hsl(var(--muted)/0.6) !important;
   border: 1px solid hsl(var(--border)) !important;
 }
