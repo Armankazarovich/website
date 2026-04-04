@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,
@@ -146,6 +147,8 @@ function ResultItem({
 // ─── Desktop inline search (expands in topbar) ──────────────────────────────
 export function AdminDesktopSearch() {
   const [expanded, setExpanded] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(expanded);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -204,7 +207,7 @@ export function AdminDesktopSearch() {
     <div ref={containerRef} className="flex-1 flex items-center relative mx-1 animate-in slide-in-from-right-3 fade-in duration-200">
       {/* Input bar */}
       <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
-        style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.14)" }}>
+        style={{ background: isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)", border: isDark ? "1px solid rgba(255,255,255,0.14)" : "1px solid rgba(0,0,0,0.10)" }}>
         <Search className="w-4 h-4 text-blue-400 shrink-0" />
         <input
           ref={inputRef}
@@ -212,14 +215,14 @@ export function AdminDesktopSearch() {
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Поиск заказов, товаров, клиентов..."
-          className="flex-1 bg-transparent text-white outline-none placeholder:text-white/35 min-w-0"
+          className={`flex-1 bg-transparent outline-none min-w-0 ${isDark ? "text-white placeholder:text-white/35" : "text-foreground placeholder:text-foreground/40"}`}
           style={{ fontSize: "16px" }}
         />
         {loading
           ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
           : query
-            ? <button onClick={() => setQuery("")} className="text-white/30 hover:text-white/60 transition-colors shrink-0"><X className="w-3.5 h-3.5" /></button>
-            : <kbd className="text-[10px] text-white/25 font-mono shrink-0">Esc</kbd>
+            ? <button onClick={() => setQuery("")} className={`${isDark ? "text-white/30 hover:text-white/60" : "text-foreground/35 hover:text-foreground/65"} transition-colors shrink-0`}><X className="w-3.5 h-3.5" /></button>
+            : <kbd className={`text-[10px] font-mono shrink-0 ${isDark ? "text-white/25" : "text-foreground/30"}`}>Esc</kbd>
         }
       </div>
 
@@ -227,14 +230,14 @@ export function AdminDesktopSearch() {
       {results.length > 0 && (
         <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: "rgba(10,14,30,0.95)",
+            background: isDark ? "rgba(10,14,30,0.96)" : "rgba(255,252,248,0.97)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+            border: isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(0,0,0,0.08)",
+            boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.55)" : "0 16px 48px rgba(0,0,0,0.12)",
           }}>
           {!query.trim() && (
-            <p className="px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
+            <p className={`px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] ${isDark ? "text-white/25" : "text-foreground/35"}`}>
               Быстрый переход
             </p>
           )}
@@ -243,10 +246,10 @@ export function AdminDesktopSearch() {
               <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
             ))}
           </div>
-          <div className="px-5 py-2 flex items-center gap-4 text-[10px] text-white/20"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↑↓</kbd> навигация</span>
-            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↵</kbd> открыть</span>
+          <div className={`px-5 py-2 flex items-center gap-4 text-[10px] ${isDark ? "text-white/20" : "text-foreground/30"}`}
+            style={{ borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)" }}>
+            <span><kbd className={`font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/10 text-white/30" : "bg-black/06 text-foreground/35"}`}>↑↓</kbd> навигация</span>
+            <span><kbd className={`font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/10 text-white/30" : "bg-black/06 text-foreground/35"}`}>↵</kbd> открыть</span>
             <span className="ml-auto opacity-40">⌘K</span>
           </div>
         </div>
@@ -261,6 +264,8 @@ export function AdminSearch() {
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(open);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
 
   // Cmd+K / Ctrl+K
   useEffect(() => {
@@ -303,14 +308,14 @@ export function AdminSearch() {
           <div className="fixed inset-x-0 top-0 z-[61] flex justify-center px-3 pt-3 pointer-events-none">
             <div className="w-full max-w-2xl pointer-events-auto rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(10,14,30,0.96)",
+                background: isDark ? "rgba(10,14,30,0.97)" : "rgba(255,252,248,0.97)",
                 backdropFilter: "blur(32px) saturate(200%)",
                 WebkitBackdropFilter: "blur(32px) saturate(200%)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset",
+                border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.08)",
+                boxShadow: isDark ? "0 32px 80px rgba(0,0,0,0.55)" : "0 24px 64px rgba(0,0,0,0.14)",
               }}>
               <div className="flex items-center gap-3 px-4 py-3.5"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                style={{ borderBottom: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.06)" }}>
                 <Search className="w-5 h-5 text-blue-400/70 shrink-0" />
                 <input
                   ref={inputRef}
@@ -318,15 +323,15 @@ export function AdminSearch() {
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={handleKey}
                   placeholder="Поиск заказов, товаров, клиентов..."
-                  className="flex-1 bg-transparent text-white outline-none placeholder:text-white/30"
+                  className={`flex-1 bg-transparent outline-none ${isDark ? "text-white placeholder:text-white/30" : "text-foreground placeholder:text-foreground/40"}`}
                   style={{ fontSize: "16px" /* предотвращает зум на iOS */ }}
                 />
                 {loading && (
                   <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
                 )}
                 <button onClick={() => setOpen(false)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${isDark ? "text-white/30 hover:text-white/60" : "text-foreground/40 hover:text-foreground/70"}`}
+                  style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)", border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)" }}>
                   <span className="text-[10px] font-mono">Esc</span>
                 </button>
               </div>

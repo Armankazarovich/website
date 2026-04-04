@@ -57,6 +57,8 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   const prevOrderCount = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -130,22 +132,22 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-[70] w-80 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200"
           style={{
-            background: "rgba(10,14,30,0.96)",
+            background: isDark ? "rgba(10,14,30,0.96)" : "rgba(255,252,248,0.97)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset",
+            border: isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(0,0,0,0.08)",
+            boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.55)" : "0 16px 48px rgba(0,0,0,0.12)",
           }}>
 
           {/* Panel header */}
           <div className="px-4 py-3 flex items-center justify-between"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            style={{ borderBottom: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.06)" }}>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #f59e0b33, #f59e0b11)" }}>
                 <Bell className="w-3.5 h-3.5 text-amber-400" />
               </div>
-              <p className="text-sm font-semibold text-white">Уведомления</p>
+              <p className={`text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>Уведомления</p>
             </div>
             <div className="flex items-center gap-2">
               {count > 0 && (
@@ -154,8 +156,8 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
                   {count} новых
                 </span>
               )}
-              <button onClick={() => setOpen(false)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-                <X className="w-3.5 h-3.5 text-white/40" />
+              <button onClick={() => setOpen(false)} className={`w-6 h-6 rounded-lg flex items-center justify-center transition-colors ${isDark ? "hover:bg-white/10" : "hover:bg-black/06"}`}>
+                <X className={`w-3.5 h-3.5 ${isDark ? "text-white/40" : "text-foreground/40"}`} />
               </button>
             </div>
           </div>
@@ -169,32 +171,32 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
             ) : orders.length === 0 ? (
               <div className="text-center py-10 px-4">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: "rgba(255,255,255,0.05)" }}>
-                  <Bell className="w-6 h-6 text-white/15" />
+                  style={{ background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+                  <Bell className={`w-6 h-6 ${isDark ? "text-white/15" : "text-foreground/20"}`} />
                 </div>
-                <p className="text-sm font-medium text-white/40">Нет новых уведомлений</p>
-                <p className="text-[11px] text-white/20 mt-1">Все заказы обработаны</p>
+                <p className={`text-sm font-medium ${isDark ? "text-white/40" : "text-foreground/50"}`}>Нет новых уведомлений</p>
+                <p className={`text-[11px] mt-1 ${isDark ? "text-white/20" : "text-foreground/35"}`}>Все заказы обработаны</p>
               </div>
             ) : (
               <div className="p-2 space-y-1">
                 {orders.slice(0, 5).map((order: any) => (
                   <button key={order.id}
                     onClick={() => { router.push(`/admin/orders/${order.id}`); setOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.07] transition-colors group">
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors group ${isDark ? "hover:bg-white/[0.07]" : "hover:bg-black/[0.04]"}`}>
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary)/0.08))" }}>
                       <ShoppingBag className="w-4 h-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white/85">
+                      <p className={`text-sm font-semibold ${isDark ? "text-white/85" : "text-foreground/90"}`}>
                         Заказ #{order.orderNumber}
                       </p>
-                      <p className="text-[11px] text-white/40 truncate">
+                      <p className={`text-[11px] truncate ${isDark ? "text-white/40" : "text-foreground/50"}`}>
                         {order.clientName || "Клиент"}
                         {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽` : ""}
                       </p>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-white/20 group-hover:text-primary/60 transition-colors shrink-0" />
+                    <ArrowRight className={`w-3.5 h-3.5 group-hover:text-primary/60 transition-colors shrink-0 ${isDark ? "text-white/20" : "text-foreground/25"}`} />
                   </button>
                 ))}
               </div>
@@ -202,10 +204,10 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="px-4 py-2.5" style={{ borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)" }}>
             <button
               onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-              className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-white/[0.07]"
+              className={`w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors ${isDark ? "hover:bg-white/[0.07]" : "hover:bg-black/[0.04]"}`}
               style={{ color: "hsl(var(--primary))" }}>
               Все новые заказы →
             </button>
@@ -257,21 +259,21 @@ function AdminDesktopSettings() {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-[70] w-72 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-150"
           style={{
-            background: "rgba(10,14,30,0.97)",
+            background: classic ? "rgba(10,14,30,0.97)" : isDark ? "rgba(10,14,30,0.97)" : "rgba(255,252,248,0.97)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset",
+            border: isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(0,0,0,0.08)",
+            boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.55)" : "0 16px 48px rgba(0,0,0,0.12)",
           }}>
 
           {/* Заголовок панели */}
           <div className="px-4 py-3 flex items-center gap-2.5"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            style={{ borderBottom: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.06)" }}>
             <div className="w-7 h-7 rounded-xl flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.08))" }}>
               <Settings className="w-3.5 h-3.5 text-primary" />
             </div>
-            <p className="text-sm font-semibold text-white/85">Настройки</p>
+            <p className={`text-sm font-semibold ${isDark ? "text-white/85" : "text-foreground"}`}>Настройки</p>
           </div>
 
           {/* Контент */}
@@ -279,23 +281,23 @@ function AdminDesktopSettings() {
 
             {/* Язык */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Язык / Language</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-2.5 ${isDark ? "text-white/35" : "text-foreground/45"}`}>Язык / Language</p>
               <AdminLangPickerInline />
             </div>
 
             {/* Шрифт */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Размер шрифта</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-2.5 ${isDark ? "text-white/35" : "text-foreground/45"}`}>Размер шрифта</p>
               <MobileFontControl />
             </div>
 
             {/* Тема */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Тема оформления</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-2.5 ${isDark ? "text-white/35" : "text-foreground/45"}`}>Тема оформления</p>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all hover:bg-white/[0.06]"
-                style={{ background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.08)" }}>
+                className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all ${isDark ? "hover:bg-white/[0.06]" : "hover:bg-black/[0.04]"}`}
+                style={{ background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)", border: isDark ? "1.5px solid rgba(255,255,255,0.08)" : "1.5px solid rgba(0,0,0,0.07)" }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
                   {theme === "dark"
@@ -303,20 +305,20 @@ function AdminDesktopSettings() {
                     : <Moon className="w-4 h-4 text-violet-400" />}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-white/80">{theme === "dark" ? "Тёмная тема" : "Светлая тема"}</p>
-                  <p className="text-[11px] text-white/30">Нажми для переключения</p>
+                  <p className={`text-sm font-medium ${isDark ? "text-white/80" : "text-foreground/85"}`}>{theme === "dark" ? "Тёмная тема" : "Светлая тема"}</p>
+                  <p className={`text-[11px] ${isDark ? "text-white/30" : "text-foreground/40"}`}>Нажми для переключения</p>
                 </div>
                 <div className="relative w-10 h-[22px] rounded-full flex-shrink-0"
-                  style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : "rgba(0,0,0,0.12)", border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(0,0,0,0.1)" }}>
                   <div className="absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200"
-                    style={{ background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)", left: theme === "dark" ? "calc(100% - 19px)" : "3px" }} />
+                    style={{ background: "hsl(var(--primary))", left: theme === "dark" ? "calc(100% - 19px)" : "3px" }} />
                 </div>
               </button>
             </div>
 
             {/* Фон панели */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Оформление</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-2.5 ${isDark ? "text-white/35" : "text-foreground/45"}`}>Оформление</p>
               <button
                 onClick={toggleClassic}
                 className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all hover:bg-white/[0.06]"
@@ -339,19 +341,19 @@ function AdminDesktopSettings() {
 
             {/* Палитра */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Цветовая палитра</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-2.5 ${isDark ? "text-white/35" : "text-foreground/45"}`}>Цветовая палитра</p>
               <div className="grid grid-cols-4 gap-1.5">
                 {PALETTES.map((p) => (
                   <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
                     className="flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all"
                     style={
                       palette === p.id
-                        ? { border: "2px solid rgba(255,255,255,0.85)", background: "rgba(255,255,255,0.10)" }
-                        : { border: "1.5px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.04)" }
+                        ? { border: isDark ? "2px solid rgba(255,255,255,0.85)" : "2px solid hsl(var(--primary)/0.7)", background: isDark ? "rgba(255,255,255,0.10)" : "hsl(var(--primary)/0.08)" }
+                        : { border: isDark ? "1.5px solid rgba(255,255,255,0.07)" : "1.5px solid rgba(0,0,0,0.07)", background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)" }
                     }>
                     <div className="w-6 h-6 rounded-lg"
                       style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                    <span className="text-[9px] font-medium text-white/40 truncate w-full text-center px-0.5">{p.name}</span>
+                    <span className={`text-[9px] font-medium truncate w-full text-center px-0.5 ${isDark ? "text-white/40" : "text-foreground/55"}`}>{p.name}</span>
                   </button>
                 ))}
               </div>
