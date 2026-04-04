@@ -1,10 +1,41 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Languages } from "lucide-react";
+import { Languages, Check } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
 
+// ─── Inline language picker (for mobile settings panel) ─────────────────────
+export function AdminLangPickerInline() {
+  const { lang, setLang } = useAdminLang();
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {ADMIN_LANGUAGES.map(l => (
+        <button
+          key={l.code}
+          onClick={() => setLang(l.code)}
+          className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all text-center relative"
+          style={
+            lang === l.code
+              ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
+              : { background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.08)" }
+          }
+        >
+          <span className="text-2xl leading-none">{l.flag}</span>
+          <span className="text-[10px] font-medium text-white/70 leading-tight">{l.label}</span>
+          {lang === l.code && (
+            <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center"
+              style={{ background: "hsl(var(--primary))" }}>
+              <Check className="w-2 h-2 text-white" />
+            </span>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Dropdown lang picker (for desktop topbar) ───────────────────────────────
 export function AdminLangPicker() {
   const { lang, setLang } = useAdminLang();
   const [open, setOpen] = useState(false);
@@ -30,42 +61,56 @@ export function AdminLangPicker() {
       <button
         onClick={() => setOpen(o => !o)}
         title="Язык / Language"
-        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors aray-icon-spin
-          ${open ? "bg-muted text-foreground" : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"}`}
+        className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110
+          ${open ? "bg-emerald-500/20 ring-2 ring-emerald-400/30" : "hover:bg-emerald-500/15"}`}
       >
         {current ? (
           <span className="text-base leading-none">{current.flag}</span>
         ) : (
-          <Languages className="w-4 h-4" />
+          <Languages className="w-4 h-4 text-emerald-400" />
         )}
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 z-50
-          bg-card border border-border rounded-2xl shadow-xl overflow-hidden
-          animate-in slide-in-from-top-2 fade-in duration-150 w-52 max-h-[70vh] overflow-y-auto">
+        <div className="absolute top-full right-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-150"
+          style={{
+            background: "rgba(10,14,30,0.95)",
+            backdropFilter: "blur(32px) saturate(200%)",
+            WebkitBackdropFilter: "blur(32px) saturate(200%)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "20px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            width: "260px",
+          }}>
 
-          <div className="px-3 pt-2.5 pb-1.5 border-b border-border">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-              {lang === "ar" ? "اللغة" : "Язык / Language"}
+          <div className="px-4 pt-3 pb-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+              Язык / Language
             </p>
           </div>
 
-          <div className="p-1.5 grid grid-cols-1 gap-0.5">
+          {/* Card grid */}
+          <div className="p-3 grid grid-cols-3 gap-2">
             {ADMIN_LANGUAGES.map(l => (
               <button
                 key={l.code}
                 onClick={() => pick(l.code)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors text-left
-                  ${lang === l.code
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
+                className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-all text-center relative group"
+                style={
+                  lang === l.code
+                    ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
+                    : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.08)" }
+                }
               >
-                <span className="text-base leading-none shrink-0">{l.flag}</span>
-                <span className="text-xs font-medium">{l.label}</span>
+                <span className="text-2xl leading-none group-hover:scale-110 transition-transform">{l.flag}</span>
+                <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? "text-white/90" : "text-white/55"}`}>
+                  {l.label}
+                </span>
                 {lang === l.code && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-foreground/70 shrink-0" />
+                  <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center"
+                    style={{ background: "hsl(var(--primary))" }}>
+                    <Check className="w-2 h-2 text-white" />
+                  </span>
                 )}
               </button>
             ))}

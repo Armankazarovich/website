@@ -43,32 +43,17 @@ type SearchResult =
   | { type: "product"; href: string; label: string; sub: string }
   | { type: "client";  href: string; label: string; sub: string };
 
-export function AdminSearch() {
-  const [open, setOpen] = useState(false);
+// ─── Shared search logic hook ───────────────────────────────────────────────
+function useSearchLogic(active: boolean) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(0);
-  const router = useRouter();
-  const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cmd+K / Ctrl+K
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(true); }
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      setTimeout(() => inputRef.current?.focus(), 60);
-      setQuery(""); setResults([]); setSelected(0);
-    }
-  }, [open]);
+    if (!active) { setQuery(""); setResults([]); return; }
+  }, [active]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -108,49 +93,223 @@ export function AdminSearch() {
     }, 250);
   }, [query]);
 
+  return { query, setQuery, results, loading, selected, setSelected };
+}
+
+// ─── Result item renderer ───────────────────────────────────────────────────
+function ResultItem({
+  r, i, selected, onSelect, onGo, dark,
+}: {
+  r: SearchResult; i: number; selected: number;
+  onSelect: (i: number) => void; onGo: (r: SearchResult) => void;
+  dark?: boolean;
+}) {
+  const isActive = i === selected;
+  return (
+    <button
+      key={i}
+      onClick={() => onGo(r)}
+      onMouseEnter={() => onSelect(i)}
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+      style={{
+        background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+        borderLeft: isActive ? "2px solid hsl(var(--primary))" : "2px solid transparent",
+      }}
+    >
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+        style={{ background: isActive ? "hsl(var(--primary)/0.2)" : "rgba(255,255,255,0.07)" }}>
+        {r.type === "page"    && <r.icon className="w-3.5 h-3.5 text-white/60" />}
+        {r.type === "order"   && <Hash className="w-3.5 h-3.5 text-blue-400" />}
+        {r.type === "product" && <Package className="w-3.5 h-3.5 text-orange-400" />}
+        {r.type === "client"  && <UserCircle className="w-3.5 h-3.5 text-emerald-400" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-white/90 truncate">{r.label}</p>
+        {"sub" in r && r.sub && (
+          <p className="text-[11px] text-white/40 truncate">{r.sub}</p>
+        )}
+        {r.type === "page" && (
+          <p className="text-[10px] text-white/25">{r.group}</p>
+        )}
+      </div>
+      <div className="shrink-0 flex items-center gap-1.5">
+        {r.type === "order" && (
+          <span className="text-[10px] text-white/40 px-1.5 py-0.5 rounded-full"
+            style={{ background: "rgba(255,255,255,0.08)" }}>{r.status}</span>
+        )}
+        <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isActive ? "opacity-50 text-primary" : "opacity-0"}`} />
+      </div>
+    </button>
+  );
+}
+
+// ─── Desktop inline search (expands in topbar) ──────────────────────────────
+export function AdminDesktopSearch() {
+  const [expanded, setExpanded] = useState(false);
+  const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(expanded);
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Click outside → close
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setExpanded(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  // Cmd+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setExpanded(true); }
+      if (e.key === "Escape" && expanded) setExpanded(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [expanded]);
+
+  useEffect(() => {
+    if (expanded) setTimeout(() => inputRef.current?.focus(), 60);
+  }, [expanded]);
+
+  const go = useCallback((r: SearchResult) => {
+    router.push(r.href); setExpanded(false);
+  }, [router]);
+
   const handleKey = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setSelected(s => Math.min(s + 1, results.length - 1)); }
     if (e.key === "ArrowUp")   { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)); }
-    if (e.key === "Enter" && results[selected]) {
-      router.push(results[selected].href); setOpen(false);
-    }
-  }, [results, selected, router]);
+    if (e.key === "Enter" && results[selected]) go(results[selected]);
+    if (e.key === "Escape") setExpanded(false);
+  }, [results, selected, go, setSelected]);
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => setExpanded(true)}
+        title="Поиск (⌘K)"
+        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-blue-500/15 transition-all group relative"
+      >
+        <Search className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+        <span className="absolute inset-0 rounded-xl group-hover:ring-2 ring-blue-400/25 transition-all" />
+      </button>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="flex-1 flex items-center relative mx-1 animate-in slide-in-from-right-3 fade-in duration-200">
+      {/* Input bar */}
+      <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
+        style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.14)" }}>
+        <Search className="w-4 h-4 text-blue-400 shrink-0" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={handleKey}
+          placeholder="Поиск заказов, товаров, клиентов..."
+          className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/35 min-w-0"
+        />
+        {loading
+          ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
+          : query
+            ? <button onClick={() => setQuery("")} className="text-white/30 hover:text-white/60 transition-colors shrink-0"><X className="w-3.5 h-3.5" /></button>
+            : <kbd className="text-[10px] text-white/25 font-mono shrink-0">Esc</kbd>
+        }
+      </div>
+
+      {/* Results dropdown */}
+      {results.length > 0 && (
+        <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
+          style={{
+            background: "rgba(10,14,30,0.95)",
+            backdropFilter: "blur(32px) saturate(200%)",
+            WebkitBackdropFilter: "blur(32px) saturate(200%)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+          }}>
+          {!query.trim() && (
+            <p className="px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
+              Быстрый переход
+            </p>
+          )}
+          <div className="py-1.5 max-h-[360px] overflow-y-auto">
+            {results.map((r, i) => (
+              <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+            ))}
+          </div>
+          <div className="px-5 py-2 flex items-center gap-4 text-[10px] text-white/20"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↑↓</kbd> навигация</span>
+            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↵</kbd> открыть</span>
+            <span className="ml-auto opacity-40">⌘K</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Mobile / Cmd+K modal search ─────────────────────────────────────────────
+export function AdminSearch() {
+  const [open, setOpen] = useState(false);
+  const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(open);
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Cmd+K / Ctrl+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") { e.preventDefault(); setOpen(true); }
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  useEffect(() => {
+    if (open) setTimeout(() => inputRef.current?.focus(), 60);
+  }, [open]);
+
+  const go = useCallback((r: SearchResult) => {
+    router.push(r.href); setOpen(false);
+  }, [router]);
+
+  const handleKey = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setSelected(s => Math.min(s + 1, results.length - 1)); }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)); }
+    if (e.key === "Enter" && results[selected]) go(results[selected]);
+  }, [results, selected, go, setSelected]);
 
   return (
     <>
-      {/* ── Compact trigger button ── */}
       <button
         onClick={() => setOpen(true)}
-        title="Поиск (⌘K)"
-        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground aray-icon-spin"
+        title="Поиск"
+        className="p-2 rounded-xl hover:bg-white/10 transition-colors relative shrink-0"
       >
-        <Search className="w-4 h-4" />
+        <Search className="w-[18px] h-[18px] text-blue-400" />
       </button>
 
-      {/* ── Full-screen overlay ── */}
       {open && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md"
-            onClick={() => setOpen(false)}
-          />
-
-          {/* Command palette */}
-          <div className="fixed inset-x-0 top-[10%] z-[61] flex justify-center px-4 pointer-events-none">
-            <div
-              className="w-full max-w-2xl pointer-events-auto rounded-2xl overflow-hidden"
+          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-md" onClick={() => setOpen(false)} />
+          <div className="fixed inset-x-0 top-[8%] z-[61] flex justify-center px-4 pointer-events-none">
+            <div className="w-full max-w-2xl pointer-events-auto rounded-2xl overflow-hidden"
               style={{
-                background: "rgba(10, 14, 30, 0.88)",
+                background: "rgba(10,14,30,0.92)",
                 backdropFilter: "blur(32px) saturate(200%)",
                 WebkitBackdropFilter: "blur(32px) saturate(200%)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset",
-              }}
-            >
-              {/* Input row */}
-              <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <Search className="w-5 h-5 text-white/40 shrink-0" />
+              }}>
+              <div className="flex items-center gap-3 px-5 py-4"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <Search className="w-5 h-5 text-blue-400/70 shrink-0" />
                 <input
                   ref={inputRef}
                   value={query}
@@ -160,71 +319,27 @@ export function AdminSearch() {
                   className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/30"
                 />
                 {loading && (
-                  <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+                  <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
                 )}
-                <button
-                  onClick={() => setOpen(false)}
+                <button onClick={() => setOpen(false)}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
-                >
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[10px] font-mono">Esc</span>
                 </button>
               </div>
-
-              {/* Results */}
               <div className="max-h-[420px] overflow-y-auto py-2">
                 {results.length === 0 && !loading && query.trim() && (
                   <p className="text-center text-sm text-white/30 py-10">Ничего не найдено</p>
                 )}
-
                 {!query.trim() && (
                   <p className="px-5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
                     Быстрый переход
                   </p>
                 )}
-
-                {results.map((r, i) => {
-                  const isActive = i === selected;
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => { router.push(r.href); setOpen(false); }}
-                      onMouseEnter={() => setSelected(i)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                      style={{
-                        background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
-                        borderLeft: isActive ? "2px solid hsl(var(--primary))" : "2px solid transparent",
-                      }}
-                    >
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: isActive ? "hsl(var(--primary)/0.2)" : "rgba(255,255,255,0.07)" }}>
-                        {r.type === "page"    && <r.icon className="w-3.5 h-3.5 text-white/60" />}
-                        {r.type === "order"   && <Hash className="w-3.5 h-3.5 text-blue-400" />}
-                        {r.type === "product" && <Package className="w-3.5 h-3.5 text-orange-400" />}
-                        {r.type === "client"  && <UserCircle className="w-3.5 h-3.5 text-emerald-400" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/90 truncate">{r.label}</p>
-                        {"sub" in r && r.sub && (
-                          <p className="text-[11px] text-white/40 truncate">{r.sub}</p>
-                        )}
-                        {r.type === "page" && (
-                          <p className="text-[10px] text-white/25">{r.group}</p>
-                        )}
-                      </div>
-                      <div className="shrink-0 flex items-center gap-1.5">
-                        {r.type === "order" && (
-                          <span className="text-[10px] text-white/40 px-1.5 py-0.5 rounded-full"
-                            style={{ background: "rgba(255,255,255,0.08)" }}>{r.status}</span>
-                        )}
-                        <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isActive ? "opacity-50 text-primary" : "opacity-0"}`} />
-                      </div>
-                    </button>
-                  );
-                })}
+                {results.map((r, i) => (
+                  <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+                ))}
               </div>
-
-              {/* Footer */}
               <div className="px-5 py-2.5 flex items-center gap-4 text-[10px] text-white/20"
                 style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
                 <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↑↓</kbd> навигация</span>

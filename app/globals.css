@@ -546,6 +546,16 @@
   50%       { transform: translateY(-3px); opacity: 0.7; }
 }
 
+/* Колокол уведомлений — небольшое покачивание */
+@keyframes bell-ring {
+  0%, 85%, 100% { transform: rotate(0deg); }
+  10%  { transform: rotate(14deg); }
+  20%  { transform: rotate(-12deg); }
+  30%  { transform: rotate(10deg); }
+  40%  { transform: rotate(-8deg); }
+  50%  { transform: rotate(4deg); }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
