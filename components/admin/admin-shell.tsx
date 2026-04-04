@@ -336,11 +336,13 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </div>
 
-      {/* ─── Mobile drawer overlay — визуальное затемнение, закрытие через document ── */}
+      {/* ─── Mobile drawer overlay — двойная защита: и прямой обработчик и document ── */}
       {open && (
         <div
           className="lg:hidden fixed inset-0 z-[49]"
           style={{ background: "rgba(0,0,0,0.55)" }}
+          onMouseDown={(e) => { e.stopPropagation(); setOpen(false); }}
+          onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }}
         />
       )}
 
