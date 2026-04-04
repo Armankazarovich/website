@@ -614,9 +614,9 @@ canvas,
 .aray-nature-mode .aray-stat-card {
   backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
   -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.30) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.22) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
@@ -683,7 +683,7 @@ canvas,
 .aray-nature-mode .bg-background .text-muted-foreground,
 .aray-nature-mode .aray-stat-card .text-muted-foreground,
 .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.48) !important;
+  color: rgba(255, 255, 255, 0.58) !important;
 }
 
 /* ── СВЕТЛАЯ ТЕМА: витражное стекло — цвет палитры ── */

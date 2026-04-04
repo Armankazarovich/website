@@ -134,7 +134,7 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
                 />
                 {badgeCount > 0 && (
                   <span
-                    className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-0.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none"
+                    className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-0.5 rounded-full text-[10px] font-bold text-white flex items-center justify-center leading-none"
                     style={{
                       background: "linear-gradient(135deg, #ef4444, #dc2626)",
                       boxShadow: "0 2px 6px rgba(239,68,68,0.5)",
@@ -147,9 +147,9 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
 
               {/* Label */}
               <span
-                className="text-[9px] font-bold leading-none mt-1.5 z-10 transition-all duration-200"
+                className="text-[10px] font-semibold leading-none mt-1.5 z-10 transition-all duration-200"
                 style={{
-                  color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.42)",
+                  color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.62)",
                   letterSpacing: "0.02em",
                 }}
               >

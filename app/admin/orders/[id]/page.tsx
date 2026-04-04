@@ -90,7 +90,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Статус заказа</h2>
           <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Создан: {formatDate(order.createdAt)}
           </p>
         </div>
@@ -107,7 +107,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Адрес</p>
+                <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Адрес</p>
                 <p>{order.deliveryAddress}</p>
               </div>
             </div>
@@ -115,7 +115,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
           <div className="flex items-start gap-2">
             <CreditCard className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs text-muted-foreground mb-0.5">Оплата</p>
+              <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Оплата</p>
               <p>{order.paymentMethod}</p>
             </div>
           </div>
@@ -123,7 +123,7 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             <div className="flex items-start gap-2">
               <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Комментарий</p>
+                <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Комментарий</p>
                 <p>{order.comment}</p>
               </div>
             </div>
