@@ -2,7 +2,7 @@
 // Стратегии: CacheFirst для статики, NetworkFirst для HTML/API
 // Версия: меняй CACHE_VERSION при каждом деплое для сброса кэша
 
-var CACHE_VERSION = 'aray-v2';
+var CACHE_VERSION = 'aray-v3';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var IMAGE_CACHE   = CACHE_VERSION + '-images';
 var PAGE_CACHE    = CACHE_VERSION + '-pages';
@@ -168,4 +168,11 @@ self.addEventListener('notificationclick', function(event) {
       return clients.openWindow(url);
     })
   );
+});
+
+// ── SKIP_WAITING — мгновенная активация нового SW ────────────────────────────
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

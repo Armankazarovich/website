@@ -697,16 +697,16 @@ canvas,
 }
 
 /* ── СВЕТЛАЯ ТЕМА: витражное стекло — цвет палитры ── */
-.light .aray-nature-mode .bg-card,
-[data-theme="light"] .aray-nature-mode .bg-card,
-.light .aray-nature-mode .bg-popover,
-[data-theme="light"] .aray-nature-mode .bg-popover,
-.light .aray-nature-mode .bg-background,
-[data-theme="light"] .aray-nature-mode .bg-background,
-.light .aray-nature-mode .bg-white,
-[data-theme="light"] .aray-nature-mode .bg-white,
-.light .aray-nature-mode .aray-stat-card,
-[data-theme="light"] .aray-nature-mode .aray-stat-card {
+html:not(.dark) .aray-nature-mode .bg-card,
+html:not(.dark) .aray-nature-mode .bg-card,
+html:not(.dark) .aray-nature-mode .bg-popover,
+html:not(.dark) .aray-nature-mode .bg-popover,
+html:not(.dark) .aray-nature-mode .bg-background,
+html:not(.dark) .aray-nature-mode .bg-background,
+html:not(.dark) .aray-nature-mode .bg-white,
+html:not(.dark) .aray-nature-mode .bg-white,
+html:not(.dark) .aray-nature-mode .aray-stat-card,
+html:not(.dark) .aray-nature-mode .aray-stat-card {
   backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
   -webkit-backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
   background: linear-gradient(135deg, hsl(var(--primary) / 0.32) 0%, hsl(var(--primary) / 0.14) 55%, rgba(255,255,255,0.06) 100%) !important;
@@ -715,50 +715,50 @@ canvas,
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Светлая тема — то же исключение для маленьких иконок w-8/h-8 */
-.light .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.light .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
+html:not(.dark) .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+html:not(.dark) .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
   backdrop-filter: blur(22px) saturate(220%) brightness(0.88) !important;
   -webkit-backdrop-filter: blur(22px) saturate(220%) brightness(0.88) !important;
   background: linear-gradient(135deg, hsl(var(--primary) / 0.28) 0%, hsl(var(--primary) / 0.10) 60%, rgba(255,255,255,0.05) 100%) !important;
@@ -766,56 +766,56 @@ canvas,
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Светлая тема — текст белый (витраж = тёмный эффект за счёт природы) */
-.light .aray-nature-mode .bg-card p,
-.light .aray-nature-mode .bg-card h1,
-.light .aray-nature-mode .bg-card h2,
-.light .aray-nature-mode .bg-card h3,
-.light .aray-nature-mode .bg-card .text-foreground,
-.light .aray-nature-mode .bg-card strong,
-.light .aray-nature-mode .bg-white p,
-.light .aray-nature-mode .bg-white h1,
-.light .aray-nature-mode .bg-white h2,
-.light .aray-nature-mode .bg-white h3,
-.light .aray-nature-mode .bg-white .text-foreground,
-.light .aray-nature-mode .bg-white strong,
-.light .aray-nature-mode .bg-background p,
-.light .aray-nature-mode .bg-background h1,
-.light .aray-nature-mode .bg-background h2,
-.light .aray-nature-mode .bg-background h3,
-.light .aray-nature-mode .bg-background .text-foreground,
-.light .aray-nature-mode .bg-background strong,
-.light .aray-nature-mode .aray-stat-card p,
-.light .aray-nature-mode .aray-stat-card h1,
-.light .aray-nature-mode .aray-stat-card h2,
-.light .aray-nature-mode .aray-stat-card h3,
-.light .aray-nature-mode .aray-stat-card .text-foreground,
-.light .aray-nature-mode .aray-stat-card strong,
-[data-theme="light"] .aray-nature-mode .bg-card p,
-[data-theme="light"] .aray-nature-mode .bg-card h1,
-[data-theme="light"] .aray-nature-mode .bg-card h2,
-[data-theme="light"] .aray-nature-mode .bg-card h3,
-[data-theme="light"] .aray-nature-mode .bg-card .text-foreground,
-[data-theme="light"] .aray-nature-mode .bg-white p,
-[data-theme="light"] .aray-nature-mode .bg-white .text-foreground,
-[data-theme="light"] .aray-nature-mode .bg-background p,
-[data-theme="light"] .aray-nature-mode .bg-background h1,
-[data-theme="light"] .aray-nature-mode .bg-background h2,
-[data-theme="light"] .aray-nature-mode .bg-background h3,
-[data-theme="light"] .aray-nature-mode .bg-background .text-foreground,
-[data-theme="light"] .aray-nature-mode .aray-stat-card p,
-[data-theme="light"] .aray-nature-mode .aray-stat-card .text-foreground {
+html:not(.dark) .aray-nature-mode .bg-card p,
+html:not(.dark) .aray-nature-mode .bg-card h1,
+html:not(.dark) .aray-nature-mode .bg-card h2,
+html:not(.dark) .aray-nature-mode .bg-card h3,
+html:not(.dark) .aray-nature-mode .bg-card .text-foreground,
+html:not(.dark) .aray-nature-mode .bg-card strong,
+html:not(.dark) .aray-nature-mode .bg-white p,
+html:not(.dark) .aray-nature-mode .bg-white h1,
+html:not(.dark) .aray-nature-mode .bg-white h2,
+html:not(.dark) .aray-nature-mode .bg-white h3,
+html:not(.dark) .aray-nature-mode .bg-white .text-foreground,
+html:not(.dark) .aray-nature-mode .bg-white strong,
+html:not(.dark) .aray-nature-mode .bg-background p,
+html:not(.dark) .aray-nature-mode .bg-background h1,
+html:not(.dark) .aray-nature-mode .bg-background h2,
+html:not(.dark) .aray-nature-mode .bg-background h3,
+html:not(.dark) .aray-nature-mode .bg-background .text-foreground,
+html:not(.dark) .aray-nature-mode .bg-background strong,
+html:not(.dark) .aray-nature-mode .aray-stat-card p,
+html:not(.dark) .aray-nature-mode .aray-stat-card h1,
+html:not(.dark) .aray-nature-mode .aray-stat-card h2,
+html:not(.dark) .aray-nature-mode .aray-stat-card h3,
+html:not(.dark) .aray-nature-mode .aray-stat-card .text-foreground,
+html:not(.dark) .aray-nature-mode .aray-stat-card strong,
+html:not(.dark) .aray-nature-mode .bg-card p,
+html:not(.dark) .aray-nature-mode .bg-card h1,
+html:not(.dark) .aray-nature-mode .bg-card h2,
+html:not(.dark) .aray-nature-mode .bg-card h3,
+html:not(.dark) .aray-nature-mode .bg-card .text-foreground,
+html:not(.dark) .aray-nature-mode .bg-white p,
+html:not(.dark) .aray-nature-mode .bg-white .text-foreground,
+html:not(.dark) .aray-nature-mode .bg-background p,
+html:not(.dark) .aray-nature-mode .bg-background h1,
+html:not(.dark) .aray-nature-mode .bg-background h2,
+html:not(.dark) .aray-nature-mode .bg-background h3,
+html:not(.dark) .aray-nature-mode .bg-background .text-foreground,
+html:not(.dark) .aray-nature-mode .aray-stat-card p,
+html:not(.dark) .aray-nature-mode .aray-stat-card .text-foreground {
   color: rgba(255, 255, 255, 0.92) !important;
 }
-.light .aray-nature-mode .bg-card .text-muted-foreground,
-.light .aray-nature-mode .bg-white .text-muted-foreground,
-.light .aray-nature-mode .bg-background .text-muted-foreground,
-.light .aray-nature-mode .aray-stat-card .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode .bg-card .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode .bg-white .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode .bg-background .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode .aray-stat-card .text-muted-foreground,
-.light .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground,
-[data-theme="light"] .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground {
+html:not(.dark) .aray-nature-mode .bg-card .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .bg-white .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .bg-background .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .aray-stat-card .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .bg-card .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .bg-white .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .bg-background .text-muted-foreground,
+html:not(.dark) .aray-nature-mode .aray-stat-card .text-muted-foreground,
+html:not(.dark) .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground,
+html:not(.dark) .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground {
   color: rgba(255, 255, 255, 0.52) !important;
 }
 
@@ -845,8 +845,8 @@ canvas,
   line-height: 1;
 }
 /* Светлая тема — тот же тёмный стиль (контраст на белом фросте) */
-.light .aray-nature-mode .aray-section-title,
-[data-theme="light"] .aray-nature-mode .aray-section-title {
+html:not(.dark) .aray-nature-mode .aray-section-title,
+html:not(.dark) .aray-nature-mode .aray-section-title {
   background: rgba(5, 8, 20, 0.48);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: none;
@@ -869,10 +869,10 @@ canvas,
 .aray-nature-mode .border {
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
-.light .aray-nature-mode .border-border,
-[data-theme="light"] .aray-nature-mode .border-border,
-.light .aray-nature-mode .border,
-[data-theme="light"] .aray-nature-mode .border {
+html:not(.dark) .aray-nature-mode .border-border,
+html:not(.dark) .aray-nature-mode .border-border,
+html:not(.dark) .aray-nature-mode .border,
+html:not(.dark) .aray-nature-mode .border {
   border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -880,8 +880,8 @@ canvas,
 .aray-nature-mode .bg-muted {
   background: rgba(255, 255, 255, 0.06) !important;
 }
-.light .aray-nature-mode .bg-muted,
-[data-theme="light"] .aray-nature-mode .bg-muted {
+html:not(.dark) .aray-nature-mode .bg-muted,
+html:not(.dark) .aray-nature-mode .bg-muted {
   background: rgba(0, 0, 0, 0.05) !important;
 }
 
@@ -895,12 +895,12 @@ canvas,
   color-scheme: dark !important;
 }
 /* Светлая тема — тёмный текст, светлый фон */
-.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.light .aray-nature-mode textarea,
-[data-theme="light"] .aray-nature-mode textarea,
-.light .aray-nature-mode select,
-[data-theme="light"] .aray-nature-mode select {
+html:not(.dark) .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+html:not(.dark) .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+html:not(.dark) .aray-nature-mode textarea,
+html:not(.dark) .aray-nature-mode textarea,
+html:not(.dark) .aray-nature-mode select,
+html:not(.dark) .aray-nature-mode select {
   background: rgba(0, 0, 0, 0.07) !important;
   border-color: rgba(0, 0, 0, 0.12) !important;
   color: rgba(0, 0, 0, 0.85) !important;
@@ -912,16 +912,16 @@ canvas,
   color: rgba(255, 255, 255, 0.52) !important;
 }
 /* Placeholder — светлая тема */
-.light .aray-nature-mode input::placeholder,
-.light .aray-nature-mode textarea::placeholder,
-[data-theme="light"] .aray-nature-mode input::placeholder,
-[data-theme="light"] .aray-nature-mode textarea::placeholder {
+html:not(.dark) .aray-nature-mode input::placeholder,
+html:not(.dark) .aray-nature-mode textarea::placeholder,
+html:not(.dark) .aray-nature-mode input::placeholder,
+html:not(.dark) .aray-nature-mode textarea::placeholder {
   color: rgba(0, 0, 0, 0.38) !important;
 }
 /* Select — принудительная цветовая схема */
 .aray-nature-mode select { color-scheme: dark !important; }
-.light .aray-nature-mode select,
-[data-theme="light"] .aray-nature-mode select { color-scheme: light !important; }
+html:not(.dark) .aray-nature-mode select,
+html:not(.dark) .aray-nature-mode select { color-scheme: light !important; }
 /* Select option */
 .aray-nature-mode select option {
   background: rgb(12, 16, 36) !important;
@@ -930,8 +930,8 @@ canvas,
 
 /* Email preview — явно белый фон (исключение из glass системы) */
 .aray-nature-mode .aray-email-preview,
-.light .aray-nature-mode .aray-email-preview,
-[data-theme="light"] .aray-nature-mode .aray-email-preview {
+html:not(.dark) .aray-nature-mode .aray-email-preview,
+html:not(.dark) .aray-nature-mode .aray-email-preview {
   background: #ffffff !important;
   color: #111827 !important;
   backdrop-filter: none !important;
@@ -945,8 +945,8 @@ canvas,
   background: rgba(5, 8, 20, 0.50) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-.light .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]),
-[data-theme="light"] .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
+html:not(.dark) .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]),
+html:not(.dark) .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
   backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
   -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
   background: rgba(5, 8, 20, 0.38) !important;
@@ -957,8 +957,8 @@ canvas,
 .aray-nature-mode .divide-border > * + * {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
-.light .aray-nature-mode .divide-border > * + *,
-[data-theme="light"] .aray-nature-mode .divide-border > * + * {
+html:not(.dark) .aray-nature-mode .divide-border > * + *,
+html:not(.dark) .aray-nature-mode .divide-border > * + * {
   border-color: rgba(0, 0, 0, 0.06) !important;
 }
 
@@ -999,8 +999,8 @@ canvas,
 }
 
 /* Светлая тема — тот же тёмный glass (единый стиль!) */
-.light .aray-nature-card,
-[data-theme="light"] .aray-nature-card {
+html:not(.dark) .aray-nature-card,
+html:not(.dark) .aray-nature-card {
   backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
   -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
   background: linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(5, 8, 20, 0.52);
@@ -1016,12 +1016,12 @@ canvas,
 .aray-nature-mode .aray-photo-overlay-light {
   display: none;
 }
-.light .aray-nature-mode .aray-photo-overlay-dark,
-[data-theme="light"] .aray-nature-mode .aray-photo-overlay-dark {
+html:not(.dark) .aray-nature-mode .aray-photo-overlay-dark,
+html:not(.dark) .aray-nature-mode .aray-photo-overlay-dark {
   display: none;
 }
-.light .aray-nature-mode .aray-photo-overlay-light,
-[data-theme="light"] .aray-nature-mode .aray-photo-overlay-light {
+html:not(.dark) .aray-nature-mode .aray-photo-overlay-light,
+html:not(.dark) .aray-nature-mode .aray-photo-overlay-light {
   display: block;
 }
 
@@ -1054,10 +1054,10 @@ canvas,
   background: rgba(5, 8, 20, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-.light .aray-nature-mode button.aray-icon-spin,
-.light .aray-nature-mode a.aray-icon-spin,
-[data-theme="light"] .aray-nature-mode button.aray-icon-spin,
-[data-theme="light"] .aray-nature-mode a.aray-icon-spin {
+html:not(.dark) .aray-nature-mode button.aray-icon-spin,
+html:not(.dark) .aray-nature-mode a.aray-icon-spin,
+html:not(.dark) .aray-nature-mode button.aray-icon-spin,
+html:not(.dark) .aray-nature-mode a.aray-icon-spin {
   background: rgba(255, 255, 255, 0.50) !important;
   border-color: rgba(255, 255, 255, 0.65) !important;
 }
@@ -1091,22 +1091,22 @@ canvas,
 }
 
 /* Светлая тема — тот же тёмный glass (не белый) */
-.light .aray-nature-mode a.bg-card,
-.light .aray-nature-mode button.bg-card,
-.light .aray-nature-mode a.aray-nature-card,
-.light .aray-nature-mode button.aray-nature-card,
-[data-theme="light"] .aray-nature-mode a.bg-card,
-[data-theme="light"] .aray-nature-mode button.bg-card {
+html:not(.dark) .aray-nature-mode a.bg-card,
+html:not(.dark) .aray-nature-mode button.bg-card,
+html:not(.dark) .aray-nature-mode a.aray-nature-card,
+html:not(.dark) .aray-nature-mode button.aray-nature-card,
+html:not(.dark) .aray-nature-mode a.bg-card,
+html:not(.dark) .aray-nature-mode button.bg-card {
   background: rgba(5, 8, 20, 0.48) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   transition: all 0.2s ease !important;
 }
-.light .aray-nature-mode a.bg-card:hover,
-.light .aray-nature-mode button.bg-card:hover,
-.light .aray-nature-mode a.aray-nature-card:hover,
-.light .aray-nature-mode button.aray-nature-card:hover,
-[data-theme="light"] .aray-nature-mode a.bg-card:hover,
-[data-theme="light"] .aray-nature-mode button.bg-card:hover {
+html:not(.dark) .aray-nature-mode a.bg-card:hover,
+html:not(.dark) .aray-nature-mode button.bg-card:hover,
+html:not(.dark) .aray-nature-mode a.aray-nature-card:hover,
+html:not(.dark) .aray-nature-mode button.aray-nature-card:hover,
+html:not(.dark) .aray-nature-mode a.bg-card:hover,
+html:not(.dark) .aray-nature-mode button.bg-card:hover {
   background: rgba(8, 12, 32, 0.58) !important;
   border-color: rgba(255, 255, 255, 0.20) !important;
   transform: translateY(-2px);
@@ -1469,8 +1469,8 @@ html:not(.dark) .aray-nature-mode .aray-topbar-pill {
 .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span):not(input) {
   background: rgba(5, 8, 20, 0.30) !important;
 }
-.light .aray-nature-mode tr.bg-white,
-[data-theme="light"] .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span) {
+html:not(.dark) .aray-nature-mode tr.bg-white,
+html:not(.dark) .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span) {
   background: rgba(255, 255, 255, 0.65) !important;
 }
 
