@@ -12,48 +12,48 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/api/admin/pwa-icon?s=72",
+      "src": "/icons/aray-72.png",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=96",
+      "src": "/icons/aray-96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=128",
+      "src": "/icons/aray-128.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=144",
+      "src": "/icons/aray-144.png",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=152",
+      "src": "/icons/aray-152.png",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=180",
+      "src": "/icons/aray-180.png",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=192",
+      "src": "/icons/aray-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "maskable any"
     },
     {
-      "src": "/api/admin/pwa-icon?s=384",
+      "src": "/icons/aray-384.png",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "/api/admin/pwa-icon?s=512",
+      "src": "/icons/aray-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
@@ -68,14 +68,14 @@
       "short_name": "Заказы",
       "description": "Новые заказы",
       "url": "/admin/orders",
-      "icons": [{ "src": "/api/admin/pwa-icon?s=96", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/aray-96.png", "sizes": "96x96" }]
     },
     {
       "name": "Дашборд",
       "short_name": "Дашборд",
       "description": "Панель управления",
       "url": "/admin",
-      "icons": [{ "src": "/api/admin/pwa-icon?s=96", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/aray-96.png", "sizes": "96x96" }]
     }
   ]
 }

@@ -1,22 +1,3 @@
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: false,
-  skipWaiting: true,
-  disable: true,
-  runtimeCaching: [
-    {
-      urlPattern: /^https?.*/,
-      handler: 'NetworkFirst',
-      options: {
-        cacheName: 'offlineCache',
-        expiration: {
-          maxEntries: 200,
-        },
-      },
-    },
-  ],
-});
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
@@ -26,6 +7,14 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // Манифесты — без кэша (обновляются сразу)
+        source: '/:path(manifest\\.json|admin-manifest\\.json)',
+        headers: [
+          { key: 'Content-Type', value: 'application/manifest+json' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+        ],
+      },
       {
         // Service Worker — без кэша, явный тип и разрешённый scope
         source: '/sw.js',
@@ -92,4 +81,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
+module.exports = nextConfig;
