@@ -149,35 +149,21 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
 
-  // Swipe-to-open + tap/click outside-to-close (touch + mouse)
+  // Только свайп-жесты — закрытие через overlay напрямую
   const touchStartX = useRef(0);
   const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
     const onTouchEnd = (e: TouchEvent) => {
       const dx = e.changedTouches[0].clientX - touchStartX.current;
-      // Свайп от левого края → открыть
-      if (!open && touchStartX.current < 32 && dx > 60) { setOpen(true); return; }
-      // Свайп влево → закрыть
-      if (open && dx < -60) { setOpen(false); return; }
-      // Тап снаружи → закрыть (мобайл)
-      if (open && drawerRef.current) {
-        if (!drawerRef.current.contains(e.target as Node)) setOpen(false);
-      }
-    };
-    // Клик мышью снаружи → закрыть (десктоп Windows/Mac)
-    const onMouseDown = (e: MouseEvent) => {
-      if (open && drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (!open && touchStartX.current < 32 && dx > 60) setOpen(true);  // свайп → открыть
+      if (open && dx < -60) setOpen(false);                              // свайп влево → закрыть
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchend", onTouchEnd, { passive: true });
-    document.addEventListener("mousedown", onMouseDown);
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchend", onTouchEnd);
-      document.removeEventListener("mousedown", onMouseDown);
     };
   }, [open]);
 
@@ -336,13 +322,13 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </div>
 
-      {/* ─── Mobile drawer overlay — двойная защита: и прямой обработчик и document ── */}
+      {/* ─── Mobile drawer overlay ────────────────────────────── */}
       {open && (
         <div
-          className="lg:hidden fixed inset-0 z-[49]"
+          className="fixed inset-0 z-[49]"
           style={{ background: "rgba(0,0,0,0.55)" }}
-          onMouseDown={(e) => { e.stopPropagation(); setOpen(false); }}
-          onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }}
+          onTouchStart={() => setOpen(false)}
+          onMouseDown={() => setOpen(false)}
         />
       )}
 
