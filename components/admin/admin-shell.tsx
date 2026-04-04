@@ -149,7 +149,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const { palette, setPalette } = usePalette();
   const pageTitle = usePageTitle();
 
-  // Swipe-to-open + swipe-to-close (tap-outside через overlay)
+  // Swipe-to-open + tap/click outside-to-close (touch + mouse)
   const touchStartX = useRef(0);
   const drawerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -160,12 +160,24 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       if (!open && touchStartX.current < 32 && dx > 60) { setOpen(true); return; }
       // Свайп влево → закрыть
       if (open && dx < -60) { setOpen(false); return; }
+      // Тап снаружи → закрыть (мобайл)
+      if (open && drawerRef.current) {
+        if (!drawerRef.current.contains(e.target as Node)) setOpen(false);
+      }
+    };
+    // Клик мышью снаружи → закрыть (десктоп Windows/Mac)
+    const onMouseDown = (e: MouseEvent) => {
+      if (open && drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
     };
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchend", onTouchEnd, { passive: true });
+    document.addEventListener("mousedown", onMouseDown);
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("mousedown", onMouseDown);
     };
   }, [open]);
 
@@ -324,14 +336,11 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </div>
 
-      {/* ─── Mobile drawer overlay — любое касание снаружи закрывает ── */}
+      {/* ─── Mobile drawer overlay — визуальное затемнение, закрытие через document ── */}
       {open && (
-        <button
-          className="lg:hidden fixed inset-0 z-[49] w-full h-full border-0 p-0 m-0"
-          style={{ background: "rgba(0,0,0,0.55)", cursor: "default" }}
-          onClick={() => setOpen(false)}
-          onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }}
-          aria-label="Закрыть меню"
+        <div
+          className="lg:hidden fixed inset-0 z-[49]"
+          style={{ background: "rgba(0,0,0,0.55)" }}
         />
       )}
 
