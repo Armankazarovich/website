@@ -1182,7 +1182,7 @@ html:not(.dark) .aray-nature-mode .aray-sidebar button:hover {
 
 /* ── TOPBAR: тёмная тема — тёмный стеклянный фон с акцентом ── */
 .dark .aray-nature-mode .aray-topbar {
-  background: linear-gradient(90deg, hsl(var(--primary)/0.12) 0%, rgba(8,12,30,0.90) 55%) !important;
+  background: linear-gradient(90deg, rgba(8,12,30,0.88) 0%, rgba(8,12,30,0.94) 100%) !important;
   backdrop-filter: blur(28px) saturate(200%);
   -webkit-backdrop-filter: blur(28px) saturate(200%);
   border-bottom: 1px solid hsl(var(--primary)/0.22) !important;
@@ -1218,7 +1218,7 @@ html:not(.dark) .aray-nature-mode .aray-sidebar button:hover {
 
 /* ── TOPBAR: светлая тема (next-themes не добавляет .light, только убирает .dark) ── */
 html:not(.dark) .aray-nature-mode .aray-topbar {
-  background: linear-gradient(90deg, hsl(var(--primary)/0.07) 0%, rgba(255,252,248,0.96) 45%) !important;
+  background: rgba(255, 252, 248, 0.94) !important;
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border-bottom: 1px solid hsl(var(--primary)/0.16) !important;
