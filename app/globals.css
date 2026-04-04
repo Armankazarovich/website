@@ -1134,14 +1134,14 @@ html:not(.dark) .aray-nature-mode .aray-sidebar a * {
 html:not(.dark) .aray-nature-mode .aray-sidebar a:hover,
 html:not(.dark) .aray-nature-mode .aray-sidebar a:hover * {
   color: hsl(var(--foreground)) !important;
-  background: rgba(232, 112, 10, 0.09) !important;
-  border-color: rgba(232, 112, 10, 0.18) !important;
+  background: hsl(var(--primary) / 0.09) !important;
+  border-color: hsl(var(--primary) / 0.18) !important;
 }
 
 /* Nav-ссылки — активная */
 html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active {
-  background: rgba(232, 112, 10, 0.12) !important;
-  border-color: rgba(232, 112, 10, 0.30) !important;
+  background: hsl(var(--primary) / 0.12) !important;
+  border-color: hsl(var(--primary) / 0.30) !important;
 }
 html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active,
 html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active * {
