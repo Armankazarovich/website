@@ -325,12 +325,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{
-            boxShadow: "4px 0 32px rgba(0,0,0,0.4)",
-            paddingTop: "env(safe-area-inset-top, 0px)",
-          }}
+          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)" }}
           aria-describedby={undefined}
         >
+          {/* Safe area отступ под Dynamic Island / Notch */}
+          <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
+
           {/* Шапка дравера */}
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
             <div>
