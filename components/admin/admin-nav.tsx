@@ -13,7 +13,6 @@ import {
   Star,
   Settings,
   Megaphone,
-  ChevronRight,
   Globe,
   HelpCircle,
   Users,
@@ -161,11 +160,6 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
                   {pendingCount > 9 ? "9+" : pendingCount}
                 </span>
               )}
-              <ChevronRight
-                className={`w-3 h-3 transition-all duration-200 ${
-                  isActive ? "opacity-60 text-primary" : "opacity-0 group-hover:opacity-50"
-                }`}
-              />
             </Link>
           </div>
         );
