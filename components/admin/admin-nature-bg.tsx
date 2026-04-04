@@ -31,29 +31,45 @@ const ANIMS = ["kenburns-in", "kenburns-2", "kenburns-3"];
 const SHOW_MS = 22_000; // 22 сек — достаточно долго чтобы насладиться
 const FADE_MS =  4_000; // 4 сек crossfade — кинематографично
 
+// Определяем время суток по часам (6:00–20:00 = день)
+function getIsDay() {
+  const h = new Date().getHours();
+  return h >= 6 && h < 20;
+}
+
 export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
-  const PHOTOS = isDark ? NIGHT : DAY;
+
+  // Фото по реальному времени суток
+  const [isDay, setIsDay] = useState(getIsDay);
+  const PHOTOS = isDay ? DAY : NIGHT;
 
   const [cur,    setCur]    = useState(0);
   const [next,   setNext]   = useState(1);
   const [fading, setFading] = useState(false);
   const [failed, setFailed] = useState<Set<number>>(new Set());
-  const prevDark = useRef(isDark);
+  const prevIsDay = useRef(isDay);
 
-  // Плавная смена при переключении темы
+  // Проверяем время каждую минуту — при смене суток плавно переходим
   useEffect(() => {
-    if (prevDark.current === isDark) return;
-    prevDark.current = isDark;
-    setFading(true);
-    setTimeout(() => {
-      setCur(0);
-      setNext(1 % PHOTOS.length);
-      setFailed(new Set());
-      setFading(false);
-    }, FADE_MS);
-  }, [isDark]);
+    const tick = () => {
+      const nowIsDay = getIsDay();
+      if (nowIsDay !== prevIsDay.current) {
+        prevIsDay.current = nowIsDay;
+        setFading(true);
+        setTimeout(() => {
+          setIsDay(nowIsDay);
+          setCur(0);
+          setNext(1);
+          setFailed(new Set());
+          setFading(false);
+        }, FADE_MS);
+      }
+    };
+    const interval = setInterval(tick, 60_000); // каждую минуту
+    return () => clearInterval(interval);
+  }, []);
 
   // Автоматическая смена фото
   useEffect(() => {
@@ -120,9 +136,9 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       <div className="aray-photo-overlay-dark  absolute inset-0"
         style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, transparent 28%)" }} />
 
-      {/* Лейбл */}
+      {/* Лейбл — реальное время суток */}
       <div className="absolute bottom-3 right-5 flex items-center gap-2" style={{ opacity: 0.28 }}>
-        <span className="text-white text-[9px]">{isDark ? "🌙" : "☀️"}</span>
+        <span className="text-white text-[9px]">{isDay ? "☀️" : "🌙"}</span>
         <span className="w-px h-3 bg-white/60" />
         <span className="text-white text-[9px] tracking-[0.24em] uppercase font-light">
           {PHOTOS[cur]?.label}
