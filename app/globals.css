@@ -617,11 +617,11 @@ canvas,
    ══════════════════════════════════════════════════════════════ */
 
 /* ── ТЁМНАЯ ТЕМА: тёмный glass rgba(5,8,20) ── */
-.aray-nature-mode .bg-card,
-.aray-nature-mode .bg-popover,
-.aray-nature-mode .bg-background,
-.aray-nature-mode .bg-white,
-.aray-nature-mode .aray-stat-card {
+.dark .aray-nature-mode .bg-card,
+.dark .aray-nature-mode .bg-popover,
+.dark .aray-nature-mode .bg-background,
+.dark .aray-nature-mode .bg-white,
+.dark .aray-nature-mode .aray-stat-card {
   backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
   -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
   background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.55) !important;
@@ -629,114 +629,87 @@ canvas,
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
-/* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
-.aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-.aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
+/* Большие цветные блоки → тёмное стекло в тёмной теме (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
+.dark .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+.dark .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
   backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
   -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
   background: linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(5, 8, 20, 0.26) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
-/* Текст в тёмных карточках — белый (только p/h/span, не иконки) */
-.aray-nature-mode .bg-card p,
-.aray-nature-mode .bg-card h1,
-.aray-nature-mode .bg-card h2,
-.aray-nature-mode .bg-card h3,
-.aray-nature-mode .bg-card h4,
-.aray-nature-mode .bg-card .text-foreground,
-.aray-nature-mode .bg-card strong,
-.aray-nature-mode .bg-white p,
-.aray-nature-mode .bg-white h1,
-.aray-nature-mode .bg-white h2,
-.aray-nature-mode .bg-white h3,
-.aray-nature-mode .bg-white .text-foreground,
-.aray-nature-mode .bg-white strong,
-.aray-nature-mode .bg-background p,
-.aray-nature-mode .bg-background h1,
-.aray-nature-mode .bg-background h2,
-.aray-nature-mode .bg-background h3,
-.aray-nature-mode .bg-background h4,
-.aray-nature-mode .bg-background .text-foreground,
-.aray-nature-mode .bg-background strong,
-.aray-nature-mode .aray-stat-card p,
-.aray-nature-mode .aray-stat-card h1,
-.aray-nature-mode .aray-stat-card h2,
-.aray-nature-mode .aray-stat-card h3,
-.aray-nature-mode .aray-stat-card h4,
-.aray-nature-mode .aray-stat-card .text-foreground,
-.aray-nature-mode .aray-stat-card strong {
+/* Текст в тёмных карточках — белый (только тёмная тема) */
+.dark .aray-nature-mode .bg-card p,
+.dark .aray-nature-mode .bg-card h1,
+.dark .aray-nature-mode .bg-card h2,
+.dark .aray-nature-mode .bg-card h3,
+.dark .aray-nature-mode .bg-card h4,
+.dark .aray-nature-mode .bg-card .text-foreground,
+.dark .aray-nature-mode .bg-card strong,
+.dark .aray-nature-mode .bg-white p,
+.dark .aray-nature-mode .bg-white h1,
+.dark .aray-nature-mode .bg-white h2,
+.dark .aray-nature-mode .bg-white h3,
+.dark .aray-nature-mode .bg-white .text-foreground,
+.dark .aray-nature-mode .bg-white strong,
+.dark .aray-nature-mode .bg-background p,
+.dark .aray-nature-mode .bg-background h1,
+.dark .aray-nature-mode .bg-background h2,
+.dark .aray-nature-mode .bg-background h3,
+.dark .aray-nature-mode .bg-background h4,
+.dark .aray-nature-mode .bg-background .text-foreground,
+.dark .aray-nature-mode .bg-background strong,
+.dark .aray-nature-mode .aray-stat-card p,
+.dark .aray-nature-mode .aray-stat-card h1,
+.dark .aray-nature-mode .aray-stat-card h2,
+.dark .aray-nature-mode .aray-stat-card h3,
+.dark .aray-nature-mode .aray-stat-card h4,
+.dark .aray-nature-mode .aray-stat-card .text-foreground,
+.dark .aray-nature-mode .aray-stat-card strong {
   color: rgba(255, 255, 255, 0.90) !important;
 }
-.aray-nature-mode .bg-card .text-muted-foreground,
-.aray-nature-mode .bg-white .text-muted-foreground,
-.aray-nature-mode .bg-background .text-muted-foreground,
-.aray-nature-mode .aray-stat-card .text-muted-foreground,
-.aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground {
+.dark .aray-nature-mode .bg-card .text-muted-foreground,
+.dark .aray-nature-mode .bg-white .text-muted-foreground,
+.dark .aray-nature-mode .bg-background .text-muted-foreground,
+.dark .aray-nature-mode .aray-stat-card .text-muted-foreground,
+.dark .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground {
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
-/* ── СВЕТЛАЯ ТЕМА: витражное стекло — цвет палитры ── */
-html:not(.dark) .aray-nature-mode .bg-card,
+/* ── СВЕТЛАЯ ТЕМА: белое матовое стекло (iOS frosted glass) ── */
 html:not(.dark) .aray-nature-mode .bg-card,
 html:not(.dark) .aray-nature-mode .bg-popover,
-html:not(.dark) .aray-nature-mode .bg-popover,
-html:not(.dark) .aray-nature-mode .bg-background,
 html:not(.dark) .aray-nature-mode .bg-background,
 html:not(.dark) .aray-nature-mode .bg-white,
-html:not(.dark) .aray-nature-mode .bg-white,
-html:not(.dark) .aray-nature-mode .aray-stat-card,
 html:not(.dark) .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.32) 0%, hsl(var(--primary) / 0.14) 55%, rgba(255,255,255,0.06) 100%) !important;
-  border-color: hsl(var(--primary) / 0.35) !important;
-  box-shadow: 0 4px 28px hsl(var(--primary) / 0.18), 0 1px 0 hsl(var(--primary) / 0.25) inset !important;
-  color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(32px) saturate(160%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10) !important;
+  color: hsl(var(--foreground)) !important;
 }
-/* Светлая тема — то же исключение для маленьких иконок w-8/h-8 */
-html:not(.dark) .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-green-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-emerald-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-violet-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-slate-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-amber-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-red-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-cyan-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-teal-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-indigo-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-gray-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-rose-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-purple-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-pink-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-sky-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-lime-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
-html:not(.dark) .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
+/* Светлая тема — цветные блоки: белое матовое стекло с тёмным текстом */
 html:not(.dark) .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 html:not(.dark) .aray-nature-mode [class*="bg-blue-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 html:not(.dark) .aray-nature-mode [class*="bg-yellow-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -759,17 +732,18 @@ html:not(.dark) .aray-nature-mode [class*="bg-fuchsia-"][class*="rounded"]:not([
 html:not(.dark) .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 html:not(.dark) .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 html:not(.dark) .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
-  backdrop-filter: blur(22px) saturate(220%) brightness(0.88) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(220%) brightness(0.88) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.28) 0%, hsl(var(--primary) / 0.10) 60%, rgba(255,255,255,0.05) 100%) !important;
-  border-color: hsl(var(--primary) / 0.30) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  color: hsl(var(--foreground)) !important;
 }
-/* Светлая тема — текст белый (витраж = тёмный эффект за счёт природы) */
+/* Светлая тема — текст тёмный (белое матовое стекло = читаемый тёмный текст) */
 html:not(.dark) .aray-nature-mode .bg-card p,
 html:not(.dark) .aray-nature-mode .bg-card h1,
 html:not(.dark) .aray-nature-mode .bg-card h2,
 html:not(.dark) .aray-nature-mode .bg-card h3,
+html:not(.dark) .aray-nature-mode .bg-card h4,
 html:not(.dark) .aray-nature-mode .bg-card .text-foreground,
 html:not(.dark) .aray-nature-mode .bg-card strong,
 html:not(.dark) .aray-nature-mode .bg-white p,
@@ -782,41 +756,24 @@ html:not(.dark) .aray-nature-mode .bg-background p,
 html:not(.dark) .aray-nature-mode .bg-background h1,
 html:not(.dark) .aray-nature-mode .bg-background h2,
 html:not(.dark) .aray-nature-mode .bg-background h3,
+html:not(.dark) .aray-nature-mode .bg-background h4,
 html:not(.dark) .aray-nature-mode .bg-background .text-foreground,
 html:not(.dark) .aray-nature-mode .bg-background strong,
 html:not(.dark) .aray-nature-mode .aray-stat-card p,
 html:not(.dark) .aray-nature-mode .aray-stat-card h1,
 html:not(.dark) .aray-nature-mode .aray-stat-card h2,
 html:not(.dark) .aray-nature-mode .aray-stat-card h3,
+html:not(.dark) .aray-nature-mode .aray-stat-card h4,
 html:not(.dark) .aray-nature-mode .aray-stat-card .text-foreground,
-html:not(.dark) .aray-nature-mode .aray-stat-card strong,
-html:not(.dark) .aray-nature-mode .bg-card p,
-html:not(.dark) .aray-nature-mode .bg-card h1,
-html:not(.dark) .aray-nature-mode .bg-card h2,
-html:not(.dark) .aray-nature-mode .bg-card h3,
-html:not(.dark) .aray-nature-mode .bg-card .text-foreground,
-html:not(.dark) .aray-nature-mode .bg-white p,
-html:not(.dark) .aray-nature-mode .bg-white .text-foreground,
-html:not(.dark) .aray-nature-mode .bg-background p,
-html:not(.dark) .aray-nature-mode .bg-background h1,
-html:not(.dark) .aray-nature-mode .bg-background h2,
-html:not(.dark) .aray-nature-mode .bg-background h3,
-html:not(.dark) .aray-nature-mode .bg-background .text-foreground,
-html:not(.dark) .aray-nature-mode .aray-stat-card p,
-html:not(.dark) .aray-nature-mode .aray-stat-card .text-foreground {
-  color: rgba(255, 255, 255, 0.92) !important;
+html:not(.dark) .aray-nature-mode .aray-stat-card strong {
+  color: hsl(var(--foreground)) !important;
 }
 html:not(.dark) .aray-nature-mode .bg-card .text-muted-foreground,
 html:not(.dark) .aray-nature-mode .bg-white .text-muted-foreground,
 html:not(.dark) .aray-nature-mode .bg-background .text-muted-foreground,
 html:not(.dark) .aray-nature-mode .aray-stat-card .text-muted-foreground,
-html:not(.dark) .aray-nature-mode .bg-card .text-muted-foreground,
-html:not(.dark) .aray-nature-mode .bg-white .text-muted-foreground,
-html:not(.dark) .aray-nature-mode .bg-background .text-muted-foreground,
-html:not(.dark) .aray-nature-mode .aray-stat-card .text-muted-foreground,
-html:not(.dark) .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground,
 html:not(.dark) .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]) .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.52) !important;
+  color: hsl(var(--muted-foreground)) !important;
 }
 
 /* ── Система масштабирования шрифтов (--aray-font-scale устанавливается JS) ── */
@@ -844,13 +801,12 @@ html:not(.dark) .aray-nature-mode [class*="bg-"][class*="rounded"]:not([class*="
   text-transform: uppercase;
   line-height: 1;
 }
-/* Светлая тема — тот же тёмный стиль (контраст на белом фросте) */
-html:not(.dark) .aray-nature-mode .aray-section-title,
+/* Светлая тема — светлый frosted стиль (на белом матовом стекле) */
 html:not(.dark) .aray-nature-mode .aray-section-title {
-  background: rgba(5, 8, 20, 0.48);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(255, 255, 255, 0.55);
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.85) !important;
+  color: hsl(var(--foreground) / 0.65) !important;
 }
 /* Иконка внутри — чуть крупнее, акцентный цвет, БЕЗ hover-анимации */
 .aray-nature-mode .aray-section-title svg {
@@ -865,30 +821,27 @@ html:not(.dark) .aray-nature-mode .aray-section-title {
 }
 
 /* Границы — тёмная тема белые, светлая тема тёмные */
-.aray-nature-mode .border-border,
-.aray-nature-mode .border {
+.dark .aray-nature-mode .border-border,
+.dark .aray-nature-mode .border {
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 html:not(.dark) .aray-nature-mode .border-border,
-html:not(.dark) .aray-nature-mode .border-border,
-html:not(.dark) .aray-nature-mode .border,
 html:not(.dark) .aray-nature-mode .border {
   border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
-/* Muted фон — тёмная тема светлее, светлая темнее */
-.aray-nature-mode .bg-muted {
+/* Muted фон — тёмная тема светлее, светлая — light-friendly */
+.dark .aray-nature-mode .bg-muted {
   background: rgba(255, 255, 255, 0.06) !important;
 }
-html:not(.dark) .aray-nature-mode .bg-muted,
 html:not(.dark) .aray-nature-mode .bg-muted {
-  background: rgba(0, 0, 0, 0.05) !important;
+  background: rgba(255, 255, 255, 0.45) !important;
 }
 
 /* Input, Select, Textarea — тёмная тема: белое стекло */
-.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.aray-nature-mode textarea,
-.aray-nature-mode select {
+.dark .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
+.dark .aray-nature-mode textarea,
+.dark .aray-nature-mode select {
   background: rgba(255, 255, 255, 0.14) !important;
   border-color: rgba(255, 255, 255, 0.22) !important;
   color: rgba(255, 255, 255, 0.95) !important;
@@ -939,25 +892,23 @@ html:not(.dark) .aray-nature-mode .aray-email-preview {
 }
 
 /* bg-background с opacity — sticky заголовки страниц (bg-background/80, /60 и т.д.) */
-.aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
+.dark .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
   backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
   background: rgba(5, 8, 20, 0.50) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
-html:not(.dark) .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]),
 html:not(.dark) .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
-  backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
-  background: rgba(5, 8, 20, 0.38) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(1.06) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
 }
 
 /* Разделители таблиц — тонкие и прозрачные */
-.aray-nature-mode .divide-border > * + * {
+.dark .aray-nature-mode .divide-border > * + * {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
-html:not(.dark) .aray-nature-mode .divide-border > * + *,
 html:not(.dark) .aray-nature-mode .divide-border > * + * {
   border-color: rgba(0, 0, 0, 0.06) !important;
 }
@@ -998,15 +949,14 @@ html:not(.dark) .aray-nature-mode .divide-border > * + * {
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* Светлая тема — тот же тёмный glass (единый стиль!) */
-html:not(.dark) .aray-nature-card,
+/* Светлая тема — белое матовое стекло (iOS frosted glass) */
 html:not(.dark) .aray-nature-card {
-  backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
-  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(0.85);
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(5, 8, 20, 0.52);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35);
-  color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(32px) saturate(160%) brightness(1.08);
+  -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.08);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
+  color: hsl(var(--foreground));
 }
 
 /* Overlay на фото: тёмная тема — затемнение, светлая — осветление */
@@ -1046,9 +996,9 @@ html:not(.dark) .aray-nature-mode .aray-photo-overlay-light {
 /* dark class is the default — no override needed */
 
 /* ── БЫСТРЫЙ ДОСТУП — кнопки И ссылки с классом ── */
-.aray-nature-mode button.aray-icon-spin,
-.aray-nature-mode a.aray-icon-spin,
-.aray-nature-mode .aray-icon-spin:not(a):not(button) {
+.dark .aray-nature-mode button.aray-icon-spin,
+.dark .aray-nature-mode a.aray-icon-spin,
+.dark .aray-nature-mode .aray-icon-spin:not(a):not(button) {
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   background: rgba(5, 8, 20, 0.38) !important;
@@ -1070,45 +1020,43 @@ html:not(.dark) .aray-nature-mode a.aray-icon-spin {
    ══════════════════════════════════════════════════════════════ */
 
 /* Тёмная тема — чистое стекло с цветом палитры */
-.aray-nature-mode a.bg-card,
-.aray-nature-mode button.bg-card,
-.aray-nature-mode a.aray-nature-card,
-.aray-nature-mode button.aray-nature-card {
+.dark .aray-nature-mode a.bg-card,
+.dark .aray-nature-mode button.bg-card,
+.dark .aray-nature-mode a.aray-nature-card,
+.dark .aray-nature-mode button.aray-nature-card {
   background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.56) !important;
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.30) !important;
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
   outline: none !important;
   transition: all 0.2s ease !important;
 }
-.aray-nature-mode a.bg-card:hover,
-.aray-nature-mode button.bg-card:hover,
-.aray-nature-mode a.aray-nature-card:hover,
-.aray-nature-mode button.aray-nature-card:hover {
+.dark .aray-nature-mode a.bg-card:hover,
+.dark .aray-nature-mode button.bg-card:hover,
+.dark .aray-nature-mode a.aray-nature-card:hover,
+.dark .aray-nature-mode button.aray-nature-card:hover {
   background: linear-gradient(135deg, hsl(var(--primary) / 0.18) 0%, transparent 55%), rgba(8, 14, 38, 0.68) !important;
   box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
   transform: translateY(-2px);
 }
 
-/* Светлая тема — тот же тёмный glass (не белый) */
+/* Светлая тема — белое матовое стекло для кликабельных карточек */
 html:not(.dark) .aray-nature-mode a.bg-card,
 html:not(.dark) .aray-nature-mode button.bg-card,
 html:not(.dark) .aray-nature-mode a.aray-nature-card,
-html:not(.dark) .aray-nature-mode button.aray-nature-card,
-html:not(.dark) .aray-nature-mode a.bg-card,
-html:not(.dark) .aray-nature-mode button.bg-card {
-  background: rgba(5, 8, 20, 0.48) !important;
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+html:not(.dark) .aray-nature-mode button.aray-nature-card {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.60) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
   transition: all 0.2s ease !important;
 }
 html:not(.dark) .aray-nature-mode a.bg-card:hover,
 html:not(.dark) .aray-nature-mode button.bg-card:hover,
 html:not(.dark) .aray-nature-mode a.aray-nature-card:hover,
-html:not(.dark) .aray-nature-mode button.aray-nature-card:hover,
-html:not(.dark) .aray-nature-mode a.bg-card:hover,
-html:not(.dark) .aray-nature-mode button.bg-card:hover {
-  background: rgba(8, 12, 32, 0.58) !important;
-  border-color: rgba(255, 255, 255, 0.20) !important;
+html:not(.dark) .aray-nature-mode button.aray-nature-card:hover {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.80) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
   transform: translateY(-2px);
 }
 
@@ -1139,6 +1087,15 @@ html:not(.dark) .aray-nature-mode button.bg-card:hover {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── TOPBAR: базовый стиль (без nature-режима) — адаптируется к теме ── */
+.aray-topbar {
+  background: hsl(var(--card) / 0.95);
+  border-bottom: 1px solid hsl(var(--border));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* ── TOPBAR: тёмная тема — тёмный стеклянный фон с акцентом ── */

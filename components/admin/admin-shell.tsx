@@ -525,7 +525,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         <AdminDesktopSettings />
 
         {/* Разделитель + Аватар */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-white/15 shrink-0">
+        <div className="flex items-center gap-2.5 pl-3 border-l border-border/50 shrink-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shrink-0 aray-neon-sm"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
             {email ? email[0].toUpperCase() : "A"}
