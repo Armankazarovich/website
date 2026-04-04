@@ -326,10 +326,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
       {/* ─── Mobile drawer overlay — любое касание снаружи закрывает ── */}
       {open && (
-        <div
-          className="lg:hidden fixed inset-0 z-[49]"
-          style={{ background: "rgba(0,0,0,0.55)" }}
-          onPointerDown={() => setOpen(false)}
+        <button
+          className="lg:hidden fixed inset-0 z-[49] w-full h-full border-0 p-0 m-0"
+          style={{ background: "rgba(0,0,0,0.55)", cursor: "default" }}
+          onClick={() => setOpen(false)}
+          onTouchStart={(e) => { e.stopPropagation(); setOpen(false); }}
+          aria-label="Закрыть меню"
         />
       )}
 
