@@ -1263,6 +1263,97 @@ html:not(.dark) .aray-nature-mode .aray-topbar-pill {
   border: 1px solid hsl(var(--border)) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   КЛАССИЧЕСКИЙ РЕЖИМ — без фото-фона, чистый, доступный
+   Включается классом .aray-classic-mode на корневом wrapper'е
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.aray-classic-mode {
+  background: hsl(var(--background));
+}
+
+/* Sidebar — сплошной, без blur */
+.aray-classic-mode .aray-sidebar {
+  background: hsl(var(--card)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-right: 1px solid hsl(var(--border)) !important;
+  box-shadow: 1px 0 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Весь текст в sidebar — через CSS переменные */
+.aray-classic-mode .aray-sidebar * {
+  color: hsl(var(--foreground) / 0.75) !important;
+}
+.aray-classic-mode .aray-sidebar a {
+  color: hsl(var(--foreground) / 0.70) !important;
+}
+.aray-classic-mode .aray-sidebar a:hover {
+  background: hsl(var(--muted)) !important;
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+.aray-classic-mode .aray-sidebar a.aray-nav-active {
+  background: hsl(var(--primary) / 0.10) !important;
+  border-color: hsl(var(--primary) / 0.30) !important;
+  color: hsl(var(--foreground)) !important;
+}
+.aray-classic-mode .aray-sidebar a.aray-nav-active svg {
+  color: hsl(var(--primary)) !important;
+}
+.aray-classic-mode .aray-sidebar [class*="tracking-"] {
+  color: hsl(var(--foreground) / 0.38) !important;
+}
+.aray-classic-mode .aray-sidebar button {
+  color: hsl(var(--foreground) / 0.65) !important;
+}
+.aray-classic-mode .aray-sidebar button:hover {
+  background: hsl(var(--muted)) !important;
+}
+.aray-classic-mode .aray-sidebar .aray-nav-divider {
+  background: hsl(var(--border)) !important;
+}
+
+/* Topbar — сплошной */
+.aray-classic-mode .aray-topbar {
+  background: hsl(var(--card)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05) !important;
+}
+.aray-classic-mode .aray-topbar * {
+  color: hsl(var(--foreground) / 0.80) !important;
+}
+.aray-classic-mode .aray-topbar button:hover {
+  background: hsl(var(--muted)) !important;
+}
+
+/* Карточки — сплошные, без blur */
+.aray-classic-mode .bg-card,
+.aray-classic-mode .aray-stat-card,
+.aray-classic-mode .aray-nature-card {
+  background: hsl(var(--card)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: hsl(var(--border)) !important;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Весь текст — через переменные, без opacity tricks */
+.aray-classic-mode .text-white\/60,
+.aray-classic-mode .text-white\/50,
+.aray-classic-mode .text-white\/40,
+.aray-classic-mode .text-white\/30 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.aray-classic-mode .text-white\/80,
+.aray-classic-mode .text-white\/90,
+.aray-classic-mode .text-white {
+  color: hsl(var(--foreground)) !important;
+}
+
 /* ── Неоновое свечение (адаптируется к палитре) ── */
 .aray-neon {
   box-shadow:

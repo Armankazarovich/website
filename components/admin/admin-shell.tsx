@@ -6,8 +6,27 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
-  ArrowRight, ALargeSmall,
+  ArrowRight, ALargeSmall, Monitor,
 } from "lucide-react";
+
+// ── Классический режим (без фото-фона) ───────────────────────────────────────
+const LS_CLASSIC = "aray-classic-mode";
+
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem(LS_CLASSIC) === "1");
+    const handler = () => setClassic(localStorage.getItem(LS_CLASSIC) === "1");
+    window.addEventListener("aray-classic-change", handler);
+    return () => window.removeEventListener("aray-classic-change", handler);
+  }, []);
+  const toggle = () => {
+    const next = !(localStorage.getItem(LS_CLASSIC) === "1");
+    localStorage.setItem(LS_CLASSIC, next ? "1" : "0");
+    window.dispatchEvent(new Event("aray-classic-change"));
+  };
+  return { classic, toggle };
+}
 
 // ── Звук нового заказа (Web Audio API, без файлов) ───────────────────────────
 function playOrderChime() {
@@ -214,6 +233,7 @@ function AdminDesktopSettings() {
   const [open, setOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
+  const { classic, toggle: toggleClassic } = useClassicMode();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -290,6 +310,29 @@ function AdminDesktopSettings() {
                   style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.1)" }}>
                   <div className="absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200"
                     style={{ background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)", left: theme === "dark" ? "calc(100% - 19px)" : "3px" }} />
+                </div>
+              </button>
+            </div>
+
+            {/* Фон панели */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-2.5">Оформление</p>
+              <button
+                onClick={toggleClassic}
+                className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl transition-all hover:bg-white/[0.06]"
+                style={{ background: "rgba(255,255,255,0.05)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.08)"}` }}>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(100,120,180,0.15)" }}>
+                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-blue-300"}`} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-medium text-white/80">{classic ? "Классический" : "С фото-фоном"}</p>
+                  <p className="text-[11px] text-white/30">{classic ? "Чистый фон, удобно для всех" : "Красивые природные фото"}</p>
+                </div>
+                <div className="relative w-10 h-[22px] rounded-full flex-shrink-0"
+                  style={{ background: classic ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div className="absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200"
+                    style={{ background: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)", left: classic ? "calc(100% - 19px)" : "3px" }} />
                 </div>
               </button>
             </div>
@@ -414,6 +457,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
+  const { classic, toggle: toggleClassic } = useClassicMode();
   const pageTitle = usePageTitle();
 
   // Свайп от левого края → открыть меню
@@ -433,8 +477,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   }, [open]);
 
   return (
-    <div className="flex min-h-screen aray-admin-bg aray-nature-mode relative" style={{ backgroundColor: "rgb(8, 12, 30)" }}>
-      <AdminNatureBg enabled={true} />
+    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
+      style={classic ? undefined : { backgroundColor: "rgb(8, 12, 30)" }}>
+      <AdminNatureBg enabled={!classic} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
@@ -665,6 +710,29 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
                       background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
                       left: theme === "dark" ? "calc(100% - 18px)" : "2px",
                     }} />
+                </div>
+              </button>
+            </div>
+
+            {/* Классический режим */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">Оформление</p>
+              <button
+                onClick={toggleClassic}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
+                style={{ background: "rgba(255,255,255,0.06)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.09)"}` }}>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(100,120,180,0.15)" }}>
+                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-blue-300"}`} />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold text-white/85">{classic ? "Классический" : "С фото-фоном"}</p>
+                  <p className="text-[11px] text-white/35">{classic ? "Чистый фон" : "Природные фото"}</p>
+                </div>
+                <div className="relative w-10 h-[22px] rounded-full flex-shrink-0"
+                  style={{ background: classic ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div className="absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200"
+                    style={{ background: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)", left: classic ? "calc(100% - 19px)" : "3px" }} />
                 </div>
               </button>
             </div>
