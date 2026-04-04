@@ -1089,6 +1089,88 @@ html:not(.dark) .aray-nature-mode button.aray-nature-card:hover {
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   СВЕТЛАЯ ТЕМА — Sidebar: тёплое молочное стекло
+   Все text-white/X классы перебиваем через color !important
+   ══════════════════════════════════════════════════════════════════════════ */
+
+html:not(.dark) .aray-nature-mode .aray-sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 251, 246, 0.91) 0%,
+    rgba(255, 248, 240, 0.88) 50%,
+    rgba(255, 245, 235, 0.86) 100%
+  ) !important;
+  backdrop-filter: blur(28px) saturate(160%) brightness(1.06) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(1.06) !important;
+  border-right: 1px solid rgba(232, 112, 10, 0.14) !important;
+  box-shadow: 2px 0 24px rgba(0, 0, 0, 0.07) !important;
+}
+
+/* Лого и заголовок */
+html:not(.dark) .aray-nature-mode .aray-sidebar .font-bold,
+html:not(.dark) .aray-nature-mode .aray-sidebar p,
+html:not(.dark) .aray-nature-mode .aray-sidebar span:not(.rounded-full) {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Все текст в сайдбаре — тёмный */
+html:not(.dark) .aray-nature-mode .aray-sidebar * {
+  color: hsl(var(--foreground) / 0.80) !important;
+}
+
+/* Группы-разделители (ПРОДАЖИ, ТОВАРЫ…) */
+html:not(.dark) .aray-nature-mode .aray-sidebar [class*="tracking-"] {
+  color: hsl(var(--foreground) / 0.40) !important;
+}
+
+/* Nav-ссылки — обычные */
+html:not(.dark) .aray-nature-mode .aray-sidebar a,
+html:not(.dark) .aray-nature-mode .aray-sidebar a * {
+  color: hsl(var(--foreground) / 0.70) !important;
+}
+
+/* Nav-ссылки — hover */
+html:not(.dark) .aray-nature-mode .aray-sidebar a:hover,
+html:not(.dark) .aray-nature-mode .aray-sidebar a:hover * {
+  color: hsl(var(--foreground)) !important;
+  background: rgba(232, 112, 10, 0.09) !important;
+  border-color: rgba(232, 112, 10, 0.18) !important;
+}
+
+/* Nav-ссылки — активная */
+html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active {
+  background: rgba(232, 112, 10, 0.12) !important;
+  border-color: rgba(232, 112, 10, 0.30) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active,
+html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active * {
+  color: hsl(var(--foreground)) !important;
+}
+/* Иконка активного пункта — primary цвет */
+html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active svg {
+  color: hsl(var(--primary)) !important;
+}
+
+/* Разделитель линия */
+html:not(.dark) .aray-nature-mode .aray-sidebar .aray-nav-divider {
+  background: hsl(var(--foreground) / 0.12) !important;
+}
+
+/* Нижняя часть — email, выход */
+html:not(.dark) .aray-nature-mode .aray-sidebar [class*="text-white"] {
+  color: hsl(var(--foreground) / 0.60) !important;
+}
+
+/* Кнопки в сайдбаре (мобильный X и т.д.) */
+html:not(.dark) .aray-nature-mode .aray-sidebar button {
+  color: hsl(var(--foreground) / 0.65) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-sidebar button:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
 /* ── TOPBAR: базовый стиль (без nature-режима) — адаптируется к теме ── */
 .aray-topbar {
   background: hsl(var(--card) / 0.95);
