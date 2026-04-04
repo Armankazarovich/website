@@ -372,6 +372,22 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     inputRef.current?.focus();
   });
 
+  // ── Обработчик кнопок-действий от Арая — ДОЛЖЕН быть до return! ──────────
+  const handleAction = useCallback((action: ArayAction) => {
+    if (action.type === "navigate" && action.url) {
+      setBrowserUrl(action.url);
+      setBrowserOpen(true);
+    }
+    if ((action.type === "spotlight" || action.type === "highlight") && action.spotX !== undefined) {
+      setBrowserAction({ type: action.type, spotX: action.spotX, spotY: action.spotY, hint: action.hint });
+      if (!browserOpen) setBrowserOpen(true);
+      setTimeout(() => setBrowserAction(null), 5500);
+    }
+    if (action.type === "call" && action.url) {
+      window.location.href = action.url;
+    }
+  }, [browserOpen]);
+
   if (!enabled || !visible) return null;
 
   // ── Общие стили панели ────────────────────────────────────────────────────
@@ -424,22 +440,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       </div>
     </div>
   );
-
-  // ── Обработчик кнопок-действий от Арая ───────────────────────────────────
-  const handleAction = useCallback((action: ArayAction) => {
-    if (action.type === "navigate" && action.url) {
-      setBrowserUrl(action.url);
-      setBrowserOpen(true);
-    }
-    if ((action.type === "spotlight" || action.type === "highlight") && action.spotX !== undefined) {
-      setBrowserAction({ type: action.type, spotX: action.spotX, spotY: action.spotY, hint: action.hint });
-      if (!browserOpen) setBrowserOpen(true);
-      setTimeout(() => setBrowserAction(null), 5500);
-    }
-    if (action.type === "call" && action.url) {
-      window.location.href = action.url;
-    }
-  }, [browserOpen]);
 
   // ── Чат-область ───────────────────────────────────────────────────────────
   const ChatBody = () => (

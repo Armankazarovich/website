@@ -18,22 +18,22 @@ async function getBusinessContext() {
     prisma.order.count({ where: { createdAt: { gte: weekStart } } }),
     prisma.order.count({ where: { status: { in: ["NEW", "CONFIRMED"] } } }),
     prisma.orderItem.groupBy({
-      by: ["productId"],
+      by: ["variantId"],
       _sum: { quantity: true },
       orderBy: { _sum: { quantity: "desc" } },
       take: 3,
     }),
     prisma.order.aggregate({
       where: { status: { notIn: ["CANCELLED"] }, createdAt: { gte: weekStart } },
-      _sum: { total: true },
+      _sum: { totalAmount: true },
     }),
   ]);
 
-  // Названия топ-товаров
+  // Названия топ-товаров (через вариант → продукт)
   const topProductNames = await Promise.all(
     topProducts.map(async (tp) => {
-      const p = await prisma.product.findUnique({ where: { id: tp.productId }, select: { name: true } });
-      return p?.name || "Товар";
+      const v = await prisma.productVariant.findUnique({ where: { id: tp.variantId }, select: { product: { select: { name: true } } } });
+      return v?.product?.name || "Товар";
     })
   );
 
@@ -41,7 +41,7 @@ async function getBusinessContext() {
     ordersToday,
     ordersWeek,
     pendingOrders,
-    revenueWeek: Number(totalRevenue._sum.total || 0),
+    revenueWeek: Number(totalRevenue._sum.totalAmount || 0),
     topProducts: topProductNames,
   };
 }

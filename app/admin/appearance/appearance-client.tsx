@@ -454,7 +454,6 @@ export function AppearanceClient({
                       className="w-9 h-9 rounded-full shrink-0 border-2 border-white/20 shadow cursor-pointer ring-offset-1 transition-all"
                       style={{
                         background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                        ringColor: isPreviewing ? p.accent : "transparent",
                         boxShadow: isPreviewing ? `0 0 0 2px ${p.accent}55, 0 2px 8px ${p.accent}40` : undefined,
                       }}
                       onClick={() => toggle(p.id)}

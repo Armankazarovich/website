@@ -8,7 +8,7 @@ import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToStaff } from "@/lib/push";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
 
-const STAFF_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 
 export async function POST(req: NextRequest) {
   const session = await auth();
