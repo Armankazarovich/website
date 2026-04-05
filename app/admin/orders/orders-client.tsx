@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
-import { formatDate, formatPrice } from "@/lib/utils";
-import { Search, Trash2, Loader2, Download } from "lucide-react";
+import { AdminQuickView } from "@/components/admin/admin-quick-view";
+import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
+import {
+  Search, Trash2, Loader2, Download, Phone, MapPin,
+  Package, CreditCard, Truck, MessageSquare, ExternalLink,
+  ChevronLeft, ChevronRight, Clock,
+} from "lucide-react";
 
 const STATUS_FILTERS = [
   { key: "ALL", label: "Все" },
@@ -35,6 +40,152 @@ type Order = {
 
 type Stats = { todayCount: number; todayRevenue: number; newCount: number };
 
+// ── QuickView контент для заказа ─────────────────────────────────────────────
+function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpenFull: () => void }) {
+  const [order, setOrder] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/admin/orders/${orderId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { setOrder(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="text-center py-16 text-white/40">
+        <p>Не удалось загрузить заказ</p>
+      </div>
+    );
+  }
+
+  const statusColor = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
+  const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
+  const total = Number(order.totalAmount || 0) + Number(order.deliveryCost || 0);
+
+  return (
+    <div className="p-4 space-y-4">
+
+      {/* Статус + дата */}
+      <div className="flex items-center justify-between">
+        <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColor}`}>
+          {statusLabel}
+        </span>
+        <div className="flex items-center gap-1.5 text-white/40">
+          <Clock className="w-3.5 h-3.5" />
+          <span className="text-xs">{formatDate(order.createdAt)}</span>
+        </div>
+      </div>
+
+      {/* Клиент */}
+      <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Клиент</p>
+        <div className="flex items-center justify-between">
+          <p className="text-base font-semibold text-white">{order.guestName || "—"}</p>
+          {order.guestPhone && (
+            <a href={`tel:${order.guestPhone}`}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-white"
+              style={{ background: "hsl(var(--primary)/0.25)", border: "1px solid hsl(var(--primary)/0.4)" }}>
+              <Phone className="w-3.5 h-3.5 text-primary" />
+              {order.guestPhone}
+            </a>
+          )}
+        </div>
+        {order.deliveryAddress && (
+          <div className="flex items-start gap-2">
+            <MapPin className="w-3.5 h-3.5 text-white/35 mt-0.5 shrink-0" />
+            <p className="text-sm text-white/60">{order.deliveryAddress}</p>
+          </div>
+        )}
+        {order.contactMethod && (
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-3.5 h-3.5 text-white/35 shrink-0" />
+            <p className="text-sm text-white/60">Связь: {order.contactMethod}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Позиции */}
+      {order.items?.length > 0 && (
+        <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
+          <div className="px-4 py-2.5" style={{ background: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 flex items-center gap-2">
+              <Package className="w-3.5 h-3.5" /> Позиции ({order.items.length})
+            </p>
+          </div>
+          <div className="divide-y" style={{ divideColor: "rgba(255,255,255,0.06)" }}>
+            {order.items.map((item: any) => (
+              <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-white/85 truncate">{item.productName}</p>
+                  {item.variantName && (
+                    <p className="text-xs text-white/40 mt-0.5">{item.variantName}</p>
+                  )}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-bold text-white">{formatPrice(Number(item.price))}</p>
+                  <p className="text-xs text-white/40">× {item.quantity}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Итого */}
+      <div className="rounded-2xl p-4 space-y-2" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 flex items-center gap-2">
+          <CreditCard className="w-3.5 h-3.5" /> Оплата
+        </p>
+        <div className="flex justify-between text-sm text-white/60">
+          <span>Товары</span>
+          <span>{formatPrice(Number(order.totalAmount))}</span>
+        </div>
+        {Number(order.deliveryCost) > 0 && (
+          <div className="flex justify-between text-sm text-white/60">
+            <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5" />Доставка</span>
+            <span>{formatPrice(Number(order.deliveryCost))}</span>
+          </div>
+        )}
+        <div className="flex justify-between text-base font-bold text-white pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+          <span>Итого</span>
+          <span style={{ color: "hsl(var(--primary))" }}>{formatPrice(total)}</span>
+        </div>
+        {order.paymentMethod && (
+          <p className="text-xs text-white/40">{order.paymentMethod}</p>
+        )}
+      </div>
+
+      {/* Изменить статус */}
+      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-3">Изменить статус</p>
+        <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+      </div>
+
+      {/* Открыть полную страницу */}
+      <button
+        onClick={onOpenFull}
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all active:scale-[0.98]"
+        style={{ background: "hsl(var(--primary)/0.20)", border: "1.5px solid hsl(var(--primary)/0.40)" }}
+      >
+        <ExternalLink className="w-4 h-4 text-primary" />
+        <span style={{ color: "hsl(var(--primary))" }}>Открыть полную страницу</span>
+      </button>
+    </div>
+  );
+}
+
+// ── Главный компонент ─────────────────────────────────────────────────────────
 export function OrdersClient({ orders: initialOrders, stats: initialStats }: { orders: Order[]; stats: Stats }) {
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
@@ -43,7 +194,10 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
 
-  // Автообновление каждые 30 секунд — новые заказы всегда видны
+  // QuickView state
+  const [quickViewId, setQuickViewId] = useState<string | null>(null);
+
+  // Автообновление каждые 30 секунд
   useEffect(() => {
     const timer = setInterval(() => router.refresh(), 30000);
     return () => clearInterval(timer);
@@ -83,11 +237,8 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   };
 
   const toggleAll = () => {
-    if (selected.size === filtered.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filtered.map((o) => o.id)));
-    }
+    if (selected.size === filtered.length) setSelected(new Set());
+    else setSelected(new Set(filtered.map((o) => o.id)));
   };
 
   const handleExportCSV = () => {
@@ -106,11 +257,9 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
+    const a = document.createElement("a"); a.href = url;
     a.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.click(); URL.revokeObjectURL(url);
   };
 
   const handleBulkDelete = async () => {
@@ -126,30 +275,36 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         setOrders((prev) => prev.filter((o) => !selected.has(o.id)));
         setSelected(new Set());
       }
-    } finally {
-      setDeleting(false);
-    }
+    } finally { setDeleting(false); }
   };
+
+  // Навигация между заказами внутри попапа
+  const quickViewIdx = filtered.findIndex(o => o.id === quickViewId);
+  const goPrev = () => { if (quickViewIdx > 0) setQuickViewId(filtered[quickViewIdx - 1].id); };
+  const goNext = () => { if (quickViewIdx < filtered.length - 1) setQuickViewId(filtered[quickViewIdx + 1].id); };
+
+  const quickOrder = filtered.find(o => o.id === quickViewId);
 
   return (
     <div className="space-y-5">
+
       {/* Статистика */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs text-muted-foreground">Заказов сегодня</p>
           <p className="text-2xl font-bold mt-1">{stats.todayCount}</p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs text-muted-foreground">Выручка сегодня</p>
           <p className="text-2xl font-bold mt-1">{formatPrice(stats.todayRevenue)}</p>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs text-muted-foreground">Новых заказов</p>
-          <p className="text-2xl font-bold mt-1 text-blue-600 dark:text-blue-400">{stats.newCount}</p>
+          <p className="text-2xl font-bold mt-1 text-primary">{stats.newCount}</p>
         </div>
       </div>
 
-      {/* Фильтры + поиск + bulk delete */}
+      {/* Фильтры + поиск */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -163,32 +318,23 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         </div>
         <div className="flex flex-wrap gap-1.5 flex-1">
           {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setStatusFilter(f.key)}
+            <button key={f.key} onClick={() => setStatusFilter(f.key)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 statusFilter === f.key
                   ? "bg-primary text-primary-foreground"
                   : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
+              }`}>
               {f.label}
             </button>
           ))}
         </div>
-        <button
-          onClick={handleExportCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-muted/80 transition-colors shrink-0"
-        >
-          <Download className="w-4 h-4" />
-          CSV
+        <button onClick={handleExportCSV}
+          className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-muted/80 transition-colors shrink-0">
+          <Download className="w-4 h-4" /> CSV
         </button>
         {selected.size > 0 && (
-          <button
-            onClick={handleBulkDelete}
-            disabled={deleting}
-            className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:bg-destructive/90 transition-colors shrink-0"
-          >
+          <button onClick={handleBulkDelete} disabled={deleting}
+            className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:bg-destructive/90 transition-colors shrink-0">
             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             Удалить ({selected.size})
           </button>
@@ -202,12 +348,9 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
             <thead className="bg-muted/50">
               <tr>
                 <th className="px-3 py-3">
-                  <input
-                    type="checkbox"
+                  <input type="checkbox"
                     checked={selected.size > 0 && selected.size === filtered.length}
-                    onChange={toggleAll}
-                    className="rounded"
-                  />
+                    onChange={toggleAll} className="rounded" />
                 </th>
                 <th className="text-left px-4 py-3 font-semibold">№</th>
                 <th className="text-left px-4 py-3 font-semibold">Клиент</th>
@@ -223,39 +366,26 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
               {filtered.map((order) => (
                 <tr
                   key={order.id}
-                  className={`hover:bg-muted/30 transition-colors ${selected.has(order.id) ? "bg-destructive/5" : ""}`}
+                  onClick={() => setQuickViewId(order.id)}
+                  className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                    selected.has(order.id) ? "bg-destructive/5" : ""
+                  } ${quickViewId === order.id ? "bg-primary/5 border-l-2 border-primary" : ""}`}
                 >
-                  <td className="px-3 py-3 text-center">
-                    <input
-                      type="checkbox"
+                  <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
+                    <input type="checkbox"
                       checked={selected.has(order.id)}
                       onChange={() => toggleSelect(order.id)}
-                      className="rounded"
-                    />
+                      className="rounded" />
                   </td>
-                  <td className="px-4 py-3 font-medium">
-                    <Link href={`/admin/orders/${order.id}`} className="hover:text-primary transition-colors">
-                      #{order.orderNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Link href={`/admin/orders/${order.id}`} className="hover:text-primary transition-colors block">
-                      {order.guestName || "—"}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    {order.guestPhone ? (
-                      <a href={`tel:${order.guestPhone}`} className="text-primary hover:underline">
-                        {order.guestPhone}
-                      </a>
-                    ) : "—"}
-                  </td>
+                  <td className="px-4 py-3 font-medium text-primary">#{order.orderNumber}</td>
+                  <td className="px-4 py-3 font-medium">{order.guestName || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{order.guestPhone || "—"}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell max-w-[160px] truncate">
                     {order.deliveryAddress || "—"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(order.createdAt)}</td>
                   <td className="px-4 py-3 text-right font-bold">{formatPrice(Number(order.totalAmount))}</td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
                     <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{order.items.length}</td>
@@ -270,6 +400,34 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
           </p>
         )}
       </div>
+
+      {/* QuickView попап */}
+      <AdminQuickView
+        open={!!quickViewId}
+        onClose={() => setQuickViewId(null)}
+        title={quickOrder ? `Заказ #${quickOrder.orderNumber}` : "Заказ"}
+        subtitle={quickOrder?.guestName || undefined}
+      >
+        {/* Навигация между заказами */}
+        <div className="flex items-center justify-between px-4 pt-3 pb-1">
+          <button onClick={goPrev} disabled={quickViewIdx <= 0}
+            className="flex items-center gap-1.5 text-xs text-white/40 disabled:opacity-20 hover:text-white/70 transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Предыдущий
+          </button>
+          <span className="text-xs text-white/30">{quickViewIdx + 1} / {filtered.length}</span>
+          <button onClick={goNext} disabled={quickViewIdx >= filtered.length - 1}
+            className="flex items-center gap-1.5 text-xs text-white/40 disabled:opacity-20 hover:text-white/70 transition-colors">
+            Следующий <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+
+        {quickViewId && (
+          <OrderQuickViewContent
+            orderId={quickViewId}
+            onOpenFull={() => { router.push(`/admin/orders/${quickViewId}`); setQuickViewId(null); }}
+          />
+        )}
+      </AdminQuickView>
     </div>
   );
 }
