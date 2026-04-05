@@ -800,15 +800,22 @@ canvas,
   color: rgba(255, 255, 255, 0.90) !important;
 }
 /* focus ring — primary color everywhere (убирает синий браузерный default) */
-.aray-nature-mode input:focus,
+.aray-nature-mode input:focus:not(.aray-search-input),
 .aray-nature-mode textarea:focus,
 .aray-nature-mode select:focus,
-.light .aray-nature-mode input:focus,
+.light .aray-nature-mode input:focus:not(.aray-search-input),
 .light .aray-nature-mode textarea:focus,
 .light .aray-nature-mode select:focus {
   outline: none !important;
   border-color: hsl(var(--primary) / 0.55) !important;
   box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
+}
+/* Строка поиска — своя обводка управляется React state (focused), без глобального orange */
+.aray-nature-mode input.aray-search-input:focus {
+  outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 /* Кнопки и ссылки — outline цвета палитры вместо синего браузерного */
 .aray-nature-mode button:focus-visible,
@@ -1191,6 +1198,13 @@ a:focus-visible {
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   background: rgba(5, 8, 20, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
+}
+/* hover — оранжевый тинт (Tailwind hover классы не работают из-за !important выше) */
+.aray-nature-mode a.aray-icon-spin:hover,
+.aray-nature-mode button.aray-icon-spin:hover {
+  background: hsl(var(--primary) / 0.13) !important;
+  border-color: hsl(var(--primary) / 0.45) !important;
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.22) !important;
 }
 .light .aray-nature-mode button.aray-icon-spin,
 .light .aray-nature-mode a.aray-icon-spin,
@@ -1744,7 +1758,7 @@ a:focus-visible {
   -webkit-text-fill-color: rgba(255, 255, 255, 0.35) !important;
   opacity: 1;
 }
-.aray-nature-mode input:focus:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.aray-nature-mode input:focus:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.aray-search-input),
 .aray-nature-mode textarea:focus,
 .aray-nature-mode select:focus {
   background: rgba(8, 14, 34, 0.82) !important;

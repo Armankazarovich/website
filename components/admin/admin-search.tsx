@@ -239,7 +239,7 @@ export function AdminDesktopSearch() {
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Поиск заказов, товаров, клиентов..."
-          className="flex-1 bg-transparent outline-none min-w-0 text-white placeholder:text-white/35"
+          className="aray-search-input flex-1 bg-transparent outline-none min-w-0 text-white placeholder:text-white/35"
           style={{ fontSize: "16px" }}
           autoComplete="off"
           autoCorrect="off"
@@ -687,7 +687,7 @@ export function AdminStickySearchBar() {
           onFocus={() => setFocused(true)}
           onKeyDown={handleKey}
           placeholder={placeholder}
-          className="flex-1 bg-transparent outline-none min-w-0 text-white/90 placeholder:text-white/38 text-[13px] tracking-[0.01em]"
+          className="aray-search-input flex-1 bg-transparent outline-none min-w-0 text-white/90 placeholder:text-white/38 text-[13px] tracking-[0.01em]"
           autoComplete="off"
           spellCheck={false}
         />
