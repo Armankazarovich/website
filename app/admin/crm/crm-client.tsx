@@ -728,7 +728,7 @@ function CrmStats({ leads }: { leads: Lead[] }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 border-b border-border">
       {[
-        { label: "Всего лидов", value: total, icon: Users, color: "text-blue-500" },
+        { label: "Всего лидов", value: total, icon: Users, color: "text-primary" },
         { label: "Успешных", value: won, icon: CheckCircle2, color: "text-emerald-500" },
         { label: "Конверсия", value: `${convRate}%`, icon: TrendingUp, color: "text-violet-500" },
         { label: "Сумма воронки", value: formatMoney(totalValue) || "—", icon: Banknote, color: "text-amber-500" },
@@ -970,7 +970,7 @@ function OrdersKanban({ search }: { search: string }) {
       {/* Статистика */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 border-b border-border flex-shrink-0">
         {[
-          { label: "Всего заказов", value: orders.length, icon: ShoppingBag, color: "text-blue-500" },
+          { label: "Всего заказов", value: orders.length, icon: ShoppingBag, color: "text-primary" },
           { label: "Активных", value: activeOrders, icon: TrendingUp, color: "text-amber-500" },
           { label: "Завершённых", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length, icon: CheckCircle2, color: "text-emerald-500" },
           { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, color: "text-violet-500" },

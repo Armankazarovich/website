@@ -274,7 +274,7 @@ export function ProductsClient({
             <button
               onClick={bulkWatermark}
               disabled={wmSaving}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-700 border border-blue-300 text-xs font-medium hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary border border-primary/30 text-xs font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
             >
               <Stamp className="w-3.5 h-3.5" /> {wmSaving ? "Наносим..." : "Водяной знак"}
             </button>

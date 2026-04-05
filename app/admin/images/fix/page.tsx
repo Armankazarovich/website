@@ -228,7 +228,7 @@ export default function ImageFixPage() {
       )}
 
       {/* Восстановление из бэкапа */}
-      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5">
+      <div className="bg-primary/15 border border-primary/20 rounded-2xl p-5">
         <h2 className="font-semibold flex items-center gap-2 mb-3">
           <CheckCircle2 className="w-4 h-4 text-primary" />
           Восстановление из резервной копии

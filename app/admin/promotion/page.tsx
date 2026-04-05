@@ -378,7 +378,7 @@ function SeoHealthSection({ productCount }: { productCount: number }) {
       {/* Описания товаров */}
       <div className="bg-card border border-border rounded-2xl p-4 space-y-2">
         <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-blue-500" />
+          <Package className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold">Описания товаров</span>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -484,7 +484,7 @@ export default function PromotionPage() {
               icon={Package}
               label="Товаров в каталоге"
               value={stats.productCount}
-              color="bg-blue-500"
+              color="bg-primary"
             />
             <StatCard
               icon={ShoppingBag}

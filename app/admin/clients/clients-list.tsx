@@ -285,8 +285,8 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
 
               {/* Promote to staff panel */}
               {isPromoting && (
-                <div className="border-t border-border px-4 py-3 bg-blue-50/50 dark:bg-blue-950/20">
-                  <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-2">
+                <div className="border-t border-border px-4 py-3 bg-primary/10 dark:bg-primary/15">
+                  <p className="text-xs font-medium text-primary mb-2">
                     <UserCog className="w-3.5 h-3.5 inline mr-1" />
                     Назначить <strong>{client.name || client.email}</strong> сотрудником
                   </p>

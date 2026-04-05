@@ -318,7 +318,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                   </tr>
                 ))}
                 {deliveryCost > 0 && (
-                  <tr className="bg-blue-500/5">
+                  <tr className="bg-primary/10">
                     <td className="px-4 py-2.5 font-medium">Стоимость доставки</td>
                     <td className="px-4 py-2.5 text-muted-foreground">—</td>
                     <td className="px-4 py-2.5 font-medium text-right">{deliveryCost.toLocaleString("ru-RU")} ₽</td>

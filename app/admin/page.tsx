@@ -75,7 +75,7 @@ const ROLE_GREETINGS: Record<string, string> = {
 const ROLE_COLORS: Record<string, string> = {
   SUPER_ADMIN: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-200",
   ADMIN: "bg-primary/10 text-primary",
-  MANAGER: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  MANAGER: "bg-primary/10 text-primary",
   COURIER: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   ACCOUNTANT: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
   WAREHOUSE: "bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200",
@@ -193,12 +193,12 @@ export default async function AdminDashboard() {
             </Link>
           )}
           {pendingStaff > 0 && isOwner && (
-            <Link href="/admin/staff" className="flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-2xl">
+            <Link href="/admin/staff" className="flex items-center justify-between px-4 py-3 bg-primary/10 dark:bg-primary/15 border border-primary/30 rounded-2xl">
               <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">{pendingStaff} сотрудников ждут одобрения</span>
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">{pendingStaff} сотрудников ждут одобрения</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-blue-500" />
+              <ChevronRight className="w-4 h-4 text-primary" />
             </Link>
           )}
         </div>
@@ -264,7 +264,7 @@ export default async function AdminDashboard() {
       {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
       <div>
         <AdminSectionTitle icon={Zap} title="Быстрый доступ" />
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {quickActions.map((action) => (
             <Link
               key={action.href}

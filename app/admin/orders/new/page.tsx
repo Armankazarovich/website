@@ -43,7 +43,7 @@ const SCRIPTS: { id: string; label: string; icon: React.ElementType; color: stri
     id: "greeting",
     label: "Приветствие",
     icon: Hand,
-    color: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
+    color: "bg-primary/10 border-primary/20 text-primary",
     text: "«Компания ПилоРус, меня зовут [имя], добрый день! Чем могу помочь?»",
     tip: "Представьтесь по имени — это повышает доверие клиента.",
   },
@@ -139,6 +139,7 @@ export default function NewPhoneOrderPage() {
   const [activeScript, setActiveScript] = useState<string | null>(null);
   const [showClientForm, setShowClientForm] = useState(true);
   const [addedFlash, setAddedFlash] = useState<string | null>(null);
+  const [showMobileCart, setShowMobileCart] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -272,22 +273,22 @@ export default function NewPhoneOrderPage() {
   ];
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-56px)] md:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 md:px-4 py-2.5 border-b border-border bg-card shrink-0">
+        <div className="flex items-center gap-2 md:gap-3">
           <AdminBack />
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-base">Заказ по телефону</span>
+            <span className="font-semibold text-sm md:text-base">Заказ по телефону</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Scripts toggle */}
+          {/* Scripts toggle — hidden on mobile */}
           <button
             onClick={() => setShowScripts((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${showScripts ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${showScripts ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30"}`}
           >
             <BookOpen className="w-3.5 h-3.5" />
             Скрипты
@@ -295,7 +296,7 @@ export default function NewPhoneOrderPage() {
           <button
             onClick={handleSubmit}
             disabled={saving || items.length === 0 || !form.guestName}
-            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-40"
+            className="hidden md:flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-40"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             Создать заказ
@@ -304,7 +305,7 @@ export default function NewPhoneOrderPage() {
       </div>
 
       {/* ── Main POS Layout ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
 
         {/* ── LEFT: Product Catalog ── */}
         <div className="flex flex-col flex-1 overflow-hidden border-r border-border">
@@ -496,7 +497,26 @@ export default function NewPhoneOrderPage() {
         </div>
 
         {/* ── RIGHT: Order Panel ── */}
-        <div className="w-80 xl:w-96 flex flex-col bg-card border-l border-border overflow-hidden shrink-0">
+        <div className={`
+          ${showMobileCart
+            ? "fixed inset-0 z-50 flex flex-col bg-card"
+            : "hidden md:flex md:flex-col"
+          }
+          md:relative md:w-80 xl:w-96 md:border-l md:border-border overflow-hidden shrink-0
+        `}>
+          {/* Mobile close button */}
+          {showMobileCart && (
+            <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20 shrink-0">
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="w-4 h-4 text-primary" />
+                <span className="font-semibold text-sm">Корзина ({items.length} поз.)</span>
+              </div>
+              <button onClick={() => setShowMobileCart(false)} className="text-muted-foreground hover:text-foreground p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+
           {/* Client section */}
           <div className="border-b border-border shrink-0">
             <button
@@ -736,6 +756,27 @@ export default function NewPhoneOrderPage() {
             </button>
           </div>
         </div>
+
+        {/* ── Floating mobile cart button ── */}
+        {!showMobileCart && (
+          <button
+            type="button"
+            onClick={() => setShowMobileCart(true)}
+            className="md:hidden fixed bottom-[84px] right-4 z-40 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl shadow-lg font-bold text-sm active:scale-[0.96] transition-all"
+            style={{ boxShadow: "0 4px 20px hsl(var(--primary)/0.4)" }}
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {items.length > 0 ? (
+              <>
+                <span>{items.length} поз.</span>
+                <span className="opacity-70">·</span>
+                <span>{totalAmount.toLocaleString("ru-RU")} ₽</span>
+              </>
+            ) : (
+              <span>Корзина пуста</span>
+            )}
+          </button>
+        )}
 
         {/* ── SCRIPTS Drawer (over right panel) ── */}
         {showScripts && (

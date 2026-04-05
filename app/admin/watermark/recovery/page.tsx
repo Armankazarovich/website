@@ -162,7 +162,7 @@ export default function WatermarkRecoveryPage() {
             <button
               onClick={loadPreview}
               disabled={previewLoading}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl border border-primary text-primary font-semibold hover:bg-primary/5 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl border border-primary text-primary font-semibold hover:bg-primary/15 disabled:opacity-50 transition-colors"
             >
               {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Eye className="w-4 h-4" />}
               {previewLoading ? "Анализируем..." : "Показать превью совпадений"}
@@ -231,7 +231,7 @@ export default function WatermarkRecoveryPage() {
                     key={product.id}
                     onClick={() => setSelected(isSelected ? null : product.id)}
                     className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                      isSelected ? "border-primary bg-primary/5 shadow-sm"
+                      isSelected ? "border-primary bg-primary/15 shadow-sm"
                       : isSaved ? "border-emerald-500/40 bg-emerald-500/5"
                       : "border-border hover:border-primary/40 bg-card"
                     }`}

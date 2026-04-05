@@ -422,8 +422,8 @@ export function ImportClient() {
       </div>
 
       {/* Info */}
-      <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm">
-        <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-primary/10 border border-primary/20 text-sm">
+        <Info className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <div className="text-muted-foreground space-y-1">
           <p><strong className="text-foreground">Безопасно:</strong> Импорт только обновляет и добавляет товары — не удаляет существующие.</p>
           <p><strong className="text-foreground">Slug:</strong> Автоматически генерируется из названия на латинице. Используется как ключ для upsert.</p>

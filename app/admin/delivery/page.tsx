@@ -24,7 +24,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  CONFIRMED: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  CONFIRMED: "bg-primary/10 text-primary",
   PROCESSING: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
   SHIPPED: "bg-orange-500/10 text-orange-700 dark:text-orange-400",
   IN_DELIVERY: "bg-purple-500/10 text-purple-700 dark:text-purple-400",

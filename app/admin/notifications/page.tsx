@@ -493,8 +493,8 @@ export default function NotificationsPage() {
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-border">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center">
-              <Bot className="w-5 h-5 text-blue-500" />
+            <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center">
+              <Bot className="w-5 h-5 text-primary" />
             </div>
             <div>
               <h2 className="font-semibold text-base">Telegram Бот</h2>
@@ -557,7 +557,7 @@ export default function NotificationsPage() {
             <button
               onClick={setupTelegram}
               disabled={tgSetting}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               {tgSetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
               {tgStatus?.correct ? "Переустановить вебхук" : "Настроить вебхук"}

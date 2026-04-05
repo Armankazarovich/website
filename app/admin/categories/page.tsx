@@ -96,7 +96,7 @@ function CategoryRow({
             : <span className="text-[10px] bg-muted text-muted-foreground border border-border px-1.5 py-0.5 rounded-full line-through">Меню</span>
           }
           {cat.showInFooter
-            ? <span className="text-[10px] bg-blue-500/10 text-blue-600 border border-blue-500/20 px-1.5 py-0.5 rounded-full">Футер</span>
+            ? <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">Футер</span>
             : <span className="text-[10px] bg-muted text-muted-foreground border border-border px-1.5 py-0.5 rounded-full line-through">Футер</span>
           }
         </div>
@@ -331,8 +331,8 @@ function CategoryModal({
                 <p className="text-[10px] text-muted-foreground">Главная навигация</p>
               </div>
             </label>
-            <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-colors ${showInFooter ? "border-blue-500/30 bg-blue-500/5" : "border-border bg-muted/50"}`}>
-              <input type="checkbox" checked={showInFooter} onChange={(e) => setShowInFooter(e.target.checked)} className="w-4 h-4 accent-blue-500" />
+            <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-colors ${showInFooter ? "border-primary/30 bg-primary/15" : "border-border bg-muted/50"}`}>
+              <input type="checkbox" checked={showInFooter} onChange={(e) => setShowInFooter(e.target.checked)} className="w-4 h-4 accent-primary" />
               <div>
                 <p className="text-xs font-medium">Подвал</p>
                 <p className="text-[10px] text-muted-foreground">Ссылки в футере</p>

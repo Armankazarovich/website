@@ -341,8 +341,46 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         )}
       </div>
 
-      {/* Таблица */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      {/* Мобильные карточки (< md) */}
+      <div className="md:hidden space-y-2">
+        {filtered.map((order) => (
+          <div
+            key={order.id}
+            onClick={() => setQuickViewId(order.id)}
+            className={`bg-card rounded-2xl border p-4 cursor-pointer active:scale-[0.99] transition-all ${
+              quickViewId === order.id ? "border-primary/60" : "border-border"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-primary text-sm">#{order.orderNumber}</span>
+                <span className="text-muted-foreground text-xs">{formatDate(order.createdAt)}</span>
+              </div>
+              <div onClick={e => e.stopPropagation()}>
+                <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{order.guestName || "—"}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">{order.guestPhone || "—"}</p>
+              </div>
+              <div className="text-right shrink-0 ml-3">
+                <p className="font-bold text-base">{formatPrice(Number(order.totalAmount))}</p>
+                <p className="text-muted-foreground text-xs">{order.items.length} поз.</p>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="text-center text-muted-foreground py-12">
+            {orders.length === 0 ? "Заказов ещё нет" : "Ничего не найдено"}
+          </p>
+        )}
+      </div>
+
+      {/* Десктопная таблица (≥ md) */}
+      <div className="hidden md:block bg-card rounded-2xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
@@ -369,7 +407,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
                   onClick={() => setQuickViewId(order.id)}
                   className={`hover:bg-muted/30 transition-colors cursor-pointer ${
                     selected.has(order.id) ? "bg-destructive/5" : ""
-                  } ${quickViewId === order.id ? "bg-primary/5 border-l-2 border-primary" : ""}`}
+                  } ${quickViewId === order.id ? "bg-primary/15 border-l-2 border-primary" : ""}`}
                 >
                   <td className="px-3 py-3 text-center" onClick={e => e.stopPropagation()}>
                     <input type="checkbox"

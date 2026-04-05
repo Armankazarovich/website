@@ -464,7 +464,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
               {activeTab === "bg" && (
                 <div className="space-y-4">
                   {/* Remove bg */}
-                  <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2.5">
+                  <div className="p-3 rounded-xl bg-primary/15 border border-primary/20 space-y-2.5">
                     <p className="text-xs font-semibold text-primary flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5" /> Убрать фон
                     </p>
@@ -544,7 +544,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
                       { type: "triangle" as const, label: "Треугольник",   icon: "▲" },
                     ].map(s => (
                       <button key={s.type} onClick={() => addShape(s.type)}
-                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all text-xs font-medium">
+                        className="flex flex-col items-center gap-1.5 py-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/15 transition-all text-xs font-medium">
                         <span className="text-2xl leading-none" style={{ color: shapeColor }}>{s.icon}</span>
                         <span className="text-[10px] text-muted-foreground text-center leading-tight">{s.label}</span>
                       </button>
@@ -600,7 +600,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
 
                   {/* Live edit selected text */}
                   {selType === "text" && (
-                    <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+                    <div className="p-3 rounded-xl bg-primary/15 border border-primary/20 space-y-3">
                       <p className="text-xs font-semibold text-primary">✏️ Изменить выбранный текст</p>
                       <div className="flex items-center gap-2">
                         <input type="color" value={liveColor}
@@ -683,7 +683,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
                   <div className="space-y-1.5">
                     {ADVANTAGES.map(adv => (
                       <button key={adv.text} onClick={() => addAdvantage(adv.icon, adv.text)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors text-left">
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/15 transition-colors text-left">
                         <span className="text-base">{adv.icon}</span><span className="text-sm">{adv.text}</span>
                       </button>
                     ))}
@@ -707,7 +707,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
                   <p className="text-[11px] text-muted-foreground">Загрузите PNG с прозрачным фоном. Перетащите в нужный угол.</p>
                   <input ref={logoInputRef} type="file" accept="image/png,image/svg+xml,image/webp" className="hidden" onChange={handleLogoUpload} />
                   <button onClick={() => logoInputRef.current?.click()}
-                    className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/5 transition-colors">
+                    className="w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-border hover:border-primary/40 hover:bg-primary/15 transition-colors">
                     <Award className="w-8 h-8 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">Загрузить логотип</span>
                     <span className="text-[10px] text-muted-foreground/60">PNG, SVG, WebP</span>

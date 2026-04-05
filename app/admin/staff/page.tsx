@@ -57,9 +57,9 @@ const ROLE_DEFINITIONS: Record<
   },
   MANAGER: {
     label: "Менеджер",
-    color: "bg-blue-500/15 text-blue-700 dark:text-blue-400",
-    dot: "bg-blue-500",
-    avatarBg: "bg-blue-500/20 text-blue-700 dark:text-blue-300",
+    color: "bg-primary/15 text-primary",
+    dot: "bg-primary",
+    avatarBg: "bg-primary/20 text-primary",
     description: "Продажи, товары, клиенты, маркетинг",
     sections: ["Заказы", "Каталог товаров", "Клиенты", "Акции", "Отзывы", "Медиабиблиотека", "Импорт"],
     defaultPassword: "manager123",

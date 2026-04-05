@@ -483,7 +483,7 @@ export function AppearanceClient({
                     ) : isOn ? (
                       <button
                         onClick={() => setDefaultPalette(p.id)}
-                        className="text-xs text-muted-foreground hover:text-primary hover:bg-primary/5 px-2 py-1 rounded-lg transition-colors shrink-0"
+                        className="text-xs text-muted-foreground hover:text-primary hover:bg-primary/15 px-2 py-1 rounded-lg transition-colors shrink-0"
                       >
                         Сделать по умолчанию
                       </button>

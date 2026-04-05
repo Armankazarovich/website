@@ -208,7 +208,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 <button
                   key={i}
                   onClick={() => loadPreset(p)}
-                  className="text-left p-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all"
+                  className="text-left p-3 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/15 transition-all"
                 >
                   <p className="text-sm font-semibold">{p.name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
@@ -420,7 +420,7 @@ export default function WorkflowsPage() {
 
       {/* ── One-click install for lumber store ── */}
       {!loading && (
-        <div className={`rounded-2xl border-2 p-5 transition-all ${seedDone ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20" : "border-primary/30 bg-primary/5"}`}>
+        <div className={`rounded-2xl border-2 p-5 transition-all ${seedDone ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20" : "border-primary/30 bg-primary/15"}`}>
           {seedDone ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0">

@@ -80,7 +80,7 @@ export function AdminDashboardWidgets() {
   const tempStr = `${weather.temp > 0 ? "+" : ""}${weather.temp}°`;
 
   return (
-    <div className="flex items-center gap-2 text-foreground/50">
+    <div className="flex items-center flex-wrap gap-2 text-foreground/50">
       <span className="text-base leading-none">{emoji}</span>
       <span className="text-xs font-medium text-foreground/60">{tempStr} · {label}</span>
       <span className="text-foreground/25">·</span>

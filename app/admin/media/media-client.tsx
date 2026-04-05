@@ -251,7 +251,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => fileRef.current?.click()}
         className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
-          dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"
+          dragOver ? "border-primary bg-primary/15" : "border-border hover:border-primary/40 hover:bg-muted/30"
         }`}
       >
         <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
