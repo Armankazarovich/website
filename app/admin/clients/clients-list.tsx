@@ -23,11 +23,11 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-100 text-blue-700", CONFIRMED: "bg-purple-100 text-purple-700",
-  PROCESSING: "bg-yellow-100 text-yellow-700", SHIPPED: "bg-orange-100 text-orange-700",
-  IN_DELIVERY: "bg-sky-100 text-sky-700", READY_PICKUP: "bg-violet-100 text-violet-700",
-  DELIVERED: "bg-green-100 text-green-700", COMPLETED: "bg-teal-100 text-teal-700",
-  CANCELLED: "bg-red-100 text-red-700",
+  NEW: "bg-blue-500/15 text-blue-500 border border-blue-500/25", CONFIRMED: "bg-purple-500/15 text-purple-500 border border-purple-500/25",
+  PROCESSING: "bg-yellow-500/15 text-yellow-600 border border-yellow-500/25", SHIPPED: "bg-orange-500/15 text-orange-500 border border-orange-500/25",
+  IN_DELIVERY: "bg-sky-500/15 text-sky-500 border border-sky-500/25", READY_PICKUP: "bg-violet-500/15 text-violet-500 border border-violet-500/25",
+  DELIVERED: "bg-green-500/15 text-green-600 border border-green-500/25", COMPLETED: "bg-teal-500/15 text-teal-600 border border-teal-500/25",
+  CANCELLED: "bg-red-500/15 text-red-500 border border-red-500/25",
 };
 
 type ClientOrder = {

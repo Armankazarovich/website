@@ -1017,7 +1017,7 @@ export default function EmailPage() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           {s.source === "registered" ? (
-                            <span className="inline-flex items-center px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs font-medium">
+                            <span className="inline-flex items-center px-2 py-0.5 bg-primary/10 text-primary dark:bg-primary/15 rounded-full text-xs font-medium">
                               Зарегистрирован
                             </span>
                           ) : (

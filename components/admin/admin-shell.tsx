@@ -323,7 +323,7 @@ function AdminDesktopSettings() {
                 style={{ background: "rgba(255,255,255,0.05)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.08)"}` }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(100,120,180,0.15)" }}>
-                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-blue-300"}`} />
+                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-primary/70"}`} />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-medium text-white/80">{classic ? "Классический" : "С фото-фоном"}</p>
@@ -725,7 +725,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
                 style={{ background: "rgba(255,255,255,0.06)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.09)"}` }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(100,120,180,0.15)" }}>
-                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-blue-300"}`} />
+                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-primary/70"}`} />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold text-white/85">{classic ? "Классический" : "С фото-фоном"}</p>

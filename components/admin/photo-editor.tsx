@@ -405,7 +405,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
           <h2 className="font-display font-semibold text-lg flex items-center gap-2">
-            <PenTool className="w-5 h-5 text-blue-500" /> Редактор фото
+            <PenTool className="w-5 h-5 text-primary" /> Редактор фото
           </h2>
           <div className="flex items-center gap-2">
             <button onClick={applyWatermark} disabled={applyingWm} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border hover:bg-accent transition-colors disabled:opacity-50">

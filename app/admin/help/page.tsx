@@ -13,7 +13,7 @@ import Link from "next/link";
 /* ─── Roles ─── */
 const ROLES = [
   { key: "all",      label: "Все",           icon: Users,    color: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",   ring: "ring-slate-400" },
-  { key: "client",   label: "Клиент",        icon: User,     color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",    ring: "ring-blue-400" },
+  { key: "client",   label: "Клиент",        icon: User,     color: "bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary",    ring: "ring-primary/40" },
   { key: "manager",  label: "Менеджер",      icon: Phone,    color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300", ring: "ring-green-400" },
   { key: "admin",    label: "Администратор", icon: Shield,   color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300", ring: "ring-orange-400" },
   { key: "director", label: "Директор",      icon: TrendingUp, color: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300", ring: "ring-purple-400" },

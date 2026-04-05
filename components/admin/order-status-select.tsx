@@ -31,15 +31,15 @@ export function OrderStatusSelect({ orderId, currentStatus }: Props) {
   };
 
   const colors: Record<string, string> = {
-    NEW: "bg-blue-100 text-blue-800",
-    CONFIRMED: "bg-purple-100 text-purple-800",
-    PROCESSING: "bg-yellow-100 text-yellow-800",
-    SHIPPED: "bg-orange-100 text-orange-800",
-    IN_DELIVERY: "bg-sky-100 text-sky-800",
-    READY_PICKUP: "bg-violet-100 text-violet-800",
-    DELIVERED: "bg-green-100 text-green-800",
-    COMPLETED: "bg-teal-100 text-teal-800",
-    CANCELLED: "bg-red-100 text-red-800",
+    NEW: "bg-blue-500/15 text-blue-500",
+    CONFIRMED: "bg-purple-500/15 text-purple-500",
+    PROCESSING: "bg-yellow-500/15 text-yellow-600",
+    SHIPPED: "bg-orange-500/15 text-orange-500",
+    IN_DELIVERY: "bg-sky-500/15 text-sky-500",
+    READY_PICKUP: "bg-violet-500/15 text-violet-500",
+    DELIVERED: "bg-green-500/15 text-green-600",
+    COMPLETED: "bg-teal-500/15 text-teal-600",
+    CANCELLED: "bg-red-500/15 text-red-500",
   };
 
   return (
