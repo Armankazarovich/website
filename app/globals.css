@@ -885,6 +885,52 @@ canvas,
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
+/* ═════════════════════════════════════════════════════════════
+   LIGHT THEME + NATURE MODE — БЕЛЫЙ ТЕКСТ НА ТЁМНОМ ФОНЕ
+   В light теме --foreground тёмный, но визуальный фон у нас тёмный!
+   Переопределяем CSS vars в <main> → text-foreground/muted → белые.
+   Tailwind hardcoded-цвета (text-orange-600 и т.д.) НЕ затронуты.
+   ═════════════════════════════════════════════════════════════ */
+.light .aray-nature-mode main,
+[data-theme="light"] .aray-nature-mode main {
+  --foreground: 0 0% 92%;
+  --muted-foreground: 0 0% 58%;
+  color: rgba(255, 255, 255, 0.88);
+}
+/* Тёмные hardcoded тексты (алерты, section headings) → белые.
+   Исключаем rounded-full badge'и — у них своя bg+text пара (нужен читаемый контраст). */
+.light .aray-nature-mode main .text-orange-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-yellow-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-blue-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-green-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-red-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-slate-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-violet-800:not([class*="rounded-full"]),
+.light .aray-nature-mode main .text-emerald-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-orange-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-yellow-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-blue-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-green-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-red-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-slate-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-violet-800:not([class*="rounded-full"]),
+[data-theme="light"] .aray-nature-mode main .text-emerald-800:not([class*="rounded-full"]) {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* Светлые border-цвета алертов → тонкие белые */
+.light .aray-nature-mode main .border-orange-200,
+.light .aray-nature-mode main .border-yellow-200,
+.light .aray-nature-mode main .border-blue-200,
+.light .aray-nature-mode main .border-green-200,
+.light .aray-nature-mode main .border-red-200,
+[data-theme="light"] .aray-nature-mode main .border-orange-200,
+[data-theme="light"] .aray-nature-mode main .border-yellow-200,
+[data-theme="light"] .aray-nature-mode main .border-blue-200,
+[data-theme="light"] .aray-nature-mode main .border-green-200,
+[data-theme="light"] .aray-nature-mode main .border-red-200 {
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
 /* ── ОСОБЕННЫЙ GLASSMORPHISM — многослойный blur из будущего ── */
 .aray-glass {
   backdrop-filter: blur(20px) saturate(180%) brightness(1.05);
