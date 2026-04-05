@@ -616,20 +616,16 @@ canvas,
    Иконки и кнопки НЕ трогаем — они сами знают свои цвета.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── ТЁМНАЯ ТЕМА: тёмный glass с лёгким тинтом палитры ── */
+/* ══════════════════════════════════════════════════════════════
+   КАРТОЧКИ В ПРИРОДНОМ РЕЖИМЕ — ЧИСТОЕ СТЕКЛО (без цветного тинта)
+   Одно правило для ВСЕХ тем — минимализм, работает с любой палитрой.
+   Тёмный frosted glass: видно природный фон, но контент читаем.
+   ══════════════════════════════════════════════════════════════ */
 .aray-nature-mode .bg-card,
 .aray-nature-mode .bg-popover,
 .aray-nature-mode .bg-background,
 .aray-nature-mode .bg-white,
-.aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.55) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
-}
-/* ── СВЕТЛАЯ ТЕМА: витражное стекло — цвет палитры ── */
+.aray-nature-mode .aray-stat-card,
 .light .aray-nature-mode .bg-card,
 [data-theme="light"] .aray-nature-mode .bg-card,
 .light .aray-nature-mode .bg-popover,
@@ -640,11 +636,11 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.32) 0%, hsl(var(--primary) / 0.14) 55%, rgba(255,255,255,0.06) 100%) !important;
-  border-color: hsl(var(--primary) / 0.35) !important;
-  box-shadow: 0 4px 28px hsl(var(--primary) / 0.18), 0 1px 0 hsl(var(--primary) / 0.25) inset !important;
+  backdrop-filter: blur(26px) saturate(180%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(180%) brightness(0.82) !important;
+  background: rgba(6, 10, 24, 0.52) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
@@ -778,25 +774,21 @@ canvas,
   transform: none !important;
 }
 
-/* Границы — тёмная тема белые, светлая тема тёмные */
+/* Границы — всегда белые (фон всегда тёмный: природное фото) */
 .aray-nature-mode .border-border,
-.aray-nature-mode .border {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
+.aray-nature-mode .border,
 .light .aray-nature-mode .border-border,
 [data-theme="light"] .aray-nature-mode .border-border,
 .light .aray-nature-mode .border,
 [data-theme="light"] .aray-nature-mode .border {
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* Muted фон — тёмная тема светлее, светлая темнее */
-.aray-nature-mode .bg-muted {
-  background: rgba(255, 255, 255, 0.06) !important;
-}
+/* Muted фон — всегда белое стекло (фон всегда тёмный) */
+.aray-nature-mode .bg-muted,
 .light .aray-nature-mode .bg-muted,
 [data-theme="light"] .aray-nature-mode .bg-muted {
-  background: rgba(0, 0, 0, 0.05) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
 }
 
 /* Input, Select, Textarea — тёмная тема: белое стекло */
@@ -808,17 +800,17 @@ canvas,
   color: rgba(255, 255, 255, 0.95) !important;
   color-scheme: dark !important;
 }
-/* Светлая тема — тёмный текст, светлый фон */
+/* Светлая тема — тот же стиль что тёмная (фон ВСЕГДА тёмное фото) */
 .light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
 .light .aray-nature-mode textarea,
 [data-theme="light"] .aray-nature-mode textarea,
 .light .aray-nature-mode select,
 [data-theme="light"] .aray-nature-mode select {
-  background: rgba(0, 0, 0, 0.07) !important;
-  border-color: rgba(0, 0, 0, 0.12) !important;
-  color: rgba(0, 0, 0, 0.85) !important;
-  color-scheme: light !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  color-scheme: dark !important;
 }
 /* Placeholder — тёмная тема */
 .aray-nature-mode input::placeholder,
@@ -1049,8 +1041,8 @@ canvas,
 .light .aray-nature-mode a.aray-icon-spin,
 [data-theme="light"] .aray-nature-mode button.aray-icon-spin,
 [data-theme="light"] .aray-nature-mode a.aray-icon-spin {
-  background: rgba(255, 255, 255, 0.50) !important;
-  border-color: rgba(255, 255, 255, 0.65) !important;
+  background: rgba(5, 8, 20, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
 /* Sidebar nav-ссылки — ПЕРЕОПРЕДЕЛЕНИЕ: прозрачные (навигация не нужно выделять) */
@@ -1471,8 +1463,8 @@ canvas,
   background: rgba(5, 8, 20, 0.30) !important;
 }
 .light .aray-nature-mode tr.bg-white,
-[data-theme="light"] .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span) {
-  background: rgba(255, 255, 255, 0.65) !important;
+[data-theme="light"] .aray-nature-mode tr.bg-white {
+  background: rgba(5, 8, 20, 0.35) !important;
 }
 
 /* ── ФИЛЬТР-ПИЛЮЛИ — тёмное стекло (bg-muted/40, bg-muted/60 и т.д.) ── */
@@ -1508,4 +1500,15 @@ canvas,
 .aray-nature-mode h3[class*="font-semibold"] {
   color: rgba(255, 255, 255, 0.92) !important;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.40);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ДУБЛИРУЮЩИЕСЯ ЗАГОЛОВКИ СТРАНИЦ — скрыть на десктопе
+   Topbar уже показывает название страницы через breadcrumb/title.
+   Первый h1 в main (page-level title) скрываем только на lg+.
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  .aray-nature-mode main h1[class*="font-display"][class*="font-bold"] {
+    display: none;
+  }
 }
