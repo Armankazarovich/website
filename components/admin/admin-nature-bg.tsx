@@ -3,36 +3,36 @@
 import { useEffect, useState, useRef } from "react";
 import { useTheme } from "next-themes";
 
-// ── 12 дневных фото: природа + города ────────────────────────────────────────
+// ── 12 дневных фото: только природа ──────────────────────────────────────────
 const DAY: { url: string; label: string }[] = [
   { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=85&auto=format&fit=crop", label: "Горные вершины" },
   { url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1920&q=85&auto=format&fit=crop", label: "Дремучий лес" },
-  { url: "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=1920&q=85&auto=format&fit=crop", label: "Париж днём" },
   { url: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1920&q=85&auto=format&fit=crop", label: "Водопад" },
-  { url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1920&q=85&auto=format&fit=crop", label: "Город в облаках" },
   { url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1920&q=85&auto=format&fit=crop", label: "Альпы" },
-  { url: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1920&q=85&auto=format&fit=crop", label: "Лондон" },
   { url: "https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=1920&q=85&auto=format&fit=crop", label: "Океан" },
   { url: "https://images.unsplash.com/photo-1448375240703-89f2b795f098?w=1920&q=85&auto=format&fit=crop", label: "Туманный лес" },
-  { url: "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1920&q=85&auto=format&fit=crop", label: "Нью-Йорк" },
   { url: "https://images.unsplash.com/photo-1491555103944-7c89fc6e1e65?w=1920&q=85&auto=format&fit=crop", label: "Снежные горы" },
-  { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=85&auto=format&fit=crop", label: "Токио" },
+  { url: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=85&auto=format&fit=crop", label: "Закат над горами" },
+  { url: "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1920&q=85&auto=format&fit=crop", label: "Зелёные холмы" },
+  { url: "https://images.unsplash.com/photo-1439853949212-36652a89e0d3?w=1920&q=85&auto=format&fit=crop", label: "Горное озеро" },
+  { url: "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=1920&q=85&auto=format&fit=crop", label: "Осенний лес" },
+  { url: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1920&q=85&auto=format&fit=crop", label: "Горная долина" },
 ];
 
-// ── 12 ночных фото: природа + ночные города ──────────────────────────────────
+// ── 12 ночных фото: только природа ───────────────────────────────────────────
 const NIGHT: { url: string; label: string }[] = [
   { url: "https://images.unsplash.com/photo-1419242902344-4b9f4c242d08?w=1920&q=85&auto=format&fit=crop", label: "Млечный путь" },
-  { url: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1920&q=85&auto=format&fit=crop", label: "Токио ночью" },
   { url: "https://images.unsplash.com/photo-1480497490-fa5c5aff5051?w=1920&q=85&auto=format&fit=crop", label: "Горный закат" },
-  { url: "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=1920&q=85&auto=format&fit=crop&sat=-100&bri=-20", label: "Ночной Париж" },
   { url: "https://images.unsplash.com/photo-1516912799-8f4ec627d5f4?w=1920&q=85&auto=format&fit=crop", label: "Северное сияние" },
-  { url: "https://images.unsplash.com/photo-1499678329028-101435549a4e?w=1920&q=85&auto=format&fit=crop", label: "Огни города" },
   { url: "https://images.unsplash.com/photo-1445905595283-21f8ae8a33d2?w=1920&q=85&auto=format&fit=crop", label: "Ночные горы" },
-  { url: "https://images.unsplash.com/photo-1538970272646-f61fabb3bfab?w=1920&q=85&auto=format&fit=crop", label: "Нью-Йорк ночью" },
   { url: "https://images.unsplash.com/photo-1458668383970-8ddd3927deed?w=1920&q=85&auto=format&fit=crop", label: "Горное озеро" },
   { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=85&auto=format&fit=crop&bri=-30", label: "Ночные вершины" },
   { url: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1920&q=85&auto=format&fit=crop", label: "Звёздное небо" },
-  { url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1920&q=85&auto=format&fit=crop", label: "Ночной горизонт" },
+  { url: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?w=1920&q=85&auto=format&fit=crop", label: "Ночной лес" },
+  { url: "https://images.unsplash.com/photo-1501426026826-31c667bdf23d?w=1920&q=85&auto=format&fit=crop", label: "Звёзды над горами" },
+  { url: "https://images.unsplash.com/photo-1472214103597-f85f9a3f1ab6?w=1920&q=85&auto=format&fit=crop", label: "Ночная тайга" },
+  { url: "https://images.unsplash.com/photo-1504701954957-a574bfe0b0f9?w=1920&q=85&auto=format&fit=crop", label: "Полярное сияние" },
+  { url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1920&q=85&auto=format&fit=crop", label: "Галактика" },
 ];
 
 const ANIMS = ["kenburns-in", "kenburns-2", "kenburns-3"];
