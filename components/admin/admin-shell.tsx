@@ -228,6 +228,115 @@ import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 
+// ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
+function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
+  const [count, setCount] = useState(0);
+  const [bellOpen, setBellOpen] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications/count");
+        if (res.ok) { const d = await res.json(); setCount(d.total ?? 0); }
+      } catch {}
+    };
+    fetchCount();
+    const t = setInterval(fetchCount, 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const openBell = async () => {
+    setBellOpen(true);
+    if (!orders.length) {
+      setLoadingOrders(true);
+      try {
+        const res = await fetch("/api/admin/orders?status=NEW&limit=5");
+        if (res.ok) { const d = await res.json(); setOrders(d.orders ?? []); }
+      } catch {} finally { setLoadingOrders(false); }
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      {/* Уведомления — pill кнопка */}
+      <div className="relative">
+        <button
+          onClick={openBell}
+          style={{ WebkitTapHighlightColor: "transparent",
+            background: count > 0 ? "hsl(var(--primary)/0.20)" : "rgba(255,255,255,0.08)",
+            border: count > 0 ? "1px solid hsl(var(--primary)/0.40)" : "1px solid rgba(255,255,255,0.12)",
+          }}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
+        >
+          <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }} />
+          {count > 0 && (
+            <span className="text-[11px] font-bold leading-none" style={{ color: "hsl(var(--primary))" }}>
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
+        </button>
+
+        {/* Dropdown уведомлений */}
+        {bellOpen && (
+          <>
+            <div className="fixed inset-0 z-[80]" onClick={() => setBellOpen(false)} />
+            <div className="absolute right-0 top-full mt-2 z-[81] w-72 rounded-2xl overflow-hidden"
+              style={{ background: "rgba(10,14,30,0.97)", border: "1px solid rgba(255,255,255,0.10)",
+                backdropFilter: "blur(32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
+              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Новые заказы</p>
+              </div>
+              {loadingOrders ? (
+                <div className="flex justify-center py-6">
+                  <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                </div>
+              ) : orders.length === 0 ? (
+                <p className="text-center text-white/35 text-sm py-6">Нет новых заказов</p>
+              ) : (
+                <div className="py-1.5 max-h-64 overflow-y-auto">
+                  {orders.map((o: any) => (
+                    <button key={o.id} onClick={() => { router.push(`/admin/orders/${o.id}`); setBellOpen(false); }}
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-white/06 transition-colors text-left">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white/90 truncate">#{o.orderNumber} {o.guestName || "—"}</p>
+                        <p className="text-[11px] text-white/40">{o.guestPhone || ""}</p>
+                      </div>
+                      <span className="text-xs font-semibold text-primary shrink-0">
+                        {o.totalAmount ? `${Number(o.totalAmount).toLocaleString()} ₽` : ""}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                <button onClick={() => { router.push("/admin/orders"); setBellOpen(false); }}
+                  className="w-full py-3 text-center text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
+                  Все заказы →
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Настройки — gear pill */}
+      <button
+        onClick={onSettingsOpen}
+        style={{ WebkitTapHighlightColor: "transparent",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.12)" }}
+        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
+      >
+        <Settings className="w-4 h-4 text-white/55" />
+      </button>
+    </div>
+  );
+}
+
 // ── Десктопная панель настроек (тот же стиль что и мобильная) ───────────────
 function AdminDesktopSettings() {
   const [open, setOpen] = useState(false);
@@ -526,26 +635,29 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       </aside>
 
       {/* ─── Mobile header ────────────────────────────────────── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-1.5 px-2 h-14 aray-sidebar text-white"
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-2 px-3 h-14 aray-sidebar text-white"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}>
+        {/* Hamburger */}
         <button onClick={() => setOpen(true)}
-          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0"
+          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0 active:scale-90"
+          style={{ WebkitTapHighlightColor: "transparent" }}
           aria-label="Меню">
           <Menu className="w-5 h-5" />
         </button>
-        <Link href="/admin" className="flex-1 min-w-0 px-1">
-          <span className="font-display font-bold text-base leading-none">ПилоРус</span>
-          <span className="text-[10px] text-white/45 ml-1.5">{pageTitle}</span>
+
+        {/* Лого + бренд */}
+        <Link href="/admin" className="flex-1 min-w-0 flex items-center gap-2">
+          <div className="flex flex-col">
+            <span className="font-display font-bold text-sm leading-none">ПилоРус</span>
+            <span className="text-[10px] text-white/40 leading-none mt-0.5">{pageTitle || "Панель"}</span>
+          </div>
         </Link>
-        {/* Мобильный поиск */}
+
+        {/* Поиск */}
         <AdminSearch />
-        {/* Колокол */}
-        <AdminNotificationBell mobile={true} />
-        {/* Настройки */}
-        <button onClick={() => setMobileSettingsOpen(true)}
-          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0">
-          <Settings className="w-[18px] h-[18px] text-white/55" />
-        </button>
+
+        {/* Pill: уведомления + настройки (как фильтры в магазине) */}
+        <AdminMobileActionPill onSettingsOpen={() => setMobileSettingsOpen(true)} />
       </header>
 
       {/* ─── Desktop top bar ──────────────────────────────────── */}
