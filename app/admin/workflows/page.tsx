@@ -6,6 +6,7 @@ import {
   ShoppingBag, Clock, CheckSquare,
   Loader2, RefreshCw, CheckCircle2,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Workflow = {
   id: string;
@@ -82,6 +83,7 @@ function WorkflowCard({
   onToggle: () => void;
   onDelete: () => void;
 }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const trigger = TRIGGERS.find(t => t.id === wf.trigger);
   const TriggerIcon = trigger?.icon ?? Zap;
 
@@ -119,13 +121,23 @@ function WorkflowCard({
             {wf.active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
           </button>
           <button
-            onClick={() => { if (confirm(`Удалить воркфлоу "${wf.name}"?`)) onDelete(); }}
+            onClick={() => setConfirmDelete(true)}
             className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); onDelete(); }}
+        title={`Удалить воркфлоу?`}
+        description={`Воркфлоу «${wf.name}» будет удалён без возможности восстановления.`}
+        confirmLabel="Удалить"
+        variant="danger"
+      />
 
       {/* Actions preview */}
       <div className="mt-4 pt-4 border-t border-border/50">
@@ -337,6 +349,7 @@ export default function WorkflowsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [seedDone, setSeedDone] = useState(false);
+  const [confirmSeed, setConfirmSeed] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -352,7 +365,6 @@ export default function WorkflowsPage() {
   useEffect(() => { load(); }, []);
 
   const installDefaults = async () => {
-    if (!confirm("Установить 6 готовых воронок для магазина пиломатериалов?")) return;
     setSeeding(true);
     try {
       const res = await fetch("/api/admin/workflows/seed", { method: "POST" });
@@ -446,7 +458,7 @@ export default function WorkflowsPage() {
                 </div>
               </div>
               <button
-                onClick={installDefaults}
+                onClick={() => setConfirmSeed(true)}
                 disabled={seeding}
                 className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90 disabled:opacity-60 transition-colors shadow-lg shadow-primary/30 text-sm"
               >
@@ -494,6 +506,17 @@ export default function WorkflowsPage() {
           onCreated={wf => setWorkflows(prev => [...prev, wf])}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmSeed}
+        onClose={() => setConfirmSeed(false)}
+        onConfirm={() => { setConfirmSeed(false); installDefaults(); }}
+        title="Установить готовые воронки?"
+        description="Установить 6 готовых воронок для магазина пиломатериалов? Они будут сразу активны."
+        confirmLabel="Установить"
+        variant="default"
+        loading={seeding}
+      />
     </div>
   );
 }

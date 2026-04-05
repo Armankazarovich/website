@@ -10,6 +10,7 @@ import {
   ArrowDown, Minus, ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TaskStatus = "BACKLOG" | "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
@@ -180,6 +181,7 @@ function TaskModal({
   const [comments, setComments] = useState(task.comments);
   const [saving, setSaving] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const save = async () => {
     setSaving(true);
@@ -246,7 +248,7 @@ function TaskModal({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { if (confirm("Удалить задачу?")) { onDelete(); onClose(); } }}
+              onClick={() => setConfirmDelete(true)}
               className="text-xs text-destructive hover:text-destructive/80 px-2 py-1 rounded-lg hover:bg-destructive/10 transition-colors"
             >
               Удалить
@@ -409,6 +411,16 @@ function TaskModal({
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); onDelete(); onClose(); }}
+        title="Удалить задачу?"
+        description="Задача и все её комментарии будут удалены без возможности восстановления."
+        confirmLabel="Удалить"
+        variant="danger"
+      />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Promotion = {
   id: string;
@@ -30,6 +31,7 @@ function PromotionCard({
   const [validUntil, setValidUntil] = useState(promo.validUntil ? promo.validUntil.slice(0, 10) : "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const isExpired = promo.validUntil && new Date(promo.validUntil) < new Date();
 
@@ -117,9 +119,7 @@ function PromotionCard({
       </div>
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
         <button
-          onClick={() => {
-            if (confirm("Удалить акцию?")) onDelete(promo.id);
-          }}
+          onClick={() => setConfirmDelete(true)}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
@@ -140,6 +140,16 @@ function PromotionCard({
           )}
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); onDelete(promo.id); }}
+        title="Удалить акцию?"
+        description={`Акция «${promo.title}» будет удалена навсегда.`}
+        confirmLabel="Удалить"
+        variant="danger"
+      />
     </div>
   );
 }

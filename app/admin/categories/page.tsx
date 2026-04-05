@@ -10,6 +10,7 @@ import {
   Upload, Save, Plus, Loader2, Check, ImageIcon, Trash2,
   Eye, EyeOff, ChevronUp, ChevronDown, Settings2,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Category = {
   id: string;
@@ -44,6 +45,7 @@ function CategoryRow({
   const [modalOpen, setModalOpen] = useState(false);
   const [toggling, setToggling]   = useState(false);
   const [moving, setMoving]       = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const hidden = isHidden(cat);
 
   const handleToggle = async () => {
@@ -129,7 +131,7 @@ function CategoryRow({
             <Settings2 className="w-3.5 h-3.5" />
           </button>
           <button
-            onClick={() => { if (confirm(`Удалить «${cat.name}»?`)) onDelete(cat.id); }}
+            onClick={() => setConfirmDelete(true)}
             title="Удалить"
             className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
           >
@@ -147,6 +149,15 @@ function CategoryRow({
           await onUpdate(cat.id, data);
           setModalOpen(false);
         }}
+      />
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={() => { setConfirmDelete(false); onDelete(cat.id); }}
+        title={`Удалить «${cat.name}»?`}
+        description="Категория будет удалена. Товары категории не удаляются."
+        confirmLabel="Удалить"
+        variant="danger"
       />
     </>
   );

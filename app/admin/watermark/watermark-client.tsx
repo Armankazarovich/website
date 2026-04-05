@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Upload, CheckCircle, Loader2, Image as ImageIcon, Layers, Sliders, Zap, AlertCircle, Type, RotateCcw, ShieldCheck, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 const POSITIONS = [
   { value: "bottom-right", label: "Правый низ" },
@@ -50,6 +51,11 @@ export function WatermarkClient({
   const [applyResult,setApplyResult]= useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const [confirmBackup,   setConfirmBackup]   = useState(false);
+  const [confirmRestore,  setConfirmRestore]  = useState(false);
+  const [confirmCleanup,  setConfirmCleanup]  = useState(false);
+  const [confirmApplyAll, setConfirmApplyAll] = useState(false);
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -79,7 +85,6 @@ export function WatermarkClient({
   };
 
   const backupImages = async () => {
-    if (!confirm("Создать резервную копию всех фото товаров? Это позволит восстановить их после применения водяного знака.")) return;
     setBacking(true);
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "backup_images" }) });
@@ -93,7 +98,6 @@ export function WatermarkClient({
   };
 
   const restoreImages = async () => {
-    if (!confirm("Восстановить все фото товаров из резервной копии? Это отменит применённые водяные знаки.")) return;
     setRestoring(true);
     setApplyResult(null);
     try {
@@ -104,7 +108,6 @@ export function WatermarkClient({
   };
 
   const cleanupOrphans = async () => {
-    if (!confirm("Удалить все неиспользуемые wm-* файлы? Файлы, на которые не ссылается ни один товар, будут удалены.")) return;
     setCleaning(true); setApplyResult(null);
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cleanup_orphans" }) });
@@ -114,7 +117,6 @@ export function WatermarkClient({
   };
 
   const applyToAll = async () => {
-    if (!confirm("Применить водяной знак ко ВСЕМ фото товаров?\n\nСначала создайте резервную копию если ещё не сделали!")) return;
     setApplying(true); setApplyResult(null);
     try {
       const res  = await fetch("/api/admin/watermark", {
@@ -291,14 +293,14 @@ export function WatermarkClient({
         )}
 
         <div className="flex gap-3 flex-wrap">
-          <button onClick={applyToAll} disabled={applying || (wmType === "logo" && !logoUrl) || (wmType === "text" && !wmText.trim())}
+          <button onClick={() => setConfirmApplyAll(true)} disabled={applying || (wmType === "logo" && !logoUrl) || (wmType === "text" && !wmText.trim())}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
             {applying ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             {applying ? "Применяем..." : "Применить ко всем фото"}
           </button>
 
           {backupDate && (
-            <button onClick={restoreImages} disabled={restoring}
+            <button onClick={() => setConfirmRestore(true)} disabled={restoring}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors">
               {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
               {restoring ? "Восстанавливаем..." : "Отменить — вернуть оригиналы"}
@@ -311,13 +313,54 @@ export function WatermarkClient({
           <p className="text-xs text-muted-foreground mb-2">
             Старые wm-файлы больше не нужны — теперь при повторном применении они перезаписываются автоматически (без дублей). Удалите накопившиеся старые файлы кнопкой ниже:
           </p>
-          <button onClick={cleanupOrphans} disabled={cleaning}
+          <button onClick={() => setConfirmCleanup(true)} disabled={cleaning}
             className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/5 disabled:opacity-50 transition-colors">
             {cleaning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             {cleaning ? "Очищаем..." : "Удалить дубли / неиспользуемые wm-файлы"}
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmBackup}
+        onClose={() => setConfirmBackup(false)}
+        onConfirm={() => { setConfirmBackup(false); backupImages(); }}
+        title="Создать резервную копию?"
+        description="Создать резервную копию всех фото товаров? Это позволит восстановить их после применения водяного знака."
+        confirmLabel="Создать копию"
+        variant="default"
+        loading={backing}
+      />
+      <ConfirmDialog
+        open={confirmRestore}
+        onClose={() => setConfirmRestore(false)}
+        onConfirm={() => { setConfirmRestore(false); restoreImages(); }}
+        title="Восстановить оригиналы?"
+        description="Восстановить все фото товаров из резервной копии? Это отменит применённые водяные знаки."
+        confirmLabel="Восстановить"
+        variant="warning"
+        loading={restoring}
+      />
+      <ConfirmDialog
+        open={confirmCleanup}
+        onClose={() => setConfirmCleanup(false)}
+        onConfirm={() => { setConfirmCleanup(false); cleanupOrphans(); }}
+        title="Удалить неиспользуемые файлы?"
+        description="Удалить все неиспользуемые wm-* файлы? Файлы, на которые не ссылается ни один товар, будут удалены."
+        confirmLabel="Удалить"
+        variant="danger"
+        loading={cleaning}
+      />
+      <ConfirmDialog
+        open={confirmApplyAll}
+        onClose={() => setConfirmApplyAll(false)}
+        onConfirm={() => { setConfirmApplyAll(false); applyToAll(); }}
+        title="Применить ко всем фото?"
+        description="Водяной знак будет применён ко ВСЕМ фото товаров. Сначала создайте резервную копию если ещё не сделали!"
+        confirmLabel="Применить"
+        variant="warning"
+        loading={applying}
+      />
     </div>
   );
 }

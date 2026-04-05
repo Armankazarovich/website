@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Trash2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 interface Props {
   reviewId: string;
@@ -11,6 +12,8 @@ interface Props {
 
 export function ReviewActions({ reviewId, approved: initialApproved }: Props) {
   const [approved, setApproved] = useState(initialApproved);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const toggleApprove = async () => {
     await fetch(`/api/admin/reviews/${reviewId}`, {
@@ -22,9 +25,14 @@ export function ReviewActions({ reviewId, approved: initialApproved }: Props) {
   };
 
   const deleteReview = async () => {
-    if (!confirm("Удалить отзыв?")) return;
-    await fetch(`/api/admin/reviews/${reviewId}`, { method: "DELETE" });
-    window.location.reload();
+    setDeleting(true);
+    try {
+      await fetch(`/api/admin/reviews/${reviewId}`, { method: "DELETE" });
+      setConfirmDelete(false);
+      window.location.reload();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -33,9 +41,19 @@ export function ReviewActions({ reviewId, approved: initialApproved }: Props) {
         <CheckCircle className="w-3 h-3 mr-1" />
         {approved ? "Скрыть" : "Опубликовать"}
       </Button>
-      <Button size="sm" variant="ghost" className="text-destructive" onClick={deleteReview}>
+      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setConfirmDelete(true)}>
         <Trash2 className="w-3 h-3" />
       </Button>
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={deleteReview}
+        title="Удалить отзыв?"
+        description="Отзыв будет удалён без возможности восстановления."
+        confirmLabel="Удалить"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
 
 type Review = {
@@ -161,6 +162,8 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [starterLoading, setStarterLoading] = useState(false);
   const [starterResult, setStarterResult] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [confirmSeed, setConfirmSeed] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPlatforms, setShowPlatforms] = useState(false);
 
@@ -194,7 +197,6 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Удалить отзыв?")) return;
     setLoadingId(id);
     try {
       const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
@@ -207,7 +209,6 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
   };
 
   const addStarterReviews = async () => {
-    if (!confirm("Добавить 6 стартовых отзывов? Они будут сразу опубликованы.")) return;
     setStarterLoading(true);
     setStarterResult(null);
     try {
@@ -240,7 +241,7 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={addStarterReviews}
+          onClick={() => setConfirmSeed(true)}
           disabled={starterLoading}
         >
           {starterLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
@@ -441,7 +442,7 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
                         size="sm"
                         variant="ghost"
                         className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(review.id)}
+                        onClick={() => setConfirmDeleteId(review.id)}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -458,6 +459,27 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={() => { if (confirmDeleteId) handleDelete(confirmDeleteId); setConfirmDeleteId(null); }}
+        title="Удалить отзыв?"
+        description="Отзыв будет удалён без возможности восстановления."
+        confirmLabel="Удалить"
+        variant="danger"
+        loading={!!loadingId}
+      />
+      <ConfirmDialog
+        open={confirmSeed}
+        onClose={() => setConfirmSeed(false)}
+        onConfirm={() => { setConfirmSeed(false); addStarterReviews(); }}
+        title="Добавить стартовые отзывы?"
+        description="6 готовых отзывов будут добавлены и сразу опубликованы на сайте."
+        confirmLabel="Добавить"
+        variant="warning"
+        loading={starterLoading}
+      />
     </div>
   );
 }
