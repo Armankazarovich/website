@@ -2,12 +2,22 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { ReviewsClient } from "./reviews-client";
 
-export default async function AdminReviewsPage() {
+export default async function AdminReviewsPage({
+  searchParams,
+}: {
+  searchParams: { status?: string };
+}) {
   const reviews = await prisma.review.findMany({
     orderBy: { createdAt: "desc" },
   });
 
   const pendingCount = reviews.filter((r) => !r.approved).length;
+
+  // Начальный фильтр из Smart Command Bar (чипсы: На модерации / Одобренные)
+  const initialFilter =
+    searchParams.status === "pending" ? "PENDING" :
+    searchParams.status === "approved" ? "APPROVED" :
+    "ALL";
 
   return (
     <div className="space-y-6">
@@ -19,7 +29,7 @@ export default async function AdminReviewsPage() {
           </span>
         )}
       </div>
-      <ReviewsClient reviews={reviews as any} />
+      <ReviewsClient reviews={reviews as any} initialFilter={initialFilter} />
     </div>
   );
 }

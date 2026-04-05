@@ -155,9 +155,15 @@ function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">)
   );
 }
 
-export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
+export function ReviewsClient({
+  reviews: initial,
+  initialFilter = "ALL",
+}: {
+  reviews: Review[];
+  initialFilter?: "ALL" | "PENDING" | "APPROVED";
+}) {
   const [reviews, setReviews] = useState(initial);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED">("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED">(initialFilter);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [starterLoading, setStarterLoading] = useState(false);

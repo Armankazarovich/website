@@ -34,10 +34,17 @@ const STATUS_COLORS: Record<string, string> = {
   CANCELLED: "bg-destructive/10 text-destructive",
 };
 
-export default async function DeliveryPage() {
+export default async function DeliveryPage({
+  searchParams,
+}: {
+  searchParams: { status?: string };
+}) {
   const session = await auth();
   const role = (session?.user as any)?.role;
   if (!session || !role || role === "USER") redirect("/login");
+
+  // Фильтр из Smart Command Bar (чипсы: Подтверждён / В пути / Самовывоз)
+  const statusFilter = searchParams.status || null;
 
   const allOrders = await prisma.order.findMany({
     where: {
@@ -48,9 +55,15 @@ export default async function DeliveryPage() {
     orderBy: { createdAt: "asc" },
   });
 
-  const activeOrders = allOrders.filter((o) => ACTIVE_STATUSES.includes(o.status));
-  const pickupOrders = allOrders.filter((o) => o.status === PICKUP_STATUS);
+  const allActive = allOrders.filter((o) => ACTIVE_STATUSES.includes(o.status));
+  const allPickup = allOrders.filter((o) => o.status === PICKUP_STATUS);
   const archiveOrders = allOrders.filter((o) => ARCHIVE_STATUSES.includes(o.status));
+
+  // Применяем фильтр чипса если он задан
+  const activeOrders = statusFilter && statusFilter !== PICKUP_STATUS
+    ? allActive.filter((o) => o.status === statusFilter)
+    : allActive;
+  const pickupOrders = statusFilter === PICKUP_STATUS ? allPickup : (statusFilter ? [] : allPickup);
 
   const totalDelivery = [...activeOrders, ...pickupOrders].reduce(
     (sum, o) => sum + Number((o as any).deliveryCost ?? 0),
@@ -66,6 +79,19 @@ export default async function DeliveryPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Автообновление каждые 30 секунд */}
       <AutoRefresh intervalMs={30000} />
+
+      {/* Активный фильтр из Smart Bar */}
+      {statusFilter && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/25 rounded-2xl">
+          <span className="text-sm text-primary font-medium">
+            Фильтр: {STATUS_LABELS[statusFilter] || statusFilter}
+          </span>
+          <Link href="/admin/delivery" className="ml-auto text-xs text-primary/60 hover:text-primary transition-colors">
+            Сбросить ×
+          </Link>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <h1 className="font-display font-bold text-2xl flex items-center gap-2">
