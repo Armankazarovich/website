@@ -231,7 +231,7 @@ export function AdminDesktopSearch() {
     <div ref={containerRef} className="flex-1 flex items-center relative mx-1 animate-in slide-in-from-right-3 fade-in duration-200">
       {/* Input bar */}
       <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
-        style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.14)" }}>
+        style={{ background: "rgba(10,15,35,0.75)", border: "1.5px solid rgba(255,255,255,0.18)" }}>
         <Search className="w-4 h-4 text-primary/70 shrink-0" />
         <input
           ref={inputRef}
@@ -664,14 +664,14 @@ export function AdminStickySearchBar() {
         className="flex items-center gap-2.5 px-4 py-3 rounded-2xl transition-all duration-200 w-full"
         style={{
           background: focused
-            ? "rgba(14,20,44,0.88)"
+            ? "rgba(14,20,44,0.90)"
             : "rgba(10,15,35,0.75)",
           border: focused
-            ? "1.5px solid hsl(var(--primary)/0.55)"
+            ? "1.5px solid rgba(255,255,255,0.28)"
             : "1.5px solid rgba(255,255,255,0.14)",
           boxShadow: focused
-            ? "0 0 0 3px hsl(var(--primary)/0.12), inset 0 1px 0 rgba(255,255,255,0.05)"
-            : "inset 0 1px 0 rgba(255,255,255,0.05)",
+            ? "inset 0 1px 0 rgba(255,255,255,0.07)"
+            : "none",
         }}
       >
         <Search className="w-4 h-4 text-primary/70 shrink-0" />
