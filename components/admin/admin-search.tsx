@@ -207,7 +207,7 @@ export function AdminDesktopSearch() {
     <div ref={containerRef} className="flex-1 flex items-center relative mx-1 animate-in slide-in-from-right-3 fade-in duration-200">
       {/* Input bar */}
       <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
-        style={{ background: isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.06)", border: isDark ? "1px solid rgba(255,255,255,0.14)" : "1px solid rgba(0,0,0,0.10)" }}>
+        style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.14)" }}>
         <Search className="w-4 h-4 text-blue-400 shrink-0" />
         <input
           ref={inputRef}
@@ -215,14 +215,14 @@ export function AdminDesktopSearch() {
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Поиск заказов, товаров, клиентов..."
-          className={`flex-1 bg-transparent outline-none min-w-0 ${isDark ? "text-white placeholder:text-white/35" : "text-foreground placeholder:text-foreground/40"}`}
+          className="flex-1 bg-transparent outline-none min-w-0 text-white placeholder:text-white/35"
           style={{ fontSize: "16px" }}
         />
         {loading
           ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
           : query
-            ? <button onClick={() => setQuery("")} className={`${isDark ? "text-white/30 hover:text-white/60" : "text-foreground/35 hover:text-foreground/65"} transition-colors shrink-0`}><X className="w-3.5 h-3.5" /></button>
-            : <kbd className={`text-[10px] font-mono shrink-0 ${isDark ? "text-white/25" : "text-foreground/30"}`}>Esc</kbd>
+            ? <button onClick={() => setQuery("")} className="text-white/30 hover:text-white/60 transition-colors shrink-0"><X className="w-3.5 h-3.5" /></button>
+            : <kbd className="text-[10px] font-mono shrink-0 text-white/25">Esc</kbd>
         }
       </div>
 

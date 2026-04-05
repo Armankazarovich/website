@@ -10,9 +10,9 @@ const STATUS_OPTIONS = [
   { value: "SHIPPED", label: "Отгружен" },
   { value: "IN_DELIVERY", label: "Доставляется" },
   { value: "READY_PICKUP", label: "Готов к выдаче" },
-  { value: "DELIVERED", label: "✓ Доставлен" },
-  { value: "COMPLETED", label: "🏁 Завершён (самовывоз)" },
-  { value: "CANCELLED", label: "✕ Отменён" },
+  { value: "DELIVERED", label: "Доставлен" },
+  { value: "COMPLETED", label: "Завершён (самовывоз)" },
+  { value: "CANCELLED", label: "Отменён" },
 ];
 
 export function DeliveryStatusSelect({ orderId, currentStatus }: { orderId: string; currentStatus: string }) {

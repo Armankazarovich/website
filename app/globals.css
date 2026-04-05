@@ -710,6 +710,79 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   МОДАЛЬНЫЕ ОКНА (Dialog/Sheet/Popover) — всегда тёмный glass
+   Shadcn Dialog рендерит role="dialog" с bg-background (белый).
+   Перекрываем глобально — не нужно трогать каждую страницу.
+   ══════════════════════════════════════════════════════════════ */
+.aray-nature-mode [role="dialog"] {
+  background: rgba(10, 14, 30, 0.97) !important;
+  backdrop-filter: blur(32px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+/* Текст и метки внутри модалки */
+.aray-nature-mode [role="dialog"] p,
+.aray-nature-mode [role="dialog"] h1,
+.aray-nature-mode [role="dialog"] h2,
+.aray-nature-mode [role="dialog"] h3,
+.aray-nature-mode [role="dialog"] h4,
+.aray-nature-mode [role="dialog"] span:not([class*="bg-"]),
+.aray-nature-mode [role="dialog"] label,
+.aray-nature-mode [role="dialog"] .text-foreground {
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+.aray-nature-mode [role="dialog"] .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.50) !important;
+}
+/* Инпуты/select/textarea внутри модалок — тёмный glass */
+.aray-nature-mode [role="dialog"] input,
+.aray-nature-mode [role="dialog"] textarea,
+.aray-nature-mode [role="dialog"] select {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+.aray-nature-mode [role="dialog"] input::placeholder,
+.aray-nature-mode [role="dialog"] textarea::placeholder {
+  color: rgba(255, 255, 255, 0.30) !important;
+}
+/* Разделители внутри модалок */
+.aray-nature-mode [role="dialog"] [class*="border-b"],
+.aray-nature-mode [role="dialog"] [class*="border-t"] {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+/* Футер модалки */
+.aray-nature-mode [role="dialog"] .bg-card {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+/* Оверлей модалки */
+.aray-nature-mode [data-radix-dialog-overlay] {
+  background: rgba(0, 0, 0, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ИНПУТЫ НА ВСЕХ СТРАНИЦАХ — тёмный стиль в nature-mode
+   ══════════════════════════════════════════════════════════════ */
+.aray-nature-mode main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.aray-nature-mode main textarea,
+.aray-nature-mode main select {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+.aray-nature-mode main input::placeholder,
+.aray-nature-mode main textarea::placeholder {
+  color: rgba(255, 255, 255, 0.30) !important;
+}
+.aray-nature-mode main select option {
+  background: #0d1426;
+  color: rgba(255, 255, 255, 0.90);
+}
+
 /* ── Role badge в nature-mode — всегда читаемый поверх фото ── */
 .aray-nature-mode .aray-role-badge {
   background: rgba(255, 255, 255, 0.15) !important;
