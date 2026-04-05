@@ -282,7 +282,7 @@ export function AppearanceClient({
         <p className="text-sm text-muted-foreground">
           Визуальное оформление карточек во всём каталоге
         </p>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {CARD_STYLES.map((style) => {
             const isActive = cardStyle === style.key;
             return (

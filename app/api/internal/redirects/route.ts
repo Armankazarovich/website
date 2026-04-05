@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // Внутренний эндпоинт для middleware — список редиректов категорий
 export async function GET() {
   const redirects = await prisma.categoryRedirect.findMany({
