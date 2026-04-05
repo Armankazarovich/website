@@ -7,8 +7,16 @@ import {
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,
   Wallet, Globe, Bell, Palette, HeartPulse, FileDown, Images,
   Megaphone, UserCircle, CheckSquare, Target, HelpCircle,
-  ArrowRight, Hash,
+  ArrowRight, Hash, Plus, Phone, Zap, Command,
 } from "lucide-react";
+
+// ─── Quick actions (быстрые действия без поиска) ────────────────────────────
+const QUICK_ACTIONS = [
+  { label: "Новый заказ",  icon: Plus,       href: "/admin/orders",      desc: "Оформить по телефону" },
+  { label: "Добавить товар",icon: Package,   href: "/admin/products/new",desc: "Создать карточку" },
+  { label: "Новый лид",    icon: Target,     href: "/admin/crm",         desc: "Добавить в CRM" },
+  { label: "Загрузить фото",icon: Images,    href: "/admin/media",       desc: "Медиабиблиотека" },
+];
 import { formatPrice, ORDER_STATUS_LABELS } from "@/lib/utils";
 
 const PAGES: Extract<SearchResult, { type: "page" }>[] = [
@@ -102,48 +110,61 @@ function useSearchLogic(active: boolean) {
   return { query, setQuery, results, loading, selected, setSelected };
 }
 
+// ─── Type badge colors ──────────────────────────────────────────────────────
+const TYPE_META: Record<string, { label: string; bg: string; color: string }> = {
+  order:   { label: "Заказ",   bg: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))" },
+  product: { label: "Товар",   bg: "rgba(251,146,60,0.18)",    color: "rgb(251,146,60)" },
+  client:  { label: "Клиент",  bg: "rgba(52,211,153,0.18)",    color: "rgb(52,211,153)" },
+  page:    { label: "Страница",bg: "rgba(255,255,255,0.08)",    color: "rgba(255,255,255,0.40)" },
+};
+
 // ─── Result item renderer ───────────────────────────────────────────────────
 function ResultItem({
-  r, i, selected, onSelect, onGo, dark,
+  r, i, selected, onSelect, onGo,
 }: {
   r: SearchResult; i: number; selected: number;
   onSelect: (i: number) => void; onGo: (r: SearchResult) => void;
-  dark?: boolean;
 }) {
   const isActive = i === selected;
+  const meta = TYPE_META[r.type] || TYPE_META.page;
   return (
     <button
-      key={i}
       onClick={() => onGo(r)}
       onMouseEnter={() => onSelect(i)}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+      className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-100 group"
       style={{
-        background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
-        borderLeft: isActive ? "2px solid hsl(var(--primary))" : "2px solid transparent",
+        background: isActive ? "rgba(255,255,255,0.07)" : "transparent",
+        borderLeft: isActive ? `2.5px solid hsl(var(--primary))` : "2.5px solid transparent",
       }}
     >
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: isActive ? "hsl(var(--primary)/0.2)" : "rgba(255,255,255,0.07)" }}>
-        {r.type === "page"    && <r.icon className="w-3.5 h-3.5 text-white/60" />}
-        {r.type === "order"   && <Hash className="w-3.5 h-3.5 text-primary/70" />}
-        {r.type === "product" && <Package className="w-3.5 h-3.5 text-orange-400" />}
-        {r.type === "client"  && <UserCircle className="w-3.5 h-3.5 text-emerald-400" />}
+      {/* Icon */}
+      <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
+        style={{ background: isActive ? meta.bg : "rgba(255,255,255,0.06)" }}>
+        {r.type === "page"    && <r.icon className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
+        {r.type === "order"   && <Hash className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
+        {r.type === "product" && <Package className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
+        {r.type === "client"  && <UserCircle className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
       </div>
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white/90 truncate">{r.label}</p>
+        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: isActive ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.80)" }}>
+          {r.label}
+        </p>
         {"sub" in r && r.sub && (
-          <p className="text-[11px] text-white/40 truncate">{r.sub}</p>
+          <p className="text-[11px] truncate mt-0.5" style={{ color: "rgba(255,255,255,0.38)" }}>{r.sub}</p>
         )}
-        {r.type === "page" && (
-          <p className="text-[10px] text-white/25">{r.group}</p>
+        {r.type === "order" && r.status && (
+          <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{r.status}</p>
         )}
       </div>
-      <div className="shrink-0 flex items-center gap-1.5">
-        {r.type === "order" && (
-          <span className="text-[10px] text-white/40 px-1.5 py-0.5 rounded-full"
-            style={{ background: "rgba(255,255,255,0.08)" }}>{r.status}</span>
-        )}
-        <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isActive ? "opacity-50 text-primary" : "opacity-0"}`} />
+      {/* Type badge + arrow */}
+      <div className="shrink-0 flex items-center gap-2">
+        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+          style={{ background: meta.bg, color: meta.color }}>
+          {meta.label}
+        </span>
+        <ArrowRight className="w-3.5 h-3.5 transition-all duration-150"
+          style={{ color: isActive ? "hsl(var(--primary))" : "transparent" }} />
       </div>
     </button>
   );
@@ -261,7 +282,7 @@ export function AdminDesktopSearch() {
   );
 }
 
-// ─── Mobile / Cmd+K modal search ─────────────────────────────────────────────
+// ─── Command Palette (⌘K) — главная фича ARAY Admin ─────────────────────────
 export function AdminSearch() {
   const [open, setOpen] = useState(false);
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(open);
@@ -279,86 +300,194 @@ export function AdminSearch() {
   }, []);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 60);
+    if (open) setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
 
   const go = useCallback((r: SearchResult) => {
-    router.push(r.href); setOpen(false);
-  }, [router]);
+    router.push(r.href); setOpen(false); setQuery("");
+  }, [router, setQuery]);
+
+  const goHref = useCallback((href: string) => {
+    router.push(href); setOpen(false); setQuery("");
+  }, [router, setQuery]);
 
   const handleKey = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setSelected(s => Math.min(s + 1, results.length - 1)); }
     if (e.key === "ArrowUp")   { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)); }
     if (e.key === "Enter" && results[selected]) go(results[selected]);
-  }, [results, selected, go, setSelected]);
+    if (e.key === "Escape") { setOpen(false); setQuery(""); }
+  }, [results, selected, go, setSelected, setQuery]);
+
+  // Группировка результатов по типу
+  const grouped = results.reduce<Record<string, SearchResult[]>>((acc, r) => {
+    const key = r.type;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(r);
+    return acc;
+  }, {});
+
+  const groupOrder: SearchResult["type"][] = ["order", "product", "client", "page"];
+  const groupLabels: Record<string, string> = { order: "Заказы", product: "Товары", client: "Клиенты", page: "Страницы" };
+
+  // Плоский список для keyboard navigation
+  const flatResults = groupOrder.flatMap(g => grouped[g] || []);
+  // Перестроить selected index относительно flatResults
+  const flatSelected = flatResults.findIndex((_, i) => i === selected);
+
+  const hasQuery = query.trim().length > 0;
+
+  if (!open) return (
+    <button
+      onClick={() => setOpen(true)}
+      title="Поиск (⌘K)"
+      className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0"
+    >
+      <Search className="w-[18px] h-[18px] text-primary/70" />
+    </button>
+  );
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        title="Поиск"
-        className="p-2 rounded-xl hover:bg-white/10 transition-colors relative shrink-0"
-      >
-        <Search className="w-[18px] h-[18px] text-primary/70" />
-      </button>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[70]"
+        style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}
+        onClick={() => { setOpen(false); setQuery(""); }}
+      />
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          {/* Прижат к верху экрана — клавиатура не перекрывает */}
-          <div className="fixed inset-x-0 top-0 z-[61] flex justify-center px-3 pt-3 pointer-events-none">
-            <div className="w-full max-w-2xl pointer-events-auto rounded-2xl overflow-hidden"
-              style={{
-                background: "rgba(10,14,30,0.97)",
-                backdropFilter: "blur(32px) saturate(200%)",
-                WebkitBackdropFilter: "blur(32px) saturate(200%)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
-              }}>
-              <div className="flex items-center gap-3 px-4 py-3.5"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <Search className="w-5 h-5 text-primary/70/70 shrink-0" />
-                <input
-                  ref={inputRef}
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  onKeyDown={handleKey}
-                  placeholder="Поиск заказов, товаров, клиентов..."
-                  className="flex-1 bg-transparent outline-none text-white placeholder:text-white/30"
-                  style={{ fontSize: "16px" /* предотвращает зум на iOS */ }}
-                />
-                {loading && (
-                  <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
-                )}
-                <button onClick={() => setOpen(false)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg transition-colors text-white/30 hover:text-white/60"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  <span className="text-[10px] font-mono">Esc</span>
-                </button>
-              </div>
-              <div className="max-h-[420px] overflow-y-auto py-2">
-                {results.length === 0 && !loading && query.trim() && (
-                  <p className="text-center text-sm text-white/30 py-10">Ничего не найдено</p>
-                )}
-                {!query.trim() && (
-                  <p className="px-5 pt-2 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
-                    Быстрый переход
-                  </p>
-                )}
-                {results.map((r, i) => (
-                  <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
-                ))}
-              </div>
-              <div className="px-5 py-2.5 flex items-center gap-4 text-[10px] text-white/20"
-                style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↑↓</kbd> навигация</span>
-                <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↵</kbd> открыть</span>
-                <span className="ml-auto opacity-40">⌘K</span>
-              </div>
-            </div>
+      {/* Command Palette — центр экрана десктоп, снизу мобил */}
+      <div className="fixed inset-x-0 bottom-0 lg:inset-auto lg:top-[12vh] lg:left-1/2 lg:-translate-x-1/2 z-[71] flex lg:block justify-center">
+        <div
+          className="w-full lg:w-[620px] rounded-t-[28px] lg:rounded-[24px] overflow-hidden flex flex-col"
+          style={{
+            maxHeight: "88dvh",
+            background: "rgba(7,11,28,0.88)",
+            backdropFilter: "blur(56px) saturate(240%) brightness(0.80)",
+            WebkitBackdropFilter: "blur(56px) saturate(240%) brightness(0.80)",
+            border: "1px solid rgba(255,255,255,0.13)",
+            boxShadow: "0 40px 100px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04) inset",
+          }}
+        >
+          {/* Drag handle (mobile) */}
+          <div className="lg:hidden flex justify-center pt-3 pb-0 shrink-0">
+            <div className="w-10 h-1 rounded-full bg-white/20" />
           </div>
-        </>
-      )}
+
+          {/* Search input */}
+          <div className="flex items-center gap-3 px-5 py-4 shrink-0"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            {loading
+              ? <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+              : <Search className="w-5 h-5 text-primary/70 shrink-0" />
+            }
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder="Найти заказ, товар, клиента, страницу..."
+              className="flex-1 bg-transparent outline-none text-white/95 placeholder:text-white/28 text-[15px] font-medium"
+              style={{ fontSize: "16px" }}
+            />
+            <button onClick={() => { setOpen(false); setQuery(""); }}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}>
+              <span className="text-[10px] font-mono">Esc</span>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="overflow-y-auto overscroll-contain flex-1">
+
+            {/* ── Пустой запрос → Быстрые действия + Навигация ── */}
+            {!hasQuery && (
+              <>
+                {/* Быстрые действия */}
+                <div className="px-5 pt-4 pb-2">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-3">
+                    Быстрые действия
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {QUICK_ACTIONS.map((a) => (
+                      <button
+                        key={a.href}
+                        onClick={() => goHref(a.href)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.98] hover:brightness-110 group"
+                        style={{
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.09)",
+                        }}
+                      >
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: "hsl(var(--primary)/0.18)" }}>
+                          <a.icon className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[12px] font-semibold text-white/85 truncate">{a.label}</p>
+                          <p className="text-[10px] text-white/35 truncate">{a.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Навигация по страницам */}
+                <div className="px-5 pt-3 pb-2">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-1">
+                    Навигация
+                  </p>
+                </div>
+                <div className="pb-3">
+                  {results.map((r, i) => (
+                    <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ── С запросом → Сгруппированные результаты ── */}
+            {hasQuery && results.length === 0 && !loading && (
+              <div className="py-14 flex flex-col items-center gap-3">
+                <Search className="w-8 h-8 text-white/15" />
+                <p className="text-sm text-white/30">Ничего не найдено по «{query}»</p>
+              </div>
+            )}
+
+            {hasQuery && groupOrder.map(type => {
+              const items = grouped[type];
+              if (!items?.length) return null;
+              // Найти базовый index для клавиатурной навигации
+              const baseIdx = flatResults.findIndex(r => r === items[0]);
+              return (
+                <div key={type}>
+                  <p className="px-5 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.22em] text-white/25">
+                    {groupLabels[type]}
+                  </p>
+                  {items.map((r, i) => (
+                    <ResultItem key={i} r={r} i={baseIdx + i} selected={selected} onSelect={setSelected} onGo={go} />
+                  ))}
+                </div>
+              );
+            })}
+
+            <div style={{ height: "max(12px, env(safe-area-inset-bottom, 12px))" }} />
+          </div>
+
+          {/* Footer */}
+          <div className="px-5 py-2.5 flex items-center gap-4 shrink-0"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="flex items-center gap-1.5 text-[10px] text-white/20">
+              <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↑↓</kbd> навигация
+            </span>
+            <span className="flex items-center gap-1.5 text-[10px] text-white/20">
+              <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↵</kbd> открыть
+            </span>
+            <span className="ml-auto flex items-center gap-1 text-[10px] text-white/15">
+              <Command className="w-3 h-3" />K
+            </span>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
@@ -607,31 +736,31 @@ export function AdminStickySearchBar() {
         </div>
       )}
 
-      {/* Dropdown results */}
+      {/* Dropdown results — стекло */}
       {focused && results.length > 0 && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
+        <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: "rgba(8,12,28,0.97)",
-            backdropFilter: "blur(40px) saturate(200%)",
-            WebkitBackdropFilter: "blur(40px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset",
+            background: "rgba(7,11,28,0.88)",
+            backdropFilter: "blur(48px) saturate(220%) brightness(0.80)",
+            WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.80)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset",
           }}>
           {!query.trim() && (
-            <p className="px-5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
-              Быстрый переход
+            <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.22em] text-white/25">
+              Навигация
             </p>
           )}
-          <div className="py-1.5 max-h-[380px] overflow-y-auto">
+          <div className="py-1 max-h-[320px] overflow-y-auto">
             {results.map((r, i) => (
               <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
             ))}
           </div>
-          <div className="px-5 py-2 flex items-center gap-4 text-[10px] text-white/20"
+          <div className="px-4 py-2 flex items-center gap-3 text-[9px] text-white/18"
             style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↑↓</kbd> навигация</span>
-            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↵</kbd> открыть</span>
-            <span className="ml-auto opacity-40">⌘K</span>
+            <span><kbd className="font-mono bg-white/08 px-1 py-0.5 rounded text-white/25">↑↓</kbd></span>
+            <span><kbd className="font-mono bg-white/08 px-1 py-0.5 rounded text-white/25">↵</kbd> открыть</span>
+            <span className="ml-auto text-white/15 flex items-center gap-0.5"><Command className="w-3 h-3" />K полный поиск</span>
           </div>
         </div>
       )}
