@@ -258,10 +258,7 @@ export default async function AdminDashboard() {
             <Link
               key={action.href}
               href={action.href}
-              className={`group flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 min-h-[72px] active:scale-[0.95] transition-all duration-200 aray-icon-spin ${action.bg}`}
-              style={{ borderColor: "hsl(var(--primary)/0.20)" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(var(--primary)/0.55)"; (e.currentTarget as HTMLElement).style.background = "hsl(var(--primary)/0.14)"; (e.currentTarget as HTMLElement).style.transform = "scale(1.03)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px hsl(var(--primary)/0.25)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(var(--primary)/0.20)"; (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}
+              className={`group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-primary/20 p-3 min-h-[72px] active:scale-[0.95] transition-all duration-200 aray-icon-spin hover:border-primary/55 hover:bg-primary/[0.10] hover:scale-[1.03] hover:shadow-[0_0_18px_hsl(var(--primary)/0.22)] ${action.bg}`}
             >
               <action.icon className={`w-5 h-5 ${action.color} transition-all duration-200 group-hover:scale-110`} />
               <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
