@@ -8,6 +8,7 @@ import {
   ChevronDown, ChevronRight, User, MessageSquare, X, ShoppingCart,
   CreditCard, Banknote, Building2, Check, AlertCircle, Zap, BookOpen,
   ChevronUp, MapPin, Truck, Package, Star, Info,
+  Hand, Ruler, TrendingUp, TreePine, Clock, CheckCircle2,
 } from "lucide-react";
 import { AdminBack } from "@/components/admin/admin-back";
 
@@ -37,11 +38,11 @@ type CartItem = {
 };
 
 // ── Скрипты продаж для менеджера ────────────────────────────────
-const SCRIPTS = [
+const SCRIPTS: { id: string; label: string; icon: React.ElementType; color: string; text: string; tip: string }[] = [
   {
     id: "greeting",
     label: "Приветствие",
-    icon: "👋",
+    icon: Hand,
     color: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400",
     text: "«Компания ПилоРус, меня зовут [имя], добрый день! Чем могу помочь?»",
     tip: "Представьтесь по имени — это повышает доверие клиента.",
@@ -49,7 +50,7 @@ const SCRIPTS = [
   {
     id: "volume",
     label: "Уточнить объём",
-    icon: "📐",
+    icon: Ruler,
     color: "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400",
     text: "«Скажите, какой объём материала планируете? Лучше заказать с запасом 10–15% — отходы при раскрое неизбежны.»",
     tip: "Запас 10% = меньше дозаказов = довольный клиент.",
@@ -57,7 +58,7 @@ const SCRIPTS = [
   {
     id: "upsell",
     label: "Апсейл (крупный заказ)",
-    icon: "⬆️",
+    icon: TrendingUp,
     color: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400",
     text: "«При заказе от 5 м³ мы предоставляем бесплатную доставку по Химкам. Итого выйдет даже выгоднее, чем везти самостоятельно.»",
     tip: "Порог бесплатной доставки — главный рычаг увеличения чека.",
@@ -65,7 +66,7 @@ const SCRIPTS = [
   {
     id: "quality",
     label: "Вопрос о качестве",
-    icon: "🌲",
+    icon: TreePine,
     color: "bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400",
     text: "«Для каких целей берёте? Для бани — рекомендую лиственницу (не гниёт), для стропил — сосну 1 сорт. Для чернового пола — 2 сорт сэкономит бюджет.»",
     tip: "Экспертный совет = доверие = повторные покупки.",
@@ -73,7 +74,7 @@ const SCRIPTS = [
   {
     id: "urgency",
     label: "Срочность",
-    icon: "⏰",
+    icon: Clock,
     color: "bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400",
     text: "«Сейчас сезон — склад быстро расходится. Могу зафиксировать вашу позицию, оплата в течение 1–2 дней. Так точно получите нужное количество.»",
     tip: "Сезонная срочность реальна — используйте честно.",
@@ -81,7 +82,7 @@ const SCRIPTS = [
   {
     id: "objection",
     label: "Возражение «дорого»",
-    icon: "💬",
+    icon: MessageSquare,
     color: "bg-purple-500/10 border-purple-500/20 text-purple-600 dark:text-purple-400",
     text: "«Понимаю. Давайте посмотрим на сорт — 2 сорт той же породы обойдётся на 15–20% дешевле. Плюс у нас нет скрытых доборов за объём.»",
     tip: "Не снижайте цену — предложите альтернативу внутри ассортимента.",
@@ -89,7 +90,7 @@ const SCRIPTS = [
   {
     id: "closing",
     label: "Закрытие сделки",
-    icon: "✅",
+    icon: CheckCircle2,
     color: "bg-primary/10 border-primary/20 text-primary",
     text: "«Итого [сумма] ₽, доставка [дата/самовывоз]. Оформляем? Уточните имя и телефон для заказа.»",
     tip: "Называйте конкретную сумму и дату — клиенту проще сказать «да».",
@@ -652,7 +653,7 @@ export default function NewPhoneOrderPage() {
                     onClick={() => { setDeliveryCostInput(String(r.basePrice)); setDeliveryCost(r.basePrice); setCalcOpen(false); }}
                     className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs border transition-colors hover:border-primary/40 ${i === 0 ? "bg-primary/5 border-primary/20" : "bg-background border-border"}`}
                   >
-                    <span>{i === 0 ? "⭐ " : ""}{r.vehicleName} · {r.payload}</span>
+                    <span className="flex items-center gap-1">{i === 0 && <Star className="w-3 h-3 text-amber-400 shrink-0" />}{r.vehicleName} · {r.payload}</span>
                     <span className="font-bold">{r.basePrice.toLocaleString()} ₽</span>
                   </button>
                 ))}
@@ -759,7 +760,7 @@ export default function NewPhoneOrderPage() {
                     onClick={() => setActiveScript(activeScript === s.id ? null : s.id)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg leading-none">{s.icon}</span>
+                        <s.icon className="w-4 h-4 shrink-0" />
                         <span className="text-sm font-semibold">{s.label}</span>
                       </div>
                       <ChevronDown className={`w-3.5 h-3.5 transition-transform ${activeScript === s.id ? "rotate-180" : ""}`} />

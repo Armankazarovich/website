@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, Copy, ExternalLink, Settings,
   Globe, RefreshCw, ShoppingBag, Package, Zap, Clock, ArrowRight,
   Building2, BarChart3, Link as LinkIcon,
+  Search, FolderOpen, ImageIcon,
 } from "lucide-react";
 
 // ─── Copy button ─────────────────────────────────────────────────────────────
@@ -712,7 +713,11 @@ function SiteMigrationSection() {
             {migrating && (
               <div className="space-y-2">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{step === "analyzing" ? "🔍 Анализируем источник..." : "📦 Импортируем товары и категории..."}</span>
+                  <span className="flex items-center gap-1">
+                    {step === "analyzing"
+                      ? <><Search className="w-3 h-3 shrink-0" /> Анализируем источник...</>
+                      : <><Package className="w-3 h-3 shrink-0" /> Импортируем товары и категории...</>}
+                  </span>
                   <span>{progress}%</span>
                 </div>
                 <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
@@ -726,12 +731,12 @@ function SiteMigrationSection() {
 
             <div className="grid grid-cols-3 gap-2 text-center">
               {[
-                { label: "Товары", icon: "📦" },
-                { label: "Категории", icon: "🗂️" },
-                { label: "Изображения", icon: "🖼️" },
+                { label: "Товары", icon: Package },
+                { label: "Категории", icon: FolderOpen },
+                { label: "Изображения", icon: ImageIcon },
               ].map((item) => (
                 <div key={item.label} className="p-2.5 rounded-xl border border-border bg-muted/20">
-                  <p className="text-lg">{item.icon}</p>
+                  <div className="flex justify-center mb-1"><item.icon className="w-5 h-5 text-muted-foreground" /></div>
                   <p className="text-xs text-muted-foreground">{item.label}</p>
                 </div>
               ))}

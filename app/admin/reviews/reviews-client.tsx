@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Review = {
@@ -14,14 +14,24 @@ type Review = {
   source?: string;
 };
 
-const PLATFORMS = [
+const PLATFORMS: {
+  key: string;
+  name: string;
+  color: string;
+  borderColor: string;
+  badge: string;
+  icon: React.ElementType;
+  href: string;
+  instruction: string;
+  status: string;
+}[] = [
   {
     key: "google",
     name: "Google Карты",
     color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     borderColor: "border-blue-200 dark:border-blue-800/40",
     badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-    icon: "🌐",
+    icon: Globe,
     href: "https://maps.google.com/?cid=YOUR_CID",
     instruction: "Откройте Google Мой Бизнес → Отзывы → скопируйте нужные и добавьте вручную",
     status: "manual",
@@ -32,7 +42,7 @@ const PLATFORMS = [
     color: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     borderColor: "border-amber-200 dark:border-amber-800/40",
     badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-    icon: "🗺️",
+    icon: Map,
     href: "https://business.yandex.ru/",
     instruction: "Откройте Яндекс Бизнес → Репутация → скопируйте отзывы для публикации",
     status: "manual",
@@ -43,7 +53,7 @@ const PLATFORMS = [
     color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
     borderColor: "border-green-200 dark:border-green-800/40",
     badge: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-    icon: "📍",
+    icon: MapPin,
     href: "https://account.2gis.com/",
     instruction: "Авторизуйтесь в 2GIS для бизнеса → Отзывы → скопируйте лучшие",
     status: "manual",
@@ -54,7 +64,7 @@ const PLATFORMS = [
     color: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
     borderColor: "border-sky-200 dark:border-sky-800/40",
     badge: "bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300",
-    icon: "💬",
+    icon: MessageSquare,
     href: "https://vk.com/",
     instruction: "Перейдите в группу ВК → раздел «Отзывы» → скопируйте нужные комментарии",
     status: "manual",
@@ -117,14 +127,14 @@ function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">)
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
                 source === p.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
               }`}>
-              {p.icon} {p.name}
+              <p.icon className="w-3.5 h-3.5 inline mr-1" />{p.name}
             </button>
           ))}
           <button onClick={() => setSource("site")}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
               source === "site" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
             }`}>
-            💻 Сайт
+            <Monitor className="w-3.5 h-3.5 inline mr-1" />Сайт
           </button>
         </div>
       </div>
@@ -284,7 +294,7 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
             {PLATFORMS.map(p => (
               <div key={p.key} className={`border ${p.borderColor} rounded-xl p-3 space-y-2`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{p.icon}</span>
+                  <p.icon className="w-5 h-5 shrink-0" />
                   <span className="font-semibold text-sm">{p.name}</span>
                   <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${p.badge}`}>Ручной импорт</span>
                 </div>

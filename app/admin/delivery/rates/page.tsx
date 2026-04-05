@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Truck, Pencil, Check, X, Loader2, Calculator, Plus, Trash2 } from "lucide-react";
+import { Truck, Pencil, Check, X, Loader2, Calculator, Plus, Trash2, Star } from "lucide-react";
 
 type Rate = {
   id: string;
@@ -159,7 +159,7 @@ export default function DeliveryRatesPage() {
               >
                 <div>
                   <p className={`font-semibold text-sm ${i === 0 ? "text-primary" : ""}`}>
-                    {i === 0 && "⭐ "}{r.vehicleName}
+                    {i === 0 && <Star className="w-3.5 h-3.5 text-amber-400 inline mr-1" />}{r.vehicleName}
                     {i === 0 && <span className="ml-2 text-xs font-normal text-muted-foreground">— оптимальный</span>}
                   </p>
                   <p className="text-xs text-muted-foreground">{r.payload} · до {r.maxVolume} м³</p>

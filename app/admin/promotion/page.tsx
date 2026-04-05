@@ -19,6 +19,9 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  Camera,
+  MessageSquare,
+  Megaphone,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -37,7 +40,7 @@ type MarketplaceCard = {
 
 type WeeklyTask = {
   day: string;
-  emoji: string;
+  icon: React.ElementType;
   title: string;
   tip: string;
 };
@@ -105,37 +108,37 @@ const MARKETPLACES: MarketplaceCard[] = [
 const WEEKLY_TASKS: WeeklyTask[] = [
   {
     day: "Понедельник",
-    emoji: "📸",
+    icon: Camera,
     title: "Добавить 1-2 новых фото товаров",
     tip: "Живые фото с реальных объектов привлекают больше внимания. Сделайте снимок свежей партии пиломатериала прямо на складе — клиенты ценят честность. Загружайте через Медиабиблиотеку, затем добавляйте к карточке товара.",
   },
   {
     day: "Среда",
-    emoji: "💬",
+    icon: MessageSquare,
     title: "Ответить на отзывы в Яндекс Картах",
     tip: "Регулярные ответы на отзывы (особенно отрицательные) показывают алгоритму, что бизнес живой. Откройте Яндекс Бизнес → Отзывы. Отвечайте вежливо, упоминайте название компании — это помогает SEO.",
   },
   {
     day: "Пятница",
-    emoji: "📢",
+    icon: Megaphone,
     title: "Отправить акцию подписчикам (push/email)",
     tip: "Пятница — лучший день для B2C-рассылок. Создайте короткое сообщение с конкретной скидкой или акцией. Используйте раздел Email рассылка для выбора аудитории. Push-уведомления отправляйте через раздел Уведомления.",
   },
   {
     day: "Каждый день",
-    emoji: "✅",
+    icon: CheckCircle2,
     title: "Обработать все заказы до конца дня",
     tip: "Быстрая обработка заказов напрямую влияет на рейтинг в Яндекс Маркет. Цель — статус «В обработке» не дольше 4 часов. Перейдите в Заказы → отсортируйте по дате создания.",
   },
   {
     day: "Раз в месяц",
-    emoji: "🔄",
+    icon: RefreshCw,
     title: "Обновить цены + отправить в Яндекс Маркет",
     tip: "Актуальные цены в YML-фиде улучшают конверсию и снижают отказы. Обновите цены через Каталог товаров → Быстрое редактирование. YML автоматически обновляется при каждом запросе.",
   },
   {
     day: "Раз в месяц",
-    emoji: "📊",
+    icon: BarChart2,
     title: "Проверить Яндекс Метрику — что ищут на сайте",
     tip: "В Яндекс Метрике откройте Отчёты → Поведение → Внутренний поиск. Какие слова вводят? Это подсказки для новых товаров и SEO-текстов. Также проверьте Вебвизор для популярных страниц.",
   },
@@ -240,7 +243,7 @@ function WeeklyTaskCard({ task }: { task: WeeklyTask }) {
         className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors text-left"
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="text-xl">{task.emoji}</span>
+        <task.icon className="w-5 h-5 text-muted-foreground shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="text-xs font-medium text-muted-foreground">{task.day}</div>
           <div className="text-sm font-semibold leading-snug">{task.title}</div>

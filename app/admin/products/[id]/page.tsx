@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Save, Trash2, Plus, Upload, ImageIcon,
   Check, Loader2, Wand2, PenTool, Images, ExternalLink,
-  ChevronLeft, ChevronRight, X, GripVertical, Search,
+  ChevronLeft, ChevronRight, X, GripVertical, Search, Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminBack } from "@/components/admin/admin-back";
@@ -432,7 +432,7 @@ export default function AdminProductEditPage() {
               </button>
             </label>
             <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm">Рекомендуемый ⭐</span>
+              <span className="text-sm flex items-center gap-1">Рекомендуемый <Star className="w-3.5 h-3.5 text-amber-400" /></span>
               <button
                 onClick={() => setFeatured((v) => !v)}
                 className={cn(
