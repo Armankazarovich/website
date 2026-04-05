@@ -83,16 +83,16 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       })()}
 
       {/* ── Оверлеи ── */}
-      {/* Базовое затемнение — нейтральное тёмно-синее */}
-      <div className="absolute inset-0" style={{ background: "rgba(4, 6, 18, 0.52)" }} />
+      {/* Базовое затемнение — лёгкое, чтобы фото было видно */}
+      <div className="absolute inset-0" style={{ background: "rgba(4, 6, 18, 0.30)" }} />
 
-      {/* Виньетка снизу */}
+      {/* Виньетка снизу — более мягкая */}
       <div className="absolute inset-0"
-        style={{ background: "linear-gradient(to top, rgba(4,6,18,0.82) 0%, rgba(4,6,18,0.18) 42%, transparent 65%)" }} />
+        style={{ background: "linear-gradient(to top, rgba(4,6,18,0.70) 0%, rgba(4,6,18,0.10) 40%, transparent 62%)" }} />
 
-      {/* Виньетка сверху */}
+      {/* Виньетка сверху — лёгкая */}
       <div className="absolute inset-0"
-        style={{ background: "linear-gradient(to bottom, rgba(4,6,18,0.50) 0%, transparent 30%)" }} />
+        style={{ background: "linear-gradient(to bottom, rgba(4,6,18,0.38) 0%, transparent 28%)" }} />
 
       {/* Лейбл фото */}
       <div className="absolute bottom-3 right-5 flex items-center gap-2" style={{ opacity: 0.22 }}>
