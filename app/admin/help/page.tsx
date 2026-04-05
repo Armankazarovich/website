@@ -596,7 +596,7 @@ export default function HelpPage() {
       )}
 
       {/* Footer contact */}
-      <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
           <Phone className="w-5 h-5 text-primary" />
         </div>

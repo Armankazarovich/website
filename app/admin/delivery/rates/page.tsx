@@ -154,7 +154,7 @@ export default function DeliveryRatesPage() {
               <div
                 key={r.id}
                 className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
-                  i === 0 ? "bg-primary/5 border-primary/30" : "bg-muted/30 border-border"
+                  i === 0 ? "bg-primary/15 border-primary/30" : "bg-muted/30 border-border"
                 }`}
               >
                 <div>
@@ -210,7 +210,7 @@ export default function DeliveryRatesPage() {
                 {rates.map((rate) => {
                   const isEditing = editingId === rate.id;
                   return (
-                    <tr key={rate.id} className={isEditing ? "bg-primary/5" : "hover:bg-muted/20 transition-colors"}>
+                    <tr key={rate.id} className={isEditing ? "bg-primary/15" : "hover:bg-muted/20 transition-colors"}>
                       <td className="px-4 py-3">
                         {isEditing ? (
                           <input

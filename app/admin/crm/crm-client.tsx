@@ -216,7 +216,7 @@ function StageColumn({
     <div
       className={`flex flex-col rounded-2xl border-2 transition-all duration-150 min-w-[260px] max-w-[280px] ${
         isDragOver
-          ? "border-primary/50 bg-primary/5 shadow-lg shadow-primary/10"
+          ? "border-primary/50 bg-primary/15 shadow-lg shadow-primary/10"
           : `${stage.border} ${stage.light}`
       }`}
       onDrop={(e) => onDrop(e, stage.key)}
@@ -796,7 +796,7 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
           {PRESETS.map(p => (
             <button key={p.key} onClick={() => setSelected(p.key)}
               className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${
-                selected === p.key ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
+                selected === p.key ? "border-primary bg-primary/15" : "border-border hover:border-primary/30"
               }`}>
               <p className="font-semibold text-sm text-foreground">{p.label}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
@@ -1020,7 +1020,7 @@ function OrdersKanban({ search }: { search: string }) {
                 <div
                   key={stage.key}
                   className={`flex flex-col rounded-2xl border-2 transition-all duration-150 min-w-[230px] max-w-[250px] ${
-                    isOver ? "border-primary/50 bg-primary/5 shadow-lg" : `${stage.border} ${stage.light}`
+                    isOver ? "border-primary/50 bg-primary/15 shadow-lg" : `${stage.border} ${stage.light}`
                   }`}
                   onDrop={(e) => handleDrop(e, stage.key)}
                   onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.key); }}

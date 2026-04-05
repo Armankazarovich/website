@@ -138,13 +138,13 @@ export function WatermarkClient({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <button onClick={() => setWmType("logo")}
-            className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${wmType === "logo" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
+            className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${wmType === "logo" ? "border-primary bg-primary/15" : "border-border hover:border-primary/40"}`}>
             <ImageIcon className={`w-6 h-6 ${wmType === "logo" ? "text-primary" : "text-muted-foreground"}`} />
             <span className={`text-sm font-medium ${wmType === "logo" ? "text-primary" : ""}`}>Логотип / Иконка</span>
             <span className="text-[11px] text-muted-foreground text-center">PNG с прозрачным фоном</span>
           </button>
           <button onClick={() => setWmType("text")}
-            className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${wmType === "text" ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}>
+            className={`flex flex-col items-center gap-2 py-4 rounded-xl border-2 transition-all ${wmType === "text" ? "border-primary bg-primary/15" : "border-border hover:border-primary/40"}`}>
             <Type className={`w-6 h-6 ${wmType === "text" ? "text-primary" : "text-muted-foreground"}`} />
             <span className={`text-sm font-medium ${wmType === "text" ? "text-primary" : ""}`}>Текст</span>
             <span className="text-[11px] text-muted-foreground text-center">Название сайта или домен</span>

@@ -308,7 +308,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             { label: "Отслеживается", val: tracked,         color: "text-primary",     key: "tracked" },
           ].map(s => (
             <button key={s.key} onClick={() => setFilterStatus(s.key as typeof filterStatus)}
-              className={`p-3 rounded-xl border text-left transition-all ${filterStatus === s.key ? "border-primary bg-primary/5 shadow-sm" : "border-border bg-card hover:bg-accent"}`}>
+              className={`p-3 rounded-xl border text-left transition-all ${filterStatus === s.key ? "border-primary/60 bg-primary/15" : "border-border bg-card hover:bg-accent"}`}>
               <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
             </button>
@@ -337,7 +337,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             <button
               onClick={() => setShowColMenu(p => !p)}
               className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors
-                ${showColMenu ? "border-primary bg-primary/5 text-primary" : "border-border bg-card hover:bg-accent"}`}
+                ${showColMenu ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:bg-accent"}`}
             >
               <Settings2 className="w-4 h-4" /> Колонки
             </button>
@@ -367,8 +367,8 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           </div>
         </div>
 
-        <p className="text-xs text-muted-foreground no-print">
-          💡 Нажмите на любое значение для редактирования. Статус переключается кликом.
+        <p className="text-xs text-white/40 no-print">
+          Нажмите на любое значение для редактирования — статус переключается кликом.
         </p>
 
         {/* Content */}

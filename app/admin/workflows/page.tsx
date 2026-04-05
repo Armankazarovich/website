@@ -251,7 +251,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                     <button
                       key={t.id}
                       onClick={() => setTrigger(t.id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${trigger === t.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
+                      className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${trigger === t.id ? "border-primary bg-primary/15" : "border-border hover:border-primary/40"}`}
                     >
                       <Icon className="w-4 h-4 text-primary shrink-0" />
                       <div>

@@ -252,7 +252,7 @@ export function ProductsClient({
 
       {/* ── BULK ACTION BAR ── */}
       {someSelected && (
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-2xl animate-in slide-in-from-top-2 duration-200">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-primary/15 border border-primary/20 rounded-2xl animate-in slide-in-from-top-2 duration-200">
           <span className="text-sm font-semibold text-primary">
             {selected.size} выбрано
           </span>
@@ -346,7 +346,7 @@ export function ProductsClient({
         {filtered.map(p => (
           <div
             key={p.id}
-            className={`bg-card border rounded-2xl p-4 transition-all ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "border-primary bg-primary/3" : "border-border"}`}
+            className={`bg-card border rounded-2xl p-4 transition-all ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "border-primary bg-primary/15" : "border-border"}`}
           >
             <div className="flex items-start gap-3">
               <button onClick={() => toggleSelect(p.id)} className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors">
@@ -422,7 +422,7 @@ export function ProductsClient({
               {filtered.map(p => (
                 <tr
                   key={p.id}
-                  className={`hover:bg-muted/30 transition-colors ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "bg-primary/5" : ""}`}
+                  className={`hover:bg-muted/30 transition-colors ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "bg-primary/15" : ""}`}
                 >
                   <td className="px-4 py-3">
                     <button onClick={() => toggleSelect(p.id)} className="text-muted-foreground hover:text-primary transition-colors">

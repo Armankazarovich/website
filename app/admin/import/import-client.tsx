@@ -369,7 +369,7 @@ export function ImportClient() {
           onDrop={handleFileDrop}
           onClick={() => fileRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-            file ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"
+            file ? "border-primary bg-primary/15" : "border-border hover:border-primary/50 hover:bg-muted/30"
           }`}
         >
           <input ref={fileRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={handleFileChange} />
@@ -613,7 +613,7 @@ function MarketplacesSection() {
       </div>
 
       <div className="px-4 pb-4">
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-muted-foreground">
           <Zap className="w-4 h-4 text-primary shrink-0" />
           <span>
             <strong className="text-foreground">Уже сейчас работает:</strong> Google Таблицы (двусторонняя), Excel/CSV (импорт).
@@ -679,7 +679,7 @@ function SiteMigrationSection() {
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Откуда переносим</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {PLATFORMS.map((p) => (
-                  <label key={p.value} className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${platform === p.value ? "border-primary/50 bg-primary/5" : "border-border bg-muted/20 hover:border-primary/30"}`}>
+                  <label key={p.value} className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${platform === p.value ? "border-primary/50 bg-primary/15" : "border-border bg-muted/20 hover:border-primary/30"}`}>
                     <input type="radio" name="platform" value={p.value} checked={platform === p.value} onChange={() => setPlatform(p.value)} className="accent-primary" />
                     <span className="text-sm">{p.label}</span>
                   </label>

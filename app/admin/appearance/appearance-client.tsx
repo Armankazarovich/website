@@ -291,7 +291,7 @@ export function AppearanceClient({
                 onClick={() => setCardStyle(style.key)}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
                   isActive
-                    ? "border-primary bg-primary/5"
+                    ? "border-primary bg-primary/15"
                     : "border-border hover:border-primary/40 hover:bg-muted/30"
                 }`}
               >
@@ -325,7 +325,7 @@ export function AppearanceClient({
                 onClick={() => setPhotoAspect(opt.value)}
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
                   isActive
-                    ? "border-primary bg-primary/5"
+                    ? "border-primary bg-primary/15"
                     : "border-border hover:border-primary/40 hover:bg-muted/30"
                 }`}
               >
@@ -445,7 +445,7 @@ export function AppearanceClient({
                       isPreviewing
                         ? "border-primary/60 bg-primary/8 scale-[1.01] shadow-sm"
                         : isOn
-                        ? "border-primary/40 bg-primary/5"
+                        ? "border-primary/40 bg-primary/15"
                         : "border-border bg-muted/30 opacity-50"
                     }`}
                   >

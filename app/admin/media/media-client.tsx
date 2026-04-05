@@ -289,7 +289,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
       {/* ALT info banner */}
       {!pickerMode && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-700 dark:text-blue-400">
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white/45">
           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <span>
             <strong>ALT атрибут</strong> — описание фото для поисковиков и незрячих пользователей.
