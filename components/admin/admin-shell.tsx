@@ -233,7 +233,8 @@ import { AdminLangProvider } from "@/lib/admin-lang-context";
 // ── Десктопная панель настроек (тот же стиль что и мобильная) ───────────────
 function AdminDesktopSettings() {
   const [open, setOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
   const { palette, setPalette } = usePalette();
   const { classic, toggle: toggleClassic } = useClassicMode();
   const ref = useRef<HTMLDivElement>(null);

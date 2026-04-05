@@ -123,7 +123,7 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
               <Package className="w-3.5 h-3.5" /> Позиции ({order.items.length})
             </p>
           </div>
-          <div className="divide-y" style={{ divideColor: "rgba(255,255,255,0.06)" }}>
+          <div className="divide-y divide-white/[0.06]">
             {order.items.map((item: any) => (
               <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">

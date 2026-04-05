@@ -5,7 +5,7 @@ import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/uti
 import {
   ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3,
   ArrowUpRight, Truck, Warehouse, Target, Mail, Bell,
-  Settings, Wallet, BarChart2, CheckSquare,
+  Settings, Wallet, BarChart2, CheckSquare, HeartPulse,
   UserCircle, FileDown, ChevronRight, Zap,
 } from "lucide-react";
 import Link from "next/link";
