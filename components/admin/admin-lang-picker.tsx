@@ -4,8 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { Languages, Check } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
-import { useTheme } from "next-themes";
-
 // ─── Inline language picker (for mobile settings panel) ─────────────────────
 export function AdminLangPickerInline() {
   const { lang, setLang } = useAdminLang();
@@ -41,8 +39,6 @@ export function AdminLangPicker() {
   const { lang, setLang } = useAdminLang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
 
   useEffect(() => {
     const close = (e: MouseEvent) => {

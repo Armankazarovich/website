@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,
@@ -147,8 +146,6 @@ function ResultItem({
 // ─── Desktop inline search (expands in topbar) ──────────────────────────────
 export function AdminDesktopSearch() {
   const [expanded, setExpanded] = useState(false);
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(expanded);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -264,8 +261,6 @@ export function AdminSearch() {
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(open);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
 
   // Cmd+K / Ctrl+K
   useEffect(() => {
