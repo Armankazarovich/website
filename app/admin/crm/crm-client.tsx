@@ -11,6 +11,7 @@ import {
   Inbox, Settings2, Truck, Navigation, Package, Home, Flag,
 } from "lucide-react";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -474,6 +475,8 @@ function LeadDetailPanel({
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [changingStage, setChangingStage] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -510,10 +513,15 @@ function LeadDetailPanel({
   };
 
   const handleDelete = async () => {
-    if (!confirm("Удалить лид?")) return;
-    await fetch(`/api/admin/crm/leads/${lead.id}`, { method: "DELETE" });
-    onDelete(lead.id);
-    onClose();
+    setDeleting(true);
+    try {
+      await fetch(`/api/admin/crm/leads/${lead.id}`, { method: "DELETE" });
+      setConfirmDelete(false);
+      onDelete(lead.id);
+      onClose();
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const currentStage = STAGES.find(s => s.key === fullLead.stage);
@@ -537,7 +545,7 @@ function LeadDetailPanel({
             <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
               <Pencil className="w-4 h-4 text-muted-foreground" />
             </button>
-            <button onClick={handleDelete} className="w-8 h-8 rounded-xl hover:bg-destructive/10 flex items-center justify-center transition-colors">
+            <button onClick={() => setConfirmDelete(true)} className="w-8 h-8 rounded-xl hover:bg-destructive/10 flex items-center justify-center transition-colors">
               <Trash2 className="w-4 h-4 text-destructive" />
             </button>
             <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
@@ -712,6 +720,17 @@ function LeadDetailPanel({
           }}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Удалить лид?"
+        description="Лид и вся его история будут удалены без возможности восстановления."
+        confirmLabel="Удалить"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

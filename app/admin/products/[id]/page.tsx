@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminBack } from "@/components/admin/admin-back";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 // Lazy-load heavy modals — загружаются только при первом открытии
 const PhotoEditor = dynamic(
@@ -75,6 +76,8 @@ export default function AdminProductEditPage() {
   const [pipelineProgress, setPipelineProgress] = useState("");
   const [dragOverPhoto, setDragOverPhoto] = useState(false);
   const [photoEditorOpen, setPhotoEditorOpen] = useState(false);
+  const [confirmDeleteProduct, setConfirmDeleteProduct] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState(false);
   const [removingBg, setRemovingBg] = useState(false);
   const [autoPipeline, setAutoPipeline] = useState(false);
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
@@ -230,9 +233,14 @@ export default function AdminProductEditPage() {
   }, [saving, name, slug, description, categoryId, images, saleUnit, active, featured, variants, isNew, params.id, router]);
 
   const handleDelete = async () => {
-    if (!confirm("Удалить товар? Это действие нельзя отменить.")) return;
-    await fetch(`/api/admin/products/${params.id}`, { method: "DELETE" });
-    router.push("/admin/products");
+    setDeletingProduct(true);
+    try {
+      await fetch(`/api/admin/products/${params.id}`, { method: "DELETE" });
+      setConfirmDeleteProduct(false);
+      router.push("/admin/products");
+    } finally {
+      setDeletingProduct(false);
+    }
   };
 
   const addVariant = () => setVariants((prev) => [...prev, {
@@ -298,7 +306,7 @@ export default function AdminProductEditPage() {
             </a>
           )}
           {!isNew && (
-            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteProduct(true)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
@@ -660,6 +668,17 @@ export default function AdminProductEditPage() {
           onClose={() => setPhotoSearchOpen(false)}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteProduct}
+        onClose={() => setConfirmDeleteProduct(false)}
+        onConfirm={handleDelete}
+        title="Удалить товар?"
+        description="Товар и все его варианты будут удалены. Это действие нельзя отменить."
+        confirmLabel="Удалить товар"
+        variant="danger"
+        loading={deletingProduct}
+      />
     </div>
   );
 }
