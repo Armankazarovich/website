@@ -149,19 +149,28 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
             {/* Group header — separator + label */}
             {g.group !== "main" && (
               <div
-                className={`flex items-center gap-2 px-3 pt-4 pb-1.5 ${isCollapsible ? "cursor-pointer select-none group/gh" : ""}`}
+                className={`px-3 pt-4 pb-1.5 ${isCollapsible ? "cursor-pointer select-none group/gh" : ""}`}
                 onClick={isCollapsible ? () => toggleGroup(g.group) : undefined}
               >
-                {groupLabel && (
-                  <span className={`text-[9px] font-bold uppercase tracking-[0.18em] whitespace-nowrap transition-colors ${
-                    hasActiveItem ? "text-primary/70" : "text-white/35 group-hover/gh:text-white/55"
-                  }`}>
-                    {groupLabel}
-                  </span>
-                )}
-                <div className="flex-1 aray-nav-divider" />
-                {isCollapsible && (
-                  <ChevronDown className={`w-3 h-3 text-white/25 group-hover/gh:text-white/50 transition-all duration-200 ${isCollapsed ? "" : "rotate-180"}`} />
+                <div className="flex items-center gap-2">
+                  {groupLabel && (
+                    <span className={`text-[9px] font-bold uppercase tracking-[0.18em] whitespace-nowrap transition-colors ${
+                      hasActiveItem ? "text-primary/70" : "text-white/35 group-hover/gh:text-white/55"
+                    }`}>
+                      {groupLabel}
+                    </span>
+                  )}
+                  <div className="flex-1 aray-nav-divider" />
+                  {isCollapsible && (
+                    <ChevronDown className={`w-3 h-3 text-white/25 group-hover/gh:text-white/50 transition-all duration-200 ${isCollapsed ? "" : "rotate-180"}`} />
+                  )}
+                </div>
+                {/* Превью пунктов когда свёрнуто */}
+                {isCollapsible && isCollapsed && (
+                  <p className="text-[10px] text-white/28 mt-1 leading-relaxed truncate">
+                    {g.items.slice(0, 4).map(i => i.labelKey ? t(i.labelKey) : i.label).join(" · ")}
+                    {g.items.length > 4 && ` +${g.items.length - 4}`}
+                  </p>
                 )}
               </div>
             )}
