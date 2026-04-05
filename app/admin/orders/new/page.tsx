@@ -273,7 +273,7 @@ export default function NewPhoneOrderPage() {
   ];
 
   return (
-    <div className="h-[calc(100dvh-56px)] md:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100dvh-148px)] md:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-3 md:px-4 py-2.5 border-b border-border bg-card shrink-0">
         <div className="flex items-center gap-2 md:gap-3">
@@ -773,8 +773,8 @@ export default function NewPhoneOrderPage() {
           <button
             type="button"
             onClick={() => setShowMobileCart(true)}
-            className="md:hidden fixed bottom-[84px] right-4 z-40 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl shadow-lg font-bold text-sm active:scale-[0.96] transition-all"
-            style={{ bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" }}
+            className="md:hidden fixed right-4 z-40 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl shadow-lg font-bold text-sm active:scale-[0.96] transition-all"
+            style={{ bottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}
             style={{ boxShadow: "0 4px 20px hsl(var(--primary)/0.4)" }}
           >
             <ShoppingCart className="w-5 h-5" />
