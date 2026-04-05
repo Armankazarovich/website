@@ -352,6 +352,7 @@ function ArayControlCenter() {
   const { palette, setPalette } = usePalette();
   const { classic, toggle: toggleClassic } = useClassicMode();
   const ref = useRef<HTMLDivElement>(null);
+  const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
   const router = useRouter();
   const prevCountRef = useRef<number | null>(null);
 
@@ -383,8 +384,15 @@ function ArayControlCenter() {
     return () => clearInterval(t);
   }, []);
 
+  const calcPos = () => {
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      setPanelPos({ bottom: window.innerHeight - r.top + 6, left: r.left });
+    }
+  };
+
   const openNotif = async () => {
-    setTab("notif"); setOpen(true);
+    calcPos(); setTab("notif"); setOpen(true);
     if (!orders.length) {
       setLoadingOrders(true);
       try {
@@ -438,7 +446,7 @@ function ArayControlCenter() {
         </div>
       </button>
 
-      <button onClick={() => { setTab("style"); setOpen(o => !o); }} title="Оформление — палитра, тема, шрифт"
+      <button onClick={() => { calcPos(); setTab("style"); setOpen(o => !o); }} title="Оформление — палитра, тема, шрифт"
         className="flex-1 flex items-center justify-center gap-1 py-2.5 transition-all hover:bg-white/[0.06]"
         style={{ borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
         <Zap className="w-3.5 h-3.5" style={{ color: open && tab === "style" ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
@@ -446,9 +454,11 @@ function ArayControlCenter() {
       </button>
 
       {/* ══ ARAY Control Center Panel ════════════════════════════ */}
-      {open && (
-        <div className="absolute bottom-[calc(100%+6px)] left-0 w-[260px] z-[70] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
+      {open && panelPos && (
+        <div className="fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
           style={{
+            bottom: panelPos.bottom,
+            left: panelPos.left,
             background: "rgba(7,11,26,0.98)",
             backdropFilter: "blur(48px) saturate(200%)",
             WebkitBackdropFilter: "blur(48px) saturate(200%)",
