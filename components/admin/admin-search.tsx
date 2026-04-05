@@ -133,8 +133,8 @@ function ResultItem({
       onMouseEnter={() => onSelect(i)}
       className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-100 group"
       style={{
-        background: isActive ? "rgba(255,255,255,0.07)" : "transparent",
-        borderLeft: isActive ? `2.5px solid hsl(var(--primary))` : "2.5px solid transparent",
+        background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+        borderLeft: isActive ? `3px solid hsl(var(--primary))` : "3px solid transparent",
       }}
     >
       {/* Icon */}
@@ -159,7 +159,7 @@ function ResultItem({
       </div>
       {/* Type badge + arrow */}
       <div className="shrink-0 flex items-center gap-2">
-        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
+        <span className="text-[9px] font-medium px-2 py-0.5 rounded-full"
           style={{ background: meta.bg, color: meta.color }}>
           {meta.label}
         </span>
@@ -415,7 +415,6 @@ export function AdminSearch() {
                         className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.98] hover:brightness-110 group"
                         style={{
                           background: "rgba(255,255,255,0.06)",
-                          border: "1px solid rgba(255,255,255,0.09)",
                         }}
                       >
                         <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"

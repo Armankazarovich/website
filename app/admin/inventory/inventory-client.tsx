@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { InfoCard } from "@/components/admin/info-popup";
 import {
@@ -127,9 +128,12 @@ function Toast({ msg, type }: { msg: string; type: "ok" | "err" }) {
 }
 
 export function InventoryClient({ variants: init }: { variants: Variant[] }) {
+  const searchParams = useSearchParams();
   const [variants, setVariants] = useState(init);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<"all" | "in" | "out" | "tracked">("all");
+  // Статус фильтр из URL — синхронизирован со Smart Command Bar чипсами
+  const urlStatus = searchParams.get("status") as "in" | "out" | "tracked" | null;
+  const filterStatus = urlStatus || "all";
   const [filterCat, setFilterCat] = useState("all");
   const [editing, setEditing] = useState<{ id: string; field: EditField } | null>(null);
   const [editVal, setEditVal] = useState("");

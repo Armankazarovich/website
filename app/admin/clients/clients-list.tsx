@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle, Mail, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -43,9 +43,14 @@ type Client = {
 
 export function ClientsList({ clients: initialClients }: { clients: Client[] }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [clients, setClients] = useState(initialClients);
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
+
+  // URL-параметры от Smart Command Bar чипсов
+  const urlHasOrders = searchParams.get("hasorders") === "1";
+  const urlPeriodNew = searchParams.get("period") === "new";
   const [editForm, setEditForm] = useState({ name: "", phone: "", address: "" });
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -59,14 +64,14 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return clients;
-    return clients.filter(
-      (c) =>
-        c.name?.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.phone?.includes(q)
-    );
-  }, [clients, search]);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return clients.filter((c) => {
+      const matchSearch = !q || c.name?.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.phone?.includes(q);
+      const matchHasOrders = !urlHasOrders || c.orders.length > 0;
+      const matchNew = !urlPeriodNew || new Date(c.createdAt) >= thirtyDaysAgo;
+      return matchSearch && matchHasOrders && matchNew;
+    });
+  }, [clients, search, urlHasOrders, urlPeriodNew]);
 
   const handleEdit = (c: Client) => {
     setEditId(c.id);
