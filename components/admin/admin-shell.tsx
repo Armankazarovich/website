@@ -438,7 +438,7 @@ function ArayControlCenter() {
         </div>
       </button>
 
-      <button onClick={() => { setTab("style"); setOpen(o => !o); }} title="ARAY Control Center"
+      <button onClick={() => { setTab("style"); setOpen(o => !o); }} title="Оформление — палитра, тема, шрифт"
         className="flex-1 flex items-center justify-center gap-1 py-2.5 transition-all hover:bg-white/[0.06]"
         style={{ borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
         <Zap className="w-3.5 h-3.5" style={{ color: open && tab === "style" ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
@@ -785,20 +785,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         {/* ── Подвал сайдбара: палитра + пользователь + контролы ── */}
         <div className="shrink-0 border-t border-white/10 p-3 space-y-2">
           <AdminPwaInstall />
-
-          {/* Палитра + тема */}
-          <div className="px-1 flex items-center gap-1 flex-wrap">
-            {PALETTES.map((p) => (
-              <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                className={`w-5 h-5 rounded-md transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
-                style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-            ))}
-            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-              className="w-5 h-5 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all opacity-60 hover:opacity-100">
-              {theme === "dark" ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
-            </button>
-          </div>
 
           {/* ── User Card — профессиональная карточка пользователя ── */}
           <div className="rounded-2xl overflow-hidden"
