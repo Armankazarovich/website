@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { InfoBadge } from "@/components/admin/info-popup";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -1201,14 +1200,10 @@ export function CrmClient() {
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-foreground">CRM</h1>
-              <InfoBadge
-                text={tab === "orders" ? "Заказы по статусам — перетаскивайте карточки для смены статуса. Двойной клик на карточку — открыть заказ." : "Воронка продаж — перетаскивайте карточки между этапами воронки. Статус лида меняется автоматически."}
-                width={280}
-                side="bottom"
-              />
-            </div>
+            <h1 className="text-xl font-bold text-foreground">CRM</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {tab === "orders" ? "Перетащи карточку → статус заказа меняется" : "Перетащи лид между этапами воронки"}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {tab === "leads" && (

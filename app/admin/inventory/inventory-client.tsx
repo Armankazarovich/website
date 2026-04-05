@@ -3,7 +3,6 @@
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { InfoCard } from "@/components/admin/info-popup";
 import {
   Package, CheckCircle2, XCircle, FileDown,
   Printer, ChevronDown, Pencil, Minus, LayoutList, LayoutGrid,
@@ -377,11 +376,9 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           </div>
         </div>
 
-        <InfoCard
-          title="Как редактировать"
-          body="Нажмите на любое значение (цену, остаток) для редактирования. Статус в наличии/нет — переключается кликом."
-          className="no-print"
-        />
+        <p className="text-xs text-muted-foreground no-print">
+          Нажмите на любое значение (цену, остаток) для редактирования. Статус — переключается кликом.
+        </p>
 
         {/* Content */}
         <div id="inventory-print">
