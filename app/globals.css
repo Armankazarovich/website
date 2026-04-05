@@ -799,7 +799,7 @@ canvas,
   background: rgb(10, 14, 32) !important;
   color: rgba(255, 255, 255, 0.90) !important;
 }
-/* focus ring — primary color */
+/* focus ring — primary color everywhere (убирает синий браузерный default) */
 .aray-nature-mode input:focus,
 .aray-nature-mode textarea:focus,
 .aray-nature-mode select:focus,
@@ -809,6 +809,23 @@ canvas,
   outline: none !important;
   border-color: hsl(var(--primary) / 0.55) !important;
   box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
+}
+/* Кнопки и ссылки — outline цвета палитры вместо синего браузерного */
+.aray-nature-mode button:focus-visible,
+.aray-nature-mode a:focus-visible,
+.aray-nature-mode [role="button"]:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.65) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.12) !important;
+}
+/* Полностью убираем браузерный синий outline в non-nature режиме тоже */
+button:focus:not(:focus-visible),
+a:focus:not(:focus-visible) {
+  outline: none;
+}
+button:focus-visible,
+a:focus-visible {
+  outline-color: hsl(var(--primary));
 }
 
 /* ── Role badge в nature-mode — всегда читаемый поверх фото ── */

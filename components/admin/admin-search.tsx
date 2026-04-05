@@ -241,6 +241,9 @@ export function AdminDesktopSearch() {
           placeholder="Поиск заказов, товаров, клиентов..."
           className="flex-1 bg-transparent outline-none min-w-0 text-white placeholder:text-white/35"
           style={{ fontSize: "16px" }}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
         />
         {loading
           ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
@@ -388,6 +391,9 @@ export function AdminSearch() {
               placeholder="Найти заказ, товар, клиента, страницу..."
               className="flex-1 bg-transparent outline-none text-white/95 placeholder:text-white/28 text-[15px] font-medium"
               style={{ fontSize: "16px" }}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
             />
             <button onClick={() => { setOpen(false); setQuery(""); }}
               className="flex items-center gap-1 px-2 py-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
