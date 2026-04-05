@@ -39,6 +39,7 @@ export default async function OrdersTrashPage() {
         </div>
       ) : (
         <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
               <tr>
@@ -78,6 +79,7 @@ export default async function OrdersTrashPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>
