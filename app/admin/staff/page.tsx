@@ -592,7 +592,7 @@ export default function StaffPage() {
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold">Команда</h1>
+          <h1 className="font-display text-2xl font-bold">Команда</h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
             Управление сотрудниками — роли, доступ, пароли
           </p>

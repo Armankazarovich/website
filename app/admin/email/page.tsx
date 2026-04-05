@@ -561,7 +561,7 @@ export default function EmailPage() {
       <div className="flex items-center gap-3">
         <Mail className="w-6 h-6 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Email рассылка</h1>
+          <h1 className="font-display text-2xl font-bold">Email рассылка</h1>
           <p className="text-sm text-muted-foreground">
             Рассылка по клиентам, SMTP настройки и база подписчиков
           </p>

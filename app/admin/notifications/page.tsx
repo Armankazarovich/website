@@ -216,7 +216,7 @@ export default function NotificationsPage() {
       <div className="flex items-center gap-3">
         <Bell className="w-6 h-6 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Push уведомления</h1>
+          <h1 className="font-display text-2xl font-bold">Push уведомления</h1>
           <p className="text-sm text-muted-foreground">Рассылка и база подписчиков</p>
         </div>
       </div>

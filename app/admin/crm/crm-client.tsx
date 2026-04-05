@@ -1248,7 +1248,7 @@ export function CrmClient() {
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h1 className="text-xl font-bold text-foreground">CRM</h1>
+            <h1 className="font-display text-xl font-bold text-foreground">CRM</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               {tab === "orders" ? "Перетащи карточку → статус заказа меняется" : "Перетащи лид между этапами воронки"}
             </p>
