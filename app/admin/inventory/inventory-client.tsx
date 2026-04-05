@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { InfoCard } from "@/components/admin/info-popup";
 import {
@@ -129,7 +129,17 @@ function Toast({ msg, type }: { msg: string; type: "ok" | "err" }) {
 
 export function InventoryClient({ variants: init }: { variants: Variant[] }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [variants, setVariants] = useState(init);
+
+  // Записать/очистить URL param ?status=
+  const setStatusFilter = useCallback((key: string) => {
+    const params = new URLSearchParams(window.location.search);
+    if (key === "all") params.delete("status"); else params.set("status", key);
+    const qs = params.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname);
+  }, [router, pathname]);
   const [search, setSearch] = useState("");
   // Статус фильтр из URL — синхронизирован со Smart Command Bar чипсами
   const urlStatus = searchParams.get("status") as "in" | "out" | "tracked" | null;
@@ -312,7 +322,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             { label: "Нет в наличии", val: totalOut,        color: "text-destructive", key: "out" },
             { label: "Отслеживается", val: tracked,         color: "text-primary",     key: "tracked" },
           ].map(s => (
-            <button key={s.key} onClick={() => setFilterStatus(s.key as typeof filterStatus)}
+            <button key={s.key} onClick={() => setStatusFilter(s.key)}
               className={`p-3 rounded-xl border text-left transition-all ${filterStatus === s.key ? "border-primary/70 bg-card" : "border-border bg-card hover:bg-accent"}`}
               style={filterStatus === s.key ? { boxShadow: "inset 0 0 0 1.5px hsl(var(--primary)/0.35), 0 0 16px hsl(var(--primary)/0.12)" } : undefined}>
               <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
