@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   Zap, Plus, Trash2, Play, Pause, ChevronRight,
-  ShoppingBag, Clock, CheckSquare,
+  ShoppingBag, Clock, CheckSquare, X,
   Loader2, RefreshCw, CheckCircle2,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -208,7 +208,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             <Zap className="w-5 h-5 text-primary" />
             Новый воркфлоу
           </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl">✕</button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-6 space-y-5">

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Volume2, VolumeX, X } from "lucide-react";
+import { Volume2, VolumeX, X, Music } from "lucide-react";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -400,7 +400,7 @@ export function AdminAmbientSound() {
               {/* Шапка */}
               <div className="flex items-center gap-2.5 px-4 py-3.5"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <span className="text-lg">🎵</span>
+                <Music className="w-4 h-4 text-white/70 shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-semibold text-white/90">Природные звуки</p>
                   <p className="text-[10px] text-white/40">

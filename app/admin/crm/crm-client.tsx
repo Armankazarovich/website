@@ -1018,7 +1018,7 @@ function OrdersKanban({ search }: { search: string }) {
           Синхронизировать с лидами
         </button>
         {syncResult && (
-          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">✅ {syncResult}</span>
+          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {syncResult}</span>
         )}
         <span className="text-xs text-muted-foreground ml-auto">
           Перетащите карточку чтобы изменить статус заказа

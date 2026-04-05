@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import {
   FileDown, Upload, FileSpreadsheet, CheckCircle2,
-  AlertCircle, Loader2, Info, Download, Table2, CloudUpload,
+  AlertCircle, AlertTriangle, Loader2, Info, Download, Table2, CloudUpload,
   ChevronDown, ChevronUp, Copy, ExternalLink, Settings,
   Globe, RefreshCw, ShoppingBag, Package, Zap, Clock, ArrowRight,
   Building2, BarChart3, Link as LinkIcon,
@@ -398,7 +398,7 @@ export function ImportClient() {
             </p>
             {result.errors.length > 0 && (
               <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 space-y-0.5">
-                {result.errors.map((e, i) => <p key={i}>⚠ {e}</p>)}
+                {result.errors.map((e, i) => <p key={i} className="flex items-start gap-1"><AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" /> {e}</p>)}
               </div>
             )}
           </div>

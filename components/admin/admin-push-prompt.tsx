@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, X, CheckCircle } from "lucide-react";
+import { Bell, X, CheckCircle, AlertTriangle } from "lucide-react";
 import { requestPushPermission } from "@/components/push-subscription";
 
 const STORAGE_KEY = "admin_push_prompt_dismissed_at";
@@ -74,7 +74,7 @@ export function AdminPushPrompt() {
         </div>
       ) : isDenied ? (
         <div className="pr-5">
-          <p className="text-xs font-semibold text-orange-300 mb-1">⚠️ Push заблокированы</p>
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-orange-300 mb-1"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Push заблокированы</p>
           <p className="text-[10px] text-white/60 leading-relaxed">
             Разрешите уведомления в настройках браузера (замок в адресной строке), чтобы получать новые заказы
           </p>
