@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Heart, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useWishlistStore } from "@/store/wishlist";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 export default function WishlistPage() {
   const { items, remove, clear } = useWishlistStore();
+  const [confirmClear, setConfirmClear] = useState(false);
 
   return (
     <div className="container py-8">
@@ -30,7 +33,7 @@ export default function WishlistPage() {
         </div>
         {items.length > 0 && (
           <button
-            onClick={() => { if (confirm("Очистить весь список избранного?")) clear(); }}
+            onClick={() => setConfirmClear(true)}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
           >
             <Trash2 className="w-4 h-4" />
@@ -93,6 +96,16 @@ export default function WishlistPage() {
           </div>
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        onConfirm={() => { setConfirmClear(false); clear(); }}
+        title="Очистить избранное?"
+        description="Все товары из списка избранного будут удалены."
+        confirmLabel="Очистить"
+        variant="danger"
+      />
     </div>
   );
 }

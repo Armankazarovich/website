@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AdminBack } from "@/components/admin/admin-back";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type ProductReport = {
   id: string;
@@ -38,6 +39,7 @@ export default function ImageFixPage() {
   const [data, setData] = useState<{ summary: Summary; products: ProductReport[] } | null>(null);
   const [result, setResult] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "duplicates" | "broken" | "noimage">("all");
+  const [pendingAction, setPendingAction] = useState<{ action: string; label: string } | null>(null);
 
   const scan = async () => {
     setLoading(true);
@@ -54,7 +56,10 @@ export default function ImageFixPage() {
   useEffect(() => { scan(); }, []);
 
   const fixAction = async (action: string, label: string) => {
-    if (!confirm(`${label}?`)) return;
+    setPendingAction({ action, label });
+  };
+
+  const doFixAction = async (action: string) => {
     setFixing(action);
     setResult(null);
     try {
@@ -330,6 +335,17 @@ export default function ImageFixPage() {
           </p>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        open={!!pendingAction}
+        onClose={() => setPendingAction(null)}
+        onConfirm={() => { if (pendingAction) { const a = pendingAction.action; setPendingAction(null); doFixAction(a); } }}
+        title="Применить исправление?"
+        description={pendingAction ? `${pendingAction.label}` : ""}
+        confirmLabel="Применить"
+        variant="warning"
+        loading={!!fixing}
+      />
     </div>
   );
 }
