@@ -606,11 +606,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           </Link>
         </div>
 
-        <AdminNav role={role} />
-        <AdminPushPrompt />
-
-        {/* ── Погода в сайдбаре ── */}
-        <AdminSidebarWeather />
+        {/* Nav + weather scrollable, footer always pinned at bottom */}
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+          <AdminNav role={role} />
+          <AdminPushPrompt />
+          <AdminSidebarWeather />
+        </div>
 
         {/* ── Подвал сайдбара: палитра + пользователь + контролы ── */}
         <div className="shrink-0 border-t border-white/10 p-3 space-y-2">
