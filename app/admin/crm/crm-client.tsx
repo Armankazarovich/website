@@ -110,13 +110,19 @@ function LeadCard({
   onDragStart: (e: React.DragEvent, lead: Lead) => void;
   onDragEnd: (e: React.DragEvent) => void;
 }) {
+  const daysSince = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
+  const urgency = daysSince >= 7 ? "red" : daysSince >= 3 ? "amber" : null;
+
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, lead)}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className="bg-card border border-border rounded-xl p-3 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-150 group select-none"
+      className="bg-card border border-border rounded-xl p-3 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-150 group select-none overflow-hidden relative"
+      style={urgency === "red" ? { borderLeftColor: "rgb(248,113,113)", borderLeftWidth: "3px" }
+        : urgency === "amber" ? { borderLeftColor: "rgb(251,191,36)", borderLeftWidth: "3px" }
+        : undefined}
     >
       {/* Шапка */}
       <div className="flex items-start justify-between gap-2 mb-2">
@@ -178,7 +184,16 @@ function LeadCard({
             {SOURCE_LABELS[lead.source] || lead.source}
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          {urgency && (
+            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md ${
+              urgency === "red"
+                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+            }`}>
+              {daysSince}д
+            </span>
+          )}
           {(lead._count?.activities || 0) > 0 && (
             <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
               <MessageSquare className="w-3 h-3" />
@@ -928,6 +943,7 @@ function OrdersKanban({ search }: { search: string }) {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [mobileOrderStage, setMobileOrderStage] = useState("NEW");
   const dragOrderRef = useRef<OrderCard | null>(null);
 
   const fetchOrders = useCallback(async () => {
@@ -1031,6 +1047,24 @@ function OrdersKanban({ search }: { search: string }) {
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
+        <>
+          {/* Мобильный переключатель этапов заказов */}
+          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-border">
+            {ORDER_STAGES.map(s => {
+              const cnt = (ordersByStatus[s.key] || []).length;
+              return (
+                <button key={s.key} onClick={() => setMobileOrderStage(s.key)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                    mobileOrderStage === s.key ? "bg-card border-primary/60 text-foreground shadow-sm" : "border-transparent text-muted-foreground"
+                  }`}>
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                  {s.label}
+                  <span className={`px-1 rounded text-[9px] font-bold ${mobileOrderStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
+                </button>
+              );
+            })}
+          </div>
+
         <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
           <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 240}px` }}>
             {ORDER_STAGES.map(stage => {
@@ -1088,6 +1122,7 @@ function OrdersKanban({ search }: { search: string }) {
             })}
           </div>
         </div>
+        </>
       )}
     </div>
   );
@@ -1106,6 +1141,8 @@ export function CrmClient() {
   const [addFormStage, setAddFormStage] = useState("NEW");
   const [showPresets, setShowPresets] = useState(false);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState("ALL");
+  const [mobileStage, setMobileStage] = useState("NEW");
   const dragLeadRef = useRef<Lead | null>(null);
 
   const fetchLeads = useCallback(async () => {
@@ -1120,9 +1157,12 @@ export function CrmClient() {
     fetchLeads();
   }, [fetchLeads]);
 
-  // Группировка по этапам
+  // Фильтрация по источнику
+  const filteredLeads = sourceFilter === "ALL" ? leads : leads.filter(l => l.source === sourceFilter);
+
+  // Группировка по этапам (используем filteredLeads для канбана)
   const leadsByStage = STAGES.reduce((acc, s) => {
-    acc[s.key] = leads.filter(l => l.stage === s.key);
+    acc[s.key] = filteredLeads.filter(l => l.stage === s.key);
     return acc;
   }, {} as Record<string, Lead[]>);
 
@@ -1264,15 +1304,58 @@ export function CrmClient() {
           {/* Статистика лидов */}
           <CrmStats leads={leads} />
 
+          {/* Фильтр по источнику */}
+          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border overflow-x-auto flex-shrink-0">
+            {[{ key: "ALL", label: "Все" }, ...Object.entries(SOURCE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(s => (
+              <button
+                key={s.key}
+                onClick={() => setSourceFilter(s.key)}
+                className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                  sourceFilter === s.key
+                    ? "bg-primary text-white"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                }`}
+              >
+                {s.label}
+                {s.key !== "ALL" && (
+                  <span className="ml-1 opacity-60">{leads.filter(l => l.source === s.key).length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
           {/* Kanban лидов */}
           {loading ? (
             <div className="flex-1 flex items-center justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
-              <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 280}px` }}>
-                {STAGES.map(stage => {
+            <>
+              {/* Мобильный переключатель этапов */}
+              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-border">
+                {STAGES.map(s => {
+                  const cnt = (leadsByStage[s.key] || []).length;
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => setMobileStage(s.key)}
+                      className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
+                        mobileStage === s.key
+                          ? "bg-card border-primary/60 text-foreground shadow-sm"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                      {s.label}
+                      <span className={`px-1 rounded text-[9px] font-bold ${mobileStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Мобильный вид — одна колонка */}
+              <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3">
+                {STAGES.filter(s => s.key === mobileStage).map(stage => {
                   const stageleads = leadsByStage[stage.key] || [];
                   const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
                   return (
@@ -1294,7 +1377,34 @@ export function CrmClient() {
                   );
                 })}
               </div>
-            </div>
+
+              {/* Десктоп — горизонтальный Kanban */}
+              <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
+                <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 280}px` }}>
+                  {STAGES.map(stage => {
+                    const stageleads = leadsByStage[stage.key] || [];
+                    const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
+                    return (
+                      <StageColumn
+                        key={stage.key}
+                        stage={stage}
+                        leads={stageleads}
+                        staff={staff}
+                        total={stageleads.length}
+                        totalValue={totalValue}
+                        onLeadClick={setSelectedLead}
+                        onAddLead={handleAddLead}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onDrop={handleDrop}
+                        onDragOver={handleDragOver}
+                        isDragOver={dragOverStage === stage.key}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            </>
           )}
         </>
       )}
