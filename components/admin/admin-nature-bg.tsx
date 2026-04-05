@@ -145,11 +145,18 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       <div className="aray-photo-overlay-dark  absolute inset-0 bg-black/55" />
       <div className="aray-photo-overlay-light absolute inset-0 bg-black/[0.08]" />
 
-      {/* Цветной тинт палитры (мгновенно — только CSS) */}
-      <div className="aray-photo-overlay-dark  absolute inset-0"
-        style={{ background: "hsl(var(--primary)/0.20)", mixBlendMode: "color" }} />
+      {/* Цветной тинт палитры — "погода по цвету" ☀️❄️🌿 */}
+      {/* Тёмная тема: насыщенный тинт */}
+      <div className="aray-photo-overlay-dark absolute inset-0"
+        style={{ background: "hsl(var(--primary)/0.35)", mixBlendMode: "color" }} />
+      {/* Светлая тема: мягкий тёплый тинт */}
       <div className="aray-photo-overlay-light absolute inset-0"
-        style={{ background: "hsl(var(--primary)/0.12)", mixBlendMode: "color" }} />
+        style={{ background: "hsl(var(--primary)/0.28)", mixBlendMode: "color" }} />
+      {/* Второй слой — усиливает настроение через soft-light */}
+      <div className="aray-photo-overlay-dark absolute inset-0"
+        style={{ background: "hsl(var(--primary)/0.12)", mixBlendMode: "soft-light" }} />
+      <div className="aray-photo-overlay-light absolute inset-0"
+        style={{ background: "hsl(var(--primary)/0.10)", mixBlendMode: "soft-light" }} />
 
       {/* Виньетка снизу */}
       <div className="aray-photo-overlay-dark  absolute inset-0"
