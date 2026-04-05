@@ -120,7 +120,7 @@ function ResultItem({
       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
         style={{ background: isActive ? "hsl(var(--primary)/0.2)" : "rgba(255,255,255,0.07)" }}>
         {r.type === "page"    && <r.icon className="w-3.5 h-3.5 text-white/60" />}
-        {r.type === "order"   && <Hash className="w-3.5 h-3.5 text-blue-400" />}
+        {r.type === "order"   && <Hash className="w-3.5 h-3.5 text-primary/70" />}
         {r.type === "product" && <Package className="w-3.5 h-3.5 text-orange-400" />}
         {r.type === "client"  && <UserCircle className="w-3.5 h-3.5 text-emerald-400" />}
       </div>
@@ -195,10 +195,10 @@ export function AdminDesktopSearch() {
       <button
         onClick={() => setExpanded(true)}
         title="Поиск (⌘K)"
-        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-blue-500/15 transition-all group relative"
+        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-primary/15 transition-all group relative"
       >
-        <Search className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-        <span className="absolute inset-0 rounded-xl group-hover:ring-2 ring-blue-400/25 transition-all" />
+        <Search className="w-4 h-4 text-primary/70 group-hover:scale-110 transition-transform" />
+        <span className="absolute inset-0 rounded-xl group-hover:ring-2 ring-primary/25 transition-all" />
       </button>
     );
   }
@@ -208,7 +208,7 @@ export function AdminDesktopSearch() {
       {/* Input bar */}
       <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
         style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.14)" }}>
-        <Search className="w-4 h-4 text-blue-400 shrink-0" />
+        <Search className="w-4 h-4 text-primary/70 shrink-0" />
         <input
           ref={inputRef}
           value={query}
@@ -219,7 +219,7 @@ export function AdminDesktopSearch() {
           style={{ fontSize: "16px" }}
         />
         {loading
-          ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
+          ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
           : query
             ? <button onClick={() => setQuery("")} className="text-white/30 hover:text-white/60 transition-colors shrink-0"><X className="w-3.5 h-3.5" /></button>
             : <kbd className="text-[10px] font-mono shrink-0 text-white/25">Esc</kbd>
@@ -298,7 +298,7 @@ export function AdminSearch() {
         title="Поиск"
         className="p-2 rounded-xl hover:bg-white/10 transition-colors relative shrink-0"
       >
-        <Search className="w-[18px] h-[18px] text-blue-400" />
+        <Search className="w-[18px] h-[18px] text-primary/70" />
       </button>
 
       {open && (
@@ -316,7 +316,7 @@ export function AdminSearch() {
               }}>
               <div className="flex items-center gap-3 px-4 py-3.5"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <Search className="w-5 h-5 text-blue-400/70 shrink-0" />
+                <Search className="w-5 h-5 text-primary/70/70 shrink-0" />
                 <input
                   ref={inputRef}
                   value={query}
@@ -327,7 +327,7 @@ export function AdminSearch() {
                   style={{ fontSize: "16px" /* предотвращает зум на iOS */ }}
                 />
                 {loading && (
-                  <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
+                  <div className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
                 )}
                 <button onClick={() => setOpen(false)}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg transition-colors text-white/30 hover:text-white/60"

@@ -1198,61 +1198,56 @@ canvas,
   transform: scale(0.93);
 }
 
-/* ── TOPBAR: светлая тема — светлый фон, тёмный заголовок ── */
+/* ── TOPBAR: светлая тема — ТОЖЕ тёмный (фон всегда тёмное фото) ── */
 .light .aray-nature-mode .aray-topbar,
 [data-theme="light"] .aray-nature-mode .aray-topbar {
-  background: linear-gradient(90deg, hsl(var(--primary)/0.06) 0%, rgba(255,252,248,0.95) 50%) !important;
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-bottom: 1px solid hsl(var(--primary)/0.14) !important;
-  box-shadow: 0 1px 0 hsl(var(--primary)/0.08), 0 2px 12px rgba(0,0,0,0.05) !important;
+  background: linear-gradient(90deg, hsl(var(--primary)/0.12) 0%, rgba(8,12,30,0.92) 55%) !important;
+  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  border-bottom: 1px solid hsl(var(--primary)/0.22) !important;
+  box-shadow: 0 1px 0 hsl(var(--primary)/0.14), 0 4px 24px rgba(0,0,0,0.28) !important;
 }
-/* Текст в светлой теме — тёмный */
+/* Текст в светлой теме — белый (как в тёмной) */
 .light .aray-nature-mode .aray-topbar *,
 [data-theme="light"] .aray-nature-mode .aray-topbar * {
-  color: hsl(var(--foreground)) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
 }
 .light .aray-nature-mode .aray-topbar .text-muted-foreground,
 [data-theme="light"] .aray-nature-mode .aray-topbar .text-muted-foreground {
-  color: hsl(var(--muted-foreground)) !important;
+  color: rgba(255, 255, 255, 0.55) !important;
 }
 .light .aray-nature-mode .aray-topbar input,
 [data-theme="light"] .aray-nature-mode .aray-topbar input {
-  background: hsl(var(--muted)/0.6) !important;
-  border-color: hsl(var(--border)) !important;
-  color: hsl(var(--foreground)) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
 }
 .light .aray-nature-mode .aray-topbar input::placeholder,
 [data-theme="light"] .aray-nature-mode .aray-topbar input::placeholder {
-  color: hsl(var(--muted-foreground)/0.6) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
 }
 .light .aray-nature-mode .aray-topbar button,
 [data-theme="light"] .aray-nature-mode .aray-topbar button,
 .light .aray-nature-mode .aray-topbar [role="button"],
 [data-theme="light"] .aray-nature-mode .aray-topbar [role="button"] {
-  color: hsl(var(--foreground)/0.75) !important;
+  color: rgba(255, 255, 255, 0.80) !important;
 }
 .light .aray-nature-mode .aray-topbar button:hover,
 [data-theme="light"] .aray-nature-mode .aray-topbar button:hover {
-  background: hsl(var(--muted)/0.8) !important;
-  color: hsl(var(--foreground)) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 1.0) !important;
 }
 .light .aray-nature-mode .aray-topbar button:active,
 [data-theme="light"] .aray-nature-mode .aray-topbar button:active {
-  background: hsl(var(--muted)) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
   transform: scale(0.93);
 }
 
-/* Стеклянная пилюля с кнопками */
-.dark .aray-nature-mode .aray-topbar-pill {
+/* Стеклянная пилюля с кнопками — всегда тёмная */
+.aray-nature-mode .aray-topbar-pill {
   background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.13) !important;
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset !important;
-}
-.light .aray-nature-mode .aray-topbar-pill,
-[data-theme="light"] .aray-nature-mode .aray-topbar-pill {
-  background: hsl(var(--muted)/0.6) !important;
-  border: 1px solid hsl(var(--border)) !important;
 }
 
 /* ── Неоновое свечение (адаптируется к палитре) ── */
@@ -1551,4 +1546,94 @@ canvas,
   .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"] {
     display: none;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ЕДИНЫЙ СТИЛЬ ФОРМ — все инпуты тёмное стекло в nature mode
+   Применяется ВЕЗДЕ в admin: main, modal, panel, sticky bar
+   ══════════════════════════════════════════════════════════════ */
+.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+.aray-nature-mode textarea,
+.aray-nature-mode select {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.90);
+}
+.aray-nature-mode input::placeholder,
+.aray-nature-mode textarea::placeholder {
+  color: rgba(255, 255, 255, 0.30) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.30) !important;
+  opacity: 1;
+}
+.aray-nature-mode input:focus:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.aray-nature-mode textarea:focus,
+.aray-nature-mode select:focus {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25) !important;
+}
+/* select option — в браузере нельзя стилизовать, но хотя бы тёмный фон */
+.aray-nature-mode select option {
+  background: rgb(10, 14, 30) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+/* label/hint текст рядом с формами */
+.aray-nature-mode label {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* ── TaskModal панель — тёмное стекло (не dialog, inline panel) ── */
+.aray-nature-mode .aray-task-panel {
+  background: rgba(8, 12, 28, 0.97) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+
+/* ── Стикерные фильтр-полоски — только если остались ── */
+.aray-nature-mode .aray-filter-bar {
+  background: rgba(6, 10, 24, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+}
+
+/* ── Глобальные диалоги (role=dialog) — уже тёмные, усиливаем specificity ── */
+.aray-nature-mode [role="dialog"] {
+  background: rgba(8, 12, 28, 0.97) !important;
+  backdrop-filter: blur(40px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.60) !important;
+}
+.light .aray-nature-mode [role="dialog"],
+[data-theme="light"] .aray-nature-mode [role="dialog"] {
+  background: rgba(8, 12, 28, 0.97) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* ── Кнопки Cancel/Отмена в формах — светлая обводка ── */
+.aray-nature-mode [role="dialog"] button[variant="outline"],
+.aray-nature-mode [role="dialog"] .btn-outline {
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ── Таблицы thead в природном режиме ── */
+.aray-nature-mode thead,
+.aray-nature-mode .bg-muted\/50 {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+.aray-nature-mode thead th,
+.aray-nature-mode thead td {
+  color: rgba(255, 255, 255, 0.55) !important;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }

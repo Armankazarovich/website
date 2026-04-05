@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -777,9 +778,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </SheetContent>
       </Sheet>
 
+      {/* ─── Mobile bottom nav ───────────────────────────────── */}
+      <AdminMobileBottomNav role={role} onMenuOpen={() => setOpen(true)} menuOpen={open} />
+
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
-        <div className="pt-14" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))" }}>
+        <div className="pt-14" style={{ paddingBottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>

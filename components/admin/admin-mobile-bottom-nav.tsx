@@ -227,15 +227,9 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
   const pathname = usePathname();
   const group = getRoleGroup(role);
   const tabs = ROLE_TABS[group] ?? ROLE_TABS.owner;
-  const [menuPopupOpen, setMenuPopupOpen] = useState(false);
 
   return (
     <>
-      {/* Menu popup */}
-      {menuPopupOpen && (
-        <MenuPopup role={role} onClose={() => setMenuPopupOpen(false)} />
-      )}
-
       {/* Bottom dock */}
       <nav
         className="lg:hidden fixed z-50"
@@ -298,23 +292,23 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
             );
           })}
 
-          {/* Кнопка Меню → попап */}
+          {/* Кнопка Меню → открывает боковой drawer */}
           <button
-            onClick={() => setMenuPopupOpen(o => !o)}
+            onClick={onMenuOpen}
             className="flex-1 focus:outline-none"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <div className="flex flex-col items-center justify-center py-3 px-2 min-w-0 relative transition-all duration-200 active:scale-90 select-none">
-              {menuPopupOpen && (
+              {menuOpen && (
                 <div className="absolute inset-x-1.5 inset-y-1.5 rounded-[18px]"
                   style={{ background: "hsl(var(--primary) / 0.20)", boxShadow: "0 0 16px hsl(var(--primary) / 0.30)" }} />
               )}
               <MoreHorizontal
                 className="w-[22px] h-[22px] z-10 transition-all duration-200"
-                style={{ color: menuPopupOpen ? "hsl(var(--primary))" : "rgba(255,255,255,0.58)" }}
+                style={{ color: menuOpen ? "hsl(var(--primary))" : "rgba(255,255,255,0.58)" }}
               />
               <span className="text-[10px] font-semibold leading-none mt-1.5 z-10"
-                style={{ color: menuPopupOpen ? "hsl(var(--primary))" : "rgba(255,255,255,0.62)" }}>
+                style={{ color: menuOpen ? "hsl(var(--primary))" : "rgba(255,255,255,0.62)" }}>
                 Меню
               </span>
             </div>

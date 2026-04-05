@@ -225,7 +225,7 @@ function TaskModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="w-full max-w-2xl h-full bg-background shadow-2xl flex flex-col overflow-hidden"
+        className="w-full max-w-2xl h-full bg-background aray-task-panel shadow-2xl flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -628,67 +628,32 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
 
   return (
     <div className="h-full flex flex-col">
-      {/* Top bar */}
-      <div className="px-6 py-4 border-b border-border bg-card sticky top-14 z-10 aray-topbar">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <h1 className="font-display font-bold text-xl">Задачи</h1>
-            {/* Quick stats */}
-            <div className="flex gap-2">
-              {overdue > 0 && (
-                <span className="flex items-center gap-1 text-xs bg-red-100 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-2 py-1 rounded-lg font-medium">
-                  <AlertTriangle className="w-3 h-3" /> {overdue} просрочено
-                </span>
-              )}
-              {urgent > 0 && (
-                <span className="flex items-center gap-1 text-xs bg-orange-100 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded-lg font-medium">
-                  <Flame className="w-3 h-3" /> {urgent} срочных
-                </span>
-              )}
-              {inProgress > 0 && (
-                <span className="flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 px-2 py-1 rounded-lg font-medium">
-                  <RefreshCw className="w-3 h-3" /> {inProgress} в работе
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-2 flex-wrap">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Поиск..."
-                className="pl-8 pr-3 py-1.5 text-sm border border-border rounded-xl bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 w-40"
-              />
-            </div>
-            <select
-              value={filterPriority}
-              onChange={e => setFilterPriority(e.target.value as any)}
-              className="text-sm border border-border rounded-xl px-2 py-1.5 bg-card focus:outline-none"
-            >
-              <option value="">Все приоритеты</option>
-              {Object.entries(PRIORITY_META).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
-            </select>
-            <select
-              value={filterAssignee}
-              onChange={e => setFilterAssignee(e.target.value)}
-              className="text-sm border border-border rounded-xl px-2 py-1.5 bg-card focus:outline-none"
-            >
-              <option value="">Все сотрудники</option>
-              {staff.map(u => <option key={u.id} value={u.id}>{u.name ?? u.email}</option>)}
-            </select>
-            <Link
-              href="/admin/workflows"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition-colors"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              Автоворкфлоу
-            </Link>
-          </div>
+      {/* Compact header row — stats + autoworkflow link */}
+      <div className="px-6 pt-4 pb-2 flex items-center gap-3 flex-wrap">
+        <div className="flex gap-2">
+          {overdue > 0 && (
+            <span className="flex items-center gap-1 text-xs bg-red-500/15 text-red-400 px-2 py-1 rounded-xl font-medium border border-red-500/20">
+              <AlertTriangle className="w-3 h-3" /> {overdue} просрочено
+            </span>
+          )}
+          {urgent > 0 && (
+            <span className="flex items-center gap-1 text-xs bg-orange-500/15 text-orange-400 px-2 py-1 rounded-xl font-medium border border-orange-500/20">
+              <Flame className="w-3 h-3" /> {urgent} срочных
+            </span>
+          )}
+          {inProgress > 0 && (
+            <span className="flex items-center gap-1 text-xs bg-amber-500/15 text-amber-400 px-2 py-1 rounded-xl font-medium border border-amber-500/20">
+              <RefreshCw className="w-3 h-3" /> {inProgress} в работе
+            </span>
+          )}
         </div>
+        <Link
+          href="/admin/workflows"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors ml-auto"
+        >
+          <Zap className="w-3 h-3" />
+          Автоворкфлоу
+        </Link>
       </div>
 
       {/* Board */}
