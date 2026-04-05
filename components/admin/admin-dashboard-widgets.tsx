@@ -35,8 +35,6 @@ function useWeather() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let lat = 55.8945, lon = 37.3877, city = "Химки";
-
     async function fetchWeather(la: number, lo: number, cityName: string) {
       try {
         const res = await fetch(
@@ -51,42 +49,33 @@ function useWeather() {
           date: now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
           weekday: now.toLocaleDateString("ru-RU", { weekday: "long" }),
         });
-      } catch {
-        // Тихо — не показываем ошибку
-      } finally {
-        setLoading(false);
-      }
+      } catch { /* тихо */ }
+      finally { setLoading(false); }
     }
 
-    // Пробуем геолокацию
+    // Шаг 1: сразу грузим Химки (быстро, без ожидания геолокации)
+    fetchWeather(55.8945, 37.3877, "Химки");
+
+    // Шаг 2: параллельно пробуем геолокацию — если разрешат, обновим
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
-          lat = pos.coords.latitude;
-          lon = pos.coords.longitude;
-          // Reverse geocode через Nominatim (бесплатно, без ключа)
+          const { latitude: la, longitude: lo } = pos.coords;
+          let city = "Ваш город";
           try {
             const geo = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ru`,
+              `https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&accept-language=ru`,
               { headers: { "User-Agent": "PiloRus-Admin/1.0" } }
             );
-            const geoData = await geo.json();
-            city = geoData.address?.city
-              || geoData.address?.town
-              || geoData.address?.village
-              || geoData.address?.suburb
-              || "Ваш город";
-          } catch { /* используем Химки */ }
-          fetchWeather(lat, lon, city);
+            const gd = await geo.json();
+            city = gd.address?.city || gd.address?.town || gd.address?.village || gd.address?.suburb || city;
+          } catch { /* оставим координаты */ }
+          // Обновляем с реальной локацией
+          fetchWeather(la, lo, city);
         },
-        () => {
-          // Пользователь отказал — используем Химки
-          fetchWeather(lat, lon, city);
-        },
-        { timeout: 5000, maximumAge: 300_000 }
+        () => { /* отказал — Химки уже показаны */ },
+        { timeout: 6000, maximumAge: 300_000 }
       );
-    } else {
-      fetchWeather(lat, lon, city);
     }
   }, []);
 
