@@ -10,8 +10,9 @@ import {
   ArrowRight, ALargeSmall, Monitor, Zap, Palette,
 } from "lucide-react";
 
-// ── Классический режим (без фото-фона) ───────────────────────────────────────
+// ── Ключи localStorage ────────────────────────────────────────────────────────
 const LS_CLASSIC = "aray-classic-mode";
+const LS_FONT    = "aray-font-size";
 
 function useClassicMode() {
   const [classic, setClassic] = useState(false);
@@ -393,13 +394,25 @@ function ArayControlCenter() {
     }
   };
 
+  // Единые размеры шрифтов — те же значения что в AdminFontPicker
   const FONT_SIZES_CC = [
-    { id: "sm", label: "Малый", px: "14px", scale: "0.9" },
-    { id: "md", label: "Норм",  px: "16px", scale: "1.0" },
-    { id: "lg", label: "Крупн", px: "18px", scale: "1.1" },
+    { id: "sm", label: "Компакт", px: "13px",   scale: "0.929" },
+    { id: "md", label: "Норм",    px: "14px",   scale: "1"     },
+    { id: "lg", label: "Крупн",   px: "15.5px", scale: "1.107" },
   ];
   const [fontActive, setFontActive] = useState("md");
-  useEffect(() => { const s = localStorage.getItem(LS_FONT); if (s) setFontActive(s); }, []);
+
+  // ── Инициализация шрифта при загрузке (применяет к DOM, не только к state) ──
+  useEffect(() => {
+    const saved = localStorage.getItem(LS_FONT);
+    const id = saved || (window.innerWidth < 768 ? "sm" : "md");
+    setFontActive(id);
+    const size = FONT_SIZES_CC.find(f => f.id === id) || FONT_SIZES_CC[1];
+    document.documentElement.style.setProperty("font-size", size.px);
+    document.documentElement.style.setProperty("--aray-font-scale", size.scale);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pickFont = (id: string) => {
     const s = FONT_SIZES_CC.find(f => f.id === id)!;
     setFontActive(id);
@@ -683,7 +696,6 @@ const FONT_SIZES = [
   { id: "lg", label: "Крупнее", px: "15.5px", scale: "1.107" },
   { id: "xl", label: "Макс",    px: "17px",   scale: "1.214" },
 ];
-const LS_FONT = "aray-font-size";
 
 function MobileFontControl() {
   const [active, setActive] = useState("md");
