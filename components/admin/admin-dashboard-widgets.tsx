@@ -65,9 +65,10 @@ function useWeather() {
   return weather;
 }
 
-// ── Компактная строчка погоды — встраивается в шапку дашборда ─────────────────
-export function AdminDashboardWidgets() {
+// ── Компактная погода в боковой панели — с hover-раскрытием ──────────────────
+export function AdminSidebarWeather() {
   const [mounted, setMounted] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const weather = useWeather();
 
   useEffect(() => { setMounted(true); }, []);
@@ -76,17 +77,42 @@ export function AdminDashboardWidgets() {
 
   const { emoji, label } = getWeatherInfo(weather.code);
   const now = new Date();
-  const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
+  const dateStr = now.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" });
   const tempStr = `${weather.temp > 0 ? "+" : ""}${weather.temp}°`;
 
   return (
-    <div className="flex items-center flex-wrap gap-2 text-foreground/50">
-      <span className="text-base leading-none">{emoji}</span>
-      <span className="text-xs font-medium text-foreground/60">{tempStr} · {label}</span>
-      <span className="text-foreground/25">·</span>
-      <span className="text-xs text-foreground/40 capitalize">{weather.city}</span>
-      <span className="text-foreground/25">·</span>
-      <span className="text-xs text-foreground/40 capitalize">{dateStr}</span>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="mx-3 mb-1.5 px-3 py-2.5 rounded-2xl cursor-default select-none transition-all duration-300"
+      style={{
+        background: hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+        border: `1px solid ${hovered ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)"}`,
+        boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
+      }}
+    >
+      {/* Всегда видная строчка */}
+      <div className="flex items-center gap-2">
+        <span className="text-xl leading-none">{emoji}</span>
+        <span className="text-sm font-bold leading-none" style={{ color: "hsl(var(--primary))" }}>{tempStr}</span>
+        <span className="text-[11px] text-white/45 ml-auto leading-none">{weather.city}</span>
+      </div>
+
+      {/* Раскрывается при наведении */}
+      <div
+        className="overflow-hidden transition-all duration-300"
+        style={{ maxHeight: hovered ? "56px" : "0px", opacity: hovered ? 1 : 0, marginTop: hovered ? "8px" : "0px" }}
+      >
+        <div className="pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+          <p className="text-[11px] font-medium text-white/65">{label}</p>
+          <p className="text-[10px] text-white/35 mt-0.5 capitalize">{dateStr}</p>
+        </div>
+      </div>
     </div>
   );
+}
+
+// ── Устаревший компонент (оставлен для обратной совместимости) ────────────────
+export function AdminDashboardWidgets() {
+  return null;
 }

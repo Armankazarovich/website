@@ -904,14 +904,17 @@ function OrderKanbanCard({
       </div>
 
       {itemsSummary && (
-        <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5">
-          📦 {itemsSummary}{hasMore ? `... +${order.items.length - 2}` : ""}
+        <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5 flex items-center gap-1">
+          <Package className="w-2.5 h-2.5 shrink-0" />
+          {itemsSummary}{hasMore ? `... +${order.items.length - 2}` : ""}
         </p>
       )}
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground">
-          {order.paymentMethod === "Наличные" ? "💵 Нал" : "🏦 Безнал"}
+        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+          {order.paymentMethod === "Наличные"
+            ? <><Banknote className="w-2.5 h-2.5" /> Нал</>
+            : <><Building2 className="w-2.5 h-2.5" /> Безнал</>}
         </span>
         <span className="text-[10px] text-muted-foreground">{timeAgo(order.createdAt)}</span>
       </div>

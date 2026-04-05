@@ -227,6 +227,7 @@ import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
+import { AdminSidebarWeather } from "@/components/admin/admin-dashboard-widgets";
 
 // ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
 function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
@@ -607,6 +608,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
         <AdminNav role={role} />
         <AdminPushPrompt />
+
+        {/* ── Погода в сайдбаре ── */}
+        <AdminSidebarWeather />
 
         <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
           <AdminPwaInstall />

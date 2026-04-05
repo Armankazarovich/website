@@ -1140,13 +1140,23 @@ canvas,
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-.aray-nature-mode .aray-sidebar a.aray-icon-spin:hover {
+.aray-nature-mode .aray-sidebar a.aray-icon-spin:hover,
+.aray-nature-mode .aray-sidebar a.aray-nav-hover:hover {
   background: rgba(255, 255, 255, 0.07) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 .aray-nature-mode .aray-sidebar a.aray-nav-active {
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   background: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* ── Hover навигации с акцентом основного цвета ── */
+.aray-nav-hover {
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.aray-nav-hover:hover {
+  background: hsl(var(--primary) / 0.13) !important;
+  border-color: hsl(var(--primary) / 0.18) !important;
 }
 
 /* ── SIDEBAR GLASS в nature-режиме ── */
@@ -1512,8 +1522,41 @@ canvas,
   transform: rotate(0deg) scale(0.9);
 }
 
-/* Кнопки с классом aray-icon-spin уже имеют анимацию выше.
-   Глобальная анимация намеренно НЕ применяется — только через ручную метку. */
+/* Кнопки с классом aray-icon-spin уже имеют анимацию выше. */
+
+/* ── ГЛОБАЛЬНАЯ анимация иконок — все кнопки и ссылки в admin ──────────────
+   Применяется ко всем SVG внутри интерактивных элементов.
+   Исключения: spinner (animate-spin), disabled, checkbox/radio, range.
+   ─────────────────────────────────────────────────────────────────────────── */
+.aray-admin-bg button:not([disabled]):not([class*="animate-spin"]) svg,
+.aray-admin-bg a svg,
+.aray-classic-mode button:not([disabled]):not([class*="animate-spin"]) svg,
+.aray-classic-mode a svg {
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
+}
+/* Не анимировать спиннеры */
+.aray-admin-bg .animate-spin svg,
+.aray-classic-mode .animate-spin svg,
+.aray-admin-bg svg.animate-spin,
+.aray-classic-mode svg.animate-spin {
+  transition: none !important;
+}
+/* Hover — лёгкий поворот + увеличение */
+.aray-admin-bg button:not([disabled]):hover svg,
+.aray-admin-bg a:hover svg,
+.aray-classic-mode button:not([disabled]):hover svg,
+.aray-classic-mode a:hover svg {
+  transform: rotate(8deg) scale(1.14);
+}
+/* Active — пружинный отскок назад */
+.aray-admin-bg button:not([disabled]):active svg,
+.aray-admin-bg a:active svg,
+.aray-classic-mode button:not([disabled]):active svg,
+.aray-classic-mode a:active svg {
+  transform: rotate(0deg) scale(0.88);
+  transition-duration: 0.12s;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ЧИТАБЕЛЬНОСТЬ ТЕКСТА в природном режиме

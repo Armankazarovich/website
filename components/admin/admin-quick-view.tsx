@@ -37,24 +37,24 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end lg:items-stretch lg:justify-end">
+    <div className="fixed inset-0 z-[80] flex items-end lg:items-center lg:justify-center lg:p-8">
 
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
-        style={{ backdropFilter: "blur(4px)" }}
+        className="absolute inset-0 bg-black/60 animate-in fade-in duration-200"
+        style={{ backdropFilter: "blur(6px)" }}
         onClick={onClose}
       />
 
-      {/* Panel — bottom sheet on mobile, side panel on desktop */}
+      {/* Panel — bottom sheet on mobile, centered modal on desktop */}
       <div
         ref={panelRef}
         className={`
           relative z-10 flex flex-col
-          w-full lg:w-[520px] xl:w-[580px]
-          rounded-t-[28px] lg:rounded-none lg:rounded-l-[28px]
+          w-full lg:max-w-2xl
+          rounded-t-[28px] lg:rounded-[28px]
           overflow-hidden
-          animate-in slide-in-from-bottom lg:slide-in-from-right duration-300
+          animate-in slide-in-from-bottom lg:slide-in-from-bottom-4 lg:zoom-in-95 duration-300
         `}
         style={{
           maxHeight: "92dvh",
@@ -62,7 +62,7 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
           backdropFilter: "blur(40px) saturate(200%)",
           WebkitBackdropFilter: "blur(40px) saturate(200%)",
           border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 -8px 48px rgba(0,0,0,0.6), -4px 0 40px rgba(0,0,0,0.4)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
         }}
       >
         {/* Drag handle (mobile) */}

@@ -147,11 +147,11 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
               className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden aray-icon-spin ${
                 isActive
                   ? "aray-nav-active text-white"
-                  : "text-white/65 hover:text-white hover:bg-white/[0.07]"
+                  : "text-white/60 hover:text-white aray-nav-hover"
               }`}
             >
               <item.icon className={`w-4 h-4 shrink-0 transition-colors duration-200 ${
-                isActive ? "text-primary" : "text-white/60 group-hover:text-white/90"
+                isActive ? "text-primary" : "text-white/45 group-hover:text-primary/80"
               }`} />
               <span className="flex-1">{item.labelKey ? t(item.labelKey) : item.label}</span>
               {/* Pending badge for staff page */}
