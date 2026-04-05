@@ -616,21 +616,35 @@ canvas,
    Иконки и кнопки НЕ трогаем — они сами знают свои цвета.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── ПРИРОДНЫЙ РЕЖИМ: нейтральное тёмное матовое стекло ──
-   saturate(100%) = не усиливаем цвета фото (без этого оранжевое → ещё оранжевее)
-   rgba(4,6,18,0.72) = 72% непрозрачность, нейтральный тёмно-синий
-   Один блок для всех тем — без мёртвых .light/.dark правил
-────────────────────────────────────────────────────────────────── */
+/* ── ТЁМНАЯ ТЕМА: тёмный glass с лёгким тинтом палитры ── */
 .aray-nature-mode .bg-card,
 .aray-nature-mode .bg-popover,
 .aray-nature-mode .bg-background,
 .aray-nature-mode .bg-white,
 .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(36px) saturate(100%) brightness(0.72) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(100%) brightness(0.72) !important;
-  background: rgba(4, 6, 18, 0.72) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 4px 28px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* ── СВЕТЛАЯ ТЕМА: витражное стекло — цвет палитры ── */
+.light .aray-nature-mode .bg-card,
+[data-theme="light"] .aray-nature-mode .bg-card,
+.light .aray-nature-mode .bg-popover,
+[data-theme="light"] .aray-nature-mode .bg-popover,
+.light .aray-nature-mode .bg-background,
+[data-theme="light"] .aray-nature-mode .bg-background,
+.light .aray-nature-mode .bg-white,
+[data-theme="light"] .aray-nature-mode .bg-white,
+.light .aray-nature-mode .aray-stat-card,
+[data-theme="light"] .aray-nature-mode .aray-stat-card {
+  backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(240%) brightness(0.90) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.32) 0%, hsl(var(--primary) / 0.14) 55%, rgba(255,255,255,0.06) 100%) !important;
+  border-color: hsl(var(--primary) / 0.35) !important;
+  box-shadow: 0 4px 28px hsl(var(--primary) / 0.18), 0 1px 0 hsl(var(--primary) / 0.25) inset !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
@@ -656,10 +670,10 @@ canvas,
 .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
-  backdrop-filter: blur(28px) saturate(100%) brightness(0.72) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(100%) brightness(0.72) !important;
-  background: rgba(4, 6, 18, 0.55) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(5, 8, 20, 0.26) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Текст в тёмных карточках — белый (только p/h/span, не иконки) */
@@ -700,11 +714,6 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
-/* ── ЗАМЕТКА: .light .aray-nature-mode правила удалены —
-   next-themes НЕ добавляет класс .light на <html>, только .dark.
-   В светлой теме работают правила выше (без префикса) — одинаково для всех тем.
-────────────────────────────────────────────────────────────────── */
-/* (удалён мёртвый блок .light/.data-theme="light" — 100 строк — next-themes не ставит .light) */
 /* ── Система масштабирования шрифтов (--aray-font-scale устанавливается JS) ── */
 :root { --aray-font-scale: 1; }
 
