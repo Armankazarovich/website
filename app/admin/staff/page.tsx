@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   UserPlus,
   ChevronDown,
@@ -202,6 +203,8 @@ function StatusBadge({ status }: { status: string | null }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function StaffPage() {
+  const searchParams = useSearchParams();
+  const urlStatus = searchParams.get("status"); // "PENDING" | "ACTIVE" | "SUSPENDED" | null
   const [members, setMembers] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
@@ -574,9 +577,13 @@ export default function StaffPage() {
     );
   }
 
-  // ── Sorted groups ───────────────────────────────────────────────────────────
-  const pending = members.filter((m) => m.staffStatus === "PENDING");
-  const active = members.filter((m) => m.staffStatus === "ACTIVE" || !m.staffStatus);
+  // ── Sorted groups — с учётом URL фильтра из Smart Command Bar ─────────────
+  const showPending  = !urlStatus || urlStatus === "PENDING";
+  const showActive   = !urlStatus || urlStatus === "ACTIVE";
+  const showSuspended = !urlStatus || urlStatus === "SUSPENDED";
+
+  const pending  = members.filter((m) => m.staffStatus === "PENDING");
+  const active   = members.filter((m) => m.staffStatus === "ACTIVE" || !m.staffStatus);
   const suspended = members.filter((m) => m.staffStatus === "SUSPENDED");
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -806,7 +813,7 @@ export default function StaffPage() {
       ) : (
         <div className="space-y-6">
           {/* Pending */}
-          {pending.length > 0 && (
+          {showPending && pending.length > 0 && (
             <section>
               <AdminSectionTitle
                 icon={Clock}
@@ -823,7 +830,7 @@ export default function StaffPage() {
           )}
 
           {/* Active */}
-          {active.length > 0 && (
+          {showActive && active.length > 0 && (
             <section>
               <AdminSectionTitle
                 icon={CheckCircle2}
@@ -837,7 +844,7 @@ export default function StaffPage() {
           )}
 
           {/* Suspended */}
-          {suspended.length > 0 && (
+          {showSuspended && suspended.length > 0 && (
             <section>
               <AdminSectionTitle
                 icon={XCircle}
