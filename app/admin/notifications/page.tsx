@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity, Trash2, Bot, Wifi, WifiOff, RefreshCw, AlertTriangle } from "lucide-react";
+import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity, Trash2, Bot, Wifi, WifiOff, RefreshCw, AlertTriangle, Package, Lightbulb, Megaphone } from "lucide-react";
 import { requestPushPermission } from "@/components/push-subscription";
 
 const SEGMENTS = [
@@ -243,11 +243,11 @@ export default function NotificationsPage() {
       {/* Таб: Рассылка */}
       {tab === "send" && (
         <div className="space-y-5">
-          <div className="bg-muted/30 rounded-xl p-4 text-sm text-muted-foreground space-y-1">
-            <p>🛒 <strong>Авто:</strong> новый заказ → пуш сотрудникам + клиенту</p>
-            <p>📦 <strong>Авто:</strong> смена статуса → пуш клиенту</p>
-            <p>💡 <strong>Авто:</strong> советы каждый понедельник, акции по пятницам</p>
-            <p>📣 <strong>Вручную:</strong> форма ниже — рассылка по сегменту</p>
+          <div className="bg-muted/30 rounded-xl p-4 text-sm text-muted-foreground space-y-1.5">
+            <p className="flex items-center gap-2"><ShoppingBag className="w-4 h-4 shrink-0" /> <span><strong>Авто:</strong> новый заказ → пуш сотрудникам + клиенту</span></p>
+            <p className="flex items-center gap-2"><Package className="w-4 h-4 shrink-0" /> <span><strong>Авто:</strong> смена статуса → пуш клиенту</span></p>
+            <p className="flex items-center gap-2"><Lightbulb className="w-4 h-4 shrink-0" /> <span><strong>Авто:</strong> советы каждый понедельник, акции по пятницам</span></p>
+            <p className="flex items-center gap-2"><Megaphone className="w-4 h-4 shrink-0" /> <span><strong>Вручную:</strong> форма ниже — рассылка по сегменту</span></p>
           </div>
 
           {/* Диагностика */}

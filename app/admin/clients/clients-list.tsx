@@ -349,7 +349,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                       <p className="text-xs font-medium text-green-700 dark:text-green-400">
                         ✅ Пароль успешно сброшен
                       </p>
-                      <div className="bg-white dark:bg-black/20 border border-border rounded-lg px-4 py-3 flex items-center justify-between gap-3">
+                      <div className="bg-card border border-border rounded-lg px-4 py-3 flex items-center justify-between gap-3">
                         <div>
                           <p className="text-[10px] text-muted-foreground mb-0.5">Новый пароль клиента:</p>
                           <p className="text-lg font-mono font-bold tracking-widest">{resetResult.password}</p>

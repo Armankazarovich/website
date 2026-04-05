@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive } from "lucide-react";
+import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive, Store, MessageSquare } from "lucide-react";
 import { DeliveryStatusSelect } from "./delivery-status-select";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 
@@ -120,8 +120,9 @@ export default async function DeliveryPage() {
           {pickupOrders.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${STATUS_COLORS[PICKUP_STATUS]}`}>
-                  🏪 Самовывоз — Готов к выдаче
+                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 w-fit ${STATUS_COLORS[PICKUP_STATUS]}`}>
+                  <Store className="w-3.5 h-3.5" />
+                  Самовывоз — Готов к выдаче
                 </span>
                 <span className="text-sm text-muted-foreground">{pickupOrders.length} заказов</span>
               </div>
@@ -239,8 +240,9 @@ function OrderCard({ order }: { order: any }) {
       </div>
 
       {order.comment && (
-        <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-          💬 {order.comment}
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+          <MessageSquare className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          {order.comment}
         </p>
       )}
 
