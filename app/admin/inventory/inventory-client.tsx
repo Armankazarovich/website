@@ -308,7 +308,8 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             { label: "Отслеживается", val: tracked,         color: "text-primary",     key: "tracked" },
           ].map(s => (
             <button key={s.key} onClick={() => setFilterStatus(s.key as typeof filterStatus)}
-              className={`p-3 rounded-xl border text-left transition-all ${filterStatus === s.key ? "border-primary/60 bg-primary/15" : "border-border bg-card hover:bg-accent"}`}>
+              className={`p-3 rounded-xl border text-left transition-all ${filterStatus === s.key ? "border-primary/70 bg-card" : "border-border bg-card hover:bg-accent"}`}
+              style={filterStatus === s.key ? { boxShadow: "inset 0 0 0 1.5px hsl(var(--primary)/0.35), 0 0 16px hsl(var(--primary)/0.12)" } : undefined}>
               <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
             </button>

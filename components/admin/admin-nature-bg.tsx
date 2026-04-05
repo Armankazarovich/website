@@ -9,32 +9,32 @@ import { useTheme } from "next-themes";
 
 const DAY: { url: string; backup: string; label: string }[] = [
   {
-    url:    "https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1280&q=75&auto=format&fit=crop",
     label:  "Горные вершины",
   },
   {
-    url:    "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1280&q=75&auto=format&fit=crop",
     label:  "Дремучий лес",
   },
   {
-    url:    "https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?w=1280&q=75&auto=format&fit=crop",
     label:  "Водопад",
   },
   {
-    url:    "https://images.pexels.com/photos/1459495/pexels-photo-1459495.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1459495/pexels-photo-1459495.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1448375240703-89f2b795f098?w=1280&q=75&auto=format&fit=crop",
     label:  "Лесной рассвет",
   },
   {
-    url:    "https://images.pexels.com/photos/1287145/pexels-photo-1287145.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1287145/pexels-photo-1287145.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1280&q=75&auto=format&fit=crop",
     label:  "Горное озеро",
   },
   {
-    url:    "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1439853949212-36652a89e0d3?w=1280&q=75&auto=format&fit=crop",
     label:  "Горный туман",
   },
@@ -42,32 +42,32 @@ const DAY: { url: string; backup: string; label: string }[] = [
 
 const NIGHT: { url: string; backup: string; label: string }[] = [
   {
-    url:    "https://images.pexels.com/photos/1671325/pexels-photo-1671325.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1671325/pexels-photo-1671325.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1419242902344-4b9f4c242d08?w=1280&q=75&auto=format&fit=crop",
     label:  "Млечный путь",
   },
   {
-    url:    "https://images.pexels.com/photos/1252843/pexels-photo-1252843.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1252843/pexels-photo-1252843.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1516912799-8f4ec627d5f4?w=1280&q=75&auto=format&fit=crop",
     label:  "Северное сияние",
   },
   {
-    url:    "https://images.pexels.com/photos/2225542/pexels-photo-2225542.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/2225542/pexels-photo-2225542.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1501426026826-31c667bdf23d?w=1280&q=75&auto=format&fit=crop",
     label:  "Звёзды над горами",
   },
   {
-    url:    "https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1174732/pexels-photo-1174732.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1445905595283-21f8ae8a33d2?w=1280&q=75&auto=format&fit=crop",
     label:  "Ночные горы",
   },
   {
-    url:    "https://images.pexels.com/photos/1738434/pexels-photo-1738434.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/1738434/pexels-photo-1738434.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=1280&q=75&auto=format&fit=crop",
     label:  "Звёздное небо",
   },
   {
-    url:    "https://images.pexels.com/photos/592750/pexels-photo-592750.jpeg?auto=compress&cs=tinysrgb&w=1280",
+    url:    "https://images.pexels.com/photos/592750/pexels-photo-592750.jpeg?auto=compress&cs=tinysrgb&w=960&q=80",
     backup: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1280&q=75&auto=format&fit=crop",
     label:  "Полярное сияние",
   },

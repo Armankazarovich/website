@@ -1583,24 +1583,26 @@ canvas,
 .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
 .aray-nature-mode textarea,
 .aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.07) !important;
-  border-color: rgba(255, 255, 255, 0.13) !important;
+  background: rgba(6, 10, 24, 0.68) !important;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  border-color: rgba(255, 255, 255, 0.14) !important;
   color: rgba(255, 255, 255, 0.90) !important;
   -webkit-text-fill-color: rgba(255, 255, 255, 0.90);
 }
 .aray-nature-mode input::placeholder,
 .aray-nature-mode textarea::placeholder {
-  color: rgba(255, 255, 255, 0.30) !important;
-  -webkit-text-fill-color: rgba(255, 255, 255, 0.30) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.35) !important;
   opacity: 1;
 }
 .aray-nature-mode input:focus:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 .aray-nature-mode textarea:focus,
 .aray-nature-mode select:focus {
-  background: rgba(255, 255, 255, 0.10) !important;
-  border-color: rgba(255, 255, 255, 0.28) !important;
+  background: rgba(8, 14, 34, 0.82) !important;
+  border-color: hsl(var(--primary) / 0.55) !important;
   outline: none;
-  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.25) !important;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.20) !important;
 }
 /* select option — в браузере нельзя стилизовать, но хотя бы тёмный фон */
 .aray-nature-mode select option {
