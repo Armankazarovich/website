@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import type { TranslationKey } from "@/lib/admin-i18n";
 import { ChevronDown } from "lucide-react";

@@ -95,11 +95,19 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const [mounted, setMounted]       = useState(false);
   const [cur, setCur]               = useState(0);
   const [next, setNext]             = useState(1);
-  const [appearing, setAppearing]   = useState(false); // true когда идёт появление нового фото
+  const [appearing, setAppearing]   = useState(false);
   const [slotState, setSlotState]   = useState<Record<number, SlotState>>({});
+  const [tabHidden, setTabHidden]   = useState(false); // Page Visibility API
   const prevIsDark                  = useRef<boolean | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // ── Пауза анимаций когда вкладка скрыта (экономим батарею) ──────────────────
+  useEffect(() => {
+    const onChange = () => setTabHidden(document.hidden);
+    document.addEventListener("visibilitychange", onChange);
+    return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
 
   const isDark  = mounted ? resolvedTheme !== "light" : guessIsDark();
   const PHOTOS  = isDark ? NIGHT : DAY;
@@ -132,20 +140,20 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
     prevIsDark.current = isDark;
   }, [isDark, mounted]);
 
-  // Автосмена: показываем следующее ПОВЕРХ текущего (появление, не затухание)
+  // Автосмена фото — останавливается когда вкладка скрыта (батарея)
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || tabHidden) return;
     const t = setInterval(() => {
       const n = (cur + 1) % PHOTOS.length;
       setNext(n);
-      setAppearing(true);                           // следующее фото появляется сверху
+      setAppearing(true);
       setTimeout(() => {
-        setCur(n);                                  // фиксируем: следующее стало текущим
-        setAppearing(false);                        // сбрасываем анимацию
+        setCur(n);
+        setAppearing(false);
       }, FADE_MS);
     }, SHOW_MS);
     return () => clearInterval(t);
-  }, [enabled, cur, PHOTOS.length]);
+  }, [enabled, tabHidden, cur, PHOTOS.length]);
 
   if (!enabled) return null;
 
@@ -161,21 +169,22 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       <div className="absolute inset-0 transition-colors duration-1000"
         style={{ background: isDark ? "#040b14" : "#daedf5" }} />
       <div className="absolute inset-0" style={{ filter: "blur(100px)", opacity: 0.90 }}>
+        {/* animationPlayState: paused когда вкладка скрыта — экономим CPU/GPU */}
         {isDark ? (
           <>
-            <div className="absolute rounded-full" style={{ width:"65%", height:"65%", top:"5%",   left:"-5%", background:"radial-gradient(circle, #0d3d28 0%, transparent 70%)", animation:"aray-blob-1 20s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"58%", height:"58%", top:"45%",  left:"48%", background:"radial-gradient(circle, #0a1e3d 0%, transparent 70%)", animation:"aray-blob-2 24s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"52%", height:"52%", top:"25%",  left:"35%", background:"radial-gradient(circle, #14093a 0%, transparent 70%)", animation:"aray-blob-3 18s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"44%", height:"44%", top:"60%",  left:"5%",  background:"radial-gradient(circle, #082a18 0%, transparent 70%)", animation:"aray-blob-4 22s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"36%", height:"36%", top:"-5%",  left:"55%", background:"radial-gradient(circle, #1a0a3a 0%, transparent 70%)", animation:"aray-blob-5 28s ease-in-out infinite" }} />
+            <div className="absolute rounded-full" style={{ width:"65%", height:"65%", top:"5%",   left:"-5%", background:"radial-gradient(circle, #0d3d28 0%, transparent 70%)", animation:"aray-blob-1 20s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"58%", height:"58%", top:"45%",  left:"48%", background:"radial-gradient(circle, #0a1e3d 0%, transparent 70%)", animation:"aray-blob-2 24s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"52%", height:"52%", top:"25%",  left:"35%", background:"radial-gradient(circle, #14093a 0%, transparent 70%)", animation:"aray-blob-3 18s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"44%", height:"44%", top:"60%",  left:"5%",  background:"radial-gradient(circle, #082a18 0%, transparent 70%)", animation:"aray-blob-4 22s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"36%", height:"36%", top:"-5%",  left:"55%", background:"radial-gradient(circle, #1a0a3a 0%, transparent 70%)", animation:"aray-blob-5 28s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
           </>
         ) : (
           <>
-            <div className="absolute rounded-full" style={{ width:"70%", height:"70%", top:"-5%",  left:"-8%", background:"radial-gradient(circle, #60c5a8 0%, transparent 70%)", animation:"aray-blob-1 20s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"60%", height:"60%", top:"40%",  left:"45%", background:"radial-gradient(circle, #6ab8e0 0%, transparent 70%)", animation:"aray-blob-2 24s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"55%", height:"55%", top:"20%",  left:"30%", background:"radial-gradient(circle, #78c895 0%, transparent 70%)", animation:"aray-blob-3 18s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"48%", height:"48%", top:"58%",  left:"2%",  background:"radial-gradient(circle, #94d4c8 0%, transparent 70%)", animation:"aray-blob-4 22s ease-in-out infinite" }} />
-            <div className="absolute rounded-full" style={{ width:"40%", height:"40%", top:"-8%",  left:"60%", background:"radial-gradient(circle, #4ab8d8 0%, transparent 70%)", animation:"aray-blob-5 26s ease-in-out infinite" }} />
+            <div className="absolute rounded-full" style={{ width:"70%", height:"70%", top:"-5%",  left:"-8%", background:"radial-gradient(circle, #60c5a8 0%, transparent 70%)", animation:"aray-blob-1 20s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"60%", height:"60%", top:"40%",  left:"45%", background:"radial-gradient(circle, #6ab8e0 0%, transparent 70%)", animation:"aray-blob-2 24s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"55%", height:"55%", top:"20%",  left:"30%", background:"radial-gradient(circle, #78c895 0%, transparent 70%)", animation:"aray-blob-3 18s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"48%", height:"48%", top:"58%",  left:"2%",  background:"radial-gradient(circle, #94d4c8 0%, transparent 70%)", animation:"aray-blob-4 22s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width:"40%", height:"40%", top:"-8%",  left:"60%", background:"radial-gradient(circle, #4ab8d8 0%, transparent 70%)", animation:"aray-blob-5 26s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
           </>
         )}
       </div>
@@ -190,7 +199,7 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
             fetchPriority="high"
             decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ animation: `${ANIMS[cur % 3]} ${SHOW_MS}ms ease-in-out forwards`, willChange: "transform" }}
+            style={{ animation: `${ANIMS[cur % 3]} ${SHOW_MS}ms ease-in-out forwards`, animationPlayState: tabHidden ? "paused" : "running" }}
             onError={() => handleError(cur)}
           />
         </div>
@@ -214,7 +223,7 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
             alt=""
             decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ animation: `${ANIMS[next % 3]} ${SHOW_MS}ms ease-in-out forwards`, willChange: "transform" }}
+            style={{ animation: `${ANIMS[next % 3]} ${SHOW_MS}ms ease-in-out forwards`, animationPlayState: tabHidden ? "paused" : "running" }}
             onError={() => handleError(next)}
           />
         </div>

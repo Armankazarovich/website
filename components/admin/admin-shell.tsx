@@ -885,12 +885,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         <div className="hidden lg:block sticky top-0 z-20 px-5 py-3"
           style={{
             background: classic
-              ? "rgba(var(--background-rgb, 255,255,255) / 0.95)"
+              ? "rgba(248,250,252,0.94)"
               : "rgba(6,9,22,0.82)",
             backdropFilter: "blur(28px) saturate(180%)",
             WebkitBackdropFilter: "blur(28px) saturate(180%)",
             borderBottom: classic
-              ? "1px solid rgba(0,0,0,0.07)"
+              ? "1px solid rgba(0,0,0,0.06)"
               : "1px solid rgba(255,255,255,0.07)",
           }}>
           <AdminStickySearchBar />

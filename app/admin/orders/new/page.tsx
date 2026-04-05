@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Plus, Trash2, Loader2, Phone, Search, Calculator,
+  Plus, Minus, Trash2, Loader2, Phone, Search, Calculator,
   ChevronDown, ChevronRight, User, MessageSquare, X, ShoppingCart,
   CreditCard, Banknote, Building2, Check, AlertCircle, Zap, BookOpen,
   ChevronUp, MapPin, Truck, Package, Star, Info,
@@ -400,7 +400,7 @@ export default function NewPhoneOrderPage() {
 
             {/* Variant selector panel — desktop only */}
             {selectedProduct && (
-              <div className="hidden md:flex md:flex-col md:w-52 border-l border-border shrink-0 bg-muted/20">
+              <div className="hidden md:flex md:flex-col md:w-52 border-l border-border shrink-0 bg-card">
                 <div className="px-3 py-2.5 border-b border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Настройка</p>
                   <p className="text-sm font-semibold line-clamp-2">{selectedProduct.name}</p>
@@ -469,7 +469,7 @@ export default function NewPhoneOrderPage() {
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Количество</p>
                     <div className="flex items-center gap-1">
                       <button type="button" onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
-                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted text-lg font-bold">−</button>
+                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors"><Minus className="w-3.5 h-3.5" /></button>
                       <input
                         type="number"
                         min={0.01}
@@ -479,7 +479,7 @@ export default function NewPhoneOrderPage() {
                         className="flex-1 text-center py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30"
                       />
                       <button type="button" onClick={() => setQuantity((q) => +(q + (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
-                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted text-lg font-bold">+</button>
+                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors"><Plus className="w-3.5 h-3.5" /></button>
                     </div>
                     {selectedVariant && itemPrice > 0 && (
                       <div className="mt-2 p-2 bg-white/[0.04] rounded-xl border border-white/10">
@@ -517,7 +517,7 @@ export default function NewPhoneOrderPage() {
         `}>
           {/* Mobile close button */}
           {showMobileCart && (
-            <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20 shrink-0">
+            <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-border bg-card shrink-0">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4 text-primary" />
                 <span className="font-semibold text-sm">Корзина ({items.length} поз.)</span>
