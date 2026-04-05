@@ -201,61 +201,52 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
 
   return (
     <>
-      {/* Top bar */}
-      <div className="bg-zinc-950 text-white text-xs py-1.5 hidden md:block">
-        <div className="container flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 bg-green-500/20 border border-green-500/40 px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse-dot" />
-              <span className="text-[10px] font-semibold text-green-400 tracking-wide">Работаем</span>
-            </span>
-            <span className="text-white/30">|</span>
-            <span className="flex items-center gap-1 text-white/55">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="2"/></svg>
-              Химки, Заводская 2А, стр.28
-            </span>
-          </div>
-          <div className="flex items-center gap-5">
-            {phones.map((p) => (
-              <a key={p.tel} href={`tel:${p.tel}`} className="flex items-center gap-1.5 hover:text-brand-cream transition-colors font-medium">
-                <Phone className="w-3 h-3" />
-                {p.display}
-              </a>
-            ))}
-            <span className="text-white/40 text-[10px] tracking-wide">Пн–Сб 09:00–20:00 · Вс 09:00–18:00</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main header */}
+      {/* ══════════════════════════════════════════════════
+          NEXT-GEN HEADER — единая стеклянная полоса
+      ══════════════════════════════════════════════════ */}
       <header
         className={cn(
-          "sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b transition-all duration-300",
-          scrolled
-            ? "shadow-[0_4px_24px_-4px_rgba(232,112,10,0.18)] border-brand-orange/25 bg-background/[0.98]"
-            : "border-border/50"
+          "sticky top-0 z-50 transition-all duration-500 relative overflow-hidden",
         )}
+        style={{
+          backdropFilter: "blur(32px) saturate(200%)",
+          WebkitBackdropFilter: "blur(32px) saturate(200%)",
+          background: scrolled
+            ? "hsl(var(--background) / 0.94)"
+            : "hsl(var(--background) / 0.78)",
+          borderBottom: `1px solid hsl(var(--primary) / ${scrolled ? "0.28" : "0.12"})`,
+          boxShadow: scrolled
+            ? "0 8px 40px rgba(0,0,0,0.22), 0 1px 0 hsl(var(--primary) / 0.15)"
+            : "none",
+        }}
       >
-        <div className="container flex items-center justify-between h-[68px] gap-3">
-          {/* Logo */}
+        {/* Palette bottom glow line */}
+        <div className="absolute inset-x-0 bottom-0 h-px pointer-events-none"
+          style={{ background: "linear-gradient(90deg, transparent 0%, hsl(var(--primary)/0.5) 30%, hsl(var(--primary)/0.8) 50%, hsl(var(--primary)/0.5) 70%, transparent 100%)" }}
+        />
+
+        <div className="container flex items-center justify-between h-[64px] gap-3">
+          {/* Logo + статус */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="relative w-12 h-12 lg:w-14 lg:h-14 shrink-0">
+            <div className="relative w-11 h-11 shrink-0">
               <Image
                 src="/logo.png"
                 alt="ПилоРус"
                 fill
-                sizes="56px"
+                sizes="44px"
                 className="object-contain"
                 priority
               />
             </div>
             <div>
-              <p className="font-display font-bold text-lg lg:text-xl leading-tight text-foreground tracking-wide">
+              <p className="font-display font-bold text-lg leading-tight text-foreground tracking-wide">
                 ПилоРус
               </p>
-              <p className="text-[10px] lg:text-[11px] text-muted-foreground leading-none hidden xs:block">
-                Пиломатериалы от производителя
-              </p>
+              <div className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+                <span className="text-[10px] text-green-400 font-semibold tracking-wide">Работаем</span>
+                <span className="text-muted-foreground/40 text-[10px] hidden xl:inline">· Химки</span>
+              </div>
             </div>
           </Link>
 
@@ -270,7 +261,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
             >
               <Link
                 href="/catalog"
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-brand-orange text-white shadow-sm shadow-brand-orange/25 hover:bg-brand-orange/90 hover:shadow-md hover:shadow-brand-orange/35 transition-all duration-200"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground shadow-sm shadow-primary/25 hover:bg-primary/90 hover:shadow-md hover:shadow-primary/35 transition-all duration-200"
               >
                 Каталог
                 <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-200", catalogOpen && "rotate-180")} />
@@ -288,7 +279,14 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                     onMouseEnter={handleCatalogEnter}
                     onMouseLeave={handleCatalogLeave}
                   >
-                    <div className="w-[680px] bg-background dark:bg-neutral-950 border border-border/60 rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="w-[680px] rounded-2xl shadow-2xl overflow-hidden border border-primary/10"
+                      style={{
+                        backdropFilter: "blur(28px) saturate(180%)",
+                        WebkitBackdropFilter: "blur(28px) saturate(180%)",
+                        background: "hsl(var(--background) / 0.94)",
+                        boxShadow: "0 24px 60px rgba(0,0,0,0.28), 0 0 0 1px hsl(var(--primary)/0.08)",
+                      }}
+                    >
                       <div className="flex">
 
                         {/* ── Категории ── */}
@@ -412,7 +410,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                 className={cn(
                   "relative px-3 py-2 rounded-lg text-sm font-medium transition-colors group",
                   pathname === link.href
-                    ? "text-brand-orange"
+                    ? "text-primary"
                     : "text-foreground/80 hover:text-foreground hover:bg-accent"
                 )}
               >
@@ -420,8 +418,8 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                 <span className={cn(
                   "absolute bottom-0.5 left-3 right-3 h-0.5 rounded-full bg-brand-orange transition-all duration-300 origin-left",
                   pathname === link.href
-                    ? "scale-x-100 opacity-100"
-                    : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-40"
+                    ? "scale-x-100 opacity-100 bg-primary"
+                    : "scale-x-0 opacity-0 group-hover:scale-x-100 group-hover:opacity-40 bg-primary"
                 )} />
               </Link>
             ))}
@@ -429,7 +427,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
             {/* Partnership button */}
             <button
               onClick={() => setPartnershipOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-brand-orange hover:bg-brand-orange/10"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-primary hover:bg-primary/10"
             >
               <Handshake className="w-3.5 h-3.5" />
               Сотрудничество
@@ -486,6 +484,16 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
+            {/* Телефон — только на широких экранах */}
+            {phones[0] && (
+              <a
+                href={`tel:${phones[0].tel}`}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all mr-1"
+              >
+                <Phone className="w-3.5 h-3.5 text-primary" />
+                {phones[0].display}
+              </a>
+            )}
             {/* Search */}
             <button
               onClick={toggleSearch}
