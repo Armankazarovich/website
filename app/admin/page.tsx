@@ -15,50 +15,53 @@ import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { DashboardTopItems } from "@/components/admin/dashboard-top-items";
 
 // ── Быстрые действия по ролям ──────────────────────────────────────────────
+// Все цвета = text-primary / bg-primary — следуют выбранной палитре автоматически
+const C = "text-primary";
+const B = "bg-primary/[0.08] dark:bg-primary/[0.12]";
 const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType; color: string; bg: string }[]> = {
   owner: [
-    { href: "/admin/orders",       label: "Заказы",        icon: ShoppingBag, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
-    { href: "/admin/clients",      label: "Клиенты",       icon: UserCircle,  color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-white/[0.04]" },
-    { href: "/admin/analytics",    label: "Аналитика",     icon: BarChart2,   color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-white/[0.04]" },
-    { href: "/admin/finance",      label: "Финансы",       icon: Wallet,      color: "text-emerald-600 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-white/[0.04]" },
-    { href: "/admin/products",     label: "Каталог",       icon: Package,     color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-50 dark:bg-white/[0.04]" },
-    { href: "/admin/email",        label: "Email",         icon: Mail,        color: "text-red-600 dark:text-red-400",    bg: "bg-red-50 dark:bg-white/[0.04]" },
-    { href: "/admin/notifications",label: "Уведомления",   icon: Bell,        color: "text-cyan-600 dark:text-cyan-400",   bg: "bg-cyan-50 dark:bg-white/[0.04]" },
-    { href: "/admin/settings",     label: "Настройки",     icon: Settings,    color: "text-slate-600 dark:text-slate-300",  bg: "bg-slate-50 dark:bg-white/[0.04]" },
+    { href: "/admin/orders",       label: "Заказы",      icon: ShoppingBag, color: C, bg: B },
+    { href: "/admin/clients",      label: "Клиенты",     icon: UserCircle,  color: C, bg: B },
+    { href: "/admin/analytics",    label: "Аналитика",   icon: BarChart2,   color: C, bg: B },
+    { href: "/admin/finance",      label: "Финансы",     icon: Wallet,      color: C, bg: B },
+    { href: "/admin/products",     label: "Каталог",     icon: Package,     color: C, bg: B },
+    { href: "/admin/email",        label: "Email",       icon: Mail,        color: C, bg: B },
+    { href: "/admin/notifications",label: "Уведомления", icon: Bell,        color: C, bg: B },
+    { href: "/admin/settings",     label: "Настройки",   icon: Settings,    color: C, bg: B },
   ],
   manager: [
-    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
-    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-white/[0.04]" },
-    { href: "/admin/crm",       label: "CRM",       icon: Target,      color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-white/[0.04]" },
-    { href: "/admin/delivery",  label: "Доставка",  icon: Truck,       color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-white/[0.04]" },
-    { href: "/admin/products",  label: "Каталог",   icon: Package,     color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-50 dark:bg-white/[0.04]" },
-    { href: "/admin/reviews",   label: "Отзывы",    icon: Star,        color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-white/[0.04]" },
-    { href: "/admin/tasks",     label: "Задачи",    icon: CheckSquare, color: "text-teal-600 dark:text-teal-400",   bg: "bg-teal-50 dark:bg-white/[0.04]" },
-    { href: "/admin/inventory", label: "Склад",     icon: Warehouse,   color: "text-slate-600 dark:text-slate-300",  bg: "bg-slate-50 dark:bg-white/[0.04]" },
+    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: C, bg: B },
+    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: C, bg: B },
+    { href: "/admin/crm",       label: "CRM",       icon: Target,      color: C, bg: B },
+    { href: "/admin/delivery",  label: "Доставка",  icon: Truck,       color: C, bg: B },
+    { href: "/admin/products",  label: "Каталог",   icon: Package,     color: C, bg: B },
+    { href: "/admin/reviews",   label: "Отзывы",    icon: Star,        color: C, bg: B },
+    { href: "/admin/tasks",     label: "Задачи",    icon: CheckSquare, color: C, bg: B },
+    { href: "/admin/inventory", label: "Склад",     icon: Warehouse,   color: C, bg: B },
   ],
   courier: [
-    { href: "/admin/delivery", label: "Мои доставки", icon: Truck,       color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-white/[0.04]" },
-    { href: "/admin/orders",   label: "Заказы",       icon: ShoppingBag, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
-    { href: "/admin/tasks",    label: "Задачи",       icon: CheckSquare, color: "text-teal-600 dark:text-teal-400",   bg: "bg-teal-50 dark:bg-white/[0.04]" },
-    { href: "/admin/help",     label: "Помощь",       icon: HeartPulse,  color: "text-red-600 dark:text-red-400",    bg: "bg-red-50 dark:bg-white/[0.04]" },
+    { href: "/admin/delivery", label: "Мои доставки", icon: Truck,       color: C, bg: B },
+    { href: "/admin/orders",   label: "Заказы",       icon: ShoppingBag, color: C, bg: B },
+    { href: "/admin/tasks",    label: "Задачи",       icon: CheckSquare, color: C, bg: B },
+    { href: "/admin/help",     label: "Помощь",       icon: HeartPulse,  color: C, bg: B },
   ],
   accountant: [
-    { href: "/admin/finance",   label: "Финансы",   icon: Wallet,      color: "text-emerald-600 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-white/[0.04]" },
-    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
-    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2,   color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-white/[0.04]" },
-    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-white/[0.04]" },
+    { href: "/admin/finance",   label: "Финансы",   icon: Wallet,      color: C, bg: B },
+    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: C, bg: B },
+    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2,   color: C, bg: B },
+    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: C, bg: B },
   ],
   warehouse: [
-    { href: "/admin/inventory", label: "Склад",    icon: Warehouse,   color: "text-slate-600 dark:text-slate-300",  bg: "bg-slate-50 dark:bg-white/[0.04]" },
-    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-50 dark:bg-white/[0.04]" },
-    { href: "/admin/import",    label: "Импорт",   icon: FileDown,    color: "text-cyan-600 dark:text-cyan-400",   bg: "bg-cyan-50 dark:bg-white/[0.04]" },
-    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
+    { href: "/admin/inventory", label: "Склад",    icon: Warehouse,   color: C, bg: B },
+    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: C, bg: B },
+    { href: "/admin/import",    label: "Импорт",   icon: FileDown,    color: C, bg: B },
+    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: C, bg: B },
   ],
   seller: [
-    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: "text-amber-600 dark:text-amber-400",  bg: "bg-amber-50 dark:bg-white/[0.04]" },
-    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
-    { href: "/admin/clients",   label: "Клиенты",  icon: UserCircle,  color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-white/[0.04]" },
-    { href: "/admin/reviews",   label: "Отзывы",   icon: Star,        color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-white/[0.04]" },
+    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: C, bg: B },
+    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: C, bg: B },
+    { href: "/admin/clients",   label: "Клиенты",  icon: UserCircle,  color: C, bg: B },
+    { href: "/admin/reviews",   label: "Отзывы",   icon: Star,        color: C, bg: B },
   ],
 };
 
@@ -255,9 +258,12 @@ export default async function AdminDashboard() {
             <Link
               key={action.href}
               href={action.href}
-              className={`flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border/60 p-3 min-h-[72px] active:scale-[0.95] transition-all aray-icon-spin hover:border-border hover:scale-[1.03] ${action.bg}`}
+              className={`group flex flex-col items-center justify-center gap-1.5 rounded-2xl border p-3 min-h-[72px] active:scale-[0.95] transition-all duration-200 aray-icon-spin ${action.bg}`}
+              style={{ borderColor: "hsl(var(--primary)/0.20)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(var(--primary)/0.55)"; (e.currentTarget as HTMLElement).style.background = "hsl(var(--primary)/0.14)"; (e.currentTarget as HTMLElement).style.transform = "scale(1.03)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 0 20px hsl(var(--primary)/0.25)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "hsl(var(--primary)/0.20)"; (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.transform = ""; (e.currentTarget as HTMLElement).style.boxShadow = ""; }}
             >
-              <action.icon className={`w-5 h-5 ${action.color}`} />
+              <action.icon className={`w-5 h-5 ${action.color} transition-all duration-200 group-hover:scale-110`} />
               <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
                 {action.label}
               </span>
