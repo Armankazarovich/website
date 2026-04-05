@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive, Store, MessageSquare } from "lucide-react";
+import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive, Store, MessageSquare, Send } from "lucide-react";
 import { DeliveryStatusSelect } from "./delivery-status-select";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 
@@ -198,10 +198,38 @@ export default async function DeliveryPage() {
   );
 }
 
+// ── Парсим способ связи из комментария ("Способ связи: WhatsApp — @handle\n...") ──
+function parseContact(comment: string | null, phone: string | null) {
+  if (!comment) return { icon: null, href: phone ? `tel:${phone}` : null, label: phone, restComment: null };
+  const match = comment.match(/^Способ связи: ([^\n]+)\n?([\s\S]*)$/);
+  if (!match) return { icon: null, href: phone ? `tel:${phone}` : null, label: phone, restComment: comment };
+
+  const contactLine = match[1]; // e.g. "WhatsApp — +79991234567"
+  const restComment = match[2].trim() || null;
+  const handle = contactLine.includes(" — ") ? contactLine.split(" — ")[1]?.trim() : null;
+
+  if (contactLine.includes("WhatsApp")) {
+    const waNum = (handle || phone || "").replace(/\D/g, "");
+    return { icon: "whatsapp", href: `https://wa.me/${waNum}`, label: `WA: ${handle || phone}`, target: "_blank", restComment };
+  }
+  if (contactLine.includes("Telegram")) {
+    const tgHandle = (handle || "").replace("@", "");
+    return { icon: "telegram", href: tgHandle ? `https://t.me/${tgHandle}` : `tel:${phone}`, label: handle || phone, target: tgHandle ? "_blank" : undefined, restComment };
+  }
+  if (contactLine.includes("SMS")) {
+    return { icon: "sms", href: `sms:${phone}`, label: `SMS: ${phone}`, restComment };
+  }
+  return { icon: null, href: phone ? `tel:${phone}` : null, label: phone, restComment };
+}
+
 function OrderCard({ order }: { order: any }) {
   const deliveryCost = Number(order.deliveryCost ?? 0);
+  const { icon: contactIcon, href: contactHref, label: contactLabel, target: contactTarget, restComment } =
+    parseContact(order.comment, order.guestPhone);
+
   return (
     <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+      {/* Заголовок */}
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="font-semibold">Заказ #{order.orderNumber}</p>
@@ -215,16 +243,23 @@ function OrderCard({ order }: { order: any }) {
         </div>
       </div>
 
-      {order.guestPhone && (
+      {/* Контакт — иконка меняется по способу связи */}
+      {contactHref && (
         <a
-          href={`tel:${order.guestPhone}`}
+          href={contactHref}
+          target={contactTarget as any}
+          rel="noopener noreferrer"
           className="flex items-center gap-2 text-sm text-primary hover:underline"
         >
-          <Phone className="w-3.5 h-3.5" />
-          {order.guestPhone}
+          {contactIcon === "whatsapp" && <MessageSquare className="w-3.5 h-3.5 text-green-500" />}
+          {contactIcon === "telegram" && <Send className="w-3.5 h-3.5 text-sky-500" />}
+          {contactIcon === "sms"      && <MessageSquare className="w-3.5 h-3.5 text-purple-400" />}
+          {!contactIcon               && <Phone className="w-3.5 h-3.5" />}
+          {contactLabel}
         </a>
       )}
 
+      {/* Адрес доставки */}
       {order.deliveryAddress && (
         <div className="flex items-start gap-2 text-sm text-muted-foreground">
           <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
@@ -232,6 +267,7 @@ function OrderCard({ order }: { order: any }) {
         </div>
       )}
 
+      {/* Состав заказа */}
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <Package className="w-3.5 h-3.5 mt-0.5 shrink-0" />
         <span>
@@ -241,13 +277,15 @@ function OrderCard({ order }: { order: any }) {
         </span>
       </div>
 
-      {order.comment && (
+      {/* Комментарий (без "Способ связи:" строки) */}
+      {restComment && (
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-start gap-1.5">
           <MessageSquare className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          {order.comment}
+          {restComment}
         </p>
       )}
 
+      {/* Нижняя строка */}
       <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
         <DeliveryStatusSelect orderId={order.id} currentStatus={order.status} />
         <div className="flex items-center gap-2">

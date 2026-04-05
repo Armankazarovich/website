@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
+import { InfoPopup } from "@/components/admin/info-popup";
 
 // ─── Role definitions ───────────────────────────────────────────────────────
 
@@ -161,9 +162,29 @@ function RoleBadge({ role, customRole }: { role: string; customRole?: string | n
   const def = ROLE_DEFINITIONS[role];
   if (!def) return <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{role}</span>;
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${def.color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
-      {customRole || def.label}
+    <span className="inline-flex items-center gap-1">
+      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${def.color}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
+        {customRole || def.label}
+      </span>
+      <InfoPopup
+        width={260}
+        align="start"
+        content={
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">{def.label}</p>
+            <p className="text-xs text-white/70 leading-relaxed">{def.description}</p>
+            <div className="pt-1.5 border-t border-white/10 flex flex-wrap gap-1.5">
+              {def.sections.map((s) => (
+                <span key={s} className="text-[10px] px-2 py-0.5 rounded-md text-white/60"
+                  style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        }
+      />
     </span>
   );
 }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Bell, Send, Loader2, CheckCircle, XCircle, Users, UserCheck, UserX, Clock, ShoppingBag, Activity, Trash2, Bot, Wifi, WifiOff, RefreshCw, AlertTriangle, Package, Lightbulb, Megaphone } from "lucide-react";
+import { InfoBadge } from "@/components/admin/info-popup";
 import { requestPushPermission } from "@/components/push-subscription";
 
 const SEGMENTS = [
@@ -305,7 +306,13 @@ export default function NotificationsPage() {
                   <p className="text-muted-foreground">{debug.withUser} зарег. / {debug.guests} гостей</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-2.5">
-                  <p className="text-muted-foreground mb-0.5">VAPID ключи</p>
+                  <p className="text-muted-foreground mb-0.5 flex items-center gap-1">
+                    VAPID ключи
+                    <InfoBadge
+                      text="VAPID — стандарт безопасности для Web Push. Пара ключей (публичный + приватный) хранится в .env на сервере. Без них push-уведомления не работают."
+                      width={260}
+                    />
+                  </p>
                   <p className={`font-semibold ${debug.vapidConfigured ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
                     {debug.vapidConfigured ? "✓ Настроены" : "✗ Не настроены"}
                   </p>
