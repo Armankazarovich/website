@@ -630,46 +630,42 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
             </button>
           </div>
 
-          {/* Приветствие + роль — вместо header дашборда */}
-          <div className="px-1 flex items-center justify-between gap-2">
-            <p className="text-[11px] text-white/60 truncate">
-              {(() => {
-                const h = new Date().getHours();
-                return h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
-              })()},&nbsp;
-              <span className="text-white/90 font-semibold">
-                {email ? email.split("@")[0].split(".")[0] : "Admin"}
-              </span>
-            </p>
-            {role && (
-              <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                style={{ background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.30)" }}>
-                {role === "SUPER_ADMIN" ? "Владелец" : role === "ADMIN" ? "Адм" : role === "MANAGER" ? "Менеджер" : role === "COURIER" ? "Курьер" : role === "ACCOUNTANT" ? "Бухгалтер" : role === "WAREHOUSE" ? "Склад" : role === "SELLER" ? "Продавец" : role}
-              </span>
-            )}
-          </div>
+          {/* ── User Card — профессиональная карточка пользователя ── */}
+          <div className="rounded-2xl overflow-hidden"
+            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
 
-          {/* Пользователь + уведомления + настройки */}
-          <div className="flex items-center gap-1.5 px-1">
-            {/* Аватар */}
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shrink-0"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}>
-              {email ? email[0].toUpperCase() : "A"}
+            {/* Верх карточки — аватар + имя + роль */}
+            <div className="flex items-center gap-3 px-3 py-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0 select-none"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.55))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
+                {email ? email[0].toUpperCase() : "A"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-white/90 truncate leading-tight">
+                  {email ? email.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Admin"}
+                </p>
+                <p className="text-[10px] text-white/38 truncate leading-tight mt-0.5">{email}</p>
+              </div>
+              {role && (
+                <span className="shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                  style={{ background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }}>
+                  {role === "SUPER_ADMIN" ? "Владелец" : role === "ADMIN" ? "Адм" : role === "MANAGER" ? "Менеджер" : role === "COURIER" ? "Курьер" : role === "ACCOUNTANT" ? "Бухгалтер" : role === "WAREHOUSE" ? "Склад" : role === "SELLER" ? "Продавец" : role}
+                </span>
+              )}
             </div>
-            {/* Email */}
-            <p className="flex-1 min-w-0 text-[10px] text-white/45 truncate leading-none">{email}</p>
-            {/* Уведомления */}
-            <AdminNotificationBell />
-            {/* Настройки */}
-            <AdminDesktopSettings />
-          </div>
 
-          {/* На сайт */}
-          <Link href="/"
-            className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-[11px] text-white/40 hover:text-white/80 hover:bg-white/[0.07] transition-colors">
-            <LogOut className="w-3.5 h-3.5" />
-            На сайт
-          </Link>
+            {/* Нижние кнопки — уведомления, настройки, сайт */}
+            <div className="flex items-center" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <AdminNotificationBell />
+              <AdminDesktopSettings />
+              <Link href="/"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[11px] text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
+                title="Перейти на сайт">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>На сайт</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </aside>
 

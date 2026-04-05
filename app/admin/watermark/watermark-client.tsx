@@ -49,6 +49,7 @@ export function WatermarkClient({
   const [restoring,  setRestoring]  = useState(false);
   const [cleaning,   setCleaning]   = useState(false);
   const [applyResult,setApplyResult]= useState<string | null>(null);
+  const [applyOk,    setApplyOk]    = useState<boolean | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [confirmBackup,   setConfirmBackup]   = useState(false);
@@ -92,7 +93,8 @@ export function WatermarkClient({
       if (data.ok) {
         const now = new Date().toLocaleString("ru-RU", { day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" });
         setBackupDate(now);
-        setApplyResult(`✅ Резервная копия создана: ${data.count} товаров`);
+        setApplyResult(`Резервная копия создана: ${data.count} товаров`);
+        setApplyOk(true);
       }
     } finally { setBacking(false); }
   };
@@ -103,7 +105,8 @@ export function WatermarkClient({
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "restore_images" }) });
       const data = await res.json();
-      setApplyResult(data.ok ? `✅ Восстановлено: ${data.restored} товаров` : `❌ Ошибка: ${data.error}`);
+      setApplyResult(data.ok ? `Восстановлено: ${data.restored} товаров` : `Ошибка: ${data.error}`);
+      setApplyOk(data.ok ? true : false);
     } finally { setRestoring(false); }
   };
 
@@ -112,7 +115,8 @@ export function WatermarkClient({
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cleanup_orphans" }) });
       const data = await res.json();
-      setApplyResult(data.ok ? `🧹 Удалено дублей: ${data.deleted} файл(ов)` : `❌ Ошибка: ${data.error}`);
+      setApplyResult(data.ok ? `Удалено дублей: ${data.deleted} файл(ов)` : `Ошибка: ${data.error}`);
+      setApplyOk(data.ok ? true : false);
     } finally { setCleaning(false); }
   };
 
@@ -125,7 +129,8 @@ export function WatermarkClient({
         body: JSON.stringify({ action: "apply_all", position, opacity, sizePct, type: wmType, text: wmText, textColor }),
       });
       const data = await res.json();
-      setApplyResult(data.ok ? `✅ Готово! Обработано товаров: ${data.count}` : `❌ Ошибка: ${data.error}`);
+      setApplyResult(data.ok ? `Готово! Обработано товаров: ${data.count}` : `Ошибка: ${data.error}`);
+      setApplyOk(data.ok ? true : false);
     } finally { setApplying(false); }
   };
 
@@ -184,7 +189,7 @@ export function WatermarkClient({
                 {uploading ? "Загружаем..." : uploadOk ? "Загружено!" : logoUrl ? "Заменить" : "Загрузить PNG"}
               </button>
               {uploadError && <div className="flex items-center gap-2 mt-2 text-sm text-destructive"><AlertCircle className="w-4 h-4" />{uploadError}</div>}
-              {uploadOk    && <p className="mt-1.5 text-xs text-emerald-600">✓ Логотип успешно загружен</p>}
+              {uploadOk    && <p className="mt-1.5 text-xs text-emerald-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Логотип успешно загружен</p>}
             </div>
           </div>
         </div>
@@ -289,7 +294,11 @@ export function WatermarkClient({
         )}
 
         {applyResult && (
-          <p className={`text-sm font-medium ${applyResult.startsWith("✅") ? "text-emerald-600" : "text-destructive"}`}>{applyResult}</p>
+          <div className={`flex items-center gap-2 text-sm font-medium ${applyOk === true ? "text-emerald-600" : applyOk === false ? "text-destructive" : "text-muted-foreground"}`}>
+            {applyOk === true  && <CheckCircle className="w-4 h-4 shrink-0" />}
+            {applyOk === false && <AlertCircle className="w-4 h-4 shrink-0" />}
+            {applyResult}
+          </div>
         )}
 
         <div className="flex gap-3 flex-wrap">

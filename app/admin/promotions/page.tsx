@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight } from "lucide-react";
+import { Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight, AlertTriangle } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Promotion = {
@@ -95,7 +95,7 @@ function PromotionCard({
           {validUntil && (
             <div className="flex items-end pb-2">
               <span className={`text-xs font-medium px-2 py-1 rounded-lg ${isExpired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                {isExpired ? "⚠ Истекла" : `До ${new Date(validUntil).toLocaleDateString("ru-RU")}`}
+                {isExpired ? <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Истекла</span> : `До ${new Date(validUntil).toLocaleDateString("ru-RU")}`}
               </span>
             </div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor } from "lucide-react";
+import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor, Lightbulb } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
 
@@ -316,9 +316,10 @@ export function ReviewsClient({ reviews: initial }: { reviews: Review[] }) {
               </div>
             ))}
           </div>
-          <div className="p-3 bg-muted/40 rounded-xl">
-            <p className="text-xs text-muted-foreground">
-              💡 <strong>Совет:</strong> Попросите клиентов оставить отзыв в Google и Яндекс — это улучшает SEO и видимость в поиске. Лучшие отзывы оттуда добавляйте на сайт кнопкой «Добавить вручную».
+          <div className="flex items-start gap-2.5 p-3 bg-primary/8 border border-primary/15 rounded-xl">
+            <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">Совет:</strong> Попросите клиентов оставить отзыв в Google и Яндекс — это улучшает SEO. Лучшие отзывы оттуда добавляйте на сайт кнопкой «Добавить вручную».
             </p>
           </div>
         </div>
