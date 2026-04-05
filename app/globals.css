@@ -714,6 +714,21 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
+/* ── Role badge в nature-mode — всегда читаемый поверх фото ── */
+.aray-nature-mode .aray-role-badge {
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.light .aray-nature-mode .aray-role-badge,
+[data-theme="light"] .aray-nature-mode .aray-role-badge {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: hsl(var(--primary)) !important;
+}
+
 /* ── Система масштабирования шрифтов (--aray-font-scale устанавливается JS) ── */
 :root { --aray-font-scale: 1; }
 

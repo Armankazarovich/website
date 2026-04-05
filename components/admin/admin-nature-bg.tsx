@@ -136,13 +136,13 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       <div className="aray-photo-overlay-light absolute inset-0 bg-black/[0.08]" />
 
       <div className="aray-photo-overlay-dark absolute inset-0"
-        style={{ background: "hsl(var(--primary)/0.35)", mixBlendMode: "color" }} />
+        style={{ background: "hsl(var(--primary)/0.18)", mixBlendMode: "color" }} />
       <div className="aray-photo-overlay-light absolute inset-0"
-        style={{ background: "hsl(var(--primary)/0.28)", mixBlendMode: "color" }} />
+        style={{ background: "hsl(var(--primary)/0.12)", mixBlendMode: "color" }} />
       <div className="aray-photo-overlay-dark absolute inset-0"
-        style={{ background: "hsl(var(--primary)/0.12)", mixBlendMode: "soft-light" }} />
+        style={{ background: "hsl(var(--primary)/0.06)", mixBlendMode: "soft-light" }} />
       <div className="aray-photo-overlay-light absolute inset-0"
-        style={{ background: "hsl(var(--primary)/0.10)", mixBlendMode: "soft-light" }} />
+        style={{ background: "hsl(var(--primary)/0.05)", mixBlendMode: "soft-light" }} />
 
       <div className="aray-photo-overlay-dark  absolute inset-0"
         style={{ background: "linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.15) 38%, transparent 62%)" }} />

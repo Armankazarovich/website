@@ -166,7 +166,7 @@ export default async function AdminDashboard() {
           <p className="text-xs text-muted-foreground">{greeting}, <span className="font-semibold text-foreground">{userName.split(" ")[0]}</span></p>
           <AdminDashboardWidgets />
         </div>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full aray-role-badge ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
           {ROLE_GREETINGS[role] || role}
         </span>
       </div>
