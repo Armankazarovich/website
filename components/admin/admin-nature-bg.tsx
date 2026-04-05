@@ -36,8 +36,8 @@ const NIGHT: { url: string; label: string }[] = [
 ];
 
 const ANIMS = ["kenburns-in", "kenburns-2", "kenburns-3"];
-const SHOW_MS = 22_000;
-const FADE_MS =  4_000;
+const SHOW_MS = 10_000; // 10 сек на фото
+const FADE_MS =  1_500; // 1.5 сек переход
 
 function guessIsDark(): boolean {
   if (typeof window === "undefined") return true;
