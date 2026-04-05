@@ -53,8 +53,11 @@ const allNavItems: NavItem[] = [
   { href: "/admin", label: "Дашборд", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "main" },
 
   // ── Продажи ──
-  { href: "/admin/orders",   label: "Заказы",        labelKey: "orders",        icon: ShoppingBag, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales", groupKey: "sales" },
+  { href: "/admin/orders",    label: "Заказы",        labelKey: "orders",        icon: ShoppingBag, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales", groupKey: "sales" },
   { href: "/admin/crm",      label: "CRM — Лиды",    labelKey: "crm",           icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/analytics",label: "Аналитика",     labelKey: "analytics",     icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
+  { href: "/admin/finance",  label: "Финансы",       labelKey: "finance",       icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
+  { href: "/admin/clients",  label: "Клиенты",       labelKey: "clients",       icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
   { href: "/admin/tasks",    label: "Задачи",         labelKey: "tasks",         icon: CheckSquare, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
   { href: "/admin/delivery", label: "Доставка",       labelKey: "delivery",      icon: Truck,       roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
 
@@ -71,33 +74,26 @@ const allNavItems: NavItem[] = [
   { href: "/admin/email",      label: "Email рассылка",  labelKey: "email",      icon: Mail,       roles: [SA, "ADMIN"], group: "marketing" },
   { href: "/admin/promotion",  label: "Продвижение",     labelKey: "promotion",  icon: TrendingUp, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
 
-  // ── Финансы ──
-  { href: "/admin/finance", label: "Финансы", labelKey: "finance", icon: Wallet, roles: [SA, "ADMIN", "ACCOUNTANT"], group: "finance", groupKey: "finance" },
-
-  // ── Клиенты ──
-  { href: "/admin/clients", label: "Клиенты", labelKey: "clients", icon: UserCircle, roles: [SA, "ADMIN", "MANAGER"], group: "clients", groupKey: "clients" },
-
   // ── Настройки ──
-  { href: "/admin/health",         label: "Здоровье системы", labelKey: "health",        icon: HeartPulse, roles: [SA, "ADMIN"], group: "settings", groupKey: "settings" },
-  { href: "/admin/site",           label: "Сайт",              labelKey: "site_settings", icon: Globe,      roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/site",           label: "Сайт",              labelKey: "site_settings", icon: Globe,      roles: [SA, "ADMIN"], group: "settings", groupKey: "settings" },
   { href: "/admin/settings",       label: "Настройки",         labelKey: "settings",      icon: Settings,   roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/appearance",     label: "Оформление",        labelKey: "appearance",    icon: Palette,    roles: [SA, "ADMIN"], group: "settings" },
-  { href: "/admin/analytics",      label: "Аналитика",         labelKey: "analytics",     icon: BarChart2,  roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/watermark",      label: "Водяной знак",      labelKey: "watermark",     icon: Stamp,      roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/staff",          label: "Команда",           labelKey: "staff",         icon: Users,      roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/notifications",  label: "Уведомления",       labelKey: "notifications", icon: Bell,       roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/health",         label: "Здоровье системы",  labelKey: "health",        icon: HeartPulse, roles: [SA, "ADMIN"], group: "settings" },
 
   // ── Помощь ──
   { href: "/admin/help", label: "Помощь", labelKey: "help", icon: HelpCircle, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "help" },
 ];
 
 // Группы которые будут collapsible (аккордеон)
-const COLLAPSIBLE_GROUPS = new Set(["settings", "marketing", "finance"]);
+const COLLAPSIBLE_GROUPS = new Set(["settings", "marketing"]);
 
 export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
   const [pendingCount, setPendingCount] = useState(0);
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings", "marketing"]));
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings"]));
   const { t } = useAdminLang();
 
   // Раскрыть группу если активная страница в ней
