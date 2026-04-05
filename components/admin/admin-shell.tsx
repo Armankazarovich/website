@@ -371,7 +371,7 @@ interface AdminShellProps {
 }
 
 const PAGE_TITLES: Record<string, string> = {
-  "/admin": "Дашборд",
+  "/admin": "",
   "/admin/orders": "Заказы",
   "/admin/crm": "CRM — Лиды",
   "/admin/tasks": "Задачи",

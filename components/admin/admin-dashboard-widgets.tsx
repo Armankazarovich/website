@@ -2,9 +2,96 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  Quote, Clock4, CalendarDays, RefreshCw, StickyNote,
+  Quote, CalendarDays, RefreshCw, StickyNote,
   CheckCircle2, Circle, Copy, Share2, Check, ListTodo, ChevronLeft, ChevronRight,
+  Cloud, Sun, CloudRain, CloudSnow, Wind, Thermometer,
 } from "lucide-react";
+
+// ── Погода: WMO коды → описание + иконка ──────────────────────────────────────
+function getWeatherInfo(code: number): { label: string; emoji: string } {
+  if (code === 0)                    return { label: "Ясно",             emoji: "☀️" };
+  if (code <= 2)                     return { label: "Малооблачно",      emoji: "🌤" };
+  if (code === 3)                    return { label: "Пасмурно",         emoji: "☁️" };
+  if (code <= 49)                    return { label: "Туман",            emoji: "🌫" };
+  if (code <= 59)                    return { label: "Морось",           emoji: "🌦" };
+  if (code <= 69)                    return { label: "Дождь",            emoji: "🌧" };
+  if (code <= 79)                    return { label: "Снег",             emoji: "❄️" };
+  if (code <= 82)                    return { label: "Ливень",           emoji: "⛈" };
+  if (code <= 86)                    return { label: "Снегопад",         emoji: "🌨" };
+  if (code >= 95)                    return { label: "Гроза",            emoji: "⛈" };
+  return { label: "Переменно",       emoji: "🌥" };
+}
+
+type WeatherData = {
+  temp: number;
+  code: number;
+  city: string;
+  date: string;
+  weekday: string;
+};
+
+function useWeather() {
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let lat = 55.8945, lon = 37.3877, city = "Химки";
+
+    async function fetchWeather(la: number, lo: number, cityName: string) {
+      try {
+        const res = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&current=temperature_2m,weathercode&timezone=Europe%2FMoscow`
+        );
+        const data = await res.json();
+        const now = new Date();
+        setWeather({
+          temp: Math.round(data.current.temperature_2m),
+          code: data.current.weathercode,
+          city: cityName,
+          date: now.toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
+          weekday: now.toLocaleDateString("ru-RU", { weekday: "long" }),
+        });
+      } catch {
+        // Тихо — не показываем ошибку
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // Пробуем геолокацию
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          lat = pos.coords.latitude;
+          lon = pos.coords.longitude;
+          // Reverse geocode через Nominatim (бесплатно, без ключа)
+          try {
+            const geo = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=ru`,
+              { headers: { "User-Agent": "PiloRus-Admin/1.0" } }
+            );
+            const geoData = await geo.json();
+            city = geoData.address?.city
+              || geoData.address?.town
+              || geoData.address?.village
+              || geoData.address?.suburb
+              || "Ваш город";
+          } catch { /* используем Химки */ }
+          fetchWeather(lat, lon, city);
+        },
+        () => {
+          // Пользователь отказал — используем Химки
+          fetchWeather(lat, lon, city);
+        },
+        { timeout: 5000, maximumAge: 300_000 }
+      );
+    } else {
+      fetchWeather(lat, lon, city);
+    }
+  }, []);
+
+  return { weather, loading };
+}
 
 // Хранилища с историей по датам
 const NOTES_KEY = "aray_notes_v2";       // { "YYYY-MM-DD": string }
@@ -344,30 +431,24 @@ function SmartNotes({ dateStr, isToday }: { dateStr: string; isToday: boolean })
 
 // ── Главный компонент ──────────────────────────────────────────────────────────
 export function AdminDashboardWidgets() {
-  const [now, setNow]               = useState<Date | null>(null);
-  const [selectedDate, setSelected] = useState<Date>(new Date());
-  const [quoteIdx, setQuoteIdx]     = useState(0);
+  const [mounted, setMounted]        = useState(false);
+  const [selectedDate, setSelected]  = useState<Date>(new Date());
+  const [quoteIdx, setQuoteIdx]      = useState(0);
+  const { weather, loading: wLoad }  = useWeather();
 
-  useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     setQuoteIdx(Math.floor(Math.random() * QUOTES.length));
   }, []);
 
-  if (!now) return null;
+  if (!mounted) return null;
 
+  const now     = new Date();
   const today   = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const selKey  = dateKey(selectedDate);
   const todayKey2 = dateKey(today);
   const isToday = selKey === todayKey2;
-
-  const timeStr = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
-  const secsStr = now.toLocaleTimeString("ru-RU", { second: "2-digit" });
-  const dateStr = now.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
 
   // Метка выбранной даты (если не сегодня)
   const selLabel = isToday ? null : selectedDate.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
@@ -378,17 +459,47 @@ export function AdminDashboardWidgets() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 
-      {/* ── Часы ── */}
-      <div className={glass + " flex flex-col gap-2"}>
-        <div className="flex items-center gap-1.5 text-foreground/40 mb-1">
-          <Clock4 className="w-3 h-3" />
-          <span className="text-[10px] font-bold uppercase tracking-widest">Время</span>
-        </div>
-        <div className="flex items-end gap-1.5">
-          <span className="font-display font-bold text-4xl text-foreground leading-none tracking-tight">{timeStr}</span>
-          <span className="font-mono text-xl text-foreground/30 leading-none mb-0.5">{secsStr}</span>
-        </div>
-        <p className="text-[11px] text-foreground/45 capitalize mt-1">{dateStr}</p>
+      {/* ── Погода + дата ── */}
+      <div className={glass + " flex flex-col gap-2 justify-between"}>
+        {wLoad ? (
+          <div className="flex flex-col gap-3 animate-pulse">
+            <div className="h-3 w-16 rounded bg-foreground/10" />
+            <div className="h-10 w-24 rounded bg-foreground/10" />
+            <div className="h-3 w-28 rounded bg-foreground/10" />
+          </div>
+        ) : weather ? (
+          <>
+            {/* Город */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">{weather.city}</span>
+            </div>
+
+            {/* Температура + иконка */}
+            <div className="flex items-center gap-3">
+              <span className="text-5xl leading-none">{getWeatherInfo(weather.code).emoji}</span>
+              <div>
+                <div className="font-display font-bold text-4xl text-foreground leading-none tracking-tight">
+                  {weather.temp > 0 ? "+" : ""}{weather.temp}°
+                </div>
+                <p className="text-[11px] text-foreground/50 mt-0.5">{getWeatherInfo(weather.code).label}</p>
+              </div>
+            </div>
+
+            {/* Дата */}
+            <div className="border-t border-foreground/[0.07] pt-2">
+              <p className="text-[12px] font-semibold text-foreground/70 capitalize">{weather.weekday}</p>
+              <p className="text-[11px] text-foreground/40">{weather.date}</p>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <span className="text-3xl">🌤</span>
+            <p className="text-[11px] text-foreground/40">Погода недоступна</p>
+            <p className="text-[11px] text-foreground/60 capitalize">
+              {now.toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" })}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ── Календарь + Задачи ── */}
