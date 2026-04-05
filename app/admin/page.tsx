@@ -160,20 +160,14 @@ export default async function AdminDashboard() {
     <div className="space-y-4 pb-6">
       <AutoRefresh intervalMs={60000} />
 
-      {/* ── ШАПКА ── */}
-      <div className="flex items-center justify-between">
+      {/* ── ШАПКА — минимальная ── */}
+      <div className="flex items-center justify-between pt-1">
         <div>
-          <p className="text-xs text-muted-foreground">{greeting},</p>
-          <h1 className="font-display font-bold text-xl leading-tight">{userName.split(" ")[0]}</h1>
+          <p className="text-xs text-muted-foreground">{greeting}, <span className="font-semibold text-foreground">{userName.split(" ")[0]}</span></p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
-            {ROLE_GREETINGS[role] || role}
-          </span>
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            {now.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
-          </p>
-        </div>
+        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
+          {ROLE_GREETINGS[role] || role}
+        </span>
       </div>
 
       {/* ── ЧАСЫ + КАЛЕНДАРЬ + АФОРИЗМ ── */}

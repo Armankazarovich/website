@@ -527,17 +527,10 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </aside>
 
-      {/* ─── Desktop top bar ──────────────────────────────────── */}
+      {/* ─── Desktop top bar — чистый, без заголовка ─────────── */}
       <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar">
 
-        {/* Акцент-полоска слева */}
-        <div className="w-0.5 h-6 rounded-full shrink-0"
-          style={{ background: "linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary)/0.3))" }} />
-
-        {/* Заголовок страницы */}
-        <h1 className="text-lg font-bold tracking-tight leading-none shrink-0">{pageTitle}</h1>
-
-        {/* Inline поиск — занимает свободное место */}
+        {/* Поиск занимает всё свободное место */}
         <div className="flex-1 flex items-center">
           <AdminDesktopSearch />
         </div>
@@ -548,7 +541,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         {/* Настройки (язык, шрифт, тема, палитра) */}
         <AdminDesktopSettings />
 
-        {/* Разделитель + Аватар */}
+        {/* Аватар */}
         <div className="flex items-center gap-2.5 pl-3 border-l border-border/50 shrink-0">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shrink-0 aray-neon-sm"
             style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
@@ -560,54 +553,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           </div>
         </div>
       </div>
-
-      {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)" }}
-          aria-describedby={undefined}>
-          <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
-            <div>
-              <p className="font-display font-bold text-xl text-white">ПилоРус</p>
-              <p className="text-[11px] text-white/45 mt-0.5">Панель управления</p>
-            </div>
-            <button onClick={() => setOpen(false)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-              style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto overscroll-contain">
-            <AdminNav role={role} onNavigate={() => setOpen(false)} />
-          </div>
-          <AdminPushPrompt />
-          <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
-            <AdminPwaInstall />
-            <div className="px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55 mb-2">Тема</p>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {PALETTES.map((p) => (
-                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className={`w-6 h-6 rounded-lg transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
-                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                ))}
-                <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                  {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-            <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
-            <Link href="/"
-              className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors"
-              onClick={() => setOpen(false)}>
-              <LogOut className="w-4 h-4" />
-              На сайт
-            </Link>
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
       <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
