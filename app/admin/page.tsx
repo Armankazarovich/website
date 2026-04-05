@@ -160,18 +160,16 @@ export default async function AdminDashboard() {
     <div className="space-y-4 pb-6">
       <AutoRefresh intervalMs={60000} />
 
-      {/* ── ШАПКА — минимальная ── */}
+      {/* ── ШАПКА с погодой ── */}
       <div className="flex items-center justify-between pt-1">
-        <div>
+        <div className="flex flex-col gap-1">
           <p className="text-xs text-muted-foreground">{greeting}, <span className="font-semibold text-foreground">{userName.split(" ")[0]}</span></p>
+          <AdminDashboardWidgets />
         </div>
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
           {ROLE_GREETINGS[role] || role}
         </span>
       </div>
-
-      {/* ── ЧАСЫ + КАЛЕНДАРЬ + АФОРИЗМ ── */}
-      <AdminDashboardWidgets />
 
       {/* ── АЛЕРТЫ ── */}
       {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (

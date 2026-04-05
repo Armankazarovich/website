@@ -476,10 +476,14 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
     };
   }, [open]);
 
+  // Природный фон — только в тёмной теме
+  const isDark = theme === "dark" || theme === "system";
+  const natureActive = !classic && isDark;
+
   return (
-    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
-      style={classic ? undefined : { backgroundColor: "rgb(8, 12, 30)" }}>
-      <AdminNatureBg enabled={!classic} />
+    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : natureActive ? "aray-admin-bg aray-nature-mode" : "aray-admin-bg"}`}
+      style={classic ? undefined : natureActive ? { backgroundColor: "rgb(8, 12, 30)" } : undefined}>
+      <AdminNatureBg enabled={natureActive} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
