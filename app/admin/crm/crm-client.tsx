@@ -1314,22 +1314,25 @@ export function CrmClient() {
 
           {/* Фильтр по источнику */}
           <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border overflow-x-auto flex-shrink-0">
-            {[{ key: "ALL", label: "Все" }, ...Object.entries(SOURCE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(s => (
-              <button
-                key={s.key}
-                onClick={() => setSourceFilter(s.key)}
-                className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                  sourceFilter === s.key
-                    ? "bg-primary text-white"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
-              >
-                {s.label}
-                {s.key !== "ALL" && (
-                  <span className="ml-1 opacity-60">{leads.filter(l => l.source === s.key).length}</span>
-                )}
-              </button>
-            ))}
+            {[{ key: "ALL", label: "Все" }, ...Object.entries(SOURCE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(s => {
+              const isActive = sourceFilter === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setSourceFilter(s.key)}
+                  className="shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all"
+                  style={isActive
+                    ? { background: "hsl(var(--primary))", color: "#fff", border: "1.5px solid hsl(var(--primary))" }
+                    : { background: "rgba(5,8,20,0.65)", color: "rgba(255,255,255,0.75)", border: "1.5px solid rgba(255,255,255,0.18)", backdropFilter: "blur(12px)" }
+                  }
+                >
+                  {s.label}
+                  {s.key !== "ALL" && (
+                    <span className="ml-1" style={{ opacity: 0.55 }}>{leads.filter(l => l.source === s.key).length}</span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Kanban лидов */}

@@ -636,11 +636,11 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(32px) saturate(140%) brightness(0.50) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(140%) brightness(0.50) !important;
-  background: rgba(5, 8, 20, 0.75) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.30) !important;
+  backdrop-filter: blur(28px) saturate(160%) brightness(0.75) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(0.75) !important;
+  background: rgba(5, 8, 20, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: none !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
@@ -666,10 +666,10 @@ canvas,
 .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
-  backdrop-filter: blur(24px) saturate(140%) brightness(0.52) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(140%) brightness(0.52) !important;
-  background: rgba(5, 8, 20, 0.70) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
+  background: rgba(5, 8, 20, 0.42) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Текст в тёмных карточках — белый (только p/h/span, не иконки) */
@@ -1193,17 +1193,17 @@ canvas,
 /* Интерактивные карточки (ссылки/кнопки) — чистое тёмное стекло + hover эффект */
 .aray-nature-mode a.bg-card,
 .aray-nature-mode button.bg-card {
-  background: rgba(6, 10, 24, 0.74) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(6, 10, 24, 0.52) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
   outline: none !important;
   transition: all 0.2s ease !important;
 }
 .aray-nature-mode a.bg-card:hover,
 .aray-nature-mode button.bg-card:hover {
-  background: rgba(10, 16, 40, 0.85) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.20) !important;
+  background: rgba(10, 16, 40, 0.68) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
   transform: translateY(-2px);
 }
 
