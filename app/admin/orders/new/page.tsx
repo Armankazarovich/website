@@ -322,7 +322,6 @@ export default function NewPhoneOrderPage() {
                 onFocus={() => setShowProductDropdown(true)}
                 onBlur={() => setTimeout(() => setShowProductDropdown(false), 150)}
                 className="w-full pl-9 pr-8 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
-                autoFocus
               />
               {productSearch && (
                 <button onClick={() => setProductSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -399,9 +398,9 @@ export default function NewPhoneOrderPage() {
               )}
             </div>
 
-            {/* Variant selector panel */}
+            {/* Variant selector panel — desktop only */}
             {selectedProduct && (
-              <div className="w-52 border-l border-border flex flex-col shrink-0 bg-muted/20">
+              <div className="hidden md:flex md:flex-col md:w-52 border-l border-border shrink-0 bg-muted/20">
                 <div className="px-3 py-2.5 border-b border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Настройка</p>
                   <p className="text-sm font-semibold line-clamp-2">{selectedProduct.name}</p>
@@ -775,6 +774,7 @@ export default function NewPhoneOrderPage() {
             type="button"
             onClick={() => setShowMobileCart(true)}
             className="md:hidden fixed bottom-[84px] right-4 z-40 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl shadow-lg font-bold text-sm active:scale-[0.96] transition-all"
+            style={{ bottom: "calc(84px + env(safe-area-inset-bottom, 0px))" }}
             style={{ boxShadow: "0 4px 20px hsl(var(--primary)/0.4)" }}
           >
             <ShoppingCart className="w-5 h-5" />
@@ -843,6 +843,104 @@ export default function NewPhoneOrderPage() {
           </div>
         )}
       </div>
+
+      {/* ── MOBILE: Variant Bottom Sheet ── */}
+      {selectedProduct && (
+        <div className="md:hidden fixed inset-0 z-[60] flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedProductId("")} />
+          <div className="relative bg-card rounded-t-2xl shadow-2xl flex flex-col max-h-[82dvh]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Выбор варианта</p>
+                <p className="text-sm font-semibold line-clamp-1">{selectedProduct.name}</p>
+              </div>
+              <button type="button" onClick={() => setSelectedProductId("")}
+                className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Variants grid */}
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">
+                  Размер <span className="text-muted-foreground/50 normal-case">({selectedProduct.variants.length})</span>
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {selectedProduct.variants.map((v) => {
+                    const price = unitType === "CUBE" ? v.pricePerCube : v.pricePerPiece;
+                    const isSel = selectedVariantId === v.id;
+                    return (
+                      <button key={v.id} type="button" onClick={() => setSelectedVariantId(v.id)}
+                        className={`flex flex-col items-start px-3 py-2.5 rounded-xl text-left transition-colors border relative ${
+                          isSel ? "bg-primary/10 border-primary/50" : v.inStock ? "border-border hover:border-primary/30 hover:bg-muted/50" : "border-border/40 opacity-50"
+                        }`}>
+                        {isSel && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />}
+                        <span className={`font-mono text-xs leading-tight ${isSel ? "text-primary font-semibold" : ""}`}>{v.size}</span>
+                        <span className={`text-xs font-bold mt-1 ${isSel ? "text-primary" : v.inStock ? "text-emerald-500" : "text-muted-foreground/50"}`}>
+                          {price != null ? `${Number(price).toLocaleString()} ₽` : "—"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Unit type */}
+              {availableUnits.length > 1 && (
+                <div>
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Единица измерения</p>
+                  <div className="flex gap-2">
+                    {availableUnits.map((u) => (
+                      <button key={u} type="button" onClick={() => setUnitType(u)}
+                        className={`flex-1 py-3 rounded-xl text-sm font-medium border transition-colors ${unitType === u ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary/30"}`}>
+                        {u === "CUBE" ? "м³" : "шт"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity */}
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Количество</p>
+                <div className="flex items-center gap-2">
+                  <button type="button"
+                    onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
+                    className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-muted active:scale-95">−</button>
+                  <input type="number" min={0.01} step={unitType === "CUBE" ? 0.1 : 1} value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="flex-1 text-center py-3 text-base bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                  <button type="button"
+                    onClick={() => setQuantity((q) => +(q + (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
+                    className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-muted active:scale-95">+</button>
+                </div>
+                {selectedVariant && itemPrice > 0 && (
+                  <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Сумма</span>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-primary">{fmt(itemPrice * quantity)}</p>
+                      <p className="text-xs text-muted-foreground">{fmt(itemPrice)} / {unitType === "CUBE" ? "м³" : "шт"}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Add button with safe area */}
+            <div className="p-4 border-t border-border shrink-0" style={{ paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
+              <button type="button" onClick={addItem}
+                disabled={!selectedVariant || !itemPrice || quantity <= 0}
+                className="w-full flex items-center justify-center gap-2 py-4 bg-primary text-primary-foreground rounded-2xl text-base font-bold hover:bg-primary/90 transition-colors disabled:opacity-40 active:scale-[0.98]">
+                <Plus className="w-5 h-5" />
+                В заказ {selectedVariant && itemPrice > 0 ? `· ${fmt(itemPrice * quantity)}` : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Added flash */}
       {addedFlash && (
