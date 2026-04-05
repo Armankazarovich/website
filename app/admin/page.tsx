@@ -4,9 +4,9 @@ import { auth } from "@/lib/auth";
 import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import {
   ShoppingBag, Package, Star, TrendingUp, Clock, Users, BarChart3,
-  ArrowUpRight, Shield, Truck, Warehouse, Target, Mail, Bell,
-  Settings, Wallet, BarChart2, Globe, HeartPulse, CheckSquare,
-  Megaphone, UserCircle, FileDown, ChevronRight, Zap,
+  ArrowUpRight, Truck, Warehouse, Target, Mail, Bell,
+  Settings, Wallet, BarChart2, CheckSquare,
+  UserCircle, FileDown, ChevronRight, Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
@@ -288,23 +288,6 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      {/* ── ВТОРИЧНЫЕ МЕТРИКИ ── */}
-      {isOwner && (
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { label: "Всего", value: totalOrders, href: "/admin/orders", icon: ShoppingBag },
-            { label: "Сегодня", value: todayOrders, href: "/admin/orders", icon: Users },
-            { label: "Товаров", value: totalProducts, href: "/admin/products", icon: Package },
-            { label: "7 дней", value: formatPrice(revenue7total), href: "/admin/analytics", icon: TrendingUp },
-          ].map((s) => (
-            <Link key={s.label} href={s.href} className="bg-card rounded-2xl border border-border p-3 text-center active:scale-[0.97] transition-all hover:border-primary/25 group">
-              <s.icon className="w-3.5 h-3.5 text-primary/50 mx-auto mb-1.5 transition-transform group-hover:scale-110" />
-              <p className="text-[15px] font-bold leading-tight">{s.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
-            </Link>
-          ))}
-        </div>
-      )}
 
       {/* ── ГРАФИК 7 ДНЕЙ ── */}
       {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
@@ -368,47 +351,6 @@ export default async function AdminDashboard() {
         <DashboardTopItems />
       )}
 
-      {/* ── СИСТЕМНЫЕ ССЫЛКИ (только владелец) ── */}
-      {isOwner && (
-        <div className="grid grid-cols-2 gap-2">
-          <Link href="/admin/health" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Shield className="w-4 h-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold leading-tight">Здоровье</p>
-              <p className="text-[10px] text-muted-foreground">системы</p>
-            </div>
-          </Link>
-          <Link href="/admin/staff" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4 text-blue-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold leading-tight">Команда</p>
-              <p className="text-[10px] text-muted-foreground">{pendingStaff > 0 ? `${pendingStaff} ждут` : "сотрудники"}</p>
-            </div>
-          </Link>
-          <Link href="/admin/site" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-slate-500/10 flex items-center justify-center shrink-0">
-              <Globe className="w-4 h-4 text-slate-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold leading-tight">Сайт</p>
-              <p className="text-[10px] text-muted-foreground">настройки</p>
-            </div>
-          </Link>
-          <Link href="/admin/appearance" className="flex items-center gap-3 aray-nature-card rounded-2xl p-3.5 active:scale-[0.97] transition-transform">
-            <div className="w-8 h-8 rounded-xl bg-violet-500/10 flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 text-violet-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold leading-tight">Оформление</p>
-              <p className="text-[10px] text-muted-foreground">стили, цвета</p>
-            </div>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

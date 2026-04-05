@@ -5,7 +5,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
+  X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
   ArrowRight, ALargeSmall, Monitor,
 } from "lucide-react";
 
@@ -527,29 +527,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </aside>
 
-      {/* ─── Mobile header ────────────────────────────────────── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-1.5 px-2 h-14 aray-sidebar text-white"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}>
-        <button onClick={() => setOpen(true)}
-          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0"
-          aria-label="Меню">
-          <Menu className="w-5 h-5" />
-        </button>
-        <Link href="/admin" className="flex-1 min-w-0 px-1">
-          <span className="font-display font-bold text-base leading-none">ПилоРус</span>
-          <span className="text-[10px] text-white/45 ml-1.5">{pageTitle}</span>
-        </Link>
-        {/* Мобильный поиск */}
-        <AdminSearch />
-        {/* Колокол */}
-        <AdminNotificationBell mobile={true} />
-        {/* Настройки */}
-        <button onClick={() => setMobileSettingsOpen(true)}
-          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0">
-          <Settings className="w-[18px] h-[18px] text-white/55" />
-        </button>
-      </header>
-
       {/* ─── Desktop top bar ──────────────────────────────────── */}
       <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar">
 
@@ -783,7 +760,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
-        <div className="pt-14 lg:pb-0" style={{ paddingBottom: "calc(96px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
+        <div className="pt-2 lg:pt-14 lg:pb-0" style={{ paddingBottom: "calc(96px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>
