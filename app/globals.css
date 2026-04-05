@@ -696,24 +696,21 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
-/* ── СВЕТЛАЯ ТЕМА: витраж — фото просвечивает, тинт палитры ☀️ ── */
+/* ── СВЕТЛАЯ ТЕМА: витраж — чистое стекло, фото просвечивает ☀️ ── */
 html:not(.dark) .aray-nature-mode .bg-card,
 html:not(.dark) .aray-nature-mode .bg-popover,
 html:not(.dark) .aray-nature-mode .bg-background,
 html:not(.dark) .aray-nature-mode .bg-white,
 html:not(.dark) .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(20px) saturate(220%) brightness(1.05) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(220%) brightness(1.05) !important;
-  background: linear-gradient(
-    135deg,
-    hsl(var(--primary) / 0.18) 0%,
-    rgba(255, 255, 255, 0.28) 100%
-  ) !important;
-  border-color: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(22px) saturate(160%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.60) !important;
   box-shadow:
-    0 1px 0 rgba(255,255,255,0.80) inset,
-    0 8px 32px rgba(0, 0, 0, 0.12) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+    0 2px 0 rgba(255,255,255,0.90) inset,
+    0 1px 0 rgba(255,255,255,0.60) inset,
+    0 12px 40px rgba(0, 0, 0, 0.18) !important;
+  color: rgba(255, 255, 255, 0.97) !important;
   position: relative !important;
   overflow: hidden !important;
 }
@@ -725,9 +722,9 @@ html:not(.dark) .aray-nature-mode .aray-stat-card::before {
   inset: 0;
   background: linear-gradient(
     125deg,
-    rgba(255,255,255,0.45) 0%,
-    rgba(255,255,255,0.12) 35%,
-    transparent 60%
+    rgba(255,255,255,0.55) 0%,
+    rgba(255,255,255,0.15) 30%,
+    transparent 55%
   );
   pointer-events: none;
   border-radius: inherit;
