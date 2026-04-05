@@ -58,15 +58,20 @@ function useSearchLogic(active: boolean) {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const q = query.trim();
-    if (!q) { setResults(PAGES.slice(0, 8)); setSelected(0); return; }
 
+    // Пустой запрос → показываем 8 страниц для быстрого перехода
+    if (!q) { setResults(PAGES.slice(0, 8)); setSelected(0); setLoading(false); return; }
+
+    // Мгновенный поиск по страницам — работает с 1 буквы
     const pageMatches: SearchResult[] = PAGES.filter(p =>
       p.label.toLowerCase().includes(q.toLowerCase())
     );
-    setResults(pageMatches.slice(0, 5));
+    setResults(pageMatches.slice(0, 6));
     setSelected(0);
     setLoading(true);
 
+    // API поиск: 80ms debounce (быстро с 1 буквы)
+    const delay = q.length === 1 ? 120 : 80;
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(`/api/admin/search?q=${encodeURIComponent(q)}`);
@@ -88,9 +93,10 @@ function useSearchLogic(active: boolean) {
             label: c.name || c.email || "Клиент", sub: c.email || c.phone || "",
           })),
         ];
-        setResults([...pageMatches.slice(0, 3), ...dynamic.slice(0, 7)] as SearchResult[]);
+        // Страницы + живые данные, всего до 10 результатов
+        setResults([...pageMatches.slice(0, 3), ...dynamic.slice(0, 8)] as SearchResult[]);
       } catch { /* показываем страницы */ } finally { setLoading(false); }
-    }, 250);
+    }, delay);
   }, [query]);
 
   return { query, setQuery, results, loading, selected, setSelected };
@@ -526,16 +532,20 @@ export function AdminStickySearchBar() {
     <div ref={containerRef} className="relative w-full">
       {/* Search input */}
       <div
-        className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 w-full"
+        className="flex items-center gap-2.5 px-4 py-3 rounded-2xl transition-all duration-200 w-full"
         style={{
-          background: "rgba(5,8,20,0.52)",
+          background: focused
+            ? "rgba(14,20,44,0.88)"
+            : "rgba(10,15,35,0.75)",
           border: focused
-            ? "1.5px solid hsl(var(--primary)/0.50)"
-            : "1.5px solid rgba(255,255,255,0.11)",
-          boxShadow: focused ? "0 0 0 3px hsl(var(--primary)/0.12)" : "none",
+            ? "1.5px solid hsl(var(--primary)/0.55)"
+            : "1.5px solid rgba(255,255,255,0.14)",
+          boxShadow: focused
+            ? "0 0 0 3px hsl(var(--primary)/0.12), inset 0 1px 0 rgba(255,255,255,0.05)"
+            : "inset 0 1px 0 rgba(255,255,255,0.05)",
         }}
       >
-        <Search className="w-4 h-4 text-primary/60 shrink-0" />
+        <Search className="w-4 h-4 text-primary/70 shrink-0" />
         <input
           ref={inputRef}
           value={query}
@@ -543,7 +553,7 @@ export function AdminStickySearchBar() {
           onFocus={() => setFocused(true)}
           onKeyDown={handleKey}
           placeholder={placeholder}
-          className="flex-1 bg-transparent outline-none min-w-0 text-white/90 placeholder:text-white/30 text-[13px]"
+          className="flex-1 bg-transparent outline-none min-w-0 text-white/90 placeholder:text-white/38 text-[13px] tracking-[0.01em]"
           autoComplete="off"
           spellCheck={false}
         />
@@ -565,19 +575,19 @@ export function AdminStickySearchBar() {
           {pageFilters.map((chip) => {
             const isActive = searchParams.get(chip.param) === chip.value;
             const bg = isActive
-              ? (chip.color ? CHIP_COLORS[chip.color] : "hsl(var(--primary)/0.22)")
-              : "rgba(255,255,255,0.06)";
+              ? (chip.color ? CHIP_COLORS[chip.color] : "hsl(var(--primary)/0.25)")
+              : "rgba(255,255,255,0.10)";
             const textColor = isActive
               ? (chip.color ? CHIP_COLORS_TEXT[chip.color] : "hsl(var(--primary))")
-              : "rgba(255,255,255,0.45)";
+              : "rgba(255,255,255,0.60)";
             const border = isActive
-              ? (chip.color ? `1px solid ${CHIP_COLORS_TEXT[chip.color]}40` : "1px solid hsl(var(--primary)/0.40)")
-              : "1px solid rgba(255,255,255,0.09)";
+              ? (chip.color ? `1.5px solid ${CHIP_COLORS_TEXT[chip.color]}55` : "1.5px solid hsl(var(--primary)/0.45)")
+              : "1px solid rgba(255,255,255,0.15)";
             return (
               <button
                 key={`${chip.param}-${chip.value}`}
                 onClick={() => toggleChip(chip)}
-                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150 active:scale-95"
+                className="px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-150 active:scale-95 hover:brightness-125"
                 style={{ background: bg, color: textColor, border }}
               >
                 {chip.label}
@@ -587,12 +597,9 @@ export function AdminStickySearchBar() {
           {/* Сброс всех фильтров */}
           {pageFilters.some(c => searchParams.get(c.param) === c.value) && (
             <button
-              onClick={() => {
-                const params = new URLSearchParams();
-                router.push(pathname);
-              }}
-              className="px-2 py-1 rounded-full text-[10px] transition-all duration-150 flex items-center gap-1"
-              style={{ color: "rgba(255,255,255,0.30)", border: "1px solid rgba(255,255,255,0.08)" }}
+              onClick={() => router.push(pathname)}
+              className="px-2.5 py-1 rounded-full text-[10px] transition-all duration-150 flex items-center gap-1 hover:brightness-125"
+              style={{ color: "rgba(255,255,255,0.40)", border: "1px solid rgba(255,255,255,0.14)" }}
             >
               <X className="w-2.5 h-2.5" /> сброс
             </button>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { AdminQuickView } from "@/components/admin/admin-quick-view";
@@ -13,18 +13,6 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
-const STATUS_FILTERS = [
-  { key: "ALL", label: "Все" },
-  { key: "NEW", label: "Новые" },
-  { key: "CONFIRMED", label: "Подтверждённые" },
-  { key: "PROCESSING", label: "В обработке" },
-  { key: "SHIPPED", label: "Отгружены" },
-  { key: "IN_DELIVERY", label: "В пути" },
-  { key: "READY_PICKUP", label: "Самовывоз" },
-  { key: "DELIVERED", label: "Доставлены" },
-  { key: "COMPLETED", label: "Завершены" },
-  { key: "CANCELLED", label: "Отменены" },
-];
 
 type Order = {
   id: string;
@@ -189,9 +177,12 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
 // ── Главный компонент ─────────────────────────────────────────────────────────
 export function OrdersClient({ orders: initialOrders, stats: initialStats }: { orders: Order[]; stats: Stats }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState(initialOrders);
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+
+  // Статус фильтр берём из URL (?status=NEW) — синхронизируется со Smart Command Bar
+  const statusFilter = searchParams.get("status") || "ALL";
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -305,20 +296,13 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         </div>
       </div>
 
-      {/* Фильтры + поиск */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex flex-wrap gap-1.5 flex-1">
-          {STATUS_FILTERS.map((f) => (
-            <button key={f.key} onClick={() => setStatusFilter(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === f.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}>
-              {f.label}
-            </button>
-          ))}
-        </div>
+      {/* Инструменты — CSV + массовые действия */}
+      <div className="flex items-center gap-2 justify-end">
+        {statusFilter !== "ALL" && (
+          <span className="text-xs text-muted-foreground px-2 py-1 rounded-lg bg-muted/50">
+            {filtered.length} из {orders.length}
+          </span>
+        )}
         <button onClick={handleExportCSV}
           className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-xl text-sm font-semibold hover:bg-muted/80 transition-colors shrink-0">
           <Download className="w-4 h-4" /> CSV

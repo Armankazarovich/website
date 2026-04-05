@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
   if (!role || role === "USER") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const q = req.nextUrl.searchParams.get("q")?.trim() || "";
-  if (!q || q.length < 2) return NextResponse.json({ orders: [], products: [], clients: [] });
+  // Минимальная длина — 1 символ (умный поиск с первой буквы)
+  if (!q) return NextResponse.json({ orders: [], products: [], clients: [] });
 
   const [orders, products, clients] = await Promise.all([
     // Заказы: по номеру или гостевым данным

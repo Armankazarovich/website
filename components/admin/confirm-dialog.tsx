@@ -74,10 +74,13 @@ export function ConfirmDialog({
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-sm rounded-2xl border border-border overflow-hidden shadow-2xl"
+        className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
         style={{
-          background: "rgba(10, 14, 30, 0.97)",
-          backdropFilter: "blur(24px) saturate(180%)",
+          background: "rgba(8, 13, 32, 0.82)",
+          backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+          WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.05) inset",
           animation: "dialog-pop 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
         }}
       >

@@ -58,11 +58,11 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
         `}
         style={{
           maxHeight: "92dvh",
-          background: "rgba(6, 9, 22, 0.97)",
-          backdropFilter: "blur(40px) saturate(200%)",
-          WebkitBackdropFilter: "blur(40px) saturate(200%)",
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset",
+          background: "rgba(8, 13, 32, 0.82)",
+          backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+          WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+          border: "1px solid rgba(255,255,255,0.14)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
         }}
       >
         {/* Drag handle (mobile) */}

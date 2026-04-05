@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import {
@@ -31,10 +32,20 @@ export function ProductsClient({
   products: Product[];
   categories: Category[];
 }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [products, setProducts] = useState(init);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
-  const [noPhotoOnly, setNoPhotoOnly] = useState(false);
+
+  // Фильтры из URL — синхронизируются со Smart Command Bar
+  const urlActive = searchParams.get("active");     // "1" | "0" | null
+  const urlNophoto = searchParams.get("nophoto");   // "1" | null
+  const urlFeatured = searchParams.get("featured"); // "1" | null
+
+  // Локальный toggle "Без фото" (по кнопке или из URL)
+  const noPhotoOnly = urlNophoto === "1";
   const [drawer, setDrawer] = useState<Product | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -71,12 +82,15 @@ export function ProductsClient({
     } finally { setSaving(null); }
   };
 
-  /* filtered */
+  /* filtered — читаем URL params для Smart Command Bar chips */
   const filtered = useMemo(() => products.filter(p => {
     const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
     const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchS && (!noPhotoOnly || p.images.length === 0);
-  }), [products, search, catFilter, noPhotoOnly]);
+    const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
+    const matchNophoto = !noPhotoOnly || p.images.length === 0;
+    const matchFeatured = !urlFeatured || p.featured;
+    return matchCat && matchS && matchActive && matchNophoto && matchFeatured;
+  }), [products, search, catFilter, noPhotoOnly, urlActive, urlFeatured]);
 
   /* ── selection helpers ── */
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id));
@@ -231,7 +245,11 @@ export function ProductsClient({
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
         <button
-          onClick={() => setNoPhotoOnly(v => !v)}
+          onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (noPhotoOnly) { params.delete("nophoto"); } else { params.set("nophoto", "1"); }
+            router.push(`${pathname}?${params.toString()}`);
+          }}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700" : "border-border text-muted-foreground hover:bg-muted"}`}
         >
           <ImageOff className="w-4 h-4" />
