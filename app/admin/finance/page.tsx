@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 const EXPENSE_CATEGORIES = [
   "Аренда", "Зарплата", "Транспорт", "Реклама", "Коммунальные",
@@ -59,6 +60,7 @@ export default function FinancePage() {
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [includeVat, setIncludeVat] = useState(false);
 
   // New expense form
@@ -104,10 +106,12 @@ export default function FinancePage() {
     }
   };
 
-  const deleteExpense = async (id: string) => {
-    setDeleting(id);
+  const deleteExpense = async () => {
+    if (!confirmDeleteId) return;
+    setDeleting(confirmDeleteId);
     try {
-      await fetch(`/api/admin/finance/expenses?id=${id}`, { method: "DELETE" });
+      await fetch(`/api/admin/finance/expenses?id=${confirmDeleteId}`, { method: "DELETE" });
+      setConfirmDeleteId(null);
       await load();
     } finally {
       setDeleting(null);
@@ -367,11 +371,11 @@ export default function FinancePage() {
                 </div>
                 <p className="font-semibold text-red-500 shrink-0">{formatPrice(e.amount)}</p>
                 <button
-                  onClick={() => deleteExpense(e.id)}
+                  onClick={() => setConfirmDeleteId(e.id)}
                   disabled={deleting === e.id}
-                  className="text-muted-foreground hover:text-red-500 transition-colors ml-2"
+                  className="text-muted-foreground hover:text-red-500 transition-colors ml-2 p-1"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deleting === e.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
               </div>
             ))
@@ -382,6 +386,17 @@ export default function FinancePage() {
           )}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={deleteExpense}
+        title="Удалить расход?"
+        description="Запись будет удалена без возможности восстановления."
+        confirmLabel="Удалить"
+        variant="danger"
+        loading={!!deleting}
+      />
     </div>
   );
 }
