@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,
@@ -354,5 +354,156 @@ export function AdminSearch() {
         </>
       )}
     </>
+  );
+}
+
+// ─── Контекстные плейсхолдеры по страницам ─────────────────────────────────
+const PAGE_PLACEHOLDERS: Record<string, string> = {
+  "/admin":               "Поиск заказов, товаров, клиентов, страниц...",
+  "/admin/orders":        "Искать в Заказах — имя клиента, номер, телефон...",
+  "/admin/crm":           "Искать в CRM — лиды, клиенты, сделки...",
+  "/admin/tasks":         "Искать в Задачах — описание, исполнитель...",
+  "/admin/delivery":      "Искать в Доставке — адрес, заказ, клиент...",
+  "/admin/products":      "Искать в Каталоге — название товара, slug...",
+  "/admin/categories":    "Искать Категории — название, slug...",
+  "/admin/inventory":     "Искать на Складе — товар, размер...",
+  "/admin/import":        "Импорт / Экспорт — поиск товаров...",
+  "/admin/media":         "Поиск файлов в Медиабиблиотеке...",
+  "/admin/promotions":    "Искать в Акциях — название, промокод...",
+  "/admin/reviews":       "Искать в Отзывах — текст, автор...",
+  "/admin/email":         "Искать Email рассылки — тема, текст...",
+  "/admin/finance":       "Искать в Финансах — заказы, суммы...",
+  "/admin/clients":       "Искать в Клиентах — имя, телефон, email...",
+  "/admin/analytics":     "Поиск аналитики — страница, период...",
+  "/admin/staff":         "Искать в Команде — имя, роль, статус...",
+  "/admin/notifications": "Поиск в Уведомлениях...",
+  "/admin/settings":      "Поиск Настроек...",
+  "/admin/site":          "Поиск настроек Сайта...",
+  "/admin/appearance":    "Поиск настроек Оформления...",
+  "/admin/help":          "Поиск в Помощи — вопросы, ответы...",
+};
+
+// ─── Sticky Search Bar — всегда виден, контекстный плейсхолдер ─────────────
+export function AdminStickySearchBar() {
+  const [focused, setFocused] = useState(false);
+  const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(focused);
+  const router = useRouter();
+  const pathname = usePathname();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Найти самый подходящий плейсхолдер по текущему URL
+  const placeholder = (() => {
+    const sorted = Object.entries(PAGE_PLACEHOLDERS).sort((a, b) => b[0].length - a[0].length);
+    for (const [path, ph] of sorted) {
+      if (pathname === path || (path !== "/admin" && pathname.startsWith(path))) return ph;
+    }
+    return "Поиск заказов, товаров, клиентов...";
+  })();
+
+  // Click outside → unfocus
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  // Cmd+K
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setFocused(true);
+        setTimeout(() => inputRef.current?.focus(), 60);
+      }
+      if (e.key === "Escape" && focused) { setFocused(false); setQuery(""); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [focused, setQuery]);
+
+  const go = useCallback((r: SearchResult) => {
+    router.push(r.href); setFocused(false); setQuery("");
+  }, [router, setQuery]);
+
+  const handleKey = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") { e.preventDefault(); setSelected(s => Math.min(s + 1, results.length - 1)); }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setSelected(s => Math.max(s - 1, 0)); }
+    if (e.key === "Enter" && results[selected]) go(results[selected]);
+    if (e.key === "Escape") { setFocused(false); setQuery(""); }
+  }, [results, selected, go, setSelected, setQuery]);
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      {/* Search input */}
+      <div
+        className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 w-full"
+        style={{
+          background: focused
+            ? "rgba(255,255,255,0.11)"
+            : "rgba(255,255,255,0.07)",
+          border: focused
+            ? "1.5px solid hsl(var(--primary)/0.45)"
+            : "1.5px solid rgba(255,255,255,0.10)",
+          boxShadow: focused ? "0 0 0 3px hsl(var(--primary)/0.10)" : "none",
+        }}
+      >
+        <Search className="w-4 h-4 text-primary/60 shrink-0" />
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onKeyDown={handleKey}
+          placeholder={placeholder}
+          className="flex-1 bg-transparent outline-none min-w-0 text-white/90 placeholder:text-white/30 text-[13px]"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        {loading
+          ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
+          : query
+            ? <button onClick={() => { setQuery(""); setFocused(false); }} className="shrink-0 text-white/25 hover:text-white/60 transition-colors">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            : <kbd className="hidden sm:flex items-center gap-0.5 text-[10px] font-mono text-white/20 shrink-0">
+                <span className="px-1 py-0.5 rounded bg-white/10">⌘K</span>
+              </kbd>
+        }
+      </div>
+
+      {/* Dropdown results */}
+      {focused && results.length > 0 && (
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
+          style={{
+            background: "rgba(8,12,28,0.97)",
+            backdropFilter: "blur(40px) saturate(200%)",
+            WebkitBackdropFilter: "blur(40px) saturate(200%)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03) inset",
+          }}>
+          {!query.trim() && (
+            <p className="px-5 pt-3 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
+              Быстрый переход
+            </p>
+          )}
+          <div className="py-1.5 max-h-[380px] overflow-y-auto">
+            {results.map((r, i) => (
+              <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+            ))}
+          </div>
+          <div className="px-5 py-2 flex items-center gap-4 text-[10px] text-white/20"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↑↓</kbd> навигация</span>
+            <span><kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/35">↵</kbd> открыть</span>
+            <span className="ml-auto opacity-40">⌘K</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

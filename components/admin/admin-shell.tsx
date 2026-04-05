@@ -217,7 +217,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-import { AdminDesktopSearch, AdminSearch } from "@/components/admin/admin-search";
+import { AdminDesktopSearch, AdminSearch, AdminStickySearchBar } from "@/components/admin/admin-search";
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
 import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { useTheme } from "next-themes";
@@ -612,27 +612,43 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         {/* ── Погода в сайдбаре ── */}
         <AdminSidebarWeather />
 
-        <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
+        {/* ── Подвал сайдбара: палитра + пользователь + контролы ── */}
+        <div className="shrink-0 border-t border-white/10 p-3 space-y-2">
           <AdminPwaInstall />
-          <div className="px-3 py-2">
-            <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55 mb-2">Тема</p>
-            <div className="flex items-center gap-1 flex-wrap">
-              {PALETTES.map((p) => (
-                <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                  className={`w-5 h-5 rounded-md transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
-                  style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-              ))}
-              <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-                className="w-5 h-5 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all opacity-60 hover:opacity-100">
-                {theme === "dark" ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
-              </button>
-            </div>
+
+          {/* Палитра + тема */}
+          <div className="px-1 flex items-center gap-1 flex-wrap">
+            {PALETTES.map((p) => (
+              <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                className={`w-5 h-5 rounded-md transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
+                style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
+            ))}
+            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+              className="w-5 h-5 rounded-md bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all opacity-60 hover:opacity-100">
+              {theme === "dark" ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+            </button>
           </div>
-          <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
+
+          {/* Пользователь + уведомления + настройки */}
+          <div className="flex items-center gap-1.5 px-1">
+            {/* Аватар */}
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-[10px] font-bold shrink-0"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}>
+              {email ? email[0].toUpperCase() : "A"}
+            </div>
+            {/* Email */}
+            <p className="flex-1 min-w-0 text-[10px] text-white/40 truncate leading-none">{email}</p>
+            {/* Уведомления */}
+            <AdminNotificationBell />
+            {/* Настройки */}
+            <AdminDesktopSettings />
+          </div>
+
+          {/* На сайт */}
           <Link href="/"
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors">
-            <LogOut className="w-4 h-4" />
+            className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-[11px] text-white/40 hover:text-white/80 hover:bg-white/[0.07] transition-colors">
+            <LogOut className="w-3.5 h-3.5" />
             На сайт
           </Link>
         </div>
@@ -664,41 +680,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         <AdminMobileActionPill onSettingsOpen={() => setMobileSettingsOpen(true)} />
       </header>
 
-      {/* ─── Desktop top bar ──────────────────────────────────── */}
-      <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar">
-
-        {/* Акцент-полоска + заголовок — только если есть заголовок */}
-        {pageTitle && (
-          <>
-            <div className="w-0.5 h-6 rounded-full shrink-0"
-              style={{ background: "linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary)/0.3))" }} />
-            <h1 className="text-lg font-bold tracking-tight leading-none shrink-0">{pageTitle}</h1>
-          </>
-        )}
-
-        {/* Inline поиск — занимает свободное место */}
-        <div className="flex-1 flex items-center">
-          <AdminDesktopSearch />
-        </div>
-
-        {/* Уведомления */}
-        <AdminNotificationBell />
-
-        {/* Настройки (язык, шрифт, тема, палитра) */}
-        <AdminDesktopSettings />
-
-        {/* Разделитель + Аватар */}
-        <div className="flex items-center gap-2.5 pl-3 border-l border-border/50 shrink-0">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-[11px] font-bold shrink-0 aray-neon-sm"
-            style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" }}>
-            {email ? email[0].toUpperCase() : "A"}
-          </div>
-          <div className="hidden xl:block">
-            <p className="text-[11px] font-semibold leading-none truncate max-w-[130px]">{email}</p>
-            <p className="text-[10px] leading-none mt-0.5 capitalize" style={{ opacity: 0.55 }}>{role?.toLowerCase()}</p>
-          </div>
-        </div>
-      </div>
+      {/* ─── Desktop top bar убран — контролы в сайдбаре, поиск sticky в контенте ── */}
 
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
@@ -899,7 +881,22 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
-        <div className="pt-14" style={{ paddingBottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
+        {/* Sticky search bar — только desktop */}
+        <div className="hidden lg:block sticky top-0 z-20 px-5 py-3"
+          style={{
+            background: classic
+              ? "rgba(var(--background-rgb, 255,255,255) / 0.95)"
+              : "rgba(6,9,22,0.82)",
+            backdropFilter: "blur(28px) saturate(180%)",
+            WebkitBackdropFilter: "blur(28px) saturate(180%)",
+            borderBottom: classic
+              ? "1px solid rgba(0,0,0,0.07)"
+              : "1px solid rgba(255,255,255,0.07)",
+          }}>
+          <AdminStickySearchBar />
+        </div>
+
+        <div className="pt-0" style={{ paddingBottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>
