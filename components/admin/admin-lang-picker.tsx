@@ -15,7 +15,7 @@ export function AdminLangPickerInline() {
         <button
           key={l.code}
           onClick={() => setLang(l.code)}
-          className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all text-center relative"
+          className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all text-center relative hover:brightness-125"
           style={
             lang === l.code
               ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }

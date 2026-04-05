@@ -8,6 +8,7 @@ import {
   CheckCircle2, XCircle, MoreHorizontal, ArrowRight,
   Banknote, Star, AlertCircle, RefreshCw, Loader2,
   ShoppingBag, Download, ExternalLink,
+  Inbox, Settings2, Truck, Navigation, Package, Home, Flag,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -821,15 +822,15 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
 // ─── Orders Kanban (заказы по статусам) ───────────────────────────────────────
 
 const ORDER_STAGES = [
-  { key: "NEW",          label: "Новый",         color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",    border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400",   emoji: "🆕" },
-  { key: "CONFIRMED",    label: "Подтверждён",   color: "bg-blue-500",    light: "bg-blue-50 dark:bg-blue-900/20",      border: "border-blue-200 dark:border-blue-800",     dot: "bg-blue-400",    emoji: "✅" },
-  { key: "PROCESSING",   label: "В комплектации",color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20",  border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400",  emoji: "⚙️" },
-  { key: "SHIPPED",      label: "Отгружен",      color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",    border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400",   emoji: "🚚" },
-  { key: "IN_DELIVERY",  label: "Доставляется",  color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400",  emoji: "🛵" },
-  { key: "READY_PICKUP", label: "Готов к выдаче",color: "bg-cyan-500",    light: "bg-cyan-50 dark:bg-cyan-900/20",      border: "border-cyan-200 dark:border-cyan-800",     dot: "bg-cyan-400",    emoji: "📦" },
-  { key: "DELIVERED",    label: "Доставлен ✓",   color: "bg-emerald-500", light: "bg-emerald-50 dark:bg-emerald-900/20",border: "border-emerald-200 dark:border-emerald-800",dot: "bg-emerald-400", emoji: "🎉" },
-  { key: "COMPLETED",    label: "Завершён ✓",    color: "bg-green-600",   light: "bg-green-50 dark:bg-green-900/20",    border: "border-green-200 dark:border-green-800",   dot: "bg-green-500",   emoji: "🏁" },
-  { key: "CANCELLED",    label: "Отменён",       color: "bg-gray-400",    light: "bg-gray-50 dark:bg-gray-900/20",      border: "border-gray-200 dark:border-gray-700",     dot: "bg-gray-400",    emoji: "❌" },
+  { key: "NEW",          label: "Новый",          color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",    border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400",   icon: Inbox },
+  { key: "CONFIRMED",    label: "Подтверждён",    color: "bg-blue-500",    light: "bg-blue-50 dark:bg-blue-900/20",      border: "border-blue-200 dark:border-blue-800",     dot: "bg-blue-400",    icon: CheckCircle2 },
+  { key: "PROCESSING",   label: "В комплектации", color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20",  border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400",  icon: Settings2 },
+  { key: "SHIPPED",      label: "Отгружен",       color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",    border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400",   icon: Truck },
+  { key: "IN_DELIVERY",  label: "Доставляется",   color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400",  icon: Navigation },
+  { key: "READY_PICKUP", label: "Готов к выдаче", color: "bg-cyan-500",    light: "bg-cyan-50 dark:bg-cyan-900/20",      border: "border-cyan-200 dark:border-cyan-800",     dot: "bg-cyan-400",    icon: Package },
+  { key: "DELIVERED",    label: "Доставлен",      color: "bg-emerald-500", light: "bg-emerald-50 dark:bg-emerald-900/20",border: "border-emerald-200 dark:border-emerald-800",dot: "bg-emerald-400", icon: Home },
+  { key: "COMPLETED",    label: "Завершён",       color: "bg-green-600",   light: "bg-green-50 dark:bg-green-900/20",    border: "border-green-200 dark:border-green-800",   dot: "bg-green-500",   icon: Flag },
+  { key: "CANCELLED",    label: "Отменён",        color: "bg-gray-400",    light: "bg-gray-50 dark:bg-gray-900/20",      border: "border-gray-200 dark:border-gray-700",     dot: "bg-gray-400",    icon: XCircle },
 ];
 
 type OrderCard = {
@@ -1028,7 +1029,7 @@ function OrdersKanban({ search }: { search: string }) {
                   {/* Заголовок колонки */}
                   <div className="px-3 pt-3 pb-2 flex-shrink-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm">{stage.emoji}</span>
+                      <stage.icon className="w-3.5 h-3.5 text-foreground/60" />
                       <span className="text-xs font-bold text-foreground">{stage.label}</span>
                       <span className="text-xs text-muted-foreground bg-background/60 px-1.5 py-0.5 rounded-lg font-medium ml-auto">
                         {stageOrders.length}

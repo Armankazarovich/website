@@ -6,6 +6,8 @@ import {
   MessageSquare, Loader2, CheckCircle2, Clock,
   AlertTriangle, Zap, MoreHorizontal, Link as LinkIcon,
   ArrowRight, Filter, Search, Bell,
+  Inbox, Square, RefreshCw, Eye, Flame,
+  ArrowDown, Minus, ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -40,19 +42,19 @@ type Task = {
 type Staff = { id: string; name?: string; email: string; role: string };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const COLUMNS: { id: TaskStatus; label: string; color: string; bg: string }[] = [
-  { id: "BACKLOG",     label: "📋 Очередь",   color: "text-slate-500",  bg: "bg-slate-100 dark:bg-slate-800/50" },
-  { id: "TODO",        label: "⬜ Сделать",    color: "text-blue-500",   bg: "bg-blue-50 dark:bg-blue-950/30" },
-  { id: "IN_PROGRESS", label: "🔄 В работе",  color: "text-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/30" },
-  { id: "REVIEW",      label: "👁 Проверка",   color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-950/30" },
-  { id: "DONE",        label: "✅ Готово",     color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
+const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType; color: string; bg: string }[] = [
+  { id: "BACKLOG",     label: "Очередь",  icon: Inbox,        color: "text-slate-500",   bg: "bg-slate-100 dark:bg-slate-800/50" },
+  { id: "TODO",        label: "Сделать",  icon: Square,       color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-950/30" },
+  { id: "IN_PROGRESS", label: "В работе", icon: RefreshCw,    color: "text-amber-500",   bg: "bg-amber-50 dark:bg-amber-950/30" },
+  { id: "REVIEW",      label: "Проверка", icon: Eye,          color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-950/30" },
+  { id: "DONE",        label: "Готово",   icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
 ];
 
-const PRIORITY_META: Record<TaskPriority, { label: string; color: string; icon: string }> = {
-  LOW:    { label: "Низкий",    color: "text-slate-400",  icon: "▽" },
-  MEDIUM: { label: "Средний",   color: "text-blue-500",   icon: "◈" },
-  HIGH:   { label: "Высокий",   color: "text-orange-500", icon: "▲" },
-  URGENT: { label: "Срочно",    color: "text-red-500",    icon: "🔥" },
+const PRIORITY_META: Record<TaskPriority, { label: string; color: string; icon: string; IconCmp: React.ElementType }> = {
+  LOW:    { label: "Низкий",  color: "text-slate-400",  icon: "↓", IconCmp: ArrowDown },
+  MEDIUM: { label: "Средний", color: "text-blue-500",   icon: "–", IconCmp: Minus },
+  HIGH:   { label: "Высокий", color: "text-orange-500", icon: "↑", IconCmp: ArrowUp },
+  URGENT: { label: "Срочно",  color: "text-red-500",    icon: "!", IconCmp: Flame },
 };
 
 function formatDate(d: string) {
@@ -503,6 +505,7 @@ function Column({
       {/* Column header */}
       <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <col.icon className={`w-3.5 h-3.5 ${col.color}`} />
           <span className={`text-sm font-bold ${col.color}`}>{col.label}</span>
           <span className="text-xs bg-background/60 px-1.5 py-0.5 rounded-full font-medium text-muted-foreground">
             {tasks.length}
@@ -626,7 +629,7 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
   return (
     <div className="h-full flex flex-col">
       {/* Top bar */}
-      <div className="px-6 py-4 border-b border-border bg-card sticky top-0 z-10 aray-topbar">
+      <div className="px-6 py-4 border-b border-border bg-card sticky top-14 z-10 aray-topbar">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <h1 className="font-display font-bold text-xl">Задачи</h1>
@@ -639,12 +642,12 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
               )}
               {urgent > 0 && (
                 <span className="flex items-center gap-1 text-xs bg-orange-100 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded-lg font-medium">
-                  🔥 {urgent} срочных
+                  <Flame className="w-3 h-3" /> {urgent} срочных
                 </span>
               )}
               {inProgress > 0 && (
                 <span className="flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 px-2 py-1 rounded-lg font-medium">
-                  🔄 {inProgress} в работе
+                  <RefreshCw className="w-3 h-3" /> {inProgress} в работе
                 </span>
               )}
             </div>
