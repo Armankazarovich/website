@@ -15,9 +15,9 @@ import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { DashboardTopItems } from "@/components/admin/dashboard-top-items";
 
 // ── Быстрые действия по ролям ──────────────────────────────────────────────
-// Все цвета = text-primary / bg-primary — следуют выбранной палитре автоматически
+// Все иконки = text-primary (следуют палитре), фон = bg-card (тёмное стекло в nature-mode)
 const C = "text-primary";
-const B = "bg-primary/[0.08] dark:bg-primary/[0.12]";
+const B = "bg-card";
 const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType; color: string; bg: string }[]> = {
   owner: [
     { href: "/admin/orders",       label: "Заказы",      icon: ShoppingBag, color: C, bg: B },
