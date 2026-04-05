@@ -616,18 +616,18 @@ canvas,
    Иконки и кнопки НЕ трогаем — они сами знают свои цвета.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── ТЁМНАЯ ТЕМА: тёмный glass rgba(5,8,20) ── */
-.dark .aray-nature-mode .bg-card,
-.dark .aray-nature-mode .bg-popover,
-.dark .aray-nature-mode .bg-background,
-.dark .aray-nature-mode .bg-white,
-.dark .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.55) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
+/* ── ВИТРАЖ: тёмное стекло для ВСЕХ тем — одинаково красиво ── */
+.aray-nature-mode .bg-card,
+.aray-nature-mode .bg-popover,
+.aray-nature-mode .bg-background,
+.aray-nature-mode .bg-white,
+.aray-nature-mode .aray-stat-card {
+  backdrop-filter: blur(28px) saturate(240%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(240%) brightness(0.88) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.32) 0%, hsl(var(--primary) / 0.14) 55%, rgba(5,8,20,0.42) 100%) !important;
+  border-color: hsl(var(--primary) / 0.35) !important;
+  box-shadow: 0 4px 28px hsl(var(--primary) / 0.18), 0 1px 0 hsl(var(--primary) / 0.25) inset !important;
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 /* Большие цветные блоки → тёмное стекло в тёмной теме (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
 .dark .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -659,13 +659,13 @@ canvas,
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Текст в тёмных карточках — белый (только тёмная тема) */
-.dark .aray-nature-mode .bg-card p,
-.dark .aray-nature-mode .bg-card h1,
-.dark .aray-nature-mode .bg-card h2,
-.dark .aray-nature-mode .bg-card h3,
-.dark .aray-nature-mode .bg-card h4,
-.dark .aray-nature-mode .bg-card .text-foreground,
-.dark .aray-nature-mode .bg-card strong,
+.aray-nature-mode .bg-card p,
+.aray-nature-mode .bg-card h1,
+.aray-nature-mode .bg-card h2,
+.aray-nature-mode .bg-card h3,
+.aray-nature-mode .bg-card h4,
+.aray-nature-mode .bg-card .text-foreground,
+.aray-nature-mode .bg-card strong,
 .dark .aray-nature-mode .bg-white p,
 .dark .aray-nature-mode .bg-white h1,
 .dark .aray-nature-mode .bg-white h2,
@@ -688,7 +688,7 @@ canvas,
 .dark .aray-nature-mode .aray-stat-card strong {
   color: rgba(255, 255, 255, 0.90) !important;
 }
-.dark .aray-nature-mode .bg-card .text-muted-foreground,
+.aray-nature-mode .bg-card .text-muted-foreground,
 .dark .aray-nature-mode .bg-white .text-muted-foreground,
 .dark .aray-nature-mode .bg-background .text-muted-foreground,
 .dark .aray-nature-mode .aray-stat-card .text-muted-foreground,
@@ -696,35 +696,17 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
-/* ── СВЕТЛАЯ ТЕМА: витраж — чистое стекло, фото просвечивает ☀️ ── */
-html:not(.dark) .aray-nature-mode .bg-card,
-html:not(.dark) .aray-nature-mode .bg-popover,
-html:not(.dark) .aray-nature-mode .bg-background,
-html:not(.dark) .aray-nature-mode .bg-white,
-html:not(.dark) .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(22px) saturate(160%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(1.08) !important;
-  background: rgba(255, 255, 255, 0.18) !important;
-  border-color: rgba(255, 255, 255, 0.60) !important;
-  box-shadow:
-    0 2px 0 rgba(255,255,255,0.90) inset,
-    0 1px 0 rgba(255,255,255,0.60) inset,
-    0 12px 40px rgba(0, 0, 0, 0.18) !important;
-  color: rgba(255, 255, 255, 0.97) !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-/* Солнечный луч — диагональный блик сверху */
-html:not(.dark) .aray-nature-mode .bg-card::before,
-html:not(.dark) .aray-nature-mode .aray-stat-card::before {
+/* Солнечный луч — диагональный блик сверху (оба режима) */
+.aray-nature-mode .bg-card::before,
+.aray-nature-mode .aray-stat-card::before {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     125deg,
-    rgba(255,255,255,0.55) 0%,
-    rgba(255,255,255,0.15) 30%,
-    transparent 55%
+    hsl(var(--primary) / 0.22) 0%,
+    rgba(255,255,255,0.08) 35%,
+    transparent 60%
   );
   pointer-events: none;
   border-radius: inherit;
