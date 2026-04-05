@@ -873,7 +873,7 @@ canvas,
 }
 .light .aray-nature-mode .divide-border > * + *,
 [data-theme="light"] .aray-nature-mode .divide-border > * + * {
-  border-color: rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
 }
 
 /* ── Читаемость текста прямо на фоне (без карточки) ── */
@@ -895,6 +895,7 @@ canvas,
 [data-theme="light"] .aray-nature-mode main {
   --foreground: 0 0% 92%;
   --muted-foreground: 0 0% 58%;
+  --muted: 220 12% 14%;        /* тёмный muted → bg-muted/X варианты на тёмном фоне */
   color: rgba(255, 255, 255, 0.88);
 }
 /* Тёмные hardcoded тексты (алерты, section headings) → белые.
