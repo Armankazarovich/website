@@ -616,18 +616,18 @@ canvas,
    Иконки и кнопки НЕ трогаем — они сами знают свои цвета.
    ══════════════════════════════════════════════════════════════ */
 
-/* ── ВИТРАЖ: тёмное стекло для ВСЕХ тем — одинаково красиво ── */
-.aray-nature-mode .bg-card,
-.aray-nature-mode .bg-popover,
-.aray-nature-mode .bg-background,
-.aray-nature-mode .bg-white,
-.aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(28px) saturate(240%) brightness(0.88) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(240%) brightness(0.88) !important;
-  background: linear-gradient(135deg, hsl(var(--primary) / 0.32) 0%, hsl(var(--primary) / 0.14) 55%, rgba(5,8,20,0.42) 100%) !important;
-  border-color: hsl(var(--primary) / 0.35) !important;
-  box-shadow: 0 4px 28px hsl(var(--primary) / 0.18), 0 1px 0 hsl(var(--primary) / 0.25) inset !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+/* ── ТЁМНАЯ ТЕМА: тёмный glass rgba(5,8,20) ── */
+.dark .aray-nature-mode .bg-card,
+.dark .aray-nature-mode .bg-popover,
+.dark .aray-nature-mode .bg-background,
+.dark .aray-nature-mode .bg-white,
+.dark .aray-nature-mode .aray-stat-card {
+  backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(200%) brightness(0.88) !important;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, transparent 55%), rgba(5, 8, 20, 0.55) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло в тёмной теме (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
 .dark .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -659,13 +659,13 @@ canvas,
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Текст в тёмных карточках — белый (только тёмная тема) */
-.aray-nature-mode .bg-card p,
-.aray-nature-mode .bg-card h1,
-.aray-nature-mode .bg-card h2,
-.aray-nature-mode .bg-card h3,
-.aray-nature-mode .bg-card h4,
-.aray-nature-mode .bg-card .text-foreground,
-.aray-nature-mode .bg-card strong,
+.dark .aray-nature-mode .bg-card p,
+.dark .aray-nature-mode .bg-card h1,
+.dark .aray-nature-mode .bg-card h2,
+.dark .aray-nature-mode .bg-card h3,
+.dark .aray-nature-mode .bg-card h4,
+.dark .aray-nature-mode .bg-card .text-foreground,
+.dark .aray-nature-mode .bg-card strong,
 .dark .aray-nature-mode .bg-white p,
 .dark .aray-nature-mode .bg-white h1,
 .dark .aray-nature-mode .bg-white h2,
@@ -688,7 +688,7 @@ canvas,
 .dark .aray-nature-mode .aray-stat-card strong {
   color: rgba(255, 255, 255, 0.90) !important;
 }
-.aray-nature-mode .bg-card .text-muted-foreground,
+.dark .aray-nature-mode .bg-card .text-muted-foreground,
 .dark .aray-nature-mode .bg-white .text-muted-foreground,
 .dark .aray-nature-mode .bg-background .text-muted-foreground,
 .dark .aray-nature-mode .aray-stat-card .text-muted-foreground,
@@ -696,21 +696,18 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
-/* Солнечный луч — диагональный блик сверху (оба режима) */
-.aray-nature-mode .bg-card::before,
-.aray-nature-mode .aray-stat-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    125deg,
-    hsl(var(--primary) / 0.22) 0%,
-    rgba(255,255,255,0.08) 35%,
-    transparent 60%
-  );
-  pointer-events: none;
-  border-radius: inherit;
-  z-index: 0;
+/* ── СВЕТЛАЯ ТЕМА: белое матовое стекло (iOS frosted glass) ── */
+html:not(.dark) .aray-nature-mode .bg-card,
+html:not(.dark) .aray-nature-mode .bg-popover,
+html:not(.dark) .aray-nature-mode .bg-background,
+html:not(.dark) .aray-nature-mode .bg-white,
+html:not(.dark) .aray-nature-mode .aray-stat-card {
+  backdrop-filter: blur(32px) saturate(160%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10) !important;
+  color: hsl(var(--foreground)) !important;
 }
 /* Светлая тема — цветные блоки: белое матовое стекло с тёмным текстом */
 html:not(.dark) .aray-nature-mode [class*="bg-orange-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
@@ -952,34 +949,14 @@ html:not(.dark) .aray-nature-mode .divide-border > * + * {
   color: rgba(255, 255, 255, 0.92);
 }
 
-/* Светлая тема — солнечное стекло с лучиками ☀️ */
+/* Светлая тема — белое матовое стекло (iOS frosted glass) */
 html:not(.dark) .aray-nature-card {
-  backdrop-filter: blur(36px) saturate(180%) brightness(1.12);
-  -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12);
-  background:
-    linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.80) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.90);
-  box-shadow:
-    0 2px 0 rgba(255,255,255,1) inset,        /* верхний блик — как солнечный луч */
-    0 8px 32px rgba(0, 0, 0, 0.08),
-    0 1px 0 rgba(255,255,255,0.8);
+  backdrop-filter: blur(32px) saturate(160%) brightness(1.08);
+  -webkit-backdrop-filter: blur(32px) saturate(160%) brightness(1.08);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10);
   color: hsl(var(--foreground));
-  position: relative;
-  overflow: hidden;
-}
-/* Луч света сверху-слева */
-html:not(.dark) .aray-nature-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    125deg,
-    rgba(255,255,255,0.55) 0%,
-    rgba(255,255,255,0.15) 40%,
-    transparent 65%
-  );
-  pointer-events: none;
-  border-radius: inherit;
 }
 
 /* Overlay на фото: тёмная тема — затемнение, светлая — осветление */
@@ -996,36 +973,6 @@ html:not(.dark) .aray-nature-mode .aray-photo-overlay-dark {
 html:not(.dark) .aray-nature-mode .aray-photo-overlay-light,
 html:not(.dark) .aray-nature-mode .aray-photo-overlay-light {
   display: block;
-}
-
-/* ── Живой луч солнца на карточках ─────────────────────────────────────────── */
-@keyframes sun-ray-sweep {
-  0%   { opacity: 0.55; transform: translateX(-8%) skewX(-4deg); }
-  50%  { opacity: 0.35; transform: translateX(4%)  skewX(-4deg); }
-  100% { opacity: 0.55; transform: translateX(-8%) skewX(-4deg); }
-}
-
-html:not(.dark) .aray-nature-mode .bg-card::after,
-html:not(.dark) .aray-nature-mode .aray-stat-card::after {
-  content: "";
-  position: absolute;
-  top: -40%;
-  left: -20%;
-  width: 60%;
-  height: 180%;
-  background: linear-gradient(
-    100deg,
-    transparent 0%,
-    rgba(255,255,255,0.45) 45%,
-    rgba(255,255,255,0.55) 50%,
-    rgba(255,255,255,0.45) 55%,
-    transparent 100%
-  );
-  transform: skewX(-4deg);
-  animation: sun-ray-sweep 6s ease-in-out infinite;
-  pointer-events: none;
-  border-radius: inherit;
-  z-index: 1;
 }
 
 /* Ken Burns — очень медленный, едва заметный зум */
@@ -1187,14 +1134,14 @@ html:not(.dark) .aray-nature-mode .aray-sidebar a * {
 html:not(.dark) .aray-nature-mode .aray-sidebar a:hover,
 html:not(.dark) .aray-nature-mode .aray-sidebar a:hover * {
   color: hsl(var(--foreground)) !important;
-  background: hsl(var(--primary) / 0.09) !important;
-  border-color: hsl(var(--primary) / 0.18) !important;
+  background: rgba(232, 112, 10, 0.09) !important;
+  border-color: rgba(232, 112, 10, 0.18) !important;
 }
 
 /* Nav-ссылки — активная */
 html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active {
-  background: hsl(var(--primary) / 0.12) !important;
-  border-color: hsl(var(--primary) / 0.30) !important;
+  background: rgba(232, 112, 10, 0.12) !important;
+  border-color: rgba(232, 112, 10, 0.30) !important;
 }
 html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active,
 html:not(.dark) .aray-nature-mode .aray-sidebar a.aray-nav-active * {
@@ -1233,42 +1180,87 @@ html:not(.dark) .aray-nature-mode .aray-sidebar button:hover {
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* ── TOPBAR: прозрачный в nature-режиме — иконки парят над природой ── */
-.aray-nature-mode .aray-topbar {
-  background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
+/* ── TOPBAR: тёмная тема — тёмный стеклянный фон с акцентом ── */
+.dark .aray-nature-mode .aray-topbar {
+  background: linear-gradient(90deg, hsl(var(--primary)/0.12) 0%, rgba(8,12,30,0.90) 55%) !important;
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border-bottom: 1px solid hsl(var(--primary)/0.22) !important;
+  box-shadow: 0 1px 0 hsl(var(--primary)/0.14), 0 4px 24px rgba(0,0,0,0.28) !important;
 }
-.aray-nature-mode .aray-topbar *,
-.aray-nature-mode .aray-topbar button,
-.aray-nature-mode .aray-topbar [role="button"] {
-  color: rgba(255, 255, 255, 0.88) !important;
+/* Текст в топбаре — белый в тёмной теме */
+.dark .aray-nature-mode .aray-topbar * {
+  color: rgba(255, 255, 255, 0.88);
 }
-.aray-nature-mode .aray-topbar .text-muted-foreground {
-  color: rgba(255, 255, 255, 0.50) !important;
+.dark .aray-nature-mode .aray-topbar .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.55) !important;
 }
-.aray-nature-mode .aray-topbar input {
-  background: rgba(255, 255, 255, 0.10) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
-  color: rgba(255, 255, 255, 0.92) !important;
+.dark .aray-nature-mode .aray-topbar input {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
 }
-.aray-nature-mode .aray-topbar input::placeholder {
-  color: rgba(255, 255, 255, 0.38) !important;
+.dark .aray-nature-mode .aray-topbar input::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
 }
-.aray-nature-mode .aray-topbar button:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
+.dark .aray-nature-mode .aray-topbar button,
+.dark .aray-nature-mode .aray-topbar [role="button"] {
+  color: rgba(255, 255, 255, 0.80) !important;
+}
+.dark .aray-nature-mode .aray-topbar button:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
   color: rgba(255, 255, 255, 1.0) !important;
 }
-.aray-nature-mode .aray-topbar button:active {
-  background: rgba(255, 255, 255, 0.20) !important;
+.dark .aray-nature-mode .aray-topbar button:active {
+  background: rgba(255, 255, 255, 0.18) !important;
   transform: scale(0.93);
 }
-.aray-nature-mode .aray-topbar-pill {
-  background: rgba(255, 255, 255, 0.10) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+
+/* ── TOPBAR: светлая тема (next-themes не добавляет .light, только убирает .dark) ── */
+html:not(.dark) .aray-nature-mode .aray-topbar {
+  background: linear-gradient(90deg, hsl(var(--primary)/0.07) 0%, rgba(255,252,248,0.96) 45%) !important;
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-bottom: 1px solid hsl(var(--primary)/0.16) !important;
+  box-shadow: 0 1px 0 hsl(var(--primary)/0.10), 0 3px 16px rgba(0,0,0,0.06) !important;
+}
+/* Текст в светлой теме — тёмный */
+html:not(.dark) .aray-nature-mode .aray-topbar * {
+  color: hsl(var(--foreground)) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar .text-muted-foreground {
+  color: hsl(var(--muted-foreground)) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar input {
+  background: hsl(var(--muted)/0.55) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar input::placeholder {
+  color: hsl(var(--muted-foreground)/0.55) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar button,
+html:not(.dark) .aray-nature-mode .aray-topbar [role="button"] {
+  color: hsl(var(--foreground)/0.70) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar button:hover {
+  background: hsl(var(--muted)/0.85) !important;
+  color: hsl(var(--foreground)) !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar button:active {
+  background: hsl(var(--muted)) !important;
+  transform: scale(0.93);
+}
+
+/* Стеклянная пилюля с кнопками */
+.dark .aray-nature-mode .aray-topbar-pill {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset !important;
+}
+html:not(.dark) .aray-nature-mode .aray-topbar-pill {
+  background: hsl(var(--muted)/0.6) !important;
+  border: 1px solid hsl(var(--border)) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
