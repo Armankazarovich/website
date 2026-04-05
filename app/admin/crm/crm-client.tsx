@@ -671,7 +671,7 @@ function LeadDetailPanel({
                       <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center ${
                         act.type === "WON" ? "bg-emerald-100 dark:bg-emerald-900/30" :
                         act.type === "STAGE_CHANGE" ? "bg-violet-100 dark:bg-violet-900/30" :
-                        act.type === "CALL" ? "bg-blue-100 dark:bg-blue-900/30" :
+                        act.type === "CALL" ? "bg-blue-500/15" :
                         "bg-muted"
                       }`}>
                         <Icon className="w-3.5 h-3.5 text-muted-foreground" />

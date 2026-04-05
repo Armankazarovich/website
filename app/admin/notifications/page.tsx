@@ -459,7 +459,7 @@ export default function NotificationsPage() {
                         </td>
                         <td className="px-4 py-3 text-center">
                           {s.isRegistered ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs font-medium">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/15 text-primary rounded-full text-xs font-medium">
                               <UserCheck className="w-2.5 h-2.5" /> Зарег.
                             </span>
                           ) : (
