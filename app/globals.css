@@ -939,6 +939,36 @@ canvas,
   display: block;
 }
 
+/* ── ARAY Mesh Blobs — живые дышащие градиенты ── */
+@keyframes aray-blob-1 {
+  0%, 100% { transform: translate(0px, 0px)    scale(1.00); }
+  25%       { transform: translate(8vw, 7vh)    scale(1.07); }
+  50%       { transform: translate(5vw, 14vh)   scale(0.94); }
+  75%       { transform: translate(-5vw, 5vh)   scale(1.04); }
+}
+@keyframes aray-blob-2 {
+  0%, 100% { transform: translate(0px, 0px)    scale(1.00); }
+  25%       { transform: translate(-10vw, -9vh) scale(0.93); }
+  50%       { transform: translate(-6vw, 7vh)   scale(1.09); }
+  75%       { transform: translate(9vw, -5vh)   scale(1.02); }
+}
+@keyframes aray-blob-3 {
+  0%, 100% { transform: translate(0px, 0px)    scale(1.00); }
+  33%       { transform: translate(7vw, -11vh)  scale(1.11); }
+  66%       { transform: translate(-9vw, 5vh)   scale(0.91); }
+}
+@keyframes aray-blob-4 {
+  0%, 100% { transform: translate(0px, 0px)    scale(1.00); }
+  20%       { transform: translate(13vw, 5vh)   scale(0.95); }
+  40%       { transform: translate(9vw, -7vh)   scale(1.07); }
+  60%       { transform: translate(-7vw, -9vh)  scale(0.97); }
+  80%       { transform: translate(-11vw, 7vh)  scale(1.05); }
+}
+@keyframes aray-blob-5 {
+  0%, 100% { transform: translate(0px, 0px)    scale(1.00); }
+  50%       { transform: translate(-15vw, 11vh) scale(1.13); }
+}
+
 /* Ken Burns — очень медленный, едва заметный зум */
 @keyframes kenburns-in {
   from { transform: scale(1.0)  translate(0,     0); }
