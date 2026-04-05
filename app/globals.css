@@ -696,25 +696,28 @@ canvas,
   color: rgba(255, 255, 255, 0.58) !important;
 }
 
-/* ── СВЕТЛАЯ ТЕМА: белое матовое стекло (iOS frosted glass) ── */
+/* ── СВЕТЛАЯ ТЕМА: витраж — фото просвечивает, тинт палитры ☀️ ── */
 html:not(.dark) .aray-nature-mode .bg-card,
 html:not(.dark) .aray-nature-mode .bg-popover,
 html:not(.dark) .aray-nature-mode .bg-background,
 html:not(.dark) .aray-nature-mode .bg-white,
 html:not(.dark) .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
-  -webkit-backdrop-filter: blur(36px) saturate(180%) brightness(1.12) !important;
-  background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.84) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.90) !important;
+  backdrop-filter: blur(20px) saturate(220%) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(220%) brightness(1.05) !important;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.18) 0%,
+    rgba(255, 255, 255, 0.28) 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
   box-shadow:
-    0 2px 0 rgba(255,255,255,1) inset,
-    0 8px 32px rgba(0, 0, 0, 0.07),
-    0 1px 0 rgba(255,255,255,0.9) !important;
-  color: hsl(var(--foreground)) !important;
+    0 1px 0 rgba(255,255,255,0.80) inset,
+    0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
   position: relative !important;
   overflow: hidden !important;
 }
-/* Луч света на всех карточках — светлая тема */
+/* Солнечный луч — диагональный блик сверху */
 html:not(.dark) .aray-nature-mode .bg-card::before,
 html:not(.dark) .aray-nature-mode .aray-stat-card::before {
   content: "";
@@ -722,9 +725,9 @@ html:not(.dark) .aray-nature-mode .aray-stat-card::before {
   inset: 0;
   background: linear-gradient(
     125deg,
-    rgba(255,255,255,0.60) 0%,
-    rgba(255,255,255,0.18) 38%,
-    transparent 62%
+    rgba(255,255,255,0.45) 0%,
+    rgba(255,255,255,0.12) 35%,
+    transparent 60%
   );
   pointer-events: none;
   border-radius: inherit;
