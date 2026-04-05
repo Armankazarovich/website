@@ -226,18 +226,18 @@ export function AdminDesktopSearch() {
         }
       </div>
 
-      {/* Results dropdown */}
+      {/* Results dropdown — всегда тёмный (фон всегда тёмное фото) */}
       {results.length > 0 && (
         <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: isDark ? "rgba(10,14,30,0.96)" : "rgba(255,252,248,0.97)",
+            background: "rgba(10,14,30,0.96)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: isDark ? "1px solid rgba(255,255,255,0.10)" : "1px solid rgba(0,0,0,0.08)",
-            boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.55)" : "0 16px 48px rgba(0,0,0,0.12)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
           }}>
           {!query.trim() && (
-            <p className={`px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] ${isDark ? "text-white/25" : "text-foreground/35"}`}>
+            <p className="px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
               Быстрый переход
             </p>
           )}
@@ -246,10 +246,10 @@ export function AdminDesktopSearch() {
               <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
             ))}
           </div>
-          <div className={`px-5 py-2 flex items-center gap-4 text-[10px] ${isDark ? "text-white/20" : "text-foreground/30"}`}
-            style={{ borderTop: isDark ? "1px solid rgba(255,255,255,0.06)" : "1px solid rgba(0,0,0,0.06)" }}>
-            <span><kbd className={`font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/10 text-white/30" : "bg-black/06 text-foreground/35"}`}>↑↓</kbd> навигация</span>
-            <span><kbd className={`font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/10 text-white/30" : "bg-black/06 text-foreground/35"}`}>↵</kbd> открыть</span>
+          <div className="px-5 py-2 flex items-center gap-4 text-[10px] text-white/20"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+            <span><kbd className="font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/30">↑↓</kbd> навигация</span>
+            <span><kbd className="font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/30">↵</kbd> открыть</span>
             <span className="ml-auto opacity-40">⌘K</span>
           </div>
         </div>
@@ -308,14 +308,14 @@ export function AdminSearch() {
           <div className="fixed inset-x-0 top-0 z-[61] flex justify-center px-3 pt-3 pointer-events-none">
             <div className="w-full max-w-2xl pointer-events-auto rounded-2xl overflow-hidden"
               style={{
-                background: isDark ? "rgba(10,14,30,0.97)" : "rgba(255,252,248,0.97)",
+                background: "rgba(10,14,30,0.97)",
                 backdropFilter: "blur(32px) saturate(200%)",
                 WebkitBackdropFilter: "blur(32px) saturate(200%)",
-                border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.08)",
-                boxShadow: isDark ? "0 32px 80px rgba(0,0,0,0.55)" : "0 24px 64px rgba(0,0,0,0.14)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
               }}>
               <div className="flex items-center gap-3 px-4 py-3.5"
-                style={{ borderBottom: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.06)" }}>
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <Search className="w-5 h-5 text-blue-400/70 shrink-0" />
                 <input
                   ref={inputRef}
@@ -323,15 +323,15 @@ export function AdminSearch() {
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={handleKey}
                   placeholder="Поиск заказов, товаров, клиентов..."
-                  className={`flex-1 bg-transparent outline-none ${isDark ? "text-white placeholder:text-white/30" : "text-foreground placeholder:text-foreground/40"}`}
+                  className="flex-1 bg-transparent outline-none text-white placeholder:text-white/30"
                   style={{ fontSize: "16px" /* предотвращает зум на iOS */ }}
                 />
                 {loading && (
                   <div className="w-4 h-4 rounded-full border-2 border-blue-400 border-t-transparent animate-spin shrink-0" />
                 )}
                 <button onClick={() => setOpen(false)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${isDark ? "text-white/30 hover:text-white/60" : "text-foreground/40 hover:text-foreground/70"}`}
-                  style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)", border: isDark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)" }}>
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg transition-colors text-white/30 hover:text-white/60"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <span className="text-[10px] font-mono">Esc</span>
                 </button>
               </div>

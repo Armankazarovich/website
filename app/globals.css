@@ -1469,11 +1469,13 @@ canvas,
 
 /* ══════════════════════════════════════════════════════════════
    ДУБЛИРУЮЩИЕСЯ ЗАГОЛОВКИ СТРАНИЦ — скрыть на десктопе
-   Topbar уже показывает название страницы через breadcrumb/title.
-   Первый h1 в main (page-level title) скрываем только на lg+.
+   Topbar уже показывает название страницы.
+   Скрываем ВСЕ варианты page-level h1: с font-display и без.
    ══════════════════════════════════════════════════════════════ */
 @media (min-width: 1024px) {
-  .aray-nature-mode main h1[class*="font-display"][class*="font-bold"] {
+  .aray-nature-mode main h1[class*="font-display"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-2xl"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"] {
     display: none;
   }
 }

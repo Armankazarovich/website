@@ -77,18 +77,18 @@ export function AdminLangPicker() {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-150"
           style={{
-            background: isDark ? "rgba(10,14,30,0.96)" : "rgba(255,252,248,0.97)",
+            background: "rgba(10,14,30,0.96)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(0,0,0,0.08)",
+            border: "1px solid rgba(255,255,255,0.12)",
             borderRadius: "20px",
-            boxShadow: isDark ? "0 20px 60px rgba(0,0,0,0.5)" : "0 16px 48px rgba(0,0,0,0.12)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
             width: "260px",
           }}>
 
           <div className="px-4 pt-3 pb-2"
-            style={{ borderBottom: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid rgba(0,0,0,0.06)" }}>
-            <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${isDark ? "text-white/35" : "text-foreground/45"}`}>
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
               Язык / Language
             </p>
           </div>
@@ -103,11 +103,11 @@ export function AdminLangPicker() {
                 style={
                   lang === l.code
                     ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
-                    : { background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)", border: isDark ? "1.5px solid rgba(255,255,255,0.08)" : "1.5px solid rgba(0,0,0,0.07)" }
+                    : { background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.08)" }
                 }
               >
                 <span className="text-2xl leading-none group-hover:scale-110 transition-transform">{l.flag}</span>
-                <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? (isDark ? "text-white/90" : "text-foreground") : (isDark ? "text-white/55" : "text-foreground/60")}`}>
+                <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? "text-white/90" : "text-white/55"}`}>
                   {l.label}
                 </span>
                 {lang === l.code && (
