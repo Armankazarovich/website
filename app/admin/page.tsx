@@ -153,20 +153,9 @@ export default async function AdminDashboard() {
   const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0);
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
 
-  const greetingHour = now.getHours();
-  const greeting = greetingHour < 12 ? "Доброе утро" : greetingHour < 17 ? "Добрый день" : "Добрый вечер";
-
   return (
     <div className="space-y-4 pb-6">
       <AutoRefresh intervalMs={60000} />
-
-      {/* ── ШАПКА ── */}
-      <div className="flex items-center justify-between pt-1">
-        <p className="text-sm text-muted-foreground">{greeting}, <span className="font-semibold text-foreground">{userName.split(" ")[0]}</span></p>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full aray-role-badge ${ROLE_COLORS[role] || "bg-muted text-muted-foreground"}`}>
-          {ROLE_GREETINGS[role] || role}
-        </span>
-      </div>
 
       {/* ── АЛЕРТЫ ── */}
       {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (

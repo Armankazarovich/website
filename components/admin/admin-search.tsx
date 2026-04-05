@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,
@@ -357,6 +357,69 @@ export function AdminSearch() {
   );
 }
 
+// ─── Контекстные фильтр-чипсы по страницам (Smart Command Bar) ──────────────
+type FilterChip = { label: string; param: string; value: string; color?: string };
+
+const PAGE_FILTERS: Record<string, FilterChip[]> = {
+  "/admin/orders": [
+    { label: "Новые",       param: "status", value: "NEW",         color: "blue" },
+    { label: "Подтверждён", param: "status", value: "CONFIRMED",   color: "purple" },
+    { label: "В обработке", param: "status", value: "PROCESSING",  color: "yellow" },
+    { label: "В пути",      param: "status", value: "IN_DELIVERY", color: "orange" },
+    { label: "Самовывоз",   param: "status", value: "READY_PICKUP",color: "green" },
+    { label: "Доставлен",   param: "status", value: "DELIVERED",   color: "teal" },
+    { label: "Отменён",     param: "status", value: "CANCELLED",   color: "red" },
+  ],
+  "/admin/products": [
+    { label: "Активные",      param: "active",   value: "1" },
+    { label: "Скрытые",       param: "active",   value: "0" },
+    { label: "Без фото",      param: "nophoto",  value: "1" },
+    { label: "Рекомендуемые", param: "featured", value: "1" },
+  ],
+  "/admin/inventory": [
+    { label: "В наличии",    param: "status", value: "in" },
+    { label: "Нет",          param: "status", value: "out" },
+    { label: "Отслеживается",param: "status", value: "tracked" },
+  ],
+  "/admin/clients": [
+    { label: "С заказами", param: "hasorders", value: "1" },
+    { label: "Новые",      param: "period",    value: "new" },
+  ],
+  "/admin/staff": [
+    { label: "Ожидают",    param: "status", value: "PENDING" },
+    { label: "Активные",   param: "status", value: "ACTIVE" },
+    { label: "Заблок.",    param: "status", value: "SUSPENDED" },
+  ],
+  "/admin/reviews": [
+    { label: "На модерации", param: "status", value: "pending" },
+    { label: "Одобренные",   param: "status", value: "approved" },
+  ],
+  "/admin/delivery": [
+    { label: "Подтверждён",  param: "status", value: "CONFIRMED" },
+    { label: "В пути",       param: "status", value: "IN_DELIVERY" },
+    { label: "Самовывоз",    param: "status", value: "READY_PICKUP" },
+  ],
+};
+
+const CHIP_COLORS: Record<string, string> = {
+  blue:   "hsl(217 91% 60% / 0.22)",
+  purple: "hsl(270 70% 65% / 0.22)",
+  yellow: "hsl(43 96% 56% / 0.22)",
+  orange: "hsl(25 95% 55% / 0.22)",
+  green:  "hsl(142 70% 45% / 0.22)",
+  teal:   "hsl(174 60% 50% / 0.22)",
+  red:    "hsl(0 72% 55% / 0.22)",
+};
+const CHIP_COLORS_TEXT: Record<string, string> = {
+  blue:   "hsl(217 91% 75%)",
+  purple: "hsl(270 70% 80%)",
+  yellow: "hsl(43 96% 70%)",
+  orange: "hsl(25 95% 70%)",
+  green:  "hsl(142 70% 65%)",
+  teal:   "hsl(174 60% 65%)",
+  red:    "hsl(0 72% 72%)",
+};
+
 // ─── Контекстные плейсхолдеры по страницам ─────────────────────────────────
 const PAGE_PLACEHOLDERS: Record<string, string> = {
   "/admin":               "Поиск заказов, товаров, клиентов, страниц...",
@@ -383,12 +446,13 @@ const PAGE_PLACEHOLDERS: Record<string, string> = {
   "/admin/help":          "Поиск в Помощи — вопросы, ответы...",
 };
 
-// ─── Sticky Search Bar — всегда виден, контекстный плейсхолдер ─────────────
+// ─── Sticky Search Bar + Smart Filter Chips ────────────────────────────────
 export function AdminStickySearchBar() {
   const [focused, setFocused] = useState(false);
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(focused);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -400,6 +464,27 @@ export function AdminStickySearchBar() {
     }
     return "Поиск заказов, товаров, клиентов...";
   })();
+
+  // Контекстные фильтр-чипсы для текущей страницы
+  const pageFilters: FilterChip[] = (() => {
+    const sorted = Object.entries(PAGE_FILTERS).sort((a, b) => b[0].length - a[0].length);
+    for (const [path, filters] of sorted) {
+      if (pathname === path || (path !== "/admin" && pathname.startsWith(path))) return filters;
+    }
+    return [];
+  })();
+
+  // Переключить фильтр-чипс — добавить/убрать URL param
+  const toggleChip = useCallback((chip: FilterChip) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const current = params.get(chip.param);
+    if (current === chip.value) {
+      params.delete(chip.param);
+    } else {
+      params.set(chip.param, chip.value);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  }, [pathname, searchParams, router]);
 
   // Click outside → unfocus
   useEffect(() => {
@@ -443,13 +528,11 @@ export function AdminStickySearchBar() {
       <div
         className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl transition-all duration-200 w-full"
         style={{
-          background: focused
-            ? "rgba(255,255,255,0.11)"
-            : "rgba(255,255,255,0.07)",
+          background: "rgba(5,8,20,0.52)",
           border: focused
-            ? "1.5px solid hsl(var(--primary)/0.45)"
-            : "1.5px solid rgba(255,255,255,0.10)",
-          boxShadow: focused ? "0 0 0 3px hsl(var(--primary)/0.10)" : "none",
+            ? "1.5px solid hsl(var(--primary)/0.50)"
+            : "1.5px solid rgba(255,255,255,0.11)",
+          boxShadow: focused ? "0 0 0 3px hsl(var(--primary)/0.12)" : "none",
         }}
       >
         <Search className="w-4 h-4 text-primary/60 shrink-0" />
@@ -475,6 +558,47 @@ export function AdminStickySearchBar() {
               </kbd>
         }
       </div>
+
+      {/* ── Smart Filter Chips — контекстные фильтры страницы ── */}
+      {pageFilters.length > 0 && !focused && (
+        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+          {pageFilters.map((chip) => {
+            const isActive = searchParams.get(chip.param) === chip.value;
+            const bg = isActive
+              ? (chip.color ? CHIP_COLORS[chip.color] : "hsl(var(--primary)/0.22)")
+              : "rgba(255,255,255,0.06)";
+            const textColor = isActive
+              ? (chip.color ? CHIP_COLORS_TEXT[chip.color] : "hsl(var(--primary))")
+              : "rgba(255,255,255,0.45)";
+            const border = isActive
+              ? (chip.color ? `1px solid ${CHIP_COLORS_TEXT[chip.color]}40` : "1px solid hsl(var(--primary)/0.40)")
+              : "1px solid rgba(255,255,255,0.09)";
+            return (
+              <button
+                key={`${chip.param}-${chip.value}`}
+                onClick={() => toggleChip(chip)}
+                className="px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150 active:scale-95"
+                style={{ background: bg, color: textColor, border }}
+              >
+                {chip.label}
+              </button>
+            );
+          })}
+          {/* Сброс всех фильтров */}
+          {pageFilters.some(c => searchParams.get(c.param) === c.value) && (
+            <button
+              onClick={() => {
+                const params = new URLSearchParams();
+                router.push(pathname);
+              }}
+              className="px-2 py-1 rounded-full text-[10px] transition-all duration-150 flex items-center gap-1"
+              style={{ color: "rgba(255,255,255,0.30)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <X className="w-2.5 h-2.5" /> сброс
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Dropdown results */}
       {focused && results.length > 0 && (

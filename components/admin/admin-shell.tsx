@@ -630,6 +630,25 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
             </button>
           </div>
 
+          {/* Приветствие + роль — вместо header дашборда */}
+          <div className="px-1 flex items-center justify-between gap-2">
+            <p className="text-[11px] text-white/60 truncate">
+              {(() => {
+                const h = new Date().getHours();
+                return h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
+              })()},&nbsp;
+              <span className="text-white/90 font-semibold">
+                {email ? email.split("@")[0].split(".")[0] : "Admin"}
+              </span>
+            </p>
+            {role && (
+              <span className="shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.30)" }}>
+                {role === "SUPER_ADMIN" ? "Владелец" : role === "ADMIN" ? "Адм" : role === "MANAGER" ? "Менеджер" : role === "COURIER" ? "Курьер" : role === "ACCOUNTANT" ? "Бухгалтер" : role === "WAREHOUSE" ? "Склад" : role === "SELLER" ? "Продавец" : role}
+              </span>
+            )}
+          </div>
+
           {/* Пользователь + уведомления + настройки */}
           <div className="flex items-center gap-1.5 px-1">
             {/* Аватар */}
@@ -638,7 +657,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               {email ? email[0].toUpperCase() : "A"}
             </div>
             {/* Email */}
-            <p className="flex-1 min-w-0 text-[10px] text-white/40 truncate leading-none">{email}</p>
+            <p className="flex-1 min-w-0 text-[10px] text-white/45 truncate leading-none">{email}</p>
             {/* Уведомления */}
             <AdminNotificationBell />
             {/* Настройки */}
@@ -654,33 +673,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
         </div>
       </aside>
 
-      {/* ─── Mobile header ────────────────────────────────────── */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center gap-2 px-3 h-14 aray-sidebar text-white"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(16px)" }}>
-        {/* Hamburger */}
-        <button onClick={() => setOpen(true)}
-          className="p-2 rounded-xl hover:bg-white/10 transition-colors shrink-0 active:scale-90"
-          style={{ WebkitTapHighlightColor: "transparent" }}
-          aria-label="Меню">
-          <Menu className="w-5 h-5" />
-        </button>
-
-        {/* Лого + бренд */}
-        <Link href="/admin" className="flex-1 min-w-0 flex items-center gap-2">
-          <div className="flex flex-col">
-            <span className="font-display font-bold text-sm leading-none">ПилоРус</span>
-            <span className="text-[10px] text-white/40 leading-none mt-0.5">{pageTitle || "Панель"}</span>
-          </div>
-        </Link>
-
-        {/* Поиск */}
-        <AdminSearch />
-
-        {/* Pill: уведомления + настройки (как фильтры в магазине) */}
-        <AdminMobileActionPill onSettingsOpen={() => setMobileSettingsOpen(true)} />
-      </header>
-
-      {/* ─── Desktop top bar убран — контролы в сайдбаре, поиск sticky в контенте ── */}
+      {/* ─── Mobile header убран — заменён compact sticky search bar внутри main ── */}
 
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
@@ -881,12 +874,41 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
-        {/* Sticky search bar — только desktop */}
+
+        {/* ── Mobile compact sticky bar (replaces removed header) ── */}
+        <div className="lg:hidden sticky top-0 z-20"
+          style={{
+            paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)",
+            paddingBottom: "10px",
+            paddingLeft: "12px",
+            paddingRight: "12px",
+            background: classic ? "rgba(248,250,252,0.95)" : "rgba(6,9,22,0.60)",
+            backdropFilter: "blur(24px) saturate(180%)",
+            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+            borderBottom: classic ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.08)",
+          }}>
+          {/* Первая строка: hamburger + search + bell */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setOpen(true)}
+              className="p-2 rounded-xl shrink-0 active:scale-90 transition-colors"
+              style={{ WebkitTapHighlightColor: "transparent", background: "rgba(255,255,255,0.07)" }}
+              aria-label="Меню">
+              <Menu className="w-5 h-5 text-white/70" />
+            </button>
+            <div className="flex-1 min-w-0">
+              <AdminStickySearchBar />
+            </div>
+            <AdminNotificationBell mobile />
+          </div>
+        </div>
+
+        {/* ── Desktop sticky search bar ── */}
         <div className="hidden lg:block sticky top-0 z-20 px-5 py-3"
           style={{
             background: classic
               ? "rgba(248,250,252,0.94)"
-              : "rgba(6,9,22,0.82)",
+              : "rgba(6,9,22,0.45)",
             backdropFilter: "blur(28px) saturate(180%)",
             WebkitBackdropFilter: "blur(28px) saturate(180%)",
             borderBottom: classic

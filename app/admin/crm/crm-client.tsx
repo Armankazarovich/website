@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Plus, X, Phone, Mail, Building2, User, Tag, ChevronRight,
   Pencil, Trash2, MessageSquare, PhoneCall, Calendar,
-  TrendingUp, Clock, Search, Filter, Users, Zap,
+  TrendingUp, Clock, Filter, Users, Zap,
   CheckCircle2, XCircle, MoreHorizontal, ArrowRight,
   Banknote, Star, AlertCircle, RefreshCw, Loader2,
   ShoppingBag, Download, ExternalLink,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { InfoBadge } from "@/components/admin/info-popup";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -1200,10 +1201,14 @@ export function CrmClient() {
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h1 className="text-xl font-bold text-foreground">CRM</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {tab === "orders" ? "Заказы по статусам — перетаскивайте для смены статуса" : "Воронка продаж — перетаскивайте карточки между этапами"}
-            </p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-foreground">CRM</h1>
+              <InfoBadge
+                text={tab === "orders" ? "Заказы по статусам — перетаскивайте карточки для смены статуса. Двойной клик на карточку — открыть заказ." : "Воронка продаж — перетаскивайте карточки между этапами воронки. Статус лида меняется автоматически."}
+                width={280}
+                side="bottom"
+              />
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {tab === "leads" && (
@@ -1254,16 +1259,6 @@ export function CrmClient() {
           </button>
         </div>
 
-        {/* Поиск */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            placeholder={tab === "orders" ? "Поиск по имени, телефону клиента..." : "Поиск по имени, телефону, компании..."}
-          />
-        </div>
       </div>
 
       {/* Контент */}

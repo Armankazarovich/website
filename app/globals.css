@@ -636,11 +636,11 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(26px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(180%) brightness(0.82) !important;
-  background: rgba(6, 10, 24, 0.52) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.06) inset !important;
+  backdrop-filter: blur(28px) saturate(160%) brightness(0.75) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(0.75) !important;
+  background: rgba(5, 8, 20, 0.38) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: none !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
@@ -765,22 +765,50 @@ canvas,
 }
 
 /* ══════════════════════════════════════════════════════════════
-   ИНПУТЫ НА ВСЕХ СТРАНИЦАХ — тёмный стиль в nature-mode
+   ИНПУТЫ НА ВСЕХ СТРАНИЦАХ — тёмный glass (эталон: страница нового заказа)
+   Тёмное стекло rgba(5,8,20) — фон виден через слои, текст читаем
    ══════════════════════════════════════════════════════════════ */
-.aray-nature-mode main input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-.aray-nature-mode main textarea,
-.aray-nature-mode main select {
-  background: rgba(255, 255, 255, 0.07) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.aray-nature-mode textarea,
+.aray-nature-mode select,
+.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+.light .aray-nature-mode textarea,
+.light .aray-nature-mode select,
+[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+[data-theme="light"] .aray-nature-mode textarea,
+[data-theme="light"] .aray-nature-mode select {
+  background: rgba(5, 8, 20, 0.52) !important;
+  background-color: rgba(5, 8, 20, 0.52) !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  color: rgba(255, 255, 255, 0.90) !important;
+  color-scheme: dark !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.90);
+}
+.aray-nature-mode input::placeholder,
+.aray-nature-mode textarea::placeholder,
+.light .aray-nature-mode input::placeholder,
+.light .aray-nature-mode textarea::placeholder,
+[data-theme="light"] .aray-nature-mode input::placeholder,
+[data-theme="light"] .aray-nature-mode textarea::placeholder {
+  color: rgba(255, 255, 255, 0.30) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.30) !important;
+}
+.aray-nature-mode select option,
+.light .aray-nature-mode select option,
+[data-theme="light"] .aray-nature-mode select option {
+  background: rgb(10, 14, 32) !important;
   color: rgba(255, 255, 255, 0.90) !important;
 }
-.aray-nature-mode main input::placeholder,
-.aray-nature-mode main textarea::placeholder {
-  color: rgba(255, 255, 255, 0.30) !important;
-}
-.aray-nature-mode main select option {
-  background: #0d1426;
-  color: rgba(255, 255, 255, 0.90);
+/* focus ring — primary color */
+.aray-nature-mode input:focus,
+.aray-nature-mode textarea:focus,
+.aray-nature-mode select:focus,
+.light .aray-nature-mode input:focus,
+.light .aray-nature-mode textarea:focus,
+.light .aray-nature-mode select:focus {
+  outline: none !important;
+  border-color: hsl(var(--primary) / 0.55) !important;
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15) !important;
 }
 
 /* ── Role badge в nature-mode — всегда читаемый поверх фото ── */
@@ -864,47 +892,93 @@ canvas,
   background: rgba(255, 255, 255, 0.07) !important;
 }
 
-/* Input, Select, Textarea — тёмная тема: белое стекло */
-.aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.aray-nature-mode textarea,
-.aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  color-scheme: dark !important;
+/* ══════════════════════════════════════════════════════════════
+   HOVER PALETTE — при наведении hint основного цвета (оранжевый)
+   Лёгкий градиент 135° — современно, со вкусом, без перебора
+   ══════════════════════════════════════════════════════════════ */
+
+/* hover:bg-muted / hover:bg-accent / hover:bg-secondary → primary tint */
+.aray-nature-mode [class*="hover:bg-muted"]:hover,
+.aray-nature-mode [class*="hover:bg-accent"]:hover,
+.aray-nature-mode [class*="hover:bg-secondary"]:hover {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.12) 0%, hsl(var(--primary) / 0.04) 100%) !important;
+  border-color: hsl(var(--primary) / 0.16) !important;
 }
-/* Светлая тема — тот же стиль что тёмная (фон ВСЕГДА тёмное фото) */
-.light .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-[data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]),
-.light .aray-nature-mode textarea,
-[data-theme="light"] .aray-nature-mode textarea,
-.light .aray-nature-mode select,
-[data-theme="light"] .aray-nature-mode select {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  color-scheme: dark !important;
+
+/* hover:bg-white / hover:bg-gray / hover:bg-slate → primary tint (не белый!) */
+.aray-nature-mode [class*="hover:bg-white"]:hover,
+.aray-nature-mode [class*="hover:bg-gray"]:hover,
+.aray-nature-mode [class*="hover:bg-slate"]:hover {
+  background: hsl(var(--primary) / 0.10) !important;
+  border-color: hsl(var(--primary) / 0.16) !important;
 }
-/* Placeholder — тёмная тема */
-.aray-nature-mode input::placeholder,
-.aray-nature-mode textarea::placeholder {
+
+/* active/pressed → чуть темнее */
+.aray-nature-mode [class*="active:bg-"]:active,
+.aray-nature-mode [class*="active:scale-"]:active {
+  background: hsl(var(--primary) / 0.18) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ПЕРЕКЛЮЧАТЕЛИ (Toggle) — читабельный OFF-state
+   ══════════════════════════════════════════════════════════════ */
+
+/* Toggle track в OFF состоянии: bg-muted → видимая рамка + tint */
+.aray-nature-mode .w-11.h-6.rounded-full,
+.aray-nature-mode button[class*="w-11"][class*="h-6"][class*="rounded-full"] {
+  border: 1.5px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ТЕНИ НА ШРИФТАХ — нигде не должно быть text-shadow
+   ══════════════════════════════════════════════════════════════ */
+.aray-nature-mode * {
+  text-shadow: none !important;
+}
+/* Исключение: специальные gradient-text остаются */
+.aray-nature-mode .font-display {
+  text-shadow: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КНОПКИ БЕЗ ФОНА — ghost buttons в nature-mode
+   Прозрачные с видимой рамкой
+   ══════════════════════════════════════════════════════════════ */
+.aray-nature-mode button[class*="border-border"]:not([class*="bg-"]),
+.aray-nature-mode a[class*="border-border"]:not([class*="bg-"]) {
+  background: rgba(5, 8, 20, 0.30) !important;
+  backdrop-filter: blur(8px) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.80) !important;
+}
+.aray-nature-mode button[class*="border-border"]:not([class*="bg-"]):hover,
+.aray-nature-mode a[class*="border-border"]:not([class*="bg-"]):hover {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.14) 0%, hsl(var(--primary) / 0.06) 100%) !important;
+  border-color: hsl(var(--primary) / 0.30) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ЧИТАЕМОСТЬ ТЕКСТА — белый текст везде в природном режиме
+   Текст вне карточек (прямо на фото-фоне) должен быть белым
+   ══════════════════════════════════════════════════════════════ */
+.aray-nature-mode main .text-foreground,
+.aray-nature-mode main h1:not([class*="text-primary"]),
+.aray-nature-mode main h2:not([class*="text-primary"]),
+.aray-nature-mode main h3:not([class*="text-primary"]),
+.aray-nature-mode main h4:not([class*="text-primary"]),
+.aray-nature-mode main > div > p,
+.aray-nature-mode main > div > span,
+.aray-nature-mode main .font-semibold:not([class*="text-primary"]):not([class*="text-emerald"]):not([class*="text-destructive"]):not([class*="text-amber"]):not([class*="text-orange"]) {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.aray-nature-mode main .text-muted-foreground {
   color: rgba(255, 255, 255, 0.52) !important;
 }
-/* Placeholder — светлая тема */
-.light .aray-nature-mode input::placeholder,
-.light .aray-nature-mode textarea::placeholder,
-[data-theme="light"] .aray-nature-mode input::placeholder,
-[data-theme="light"] .aray-nature-mode textarea::placeholder {
-  color: rgba(0, 0, 0, 0.38) !important;
-}
-/* Select — принудительная цветовая схема */
-.aray-nature-mode select { color-scheme: dark !important; }
-.light .aray-nature-mode select,
-[data-theme="light"] .aray-nature-mode select { color-scheme: light !important; }
-/* Select option */
-.aray-nature-mode select option {
-  background: rgb(12, 16, 36) !important;
-  color: rgba(255, 255, 255, 0.90) !important;
+/* Иконки nav-group заголовков — читаемость */
+.aray-nature-mode aside .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.38) !important;
 }
 
 /* Email preview — явно белый фон (исключение из glass системы) */

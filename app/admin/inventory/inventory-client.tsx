@@ -2,8 +2,9 @@
 
 import { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { InfoCard } from "@/components/admin/info-popup";
 import {
-  Package, Search, CheckCircle2, XCircle, FileDown,
+  Package, CheckCircle2, XCircle, FileDown,
   Printer, ChevronDown, Pencil, Minus, LayoutList, LayoutGrid,
   Settings2, Check,
 } from "lucide-react";
@@ -318,12 +319,6 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3 no-print">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input type="text" placeholder="Поиск по товару, размеру, категории..." value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20" />
-          </div>
           <div className="relative">
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
               className="appearance-none pl-3 pr-8 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
@@ -368,9 +363,11 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           </div>
         </div>
 
-        <p className="text-xs text-white/40 no-print">
-          Нажмите на любое значение для редактирования — статус переключается кликом.
-        </p>
+        <InfoCard
+          title="Как редактировать"
+          body="Нажмите на любое значение (цену, остаток) для редактирования. Статус в наличии/нет — переключается кликом."
+          className="no-print"
+        />
 
         {/* Content */}
         <div id="inventory-print">

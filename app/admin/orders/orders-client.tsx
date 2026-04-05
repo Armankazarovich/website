@@ -7,7 +7,7 @@ import { OrderStatusSelect } from "@/components/admin/order-status-select";
 import { AdminQuickView } from "@/components/admin/admin-quick-view";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import {
-  Search, Trash2, Loader2, Download, Phone, MapPin,
+  Trash2, Loader2, Download, Phone, MapPin,
   Package, CreditCard, Truck, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Clock,
 } from "lucide-react";
@@ -307,16 +307,6 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
 
       {/* Фильтры + поиск */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Имя, телефон или №..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm bg-muted/40 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
         <div className="flex flex-wrap gap-1.5 flex-1">
           {STATUS_FILTERS.map((f) => (
             <button key={f.key} onClick={() => setStatusFilter(f.key)}

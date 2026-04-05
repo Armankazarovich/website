@@ -98,6 +98,7 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
   const [appearing, setAppearing]   = useState(false);
   const [slotState, setSlotState]   = useState<Record<number, SlotState>>({});
   const [tabHidden, setTabHidden]   = useState(false); // Page Visibility API
+  const [isMobile, setIsMobile]     = useState(false);
   const prevIsDark                  = useRef<boolean | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
@@ -107,6 +108,13 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
     const onChange = () => setTabHidden(document.hidden);
     document.addEventListener("visibilitychange", onChange);
     return () => document.removeEventListener("visibilitychange", onChange);
+  }, []);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   const isDark  = mounted ? resolvedTheme !== "light" : guessIsDark();
@@ -168,7 +176,8 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       {/* ── Слой 1: CSS градиент-блобы (мгновенно, всегда работают) ── */}
       <div className="absolute inset-0 transition-colors duration-1000"
         style={{ background: isDark ? "#040b14" : "#daedf5" }} />
-      <div className="absolute inset-0" style={{ filter: "blur(100px)", opacity: 0.90 }}>
+      {/* На мобильном blur убран — экономим GPU, телефон не греется */}
+      <div className="absolute inset-0" style={{ filter: isMobile ? "none" : "blur(100px)", opacity: isMobile ? 0.70 : 0.90 }}>
         {/* animationPlayState: paused когда вкладка скрыта — экономим CPU/GPU */}
         {isDark ? (
           <>
@@ -189,8 +198,8 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         )}
       </div>
 
-      {/* ── Слой 2: Текущее фото (всегда opacity:1 — не затухает!) ── */}
-      {curSrc && (
+      {/* ── Слой 2: Текущее фото — только на desktop (mobile: только CSS градиент для производительности) ── */}
+      {curSrc && !isMobile && (
         <div className="absolute inset-0">
           <img
             key={`cur-${cur}-${isDark}`}
@@ -205,8 +214,8 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         </div>
       )}
 
-      {/* ── Слой 3: Следующее фото ПОЯВЛЯЕТСЯ поверх (scale 1.04→1, opacity 0→1) ── */}
-      {nextSrc && (
+      {/* ── Слой 3: Следующее фото — только desktop ── */}
+      {nextSrc && !isMobile && (
         <div
           className="absolute inset-0"
           style={{
@@ -229,8 +238,8 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
         </div>
       )}
 
-      {/* Предзагрузка следующего (невидимо) */}
-      {prefetchSrc && (
+      {/* Предзагрузка следующего (невидимо) — только desktop */}
+      {prefetchSrc && !isMobile && (
         <img
           key={`pre-${prefetchIdx}`}
           src={prefetchSrc}

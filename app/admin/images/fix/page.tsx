@@ -38,6 +38,7 @@ export default function ImageFixPage() {
   const [fixing, setFixing] = useState<string | null>(null);
   const [data, setData] = useState<{ summary: Summary; products: ProductReport[] } | null>(null);
   const [result, setResult] = useState<string | null>(null);
+  const [resultOk, setResultOk] = useState<boolean | null>(null);
   const [filter, setFilter] = useState<"all" | "duplicates" | "broken" | "noimage">("all");
   const [pendingAction, setPendingAction] = useState<{ action: string; label: string } | null>(null);
 
@@ -70,10 +71,12 @@ export default function ImageFixPage() {
       });
       const json = await res.json();
       if (json.ok) {
-        setResult(`✅ ${json.fixed} товаров исправлено, удалено ${json.totalRemoved} записей`);
+        setResult(`${json.fixed} товаров исправлено, удалено ${json.totalRemoved} записей`);
+        setResultOk(true);
         await scan(); // refresh
       } else {
-        setResult(`❌ Ошибка: ${json.error}`);
+        setResult(`Ошибка: ${json.error}`);
+        setResultOk(false);
       }
     } finally {
       setFixing(null);
@@ -152,7 +155,8 @@ export default function ImageFixPage() {
 
       {/* Result message */}
       {result && (
-        <div className={`px-4 py-3 rounded-xl text-sm font-medium ${result.startsWith("✅") ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"}`}>
+        <div className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 ${resultOk === true ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"}`}>
+          {resultOk === true ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
           {result}
         </div>
       )}

@@ -8,7 +8,7 @@ import {
   BarChart2, CreditCard, Users, Zap, Mail, MessageSquare,
   ChevronRight, ExternalLink, Settings2, Phone, MapPin,
   Clock, Package, Tag, Star, FileText, Truck, Wrench,
-  ToggleLeft, Key, Monitor, RefreshCw, Image, Hash,
+  ToggleLeft, Key, Monitor, RefreshCw, Image, Hash, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -298,7 +298,7 @@ export default function AdminSettingsPage() {
             onClick={() => setSearch("")}
             className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
         )}
       </div>

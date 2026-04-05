@@ -442,7 +442,7 @@ export default function StaffPage() {
         {member.staffStatus === "PENDING" && (
           <div className="border-t border-yellow-200 dark:border-yellow-900/40 bg-yellow-50/50 dark:bg-yellow-900/10 px-4 py-3">
             <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium mb-2.5">
-              ⏳ Сотрудник ожидает подтверждения. Одобрите или отклоните заявку:
+              <Clock className="w-3 h-3 inline mr-1" /> Сотрудник ожидает подтверждения. Одобрите или отклоните заявку:
             </p>
             <div className="flex gap-2">
               <button

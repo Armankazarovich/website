@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Search, Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle } from "lucide-react";
+import { Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle, Mail, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -173,17 +173,6 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
         </div>
       )}
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Поиск по имени, email, телефону..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
-      </div>
-
       {filtered.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <ShoppingBag className="w-10 h-10 mx-auto mb-3 opacity-20" />
@@ -346,8 +335,8 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                     </>
                   ) : (
                     <div className="space-y-2">
-                      <p className="text-xs font-medium text-green-700 dark:text-green-400">
-                        ✅ Пароль успешно сброшен
+                      <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 inline" /> Пароль успешно сброшен
                       </p>
                       <div className="bg-card border border-border rounded-lg px-4 py-3 flex items-center justify-between gap-3">
                         <div>
@@ -359,10 +348,10 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           Копировать
                         </Button>
                       </div>
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                         {resetResult.emailSent
-                          ? `✉️ Письмо с паролем отправлено на ${resetResult.email}`
-                          : `⚠️ Email не отправлен — сообщите пароль клиенту вручную`}
+                          ? <><Mail className="w-3 h-3 inline" /> Письмо с паролем отправлено на {resetResult.email}</>
+                          : <><AlertTriangle className="w-3 h-3 inline" /> Email не отправлен — сообщите пароль клиенту вручную</>}
                       </p>
                       <Button size="sm" variant="ghost" className="h-7 text-xs"
                         onClick={() => { setResetPasswordId(null); setResetResult(null); }}>Закрыть</Button>

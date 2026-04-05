@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Truck, Pencil, Check, X, Loader2, Calculator, Plus, Trash2, Star } from "lucide-react";
+import { Truck, Pencil, Check, X, Loader2, Calculator, Plus, Trash2, Star, AlertTriangle } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Rate = {
@@ -174,8 +174,8 @@ export default function DeliveryRatesPage() {
         )}
 
         {calcDone && calcResult.length === 0 && (
-          <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 rounded-xl">
-            ⚠️ Объём {calcVolume} м³ превышает вместимость любого транспорта. Потребуется несколько рейсов или уточните у логиста.
+          <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 rounded-xl flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" /> Объём {calcVolume} м³ превышает вместимость любого транспорта. Потребуется несколько рейсов или уточните у логиста.
           </p>
         )}
       </div>

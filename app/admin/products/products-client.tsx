@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import {
-  Search, Pencil, X, Star, Eye, EyeOff,
+  Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
   ImageOff, Stamp,
@@ -219,16 +219,6 @@ export function ProductsClient({
     <>
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Поиск по названию..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
         <div className="relative">
           <select
             value={catFilter}

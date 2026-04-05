@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, Check, Loader2, Phone, MapPin, Clock, Building2, Globe, MessageCircle } from "lucide-react";
+import { Save, Check, Loader2, Phone, MapPin, Clock, Building2, Globe, MessageCircle, Mail, Send, Info } from "lucide-react";
 
 type Settings = Record<string, string>;
 
@@ -60,11 +60,11 @@ export default function AdminSitePage() {
   );
 
   const tabs = [
-    { id: "contacts", label: "📞 Контакты" },
-    { id: "company", label: "🏢 Компания" },
-    { id: "seo", label: "🔍 SEO" },
-    { id: "footer", label: "📄 Футер" },
-    { id: "widget", label: "💬 Виджет" },
+    { id: "contacts", label: "Контакты" },
+    { id: "company", label: "Компания" },
+    { id: "seo", label: "SEO" },
+    { id: "footer", label: "Футер" },
+    { id: "widget", label: "Виджет" },
   ] as const;
 
   if (loading) return (
@@ -167,7 +167,7 @@ export default function AdminSitePage() {
             <h2 className="font-semibold">Футер (нижняя часть сайта)</h2>
             <Field label="Строка Copyright" settingKey="footer_copyright" placeholder="© 2024 ПилоРус. Все права защищены." />
             <div className="p-4 bg-muted/30 rounded-xl border border-border text-sm text-muted-foreground">
-              💡 Остальные данные в футере (телефон, адрес, часы) берутся из раздела <strong>«Контакты»</strong> выше и обновляются автоматически.
+              <Info className="w-3.5 h-3.5 inline mr-1 opacity-60" /> Остальные данные в футере (телефон, адрес, часы) берутся из раздела <strong>«Контакты»</strong> выше и обновляются автоматически.
             </div>
           </>
         )}
@@ -175,7 +175,7 @@ export default function AdminSitePage() {
         {activeTab === "widget" && (
           <>
             <h2 className="font-semibold flex items-center gap-2">
-              <span className="text-lg">💬</span> Виджет связи
+              <MessageCircle className="w-4 h-4 text-primary" /> Виджет связи
             </h2>
             <p className="text-sm text-muted-foreground -mt-2">
               Плавающая кнопка в углу сайта. Добавляйте каналы — они появятся автоматически.
@@ -186,7 +186,7 @@ export default function AdminSitePage() {
               <div>
                 <label className="block text-sm font-medium mb-2">Виджет</label>
                 <div className="flex gap-2">
-                  {[{ v: "true", l: "✅ Включён" }, { v: "false", l: "❌ Выключен" }].map(opt => (
+                  {[{ v: "true", l: "Включён" }, { v: "false", l: "Выключен" }].map(opt => (
                     <button key={opt.v} type="button"
                       onClick={() => set("widget_enabled", opt.v)}
                       className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
@@ -223,7 +223,7 @@ export default function AdminSitePage() {
 
             {/* Phone — берётся из контактов, просто показываем */}
             <div className="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
-              <span className="text-emerald-600 text-lg">📞</span>
+              <Phone className="w-5 h-5 text-emerald-600" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Телефон</p>
                 <p className="text-xs text-muted-foreground">
@@ -235,7 +235,7 @@ export default function AdminSitePage() {
 
             {/* WhatsApp */}
             <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
-              <span className="text-[#25D366] text-lg">💬</span>
+              <MessageCircle className="w-5 h-5 text-[#25D366]" />
               <div className="flex-1">
                 <p className="text-sm font-medium">WhatsApp</p>
                 <input
@@ -249,7 +249,7 @@ export default function AdminSitePage() {
 
             {/* Telegram */}
             <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
-              <span className="text-[#2AABEE] text-lg">✈️</span>
+              <Send className="w-5 h-5 text-[#2AABEE]" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Telegram</p>
                 <input
@@ -263,7 +263,7 @@ export default function AdminSitePage() {
 
             {/* VK */}
             <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
-              <span className="text-[#0077FF] text-lg">🔵</span>
+              <Globe className="w-5 h-5 text-[#0077FF]" />
               <div className="flex-1">
                 <p className="text-sm font-medium">ВКонтакте</p>
                 <input
@@ -277,7 +277,7 @@ export default function AdminSitePage() {
 
             {/* Email toggle */}
             <div className="flex items-center gap-3 p-3 bg-card border border-border rounded-xl">
-              <span className="text-muted-foreground text-lg">📧</span>
+              <Mail className="w-5 h-5 text-muted-foreground" />
               <div className="flex-1">
                 <p className="text-sm font-medium">Email в виджете</p>
                 <p className="text-xs text-muted-foreground">{settings["email"] || "Настройте в разделе «Контакты»"}</p>
@@ -298,14 +298,14 @@ export default function AdminSitePage() {
             <div className="p-4 bg-muted/30 rounded-xl border border-border">
               <p className="text-xs font-medium text-muted-foreground mb-3">ПРЕДПРОСМОТР активных каналов:</p>
               <div className="flex flex-wrap gap-2">
-                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-xs font-medium">📞 Телефон</span>
-                {settings["social_whatsapp"] && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] text-white rounded-xl text-xs font-medium">💬 WhatsApp</span>}
-                {settings["social_telegram"] && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2AABEE] text-white rounded-xl text-xs font-medium">✈️ Telegram</span>}
-                {settings["social_vk"] && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0077FF] text-white rounded-xl text-xs font-medium">🔵 ВКонтакте</span>}
-                {settings["widget_show_email"] === "true" && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-xl text-xs font-medium">📧 Email</span>}
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-xs font-medium"><Phone className="w-3 h-3" /> Телефон</span>
+                {settings["social_whatsapp"] && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] text-white rounded-xl text-xs font-medium"><MessageCircle className="w-3 h-3" /> WhatsApp</span>}
+                {settings["social_telegram"] && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2AABEE] text-white rounded-xl text-xs font-medium"><Send className="w-3 h-3" /> Telegram</span>}
+                {settings["social_vk"] && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0077FF] text-white rounded-xl text-xs font-medium"><Globe className="w-3 h-3" /> ВКонтакте</span>}
+                {settings["widget_show_email"] === "true" && <span className="flex items-center gap-1.5 px-3 py-1.5 bg-muted border border-border rounded-xl text-xs font-medium"><Mail className="w-3 h-3" /> Email</span>}
               </div>
               <p className="text-xs text-muted-foreground mt-3">
-                💡 В будущем сюда легко добавить Viber, Instagram, онлайн-чат — просто добавить новую строку
+                <Info className="w-3.5 h-3.5 inline mr-1 opacity-60" /> В будущем сюда легко добавить Viber, Instagram, онлайн-чат — просто добавить новую строку
               </p>
             </div>
           </>

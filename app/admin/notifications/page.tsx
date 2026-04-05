@@ -313,18 +313,18 @@ export default function NotificationsPage() {
                       width={260}
                     />
                   </p>
-                  <p className={`font-semibold ${debug.vapidConfigured ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
-                    {debug.vapidConfigured ? "✓ Настроены" : "✗ Не настроены"}
+                  <p className={`font-semibold flex items-center gap-1 ${debug.vapidConfigured ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+                    {debug.vapidConfigured ? <><CheckCircle className="w-3 h-3 shrink-0" /> Настроены</> : <><XCircle className="w-3 h-3 shrink-0" /> Не настроены</>}
                   </p>
                   <p className="text-muted-foreground">{debug.publicKeyPrefix}</p>
                 </div>
                 <div className="bg-muted/40 rounded-lg p-2.5">
                   <p className="text-muted-foreground mb-0.5">Браузер</p>
-                  <p className={`font-semibold ${debug.browserPermission === "granted" ? "text-green-600 dark:text-green-400" : debug.browserPermission === "denied" ? "text-destructive" : "text-yellow-600"}`}>
-                    {debug.browserPermission === "granted" ? "✓ Разрешено" : debug.browserPermission === "denied" ? "✗ Заблокировано" : "? Не спрашивали"}
+                  <p className={`font-semibold flex items-center gap-1 ${debug.browserPermission === "granted" ? "text-green-600 dark:text-green-400" : debug.browserPermission === "denied" ? "text-destructive" : "text-yellow-600"}`}>
+                    {debug.browserPermission === "granted" ? <><CheckCircle className="w-3 h-3 shrink-0" /> Разрешено</> : debug.browserPermission === "denied" ? <><XCircle className="w-3 h-3 shrink-0" /> Заблокировано</> : <><AlertTriangle className="w-3 h-3 shrink-0" /> Не спрашивали</>}
                   </p>
-                  <p className="text-muted-foreground">
-                    SW: {debug.swActive ? "✓" : "✗"} · Подписка: {debug.browserSubActive ? "✓" : "✗"}
+                  <p className="text-muted-foreground flex items-center gap-1">
+                    SW: {debug.swActive ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-destructive" />} · Подписка: {debug.browserSubActive ? <CheckCircle className="w-3 h-3 text-green-500" /> : <XCircle className="w-3 h-3 text-destructive" />}
                   </p>
                 </div>
               </div>
@@ -540,17 +540,22 @@ export default function NotificationsPage() {
                 <WifiOff className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm">
-                  {tgStatus.error ? `❌ ${tgStatus.error}` :
-                   tgStatus.correct ? "✅ Вебхук настроен корректно" :
-                   tgStatus.configured ? "⚠️ Вебхук настроен на другой URL" :
-                   "❌ Вебхук не настроен — кнопки в Telegram не работают!"}
+                <p className="font-medium text-sm flex items-center gap-1.5">
+                  {tgStatus.error ? (
+                    <><XCircle className="w-4 h-4 shrink-0" /> {tgStatus.error}</>
+                  ) : tgStatus.correct ? (
+                    <><CheckCircle className="w-4 h-4 shrink-0" /> Вебхук настроен корректно</>
+                  ) : tgStatus.configured ? (
+                    <><AlertTriangle className="w-4 h-4 shrink-0" /> Вебхук настроен на другой URL</>
+                  ) : (
+                    <><XCircle className="w-4 h-4 shrink-0" /> Вебхук не настроен — кнопки в Telegram не работают!</>
+                  )}
                 </p>
                 {tgStatus.webhookUrl && (
                   <p className="text-xs text-muted-foreground mt-1 truncate">URL: {tgStatus.webhookUrl}</p>
                 )}
                 {tgStatus.pendingUpdateCount !== undefined && tgStatus.pendingUpdateCount > 0 && (
-                  <p className="text-xs text-yellow-600 mt-1">⚡ {tgStatus.pendingUpdateCount} необработанных обновлений в очереди</p>
+                  <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1"><AlertTriangle className="w-3 h-3 shrink-0" /> {tgStatus.pendingUpdateCount} необработанных обновлений в очереди</p>
                 )}
                 {tgStatus.lastErrorMessage && (
                   <p className="text-xs text-destructive mt-1">Последняя ошибка ({tgStatus.lastErrorDate}): {tgStatus.lastErrorMessage}</p>

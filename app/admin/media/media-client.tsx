@@ -5,8 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Upload, Trash2, Copy, CheckCircle2, Loader2, Search,
-  Wand2, X, ExternalLink, FolderOpen, Info, ScanSearch,
+  Wand2, X, ExternalLink, FolderOpen, ScanSearch,
 } from "lucide-react";
+import { InfoCard } from "@/components/admin/info-popup";
 
 type MediaFile = {
   url: string; folder: string; filename: string;
@@ -126,13 +127,18 @@ function MediaCard({
 
       {/* Delete confirm */}
       {delConfirm && (
-        <div className="absolute inset-0 bg-background/95 flex flex-col items-center justify-center gap-2 p-3 z-10" onClick={(e) => e.stopPropagation()}>
-          <p className="text-xs font-medium text-center">Удалить файл?</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 z-10 rounded-2xl"
+          style={{ background: "rgba(5,8,20,0.88)", backdropFilter: "blur(12px)" }}
+          onClick={(e) => e.stopPropagation()}>
+          <Trash2 className="w-5 h-5 text-destructive" />
+          <p className="text-xs font-medium text-center text-white/90">Удалить файл?</p>
           <div className="flex gap-2">
             <button onClick={() => { onDelete(); setDelConfirm(false); }}
-              className="px-3 py-1.5 rounded-lg bg-destructive text-destructive-foreground text-xs font-semibold">Удалить</button>
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+              style={{ background: "hsl(var(--destructive))" }}>Удалить</button>
             <button onClick={() => setDelConfirm(false)}
-              className="px-3 py-1.5 rounded-lg border border-border text-xs">Отмена</button>
+              className="px-3 py-1.5 rounded-lg text-xs text-white/70"
+              style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}>Отмена</button>
           </div>
         </div>
       )}
@@ -289,14 +295,11 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
       {/* ALT info banner */}
       {!pickerMode && (
-        <div className="flex items-start gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-white/45">
-          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          <span>
-            <strong>ALT атрибут</strong> — описание фото для поисковиков и незрячих пользователей.
-            Нажмите <strong>«Авто ALT по товарам»</strong> — система заполнит ALT из названий товаров автоматически.
-            Потом можно редактировать каждый вручную.
-          </span>
-        </div>
+        <InfoCard
+          title="ALT атрибут фото"
+          body="Описание фото для поисковиков и незрячих. «Авто ALT по товарам» — заполняет ALT из названий связанных товаров автоматически."
+          width={280}
+        />
       )}
 
       {/* Grid */}
