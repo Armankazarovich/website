@@ -279,8 +279,8 @@ export default function NewPhoneOrderPage() {
         <div className="flex items-center gap-2 md:gap-3">
           <AdminBack />
           <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-primary" />
-            <span className="font-semibold text-sm md:text-base">Заказ по телефону</span>
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="font-semibold text-sm md:text-base">Терминал</span>
           </div>
         </div>
 
@@ -409,23 +409,35 @@ export default function NewPhoneOrderPage() {
                 <div className="flex-1 overflow-y-auto p-3 space-y-3">
                   {/* Variants */}
                   <div>
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Размер</p>
-                    <div className="space-y-1">
+                    <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
+                      Размер <span className="text-muted-foreground/50 normal-case">({selectedProduct.variants.length})</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-1">
                       {selectedProduct.variants.map((v) => {
                         const price = unitType === "CUBE" ? v.pricePerCube : v.pricePerPiece;
+                        const isSelected = selectedVariantId === v.id;
                         return (
                           <button
                             key={v.id}
                             type="button"
                             onClick={() => setSelectedVariantId(v.id)}
-                            className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs transition-colors border ${
-                              selectedVariantId === v.id
-                                ? "bg-primary/10 border-primary/50 text-primary font-semibold"
-                                : "border-border hover:border-primary/30 hover:bg-muted/50"
+                            className={`flex flex-col items-start px-2 py-1.5 rounded-lg text-left transition-colors border relative ${
+                              isSelected
+                                ? "bg-primary/10 border-primary/50"
+                                : v.inStock
+                                ? "border-border hover:border-primary/30 hover:bg-muted/50"
+                                : "border-border/40 opacity-50"
                             }`}
                           >
-                            <span className="font-mono">{v.size}</span>
-                            <span className={v.inStock ? "text-emerald-500" : "text-muted-foreground/50"}>
+                            {isSelected && (
+                              <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                            )}
+                            <span className={`font-mono text-[10px] leading-tight ${isSelected ? "text-primary font-semibold" : ""}`}>
+                              {v.size}
+                            </span>
+                            <span className={`text-[11px] font-bold mt-0.5 ${
+                              isSelected ? "text-primary" : v.inStock ? "text-emerald-500" : "text-muted-foreground/50"
+                            }`}>
                               {price != null ? `${Number(price).toLocaleString()} ₽` : "—"}
                             </span>
                           </button>

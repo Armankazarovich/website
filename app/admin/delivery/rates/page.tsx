@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Truck, Pencil, Check, X, Loader2, Calculator, Plus, Trash2, Star } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Rate = {
   id: string;
@@ -20,6 +21,7 @@ export default function DeliveryRatesPage() {
   const [editValues, setEditValues] = useState<Partial<Rate>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Add new rate state
   const [showAdd, setShowAdd] = useState(false);
@@ -63,14 +65,15 @@ export default function DeliveryRatesPage() {
     }
   };
 
-  const deleteRate = async (id: string) => {
-    if (!window.confirm("Удалить этот тариф?")) return;
-    setDeleting(id);
+  const deleteRate = async () => {
+    if (!confirmDeleteId) return;
+    setDeleting(confirmDeleteId);
     try {
-      const res = await fetch(`/api/admin/delivery-rates?id=${id}`, { method: "DELETE" });
-      if (res.ok) setRates((prev) => prev.filter((r) => r.id !== id));
+      const res = await fetch(`/api/admin/delivery-rates?id=${confirmDeleteId}`, { method: "DELETE" });
+      if (res.ok) setRates((prev) => prev.filter((r) => r.id !== confirmDeleteId));
     } finally {
       setDeleting(null);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -287,7 +290,7 @@ export default function DeliveryRatesPage() {
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => deleteRate(rate.id)}
+                              onClick={() => setConfirmDeleteId(rate.id)}
                               disabled={deleting === rate.id}
                               className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
                             >
@@ -380,6 +383,17 @@ export default function DeliveryRatesPage() {
       <p className="text-xs text-muted-foreground px-1">
         * Цены указаны «от» — финальная стоимость зависит от дальности и условий доставки.
       </p>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onClose={() => setConfirmDeleteId(null)}
+        onConfirm={deleteRate}
+        title="Удалить этот тариф?"
+        description="Тариф будет удалён безвозвратно."
+        confirmLabel="Удалить"
+        variant="danger"
+        loading={!!deleting}
+      />
     </div>
   );
 }

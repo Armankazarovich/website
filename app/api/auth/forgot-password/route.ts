@@ -37,11 +37,10 @@ export async function POST(req: Request) {
 
       try {
         await sendPasswordResetEmail(normalizedEmail, resetUrl);
-        console.log(`✅ Письмо сброса пароля отправлено на ${normalizedEmail}`);
       } catch (emailErr) {
         // SMTP ошибка — логируем но не раскрываем пользователю
         console.error(`❌ Ошибка отправки письма на ${normalizedEmail}:`, emailErr);
-        console.log(`🔗 Ссылка для сброса (использовать вручную): ${resetUrl}`);
+        // Ссылка для ручного использования при ошибке SMTP — только в dev
       }
     }
 

@@ -11,6 +11,7 @@ import {
   Package, CreditCard, Truck, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Clock,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 const STATUS_FILTERS = [
   { key: "ALL", label: "Все" },
@@ -193,6 +194,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   // QuickView state
   const [quickViewId, setQuickViewId] = useState<string | null>(null);
@@ -263,7 +265,6 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`Переместить ${selected.size} заказ(ов) в корзину?`)) return;
     setDeleting(true);
     try {
       const res = await fetch("/api/admin/orders/bulk-delete", {
@@ -333,7 +334,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
           <Download className="w-4 h-4" /> CSV
         </button>
         {selected.size > 0 && (
-          <button onClick={handleBulkDelete} disabled={deleting}
+          <button onClick={() => setConfirmBulkDelete(true)} disabled={deleting}
             className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:bg-destructive/90 transition-colors shrink-0">
             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             Удалить ({selected.size})
@@ -466,6 +467,17 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
           />
         )}
       </AdminQuickView>
+
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        onClose={() => setConfirmBulkDelete(false)}
+        onConfirm={handleBulkDelete}
+        title={`Переместить ${selected.size} заказ(ов) в корзину?`}
+        description="Заказы будут перемещены в корзину. Их можно будет восстановить позже."
+        confirmLabel="Переместить в корзину"
+        variant="warning"
+        loading={deleting}
+      />
     </div>
   );
 }
