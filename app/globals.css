@@ -1453,6 +1453,34 @@ canvas,
   transform: translateZ(0);
 }
 
+/* ══════════════════════════════════════════════════════════════
+   МОБИЛЬНЫЕ TOUCH TARGETS — минимум 44px для всех кнопок
+   Применяется только на мобильных (@media touch)
+   ══════════════════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+  /* Все интерактивные элементы — убираем синюю вспышку iOS */
+  button, a, [role="button"], select, input, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Кнопки — минимальный touch target */
+  button:not([class*="w-3"]):not([class*="w-4"]):not([class*="w-5"]),
+  [role="button"]:not([class*="w-3"]):not([class*="w-4"]):not([class*="w-5"]) {
+    min-height: 40px;
+  }
+  /* Инпуты — удобный размер для мобильного */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
+  select, textarea {
+    min-height: 42px;
+    font-size: 16px !important; /* предотвращает zoom на iOS */
+  }
+  /* Предотвращение zoom при фокусе — для всех форм */
+  input[type="text"], input[type="email"], input[type="tel"],
+  input[type="number"], input[type="password"], input[type="search"],
+  input[type="date"], textarea, select {
+    font-size: 16px !important;
+  }
+}
+
 /* iOS Safari only: min-height через -webkit-fill-available */
 @supports (-webkit-touch-callout: none) {
   body {

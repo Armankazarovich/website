@@ -197,7 +197,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
       <button
         onClick={handleDownloadPdf}
         disabled={downloading}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-50 min-h-[38px]"
       >
         {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
         Скачать PDF
@@ -206,7 +206,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
       {!editing ? (
         <button
           onClick={() => setEditing(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-border rounded-xl hover:bg-muted/50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-muted/50 transition-colors min-h-[38px]"
         >
           <Pencil className="w-3.5 h-3.5" />
           Редактировать

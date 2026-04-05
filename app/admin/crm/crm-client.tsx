@@ -1173,7 +1173,7 @@ export function CrmClient() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-148px)] lg:h-[calc(100vh-64px)] overflow-hidden">
       {/* Топ-бар */}
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 mb-3">
