@@ -551,12 +551,14 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Desktop top bar ──────────────────────────────────── */}
       <div className="hidden lg:flex fixed top-0 left-60 right-0 h-14 z-20 items-center px-5 gap-3 aray-topbar">
 
-        {/* Акцент-полоска слева */}
-        <div className="w-0.5 h-6 rounded-full shrink-0"
-          style={{ background: "linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary)/0.3))" }} />
-
-        {/* Заголовок страницы */}
-        <h1 className="text-lg font-bold tracking-tight leading-none shrink-0">{pageTitle}</h1>
+        {/* Акцент-полоска + заголовок — только если есть заголовок */}
+        {pageTitle && (
+          <>
+            <div className="w-0.5 h-6 rounded-full shrink-0"
+              style={{ background: "linear-gradient(180deg, hsl(var(--primary)), hsl(var(--primary)/0.3))" }} />
+            <h1 className="text-lg font-bold tracking-tight leading-none shrink-0">{pageTitle}</h1>
+          </>
+        )}
 
         {/* Inline поиск — занимает свободное место */}
         <div className="flex-1 flex items-center">
