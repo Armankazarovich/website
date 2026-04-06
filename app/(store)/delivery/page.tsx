@@ -20,6 +20,8 @@ export const metadata: Metadata = {
 export default async function DeliveryPage() {
   const settings = await getSiteSettings();
   const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
+  const phone = getSetting(settings, "phone");
+  const phoneLink = getSetting(settings, "phone_link");
   return (
     <div className="container py-12">
       <div className="flex items-start gap-3 mb-3">
@@ -136,11 +138,11 @@ export default async function DeliveryPage() {
           <h2 className="font-display font-bold text-3xl mb-3">Остались вопросы?</h2>
           <p className="text-white/75 mb-8 text-lg">Наши менеджеры на связи {workingHours}</p>
           <a
-            href="tel:+79859707133"
+            href={`tel:${phoneLink}`}
             className="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orange/90 active:scale-95 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all shadow-2xl shadow-brand-orange/40"
           >
             <Phone className="w-5 h-5" />
-            8-985-970-71-33
+            {phone}
           </a>
         </div>
       </div>

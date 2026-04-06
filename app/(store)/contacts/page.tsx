@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { ContactForm } from "@/components/store/contact-form";
 import { BackButton } from "@/components/ui/back-button";
-import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Контакты — адрес, телефоны, как проехать | ПилоРус",
@@ -20,6 +20,11 @@ export const metadata: Metadata = {
 export default async function ContactsPage() {
   const settings = await getSiteSettings();
   const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
+  const phones = getPhones(settings);
+  const email = getSetting(settings, "email");
+  const address = getSetting(settings, "address");
+  const inn = getSetting(settings, "inn");
+  const ogrn = getSetting(settings, "ogrn");
   return (
     <div className="container py-12">
       <div className="flex items-start gap-3 mb-3">
@@ -35,24 +40,21 @@ export default async function ContactsPage() {
             {
               icon: Phone,
               title: "Телефоны",
-              items: [
-                { label: "8-985-970-71-33", href: "tel:+79859707133" },
-                { label: "8-999-662-26-02", href: "tel:+79996622602" },
-              ],
+              items: phones.map((p) => ({ label: p.display, href: `tel:${p.tel}` })),
               color: "text-brand-orange",
               bg: "bg-brand-orange/10",
             },
             {
               icon: Mail,
               title: "Email",
-              items: [{ label: "info@pilo-rus.ru", href: "mailto:info@pilo-rus.ru" }],
+              items: [{ label: email, href: `mailto:${email}` }],
               color: "text-blue-600",
               bg: "bg-blue-100",
             },
             {
               icon: MapPin,
               title: "Адрес",
-              items: [{ label: "Московская обл., г. Химки, ул. Заводская 2А, стр.28", href: "#map" }],
+              items: [{ label: address, href: "#map" }],
               color: "text-brand-green",
               bg: "bg-brand-green/10",
             },
@@ -92,9 +94,9 @@ export default async function ContactsPage() {
             <h3 className="font-semibold mb-2">Реквизиты компании</h3>
             <div className="space-y-1 text-sm text-muted-foreground">
               <p>ООО «ПИТИ»</p>
-              <p>ИНН: 5047121641</p>
+              {inn && <p>ИНН: {inn}</p>}
               <p>КПП: 504701001</p>
-              <p>ОГРН: 1235000042474</p>
+              {ogrn && <p>ОГРН: {ogrn}</p>}
             </div>
           </div>
         </div>

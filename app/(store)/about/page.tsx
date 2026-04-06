@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CheckCircle, Factory, Award, Users, Leaf } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "О производстве — ПилоРус | ООО ПИТИ, Химки",
@@ -15,7 +16,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://pilo-rus.ru/about" },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const siteSettings = await getSiteSettings();
+  const phones = getPhones(siteSettings);
+  const email = getSetting(siteSettings, "email");
+  const inn = getSetting(siteSettings, "inn");
   return (
     <div className="container py-12">
       <div className="flex items-start gap-3 mb-3">
@@ -138,16 +143,19 @@ export default function AboutPage() {
           <div className="space-y-2 text-muted-foreground">
             <p><strong className="text-foreground">Полное название:</strong> Общество с ограниченной ответственностью «ПИТИ»</p>
             <p><strong className="text-foreground">Краткое название:</strong> ООО «ПИТИ»</p>
-            <p><strong className="text-foreground">ИНН:</strong> 504712164</p>
+            <p><strong className="text-foreground">ИНН:</strong> {inn}</p>
             <p><strong className="text-foreground">КПП:</strong> 504701001</p>
           </div>
           <div className="space-y-2 text-muted-foreground">
             <p><strong className="text-foreground">Юридический адрес:</strong> Московская обл., г. Химки, ул. Заводская 2А, стр.28</p>
-            <p><strong className="text-foreground">Email:</strong> info@pilo-rus.ru</p>
+            <p><strong className="text-foreground">Email:</strong> {email}</p>
             <p><strong className="text-foreground">Телефон:</strong>{" "}
-              <a href="tel:+79859707133" className="hover:underline">8-985-970-71-33</a>{" · "}
-              <a href="tel:+79996622602" className="hover:underline">8-999-662-26-02</a>{" · "}
-              <a href="tel:+79776068020" className="hover:underline">8-977-606-80-20</a>
+              {phones.map((p, i) => (
+                <span key={p.tel}>
+                  <a href={`tel:${p.tel}`} className="hover:underline">{p.display}</a>
+                  {i < phones.length - 1 && " · "}
+                </span>
+              ))}
             </p>
           </div>
         </div>

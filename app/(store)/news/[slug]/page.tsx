@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { ArrowLeft, Tag, Clock, BookOpen } from "lucide-react";
+import { ArrowLeft, Tag, Clock, BookOpen, Pencil } from "lucide-react";
+import { auth } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -43,11 +44,15 @@ function topicClass(topic: string | null) {
 }
 
 export default async function PostPage({ params }: Props) {
-  const post = await prisma.post.findUnique({
-    where: { slug: params.slug, published: true },
-  });
+  const [post, session] = await Promise.all([
+    prisma.post.findUnique({ where: { slug: params.slug, published: true } }),
+    auth(),
+  ]);
 
   if (!post) notFound();
+
+  const role = (session?.user as any)?.role;
+  const isAdmin = session && ["ADMIN", "SUPER_ADMIN", "MANAGER"].includes(role);
 
   // Increment views (fire and forget)
   prisma.post
@@ -70,6 +75,17 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <div className="container py-10 md:py-14 max-w-4xl">
+      {/* Admin edit button */}
+      {isAdmin && (
+        <Link
+          href="/admin/posts"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl hover:bg-primary/90 transition-all font-semibold text-sm group"
+        >
+          <Pencil className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+          Редактировать
+        </Link>
+      )}
+
       {/* Back button */}
       <Link
         href="/news"
