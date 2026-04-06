@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Save, Check, Loader2, Phone, MapPin, Clock, Building2, Globe, MessageCircle, Mail, Send, Info, BarChart2, Search, ExternalLink, Zap } from "lucide-react";
+import { Save, Check, Loader2, Phone, MapPin, Clock, Building2, Globe, MessageCircle, Mail, Send, Info, BarChart2, Search, ExternalLink, Zap, Rss, Radio, TrendingUp, Link2 } from "lucide-react";
 
 type Settings = Record<string, string>;
 
@@ -11,19 +11,18 @@ export default function AdminSitePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [activeTab, setActiveTab] = useState<"contacts" | "company" | "seo" | "analytics" | "footer" | "widget">("contacts");
+  const [activeTab, setActiveTab] = useState<"contacts" | "company" | "seo" | "analytics" | "promo" | "footer" | "widget">("contacts");
   const [pinging, setPinging] = useState(false);
-  const [pingResult, setPingResult] = useState<string | null>(null);
+  const [pingResults, setPingResults] = useState<{name:string;status:string;ms:number}[] | null>(null);
 
-  const pingYandex = async () => {
-    setPinging(true); setPingResult(null);
+  const handlePing = async () => {
+    setPinging(true); setPingResults(null);
     try {
-      const sitemapUrl = "https://pilo-rus.ru/sitemap.xml";
-      await fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`, { mode: "no-cors" });
-      await fetch(`https://webmaster.yandex.ru/ping?sitemap=${encodeURIComponent(sitemapUrl)}`, { mode: "no-cors" });
-      setPingResult("✅ Запрос отправлен! Яндекс и Google получили уведомление о карте сайта.");
+      const res = await fetch("/api/admin/ping", { method: "POST" });
+      const data = await res.json();
+      setPingResults(data.results ?? []);
     } catch {
-      setPingResult("✅ Ping отправлен (CORS ограничение — это нормально, запрос ушёл).");
+      setPingResults([{ name: "Ошибка", status: "error", ms: 0 }]);
     }
     setPinging(false);
   };
@@ -79,6 +78,7 @@ export default function AdminSitePage() {
     { id: "company", label: "Компания" },
     { id: "seo", label: "SEO" },
     { id: "analytics", label: "📊 Аналитика" },
+    { id: "promo", label: "🚀 Продвижение" },
     { id: "footer", label: "Футер" },
     { id: "widget", label: "Виджет" },
   ] as const;
@@ -258,43 +258,160 @@ export default function AdminSitePage() {
 
             {/* Индексация в один клик */}
             <h3 className="font-medium text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-primary" /> Индексация в один клик</h3>
-            <p className="text-xs text-muted-foreground">Отправьте карту сайта в Яндекс и Google — они узнают о новых страницах быстрее.</p>
-            <div className="p-3 bg-muted/30 rounded-xl border border-border text-xs text-muted-foreground">
-              📍 Ваша карта сайта: <span className="font-mono text-foreground">https://pilo-rus.ru/sitemap.xml</span>
+            <p className="text-xs text-muted-foreground">Пингует Google, Яндекс, Bing и RSS-агрегаторы одновременно — сервер отправляет запросы напрямую.</p>
+            <div className="grid grid-cols-1 gap-1.5 p-3 bg-muted/30 rounded-xl border border-border text-xs text-muted-foreground">
+              <div className="flex items-center justify-between"><span>🗺️ Sitemap</span><span className="font-mono text-foreground/70">pilo-rus.ru/sitemap.xml</span></div>
+              <div className="flex items-center justify-between"><span>📡 RSS</span><span className="font-mono text-foreground/70">pilo-rus.ru/rss.xml</span></div>
             </div>
             <button
-              onClick={pingYandex}
+              onClick={handlePing}
               disabled={pinging}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-all"
             >
-              {pinging ? <><Loader2 className="w-4 h-4 animate-spin" /> Отправляем...</> : <><Zap className="w-4 h-4" /> Отправить в Яндекс + Google</>}
+              {pinging ? <><Loader2 className="w-4 h-4 animate-spin" /> Пингуем 5 источников...</> : <><Radio className="w-4 h-4" /> Отправить в Google + Яндекс + Bing + RSS</>}
             </button>
-            {pingResult && (
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm text-emerald-700 dark:text-emerald-400">
-                {pingResult}
+            {pingResults && (
+              <div className="space-y-1.5">
+                {pingResults.map((r) => (
+                  <div key={r.name} className="flex items-center justify-between px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl">
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">✓ {r.name}</span>
+                    <span className="text-[10px] text-emerald-600/70">{r.ms}ms</span>
+                  </div>
+                ))}
               </div>
             )}
 
             <div className="p-4 bg-muted/30 rounded-xl border border-border space-y-2">
               <p className="text-xs font-semibold text-foreground">🔗 Быстрые ссылки вебмастеров</p>
               <div className="grid grid-cols-2 gap-2">
-                <a href="https://webmaster.yandex.ru/site/" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3 h-3" /> Яндекс Вебмастер
+                {[
+                  ["Яндекс Вебмастер","https://webmaster.yandex.ru/site/"],
+                  ["Google Search Console","https://search.google.com/search-console"],
+                  ["Яндекс Метрика","https://metrika.yandex.ru"],
+                  ["Google Analytics","https://analytics.google.com"],
+                  ["Bing Webmaster","https://www.bing.com/webmasters"],
+                  ["RSS фид","https://pilo-rus.ru/rss.xml"],
+                ].map(([label, href]) => (
+                  <a key={href} href={href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-primary hover:underline">
+                    <ExternalLink className="w-3 h-3" /> {label}
+                  </a>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === "promo" && (
+          <>
+            <h2 className="font-semibold flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> Продвижение сайта</h2>
+            <p className="text-sm text-muted-foreground">Инструменты для распространения сайта по открытым источникам — каталоги, карты, агрегаторы.</p>
+
+            {/* RSS */}
+            <div className="p-4 bg-card border border-border rounded-2xl space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/15 flex items-center justify-center">
+                  <Rss className="w-4 h-4 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">RSS-фид статей</p>
+                  <p className="text-xs text-muted-foreground">Яндекс.Новости и агрегаторы автоматически подхватывают новые статьи</p>
+                </div>
+                <span className="ml-auto text-[10px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">✓ Работает</span>
+              </div>
+              <div className="flex gap-2">
+                <a href="https://pilo-rus.ru/rss.xml" target="_blank" rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
+                  <ExternalLink className="w-3.5 h-3.5" /> Открыть RSS
                 </a>
-                <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3 h-3" /> Google Search Console
-                </a>
-                <a href="https://metrika.yandex.ru" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3 h-3" /> Яндекс Метрика
-                </a>
-                <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-xs text-primary hover:underline">
-                  <ExternalLink className="w-3 h-3" /> Google Analytics
+                <a href="https://news.yandex.ru/addmedia.html" target="_blank" rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors">
+                  <ExternalLink className="w-3.5 h-3.5" /> Подать в Яндекс.Новости
                 </a>
               </div>
+            </div>
+
+            {/* Каталоги и карты */}
+            <div className="p-4 bg-card border border-border rounded-2xl space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/15 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-blue-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Карты и каталоги компаний</p>
+                  <p className="text-xs text-muted-foreground">Самые мощные источники трафика — бесплатно</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { name: "Яндекс Бизнес", desc: "Карточка в картах + поиске Яндекса", href: "https://business.yandex.ru", badge: "🔥 Приоритет 1" },
+                  { name: "Google Бизнес-профиль", desc: "Google Maps + поиск Google", href: "https://business.google.com", badge: "🔥 Приоритет 2" },
+                  { name: "2ГИС", desc: "Популярный в регионах РФ", href: "https://2gis.ru/firms", badge: "Важно" },
+                  { name: "Авито — Компании", desc: "Тысячи просмотров бесплатно", href: "https://www.avito.ru/profile/profile", badge: "Хорошо" },
+                ].map((item) => (
+                  <a key={item.name} href={item.href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all group">
+                    <div>
+                      <p className="text-sm font-medium group-hover:text-primary transition-colors">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">{item.badge}</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Площадки объявлений */}
+            <div className="p-4 bg-card border border-border rounded-2xl space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center">
+                  <Link2 className="w-4 h-4 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Площадки объявлений</p>
+                  <p className="text-xs text-muted-foreground">Разместите товары — получите трафик из поиска</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["Авито", "https://www.avito.ru"],
+                  ["Яндекс.Объявления", "https://o.yandex.ru"],
+                  ["Юла", "https://youla.ru"],
+                  ["OLX", "https://www.olx.ru"],
+                ].map(([name, href]) => (
+                  <a key={name} href={href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-sm">
+                    {name} <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Ссылочные каталоги */}
+            <div className="p-4 bg-card border border-border rounded-2xl space-y-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" /> Отраслевые каталоги строительства
+              </p>
+              <div className="grid grid-cols-1 gap-2 text-xs">
+                {[
+                  ["Stroimaterialy.ru", "https://www.stroimaterialy.ru"],
+                  ["СтройПортал", "https://www.stroyportal.ru"],
+                  ["Строй-Справка", "https://www.stroy-spravka.ru"],
+                  ["TIU.ru строительство", "https://tiu.ru/construction.html"],
+                ].map(([name, href]) => (
+                  <a key={name} href={href} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-xl border border-border hover:border-primary/30 hover:bg-primary/5 transition-all">
+                    {name} <ExternalLink className="w-3 h-3 text-muted-foreground" />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-800 dark:text-amber-300">
+              💡 <strong>Главный совет:</strong> Яндекс Бизнес + Google Бизнес дают больше клиентов чем всё остальное вместе. Начни с них — регистрация бесплатная, эффект через 2-4 недели.
             </div>
           </>
         )}
