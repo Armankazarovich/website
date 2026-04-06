@@ -271,7 +271,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours 
                 priority
               />
             </div>
-            <div className="flex flex-col gap-0">
+            <div className="hidden min-[380px]:flex flex-col gap-0">
               <p className="font-display font-bold text-lg leading-none text-foreground tracking-wide">
                 ПилоРус
               </p>
