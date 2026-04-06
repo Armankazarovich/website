@@ -400,16 +400,15 @@ export function ProductCard({
                 key={v.id}
                 onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); setShowUnitPicker(false); } }}
                 disabled={!v.inStock}
-                className={`font-semibold rounded-lg border transition-all leading-none ${
+                className={`font-medium rounded-md border transition-all leading-none ${
                   idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
-                } items-center justify-center
-                  text-[10px] px-1.5 py-0.5 sm:text-[11px] sm:px-2 sm:py-1
-                  max-w-[90px] sm:max-w-none truncate ${
+                } items-center justify-center whitespace-nowrap
+                  text-[9px] px-[5px] py-[2px] sm:text-[10px] sm:px-1.5 sm:py-0.5 ${
                   selectedVariant?.id === v.id && v.inStock
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25"
+                    ? "border-primary bg-primary text-primary-foreground"
                     : v.inStock
-                    ? "border-border/60 bg-muted/80 text-foreground/75 hover:border-primary/60 hover:bg-primary/8 hover:text-primary"
-                    : "border-border/30 bg-transparent text-muted-foreground/35 line-through cursor-not-allowed"
+                    ? "border-border/50 bg-muted/60 text-foreground/65 hover:border-primary/50 hover:text-primary"
+                    : "border-border/25 bg-transparent text-muted-foreground/30 line-through cursor-not-allowed"
                 }`}
               >
                 {v.size}
@@ -419,7 +418,7 @@ export function ProductCard({
             {mobileExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-lg border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 inline-flex items-center justify-center"
+                className="sm:hidden text-[9px] font-medium px-[5px] py-[2px] rounded-md border border-primary/35 bg-primary/6 text-primary transition-colors active:scale-95 inline-flex items-center justify-center whitespace-nowrap"
               >
                 +{mobileExtra}
               </button>
