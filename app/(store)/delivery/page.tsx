@@ -4,8 +4,16 @@ import { CheckCircle, Truck, MapPin, Clock, FileText, Phone } from "lucide-react
 import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
-  title: "Доставка и оплата",
-  description: "Доставка пиломатериалов по Москве и МО за 1-3 дня. Самовывоз со склада в Химках. Оплата наличными и по счёту.",
+  title: "Доставка и оплата пиломатериалов — ПилоРус | Москва и МО",
+  description: "Доставка пиломатериалов по Москве и МО за 1-3 дня от 2500 руб. Самовывоз со склада в Химках бесплатно. Оплата: наличные, карта, безналичный расчёт для юрлиц.",
+  keywords: ["доставка пиломатериалов Москва", "доставка досок МО", "самовывоз пиломатериалы Химки", "оплата пиломатериалы безнал"],
+  openGraph: {
+    title: "Доставка пиломатериалов по Москве и МО — ПилоРус",
+    description: "За 1-3 дня по Москве и области. Самовывоз из Химок бесплатно.",
+    url: "https://pilo-rus.ru/delivery",
+    type: "website",
+  },
+  alternates: { canonical: "https://pilo-rus.ru/delivery" },
 };
 
 export default function DeliveryPage() {

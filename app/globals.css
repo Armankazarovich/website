@@ -1727,13 +1727,14 @@ a:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   МОБИЛЬНЫЙ (< 1024px): h1 скрыт через visibility:hidden
+   МОБИЛЬНЫЙ (< 1024px): h1 скрыт ТОЛЬКО в admin (aray-nature-mode)
    Topbar показывает pageTitle — h1 дублирует, место оставляем.
+   НЕ применяем к store-страницам (Hero, каталог, товары)!
    ══════════════════════════════════════════════════════════════ */
 @media (max-width: 1023px) {
-  main h1[class*="font-display"][class*="font-bold"],
-  main h1[class*="text-2xl"][class*="font-bold"],
-  main h1[class*="text-xl"][class*="font-bold"] {
+  .aray-nature-mode main h1[class*="font-display"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-2xl"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"] {
     visibility: hidden;
   }
 }

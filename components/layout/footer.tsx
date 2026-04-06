@@ -190,6 +190,9 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
             <Link href="/privacy" className="hover:text-zinc-400 transition-colors underline underline-offset-2">
               Политика конфиденциальности
             </Link>
+            <Link href="/terms" className="hover:text-zinc-400 transition-colors underline underline-offset-2">
+              Пользовательское соглашение
+            </Link>
           </div>
         </div>
       </div>

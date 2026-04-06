@@ -3,8 +3,16 @@ import { CheckCircle, Factory, Award, Users, Leaf } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
-  title: "О производстве",
-  description: "ООО ПИТИ (ПилоРус) — производитель пиломатериалов в Химках. 2000 м² склад, ГОСТ-продукция, работаем напрямую.",
+  title: "О производстве — ПилоРус | ООО ПИТИ, Химки",
+  description: "ООО ПИТИ (ПилоРус) — производитель пиломатериалов в Химках с 2013 года. Склад 2000 м², ГОСТ-продукция, работаем напрямую без посредников. 10+ лет опыта, 500+ клиентов.",
+  keywords: ["ООО ПИТИ", "производство пиломатериалов Химки", "о компании пилорус", "пиломатериалы производитель Подмосковье"],
+  openGraph: {
+    title: "О производстве ПилоРус — ООО ПИТИ, Химки МО",
+    description: "Производитель пиломатериалов с 2013 года. Склад 2000 м², ГОСТ, без посредников.",
+    url: "https://pilo-rus.ru/about",
+    type: "website",
+  },
+  alternates: { canonical: "https://pilo-rus.ru/about" },
 };
 
 export default function AboutPage() {

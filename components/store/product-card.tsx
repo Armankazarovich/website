@@ -400,14 +400,14 @@ export function ProductCard({
                 key={v.id}
                 onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); setShowUnitPicker(false); } }}
                 disabled={!v.inStock}
-                className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-all ${
+                className={`text-[11px] font-semibold px-2 py-1 rounded-lg border transition-all leading-none ${
                   idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
-                } ${
+                } items-center justify-center min-h-[26px] ${
                   selectedVariant?.id === v.id && v.inStock
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                    ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/30"
                     : v.inStock
-                    ? "border-border bg-muted text-foreground/70 hover:border-primary/50 hover:bg-primary/5"
-                    : "border-border/40 bg-transparent text-muted-foreground/40 line-through cursor-not-allowed"
+                    ? "border-border/60 bg-muted/80 text-foreground/75 hover:border-primary/60 hover:bg-primary/8 hover:text-primary"
+                    : "border-border/30 bg-transparent text-muted-foreground/35 line-through cursor-not-allowed"
                 }`}
               >
                 {v.size}
@@ -417,7 +417,7 @@ export function ProductCard({
             {mobileExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="sm:hidden text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors active:scale-95"
+                className="sm:hidden text-[11px] font-semibold px-2 py-1 rounded-lg border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 min-h-[26px] inline-flex items-center justify-center"
               >
                 +{mobileExtra}
               </button>
@@ -426,7 +426,7 @@ export function ProductCard({
             {desktopExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="hidden sm:inline-flex text-[10px] font-medium px-1.5 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-primary hover:bg-primary/15 hover:border-primary/50 transition-colors active:scale-95"
+                className="hidden sm:inline-flex text-[11px] font-semibold px-2 py-1 rounded-lg border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 min-h-[26px] items-center justify-center"
               >
                 +{desktopExtra}
               </button>

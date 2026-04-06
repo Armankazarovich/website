@@ -4,8 +4,16 @@ import { ContactForm } from "@/components/store/contact-form";
 import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
-  title: "Контакты",
-  description: "Контакты ПилоРус: телефоны, адрес, режим работы. Московская обл., г. Химки, Заводская 2А, стр.28",
+  title: "Контакты — адрес, телефоны, как проехать | ПилоРус",
+  description: "Контакты ПилоРус: телефоны 8-985-970-71-33, 8-999-662-26-02. Адрес: Химки, Заводская 2А стр.28. Режим работы: пн-пт 8:00–19:00, сб 9:00–17:00.",
+  keywords: ["пилорус контакты", "адрес склада химки", "пиломатериалы химки телефон", "купить доски химки адрес"],
+  openGraph: {
+    title: "Контакты ПилоРус — Химки, Заводская 2А стр.28",
+    description: "Телефоны, адрес склада, режим работы. Самовывоз и доставка по Москве и МО.",
+    url: "https://pilo-rus.ru/contacts",
+    type: "website",
+  },
+  alternates: { canonical: "https://pilo-rus.ru/contacts" },
 };
 
 export default function ContactsPage() {
