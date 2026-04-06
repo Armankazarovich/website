@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight, AlertTriangle, ImageIcon, X } from "lucide-react";
+import {
+  Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight,
+  AlertTriangle, ImageIcon, X, Upload, Library, Link2,
+} from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+
+const MediaPickerModal = dynamic(
+  () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
+  { ssr: false }
+);
 
 type Promotion = {
   id: string;
@@ -17,6 +26,176 @@ type Promotion = {
   createdAt: string;
 };
 
+/* ── Image picker (reusable) ──────────────────────────────────────────── */
+function ImagePicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "banners");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) onChange(data.url);
+    } catch { /* silent */ } finally {
+      setUploading(false);
+    }
+  }, [onChange]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleUpload(file);
+  }, [handleUpload]);
+
+  return (
+    <>
+      <div>
+        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5" /> Картинка
+        </label>
+
+        {/* Drop zone / preview */}
+        <div
+          className={`relative rounded-2xl border-2 transition-all duration-150 overflow-hidden ${
+            dragging
+              ? "border-primary bg-primary/5 scale-[1.01]"
+              : value
+              ? "border-border"
+              : "border-dashed border-border hover:border-primary/50 bg-muted/30"
+          }`}
+          style={{ height: value ? 160 : 100 }}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+        >
+          {value ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={value} alt="Превью" className="w-full h-full object-cover" />
+              {/* Overlay on hover */}
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-all group flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMediaPicker(true)}
+                  className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 text-black text-xs font-semibold transition-all hover:bg-white"
+                >
+                  <Library className="w-3.5 h-3.5" /> Сменить
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChange("")}
+                  className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/90 text-white text-xs font-semibold transition-all hover:bg-red-500"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Удалить
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+              {uploading ? (
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              ) : (
+                <>
+                  <Upload className="w-5 h-5 opacity-40" />
+                  <p className="text-xs">Перетащите фото или выберите ниже</p>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            onClick={() => setShowMediaPicker(true)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+          >
+            <Library className="w-3.5 h-3.5" /> Медиабиблиотека
+          </button>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+          >
+            <Upload className="w-3.5 h-3.5" /> Загрузить
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowUrlInput(!showUrlInput); setUrlDraft(value); }}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+            title="Вставить URL"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* URL input (collapsible) */}
+        {showUrlInput && (
+          <div className="flex gap-2 mt-2">
+            <input
+              value={urlDraft}
+              onChange={(e) => setUrlDraft(e.target.value)}
+              placeholder="https://images.pexels.com/..."
+              className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { onChange(urlDraft); setShowUrlInput(false); }
+                if (e.key === "Escape") setShowUrlInput(false);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => { onChange(urlDraft); setShowUrlInput(false); }}
+              className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUrlInput(false)}
+              className="px-3 py-2 rounded-xl border border-border text-xs hover:bg-muted transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ""; }}
+        />
+      </div>
+
+      <MediaPickerModal
+        open={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onPick={(url) => { onChange(url); setShowMediaPicker(false); }}
+      />
+    </>
+  );
+}
+
+/* ── Promotion Card ───────────────────────────────────────────────────── */
 function PromotionCard({
   promo,
   onUpdate,
@@ -94,41 +273,21 @@ function PromotionCard({
               onChange={(e) => setValidUntil(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
-          </div>
-          <div className="col-span-2">
-            <label className="block text-xs text-muted-foreground mb-1">Картинка (URL)</label>
-            <div className="flex gap-2">
-              <input
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-                className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              {imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setImageUrl("")}
-                  className="p-2 rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-            {imageUrl && (
-              <div className="mt-2 rounded-xl overflow-hidden border border-border h-32">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imageUrl} alt="Превью" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+            {validUntil && (
+              <div className="mt-2">
+                <span className={`text-xs font-medium px-2 py-1 rounded-lg ${isExpired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
+                  {isExpired
+                    ? <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Истекла</span>
+                    : `До ${new Date(validUntil).toLocaleDateString("ru-RU")}`}
+                </span>
               </div>
             )}
           </div>
-          {validUntil && (
-            <div className="flex items-end pb-2">
-              <span className={`text-xs font-medium px-2 py-1 rounded-lg ${isExpired ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-                {isExpired ? <span className="flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Истекла</span> : `До ${new Date(validUntil).toLocaleDateString("ru-RU")}`}
-              </span>
-            </div>
-          )}
+          <div className="col-span-2">
+            <ImagePicker value={imageUrl} onChange={setImageUrl} />
+          </div>
         </div>
+
         <div className="flex flex-col gap-2 shrink-0">
           <Badge variant={isExpired ? "destructive" : promo.active ? "default" : "secondary"}>
             {isExpired ? "Истекла" : promo.active ? "Активна" : "Скрыта"}
@@ -137,15 +296,14 @@ function PromotionCard({
             onClick={() => onUpdate(promo.id, { active: !promo.active })}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            {promo.active ? (
-              <ToggleRight className="w-4 h-4 text-primary" />
-            ) : (
-              <ToggleLeft className="w-4 h-4" />
-            )}
+            {promo.active
+              ? <ToggleRight className="w-4 h-4 text-primary" />
+              : <ToggleLeft className="w-4 h-4" />}
             {promo.active ? "Выкл." : "Вкл."}
           </button>
         </div>
       </div>
+
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
         <button
           onClick={() => setConfirmDelete(true)}
@@ -155,17 +313,11 @@ function PromotionCard({
         </button>
         <Button size="sm" onClick={handleSave} disabled={saving || saved}>
           {saved ? (
-            <>
-              <Check className="w-3 h-3 mr-1" /> Сохранено
-            </>
+            <><Check className="w-3 h-3 mr-1" /> Сохранено</>
           ) : saving ? (
-            <>
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" /> ...
-            </>
+            <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> ...</>
           ) : (
-            <>
-              <Save className="w-3 h-3 mr-1" /> Сохранить
-            </>
+            <><Save className="w-3 h-3 mr-1" /> Сохранить</>
           )}
         </Button>
       </div>
@@ -183,6 +335,7 @@ function PromotionCard({
   );
 }
 
+/* ── Main Page ────────────────────────────────────────────────────────── */
 export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,15 +442,9 @@ export default function AdminPromotionsPage() {
             </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" onClick={() => setShowNew(false)}>
-              Отмена
-            </Button>
+            <Button variant="ghost" onClick={() => setShowNew(false)}>Отмена</Button>
             <Button onClick={handleCreate} disabled={creating || !newTitle}>
-              {creating ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4 mr-2" />
-              )}
+              {creating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
               Создать
             </Button>
           </div>
