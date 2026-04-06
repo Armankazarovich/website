@@ -189,7 +189,7 @@ export function ProductCard({
     updateQuantity(cartItemId, parseFloat((cartQty - 1).toFixed(1)));
   };
 
-  /* Responsive: mobile → 2 pills, desktop → 3 pills */
+  /* Responsive: mobile → 2 pills (compact), desktop → 3 pills */
   const MOBILE_LIMIT = 2;
   const DESKTOP_LIMIT = 3;
   const shownSizes = showAllSizes ? variants : variants.slice(0, DESKTOP_LIMIT);
@@ -400,11 +400,13 @@ export function ProductCard({
                 key={v.id}
                 onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); setShowUnitPicker(false); } }}
                 disabled={!v.inStock}
-                className={`text-[11px] font-semibold px-2 py-1 rounded-lg border transition-all leading-none ${
+                className={`font-semibold rounded-lg border transition-all leading-none ${
                   idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
-                } items-center justify-center min-h-[26px] ${
+                } items-center justify-center
+                  text-[10px] px-1.5 py-0.5 sm:text-[11px] sm:px-2 sm:py-1
+                  max-w-[90px] sm:max-w-none truncate ${
                   selectedVariant?.id === v.id && v.inStock
-                    ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                    ? "border-primary bg-primary text-primary-foreground shadow-sm shadow-primary/25"
                     : v.inStock
                     ? "border-border/60 bg-muted/80 text-foreground/75 hover:border-primary/60 hover:bg-primary/8 hover:text-primary"
                     : "border-border/30 bg-transparent text-muted-foreground/35 line-through cursor-not-allowed"
@@ -417,7 +419,7 @@ export function ProductCard({
             {mobileExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="sm:hidden text-[11px] font-semibold px-2 py-1 rounded-lg border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 min-h-[26px] inline-flex items-center justify-center"
+                className="sm:hidden text-[10px] font-semibold px-1.5 py-0.5 rounded-lg border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 inline-flex items-center justify-center"
               >
                 +{mobileExtra}
               </button>

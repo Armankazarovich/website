@@ -206,7 +206,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
       ══════════════════════════════════════════════════ */}
       <header
         className={cn(
-          "sticky top-0 z-50 transition-all duration-500 relative",
+          "sticky top-0 z-50 transition-all duration-500",
         )}
         style={{
           backdropFilter: "blur(32px) saturate(200%)",
