@@ -271,12 +271,12 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours 
                 priority
               />
             </div>
-            <div>
-              <p className="font-display font-bold text-lg leading-tight text-foreground tracking-wide">
+            <div className="flex flex-col gap-0">
+              <p className="font-display font-bold text-lg leading-none text-foreground tracking-wide">
                 ПилоРус
               </p>
               {/* Кнопка "Работаем" с popup расписания */}
-              <div className="relative" ref={scheduleRef}>
+              <div className="relative mt-0.5" ref={scheduleRef}>
                 <button
                   onClick={() => setScheduleOpen((v) => !v)}
                   className="flex items-center gap-1.5 group cursor-pointer"
