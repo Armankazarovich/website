@@ -262,7 +262,8 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
             <div className="px-5 py-3 border-b border-border">
               <h3 className="font-semibold text-sm">Позиции заказа</h3>
             </div>
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[360px] text-sm">
               <tbody className="divide-y divide-border">
                 {currentItems.map((item) => {
                   const removed = removedIds.includes(item.id);
@@ -338,6 +339,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                 </tr>
               </tfoot>
             </table>
+            </div>
 
             {/* Добавить товар */}
             <div className="px-5 py-4 border-t border-border space-y-3">
