@@ -281,7 +281,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
     <div className="space-y-5">
 
       {/* Статистика */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         <div className="bg-card border border-border rounded-2xl p-4">
           <p className="text-xs text-muted-foreground">Заказов сегодня</p>
           <p className="text-2xl font-bold mt-1">{stats.todayCount}</p>

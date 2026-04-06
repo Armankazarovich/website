@@ -1721,7 +1721,9 @@ a:focus-visible {
 @media (min-width: 1024px) {
   .aray-nature-mode main h1[class*="font-display"][class*="font-bold"],
   .aray-nature-mode main h1[class*="text-2xl"][class*="font-bold"],
-  .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"] {
+  .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-3xl"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-4xl"][class*="font-bold"] {
     display: none;
   }
 }
@@ -1734,7 +1736,9 @@ a:focus-visible {
 @media (max-width: 1023px) {
   .aray-nature-mode main h1[class*="font-display"][class*="font-bold"],
   .aray-nature-mode main h1[class*="text-2xl"][class*="font-bold"],
-  .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"] {
+  .aray-nature-mode main h1[class*="text-xl"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-3xl"][class*="font-bold"],
+  .aray-nature-mode main h1[class*="text-4xl"][class*="font-bold"] {
     visibility: hidden;
   }
 }
