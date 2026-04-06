@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     siteName: "ПилоРус",
     title: "ПилоРус — Пиломатериалы от производителя",
     description: "Производитель пиломатериалов в Химках. Доставка по Москве и МО.",
-    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "ПилоРус — Пиломатериалы от производителя" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -80,9 +80,12 @@ const organizationSchema = {
   "@type": "LocalBusiness",
   "name": "ПилоРус (ООО ПИТИ)",
   "image": "https://pilo-rus.ru/logo.png",
-  "description": "Производитель пиломатериалов в Химках. Доска обрезная, брус, вагонка, блок-хаус напрямую с завода.",
+  "logo": "https://pilo-rus.ru/logo.png",
+  "description": "Производитель пиломатериалов в Химках. Доска обрезная, брус, вагонка, блок-хаус напрямую с завода. Доставка по Москве и Московской области за 1-3 дня.",
   "url": "https://pilo-rus.ru",
-  "telephone": "+7-985-970-71-33",
+  "telephone": ["+7-985-970-71-33", "+7-999-662-26-02"],
+  "email": "info@pilo-rus.ru",
+  "priceRange": "₽₽",
   "address": {
     "@type": "PostalAddress",
     "streetAddress": "ул. Заводская 2А, стр.28",
@@ -96,12 +99,46 @@ const organizationSchema = {
     "latitude": 55.8883,
     "longitude": 37.4297
   },
-  "openingHoursSpecification": {
-    "@type": "OpeningHoursSpecification",
-    "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],
-    "opens": "09:00",
-    "closes": "20:00"
+  "areaServed": [
+    { "@type": "City", "name": "Москва" },
+    { "@type": "AdministrativeArea", "name": "Московская область" },
+    { "@type": "City", "name": "Химки" },
+    { "@type": "City", "name": "Мытищи" },
+    { "@type": "City", "name": "Красногорск" },
+    { "@type": "City", "name": "Люберцы" },
+    { "@type": "City", "name": "Балашиха" },
+    { "@type": "City", "name": "Одинцово" }
+  ],
+  "serviceArea": {
+    "@type": "GeoCircle",
+    "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 55.8883, "longitude": 37.4297 },
+    "geoRadius": "100000"
   },
+  "hasOfferCatalog": {
+    "@type": "OfferCatalog",
+    "name": "Пиломатериалы",
+    "itemListElement": [
+      { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Доска обрезная" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Брус" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Вагонка" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Блок-хаус" } },
+      { "@type": "Offer", "itemOffered": { "@type": "Product", "name": "Доска пола" } }
+    ]
+  },
+  "openingHoursSpecification": [
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+      "opens": "08:00",
+      "closes": "19:00"
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Saturday"],
+      "opens": "09:00",
+      "closes": "17:00"
+    }
+  ],
   "sameAs": ["https://pilmos.ru"]
 };
 

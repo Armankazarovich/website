@@ -194,11 +194,62 @@ const TICKER_ITEMS = [
   "Химки, Московская область",
 ];
 
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Где купить пиломатериалы в Москве и Московской области?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "ПилоРус (ООО ПИТИ) — производитель пиломатериалов в г. Химки, Московская область. Адрес склада: ул. Заводская 2А, стр.28. Доставка по всей Москве и МО за 1-3 дня. Телефон: 8-985-970-71-33."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Какова минимальная сумма заказа на доставку пиломатериалов?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Минимальная сумма заказа для доставки по Москве и МО от 5 000 рублей. Самовывоз со склада в Химках без ограничений по сумме."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Как рассчитать количество и стоимость досок?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Воспользуйтесь бесплатным калькулятором пиломатериалов на сайте pilo-rus.ru/calculator. Укажите размеры и нужное количество — система автоматически рассчитает кубатуру и стоимость."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Работаете ли вы с юридическими лицами?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, ООО ПИТИ (ПилоРус) работает с юридическими лицами и ИП. Выставляем счета, заключаем договора, предоставляем полный пакет документов. Оплата по безналичному расчёту."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Есть ли пиломатериалы в наличии на складе в Химках?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, склад площадью 2000 м² в Химках постоянно в наличии. Доска обрезная хвойная, брус строительный, вагонка, блок-хаус, евровагонка и другие виды пиломатериалов. Проверить наличие можно в каталоге на сайте."
+      }
+    }
+  ]
+};
+
 export default async function HomePage() {
   const { categories, featuredProducts, promotions, reviews } = await getData();
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       {/* ===== HERO ===== */}
       <section className="relative min-h-[92vh] lg:min-h-screen flex items-center overflow-hidden bg-brand-dark">
 
