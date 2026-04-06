@@ -56,12 +56,14 @@ export default async function CatalogPage({
   const perPage = 24;
   const currentSize = searchParams.size || "";
   const currentType = searchParams.type || "";
+  const currentInStock = searchParams.instock === "1";
   const currentMinPrice = searchParams.minprice ? Number(searchParams.minprice) : null;
   const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
 
   // Build variant sub-filter
   const variantWhere: Record<string, unknown> = {};
   if (currentSize) variantWhere.size = { contains: currentSize };
+  if (currentInStock) variantWhere.inStock = true;
   if (currentMinPrice !== null || currentMaxPrice !== null) {
     variantWhere.pricePerCube = {
       ...(currentMinPrice !== null ? { gte: currentMinPrice } : {}),
@@ -263,7 +265,7 @@ export default async function CatalogPage({
               }
             >
               <CatalogFilters
-                currentInStock={false}
+                currentInStock={currentInStock}
                 currentSize={currentSize}
                 sizes={crossSections}
                 currentType={currentType}
