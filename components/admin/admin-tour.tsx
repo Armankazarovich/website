@@ -269,8 +269,14 @@ export function AdminTour({ autoShow = true }: { autoShow?: boolean }) {
             className="fixed inset-0 z-[201] flex items-center justify-center p-4 pointer-events-none"
           >
             <div
-              className="pointer-events-auto w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-white/10"
-              style={{ background: "rgba(12,16,32,0.97)" }}
+              className="pointer-events-auto w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl"
+              style={{
+                background: "rgba(8,13,32,0.82)",
+                backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+                WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+                border: "1px solid rgba(255,255,255,0.14)",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+              }}
               onClick={e => e.stopPropagation()}
             >
               {/* Header gradient strip */}

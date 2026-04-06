@@ -496,10 +496,14 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
+  const openTour = () => {
+    setOpen(false);
+    window.dispatchEvent(new Event("aray-open-tour"));
+  };
+
   // Нормализуем путь (убираем суффиксы типа /admin/products/123)
   const basePath = (() => {
     const segments = pathname.split("/");
-    // Try full path, then 3 segments, then 2 segments
     if (PAGE_HELP[pathname]) return pathname;
     const twoSeg = "/" + segments.slice(1, 3).join("/");
     if (PAGE_HELP[twoSeg]) return twoSeg;
@@ -507,22 +511,20 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
   })();
 
   const helpData = basePath ? PAGE_HELP[basePath] : null;
-  if (!helpData) return null; // Нет инструкций для этой страницы
 
   // Найти контент по роли
   const role = userRole as Role | undefined;
-  const content = (role && helpData[role]) || helpData["default"];
-  if (!content) return null;
+  const content = helpData ? ((role && helpData[role]) || helpData["default"]) : null;
 
   return (
     <>
-      {/* Кнопка помощи — фиксированная в правом нижнем углу контента */}
+      {/* Кнопка помощи — фиксированная в правом нижнем углу контента, ВСЕГДА видна */}
       <button
         onClick={() => setOpen(true)}
-        title="Инструкция к разделу"
+        title={content ? "Инструкция к разделу" : "Обучение и помощь"}
         className="fixed bottom-24 right-4 lg:bottom-8 lg:right-8 z-40 w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95"
         style={{
-          background: "rgba(var(--primary-rgb, 232,112,10), 0.95)",
+          background: "rgba(232,112,10, 0.95)",
           boxShadow: "0 4px 20px rgba(232,112,10,0.4)",
         }}
       >
@@ -561,8 +563,12 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
                     <BookOpen className="w-4.5 h-4.5 text-primary" style={{ width: 18, height: 18 }} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="font-bold text-base text-foreground leading-tight">{content.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{content.subtitle}</p>
+                    <h3 className="font-bold text-base text-foreground leading-tight">
+                      {content ? content.title : "Помощь и обучение"}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {content ? content.subtitle : "Инструкции и обучение"}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -575,62 +581,101 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-                {/* Role badge */}
-                {userRole && userRole !== "USER" && (
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
-                    <Zap className="w-3 h-3" />
-                    Инструкция для: {
-                      userRole === "SUPER_ADMIN" ? "Владелец" :
-                      userRole === "ADMIN" ? "Администратор" :
-                      userRole === "MANAGER" ? "Менеджер" :
-                      userRole === "COURIER" ? "Курьер" :
-                      userRole === "WAREHOUSE" ? "Склад" :
-                      userRole === "ACCOUNTANT" ? "Бухгалтер" :
-                      userRole === "SELLER" ? "Продавец" : userRole
-                    }
+
+                {/* Кнопка тура — всегда первой в панели */}
+                <button
+                  onClick={openTour}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">Пройти обучение</p>
+                    <p className="text-xs text-muted-foreground">Интерактивный тур по всей системе</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground ml-auto" />
+                </button>
+
+                {content ? (
+                  <>
+                    {/* Role badge */}
+                    {userRole && userRole !== "USER" && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-semibold">
+                        <Zap className="w-3 h-3" />
+                        Инструкция для: {
+                          userRole === "SUPER_ADMIN" ? "Владелец" :
+                          userRole === "ADMIN" ? "Администратор" :
+                          userRole === "MANAGER" ? "Менеджер" :
+                          userRole === "COURIER" ? "Курьер" :
+                          userRole === "WAREHOUSE" ? "Склад" :
+                          userRole === "ACCOUNTANT" ? "Бухгалтер" :
+                          userRole === "SELLER" ? "Продавец" : userRole
+                        }
+                      </div>
+                    )}
+
+                    {/* Steps */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Пошаговая инструкция</p>
+                      <ol className="space-y-3">
+                        {content.steps.map((step, i) => (
+                          <li key={i} className="flex items-start gap-3">
+                            <span className="w-5.5 h-5.5 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5" style={{ minWidth: 22, height: 22 }}>
+                              {i + 1}
+                            </span>
+                            <div>
+                              <p className="text-sm text-foreground/90 leading-snug">{step.text}</p>
+                              {step.detail && (
+                                <p className="text-xs text-muted-foreground mt-0.5">{step.detail}</p>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+
+                    {/* Tip */}
+                    <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/30">
+                      <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">{content.tip}</p>
+                    </div>
+                  </>
+                ) : (
+                  /* Нет конкретной инструкции — общий экран помощи */
+                  <div className="space-y-3">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Разделы помощи</p>
+                    {[
+                      { href: "/admin/help#orders", label: "Заказы — как обрабатывать" },
+                      { href: "/admin/help#products", label: "Товары — добавить и управлять" },
+                      { href: "/admin/help#staff", label: "Команда — добавить сотрудника" },
+                      { href: "/admin/help#settings", label: "Настройки сайта" },
+                    ].map(item => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-muted transition-colors"
+                      >
+                        <ArrowRight className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-sm text-foreground/80">{item.label}</span>
+                      </Link>
+                    ))}
                   </div>
                 )}
-
-                {/* Steps */}
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Пошаговая инструкция</p>
-                  <ol className="space-y-3">
-                    {content.steps.map((step, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <span className="w-5.5 h-5.5 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5" style={{ minWidth: 22, height: 22 }}>
-                          {i + 1}
-                        </span>
-                        <div>
-                          <p className="text-sm text-foreground/90 leading-snug">{step.text}</p>
-                          {step.detail && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{step.detail}</p>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-
-                {/* Tip */}
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200/60 dark:border-amber-700/30">
-                  <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">{content.tip}</p>
-                </div>
               </div>
 
               {/* Footer */}
               <div className="px-5 py-4 border-t border-border shrink-0 space-y-2">
-                {content.helpLink && (
-                  <Link
-                    href={content.helpLink}
-                    onClick={() => setOpen(false)}
-                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-                  >
-                    <BookOpen className="w-4 h-4" />
-                    Все инструкции
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                )}
+                <Link
+                  href="/admin/help"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Все инструкции
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
                 <button
                   onClick={() => setOpen(false)}
                   className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"

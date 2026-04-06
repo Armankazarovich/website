@@ -37,7 +37,7 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end lg:items-center lg:justify-center lg:p-8">
+    <div className="fixed inset-0 z-[80] flex items-end lg:items-stretch lg:justify-end">
 
       {/* Backdrop */}
       <div
@@ -46,26 +46,26 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
         onClick={onClose}
       />
 
-      {/* Panel — bottom sheet on mobile, centered modal on desktop */}
+      {/* Panel — bottom sheet on mobile, right side panel on desktop */}
       <div
         ref={panelRef}
         className={`
           relative z-10 flex flex-col
-          w-full lg:max-w-2xl
-          rounded-t-[28px] lg:rounded-[28px]
+          w-full lg:w-[460px] lg:max-w-[460px]
+          rounded-t-[28px] lg:rounded-none lg:rounded-l-[28px]
           overflow-hidden
-          animate-in slide-in-from-bottom lg:slide-in-from-bottom-4 lg:zoom-in-95 duration-300
+          animate-in slide-in-from-bottom lg:slide-in-from-right duration-300
+          max-h-[92dvh] lg:max-h-full lg:h-full
         `}
         style={{
-          maxHeight: "92dvh",
           background: "rgba(8, 13, 32, 0.82)",
           backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           border: "1px solid rgba(255,255,255,0.14)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+          boxShadow: "-8px 0 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.05) inset",
         }}
       >
-        {/* Drag handle (mobile) */}
+        {/* Drag handle (mobile only) */}
         <div className="lg:hidden flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1 rounded-full bg-white/20" />
         </div>

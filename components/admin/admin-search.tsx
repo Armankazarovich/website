@@ -1,6 +1,18 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+
+// ── Classic mode hook (читает localStorage, реагирует на событие) ────────────
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
@@ -120,41 +132,48 @@ const TYPE_META: Record<string, { label: string; bg: string; color: string }> = 
 
 // ─── Result item renderer ───────────────────────────────────────────────────
 function ResultItem({
-  r, i, selected, onSelect, onGo,
+  r, i, selected, onSelect, onGo, classic,
 }: {
   r: SearchResult; i: number; selected: number;
   onSelect: (i: number) => void; onGo: (r: SearchResult) => void;
+  classic?: boolean;
 }) {
   const isActive = i === selected;
   const meta = TYPE_META[r.type] || TYPE_META.page;
+  // В классической теме тексты адаптируем к CSS переменным
+  const textMain  = classic ? (isActive ? "hsl(var(--foreground))" : "hsl(var(--foreground)/.80)") : (isActive ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.80)");
+  const textSub   = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)";
+  const iconInact = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.45)";
+  const iconBg    = classic ? "hsl(var(--muted)/0.5)" : "rgba(255,255,255,0.06)";
+  const rowBg     = classic ? (isActive ? "hsl(var(--accent))" : "transparent") : (isActive ? "rgba(255,255,255,0.08)" : "transparent");
   return (
     <button
       onClick={() => onGo(r)}
       onMouseEnter={() => onSelect(i)}
       className="w-full flex items-center gap-3 px-4 py-3 text-left transition-all duration-100 group"
       style={{
-        background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+        background: rowBg,
         borderLeft: isActive ? `3px solid hsl(var(--primary))` : "3px solid transparent",
       }}
     >
       {/* Icon */}
       <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
-        style={{ background: isActive ? meta.bg : "rgba(255,255,255,0.06)" }}>
-        {r.type === "page"    && <r.icon className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
-        {r.type === "order"   && <Hash className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
-        {r.type === "product" && <Package className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
-        {r.type === "client"  && <UserCircle className="w-4 h-4" style={{ color: isActive ? meta.color : "rgba(255,255,255,0.45)" }} />}
+        style={{ background: isActive ? meta.bg : iconBg }}>
+        {r.type === "page"    && <r.icon className="w-4 h-4" style={{ color: isActive ? meta.color : iconInact }} />}
+        {r.type === "order"   && <Hash className="w-4 h-4" style={{ color: isActive ? meta.color : iconInact }} />}
+        {r.type === "product" && <Package className="w-4 h-4" style={{ color: isActive ? meta.color : iconInact }} />}
+        {r.type === "client"  && <UserCircle className="w-4 h-4" style={{ color: isActive ? meta.color : iconInact }} />}
       </div>
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: isActive ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.80)" }}>
+        <p className="text-[13px] font-medium leading-tight truncate" style={{ color: textMain }}>
           {r.label}
         </p>
         {"sub" in r && r.sub && (
-          <p className="text-[11px] truncate mt-0.5" style={{ color: "rgba(255,255,255,0.38)" }}>{r.sub}</p>
+          <p className="text-[11px] truncate mt-0.5" style={{ color: textSub }}>{r.sub}</p>
         )}
         {r.type === "order" && r.status && (
-          <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.35)" }}>{r.status}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: textSub }}>{r.status}</p>
         )}
       </div>
       {/* Type badge + arrow */}
@@ -173,6 +192,7 @@ function ResultItem({
 // ─── Desktop inline search (expands in topbar) ──────────────────────────────
 export function AdminDesktopSearch() {
   const [expanded, setExpanded] = useState(false);
+  const classic = useClassicMode();
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(expanded);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -231,7 +251,10 @@ export function AdminDesktopSearch() {
     <div ref={containerRef} className="flex-1 flex items-center relative mx-1 animate-in slide-in-from-right-3 fade-in duration-200">
       {/* Input bar */}
       <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
-        style={{ background: "rgba(10,15,35,0.75)", border: "1.5px solid rgba(255,255,255,0.18)" }}>
+        style={{
+          background: classic ? "hsl(var(--background))" : "rgba(10,15,35,0.75)",
+          border: classic ? "1.5px solid hsl(var(--border))" : "1.5px solid rgba(255,255,255,0.18)",
+        }}>
         <Search className="w-4 h-4 text-primary/70 shrink-0" />
         <input
           ref={inputRef}
@@ -239,8 +262,8 @@ export function AdminDesktopSearch() {
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Поиск заказов, товаров, клиентов..."
-          className="aray-search-input flex-1 bg-transparent outline-none min-w-0 text-white placeholder:text-white/35"
-          style={{ fontSize: "16px" }}
+          className="aray-search-input flex-1 bg-transparent outline-none min-w-0"
+          style={{ fontSize: "16px", color: classic ? "hsl(var(--foreground))" : "white" }}
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
@@ -248,35 +271,38 @@ export function AdminDesktopSearch() {
         {loading
           ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
           : query
-            ? <button onClick={() => setQuery("")} className="text-white/30 hover:text-white/60 transition-colors shrink-0"><X className="w-3.5 h-3.5" /></button>
-            : <kbd className="text-[10px] font-mono shrink-0 text-white/25">Esc</kbd>
+            ? <button onClick={() => setQuery("")} className="text-muted-foreground hover:text-foreground transition-colors shrink-0"><X className="w-3.5 h-3.5" /></button>
+            : <kbd className="text-[10px] font-mono shrink-0 text-muted-foreground opacity-60">Esc</kbd>
         }
       </div>
 
-      {/* Results dropdown — всегда тёмный (фон всегда тёмное фото) */}
+      {/* Results dropdown */}
       {results.length > 0 && (
         <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: "rgba(10,14,30,0.96)",
+            background: classic ? "hsl(var(--card))" : "rgba(10,14,30,0.96)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55)",
+            border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.10)",
+            boxShadow: classic ? "0 12px 40px rgba(0,0,0,0.12)" : "0 24px 64px rgba(0,0,0,0.55)",
           }}>
           {!query.trim() && (
-            <p className="px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/25">
+            <p className="px-5 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground opacity-60">
               Быстрый переход
             </p>
           )}
           <div className="py-1.5 max-h-[360px] overflow-y-auto">
             {results.map((r, i) => (
-              <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+              <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} classic={classic} />
             ))}
           </div>
-          <div className="px-5 py-2 flex items-center gap-4 text-[10px] text-white/20"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span><kbd className="font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/30">↑↓</kbd> навигация</span>
-            <span><kbd className="font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/30">↵</kbd> открыть</span>
+          <div className="px-5 py-2 flex items-center gap-4 text-[10px]"
+            style={{
+              borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)",
+              color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.20)",
+            }}>
+            <span><kbd className="font-mono px-1.5 py-0.5 rounded">↑↓</kbd> навигация</span>
+            <span><kbd className="font-mono px-1.5 py-0.5 rounded">↵</kbd> открыть</span>
             <span className="ml-auto opacity-40">⌘K</span>
           </div>
         </div>
@@ -288,6 +314,7 @@ export function AdminDesktopSearch() {
 // ─── Command Palette (⌘K) — главная фича ARAY Admin ─────────────────────────
 export function AdminSearch() {
   const [open, setOpen] = useState(false);
+  const classic = useClassicMode();
   const { query, setQuery, results, loading, selected, setSelected } = useSearchLogic(open);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -364,21 +391,21 @@ export function AdminSearch() {
           className="w-full lg:w-[620px] rounded-t-[28px] lg:rounded-[24px] overflow-hidden flex flex-col"
           style={{
             maxHeight: "88dvh",
-            background: "rgba(7,11,28,0.88)",
+            background: classic ? "hsl(var(--card))" : "rgba(7,11,28,0.88)",
             backdropFilter: "blur(56px) saturate(240%) brightness(0.80)",
             WebkitBackdropFilter: "blur(56px) saturate(240%) brightness(0.80)",
-            border: "1px solid rgba(255,255,255,0.13)",
-            boxShadow: "0 40px 100px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04) inset",
+            border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.13)",
+            boxShadow: classic ? "0 24px 64px rgba(0,0,0,0.15)" : "0 40px 100px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.04) inset",
           }}
         >
           {/* Drag handle (mobile) */}
           <div className="lg:hidden flex justify-center pt-3 pb-0 shrink-0">
-            <div className="w-10 h-1 rounded-full bg-white/20" />
+            <div className="w-10 h-1 rounded-full bg-foreground/10" />
           </div>
 
           {/* Search input */}
           <div className="flex items-center gap-3 px-5 py-4 shrink-0"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)" }}>
             {loading
               ? <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
               : <Search className="w-5 h-5 text-primary/70 shrink-0" />
@@ -389,15 +416,22 @@ export function AdminSearch() {
               onChange={e => setQuery(e.target.value)}
               onKeyDown={handleKey}
               placeholder="Найти заказ, товар, клиента, страницу..."
-              className="flex-1 bg-transparent outline-none text-white/95 placeholder:text-white/28 text-[15px] font-medium"
-              style={{ fontSize: "16px" }}
+              className="flex-1 bg-transparent outline-none text-[15px] font-medium"
+              style={{
+                fontSize: "16px",
+                color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.95)",
+              }}
               autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
             />
             <button onClick={() => { setOpen(false); setQuery(""); }}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-white/30 hover:text-white/60 transition-colors"
-              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}>
+              className="flex items-center gap-1 px-2 py-1 rounded-lg transition-colors"
+              style={{
+                background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.06)",
+                border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.09)",
+                color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.40)",
+              }}>
               <span className="text-[10px] font-mono">Esc</span>
             </button>
           </div>
@@ -410,7 +444,7 @@ export function AdminSearch() {
               <>
                 {/* Быстрые действия */}
                 <div className="px-5 pt-4 pb-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-3">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.22em] mb-3" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.25)" }}>
                     Быстрые действия
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -420,7 +454,8 @@ export function AdminSearch() {
                         onClick={() => goHref(a.href)}
                         className="flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all active:scale-[0.98] hover:brightness-110 group"
                         style={{
-                          background: "rgba(255,255,255,0.06)",
+                          background: classic ? "hsl(var(--muted)/0.6)" : "rgba(255,255,255,0.06)",
+                          border: classic ? "1px solid hsl(var(--border))" : "none",
                         }}
                       >
                         <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -428,8 +463,8 @@ export function AdminSearch() {
                           <a.icon className="w-4 h-4 text-primary" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-[12px] font-semibold text-white/85 truncate">{a.label}</p>
-                          <p className="text-[10px] text-white/35 truncate">{a.desc}</p>
+                          <p className="text-[12px] font-semibold truncate" style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.85)" }}>{a.label}</p>
+                          <p className="text-[10px] truncate" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}>{a.desc}</p>
                         </div>
                       </button>
                     ))}
@@ -438,13 +473,13 @@ export function AdminSearch() {
 
                 {/* Навигация по страницам */}
                 <div className="px-5 pt-3 pb-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/25 mb-1">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.22em] mb-1" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.25)" }}>
                     Навигация
                   </p>
                 </div>
                 <div className="pb-3">
                   {results.map((r, i) => (
-                    <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+                    <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} classic={classic} />
                   ))}
                 </div>
               </>
@@ -453,23 +488,22 @@ export function AdminSearch() {
             {/* ── С запросом → Сгруппированные результаты ── */}
             {hasQuery && results.length === 0 && !loading && (
               <div className="py-14 flex flex-col items-center gap-3">
-                <Search className="w-8 h-8 text-white/15" />
-                <p className="text-sm text-white/30">Ничего не найдено по «{query}»</p>
+                <Search className="w-8 h-8 text-muted-foreground opacity-30" />
+                <p className="text-sm text-muted-foreground opacity-50">Ничего не найдено по «{query}»</p>
               </div>
             )}
 
             {hasQuery && groupOrder.map(type => {
               const items = grouped[type];
               if (!items?.length) return null;
-              // Найти базовый index для клавиатурной навигации
               const baseIdx = flatResults.findIndex(r => r === items[0]);
               return (
                 <div key={type}>
-                  <p className="px-5 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.22em] text-white/25">
+                  <p className="px-5 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.22em]" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.25)" }}>
                     {groupLabels[type]}
                   </p>
                   {items.map((r, i) => (
-                    <ResultItem key={i} r={r} i={baseIdx + i} selected={selected} onSelect={setSelected} onGo={go} />
+                    <ResultItem key={i} r={r} i={baseIdx + i} selected={selected} onSelect={setSelected} onGo={go} classic={classic} />
                   ))}
                 </div>
               );
@@ -480,14 +514,14 @@ export function AdminSearch() {
 
           {/* Footer */}
           <div className="px-5 py-2.5 flex items-center gap-4 shrink-0"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span className="flex items-center gap-1.5 text-[10px] text-white/20">
-              <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↑↓</kbd> навигация
+            style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
+            <span className="flex items-center gap-1.5 text-[10px]" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.20)" }}>
+              <kbd className="font-mono px-1.5 py-0.5 rounded" style={{ background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.10)", color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.30)" }}>↑↓</kbd> навигация
             </span>
-            <span className="flex items-center gap-1.5 text-[10px] text-white/20">
-              <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded text-white/30">↵</kbd> открыть
+            <span className="flex items-center gap-1.5 text-[10px]" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.20)" }}>
+              <kbd className="font-mono px-1.5 py-0.5 rounded" style={{ background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.10)", color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.30)" }}>↵</kbd> открыть
             </span>
-            <span className="ml-auto flex items-center gap-1 text-[10px] text-white/15">
+            <span className="ml-auto flex items-center gap-1 text-[10px]" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.15)" }}>
               <Command className="w-3 h-3" />K
             </span>
           </div>
