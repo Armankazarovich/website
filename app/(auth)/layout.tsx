@@ -19,7 +19,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       <Header categories={categories} />
       <main className="flex-1 pb-16 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} />
-      <MobileBottomNav />
+      <MobileBottomNav arayEnabled={false} />
       <ScrollToTop />
     </div>
   );

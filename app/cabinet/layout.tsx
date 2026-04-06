@@ -36,7 +36,7 @@ export default async function CabinetLayout({ children }: { children: React.Reac
         </div>
       </main>
       <Footer settings={siteSettings} />
-      <MobileBottomNav />
+      <MobileBottomNav arayEnabled={false} />
       <ScrollToTop />
     </div>
   );
