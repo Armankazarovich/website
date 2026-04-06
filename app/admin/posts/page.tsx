@@ -18,6 +18,7 @@ import {
   ExternalLink,
   Wand2,
   Database,
+  ImageIcon,
 } from "lucide-react";
 
 type Post = {
@@ -27,6 +28,7 @@ type Post = {
   excerpt: string;
   topic: string | null;
   readTime: number;
+  coverImage: string | null;
   published: boolean;
   aiGenerated: boolean;
   views: number;
@@ -56,18 +58,20 @@ function EditModal({
   const [excerpt, setExcerpt] = useState(post.excerpt);
   const [topic, setTopic] = useState(post.topic ?? "");
   const [readTime, setReadTime] = useState(post.readTime);
+  const [coverImage, setCoverImage] = useState(post.coverImage ?? "");
+  const [imgError, setImgError] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(post.id, { title, excerpt, topic, readTime });
+    await onSave(post.id, { title, excerpt, topic, readTime, coverImage: coverImage.trim() || null });
     setSaving(false);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg">
+      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <p className="font-display font-semibold">Редактировать статью</p>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -111,6 +115,47 @@ function EditModal({
                 className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
+          </div>
+
+          {/* Cover image */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Обложка (URL фото)
+            </label>
+            <div className="flex gap-2">
+              <input
+                value={coverImage}
+                onChange={(e) => { setCoverImage(e.target.value); setImgError(false); }}
+                placeholder="https://images.pexels.com/..."
+                className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {coverImage && (
+                <button
+                  type="button"
+                  onClick={() => { setCoverImage(""); setImgError(false); }}
+                  className="p-2 rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {coverImage && !imgError && (
+              <div className="mt-2 rounded-xl overflow-hidden border border-border h-36 bg-muted">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={coverImage}
+                  alt="Превью"
+                  className="w-full h-full object-cover"
+                  onError={() => setImgError(true)}
+                />
+              </div>
+            )}
+            {imgError && (
+              <p className="mt-1.5 text-xs text-destructive">Не удалось загрузить фото — проверьте ссылку</p>
+            )}
+            <p className="mt-1.5 text-[11px] text-muted-foreground">
+              Совет: Pexels.com → найдите фото → правая кнопка → "Копировать адрес изображения"
+            </p>
           </div>
         </div>
         <div className="flex justify-end gap-2 px-6 pb-5">
