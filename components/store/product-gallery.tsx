@@ -15,15 +15,17 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
   const [active, setActive]     = useState(0);
   const [dir, setDir]           = useState<"left" | "right" | null>(null);
   const [animating, setAnimating] = useState(false);
+  const prevActiveRef = useRef(0);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
   const go = useCallback((idx: number) => {
     if (animating || idx === active || idx < 0 || idx >= images.length) return;
+    prevActiveRef.current = active;
     setDir(idx > active ? "left" : "right");
     setAnimating(true);
+    setActive(idx);
     setTimeout(() => {
-      setActive(idx);
       setDir(null);
       setAnimating(false);
     }, 280);
@@ -69,7 +71,7 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
                 )}
               >
                 <Image
-                  src={images[active]}
+                  src={images[prevActiveRef.current]}
                   alt={name}
                   fill
                   className="object-cover"
