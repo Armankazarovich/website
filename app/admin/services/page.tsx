@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -161,6 +161,31 @@ export default function AdminServicesPage() {
   const [loading, setLoading] = useState(true);
   const [modalService, setModalService] = useState<Partial<Service> | null | false>(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const dragItem = useRef<number | null>(null);
+  const dragOver = useRef<number | null>(null);
+
+  const handleDragStart = (idx: number) => { dragItem.current = idx; };
+  const handleDragEnter = (idx: number) => { dragOver.current = idx; };
+  const handleDragEnd = async () => {
+    const from = dragItem.current;
+    const to = dragOver.current;
+    if (from === null || to === null || from === to) { dragItem.current = null; dragOver.current = null; return; }
+    const reordered = [...services];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    const updated = reordered.map((s, i) => ({ ...s, sortOrder: i }));
+    setServices(updated);
+    dragItem.current = null;
+    dragOver.current = null;
+    // Save to DB
+    await Promise.all(updated.map((s) =>
+      fetch(`/api/admin/services/${s.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sortOrder: s.sortOrder }),
+      })
+    ));
+  };
 
   const loadServices = async () => {
     try {
@@ -239,12 +264,17 @@ export default function AdminServicesPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {services.map((service) => (
+          {services.map((service, idx) => (
             <div
               key={service.id}
-              className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3 hover:border-primary/20 transition-colors"
+              draggable
+              onDragStart={() => handleDragStart(idx)}
+              onDragEnter={() => handleDragEnter(idx)}
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => e.preventDefault()}
+              className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3 hover:border-primary/20 transition-colors cursor-default"
             >
-              <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0 cursor-grab" />
+              <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0 cursor-grab active:cursor-grabbing" />
 
               <div
                 className={`w-2 h-2 rounded-full shrink-0 ${service.active ? "bg-green-500" : "bg-zinc-400"}`}

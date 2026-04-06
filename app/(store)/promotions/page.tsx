@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Tag } from "lucide-react";
 import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
 import { BackButton } from "@/components/ui/back-button";
+import { AdminEditButton } from "@/components/admin/admin-edit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -104,8 +105,9 @@ export default async function PromotionsPage() {
           return (
             <div
               key={promo.id}
-              className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${theme.gradient} text-white p-6 flex flex-col min-h-[260px]`}
+              className={`group relative rounded-2xl overflow-hidden bg-gradient-to-br ${theme.gradient} text-white p-6 flex flex-col min-h-[260px]`}
             >
+              <AdminEditButton href="/admin/promotions" mode="overlay" label="Изменить акцию" />
               {/* Декоративные круги */}
               <div className={`absolute top-0 right-0 w-44 h-44 rounded-full ${theme.circle1} -translate-y-1/2 translate-x-1/2 pointer-events-none`} />
               <div className={`absolute bottom-0 left-0 w-28 h-28 rounded-full ${theme.circle2} translate-y-1/2 -translate-x-1/2 pointer-events-none`} />
