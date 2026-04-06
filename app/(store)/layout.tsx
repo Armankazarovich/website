@@ -40,7 +40,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
     <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
       {/* Хедер на всех устройствах */}
-      <Header categories={categories} phones={getPhones(siteSettings)} />
+      <Header categories={categories} phones={getPhones(siteSettings)} workingHours={getSetting(siteSettings, "working_hours") || undefined} />
       <main className="flex-1 pb-20 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
 

@@ -46,6 +46,7 @@ const DEFAULT_PHONES: PhoneItem[] = [
 interface HeaderProps {
   categories?: HeaderCategory[];
   phones?: PhoneItem[];
+  workingHours?: string; // "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00"
 }
 
 const infoLinks = [
@@ -127,7 +128,25 @@ const MATERIAL_TYPES = [
 /* ── Популярные сечения ──────────────────────────────────────── */
 const COMMON_SIZES = ["25×100", "25×150", "50×150", "50×200", "100×100", "150×150", "40×150", "50×100"];
 
-export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps) {
+export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours }: HeaderProps) {
+  // Парсим строку "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00" в структуру
+  const parsedSchedule = (() => {
+    const raw = workingHours || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
+    const parts = raw.split(",").map(s => s.trim());
+    return parts.map(part => {
+      const [days, hours] = part.split(":").map((s, i) => i === 0 ? s.trim() : part.split(/:(.*)/s)[1].trim());
+      const d = part.split(":")[0].trim();
+      const h = part.split(/:(.*)/s)[1]?.trim() || "";
+      // Detect if this is today
+      const dow = new Date().getDay(); // 0=Sun,1=Mon,...,6=Sat
+      const isToday = (d.includes("Пн") && [1,2,3,4,5].includes(dow)) ||
+                      (d.includes("Сб") && dow === 6) ||
+                      (d.includes("Вс") && dow === 0) ||
+                      (d.includes("Вос") && dow === 0) ||
+                      (d.includes("Суб") && dow === 6);
+      return { days: d, hours: h, isToday };
+    });
+  })();
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -279,16 +298,12 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                       <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                       <span className="text-xs font-semibold text-green-600 dark:text-green-400">Сейчас работаем</span>
                     </div>
-                    {/* Расписание */}
+                    {/* Расписание из настроек сайта */}
                     <div className="px-4 py-3 space-y-1.5 text-xs">
-                      {[
-                        { days: "Пн — Пт", hours: "09:00 — 18:00", today: [1,2,3,4,5].includes(new Date().getDay()) },
-                        { days: "Суббота", hours: "09:00 — 15:00", today: new Date().getDay() === 6 },
-                        { days: "Воскресенье", hours: "Выходной", today: new Date().getDay() === 0 },
-                      ].map((row) => (
-                        <div key={row.days} className={`flex justify-between items-center py-0.5 ${row.today ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                      {parsedSchedule.map((row) => (
+                        <div key={row.days} className={`flex justify-between items-center py-0.5 ${row.isToday ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
                           <span>{row.days}</span>
-                          <span className={row.hours === "Выходной" ? "text-red-400" : row.today ? "text-green-500" : ""}>{row.hours}</span>
+                          <span className={row.hours.toLowerCase().includes("выход") ? "text-red-400" : row.isToday ? "text-green-500" : ""}>{row.hours}</span>
                         </div>
                       ))}
                     </div>
