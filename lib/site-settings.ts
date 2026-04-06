@@ -30,6 +30,13 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   social_vk: "",
   social_telegram: "",
   social_whatsapp: "+79859707133",
+  // Мессенджеры — кнопки заказа
+  whatsapp_enabled: "true",
+  whatsapp_number: "+79859707133",
+  whatsapp_message: "Здравствуйте! Хочу сделать заказ.",
+  telegram_enabled: "false",
+  telegram_username: "",
+  telegram_message: "Здравствуйте! Хочу сделать заказ.",
   seo_title: "ПилоРус — пиломатериалы от производителя в Химках",
   seo_description: "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1–3 дня. ☎ 8-985-970-71-33",
   palettes_enabled: "timber,forest,ocean,midnight,slate,crimson,wildberries,ozon,yandex,aliexpress,amazon,avito,sber",

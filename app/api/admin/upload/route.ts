@@ -15,7 +15,8 @@ const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: nu
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") {
+  const role = (session?.user as any)?.role;
+  if (!session || !["ADMIN", "SUPER_ADMIN", "MANAGER"].includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

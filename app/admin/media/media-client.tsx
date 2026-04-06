@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Upload, Trash2, Copy, CheckCircle2, Loader2, Search,
   Wand2, X, ExternalLink, FolderOpen, ScanSearch,
+  CheckSquare, Square, Smartphone,
 } from "lucide-react";
 import { InfoCard } from "@/components/admin/info-popup";
 
@@ -27,10 +28,12 @@ function fmtDate(ts: number) {
 
 // ── File card ─────────────────────────────────────────────────────────────────
 function MediaCard({
-  file, selected, onSelect, onDelete, onAltSave, onCopy,
+  file, selected, bulkMode, bulkSelected, onSelect, onDelete, onAltSave, onCopy,
 }: {
   file: MediaFile;
   selected: boolean;
+  bulkMode: boolean;
+  bulkSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onAltSave: (alt: string) => void;
@@ -53,7 +56,11 @@ function MediaCard({
   return (
     <div
       className={`group relative rounded-2xl border-2 overflow-hidden bg-card transition-all cursor-pointer ${
-        selected ? "border-primary shadow-md shadow-primary/20" : "border-border hover:border-primary/40"
+        bulkSelected
+          ? "border-primary shadow-md shadow-primary/20 ring-2 ring-primary/30"
+          : selected && !bulkMode
+          ? "border-primary shadow-md shadow-primary/20"
+          : "border-border hover:border-primary/40"
       }`}
       onClick={onSelect}
     >
@@ -64,35 +71,60 @@ function MediaCard({
         ) : (
           <div className="flex items-center justify-center h-full text-2xl font-bold text-muted-foreground">{ext}</div>
         )}
+
+        {/* Bulk mode checkbox */}
+        {bulkMode && (
+          <div className="absolute top-1.5 left-1.5 z-10">
+            <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
+              bulkSelected ? "bg-primary" : "bg-black/50 border border-white/40"
+            }`}>
+              {bulkSelected && (
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Usage badge */}
-        {file.usedIn.length > 0 && (
+        {file.usedIn.length > 0 && !bulkMode && (
           <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
             {file.usedIn.length}
           </div>
         )}
-        {/* Selected overlay */}
-        {selected && (
+
+        {/* Selected overlay (single mode) */}
+        {selected && !bulkMode && (
           <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
             <CheckCircle2 className="w-8 h-8 text-primary drop-shadow" />
           </div>
         )}
-        {/* Actions overlay */}
-        <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-          <button onClick={onCopy} title="Копировать URL"
-            className="w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
-            <Copy className="w-3.5 h-3.5" />
-          </button>
-          <a href={file.url} target="_blank" rel="noopener" title="Открыть" onClick={(e) => e.stopPropagation()}
-            className="w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-          {file.usedIn.length === 0 && (
-            <button onClick={(e) => { e.stopPropagation(); setDelConfirm(true); }} title="Удалить"
-              className="w-7 h-7 rounded-lg bg-red-600/80 text-white flex items-center justify-center hover:bg-red-700">
-              <Trash2 className="w-3.5 h-3.5" />
+
+        {/* Bulk selected overlay */}
+        {bulkSelected && (
+          <div className="absolute inset-0 bg-primary/15" />
+        )}
+
+        {/* Actions overlay (not in bulk mode) */}
+        {!bulkMode && (
+          <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+            <button onClick={onCopy} title="Копировать URL"
+              className="w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
+              <Copy className="w-3.5 h-3.5" />
             </button>
-          )}
-        </div>
+            <a href={file.url} target="_blank" rel="noopener" title="Открыть" onClick={(e) => e.stopPropagation()}
+              className="w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+            {file.usedIn.length === 0 && (
+              <button onClick={(e) => { e.stopPropagation(); setDelConfirm(true); }} title="Удалить"
+                className="w-7 h-7 rounded-lg bg-red-600/80 text-white flex items-center justify-center hover:bg-red-700">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Info */}
@@ -100,28 +132,37 @@ function MediaCard({
         <p className="text-[11px] text-muted-foreground truncate" title={file.filename}>{file.filename}</p>
         <p className="text-[10px] text-muted-foreground">{fmtSize(file.size)} · {fmtDate(file.mtime)}</p>
 
-        {/* ALT input */}
-        <div className="flex gap-1">
-          <input
-            value={alt}
-            onChange={(e) => setAlt(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") saveAlt(); }}
-            placeholder="ALT текст..."
-            className="flex-1 text-[11px] px-2 py-1 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary/40 min-w-0"
-          />
-          <button onClick={saveAlt} disabled={saving}
-            className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors ${
-              altSaved ? "bg-emerald-500 text-white" : "bg-muted hover:bg-primary/10 text-muted-foreground"
-            }`}>
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : altSaved ? <CheckCircle2 className="w-3 h-3" /> : "✓"}
-          </button>
-        </div>
+        {!bulkMode && (
+          <>
+            {/* ALT input */}
+            <div className="flex gap-1">
+              <input
+                value={alt}
+                onChange={(e) => setAlt(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") saveAlt(); }}
+                placeholder="ALT текст..."
+                className="flex-1 text-[11px] px-2 py-1 rounded-lg border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary/40 min-w-0"
+              />
+              <button onClick={saveAlt} disabled={saving}
+                className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors ${
+                  altSaved ? "bg-emerald-500 text-white" : "bg-muted hover:bg-primary/10 text-muted-foreground"
+                }`}>
+                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : altSaved ? <CheckCircle2 className="w-3 h-3" /> : "✓"}
+              </button>
+            </div>
 
-        {/* Used in */}
-        {file.usedIn.length > 0 && (
-          <div className="text-[10px] text-primary truncate">
-            {file.usedIn.map((u) => u.name).join(", ")}
-          </div>
+            {/* Used in */}
+            {file.usedIn.length > 0 && (
+              <div className="text-[10px] text-primary truncate">
+                {file.usedIn.map((u) => u.name).join(", ")}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Bulk mode: show usage warning */}
+        {bulkMode && file.usedIn.length > 0 && (
+          <p className="text-[10px] text-amber-500 truncate">используется в {file.usedIn.length} товарах</p>
         )}
       </div>
 
@@ -158,7 +199,13 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   const [autoAltLoading, setAutoAltLoading] = useState(false);
   const [autoAltResult, setAutoAltResult] = useState<string>("");
   const [dragOver, setDragOver] = useState(false);
+  // Bulk delete
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkConfirm, setBulkConfirm] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -181,6 +228,14 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   const folders = ["all", ...Array.from(new Set(files.map((f) => f.folder)))];
 
+  // Deletable in bulk = not in use
+  const bulkDeletable = filtered.filter(f => f.usedIn.length === 0);
+  const bulkSelectedCount = bulkSelected.size;
+  const bulkSelectedDeletable = Array.from(bulkSelected).filter(url => {
+    const f = files.find(x => x.url === url);
+    return f && f.usedIn.length === 0;
+  });
+
   async function upload(file: File) {
     setUploading(true);
     const fd = new FormData();
@@ -200,6 +255,36 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
     await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", url }) });
     setFiles((prev) => prev.filter((f) => f.url !== url));
     if (selected === url) setSelected(null);
+  }
+
+  async function bulkDelete() {
+    setBulkDeleting(true);
+    setBulkConfirm(false);
+    const toDelete = bulkSelectedDeletable;
+    for (const url of toDelete) {
+      await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", url }) });
+    }
+    setFiles((prev) => prev.filter(f => !toDelete.includes(f.url)));
+    setBulkSelected(new Set());
+    setBulkMode(false);
+    setBulkDeleting(false);
+  }
+
+  function toggleBulkSelect(url: string) {
+    setBulkSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
+    });
+  }
+
+  function selectAllBulk() {
+    setBulkSelected(new Set(bulkDeletable.map(f => f.url)));
+  }
+
+  function clearBulkSelect() {
+    setBulkSelected(new Set());
   }
 
   async function saveAlt(url: string, alt: string) {
@@ -245,7 +330,58 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               {autoAltLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 text-primary" />}
               Авто ALT по товарам
             </button>
+            {/* Bulk mode toggle */}
+            <button
+              onClick={() => { setBulkMode(!bulkMode); setBulkSelected(new Set()); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
+                bulkMode
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border bg-card hover:bg-muted text-foreground"
+              }`}
+            >
+              {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+              {bulkMode ? "Отмена выбора" : "Выбрать несколько"}
+            </button>
             {autoAltResult && <span className="text-sm text-emerald-600 self-center">{autoAltResult}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk actions toolbar */}
+      {bulkMode && !pickerMode && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-primary/5 border border-primary/20 rounded-2xl flex-wrap">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <CheckSquare className="w-4 h-4 text-primary" />
+            <span>Выбрано: <strong className="text-primary">{bulkSelectedCount}</strong></span>
+            {bulkSelectedCount > 0 && bulkSelectedCount !== bulkSelectedDeletable.length && (
+              <span className="text-xs text-muted-foreground">({bulkSelectedDeletable.length} можно удалить)</span>
+            )}
+          </div>
+          <div className="flex gap-2 ml-auto flex-wrap">
+            <button
+              onClick={selectAllBulk}
+              className="px-3 py-1.5 rounded-xl border border-border text-xs font-medium hover:bg-muted transition-colors"
+            >
+              Выбрать все свободные ({bulkDeletable.length})
+            </button>
+            {bulkSelectedCount > 0 && (
+              <button
+                onClick={clearBulkSelect}
+                className="px-3 py-1.5 rounded-xl border border-border text-xs font-medium hover:bg-muted transition-colors"
+              >
+                Снять выделение
+              </button>
+            )}
+            {bulkSelectedDeletable.length > 0 && (
+              <button
+                onClick={() => setBulkConfirm(true)}
+                disabled={bulkDeleting}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-destructive text-white text-xs font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-50"
+              >
+                {bulkDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Удалить выбранные ({bulkSelectedDeletable.length})
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -261,6 +397,8 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         }`}
       >
         <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+        {/* Camera input for mobile */}
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           {uploading ? (
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -270,9 +408,20 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
           <p className="text-sm font-medium">
             {uploading ? "Загружаем..." : "Перетащите фото или нажмите для выбора"}
           </p>
-          <p className="text-xs">JPG, PNG, WebP, SVG</p>
+          <p className="text-xs">JPG, PNG, WebP, SVG · с компьютера или телефона</p>
         </div>
       </div>
+
+      {/* Mobile camera upload button */}
+      {!pickerMode && (
+        <button
+          onClick={(e) => { e.stopPropagation(); cameraRef.current?.click(); }}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors"
+        >
+          <Smartphone className="w-4 h-4" />
+          Сфотографировать с телефона / камеры
+        </button>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap items-center">
@@ -319,8 +468,11 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               key={file.url}
               file={file}
               selected={selected === file.url}
+              bulkMode={bulkMode}
+              bulkSelected={bulkSelected.has(file.url)}
               onSelect={() => {
                 if (pickerMode && onPick) { onPick(file.url); return; }
+                if (bulkMode) { toggleBulkSelect(file.url); return; }
                 setSelected(selected === file.url ? null : file.url);
               }}
               onDelete={() => deleteFile(file.url)}
@@ -336,6 +488,36 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         <div className="fixed bottom-6 right-6 z-50 bg-foreground text-background px-4 py-2 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           URL скопирован
+        </div>
+      )}
+
+      {/* Bulk delete confirm dialog */}
+      {bulkConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setBulkConfirm(false)} />
+          <div className="relative bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center space-y-4">
+            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-destructive" />
+            </div>
+            <div>
+              <p className="font-display font-bold text-lg">Удалить {bulkSelectedDeletable.length} фото?</p>
+              <p className="text-sm text-muted-foreground mt-1">Файлы будут удалены с сервера навсегда. Это действие нельзя отменить.</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setBulkConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={bulkDelete}
+                className="flex-1 py-2.5 rounded-xl bg-destructive text-white text-sm font-semibold hover:bg-destructive/90 transition-colors"
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

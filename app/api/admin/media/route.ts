@@ -13,7 +13,7 @@ async function checkAdmin() {
   return session && ["ADMIN", "MANAGER"].includes(role);
 }
 
-const IMAGE_DIRS = ["products", "categories", "watermarks", "banners"];
+const IMAGE_DIRS = ["products", "categories", "watermarks", "banners", "posts"];
 
 // ── GET: list all media files ─────────────────────────────────────────────────
 export async function GET() {

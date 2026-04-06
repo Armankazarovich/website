@@ -89,7 +89,8 @@ function EditModal({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/admin/media", { method: "POST", body: fd });
+      fd.append("folder", "banners");
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (data.url) setCoverImage(data.url);
     } catch { /* silent */ } finally {
