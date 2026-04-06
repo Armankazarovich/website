@@ -12,6 +12,7 @@ import { flyToCart } from "@/lib/cart-fly";
 import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useStoreSettings } from "@/lib/store-settings-context";
+import { AdminEditButton } from "@/components/admin/admin-edit-button";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -214,6 +215,7 @@ export function ProductCard({
   if (isMagazine) {
     return (
       <div className={wrapperClass}>
+        <AdminEditButton href={`/admin/products/${id}`} mode="overlay" label="Изменить товар" />
         {/* Full-bleed image */}
         <Link href={`/product/${slug}`} className="absolute inset-0">
           {images[0] ? (
@@ -303,6 +305,7 @@ export function ProductCard({
 
   return (
     <div className={wrapperClass}>
+      <AdminEditButton href={`/admin/products/${id}`} mode="overlay" label="Изменить товар" />
       {/* Vivid animated bg — only shown for vivid style */}
       {isVivid && (
         <div className="absolute inset-0 vivid-bg" aria-hidden />

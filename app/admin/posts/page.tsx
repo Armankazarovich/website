@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,15 @@ import {
   Wand2,
   Database,
   ImageIcon,
+  Upload,
+  Library,
+  Link2,
 } from "lucide-react";
+
+const MediaPickerModal = dynamic(
+  () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
+  { ssr: false }
+);
 
 type Post = {
   id: string;
@@ -59,8 +68,13 @@ function EditModal({
   const [topic, setTopic] = useState(post.topic ?? "");
   const [readTime, setReadTime] = useState(post.readTime);
   const [coverImage, setCoverImage] = useState(post.coverImage ?? "");
-  const [imgError, setImgError] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlDraft, setUrlDraft] = useState("");
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     setSaving(true);
@@ -68,6 +82,27 @@ function EditModal({
     setSaving(false);
     onClose();
   };
+
+  const handleUpload = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/media", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.url) setCoverImage(data.url);
+    } catch { /* silent */ } finally {
+      setUploading(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleUpload(file);
+  }, [handleUpload]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -117,45 +152,119 @@ function EditModal({
             </div>
           </div>
 
-          {/* Cover image */}
+          {/* Cover image picker */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block flex items-center gap-1.5">
-              <ImageIcon className="w-3.5 h-3.5" /> Обложка (URL фото)
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <ImageIcon className="w-3.5 h-3.5" /> Обложка
             </label>
-            <div className="flex gap-2">
-              <input
-                value={coverImage}
-                onChange={(e) => { setCoverImage(e.target.value); setImgError(false); }}
-                placeholder="https://images.pexels.com/..."
-                className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              {coverImage && (
-                <button
-                  type="button"
-                  onClick={() => { setCoverImage(""); setImgError(false); }}
-                  className="p-2 rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+
+            {/* Preview / Drop zone */}
+            <div
+              className={`relative rounded-2xl border-2 transition-all duration-150 overflow-hidden ${
+                dragging
+                  ? "border-primary bg-primary/5 scale-[1.01]"
+                  : coverImage
+                  ? "border-border"
+                  : "border-dashed border-border hover:border-primary/50 bg-muted/30"
+              }`}
+              style={{ height: coverImage ? 180 : 120 }}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+            >
+              {coverImage ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={coverImage} alt="Обложка" className="w-full h-full object-cover" />
+                  {/* Overlay on hover */}
+                  <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-all group flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaPicker(true)}
+                      className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 text-black text-xs font-semibold transition-all hover:bg-white"
+                    >
+                      <Library className="w-3.5 h-3.5" /> Сменить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCoverImage("")}
+                      className="opacity-0 group-hover:opacity-100 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/90 text-white text-xs font-semibold transition-all hover:bg-red-500"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Удалить
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+                  {uploading ? (
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  ) : (
+                    <>
+                      <Upload className="w-6 h-6 opacity-40" />
+                      <p className="text-xs">Перетащите фото или выберите ниже</p>
+                    </>
+                  )}
+                </div>
               )}
             </div>
-            {coverImage && !imgError && (
-              <div className="mt-2 rounded-xl overflow-hidden border border-border h-36 bg-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={coverImage}
-                  alt="Превью"
-                  className="w-full h-full object-cover"
-                  onError={() => setImgError(true)}
+
+            {/* Action buttons */}
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowMediaPicker(true)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+              >
+                <Library className="w-3.5 h-3.5" /> Медиабиблиотека
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+              >
+                <Upload className="w-3.5 h-3.5" /> Загрузить
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowUrlInput(!showUrlInput); setUrlDraft(coverImage); }}
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+                title="Вставить URL"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* URL input (collapsible) */}
+            {showUrlInput && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  value={urlDraft}
+                  onChange={(e) => setUrlDraft(e.target.value)}
+                  placeholder="https://images.pexels.com/..."
+                  className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { setCoverImage(urlDraft); setShowUrlInput(false); }
+                    if (e.key === "Escape") setShowUrlInput(false);
+                  }}
                 />
+                <button
+                  type="button"
+                  onClick={() => { setCoverImage(urlDraft); setShowUrlInput(false); }}
+                  className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                </button>
               </div>
             )}
-            {imgError && (
-              <p className="mt-1.5 text-xs text-destructive">Не удалось загрузить фото — проверьте ссылку</p>
-            )}
-            <p className="mt-1.5 text-[11px] text-muted-foreground">
-              Совет: Pexels.com → найдите фото → правая кнопка → "Копировать адрес изображения"
-            </p>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
+            />
           </div>
         </div>
         <div className="flex justify-end gap-2 px-6 pb-5">
@@ -166,6 +275,13 @@ function EditModal({
           </Button>
         </div>
       </div>
+
+      {/* Media picker modal */}
+      <MediaPickerModal
+        open={showMediaPicker}
+        onClose={() => setShowMediaPicker(false)}
+        onPick={(url) => { setCoverImage(url); setShowMediaPicker(false); }}
+      />
     </div>
   );
 }

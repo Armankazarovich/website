@@ -279,7 +279,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours 
               <div className="relative mt-0.5" ref={scheduleRef}>
                 <button
                   onClick={() => setScheduleOpen((v) => !v)}
-                  className="flex items-center gap-1.5 group cursor-pointer"
+                  className="flex items-center gap-1.5 group cursor-pointer min-h-0 py-0"
                   aria-label="График работы"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />

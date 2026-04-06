@@ -11,6 +11,7 @@ import {
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
+import { AdminEditButton } from "@/components/admin/admin-edit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +75,9 @@ export default async function ServicesPage() {
           {services.map((service) => (
             <div
               key={service.id}
-              className="flex flex-col bg-card border border-border rounded-2xl p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-200"
+              className="group relative flex flex-col bg-card border border-border rounded-2xl p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-200"
             >
+              <AdminEditButton href="/admin/services" mode="overlay" label="Изменить услугу" />
               {/* Icon + title */}
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary shrink-0">

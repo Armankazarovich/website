@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { BookOpen, ArrowRight, Tag } from "lucide-react";
+import { AdminEditButton } from "@/components/admin/admin-edit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -79,8 +80,9 @@ export default async function NewsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {posts.map((post) => (
+            <div key={post.id} className="group relative">
+              <AdminEditButton href="/admin/posts" mode="overlay" label="Изменить статью" />
             <Link
-              key={post.id}
               href={`/news/${post.slug}`}
               className="group flex flex-col bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-200"
             >
@@ -128,6 +130,7 @@ export default async function NewsPage() {
                 </span>
               </div>
             </Link>
+            </div>
           ))}
         </div>
       )}
