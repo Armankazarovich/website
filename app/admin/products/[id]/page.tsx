@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Save, Trash2, Plus, Upload, ImageIcon,
   Check, Loader2, Wand2, PenTool, Images, ExternalLink,
-  ChevronLeft, ChevronRight, X, GripVertical, Search, Star, Keyboard,
+  ChevronLeft, ChevronRight, ChevronDown, X, GripVertical, Search, Star, Keyboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminBack } from "@/components/admin/admin-back";

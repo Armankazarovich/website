@@ -774,8 +774,7 @@ export default function NewPhoneOrderPage() {
             type="button"
             onClick={() => setShowMobileCart(true)}
             className="md:hidden fixed right-4 z-40 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-2xl shadow-lg font-bold text-sm active:scale-[0.96] transition-all"
-            style={{ bottom: "calc(100px + env(safe-area-inset-bottom, 0px))" }}
-            style={{ boxShadow: "0 4px 20px hsl(var(--primary)/0.4)" }}
+            style={{ bottom: "calc(100px + env(safe-area-inset-bottom, 0px))", boxShadow: "0 4px 20px hsl(var(--primary)/0.4)" }}
           >
             <ShoppingCart className="w-5 h-5" />
             {items.length > 0 ? (

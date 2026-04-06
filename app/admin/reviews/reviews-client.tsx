@@ -418,11 +418,13 @@ export function ReviewsClient({
                     </span>
                     {review.source && review.source !== "site" && (() => {
                       const pl = PLATFORMS.find(p => p.key === review.source);
-                      return pl ? (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${pl.badge}`}>
-                          {pl.icon} {pl.name}
+                      if (!pl) return null;
+                      const PlIcon = pl.icon;
+                      return (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-0.5 ${pl.badge}`}>
+                          <PlIcon className="w-2.5 h-2.5" /> {pl.name}
                         </span>
-                      ) : null;
+                      );
                     })()}
                     <span className="text-[11px] text-muted-foreground">
                       {new Date(review.createdAt).toLocaleDateString("ru-RU")}

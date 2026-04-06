@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
 // Маппинг статуса заказа → этап CRM
-export const ORDER_STATUS_TO_LEAD_STAGE: Record<string, string> = {
+const ORDER_STATUS_TO_LEAD_STAGE: Record<string, string> = {
   NEW:          "NEW",
   CONFIRMED:    "CONTACTED",
   PROCESSING:   "QUALIFIED",
