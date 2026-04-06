@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight, AlertTriangle } from "lucide-react";
+import { Plus, Save, Trash2, Loader2, Check, ToggleLeft, ToggleRight, AlertTriangle, ImageIcon, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Promotion = {
@@ -11,6 +11,7 @@ type Promotion = {
   title: string;
   description: string;
   discount: number | null;
+  imageUrl: string | null;
   active: boolean;
   validUntil: string | null;
   createdAt: string;
@@ -28,6 +29,7 @@ function PromotionCard({
   const [title, setTitle] = useState(promo.title);
   const [description, setDescription] = useState(promo.description);
   const [discount, setDiscount] = useState(promo.discount ? String(promo.discount) : "");
+  const [imageUrl, setImageUrl] = useState(promo.imageUrl || "");
   const [validUntil, setValidUntil] = useState(promo.validUntil ? promo.validUntil.slice(0, 10) : "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -41,6 +43,7 @@ function PromotionCard({
       title,
       description,
       discount: discount ? Number(discount) : null,
+      imageUrl: imageUrl.trim() || null,
       validUntil: validUntil ? new Date(validUntil).toISOString() : null,
     });
     setSaving(false);
@@ -91,6 +94,32 @@ function PromotionCard({
               onChange={(e) => setValidUntil(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs text-muted-foreground mb-1">Картинка (URL)</label>
+            <div className="flex gap-2">
+              <input
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              {imageUrl && (
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="p-2 rounded-xl border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {imageUrl && (
+              <div className="mt-2 rounded-xl overflow-hidden border border-border h-32">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="Превью" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              </div>
+            )}
           </div>
           {validUntil && (
             <div className="flex items-end pb-2">

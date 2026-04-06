@@ -25,6 +25,16 @@ const TOPIC_COLORS: Record<string, string> = {
   "Баня":         "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
 };
 
+// Дефолтные фото с Pexels по теме (бесплатные, CDN)
+const TOPIC_IMAGES: Record<string, string> = {
+  "Пиломатериалы": "https://images.pexels.com/photos/1374295/pexels-photo-1374295.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&fit=crop",
+  "Обработка":     "https://images.pexels.com/photos/3637834/pexels-photo-3637834.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&fit=crop",
+  "Сравнение":     "https://images.pexels.com/photos/1148496/pexels-photo-1148496.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&fit=crop",
+  "Советы":        "https://images.pexels.com/photos/5691622/pexels-photo-5691622.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&fit=crop",
+  "Баня":          "https://images.pexels.com/photos/3244513/pexels-photo-3244513.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&fit=crop",
+};
+const DEFAULT_IMAGE = "https://images.pexels.com/photos/1374295/pexels-photo-1374295.jpeg?auto=compress&cs=tinysrgb&w=800&h=400&fit=crop";
+
 function topicClass(topic: string | null) {
   if (!topic) return "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
   return TOPIC_COLORS[topic] ?? "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300";
@@ -75,29 +85,15 @@ export default async function NewsPage() {
               className="group flex flex-col bg-card border border-border rounded-2xl overflow-hidden hover:shadow-lg hover:border-primary/20 transition-all duration-200"
             >
               {/* Cover image */}
-              <div className="relative h-48 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 overflow-hidden shrink-0">
-                {post.coverImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={post.coverImage}
-                    alt={post.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <svg
-                      width="64"
-                      height="64"
-                      viewBox="0 0 64 64"
-                      fill="none"
-                      className="opacity-20"
-                    >
-                      <rect x="8" y="20" width="48" height="8" rx="3" fill="currentColor" />
-                      <rect x="8" y="32" width="48" height="8" rx="3" fill="currentColor" />
-                      <rect x="8" y="44" width="32" height="8" rx="3" fill="currentColor" />
-                    </svg>
-                  </div>
-                )}
+              <div className="relative h-48 overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={post.coverImage || TOPIC_IMAGES[post.topic ?? ""] || DEFAULT_IMAGE}
+                  alt={post.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                {/* subtle dark overlay for text readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
               </div>
 
               {/* Content */}

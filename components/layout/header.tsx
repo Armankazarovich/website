@@ -538,28 +538,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours 
               Акции
             </Link>
             <Link
-              href="/services"
-              className={cn(
-                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
-                pathname === "/services"
-                  ? "text-primary bg-primary/10"
-                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
-              )}
-            >
-              Услуги
-            </Link>
-            <Link
-              href="/news"
-              className={cn(
-                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
-                pathname === "/news"
-                  ? "text-primary bg-primary/10"
-                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
-              )}
-            >
-              Новости
-            </Link>
-            <Link
               href="/contacts"
               className={cn(
                 "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
