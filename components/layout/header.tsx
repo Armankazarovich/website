@@ -52,8 +52,6 @@ interface HeaderProps {
 const infoLinks = [
   { label: "Доставка и оплата", href: "/delivery" },
   { label: "Акции и скидки", href: "/promotions" },
-  { label: "Услуги", href: "/services" },
-  { label: "Новости", href: "/news" },
   { label: "О производстве", href: "/about" },
   { label: "Контакты", href: "/contacts" },
 ];
