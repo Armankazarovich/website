@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import { ContactForm } from "@/components/store/contact-form";
 import { BackButton } from "@/components/ui/back-button";
+import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Контакты — адрес, телефоны, как проехать | ПилоРус",
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://pilo-rus.ru/contacts" },
 };
 
-export default function ContactsPage() {
+export default async function ContactsPage() {
+  const settings = await getSiteSettings();
+  const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
   return (
     <div className="container py-12">
       <div className="flex items-start gap-3 mb-3">
@@ -56,7 +59,7 @@ export default function ContactsPage() {
             {
               icon: Clock,
               title: "Режим работы",
-              items: [{ label: "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00", href: null }],
+              items: [{ label: workingHours, href: null }],
               color: "text-purple-600",
               bg: "bg-purple-100",
             },

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
+import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 // Кэш 60 сек — быстрее чем force-dynamic, но данные актуальны
 export const revalidate = 60;
@@ -109,7 +110,7 @@ export const metadata: Metadata = {
 };
 
 async function getData() {
-  const [categories, featuredProducts, promotions, reviews] = await Promise.all([
+  const [categories, featuredProducts, promotions, reviews, settings] = await Promise.all([
     prisma.category.findMany({
       where: { showInMenu: true },
       orderBy: { sortOrder: "asc" },
@@ -134,65 +135,70 @@ async function getData() {
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
+    getSiteSettings(),
   ]);
-  return { categories, featuredProducts, promotions, reviews };
+  return { categories, featuredProducts, promotions, reviews, settings };
 }
 
-const advantages = [
-  {
-    Icon: IconProducer,
-    title: "Производитель без посредников",
-    description: "Покупаете напрямую с завода по ценам производства. Никаких наценок перекупщиков.",
-    color: "text-brand-orange",
-    bg: "bg-brand-orange/10 dark:bg-brand-orange/15",
-  },
-  {
-    Icon: IconTruck,
-    title: "Доставка 1-3 дня",
-    description: "Быстрая доставка по Москве и Московской области собственным транспортом.",
-    color: "text-brand-green",
-    bg: "bg-brand-green/10 dark:bg-brand-green/15",
-  },
-  {
-    Icon: IconCertificate,
-    title: "ГОСТ и качество",
-    description: "Вся продукция соответствует ГОСТ. Производство оснащено современным оборудованием.",
-    color: "text-sky-500",
-    bg: "bg-sky-500/10 dark:bg-sky-500/15",
-  },
-  {
-    Icon: IconWarehouse,
-    title: "2000 м² склад",
-    description: "Большой склад на территории 2000 м². Всегда в наличии широкий ассортимент.",
-    color: "text-violet-500",
-    bg: "bg-violet-500/10 dark:bg-violet-500/15",
-  },
-  {
-    Icon: IconClock,
-    title: "Работаем Пн–Сб до 20:00",
-    description: "Режим работы Пн–Сб: 09:00–20:00, Вс: 09:00–18:00. Всегда готовы помочь с выбором.",
-    color: "text-brand-orange",
-    bg: "bg-brand-orange/10 dark:bg-brand-orange/15",
-  },
-  {
-    Icon: IconShield,
-    title: "Гарантия на продукцию",
-    description: "Даём гарантию на все виды пиломатериалов. Работаем официально по договору.",
-    color: "text-brand-green",
-    bg: "bg-brand-green/10 dark:bg-brand-green/15",
-  },
-];
+function getAdvantages(workingHours: string) {
+  return [
+    {
+      Icon: IconProducer,
+      title: "Производитель без посредников",
+      description: "Покупаете напрямую с завода по ценам производства. Никаких наценок перекупщиков.",
+      color: "text-brand-orange",
+      bg: "bg-brand-orange/10 dark:bg-brand-orange/15",
+    },
+    {
+      Icon: IconTruck,
+      title: "Доставка 1-3 дня",
+      description: "Быстрая доставка по Москве и Московской области собственным транспортом.",
+      color: "text-brand-green",
+      bg: "bg-brand-green/10 dark:bg-brand-green/15",
+    },
+    {
+      Icon: IconCertificate,
+      title: "ГОСТ и качество",
+      description: "Вся продукция соответствует ГОСТ. Производство оснащено современным оборудованием.",
+      color: "text-sky-500",
+      bg: "bg-sky-500/10 dark:bg-sky-500/15",
+    },
+    {
+      Icon: IconWarehouse,
+      title: "2000 м² склад",
+      description: "Большой склад на территории 2000 м². Всегда в наличии широкий ассортимент.",
+      color: "text-violet-500",
+      bg: "bg-violet-500/10 dark:bg-violet-500/15",
+    },
+    {
+      Icon: IconClock,
+      title: "Режим работы",
+      description: `${workingHours}. Всегда готовы помочь с выбором.`,
+      color: "text-brand-orange",
+      bg: "bg-brand-orange/10 dark:bg-brand-orange/15",
+    },
+    {
+      Icon: IconShield,
+      title: "Гарантия на продукцию",
+      description: "Даём гарантию на все виды пиломатериалов. Работаем официально по договору.",
+      color: "text-brand-green",
+      bg: "bg-brand-green/10 dark:bg-brand-green/15",
+    },
+  ];
+}
 
-const TICKER_ITEMS = [
-  "2 000 м² склада",
-  "500+ довольных клиентов",
-  "10+ лет опыта",
-  "Доставка 1–3 дня",
-  "Сертифицировано ГОСТ",
-  "Производитель напрямую",
-  "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00",
-  "Химки, Московская область",
-];
+function getTickerItems(workingHours: string) {
+  return [
+    "2 000 м² склада",
+    "500+ довольных клиентов",
+    "10+ лет опыта",
+    "Доставка 1–3 дня",
+    "Сертифицировано ГОСТ",
+    "Производитель напрямую",
+    workingHours,
+    "Химки, Московская область",
+  ];
+}
 
 const faqSchema = {
   "@context": "https://schema.org",
@@ -242,7 +248,10 @@ const faqSchema = {
 };
 
 export default async function HomePage() {
-  const { categories, featuredProducts, promotions, reviews } = await getData();
+  const { categories, featuredProducts, promotions, reviews, settings } = await getData();
+  const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
+  const advantages = getAdvantages(workingHours);
+  const TICKER_ITEMS = getTickerItems(workingHours);
 
   return (
     <>
@@ -861,13 +870,13 @@ export default async function HomePage() {
                   svg: <IconTruck className="w-6 h-6 text-brand-orange" />,
                   bg: "bg-brand-orange/10 dark:bg-brand-orange/15",
                   title: "Быстрая доставка",
-                  items: ["Москва и МО — 1-3 рабочих дня", "Собственный транспорт, погрузка включена", "Работаем Пн–Сб 09:00–20:00"],
+                  items: ["Москва и МО — 1-3 рабочих дня", "Собственный транспорт, погрузка включена", `Работаем ${workingHours}`],
                 },
                 {
                   svg: <IconWarehouse className="w-6 h-6 text-brand-green" />,
                   bg: "bg-brand-green/10 dark:bg-brand-green/15",
                   title: "Самовывоз со склада",
-                  items: ["Химки, Заводская 2А, стр.28", "Режим: Пн–Сб 09:00–20:00, Вс 09:00–18:00", "Помощь погрузчика, предзаказ по телефону"],
+                  items: ["Химки, Заводская 2А, стр.28", `Режим: ${workingHours}`, "Помощь погрузчика, предзаказ по телефону"],
                 },
                 {
                   svg: (

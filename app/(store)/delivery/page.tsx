@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { CheckCircle, Truck, MapPin, Clock, FileText, Phone } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Доставка и оплата пиломатериалов — ПилоРус | Москва и МО",
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://pilo-rus.ru/delivery" },
 };
 
-export default function DeliveryPage() {
+export default async function DeliveryPage() {
+  const settings = await getSiteSettings();
+  const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
   return (
     <div className="container py-12">
       <div className="flex items-start gap-3 mb-3">
@@ -50,7 +53,7 @@ export default function DeliveryPage() {
             items: [
               "Химки, Заводская 2А, стр.28",
               "Бесплатно",
-              "Режим: Пн–Сб 09:00–20:00, Вс 09:00–18:00",
+              `Режим: ${workingHours}`,
               "Есть погрузчик на месте",
               "Предзвоните для резервирования",
             ],
@@ -131,7 +134,7 @@ export default function DeliveryPage() {
         <div className="absolute inset-0 bg-black/65" />
         <div className="relative z-10 px-8 py-14">
           <h2 className="font-display font-bold text-3xl mb-3">Остались вопросы?</h2>
-          <p className="text-white/75 mb-8 text-lg">Наши менеджеры на связи Пн–Сб с 09:00 до 20:00</p>
+          <p className="text-white/75 mb-8 text-lg">Наши менеджеры на связи {workingHours}</p>
           <a
             href="tel:+79859707133"
             className="inline-flex items-center gap-2 bg-brand-orange hover:bg-brand-orange/90 active:scale-95 text-white px-10 py-4 rounded-xl font-semibold text-lg transition-all shadow-2xl shadow-brand-orange/40"
