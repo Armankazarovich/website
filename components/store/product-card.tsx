@@ -403,8 +403,8 @@ export function ProductCard({
                 className={`font-medium border transition-all leading-none whitespace-nowrap ${
                   idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
                 } items-center justify-center
-                  text-[9px] px-1 py-px rounded
-                  sm:text-[10px] sm:px-1.5 sm:py-0.5 sm:rounded-md ${
+                  text-[10px] px-2 py-0.5 rounded-lg
+                  sm:text-[10px] sm:px-2 sm:py-0.5 sm:rounded-lg ${
                   selectedVariant?.id === v.id && v.inStock
                     ? "border-primary bg-primary text-primary-foreground shadow-sm"
                     : v.inStock
@@ -419,7 +419,7 @@ export function ProductCard({
             {mobileExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="sm:hidden text-[9px] font-medium px-1 py-px rounded border border-primary/35 bg-primary/6 text-primary transition-colors active:scale-95 inline-flex items-center justify-center whitespace-nowrap"
+                className="sm:hidden text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-primary/40 bg-primary/8 text-primary transition-colors active:scale-95 inline-flex items-center justify-center whitespace-nowrap"
               >
                 +{mobileExtra}
               </button>
