@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import {
   BookOpen, Search, ChevronDown, ChevronUp, Star, Users,
-  ShoppingCart, Package, Truck, Settings, BarChart3, Bell,
+  ShoppingCart, ShoppingBag, Package, Truck, Settings, BarChart3, Bell,
   MessageSquare, CreditCard, FileText, HelpCircle, Phone,
   Lightbulb, CheckCircle2, ArrowRight, ExternalLink, User,
   Shield, Briefcase, TrendingUp, Zap, Mail, Camera,
