@@ -44,8 +44,8 @@ type Staff = { id: string; name?: string; email: string; role: string };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType; color: string; bg: string }[] = [
-  { id: "BACKLOG",     label: "Очередь",  icon: Inbox,        color: "text-slate-500",   bg: "bg-slate-100 dark:bg-slate-800/50" },
-  { id: "TODO",        label: "Сделать",  icon: Square,       color: "text-blue-500",    bg: "bg-blue-50 dark:bg-blue-950/30" },
+  { id: "BACKLOG",     label: "Очередь",  icon: Inbox,        color: "text-slate-400",   bg: "bg-slate-100 dark:bg-slate-800/50" },
+  { id: "TODO",        label: "Сделать",  icon: Square,       color: "text-slate-500",   bg: "bg-slate-100 dark:bg-slate-800/40" },
   { id: "IN_PROGRESS", label: "В работе", icon: RefreshCw,    color: "text-amber-500",   bg: "bg-amber-50 dark:bg-amber-950/30" },
   { id: "REVIEW",      label: "Проверка", icon: Eye,          color: "text-purple-500",  bg: "bg-purple-50 dark:bg-purple-950/30" },
   { id: "DONE",        label: "Готово",   icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
@@ -53,7 +53,7 @@ const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType; color: 
 
 const PRIORITY_META: Record<TaskPriority, { label: string; color: string; icon: string; IconCmp: React.ElementType }> = {
   LOW:    { label: "Низкий",  color: "text-slate-400",  icon: "↓", IconCmp: ArrowDown },
-  MEDIUM: { label: "Средний", color: "text-blue-500",   icon: "–", IconCmp: Minus },
+  MEDIUM: { label: "Средний", color: "text-slate-400",  icon: "–", IconCmp: Minus },
   HIGH:   { label: "Высокий", color: "text-orange-500", icon: "↑", IconCmp: ArrowUp },
   URGENT: { label: "Срочно",  color: "text-red-500",    icon: "!", IconCmp: Flame },
 };

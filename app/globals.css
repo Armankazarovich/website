@@ -1904,3 +1904,41 @@ a:focus-visible {
   border-color: transparent !important;
   box-shadow: none !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   ГЛОБАЛЬНЫЙ ФИКС СИНИХ HOVER И FOCUS
+   Заменяем браузерный синий на primary цвет везде
+   ══════════════════════════════════════════════════════════════ */
+
+/* Классический режим — focus-visible тоже оранжевый */
+.aray-classic-mode button:focus-visible,
+.aray-classic-mode a:focus-visible,
+.aray-classic-mode [role="button"]:focus-visible,
+.aray-classic-mode input:focus-visible,
+.aray-classic-mode select:focus-visible,
+.aray-classic-mode textarea:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.65) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.10) !important;
+}
+
+/* Nature-mode: убираем синий selection */
+.aray-nature-mode ::selection {
+  background: hsl(var(--primary) / 0.35);
+  color: white;
+}
+.aray-classic-mode ::selection {
+  background: hsl(var(--primary) / 0.20);
+}
+
+/* Убираем синюю тень при hover на shadcn Button в nature-mode */
+.aray-nature-mode button[class*="ring-offset"],
+.aray-nature-mode a[class*="ring-offset"] {
+  --tw-ring-color: hsl(var(--primary) / 0.45) !important;
+}
+
+/* Задачи — убираем синий bg при hover карточек в nature-mode */
+.aray-nature-mode .bg-blue-50,
+.aray-nature-mode .dark\:bg-blue-950\/30 {
+  background: rgba(255,255,255,0.04) !important;
+}

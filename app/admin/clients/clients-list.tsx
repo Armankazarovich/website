@@ -23,9 +23,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  NEW: "bg-blue-500/15 text-blue-500 border border-blue-500/25", CONFIRMED: "bg-purple-500/15 text-purple-500 border border-purple-500/25",
+  NEW: "bg-slate-500/15 text-slate-500 border border-slate-500/25", CONFIRMED: "bg-teal-500/15 text-teal-600 border border-teal-500/25",
   PROCESSING: "bg-yellow-500/15 text-yellow-600 border border-yellow-500/25", SHIPPED: "bg-orange-500/15 text-orange-500 border border-orange-500/25",
-  IN_DELIVERY: "bg-sky-500/15 text-sky-500 border border-sky-500/25", READY_PICKUP: "bg-violet-500/15 text-violet-500 border border-violet-500/25",
+  IN_DELIVERY: "bg-cyan-500/15 text-cyan-600 border border-cyan-500/25", READY_PICKUP: "bg-violet-500/15 text-violet-500 border border-violet-500/25",
   DELIVERED: "bg-green-500/15 text-green-600 border border-green-500/25", COMPLETED: "bg-teal-500/15 text-teal-600 border border-teal-500/25",
   CANCELLED: "bg-red-500/15 text-red-500 border border-red-500/25",
 };

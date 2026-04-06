@@ -17,7 +17,7 @@ import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 const STAGES = [
   { key: "NEW",         label: "Новый лид",     color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",   border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400" },
-  { key: "CONTACTED",   label: "Связались",     color: "bg-blue-500",    light: "bg-blue-50 dark:bg-blue-900/20",     border: "border-blue-200 dark:border-blue-800",     dot: "bg-blue-400" },
+  { key: "CONTACTED",   label: "Связались",     color: "bg-cyan-600",    light: "bg-cyan-50 dark:bg-cyan-900/20",     border: "border-cyan-200 dark:border-cyan-800",     dot: "bg-cyan-400" },
   { key: "QUALIFIED",   label: "Квалифицирован",color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20", border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400" },
   { key: "MEETING",     label: "Замер/встреча", color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",   border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400" },
   { key: "PROPOSAL",    label: "КП отправлено", color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20", border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400" },
@@ -865,7 +865,7 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
 
 const ORDER_STAGES = [
   { key: "NEW",          label: "Новый",          color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",    border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400",   icon: Inbox },
-  { key: "CONFIRMED",    label: "Подтверждён",    color: "bg-blue-500",    light: "bg-blue-50 dark:bg-blue-900/20",      border: "border-blue-200 dark:border-blue-800",     dot: "bg-blue-400",    icon: CheckCircle2 },
+  { key: "CONFIRMED",    label: "Подтверждён",    color: "bg-teal-500",    light: "bg-teal-50 dark:bg-teal-900/20",      border: "border-teal-200 dark:border-teal-800",     dot: "bg-teal-400",    icon: CheckCircle2 },
   { key: "PROCESSING",   label: "В комплектации", color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20",  border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400",  icon: Settings2 },
   { key: "SHIPPED",      label: "Отгружен",       color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",    border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400",   icon: Truck },
   { key: "IN_DELIVERY",  label: "Доставляется",   color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400",  icon: Navigation },

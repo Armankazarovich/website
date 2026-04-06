@@ -31,11 +31,11 @@ export function OrderStatusSelect({ orderId, currentStatus }: Props) {
   };
 
   const colors: Record<string, string> = {
-    NEW: "bg-blue-500/15 text-blue-500",
-    CONFIRMED: "bg-purple-500/15 text-purple-500",
+    NEW: "bg-slate-500/15 text-slate-500",
+    CONFIRMED: "bg-teal-500/15 text-teal-600",
     PROCESSING: "bg-yellow-500/15 text-yellow-600",
     SHIPPED: "bg-orange-500/15 text-orange-500",
-    IN_DELIVERY: "bg-sky-500/15 text-sky-500",
+    IN_DELIVERY: "bg-cyan-500/15 text-cyan-600",
     READY_PICKUP: "bg-violet-500/15 text-violet-500",
     DELIVERED: "bg-green-500/15 text-green-600",
     COMPLETED: "bg-teal-500/15 text-teal-600",
