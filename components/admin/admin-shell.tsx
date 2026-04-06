@@ -229,6 +229,8 @@ import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayWidget } from "@/components/store/aray-widget";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminSidebarWeather } from "@/components/admin/admin-dashboard-widgets";
+import { AdminPageHelp } from "@/components/admin/admin-page-help";
+import { AdminTour, TourTriggerButton } from "@/components/admin/admin-tour";
 
 // ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
 function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
@@ -1078,6 +1080,12 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       </main>
 
       <ArayWidget page="admin" enabled={true} />
+
+      {/* Контекстная подсказка для каждой страницы */}
+      <AdminPageHelp userRole={role} />
+
+      {/* Интерактивный тур — показывается автоматически при первом визите */}
+      <AdminTour autoShow={true} />
     </div>
   );
 }

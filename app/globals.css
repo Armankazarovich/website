@@ -1830,3 +1830,77 @@ a:focus-visible {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   CLASSIC MODE — Светлая/Тёмная тема: фиксы для поиска и попапов
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Поиск в классическом режиме — светлый фон */
+.aray-classic-mode .aray-search-input {
+  color: hsl(var(--foreground)) !important;
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+}
+.aray-classic-mode .aray-search-input::placeholder {
+  color: hsl(var(--muted-foreground)) !important;
+  -webkit-text-fill-color: hsl(var(--muted-foreground)) !important;
+  opacity: 1;
+}
+
+/* Классический режим: kbd подсказки в поиске */
+.aray-classic-mode kbd {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: rgba(0, 0, 0, 0.45) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Классический режим: попапы и диалоги всегда по теме */
+.aray-classic-mode [role="dialog"],
+.aray-classic-mode .bg-card {
+  background: hsl(var(--card)) !important;
+  color: hsl(var(--card-foreground)) !important;
+}
+
+/* Классический режим: текст всегда тёмный (light) или светлый (dark) по CSS переменным */
+.aray-classic-mode {
+  color-scheme: light dark;
+}
+.aray-classic-mode .text-white\/90,
+.aray-classic-mode .text-white\/85,
+.aray-classic-mode .text-white\/80,
+.aray-classic-mode .text-white\/70,
+.aray-classic-mode .text-white\/65,
+.aray-classic-mode .text-white\/60 {
+  color: hsl(var(--foreground)) !important;
+}
+.aray-classic-mode .text-white\/55,
+.aray-classic-mode .text-white\/50,
+.aray-classic-mode .text-white\/45,
+.aray-classic-mode .text-white\/40,
+.aray-classic-mode .text-white\/38,
+.aray-classic-mode .text-white\/35,
+.aray-classic-mode .text-white\/30,
+.aray-classic-mode .text-white\/25,
+.aray-classic-mode .text-white\/20,
+.aray-classic-mode .text-white\/18,
+.aray-classic-mode .text-white\/15 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+/* Классический режим — фон с rgba dark colors → белый/карточный */
+.aray-classic-mode [style*="rgba(10,14,30"],
+.aray-classic-mode [style*="rgba(7,11,28"],
+.aray-classic-mode [style*="rgba(10,15,35"],
+.aray-classic-mode [style*="rgba(14,20,44"],
+.aray-classic-mode [style*="rgba(6,9,22"],
+.aray-classic-mode [style*="rgba(12,16,32"] {
+  background: hsl(var(--card) / 0.98) !important;
+  border-color: hsl(var(--border)) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Строка поиска sticky — классический режим */
+.aray-classic-mode input.aray-search-input:focus {
+  outline: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
