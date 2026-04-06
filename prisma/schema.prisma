@@ -479,3 +479,39 @@ model ArayMemory {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
+
+
+// ── Блог / Новости ────────────────────────────────────────────────────────────
+model Post {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String   // краткое описание (для карточки и meta description)
+  content     String   // HTML или Markdown
+  coverImage  String?  // URL обложки
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false)
+  aiGenerated Boolean  @default(false)  // сгенерирована Арайем
+  topic       String?  // тег / тема: "lumber", "construction", "painting" и т.д.
+  readTime    Int      @default(5)       // минут на чтение
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ── Услуги ────────────────────────────────────────────────────────────────────
+model Service {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   // краткое
+  content     String   // полное описание, HTML
+  price       String?  // "от 5 000 ₽" или null (по запросу)
+  unit        String?  // "за м²", "за м³", "за изделие"
+  image       String?  // URL картинки
+  icon        String?  // lucide icon name: "Paintbrush", "Truck", "Scissors"
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

@@ -134,6 +134,20 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("");
   const [selectedSize, setSelectedSize] = useState<string>("");
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const scheduleRef = useRef<HTMLDivElement>(null);
+
+  // Закрыть popup расписания по клику снаружи
+  useEffect(() => {
+    if (!scheduleOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (scheduleRef.current && !scheduleRef.current.contains(e.target as Node)) {
+        setScheduleOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [scheduleOpen]);
   const catalogRef = useRef<HTMLDivElement>(null);
   const closeTimeout = useRef<ReturnType<typeof setTimeout>>();
   const { theme, setTheme } = useTheme();
@@ -242,10 +256,47 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
               <p className="font-display font-bold text-lg leading-tight text-foreground tracking-wide">
                 ПилоРус
               </p>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                <span className="text-[10px] text-green-400 font-semibold tracking-wide">Работаем</span>
-                <span className="text-muted-foreground/40 text-[10px] hidden xl:inline">· Химки</span>
+              {/* Кнопка "Работаем" с popup расписания */}
+              <div className="relative" ref={scheduleRef}>
+                <button
+                  onClick={() => setScheduleOpen((v) => !v)}
+                  className="flex items-center gap-1.5 group cursor-pointer"
+                  aria-label="График работы"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+                  <span className="text-[10px] text-green-400 font-semibold tracking-wide group-hover:underline underline-offset-2">Работаем</span>
+                  <span className="text-muted-foreground/40 text-[10px] hidden xl:inline">· Химки</span>
+                </button>
+
+                {/* Popup расписания */}
+                {scheduleOpen && (
+                  <div className="absolute top-full left-0 mt-2 z-[200] w-56 bg-card border border-border rounded-2xl shadow-xl overflow-hidden"
+                    onClick={(e) => e.stopPropagation()}>
+                    {/* Заголовок */}
+                    <div className="px-4 py-2.5 bg-green-500/10 border-b border-border flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                      <span className="text-xs font-semibold text-green-600 dark:text-green-400">Сейчас работаем</span>
+                    </div>
+                    {/* Расписание */}
+                    <div className="px-4 py-3 space-y-1.5 text-xs">
+                      {[
+                        { days: "Пн — Пт", hours: "09:00 — 18:00", today: [1,2,3,4,5].includes(new Date().getDay()) },
+                        { days: "Суббота", hours: "09:00 — 15:00", today: new Date().getDay() === 6 },
+                        { days: "Воскресенье", hours: "Выходной", today: new Date().getDay() === 0 },
+                      ].map((row) => (
+                        <div key={row.days} className={`flex justify-between items-center py-0.5 ${row.today ? "text-foreground font-semibold" : "text-muted-foreground"}`}>
+                          <span>{row.days}</span>
+                          <span className={row.hours === "Выходной" ? "text-red-400" : row.today ? "text-green-500" : ""}>{row.hours}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Адрес */}
+                    <div className="px-4 py-2.5 border-t border-border bg-muted/30 text-xs text-muted-foreground flex items-center gap-1.5">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      Химки, ул. Заводская 2А, стр.28
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </Link>
