@@ -560,19 +560,17 @@ function ArayControlCenter() {
 
                 {/* Палитра */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Цветовая палитра</p>
-                  <div className="grid grid-cols-4 gap-1.5">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Цвет интерфейса</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     {PALETTES.map((p) => (
                       <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                        className="flex flex-col items-center gap-1 py-2 rounded-xl transition-all"
-                        style={palette === p.id
-                          ? { border: "2px solid rgba(255,255,255,0.8)", background: "rgba(255,255,255,0.10)" }
-                          : { border: "1.5px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)" }
-                        }>
-                        <div className="w-5 h-5 rounded-lg"
-                          style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                        <span className="text-[8px] font-medium text-white/35 truncate w-full text-center">{p.name}</span>
-                      </button>
+                        className="w-6 h-6 rounded-lg transition-all active:scale-90"
+                        style={{
+                          background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                          ...(palette === p.id
+                            ? { outline: "2px solid rgba(255,255,255,0.85)", outlineOffset: "2px" }
+                            : { opacity: 0.55 })
+                        }} />
                     ))}
                   </div>
                 </div>
