@@ -39,7 +39,7 @@ export function TrashActions({ orderId }: { orderId: string }) {
           onClick={restore}
           disabled={loading}
           title="Восстановить"
-          className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg hover:bg-green-500/20 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-xs bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors disabled:opacity-50"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Восстановить

@@ -396,7 +396,7 @@ export default function AdminProductEditPage() {
                   {!isNew && (
                     <button
                       onClick={() => setPhotoSearchOpen(true)}
-                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-emerald-500/30 text-xs font-medium text-emerald-500 hover:bg-emerald-500/10 transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-primary/30 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
                     >
                       <Search className="w-3.5 h-3.5" />
                       Найти бесплатное фото (Pixabay)
@@ -415,7 +415,7 @@ export default function AdminProductEditPage() {
                         disabled={removingBg}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border/50 text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors"
                       >
-                        {removingBg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 text-violet-500" />}
+                        {removingBg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 text-primary" />}
                         {removingBg ? "Убираем..." : "Убрать фон"}
                       </button>
                     </div>
@@ -425,11 +425,11 @@ export default function AdminProductEditPage() {
                     className={cn(
                       "w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-medium border transition-all",
                       autoPipeline
-                        ? "bg-violet-500/10 border-violet-500/30 text-violet-500"
+                        ? "bg-primary/10 border-primary/30 text-primary"
                         : "border-border/40 text-muted-foreground/70 hover:bg-muted"
                     )}
                   >
-                    <span className={cn("w-1.5 h-1.5 rounded-full", autoPipeline ? "bg-violet-500" : "bg-muted-foreground/30")} />
+                    <span className={cn("w-1.5 h-1.5 rounded-full", autoPipeline ? "bg-primary" : "bg-muted-foreground/30")} />
                     {autoPipeline ? "Авто: убрать фон + лого" : "Авто-обработка при загрузке"}
                   </button>
                 </div>

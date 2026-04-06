@@ -1,12 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
 import {
   Zap, Plus, Trash2, Play, Pause, ChevronRight,
   ShoppingBag, Clock, CheckSquare, X,
   Loader2, RefreshCw, CheckCircle2,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 
 type Workflow = {
   id: string;
@@ -157,6 +169,18 @@ function WorkflowCard({
 
 // ─── Create Workflow Modal ────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (wf: Workflow) => void }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [trigger, setTrigger] = useState("order_created");
@@ -202,13 +226,13 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-background rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
         <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold text-xl flex items-center gap-2">
+          <h2 className="font-display font-bold text-xl flex items-center gap-2" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>
             <Zap className="w-5 h-5 text-primary" />
             Новый воркфлоу
           </h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-muted/20 transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-6 space-y-5">

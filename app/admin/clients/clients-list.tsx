@@ -172,7 +172,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span><strong>{promotedName}</strong> успешно назначен сотрудником и добавлен в команду</span>
-          <button className="ml-auto text-green-500 hover:text-green-700" onClick={() => setPromotedName(null)}>
+          <button className="ml-auto text-green-500 hover:text-primary" onClick={() => setPromotedName(null)}>
             <X className="w-4 h-4" />
           </button>
         </div>

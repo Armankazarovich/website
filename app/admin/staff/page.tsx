@@ -416,7 +416,7 @@ export default function StaffPage() {
               title={member.staffStatus === "ACTIVE" ? "Заблокировать" : "Разблокировать"}
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
                 member.staffStatus === "SUSPENDED"
-                  ? "border-green-300 text-green-700 hover:bg-green-50 dark:border-green-700 dark:text-green-400 dark:hover:bg-green-900/20"
+                  ? "border-primary/40 text-primary hover:bg-primary/10 dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
                   : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -450,7 +450,7 @@ export default function StaffPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => handleSetStatus(member.id, "ACTIVE")}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors shadow-sm"
               >
                 <Check className="w-4 h-4" /> Одобрить
               </button>

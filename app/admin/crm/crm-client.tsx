@@ -13,6 +13,17 @@ import {
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
+
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 const STAGES = [
@@ -547,31 +558,51 @@ function LeadDetailPanel({
     }
   };
 
+  const isClassic = useClassicMode();
+  const drawerStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    borderLeft: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    borderLeft: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
+  };
+  const drawerHeaderStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    borderBottom: "1px solid hsl(var(--border))",
+  } : {
+    background: "rgba(8,13,32,0.70)",
+    backdropFilter: "blur(20px)",
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
+  };
   const currentStage = STAGES.find(s => s.key === fullLead.stage);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border-l border-border w-full max-w-lg h-full overflow-y-auto shadow-lg flex flex-col">
+      <div className="relative w-full max-w-lg h-full overflow-y-auto shadow-lg flex flex-col" style={drawerStyle}>
 
         {/* Заголовок */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card z-10">
+        <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10" style={drawerHeaderStyle}>
           <div className="min-w-0">
-            <h2 className="font-bold text-foreground truncate">{fullLead.name}</h2>
+            <h2 className="font-bold truncate" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{fullLead.name}</h2>
             {fullLead.company && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs flex items-center gap-1" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>
                 <Building2 className="w-3 h-3" />{fullLead.company}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2 ml-3">
-            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
-              <Pencil className="w-4 h-4 text-muted-foreground" />
+            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+              <Pencil className="w-4 h-4" />
             </button>
             <button onClick={() => setConfirmDelete(true)} className="w-8 h-8 rounded-xl hover:bg-destructive/10 flex items-center justify-center transition-colors">
               <Trash2 className="w-4 h-4 text-destructive" />
             </button>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
+            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -702,7 +733,7 @@ function LeadDetailPanel({
                       <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center ${
                         act.type === "WON" ? "bg-emerald-100 dark:bg-emerald-900/30" :
                         act.type === "STAGE_CHANGE" ? "bg-violet-100 dark:bg-violet-900/30" :
-                        act.type === "CALL" ? "bg-blue-500/15" :
+                        act.type === "CALL" ? "bg-orange-500/15" :
                         "bg-muted"
                       }`}>
                         <Icon className="w-3.5 h-3.5 text-muted-foreground" />
@@ -817,6 +848,18 @@ const PRESETS = [
 ];
 
 function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (leads: any[]) => void }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   const [selected, setSelected] = useState<string | null>(null);
 
   const preset = PRESETS.find(p => p.key === selected);
@@ -824,13 +867,13 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md">
+      <div className="relative rounded-2xl w-full max-w-md" style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
-            <h2 className="font-bold text-foreground">Пресеты по отраслям</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Загрузить демо-лиды для вашей сферы</p>
+            <h2 className="font-bold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Пресеты по отраслям</h2>
+            <p className="text-xs mt-0.5" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>Загрузить демо-лиды для вашей сферы</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>

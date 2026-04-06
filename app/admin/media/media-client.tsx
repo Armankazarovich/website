@@ -4,11 +4,22 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  Upload, Trash2, Copy, CheckCircle2, Loader2, Search,
+  Upload, Trash2, Copy, CheckCircle2, Loader2,
   Wand2, X, ExternalLink, FolderOpen, ScanSearch,
   CheckSquare, Square, Smartphone,
 } from "lucide-react";
 import { InfoCard } from "@/components/admin/info-popup";
+
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 
 type MediaFile = {
   url: string; folder: string; filename: string;
@@ -189,6 +200,18 @@ function MediaCard({
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boolean; onPick?: (url: string) => void }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -424,22 +447,15 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
       )}
 
       {/* Filters */}
-      <div className="flex gap-2 flex-wrap items-center">
-        <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Поиск по названию, ALT, товару..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30" />
-        </div>
-        <div className="flex gap-1">
-          {folders.map((f) => (
-            <button key={f} onClick={() => setFolder(f)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-                folder === f ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
-              }`}>
-              {f === "all" ? "Все" : f}
-            </button>
-          ))}
-        </div>
+      <div className="flex gap-1 flex-wrap items-center">
+        {folders.map((f) => (
+          <button key={f} onClick={() => setFolder(f)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+              folder === f ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
+            }`}>
+            {f === "all" ? "Все" : f}
+          </button>
+        ))}
       </div>
 
       {/* ALT info banner */}
@@ -495,13 +511,13 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
       {bulkConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setBulkConfirm(false)} />
-          <div className="relative bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center space-y-4">
+          <div className="relative rounded-2xl p-6 w-full max-w-sm text-center space-y-4" style={popupStyle}>
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
               <Trash2 className="w-6 h-6 text-destructive" />
             </div>
             <div>
-              <p className="font-display font-bold text-lg">Удалить {bulkSelectedDeletable.length} фото?</p>
-              <p className="text-sm text-muted-foreground mt-1">Файлы будут удалены с сервера навсегда. Это действие нельзя отменить.</p>
+              <p className="font-display font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Удалить {bulkSelectedDeletable.length} фото?</p>
+              <p className="text-sm mt-1" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>Файлы будут удалены с сервера навсегда. Это действие нельзя отменить.</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -526,14 +542,26 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
 // ── Picker modal (for use inside product edit) ────────────────────────────────
 export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (url: string) => void }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+      <div className="relative rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden" style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <h2 className="font-bold text-lg">Выбрать из медиабиблиотеки</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
+          <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>

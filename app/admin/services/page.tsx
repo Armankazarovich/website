@@ -17,6 +17,17 @@ import {
   GripVertical,
 } from "lucide-react";
 
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
+
 type Service = {
   id: string;
   slug: string;
@@ -62,6 +73,18 @@ function ServiceModal({
   onClose: () => void;
   onSave: (data: Partial<Service>) => Promise<void>;
 }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   const isNew = !service?.id;
   const [form, setForm] = useState<Omit<Service, "id">>({
     ...BLANK_SERVICE,
@@ -86,10 +109,10 @@ function ServiceModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-card z-10">
-          <p className="font-display font-semibold">{isNew ? "Новая услуга" : "Редактировать услугу"}</p>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+      <div className="rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10" style={popupStyle}>
+          <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{isNew ? "Новая услуга" : "Редактировать услугу"}</p>
+          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">

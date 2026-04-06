@@ -25,6 +25,17 @@ import {
   Link2,
 } from "lucide-react";
 
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
+
 const MediaPickerModal = dynamic(
   () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
   { ssr: false }
@@ -63,6 +74,18 @@ function EditModal({
   onClose: () => void;
   onSave: (id: string, data: Partial<Post>) => Promise<void>;
 }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   const [title, setTitle] = useState(post.title);
   const [excerpt, setExcerpt] = useState(post.excerpt);
   const [topic, setTopic] = useState(post.topic ?? "");
@@ -107,10 +130,10 @@ function EditModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-xl">
+      <div className="rounded-2xl w-full max-w-xl" style={popupStyle}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <p className="font-display font-semibold">Редактировать статью</p>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Редактировать статью</p>
+          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -295,6 +318,18 @@ function GenerateDialog({
   onClose: () => void;
   onConfirm: (data: GeneratedPost) => Promise<void>;
 }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.82)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+  };
   const [topic, setTopic] = useState("");
   const [keywords, setKeywords] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -332,13 +367,13 @@ function GenerateDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 bg-card z-10">
+      <div className="rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10" style={popupStyle}>
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-primary" />
-            <p className="font-display font-semibold">Генерация статьи с Арай</p>
+            <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Генерация статьи с Арай</p>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -390,7 +425,7 @@ function GenerateDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-6 pb-5 sticky bottom-0 bg-card pt-2 border-t border-border">
+        <div className="flex justify-end gap-2 px-6 pb-5 sticky bottom-0 pt-2 border-t border-border" style={popupStyle}>
           {!preview ? (
             <>
               <Button variant="outline" onClick={onClose}>Отмена</Button>

@@ -268,7 +268,7 @@ export function ProductsClient({
             <button
               onClick={() => bulkSetActive(true)}
               disabled={bulkSaving}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-300 text-xs font-medium hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary border border-primary/30 text-xs font-medium hover:bg-primary/20 transition-colors disabled:opacity-50"
             >
               <Eye className="w-3.5 h-3.5" /> Сделать активными
             </button>

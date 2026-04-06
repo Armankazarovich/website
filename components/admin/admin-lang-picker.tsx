@@ -61,12 +61,12 @@ export function AdminLangPicker() {
         onClick={() => setOpen(o => !o)}
         title="Язык / Language"
         className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all hover:scale-110
-          ${open ? "bg-emerald-500/20 ring-2 ring-emerald-400/30" : "hover:bg-emerald-500/15"}`}
+          ${open ? "bg-primary/20 ring-2 ring-primary/30" : "hover:bg-primary/15"}`}
       >
         {current ? (
           <span className="text-base leading-none">{current.flag}</span>
         ) : (
-          <Languages className="w-4 h-4 text-emerald-400" />
+          <Languages className="w-4 h-4 text-primary" />
         )}
       </button>
 
