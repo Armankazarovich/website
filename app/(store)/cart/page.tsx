@@ -232,7 +232,7 @@ function ShareCartButton() {
       className={`flex items-center gap-2 text-sm px-4 py-2 rounded-xl border transition-all ${
         copied
           ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
-          : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-accent"
+          : "border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10"
       }`}
       title="Скопировать ссылку на корзину"
     >
@@ -331,7 +331,7 @@ export default function CartPage() {
                           parseFloat((item.quantity - (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
                         )
                       }
-                      className="px-3 py-1.5 hover:bg-accent transition-colors"
+                      className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
@@ -348,7 +348,7 @@ export default function CartPage() {
                           parseFloat((item.quantity + (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
                         )
                       }
-                      className="px-3 py-1.5 hover:bg-accent transition-colors"
+                      className="px-3 py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
