@@ -33,6 +33,8 @@ import {
   CheckSquare,
   Zap,
   Target,
+  BookOpen,
+  Wrench,
 } from "lucide-react";
 
 type NavItem = {
@@ -67,6 +69,10 @@ const allNavItems: NavItem[] = [
   { href: "/admin/inventory",  label: "Склад / Остатки",   labelKey: "inventory",     icon: Warehouse, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
   { href: "/admin/import",     label: "Импорт / Экспорт",  labelKey: "import_export", icon: FileDown,  roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
   { href: "/admin/media",      label: "Медиабиблиотека",   labelKey: "media",         icon: Images,    roles: [SA, "ADMIN", "MANAGER"], group: "products" },
+
+  // ── Контент ──
+  { href: "/admin/posts",    label: "Статьи / Новости", icon: BookOpen, roles: [SA, "ADMIN", "MANAGER"], group: "content", groupKey: undefined },
+  { href: "/admin/services", label: "Услуги",           icon: Wrench,   roles: [SA, "ADMIN", "MANAGER"], group: "content" },
 
   // ── Маркетинг ──
   { href: "/admin/promotions", label: "Акции",          labelKey: "promotions", icon: Megaphone,  roles: [SA, "ADMIN", "MANAGER"], group: "marketing", groupKey: "marketing" },

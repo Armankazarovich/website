@@ -51,6 +51,8 @@ interface HeaderProps {
 const infoLinks = [
   { label: "Доставка и оплата", href: "/delivery" },
   { label: "Акции и скидки", href: "/promotions" },
+  { label: "Услуги", href: "/services" },
+  { label: "Новости", href: "/news" },
   { label: "О производстве", href: "/about" },
   { label: "Контакты", href: "/contacts" },
 ];
@@ -521,6 +523,28 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
               Акции
             </Link>
             <Link
+              href="/services"
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname === "/services"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              Услуги
+            </Link>
+            <Link
+              href="/news"
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname === "/news"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              Новости
+            </Link>
+            <Link
               href="/contacts"
               className={cn(
                 "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
@@ -803,6 +827,12 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                     )},
                     { label: "Акции и скидки", href: "/promotions", icon: (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>
+                    )},
+                    { label: "Услуги", href: "/services", icon: (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )},
+                    { label: "Новости и статьи", href: "/news", icon: (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/></svg>
                     )},
                     { label: "О производстве", href: "/about", icon: (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 22V9L12 3L22 9V22" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 22v-7h6v7" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>

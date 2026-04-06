@@ -115,6 +115,18 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
             </h3>
             <ul className="space-y-2.5 text-sm text-zinc-400">
               <li>
+                <Link href="/services" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
+                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
+                  Услуги
+                </Link>
+              </li>
+              <li>
+                <Link href="/news" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
+                  <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
+                  Новости и статьи
+                </Link>
+              </li>
+              <li>
                 <Link href="/delivery" className="hover:text-brand-orange transition-colors flex items-center gap-2 group">
                   <span className="w-1 h-1 rounded-full bg-zinc-600 group-hover:bg-brand-orange transition-colors" />
                   Доставка и оплата
