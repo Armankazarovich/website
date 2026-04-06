@@ -210,7 +210,6 @@ export default async function CatalogPage({
           currentType={currentType}
           currentInStock={searchParams.instock === "1"}
         />
-        <InstockToggle active={searchParams.instock === "1"} />
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
