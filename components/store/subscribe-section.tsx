@@ -113,7 +113,7 @@ export function SubscribeSection() {
         </div>
 
         {/* Three cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto w-full">
 
           {/* ── Email card ── */}
           <div className="bg-card border border-border rounded-2xl p-6 flex flex-col">
@@ -204,8 +204,8 @@ export function SubscribeSection() {
             )}
           </div>
 
-          {/* ── Telegram card ── */}
-          <div className="bg-card border border-border rounded-2xl p-6 flex flex-col">
+          {/* ── Telegram card — скрыт ── */}
+          <div className="hidden bg-card border border-border rounded-2xl p-6 flex flex-col">
             <div className="w-11 h-11 rounded-xl bg-sky-100 dark:bg-sky-900/30 flex items-center justify-center mb-4">
               <Send className="w-5 h-5 text-sky-500" />
             </div>
