@@ -546,31 +546,21 @@ export function Header({ categories = [], phones = DEFAULT_PHONES }: HeaderProps
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.94 }}
                     transition={{ type: "spring", stiffness: 420, damping: 26 }}
-                    className="absolute top-full right-0 mt-2.5 z-50 whitespace-nowrap pointer-events-none"
-                    style={{
-                      background: "rgba(14, 18, 36, 0.92)",
-                      border: "1px solid rgba(232,112,10,0.35)",
-                      borderRadius: 14,
-                      boxShadow: "0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
-                      padding: "10px 14px",
-                      backdropFilter: "blur(24px) saturate(180%)",
-                      WebkitBackdropFilter: "blur(24px) saturate(180%)",
-                    }}
+                    className="absolute top-full right-0 mt-2.5 z-50 whitespace-nowrap pointer-events-none bg-card border border-border rounded-2xl shadow-xl"
+                    style={{ padding: "10px 14px" }}
                   >
                     {/* Стрелочка */}
-                    <div className="absolute -top-[7px] right-3.5 w-3.5 h-3.5 rotate-45"
-                      style={{ background: "rgba(14,18,36,0.92)", border: "1px solid rgba(232,112,10,0.35)", borderRight: "none", borderBottom: "none" }} />
+                    <div className="absolute -top-[7px] right-3.5 w-3.5 h-3.5 rotate-45 bg-card border-l border-t border-border" />
                     {/* Контент */}
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ background: "rgba(232,112,10,0.20)" }}>
-                        <ShoppingCart className="w-3.5 h-3.5 text-brand-orange" />
+                      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+                        <ShoppingCart className="w-3.5 h-3.5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-display font-bold text-[15px] leading-none" style={{ color: "#f59020" }}>
+                        <p className="font-display font-bold text-[15px] leading-none text-primary">
                           {formatPrice(totalPrice)}
                         </p>
-                        <p className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>{totalItems} {totalItems === 1 ? "позиция" : totalItems < 5 ? "позиции" : "позиций"} в корзине</p>
+                        <p className="text-[10px] mt-0.5 text-muted-foreground">{totalItems} {totalItems === 1 ? "позиция" : totalItems < 5 ? "позиции" : "позиций"} в корзине</p>
                       </div>
                     </div>
                   </motion.div>

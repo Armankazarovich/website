@@ -352,7 +352,7 @@ function ThemePaletteBar() {
             key={p.id}
             onClick={() => setPalette(p.id)}
             title={p.name}
-            className={`w-6 h-6 rounded-lg transition-all ${
+            className={`w-7 h-7 rounded-full transition-all shrink-0 ${
               palette === p.id
                 ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-110"
                 : "opacity-60 hover:opacity-100 hover:scale-105"
@@ -363,7 +363,7 @@ function ThemePaletteBar() {
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-          className="w-6 h-6 rounded-lg bg-muted hover:bg-muted/80 flex items-center justify-center transition-all ml-1"
+          className="w-7 h-7 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-all ml-1 shrink-0"
         >
           {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
         </button>

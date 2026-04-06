@@ -404,7 +404,7 @@ export function ProductCard({
                   idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
                 } items-center justify-center
                   text-[9px] px-1 py-px rounded
-                  sm:text-[11px] sm:px-2 sm:py-1 sm:rounded-lg ${
+                  sm:text-[10px] sm:px-1.5 sm:py-0.5 sm:rounded-md ${
                   selectedVariant?.id === v.id && v.inStock
                     ? "border-primary bg-primary text-primary-foreground shadow-sm"
                     : v.inStock
@@ -428,7 +428,7 @@ export function ProductCard({
             {desktopExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="hidden sm:inline-flex text-[11px] font-semibold px-2 py-1 rounded-lg border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 min-h-[26px] items-center justify-center"
+                className="hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 items-center justify-center"
               >
                 +{desktopExtra}
               </button>

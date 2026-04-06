@@ -9,7 +9,7 @@ import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
-import { Calculator, ArrowRight } from "lucide-react";
+import { Calculator, ArrowRight, Phone } from "lucide-react";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   if (searchParams.category) {
@@ -279,9 +279,10 @@ export default async function CatalogPage({
               </p>
               <a
                 href="tel:+79859707133"
-                className="block bg-primary text-primary-foreground rounded-lg py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm shadow-primary/20"
               >
-                📞 8-985-970-71-33
+                <Phone className="w-4 h-4 shrink-0" />
+                8-985-970-71-33
               </a>
               <a
                 href="tel:+79996622602"

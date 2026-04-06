@@ -564,7 +564,7 @@ function ArayControlCenter() {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {PALETTES.map((p) => (
                       <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                        className="w-6 h-6 rounded-lg transition-all active:scale-90"
+                        className="w-7 h-7 rounded-full shrink-0 transition-all active:scale-90"
                         style={{
                           background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
                           ...(palette === p.id
@@ -862,11 +862,11 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               <div className="flex items-center gap-1.5 flex-wrap">
                 {PALETTES.map((p) => (
                   <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className={`w-6 h-6 rounded-lg transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
+                    className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
                     style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
                 ))}
                 <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="w-6 h-6 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                  className="w-7 h-7 rounded-full shrink-0 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
                   {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                 </button>
               </div>
@@ -994,21 +994,16 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
                 Цветовая палитра
               </p>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {PALETTES.map((p) => (
                   <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className="flex flex-col items-center gap-1.5 py-2.5 rounded-2xl transition-all"
-                    style={
-                      palette === p.id
-                        ? { border: "2px solid white", background: "rgba(255,255,255,0.1)" }
-                        : { border: "1.5px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)" }
-                    }>
-                    <div className="w-6 h-6 rounded-lg"
-                      style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                    <span className="text-[9px] font-medium text-white/45 leading-none truncate w-full text-center px-1">
-                      {p.name}
-                    </span>
-                  </button>
+                    className="w-9 h-9 rounded-full shrink-0 transition-all active:scale-90"
+                    style={{
+                      background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                      ...(palette === p.id
+                        ? { outline: "2.5px solid rgba(255,255,255,0.9)", outlineOffset: "3px" }
+                        : { opacity: 0.5 })
+                    }} />
                 ))}
               </div>
             </div>
