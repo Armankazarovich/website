@@ -38,6 +38,7 @@ export function ProductsClient({
   const [products, setProducts] = useState(init);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
+  const [sortBy, setSortBy] = useState("newest");
 
   // Фильтры из URL — синхронизируются со Smart Command Bar
   const urlActive = searchParams.get("active");     // "1" | "0" | null
@@ -82,15 +83,26 @@ export function ProductsClient({
     } finally { setSaving(null); }
   };
 
-  /* filtered — читаем URL params для Smart Command Bar chips */
-  const filtered = useMemo(() => products.filter(p => {
-    const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
-    const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
-    const matchNophoto = !noPhotoOnly || p.images.length === 0;
-    const matchFeatured = !urlFeatured || p.featured;
-    return matchCat && matchS && matchActive && matchNophoto && matchFeatured;
-  }), [products, search, catFilter, noPhotoOnly, urlActive, urlFeatured]);
+  /* filtered + sorted */
+  const filtered = useMemo(() => {
+    const list = products.filter(p => {
+      const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
+      const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
+      const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
+      const matchNophoto = !noPhotoOnly || p.images.length === 0;
+      const matchFeatured = !urlFeatured || p.featured;
+      return matchCat && matchS && matchActive && matchNophoto && matchFeatured;
+    });
+    return list.sort((a, b) => {
+      if (sortBy === "name_az") return a.name.localeCompare(b.name, "ru");
+      if (sortBy === "name_za") return b.name.localeCompare(a.name, "ru");
+      if (sortBy === "active") return Number(b.active) - Number(a.active);
+      if (sortBy === "hidden") return Number(a.active) - Number(b.active);
+      if (sortBy === "price_asc") return (minPrice(a) ?? 0) - (minPrice(b) ?? 0);
+      if (sortBy === "price_desc") return (minPrice(b) ?? 0) - (minPrice(a) ?? 0);
+      return 0; // newest — сервер уже вернул в нужном порядке
+    });
+  }, [products, search, catFilter, noPhotoOnly, urlActive, urlFeatured, sortBy]);
 
   /* ── selection helpers ── */
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id));
@@ -221,7 +233,7 @@ export function ProductsClient({
       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all active:scale-95
         ${saving === p.id ? "opacity-50 cursor-wait" : "cursor-pointer hover:opacity-80"}
         ${p.active
-          ? "bg-emerald-500/10 text-emerald-700 border-emerald-300"
+          ? "bg-primary/10 text-primary border-primary/30"
           : "bg-muted text-muted-foreground border-border"}`}
     >
       {p.active ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -255,6 +267,22 @@ export function ProductsClient({
           <ImageOff className="w-4 h-4" />
           Без фото {noPhotoOnly && `(${products.filter(p => p.images.length === 0).length})`}
         </button>
+        <div className="relative">
+          <select
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            className="appearance-none py-2 pl-3 pr-8 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="newest">Сначала новые</option>
+            <option value="name_az">Название А→Я</option>
+            <option value="name_za">Название Я→А</option>
+            <option value="active">Активные первые</option>
+            <option value="hidden">Скрытые первые</option>
+            <option value="price_asc">Цена ↑</option>
+            <option value="price_desc">Цена ↓</option>
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        </div>
         <span className="text-sm text-muted-foreground">{filtered.length} из {products.length}</span>
       </div>
 
