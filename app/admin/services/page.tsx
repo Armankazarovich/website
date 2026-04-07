@@ -300,7 +300,7 @@ export default function AdminServicesPage() {
               <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0 cursor-grab active:cursor-grabbing" />
 
               <div
-                className={`w-2 h-2 rounded-full shrink-0 ${service.active ? "bg-green-500" : "bg-zinc-400"}`}
+                className={`w-2 h-2 rounded-full shrink-0 ${service.active ? "bg-primary" : "bg-zinc-400"}`}
               />
 
               <div className="flex-1 min-w-0">

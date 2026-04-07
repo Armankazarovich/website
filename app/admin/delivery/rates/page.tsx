@@ -269,7 +269,7 @@ export default function DeliveryRatesPage() {
                             <button
                               onClick={() => saveEdit(rate.id)}
                               disabled={saving}
-                              className="p-1.5 text-green-600 hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
+                              className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-50"
                             >
                               {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                             </button>
@@ -305,7 +305,7 @@ export default function DeliveryRatesPage() {
 
                 {/* Add new row */}
                 {showAdd && (
-                  <tr className="bg-green-500/5 border-t-2 border-green-500/20">
+                  <tr className="bg-primary/5 border-t-2 border-primary/20">
                     <td className="px-4 py-3">
                       <input
                         placeholder="Газель 3т"
@@ -352,7 +352,7 @@ export default function DeliveryRatesPage() {
                         <button
                           onClick={saveNew}
                           disabled={addSaving || !newRate.vehicleName || !newRate.payload || !newRate.maxVolume || !newRate.basePrice}
-                          className="p-1.5 text-green-600 hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
+                          className="p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-colors disabled:opacity-40"
                         >
                           {addSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                         </button>

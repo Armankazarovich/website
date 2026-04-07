@@ -604,7 +604,7 @@ export default function AdminPostsPage() {
             >
               {/* Status dot */}
               <div
-                className={`w-2 h-2 rounded-full shrink-0 ${post.published ? "bg-green-500" : "bg-zinc-400"}`}
+                className={`w-2 h-2 rounded-full shrink-0 ${post.published ? "bg-primary" : "bg-zinc-400"}`}
                 title={post.published ? "Опубликована" : "Черновик"}
               />
 
