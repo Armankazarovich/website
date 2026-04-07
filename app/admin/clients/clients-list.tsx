@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle, Mail, AlertTriangle } from "lucide-react";
+import { Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle, Mail, AlertTriangle, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -167,6 +167,22 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
 
   return (
     <div className="space-y-4">
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+        <Input
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Поиск по имени, email, телефону..."
+          className="pl-9 h-10"
+        />
+        {search && (
+          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
       {/* Success banner after promote */}
       {promotedName && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm">
