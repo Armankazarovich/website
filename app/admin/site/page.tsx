@@ -427,8 +427,8 @@ export default function AdminSitePage() {
           {/* ── Maps & business directories ──────────────────────────── */}
           <Card>
             <div className="flex items-center gap-3 mb-1">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-blue-500" />
+              <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-semibold">Карты и каталоги компаний</p>
