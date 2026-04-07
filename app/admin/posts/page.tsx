@@ -459,6 +459,25 @@ export default function AdminPostsPage() {
   const [seedMsg, setSeedMsg] = useState("");
   const deletingRef = useRef<Set<string>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [creating, setCreating] = useState(false);
+
+  const handleCreateBlank = async () => {
+    setCreating(true);
+    try {
+      const res = await fetch("/api/admin/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Новая статья", excerpt: "", topic: "", readTime: 3, published: false }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setPosts((prev) => [created, ...prev]);
+        setEditPost(created);
+      }
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const loadPosts = async () => {
     try {
@@ -547,8 +566,8 @@ export default function AdminPostsPage() {
               <Sparkles className="w-3.5 h-3.5" />
               Генерировать с Арай
             </Button>
-            <Button size="sm" onClick={() => {/* TODO: create blank post */}}>
-              <Plus className="w-3.5 h-3.5" />
+            <Button size="sm" onClick={handleCreateBlank} disabled={creating}>
+              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
               Новая статья
             </Button>
           </div>
