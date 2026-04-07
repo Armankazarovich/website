@@ -5,13 +5,15 @@ import { useCallback, useTransition, useState } from "react";
 import { Filter, X, ChevronDown, Ruler } from "lucide-react";
 
 const PRODUCT_TYPES = [
-  { label: "Доска обрезная", value: "доска" },
+  { label: "Доска обрезная", value: "обрезная" },
+  { label: "Террасная доска", value: "террасная" },
+  { label: "Доска пола", value: "пола" },
+  { label: "Строганная доска", value: "строганная" },
   { label: "Брус / Брусок", value: "брус" },
   { label: "Вагонка", value: "вагонка" },
   { label: "Планкен", value: "планкен" },
   { label: "Блок-хаус", value: "блок-хаус" },
   { label: "Погонаж / Плинтус", value: "плинтус" },
-  { label: "Строганная", value: "строганная" },
   { label: "Фанера", value: "фанера" },
   { label: "ДСП / МДФ / ОСБ", value: "дсп" },
 ];

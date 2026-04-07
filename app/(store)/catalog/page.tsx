@@ -125,9 +125,15 @@ export default async function CatalogPage({
   // Доступные типы — только те, для которых есть товары в категории
   const productNamesLower = productsForTypes.map((p) => p.name.toLowerCase());
 
-  // Список type-значений для боковых фильтров и горизонтальной полосы
-  const allTypeValues = ["доска", "брус", "вагонка", "планкен", "блок-хаус", "плинтус", "строганная", "фанера", "дсп"];
-  const availableTypes = allTypeValues.filter((tv) =>
+  // Для ГОРИЗОНТАЛЬНОЙ полосы — грубые типы (одна кнопка = весь класс)
+  const coarseTypeValues = ["доска", "брус", "вагонка", "планкен", "блок-хаус", "плинтус", "строганная", "фанера", "дсп"];
+  const availableCoarseTypes = coarseTypeValues.filter((tv) =>
+    productNamesLower.some((name) => name.includes(tv))
+  );
+
+  // Для БОКОВОГО фильтра — точные подтипы (точное совпадение ключевого слова)
+  const preciseTypeValues = ["обрезная", "террасная", "пола", "строганная", "брус", "вагонка", "планкен", "блок-хаус", "плинтус", "фанера", "дсп"];
+  const availableTypes = preciseTypeValues.filter((tv) =>
     productNamesLower.some((name) => name.includes(tv))
   );
 
@@ -196,7 +202,7 @@ export default async function CatalogPage({
       <CatalogTypeFilter
         currentType={currentType}
         category={searchParams.category}
-        availableTypes={availableTypes}
+        availableTypes={availableCoarseTypes}
       />
 
       {/* ── Мобильная строка фильтров (только на мобильном) ── */}

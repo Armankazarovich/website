@@ -55,12 +55,12 @@ function StockBadge({ v, onToggle }: { v: Variant; onToggle: () => void }) {
     </button>
   );
   if (v.stockQty !== null && v.stockQty > 0) return (
-    <button onClick={onToggle} className="inline-flex items-center gap-1 text-emerald-600 text-xs font-medium hover:opacity-70 transition-opacity print:pointer-events-none">
+    <button onClick={onToggle} className="inline-flex items-center gap-1 text-primary text-xs font-medium hover:opacity-70 transition-opacity print:pointer-events-none">
       <CheckCircle2 className="w-3.5 h-3.5" /> {v.stockQty} шт.
     </button>
   );
   return v.inStock ? (
-    <button onClick={onToggle} title="Нажмите чтобы скрыть" className="inline-flex items-center gap-1 text-emerald-600 text-xs font-medium hover:opacity-70 transition-opacity print:pointer-events-none">
+    <button onClick={onToggle} title="Нажмите чтобы скрыть" className="inline-flex items-center gap-1 text-primary text-xs font-medium hover:opacity-70 transition-opacity print:pointer-events-none">
       <CheckCircle2 className="w-3.5 h-3.5" /> В наличии
     </button>
   ) : (
