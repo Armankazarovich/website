@@ -94,7 +94,7 @@ function CategoryRow({
         {/* Навигация-флаги */}
         <div className="hidden sm:flex items-center gap-1.5 shrink-0">
           {cat.showInMenu
-            ? <span className="text-[10px] bg-green-500/10 text-green-600 border border-green-500/20 px-1.5 py-0.5 rounded-full">Меню</span>
+            ? <span className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-1.5 py-0.5 rounded-full">Меню</span>
             : <span className="text-[10px] bg-muted text-muted-foreground border border-border px-1.5 py-0.5 rounded-full line-through">Меню</span>
           }
           {cat.showInFooter
@@ -108,7 +108,7 @@ function CategoryRow({
           ? <span className="hidden sm:flex items-center gap-1 text-[11px] bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-0.5 rounded-full shrink-0">
               <EyeOff className="w-3 h-3" /> Скрыта
             </span>
-          : <span className="hidden sm:flex items-center gap-1 text-[11px] bg-green-500/10 text-green-600 border border-green-500/20 px-2 py-0.5 rounded-full shrink-0">
+          : <span className="hidden sm:flex items-center gap-1 text-[11px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full shrink-0">
               <Eye className="w-3 h-3" /> Видна
             </span>
         }
@@ -335,8 +335,8 @@ function CategoryModal({
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Навигация</p>
 
           <div className="grid grid-cols-2 gap-2">
-            <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-colors ${showInMenu ? "border-green-500/30 bg-green-500/5" : "border-border bg-muted/50"}`}>
-              <input type="checkbox" checked={showInMenu} onChange={(e) => setShowInMenu(e.target.checked)} className="w-4 h-4 accent-green-500" />
+            <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-colors ${showInMenu ? "border-primary/30 bg-primary/5" : "border-border bg-muted/50"}`}>
+              <input type="checkbox" checked={showInMenu} onChange={(e) => setShowInMenu(e.target.checked)} className="w-4 h-4 accent-primary" />
               <div>
                 <p className="text-xs font-medium">Меню шапки</p>
                 <p className="text-[10px] text-muted-foreground">Главная навигация</p>
