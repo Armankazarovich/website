@@ -299,24 +299,24 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
                 backdropFilter: "blur(32px)",
                 boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
               }}>
-              <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Новые заказы</p>
+              <div className="px-4 py-3" style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Новые заказы</p>
               </div>
               {loadingOrders ? (
                 <div className="flex justify-center py-6">
                   <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                 </div>
               ) : orders.length === 0 ? (
-                <p className="text-center text-white/35 text-sm py-6">Нет новых заказов</p>
+                <p className="text-center text-muted-foreground text-sm py-6">Нет новых заказов</p>
               ) : (
                 <div className="py-1.5 max-h-64 overflow-y-auto">
                   {orders.map((o: any) => (
                     <button key={o.id} onClick={() => { router.push(`/admin/orders/${o.id}`); setBellOpen(false); }}
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-white/06 transition-colors text-left">
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted/20 transition-colors text-left">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white/90 truncate">#{o.orderNumber} {o.guestName || "—"}</p>
-                        <p className="text-[11px] text-white/40">{o.guestPhone || ""}</p>
+                        <p className="text-sm font-medium text-foreground truncate">#{o.orderNumber} {o.guestName || "—"}</p>
+                        <p className="text-[11px] text-muted-foreground">{o.guestPhone || ""}</p>
                       </div>
                       <span className="text-xs font-semibold text-primary shrink-0">
                         {o.totalAmount ? `${Number(o.totalAmount).toLocaleString()} ₽` : ""}
@@ -325,7 +325,7 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
                   ))}
                 </div>
               )}
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <div style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
                 <button onClick={() => { router.push("/admin/orders"); setBellOpen(false); }}
                   className="w-full py-3 text-center text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
                   Все заказы →
