@@ -236,7 +236,7 @@ export function VariantSelector({
           className={cn(
             "flex-1 text-base font-semibold transition-all duration-300",
             justAdded
-              ? "bg-emerald-500 hover:bg-emerald-500 border-emerald-400 scale-[1.02] shadow-[0_0_20px_rgba(16,185,129,0.40)]"
+              ? "bg-primary hover:bg-primary border-primary scale-[1.02] shadow-[0_0_20px_hsl(var(--primary)/0.40)]"
               : ""
           )}
           onClick={handleAdd}

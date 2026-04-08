@@ -109,7 +109,7 @@ function WorkflowCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold text-sm">{wf.name}</h3>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${wf.active ? "bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${wf.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                 {wf.active ? "Активен" : "Выкл"}
               </span>
             </div>

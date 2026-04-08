@@ -363,7 +363,7 @@ export function CalculatorWidget({ compact = false }: { compact?: boolean }) {
               className={cn(
                 "shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all",
                 added
-                  ? "bg-green-600 text-white"
+                  ? "bg-primary/80 text-primary-foreground"
                   : selectedProduct
                   ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
                   : "bg-muted text-muted-foreground cursor-not-allowed"
@@ -376,8 +376,8 @@ export function CalculatorWidget({ compact = false }: { compact?: boolean }) {
         </div>
 
         {/* Breakdown table */}
-        <div className="rounded-xl border border-border overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="rounded-xl border border-border overflow-hidden overflow-x-auto">
+          <table className="w-full min-w-[280px] text-sm">
             <thead className="bg-muted/50">
               <tr>
                 <th className="text-left px-3 py-2 text-xs font-medium text-muted-foreground">Параметр</th>

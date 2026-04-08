@@ -640,7 +640,7 @@ export default function AdminProductEditPage() {
 
       {/* ── Sticky Save Bar ── */}
       <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-64">
-        <div className="bg-background/95 backdrop-blur border-t border-border px-6 py-3 flex items-center justify-between gap-4 max-w-5xl">
+        <div className="bg-background/95 backdrop-blur border-t border-border px-6 pt-3 flex items-center justify-between gap-4 max-w-5xl" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
           <p className="text-xs text-muted-foreground hidden sm:block">
             {saved ? <><Check className="w-3 h-3 inline mr-1" /> Сохранено</> : <><Keyboard className="w-3 h-3 inline mr-1" /> Ctrl+S для быстрого сохранения</>}
           </p>

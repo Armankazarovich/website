@@ -29,8 +29,8 @@ export function InstockToggle({ active }: InstockToggleProps) {
       className={cn(
         "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200",
         active
-          ? "bg-emerald-500 text-white border-emerald-500 shadow-sm shadow-emerald-500/30"
-          : "border-border text-muted-foreground hover:border-emerald-500/50 hover:text-emerald-600 hover:bg-emerald-500/5"
+          ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/30"
+          : "border-border text-muted-foreground hover:border-primary/50 hover:text-primary hover:bg-primary/5"
       )}
     >
       <span className={cn(

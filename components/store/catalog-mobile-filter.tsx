@@ -150,20 +150,20 @@ export function CatalogMobileFilter({
                     className={cn(
                       "w-full flex items-center justify-between px-4 py-3 rounded-2xl border-2 transition-all",
                       currentInStock
-                        ? "border-emerald-500 bg-emerald-500/10"
-                        : "border-border hover:border-emerald-500/50"
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
                     )}
                   >
                     <div className="flex items-center gap-3">
                       <span className={cn(
                         "w-3 h-3 rounded-full transition-colors",
-                        currentInStock ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/30"
+                        currentInStock ? "bg-primary animate-pulse" : "bg-muted-foreground/30"
                       )} />
                       <span className="text-sm font-medium">Только в наличии</span>
                     </div>
                     <div className={cn(
                       "w-10 h-5 rounded-full transition-colors relative",
-                      currentInStock ? "bg-emerald-500" : "bg-muted"
+                      currentInStock ? "bg-primary" : "bg-muted"
                     )}>
                       <div className={cn(
                         "absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform",

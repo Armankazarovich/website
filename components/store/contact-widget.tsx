@@ -218,8 +218,8 @@ export function ContactWidget({
       id: "phone", label: isOnline ? "Позвонить — сейчас работаем" : "Позвонить",
       icon: <Phone className="w-6 h-6" />,
       href: `tel:${phoneLink || phone}`,
-      bg: "bg-emerald-500 hover:bg-emerald-600",
-      shadow: "0 4px 16px rgba(16,185,129,0.45)",
+      bg: "bg-primary hover:bg-primary/90",
+      shadow: "0 4px 16px hsl(var(--primary) / 0.40)",
     });
   }
 

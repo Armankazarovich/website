@@ -539,7 +539,7 @@ export default function CalculatorPage() {
                   className={cn(
                     "w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-base transition-all",
                     added
-                      ? "bg-green-600 text-white"
+                      ? "bg-primary/80 text-primary-foreground"
                       : selectedProduct
                       ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 active:scale-98"
                       : "bg-muted text-muted-foreground cursor-not-allowed"

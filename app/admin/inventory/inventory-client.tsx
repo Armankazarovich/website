@@ -119,7 +119,7 @@ function EditCell({
 function Toast({ msg, type }: { msg: string; type: "ok" | "err" }) {
   return (
     <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium text-white flex items-center gap-2 animate-in slide-in-from-bottom-2 fade-in duration-200
-      ${type === "ok" ? "bg-emerald-600" : "bg-destructive"}`}>
+      ${type === "ok" ? "bg-primary" : "bg-destructive"}`}>
       {type === "ok" ? <Check className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
       {msg}
     </div>

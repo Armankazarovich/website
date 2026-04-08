@@ -156,7 +156,7 @@ function MediaCard({
               />
               <button onClick={saveAlt} disabled={saving}
                 className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs transition-colors ${
-                  altSaved ? "bg-emerald-500 text-white" : "bg-muted hover:bg-primary/10 text-muted-foreground"
+                  altSaved ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-primary/10 text-muted-foreground"
                 }`}>
                 {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : altSaved ? <CheckCircle2 className="w-3 h-3" /> : "✓"}
               </button>
