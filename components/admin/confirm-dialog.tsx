@@ -1,7 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Trash2, X } from "lucide-react";
+
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -26,6 +37,7 @@ export function ConfirmDialog({
   variant = "danger",
   loading = false,
 }: ConfirmDialogProps) {
+  const classic = useClassicMode();
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -75,7 +87,12 @@ export function ConfirmDialog({
       {/* Dialog */}
       <div
         className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
-        style={{
+        style={classic ? {
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+          animation: "dialog-pop 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
+        } : {
           background: "rgba(8, 13, 32, 0.82)",
           backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
@@ -87,7 +104,8 @@ export function ConfirmDialog({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg text-white/30 hover:text-white/70 hover:bg-white/10 transition-colors"
+          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
+          style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}
         >
           <X className="w-4 h-4" />
         </button>
@@ -101,9 +119,9 @@ export function ConfirmDialog({
               </div>
             )}
             <div className="flex-1 min-w-0 pt-1">
-              <h3 className="font-semibold text-white/90 text-base leading-tight">{title}</h3>
+              <h3 className="font-semibold text-base leading-tight" style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.92)" }}>{title}</h3>
               {description && (
-                <p className="text-sm text-white/50 mt-1 leading-relaxed">{description}</p>
+                <p className="text-sm mt-1 leading-relaxed" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.50)" }}>{description}</p>
               )}
             </div>
           </div>
@@ -113,7 +131,16 @@ export function ConfirmDialog({
             <button
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl border border-white/12 text-white/60 text-sm font-medium hover:bg-white/08 hover:text-white/80 transition-colors"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              style={classic ? {
+                border: "1px solid hsl(var(--border))",
+                color: "hsl(var(--muted-foreground))",
+                background: "transparent",
+              } : {
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "rgba(255,255,255,0.60)",
+                background: "transparent",
+              }}
             >
               {cancelLabel}
             </button>

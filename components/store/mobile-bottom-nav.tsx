@@ -161,90 +161,111 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
           {leftItems.map(renderNavItem)}
         </div>
 
-        {/* ─── ARАЙ — центральная поднятая кнопка ─── */}
-        {arayEnabled && <div className="flex flex-col items-center relative" style={{ marginTop: "-20px", minWidth: "72px" }}>
+        {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
+        {arayEnabled && <div className="flex flex-col items-center relative" style={{ marginTop: "-24px", minWidth: "76px" }}>
           <motion.button
-            whileTap={{ scale: 0.88 }}
-            transition={{ type: "spring", stiffness: 400, damping: 16 }}
+            whileTap={{ scale: 0.85 }}
+            transition={{ type: "spring", stiffness: 380, damping: 14 }}
             onClick={openAray}
             aria-label="Открыть Арай"
-            style={{ WebkitTapHighlightColor: "transparent" }}
+            style={{ WebkitTapHighlightColor: "transparent", position: "relative" }}
           >
-            {/* Внешнее дыхающее кольцо */}
-            <span
-              className={`absolute inset-0 rounded-full ${arayPulse ? "animate-ping" : ""}`}
+            {/* Ping при добавлении в корзину */}
+            {arayPulse && (
+              <span className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: "rgba(232,112,10,0.30)", animationDuration: "0.7s" }} />
+            )}
+
+            {/* Платформа-тень под шаром */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1"
               style={{
-                background: "rgba(232, 112, 10, 0.25)",
-                animationDuration: "0.8s",
+                width: "46px", height: "10px",
+                background: "radial-gradient(ellipse, rgba(180,60,0,0.45) 0%, transparent 72%)",
+                filter: "blur(3px)",
               }}
             />
 
-            {/* Основная кнопка — SVG шар */}
-            <div className="aray-center-btn relative w-14 h-14 rounded-full flex items-center justify-center">
-              {/* SVG сфера */}
-              <svg width="46" height="46" viewBox="0 0 100 100" className="relative z-10">
-                <defs>
-                  {/* Основной объём шара — глубокий оранжево-коричневый */}
-                  <radialGradient id="navOrbG" cx="33%" cy="26%" r="75%">
-                    <stop offset="0%"   stopColor="#fff8dc"/>
-                    <stop offset="12%"  stopColor="#ffd166"/>
-                    <stop offset="30%"  stopColor="#f4820a"/>
-                    <stop offset="55%"  stopColor="#c44b00"/>
-                    <stop offset="78%"  stopColor="#7a1c00"/>
-                    <stop offset="100%" stopColor="#2d0800"/>
-                  </radialGradient>
-                  {/* Тень тёмной стороны */}
-                  <radialGradient id="navOrbShadow" cx="74%" cy="76%" r="58%">
-                    <stop offset="0%"   stopColor="#0d0000" stopOpacity="0.75"/>
-                    <stop offset="60%"  stopColor="#200500" stopOpacity="0.35"/>
-                    <stop offset="100%" stopColor="#0d0000" stopOpacity="0"/>
-                  </radialGradient>
-                  {/* Яркий блик — главный световой зайчик */}
-                  <radialGradient id="navOrbHL" cx="28%" cy="20%" r="36%">
-                    <stop offset="0%"   stopColor="white" stopOpacity="0.98"/>
-                    <stop offset="40%"  stopColor="white" stopOpacity="0.45"/>
-                    <stop offset="100%" stopColor="white" stopOpacity="0"/>
-                  </radialGradient>
-                  {/* Ободок — rim light снизу-справа */}
-                  <radialGradient id="navOrbRim" cx="50%" cy="50%" r="50%">
-                    <stop offset="72%"  stopColor="transparent"  stopOpacity="0"/>
-                    <stop offset="88%"  stopColor="#ff8c00"       stopOpacity="0.45"/>
-                    <stop offset="100%" stopColor="#ffb830"       stopOpacity="0.65"/>
-                  </radialGradient>
-                </defs>
-                {/* Слои шара */}
-                <circle cx="50" cy="50" r="46" fill="url(#navOrbG)"/>
-                <circle cx="50" cy="50" r="46" fill="url(#navOrbShadow)"/>
-                <circle cx="50" cy="50" r="46" fill="url(#navOrbRim)"/>
-                <circle cx="50" cy="50" r="46" fill="url(#navOrbHL)"/>
-                {/* Тонкий контур */}
-                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.18)" strokeWidth="1.5"/>
-              </svg>
+            {/* Основная кнопка */}
+            <div className="relative w-[60px] h-[60px] rounded-full flex items-center justify-center">
 
-              {/* Вращающийся световой эффект поверх шара */}
-              <div
-                className="absolute rounded-full overflow-hidden pointer-events-none z-[11]"
+              {/* Внешнее кольцо-ореол */}
+              <div className="absolute inset-0 rounded-full"
                 style={{
-                  width: "46px",
-                  height: "46px",
-                  animation: "orbLightSpin 6s linear infinite",
-                  background: "conic-gradient(from 0deg at 32% 28%, rgba(255,240,160,0.22) 0deg, transparent 70deg, rgba(120,30,0,0.18) 180deg, transparent 260deg, rgba(255,180,60,0.14) 320deg, transparent 360deg)",
-                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(255,140,0,0.18) 0%, transparent 70%)",
+                  animation: "arayBreath 3s ease-in-out infinite",
                 }}
               />
 
-              {/* Бейдж корзины */}
-              {mounted && totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 z-20 text-white text-[9px] min-w-[18px] h-[18px] px-0.5 rounded-full flex items-center justify-center font-bold leading-none"
-                  style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)", boxShadow: "0 0 8px rgba(232,112,10,0.7)" }}>
-                  {totalItems > 9 ? "9+" : totalItems}
-                </span>
-              )}
+              {/* SVG шар — улучшенный */}
+              <svg width="52" height="52" viewBox="0 0 100 100" className="relative z-10 drop-shadow-lg">
+                <defs>
+                  {/* Основной объём — насыщенный 3D */}
+                  <radialGradient id="orbMain" cx="34%" cy="27%" r="70%">
+                    <stop offset="0%"   stopColor="#fffbea"/>
+                    <stop offset="8%"   stopColor="#ffe082"/>
+                    <stop offset="22%"  stopColor="#ffac30"/>
+                    <stop offset="40%"  stopColor="#e8700a"/>
+                    <stop offset="60%"  stopColor="#b84500"/>
+                    <stop offset="80%"  stopColor="#6b1800"/>
+                    <stop offset="100%" stopColor="#1e0500"/>
+                  </radialGradient>
+                  {/* Тень правого-нижнего квадранта */}
+                  <radialGradient id="orbDark" cx="72%" cy="75%" r="55%">
+                    <stop offset="0%"   stopColor="#0a0000" stopOpacity="0.80"/>
+                    <stop offset="55%"  stopColor="#1a0400" stopOpacity="0.38"/>
+                    <stop offset="100%" stopColor="#0a0000" stopOpacity="0"/>
+                  </radialGradient>
+                  {/* Главный зайчик */}
+                  <radialGradient id="orbHL1" cx="30%" cy="22%" r="30%">
+                    <stop offset="0%"   stopColor="white" stopOpacity="1"/>
+                    <stop offset="35%"  stopColor="white" stopOpacity="0.55"/>
+                    <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                  </radialGradient>
+                  {/* Вторичный мягкий блик внизу-слева */}
+                  <radialGradient id="orbHL2" cx="22%" cy="75%" r="28%">
+                    <stop offset="0%"   stopColor="#ffcc66" stopOpacity="0.35"/>
+                    <stop offset="100%" stopColor="#ffcc66" stopOpacity="0"/>
+                  </radialGradient>
+                  {/* Rim light — золотой контур снизу-справа */}
+                  <radialGradient id="orbRim" cx="50%" cy="50%" r="50%">
+                    <stop offset="74%" stopColor="transparent" stopOpacity="0"/>
+                    <stop offset="88%" stopColor="#ff9500"     stopOpacity="0.55"/>
+                    <stop offset="100%" stopColor="#ffcc00"    stopOpacity="0.80"/>
+                  </radialGradient>
+                  {/* Внешний мягкий ореол */}
+                  <filter id="orbGlow">
+                    <feGaussianBlur stdDeviation="2.5" result="blur"/>
+                    <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+                  </filter>
+                </defs>
+                {/* Слои шара */}
+                <circle cx="50" cy="50" r="46" fill="url(#orbMain)" filter="url(#orbGlow)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#orbDark)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#orbRim)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#orbHL1)"/>
+                <circle cx="50" cy="50" r="46" fill="url(#orbHL2)"/>
+                {/* Тонкий золотой контур */}
+                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,210,80,0.22)" strokeWidth="1.5"/>
+                {/* Маленький вторичный зайчик — искра */}
+                <ellipse cx="64" cy="36" rx="5" ry="3.5"
+                  fill="white" fillOpacity="0.25"
+                  transform="rotate(-30 64 36)"/>
+              </svg>
+
+              {/* Вращающийся conic-градиент поверх — блеск */}
+              <div className="absolute rounded-full overflow-hidden pointer-events-none z-[11]"
+                style={{
+                  width: "52px", height: "52px",
+                  animation: "orbLightSpin 8s linear infinite",
+                  background: "conic-gradient(from 0deg at 32% 26%, rgba(255,245,160,0.28) 0deg, transparent 55deg, rgba(100,20,0,0.20) 175deg, transparent 255deg, rgba(255,170,50,0.18) 315deg, transparent 360deg)",
+                }}
+              />
+
             </div>
           </motion.button>
 
           {/* Подпись */}
-          <span className="text-[9px] font-bold mt-1 tracking-wider" style={{ color: "rgba(245,158,11,0.75)" }}>
+          <span className="text-[9px] font-bold tracking-wider" style={{ color: "rgba(245,158,11,0.80)", marginTop: "2px" }}>
             АРАЙ
           </span>
         </div>}
