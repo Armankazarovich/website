@@ -31,6 +31,9 @@ import {
   FileText,
   LayoutGrid,
   ScanLine,
+  Monitor,
+  Smartphone,
+  FlaskConical,
 } from "lucide-react";
 
 // ── Email Templates ──────────────────────────────────────────────
@@ -330,6 +333,14 @@ export default function EmailPage() {
   const [smtpTesting, setSmtpTesting] = useState(false);
   const [smtpTestResult, setSmtpTestResult] = useState<{ ok?: boolean; message?: string; error?: string } | null>(null);
 
+  // Preview state
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+
+  // Test email state
+  const [testEmail, setTestEmail] = useState("");
+  const [testSending, setTestSending] = useState(false);
+  const [testSent, setTestSent] = useState(false);
+
   // Import state
   const [importText, setImportText] = useState("");
   const [importLoading, setImportLoading] = useState(false);
@@ -409,6 +420,32 @@ export default function EmailPage() {
     setHtml((prev) => prev + block);
     setShowProductPicker(false);
     setProductSearch("");
+  };
+
+  // Send test email
+  const handleTestSend = async () => {
+    if (!testEmail.trim() || !html.trim()) return;
+    setTestSending(true);
+    setTestSent(false);
+    try {
+      const res = await fetch("/api/admin/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "send",
+          subject: `[ТЕСТ] ${subject || "Тест рассылки"}`,
+          html: html + `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">⚡ Тестовое письмо — отправлено из ПилоРус Admin</div>`,
+          recipients: [testEmail.trim()],
+        }),
+      });
+      const data = await res.json();
+      if (data.sent > 0) {
+        setTestSent(true);
+        setTimeout(() => setTestSent(false), 4000);
+      }
+    } finally {
+      setTestSending(false);
+    }
   };
 
   // Filtered recipients
@@ -773,24 +810,69 @@ export default function EmailPage() {
                 onClick={() => setShowPreview((v) => !v)}
                 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showPreview ? (
-                  <ChevronUp className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                )}
+                {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 {showPreview ? "Скрыть предпросмотр" : "Показать предпросмотр"}
               </button>
               {showPreview && (
                 <div className="mt-2 border border-border rounded-xl overflow-hidden">
-                  <div className="bg-muted/40 px-4 py-2 text-xs text-muted-foreground border-b border-border">
-                    Предпросмотр: <span className="font-medium text-foreground">{subject || "(без темы)"}</span>
+                  <div className="bg-muted/40 px-3 py-2 text-xs text-muted-foreground border-b border-border flex items-center justify-between gap-2">
+                    <span>Тема: <span className="font-medium text-foreground">{subject || "(без темы)"}</span></span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPreviewMode("desktop")}
+                        className={`p-1 rounded-lg transition-colors ${previewMode === "desktop" ? "bg-primary/15 text-primary" : "hover:bg-muted text-muted-foreground"}`}
+                        title="Десктоп"
+                      >
+                        <Monitor className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setPreviewMode("mobile")}
+                        className={`p-1 rounded-lg transition-colors ${previewMode === "mobile" ? "bg-primary/15 text-primary" : "hover:bg-muted text-muted-foreground"}`}
+                        title="Мобильный"
+                      >
+                        <Smartphone className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div
-                    className="p-4 bg-white text-gray-900 text-sm leading-relaxed aray-email-preview"
-                    dangerouslySetInnerHTML={{ __html: html }}
-                  />
+                  <div className="bg-gray-100 py-4 flex justify-center">
+                    <iframe
+                      srcDoc={html}
+                      sandbox="allow-same-origin"
+                      className="bg-white rounded shadow-sm transition-all duration-300"
+                      style={{ width: previewMode === "mobile" ? "375px" : "600px", minHeight: "300px", border: "none" }}
+                      onLoad={(e) => {
+                        const iframe = e.currentTarget;
+                        try { iframe.style.height = iframe.contentDocument?.body.scrollHeight + "px"; } catch {}
+                      }}
+                    />
+                  </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Test send */}
+          {html && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <input
+                type="email"
+                placeholder="Тест на email..."
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                className="flex-1 min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-1 focus:ring-ring"
+              />
+              <button
+                onClick={handleTestSend}
+                disabled={testSending || !testEmail.trim()}
+                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  testSent
+                    ? "bg-primary/10 border-primary/40 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground disabled:opacity-40"
+                }`}
+              >
+                {testSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
+                {testSent ? "Отправлено ✓" : "Тест"}
+              </button>
             </div>
           )}
 
