@@ -702,15 +702,10 @@ export function AdminStickySearchBar() {
       <div
         className="flex items-center gap-2.5 px-4 py-3 rounded-2xl transition-all duration-200 w-full"
         style={{
-          background: focused
-            ? "rgba(14,20,44,0.90)"
-            : "rgba(10,15,35,0.75)",
+          background: "transparent",
           border: focused
-            ? "1.5px solid rgba(255,255,255,0.28)"
-            : "1.5px solid rgba(255,255,255,0.14)",
-          boxShadow: focused
-            ? "inset 0 1px 0 rgba(255,255,255,0.07)"
-            : "none",
+            ? "1.5px solid rgba(255,255,255,0.30)"
+            : "1.5px solid rgba(255,255,255,0.13)",
         }}
       >
         <Search className="w-4 h-4 text-primary/70 shrink-0" />

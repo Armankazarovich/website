@@ -240,6 +240,7 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const router = useRouter();
+  const classic = useClassicMode();
 
   useEffect(() => {
     const fetchCount = async () => {
@@ -271,8 +272,8 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
         <button
           onClick={openBell}
           style={{ WebkitTapHighlightColor: "transparent",
-            background: count > 0 ? "hsl(var(--primary)/0.20)" : "rgba(255,255,255,0.08)",
-            border: count > 0 ? "1px solid hsl(var(--primary)/0.40)" : "1px solid rgba(255,255,255,0.12)",
+            background: count > 0 ? "hsl(var(--primary)/0.20)" : classic ? "hsl(var(--muted)/0.6)" : "rgba(255,255,255,0.08)",
+            border: count > 0 ? "1px solid hsl(var(--primary)/0.40)" : classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
           }}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
         >
@@ -340,11 +341,11 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
       <button
         onClick={onSettingsOpen}
         style={{ WebkitTapHighlightColor: "transparent",
-          background: "rgba(255,255,255,0.08)",
-          border: "1px solid rgba(255,255,255,0.12)" }}
+          background: classic ? "hsl(var(--muted)/0.6)" : "rgba(255,255,255,0.08)",
+          border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)" }}
         className="flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
       >
-        <Settings className="w-4 h-4 text-white/55" />
+        <Settings className="w-4 h-4" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.55)" }} />
       </button>
     </div>
   );
