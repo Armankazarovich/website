@@ -4,14 +4,17 @@ import { NextResponse } from "next/server";
 export async function GET() {
   const key = process.env.ANTHROPIC_API_KEY;
   const elKey = process.env.ELEVENLABS_API_KEY;
+  const baseUrl = process.env.ANTHROPIC_BASE_URL;
 
   if (!key) {
     return NextResponse.json({ status: "error", reason: "ANTHROPIC_API_KEY не найден в env" });
   }
 
-  // Тест Anthropic — простой запрос
+  // Используем ANTHROPIC_BASE_URL если задан (прокси), иначе прямой адрес
+  const apiUrl = (baseUrl ? baseUrl.replace(/\/$/, "") : "https://api.anthropic.com") + "/v1/messages";
+
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "x-api-key": key,
@@ -31,6 +34,7 @@ export async function GET() {
       return NextResponse.json({
         status: "ok",
         anthropic: "✅ работает",
+        proxy: baseUrl ? `✅ через прокси: ${baseUrl}` : "прямое подключение",
         keyPrefix: key.slice(0, 20) + "...",
         elevenlabs: elKey ? "✅ ключ есть" : "❌ нет ключа",
         response: data?.content?.[0]?.text || "got response",
@@ -39,6 +43,7 @@ export async function GET() {
       return NextResponse.json({
         status: "error",
         anthropic: "❌ ошибка",
+        proxy: baseUrl ? `через прокси: ${baseUrl}` : "прямое подключение",
         httpStatus: res.status,
         error: data?.error?.message || JSON.stringify(data),
         keyPrefix: key.slice(0, 20) + "...",
@@ -49,8 +54,10 @@ export async function GET() {
     return NextResponse.json({
       status: "error",
       anthropic: "❌ сеть",
+      proxy: baseUrl ? `пытался через: ${baseUrl}` : "прямое подключение (без прокси!)",
       error: e?.message,
       keyPrefix: key.slice(0, 20) + "...",
+      elevenlabs: elKey ? "✅ ключ есть" : "❌ нет ключа",
     });
   }
 }

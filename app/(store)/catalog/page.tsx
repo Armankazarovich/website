@@ -335,13 +335,15 @@ export default async function CatalogPage({
               {[
                 { value: "", label: "Новые" },
                 { value: "name", label: "А–Я" },
-                { value: "price_asc", label: "Цена ↑" },
-                { value: "price_desc", label: "Цена ↓" },
+                { value: "price_asc", label: "Цена ↑", mobileHide: true },
+                { value: "price_desc", label: "Цена ↓", mobileHide: true },
               ].map((opt) => (
                 <Link
                   key={opt.value}
                   href={buildSortUrl(opt.value)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    (opt as any).mobileHide ? "hidden sm:block" : ""
+                  } ${
                     (searchParams.sort || "") === opt.value
                       ? "bg-primary text-primary-foreground"
                       : "border border-border hover:bg-accent text-muted-foreground"
