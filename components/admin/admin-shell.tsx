@@ -142,13 +142,13 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
 
           {/* Panel header */}
           <div className="px-4 py-3 flex items-center justify-between"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #f59e0b33, #f59e0b11)" }}>
                 <Bell className="w-3.5 h-3.5 text-amber-400" />
               </div>
-              <p className="text-sm font-semibold text-white">Уведомления</p>
+              <p className="text-sm font-semibold" style={{ color: classic ? "hsl(var(--foreground))" : "white" }}>Уведомления</p>
             </div>
             <div className="flex items-center gap-2">
               {count > 0 && (
@@ -157,8 +157,8 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
                   {count} новых
                 </span>
               )}
-              <button onClick={() => setOpen(false)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-                <X className="w-3.5 h-3.5 text-white/40" />
+              <button onClick={() => setOpen(false)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-muted/20 transition-colors">
+                <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
           </div>
@@ -172,32 +172,32 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
             ) : orders.length === 0 ? (
               <div className="text-center py-10 px-4">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: "rgba(255,255,255,0.05)" }}>
-                  <Bell className="w-6 h-6 text-white/15" />
+                  style={{ background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.05)" }}>
+                  <Bell className="w-6 h-6 text-muted-foreground/30" />
                 </div>
-                <p className="text-sm font-medium text-white/40">Нет новых уведомлений</p>
-                <p className="text-[11px] text-white/20 mt-1">Все заказы обработаны</p>
+                <p className="text-sm font-medium text-muted-foreground">Нет новых уведомлений</p>
+                <p className="text-[11px] text-muted-foreground/60 mt-1">Все заказы обработаны</p>
               </div>
             ) : (
               <div className="p-2 space-y-1">
                 {orders.slice(0, 5).map((order: any) => (
                   <button key={order.id}
                     onClick={() => { router.push(`/admin/orders/${order.id}`); setOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-white/[0.07] transition-colors group">
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-muted/20 transition-colors group">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary)/0.08))" }}>
                       <ShoppingBag className="w-4 h-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white/85">
+                      <p className="text-sm font-semibold text-foreground">
                         Заказ #{order.orderNumber}
                       </p>
-                      <p className="text-[11px] text-white/40 truncate">
+                      <p className="text-[11px] text-muted-foreground truncate">
                         {order.clientName || "Клиент"}
                         {order.totalAmount ? ` · ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽` : ""}
                       </p>
                     </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-white/20 group-hover:text-primary/60 transition-colors shrink-0" />
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary/60 transition-colors shrink-0" />
                   </button>
                 ))}
               </div>
@@ -205,10 +205,10 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="px-4 py-2.5" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
             <button
               onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-              className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-white/[0.07]"
+              className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-muted/20"
               style={{ color: "hsl(var(--primary))" }}>
               Все новые заказы →
             </button>
