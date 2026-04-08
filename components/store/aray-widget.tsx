@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
-import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone } from "lucide-react";
+import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, Volume2, VolumeX } from "lucide-react";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
@@ -158,10 +158,56 @@ function useVoiceInput(onResult: (text: string) => void) {
   return { listening, start, stop };
 }
 
+// ─── Голос Арая — TTS через ElevenLabs ───────────────────────────────────────
+
+function useTTS() {
+  const [speaking, setSpeaking] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const speak = useCallback(async (text: string, msgId: string) => {
+    // Стоп если уже играет
+    if (speaking === msgId) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setSpeaking(null);
+      return;
+    }
+    audioRef.current?.pause();
+    setSpeaking(msgId);
+
+    try {
+      const res = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) { setSpeaking(null); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setSpeaking(null); URL.revokeObjectURL(url); };
+      audio.onerror = () => { setSpeaking(null); };
+      await audio.play();
+    } catch { setSpeaking(null); }
+  }, [speaking]);
+
+  return { speaking, speak };
+}
+
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
 
-function MessageBubble({ msg, onAction }: { msg: Message; onAction?: (a: ArayAction) => void }) {
+function MessageBubble({
+  msg, onAction, onSpeak, speaking,
+}: {
+  msg: Message;
+  onAction?: (a: ArayAction) => void;
+  onSpeak?: (text: string, id: string) => void;
+  speaking?: string | null;
+}) {
   const isUser = msg.role === "user";
+  const isSpeaking = speaking === msg.id;
+
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3.5`}>
       {!isUser && (
@@ -214,9 +260,24 @@ function MessageBubble({ msg, onAction }: { msg: Message; onAction?: (a: ArayAct
           </div>
         )}
 
-        <span className="text-[10px] px-1" style={{ color: "rgba(255,255,255,0.38)" }}>
-          {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
-        </span>
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.38)" }}>
+            {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+          {/* Кнопка голоса — только для сообщений Арая */}
+          {!isUser && onSpeak && (
+            <button
+              onClick={() => onSpeak(msg.content, msg.id)}
+              className="flex items-center justify-center w-5 h-5 rounded-full transition-all active:scale-90"
+              style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.28)" }}
+              title={isSpeaking ? "Остановить" : "Озвучить"}
+            >
+              {isSpeaking
+                ? <VolumeX className="w-3 h-3" />
+                : <Volume2 className="w-3 h-3" />}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -225,6 +286,7 @@ function MessageBubble({ msg, onAction }: { msg: Message; onAction?: (a: ArayAct
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function ArayWidget({ page, productName, cartTotal, enabled = true }: ArayWidgetProps) {
+  const { speaking, speak } = useTTS();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -444,7 +506,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   // ── Чат-область ───────────────────────────────────────────────────────────
   const ChatBody = () => (
     <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
-      {messages.map(m => <MessageBubble key={m.id} msg={m} onAction={handleAction} />)}
+      {messages.map(m => <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} />)}
       {loading && (
         <div className="flex gap-2.5 mb-3">
           <ArayIcon size={24} />
