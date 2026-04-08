@@ -1946,3 +1946,99 @@ a:focus-visible {
 .aray-nature-mode .dark\:bg-blue-950\/30 {
   background: rgba(255,255,255,0.04) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   СТЕКЛЯННЫЕ ПОПАПЫ — Dialog/Modal как тёмное стекло в природном режиме
+   ══════════════════════════════════════════════════════════════ */
+
+/* Оверлей диалога — матовый размытый фон */
+.aray-nature-mode .aray-dialog-overlay {
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  background: rgba(0, 0, 0, 0.62) !important;
+}
+
+/* Контент диалога — тёмное стекло */
+.aray-nature-mode .aray-glass-dialog {
+  background: rgba(8, 13, 32, 0.82) !important;
+  backdrop-filter: blur(48px) saturate(220%) brightness(0.85) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(220%) brightness(0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05) inset !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.aray-nature-mode .aray-glass-dialog h2,
+.aray-nature-mode .aray-glass-dialog h3,
+.aray-nature-mode .aray-glass-dialog p,
+.aray-nature-mode .aray-glass-dialog label,
+.aray-nature-mode .aray-glass-dialog span:not([class*="badge"]) {
+  color: inherit;
+}
+/* Иконка X закрытия */
+.aray-nature-mode .aray-glass-dialog button[class*="absolute"] svg {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+.aray-nature-mode .aray-glass-dialog button[class*="absolute"]:hover svg {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+/* Классический режим — нормальный диалог без стекла */
+.aray-classic-mode .aray-glass-dialog {
+  background: hsl(var(--card)) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+  color: hsl(var(--foreground)) !important;
+}
+.aray-classic-mode .aray-dialog-overlay {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   МОБИЛЬНАЯ ОПТИМИЗАЦИЯ — меньше нагрев GPU на телефоне
+   Backdrop-filter blur на мобильном очень дорогой для процессора
+   ══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 1023px) {
+  /* Снижаем тяжёлый blur на мобильном — главная причина нагрева */
+  .aray-nature-mode .bg-card,
+  .aray-nature-mode .bg-popover,
+  .aray-nature-mode .aray-stat-card,
+  .aray-nature-mode .aray-nature-card,
+  .aray-nature-mode .aray-glass-dialog {
+    backdrop-filter: blur(12px) saturate(160%) brightness(0.78) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(160%) brightness(0.78) !important;
+  }
+  /* Оверлей — минимальный blur на мобильном */
+  .aray-nature-mode .aray-dialog-overlay {
+    backdrop-filter: blur(3px) !important;
+    -webkit-backdrop-filter: blur(3px) !important;
+  }
+  /* Отключаем тяжёлые фоновые blob-анимации на мобильном */
+  [class*="aray-blob"] {
+    animation: none !important;
+  }
+  /* Ken Burns — отключаем (фото статичное на мобильном, ничего не теряем) */
+  [class*="kenburns"] {
+    animation: none !important;
+    transform: none !important;
+  }
+  /* Hero zoom на главной — отключаем */
+  .hero-zoom {
+    animation: none !important;
+  }
+}
+
+/* Поддержка prefer-reduced-motion — для чувствительных пользователей */
+@media (prefers-reduced-motion: reduce) {
+  .hero-zoom,
+  [class*="aray-blob"],
+  [class*="kenburns"],
+  .animate-marquee,
+  .vivid-bg {
+    animation: none !important;
+    transition: color 0.2s, background 0.2s !important;
+  }
+}

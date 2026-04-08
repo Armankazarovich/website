@@ -21,7 +21,7 @@
   ],
   "icons": [
     {
-      "src": "/icons/aray-icon.svg",
+      "src": "/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
