@@ -1948,6 +1948,49 @@ a:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   TOGGLE SWITCHES — красивые переключатели с glow по палитре
+   ══════════════════════════════════════════════════════════════ */
+
+/* Базовый переключатель */
+.aray-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  flex-shrink: 0;
+}
+.aray-toggle:focus-visible {
+  outline: 2px solid hsl(var(--primary) / 0.5);
+  outline-offset: 2px;
+}
+/* Ползунок */
+.aray-toggle-thumb {
+  display: inline-block;
+  border-radius: 9999px;
+  background: white;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(0,0,0,0.06);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Когда включён — glow по цвету палитры */
+.aray-toggle[data-state="on"] {
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.22);
+}
+/* Большой (h-6 w-11) */
+.aray-toggle-lg { height: 1.5rem; width: 2.75rem; }
+.aray-toggle-lg .aray-toggle-thumb { height: 1.1rem; width: 1.1rem; }
+.aray-toggle-lg[data-state="off"] .aray-toggle-thumb { transform: translateX(3px); }
+.aray-toggle-lg[data-state="on"]  .aray-toggle-thumb { transform: translateX(1.45rem); }
+/* Средний (h-5 w-9) */
+.aray-toggle-md { height: 1.25rem; width: 2.25rem; }
+.aray-toggle-md .aray-toggle-thumb { height: 0.875rem; width: 0.875rem; }
+.aray-toggle-md[data-state="off"] .aray-toggle-thumb { transform: translateX(3px); }
+.aray-toggle-md[data-state="on"]  .aray-toggle-thumb { transform: translateX(1.25rem); }
+
+/* ══════════════════════════════════════════════════════════════
    СТЕКЛЯННЫЕ ПОПАПЫ — Dialog/Modal как тёмное стекло в природном режиме
    ══════════════════════════════════════════════════════════════ */
 
