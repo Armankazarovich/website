@@ -59,6 +59,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   const prevOrderCount = useRef<number | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { classic } = useClassicMode();
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -288,8 +289,16 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
           <>
             <div className="fixed inset-0 z-[80]" onClick={() => setBellOpen(false)} />
             <div className="absolute right-0 top-full mt-2 z-[81] w-72 rounded-2xl overflow-hidden"
-              style={{ background: "rgba(10,14,30,0.97)", border: "1px solid rgba(255,255,255,0.10)",
-                backdropFilter: "blur(32px)", boxShadow: "0 20px 60px rgba(0,0,0,0.55)" }}>
+              style={classic ? {
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+              } : {
+                background: "rgba(10,14,30,0.97)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                backdropFilter: "blur(32px)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+              }}>
               <div className="px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Новые заказы</p>
               </div>
@@ -461,11 +470,17 @@ function ArayControlCenter() {
           style={{
             bottom: panelPos.bottom,
             left: panelPos.left,
-            background: "rgba(7,11,26,0.98)",
-            backdropFilter: "blur(48px) saturate(200%)",
-            WebkitBackdropFilter: "blur(48px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 -12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.025) inset",
+            ...(classic ? {
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            } : {
+              background: "rgba(7,11,26,0.98)",
+              backdropFilter: "blur(48px) saturate(200%)",
+              WebkitBackdropFilter: "blur(48px) saturate(200%)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              boxShadow: "0 -12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.025) inset",
+            }),
           }}>
 
           {/* Header */}

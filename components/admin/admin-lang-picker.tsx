@@ -4,6 +4,17 @@ import { useState, useRef, useEffect } from "react";
 import { Languages, Check } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
+
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 // ─── Inline language picker (for mobile settings panel) ─────────────────────
 export function AdminLangPickerInline() {
   const { lang, setLang } = useAdminLang();
@@ -39,6 +50,7 @@ export function AdminLangPicker() {
   const { lang, setLang } = useAdminLang();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const classic = useClassicMode();
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
@@ -72,7 +84,13 @@ export function AdminLangPicker() {
 
       {open && (
         <div className="absolute top-full right-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-150"
-          style={{
+          style={classic ? {
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: "20px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            width: "260px",
+          } : {
             background: "rgba(10,14,30,0.96)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
@@ -83,8 +101,9 @@ export function AdminLangPicker() {
           }}>
 
           <div className="px-4 pt-3 pb-2"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
+            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em]"
+              style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}>
               Язык / Language
             </p>
           </div>
@@ -99,11 +118,13 @@ export function AdminLangPicker() {
                 style={
                   lang === l.code
                     ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
+                    : classic
+                    ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
                     : { background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.08)" }
                 }
               >
                 <span className="text-2xl leading-none group-hover:scale-110 transition-transform">{l.flag}</span>
-                <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? "text-white/90" : "text-white/55"}`}>
+                <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? (classic ? "text-primary" : "text-white/90") : (classic ? "text-muted-foreground" : "text-white/55")}`}>
                   {l.label}
                 </span>
                 {lang === l.code && (
