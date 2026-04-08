@@ -162,10 +162,10 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
         </div>
 
         {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
-        {arayEnabled && <div className="flex flex-col items-center relative" style={{ marginTop: "-26px", minWidth: "76px" }}>
+        {arayEnabled && <div className="flex flex-col items-center" style={{ marginTop: "-18px", minWidth: "72px" }}>
           <motion.button
-            whileTap={{ scale: 0.84 }}
-            transition={{ type: "spring", stiffness: 360, damping: 14 }}
+            whileTap={{ scale: 0.88 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
             onClick={openAray}
             aria-label="Открыть Арай"
             style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "block" }}
@@ -173,122 +173,60 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             {/* Ping при добавлении в корзину */}
             {arayPulse && (
               <span className="absolute inset-0 rounded-full animate-ping"
-                style={{ background: "rgba(232,112,10,0.30)", animationDuration: "0.65s" }} />
+                style={{ background: "rgba(232,112,10,0.25)", animationDuration: "0.7s" }} />
             )}
 
-            {/* Платформа-тень */}
-            <div className="absolute bottom-[-2px] left-1/2 -translate-x-1/2"
+            {/* Шар */}
+            <svg
+              width="52" height="52" viewBox="0 0 100 100"
               style={{
-                width: "52px", height: "12px",
-                background: "radial-gradient(ellipse, rgba(160,50,0,0.50) 0%, transparent 70%)",
-                filter: "blur(4px)",
+                display: "block",
+                filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.45)) drop-shadow(0 0 4px rgba(232,112,10,0.30))",
               }}
-            />
+            >
+              <defs>
+                <radialGradient id="mob-base" cx="34%" cy="28%" r="70%">
+                  <stop offset="0%"   stopColor="#fffbe0"/>
+                  <stop offset="10%"  stopColor="#ffca40"/>
+                  <stop offset="28%"  stopColor="#f07800"/>
+                  <stop offset="52%"  stopColor="#c05000"/>
+                  <stop offset="75%"  stopColor="#6e1c00"/>
+                  <stop offset="100%" stopColor="#160300"/>
+                </radialGradient>
 
-            {/* Шар — без лишних обёрток */}
-            <div className="relative w-[64px] h-[64px] flex items-center justify-center">
-              <svg
-                width="60" height="60" viewBox="0 0 100 100"
-                className="relative z-10"
-                style={{
-                  overflow: "hidden",
-                  borderRadius: "50%",
-                  filter: "drop-shadow(0 0 7px rgba(232,112,10,0.65)) drop-shadow(0 3px 10px rgba(140,35,0,0.50))",
-                  animation: "arayBreath 3s ease-in-out infinite",
-                }}
-              >
-                <defs>
-                  {/* Основной 3D объём с живыми цветами */}
-                  <radialGradient id="mob-base" cx="34%" cy="28%" r="70%">
-                    <stop offset="0%"   stopColor="#fffbe0"/>
-                    <stop offset="8%"   stopColor="#ffe080">
-                      <animate attributeName="stopColor" values="#ffe080;#ffd040;#ffe080" dur="4s" repeatCount="indefinite"/>
-                    </stop>
-                    <stop offset="22%"  stopColor="#ffa020">
-                      <animate attributeName="stopColor" values="#ffa020;#ff8800;#ffb030;#ffa020" dur="6s" repeatCount="indefinite"/>
-                    </stop>
-                    <stop offset="45%"  stopColor="#d06000"/>
-                    <stop offset="68%"  stopColor="#7a2000"/>
-                    <stop offset="88%"  stopColor="#360800"/>
-                    <stop offset="100%" stopColor="#120200"/>
-                  </radialGradient>
+                <radialGradient id="mob-hl" cx="30%" cy="25%" r="34%">
+                  <stop offset="0%"   stopColor="white" stopOpacity="0.90"/>
+                  <stop offset="40%"  stopColor="white" stopOpacity="0.35"/>
+                  <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                </radialGradient>
 
-                  {/* Вращающийся внутренний жар */}
-                  <radialGradient id="mob-hot" cx="50%" cy="24%" r="46%">
-                    <stop offset="0%" stopColor="#ffe090" stopOpacity="0.75">
-                      <animate attributeName="stopOpacity" values="0.75;1;0.50;0.75" dur="3s" repeatCount="indefinite"/>
-                    </stop>
-                    <stop offset="100%" stopColor="#ffe090" stopOpacity="0"/>
-                  </radialGradient>
+                <radialGradient id="mob-dark" cx="72%" cy="74%" r="52%">
+                  <stop offset="0%"   stopColor="#050000" stopOpacity="0.82"/>
+                  <stop offset="60%"  stopColor="#100200" stopOpacity="0.32"/>
+                  <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
+                </radialGradient>
 
-                  {/* Тень */}
-                  <radialGradient id="mob-dark" cx="72%" cy="74%" r="54%">
-                    <stop offset="0%"   stopColor="#050000" stopOpacity="0.90"/>
-                    <stop offset="55%"  stopColor="#150300" stopOpacity="0.40"/>
-                    <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
-                  </radialGradient>
+                <radialGradient id="mob-rim" cx="50%" cy="50%" r="50%">
+                  <stop offset="76%" stopColor="transparent" stopOpacity="0"/>
+                  <stop offset="90%" stopColor="#ff9500"  stopOpacity="0.45"/>
+                  <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.70"/>
+                </radialGradient>
+              </defs>
 
-                  {/* Главный зайчик */}
-                  <radialGradient id="mob-hl" cx="30%" cy="24%" r="35%">
-                    <stop offset="0%"   stopColor="white" stopOpacity="0.95"/>
-                    <stop offset="28%"  stopColor="white" stopOpacity="0.50"/>
-                    <stop offset="100%" stopColor="white" stopOpacity="0"/>
-                  </radialGradient>
-
-                  {/* Rim light */}
-                  <radialGradient id="mob-rim" cx="50%" cy="50%" r="50%">
-                    <stop offset="73%" stopColor="transparent" stopOpacity="0"/>
-                    <stop offset="88%" stopColor="#ff9500"  stopOpacity="0.55"/>
-                    <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.85"/>
-                  </radialGradient>
-
-                  <clipPath id="mob-clip"><circle cx="50" cy="50" r="46"/></clipPath>
-                </defs>
-
-                {/* Базовая сфера */}
-                <circle cx="50" cy="50" r="46" fill="url(#mob-base)"/>
-
-                {/* Живой внутренний жар */}
-                <g clipPath="url(#mob-clip)">
-                  <ellipse cx="50" cy="28" rx="36" ry="22" fill="url(#mob-hot)">
-                    <animateTransform attributeName="transform" type="rotate"
-                      from="0 50 50" to="360 50 50" dur="7s" repeatCount="indefinite"/>
-                  </ellipse>
-                  <ellipse cx="50" cy="72" rx="26" ry="14" fill="#fb923c" opacity="0.14">
-                    <animateTransform attributeName="transform" type="rotate"
-                      from="180 50 50" to="-180 50 50" dur="10s" repeatCount="indefinite"/>
-                  </ellipse>
-                </g>
-
-                {/* Тень, rim, блик */}
-                <circle cx="50" cy="50" r="46" fill="url(#mob-dark)"/>
-                <circle cx="50" cy="50" r="46" fill="url(#mob-rim)"/>
-                <circle cx="50" cy="50" r="46" fill="url(#mob-hl)"/>
-
-                {/* Золотой контур */}
-                <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,210,80,0.20)" strokeWidth="1.5"/>
-
-                {/* Искра */}
-                <ellipse cx="64" cy="35" rx="5" ry="3"
-                  fill="white" fillOpacity="0.28" transform="rotate(-30 64 35)">
-                  <animate attributeName="fillOpacity" values="0.28;0.48;0.18;0.28" dur="4s" repeatCount="indefinite"/>
-                </ellipse>
-              </svg>
-
-              {/* Conic-блеск */}
-              <div className="absolute rounded-full overflow-hidden pointer-events-none z-[11]"
-                style={{
-                  width: "60px", height: "60px",
-                  animation: "orbLightSpin 8s linear infinite",
-                  background: "conic-gradient(from 0deg at 31% 26%, rgba(255,248,160,0.28) 0deg, transparent 48deg, rgba(70,12,0,0.18) 168deg, transparent 248deg, rgba(255,160,40,0.16) 312deg, transparent 360deg)",
-                }}
-              />
-            </div>
+              <circle cx="50" cy="50" r="46" fill="url(#mob-base)"/>
+              <circle cx="50" cy="50" r="46" fill="url(#mob-dark)"/>
+              <circle cx="50" cy="50" r="46" fill="url(#mob-rim)"/>
+              <circle cx="50" cy="50" r="46" fill="url(#mob-hl)"/>
+              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.18)" strokeWidth="1"/>
+              {/* Искра */}
+              <ellipse cx="63" cy="35" rx="4.5" ry="2.8"
+                fill="white" fillOpacity="0.22" transform="rotate(-28 63 35)"/>
+            </svg>
           </motion.button>
 
           {/* Подпись */}
-          <span className="text-[9px] font-bold tracking-widest"
-            style={{ color: "rgba(251,191,36,0.82)", marginTop: "0px", textShadow: "0 0 6px rgba(251,140,0,0.45)" }}>
+          <span className="text-[9px] font-semibold tracking-wider mt-0.5"
+            style={{ color: "rgba(251,163,30,0.75)" }}>
             АРАЙ
           </span>
         </div>}
