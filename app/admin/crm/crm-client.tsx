@@ -317,6 +317,26 @@ function LeadForm({
   initial?: Partial<Lead>;
   staff: StaffMember[];
 }) {
+  const isClassic = useClassicMode();
+  const popupStyle = isClassic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+  } : {
+    background: "rgba(8,13,32,0.88)",
+    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
+  };
+  const headerStyle = isClassic ? {
+    borderBottom: "1px solid hsl(var(--border))",
+    background: "hsl(var(--card))",
+  } : {
+    borderBottom: "1px solid rgba(255,255,255,0.09)",
+    background: "rgba(8,13,32,0.70)",
+    backdropFilter: "blur(20px)",
+  };
   const [name, setName] = useState(initial?.name || "");
   const [phone, setPhone] = useState(initial?.phone || "");
   const [email, setEmail] = useState(initial?.email || "");
@@ -349,16 +369,10 @@ function LeadForm({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }} onClick={onClose} />
       <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
-        style={{
-          background: "rgba(8,13,32,0.88)",
-          backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-          WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-          border: "1px solid rgba(255,255,255,0.14)",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
-        }}>
+        style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.09)", background: "rgba(8,13,32,0.70)", backdropFilter: "blur(20px)" }}>
-          <h2 className="font-bold text-white">{initial?.id ? "Редактировать лид" : "Новый лид"}</h2>
+          style={headerStyle}>
+          <h2 className="font-bold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{initial?.id ? "Редактировать лид" : "Новый лид"}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
             <X className="w-4 h-4" />
           </button>

@@ -6,6 +6,21 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const TYPE_LABELS: Record<string, string> = {
+  "обрезная":  "Доска обрезная",
+  "террасная": "Террасная доска",
+  "пола":      "Доска пола",
+  "строганная":"Строганная доска",
+  "брус":      "Брус / Брусок",
+  "вагонка":   "Вагонка",
+  "планкен":   "Планкен",
+  "блок-хаус": "Блок-хаус",
+  "плинтус":   "Погонаж / Плинтус",
+  "фанера":    "Фанера",
+  "дсп":       "ДСП / МДФ / ОСБ",
+  "доска":     "Доска",
+};
+
 interface Category {
   id: string;
   name: string;
@@ -253,13 +268,13 @@ export function CatalogMobileFilter({
                             key={type}
                             onClick={() => setParam("type", currentType === type ? null : type)}
                             className={cn(
-                              "px-3 py-1.5 rounded-lg text-sm border capitalize transition-all",
+                              "px-3 py-1.5 rounded-lg text-sm border transition-all",
                               currentType === type
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground hover:border-primary/40"
                             )}
                           >
-                            {type}
+                            {TYPE_LABELS[type] ?? type}
                           </button>
                         ))}
                       </div>

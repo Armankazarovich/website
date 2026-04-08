@@ -40,6 +40,14 @@ const typeFilters = [
     label: "Строганная", type: "строганная",
     icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>,
   },
+  {
+    label: "Плинтус", type: "плинтус",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="16" width="20" height="4" rx="1" stroke="currentColor" strokeWidth="1.8"/><path d="M4 16V8M20 16V8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
+  },
+  {
+    label: "ДСП / МДФ", type: "дсп",
+    icon: <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.7"/><path d="M2 9h20M2 15h20M7 5v14M17 5v14" stroke="currentColor" strokeWidth="1" strokeOpacity="0.45"/></svg>,
+  },
 ];
 
 export function CatalogTypeFilter({ currentType, category, availableTypes }: CatalogTypeFilterProps) {
