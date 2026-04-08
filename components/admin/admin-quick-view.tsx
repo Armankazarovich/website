@@ -1,7 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
+
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 
 interface AdminQuickViewProps {
   open: boolean;
@@ -19,6 +30,7 @@ interface AdminQuickViewProps {
  */
 export function AdminQuickView({ open, onClose, title, subtitle, children }: AdminQuickViewProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const classic = useClassicMode();
 
   // Закрытие по Escape
   useEffect(() => {
@@ -57,7 +69,11 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
           animate-in slide-in-from-bottom lg:slide-in-from-right duration-300
           max-h-[92dvh] lg:max-h-full lg:h-full
         `}
-        style={{
+        style={classic ? {
+          background: "hsl(var(--card))",
+          border: "1px solid hsl(var(--border))",
+          boxShadow: "-8px 0 48px rgba(0,0,0,0.12)",
+        } : {
           background: "rgba(8, 13, 32, 0.82)",
           backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
@@ -67,28 +83,28 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
       >
         {/* Drag handle (mobile only) */}
         <div className="lg:hidden flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-white/20" />
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
 
         {/* Header */}
         <div
           className="flex items-center justify-between px-5 py-4 shrink-0"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+          style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)" }}
         >
           <div className="min-w-0">
             {title && (
-              <h2 className="text-base font-bold text-white leading-tight truncate">{title}</h2>
+              <h2 className="text-base font-bold leading-tight truncate" style={{ color: classic ? "hsl(var(--foreground))" : "#fff" }}>{title}</h2>
             )}
             {subtitle && (
-              <p className="text-xs text-white/45 mt-0.5 truncate">{subtitle}</p>
+              <p className="text-xs mt-0.5 truncate" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.45)" }}>{subtitle}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ml-3 transition-all active:scale-90 hover:bg-white/10"
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ml-3 transition-all active:scale-90 hover:bg-muted/40"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
-            <X className="w-4 h-4 text-white/60" />
+            <X className="w-4 h-4" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.6)" }} />
           </button>
         </div>
 

@@ -13,6 +13,16 @@ import {
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 
 type Order = {
   id: string;
@@ -33,6 +43,17 @@ type Stats = { todayCount: number; todayRevenue: number; newCount: number };
 function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpenFull: () => void }) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const classic = useClassicMode();
+
+  // helpers for conditional styles
+  const cardStyle = classic
+    ? { background: "hsl(var(--muted)/0.5)", border: "1px solid hsl(var(--border))" }
+    : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" };
+  const labelColor = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)";
+  const textColor  = classic ? "hsl(var(--foreground))"       : "#fff";
+  const mutedColor = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.55)";
+  const iconColor  = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)";
+  const divColor   = classic ? "hsl(var(--border))"           : "rgba(255,255,255,0.08)";
 
   useEffect(() => {
     setLoading(true);
@@ -52,7 +73,7 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
 
   if (!order) {
     return (
-      <div className="text-center py-16 text-white/40">
+      <div className="text-center py-16" style={{ color: mutedColor }}>
         <p>Не удалось загрузить заказ</p>
       </div>
     );
@@ -70,60 +91,60 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
         <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColor}`}>
           {statusLabel}
         </span>
-        <div className="flex items-center gap-1.5 text-white/40">
+        <div className="flex items-center gap-1.5" style={{ color: mutedColor }}>
           <Clock className="w-3.5 h-3.5" />
           <span className="text-xs">{formatDate(order.createdAt)}</span>
         </div>
       </div>
 
       {/* Клиент */}
-      <div className="rounded-2xl p-4 space-y-3" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">Клиент</p>
+      <div className="rounded-2xl p-4 space-y-3" style={cardStyle}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: labelColor }}>Клиент</p>
         <div className="flex items-center justify-between">
-          <p className="text-base font-semibold text-white">{order.guestName || "—"}</p>
+          <p className="text-base font-semibold" style={{ color: textColor }}>{order.guestName || "—"}</p>
           {order.guestPhone && (
             <a href={`tel:${order.guestPhone}`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-white"
-              style={{ background: "hsl(var(--primary)/0.25)", border: "1px solid hsl(var(--primary)/0.4)" }}>
-              <Phone className="w-3.5 h-3.5 text-primary" />
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium"
+              style={{ background: "hsl(var(--primary)/0.15)", border: "1px solid hsl(var(--primary)/0.4)", color: "hsl(var(--primary))" }}>
+              <Phone className="w-3.5 h-3.5" />
               {order.guestPhone}
             </a>
           )}
         </div>
         {order.deliveryAddress && (
           <div className="flex items-start gap-2">
-            <MapPin className="w-3.5 h-3.5 text-white/35 mt-0.5 shrink-0" />
-            <p className="text-sm text-white/60">{order.deliveryAddress}</p>
+            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: iconColor }} />
+            <p className="text-sm" style={{ color: mutedColor }}>{order.deliveryAddress}</p>
           </div>
         )}
         {order.contactMethod && (
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5 text-white/35 shrink-0" />
-            <p className="text-sm text-white/60">Связь: {order.contactMethod}</p>
+            <MessageSquare className="w-3.5 h-3.5 shrink-0" style={{ color: iconColor }} />
+            <p className="text-sm" style={{ color: mutedColor }}>Связь: {order.contactMethod}</p>
           </div>
         )}
       </div>
 
       {/* Позиции */}
       {order.items?.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.08)" }}>
-          <div className="px-4 py-2.5" style={{ background: "rgba(255,255,255,0.04)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 flex items-center gap-2">
+        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${divColor}` }}>
+          <div className="px-4 py-2.5" style={{ background: classic ? "hsl(var(--muted)/0.3)" : "rgba(255,255,255,0.04)", borderBottom: `1px solid ${divColor}` }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] flex items-center gap-2" style={{ color: labelColor }}>
               <Package className="w-3.5 h-3.5" /> Позиции ({order.items.length})
             </p>
           </div>
-          <div className="divide-y divide-white/[0.06]">
+          <div className="divide-y" style={{ borderColor: divColor }}>
             {order.items.map((item: any) => (
               <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-white/85 truncate">{item.productName}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: textColor }}>{item.productName}</p>
                   {item.variantName && (
-                    <p className="text-xs text-white/40 mt-0.5">{item.variantName}</p>
+                    <p className="text-xs mt-0.5" style={{ color: mutedColor }}>{item.variantName}</p>
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-white">{formatPrice(Number(item.price))}</p>
-                  <p className="text-xs text-white/40">× {item.quantity}</p>
+                  <p className="text-sm font-bold" style={{ color: textColor }}>{formatPrice(Number(item.price))}</p>
+                  <p className="text-xs" style={{ color: mutedColor }}>× {item.quantity}</p>
                 </div>
               </div>
             ))}
@@ -132,32 +153,32 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
       )}
 
       {/* Итого */}
-      <div className="rounded-2xl p-4 space-y-2" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 flex items-center gap-2">
+      <div className="rounded-2xl p-4 space-y-2" style={cardStyle}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] flex items-center gap-2" style={{ color: labelColor }}>
           <CreditCard className="w-3.5 h-3.5" /> Оплата
         </p>
-        <div className="flex justify-between text-sm text-white/60">
+        <div className="flex justify-between text-sm" style={{ color: mutedColor }}>
           <span>Товары</span>
           <span>{formatPrice(Number(order.totalAmount))}</span>
         </div>
         {Number(order.deliveryCost) > 0 && (
-          <div className="flex justify-between text-sm text-white/60">
+          <div className="flex justify-between text-sm" style={{ color: mutedColor }}>
             <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5" />Доставка</span>
             <span>{formatPrice(Number(order.deliveryCost))}</span>
           </div>
         )}
-        <div className="flex justify-between text-base font-bold text-white pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex justify-between text-base font-bold pt-2" style={{ borderTop: `1px solid ${divColor}`, color: textColor }}>
           <span>Итого</span>
           <span style={{ color: "hsl(var(--primary))" }}>{formatPrice(total)}</span>
         </div>
         {order.paymentMethod && (
-          <p className="text-xs text-white/40">{order.paymentMethod}</p>
+          <p className="text-xs" style={{ color: mutedColor }}>{order.paymentMethod}</p>
         )}
       </div>
 
       {/* Изменить статус */}
-      <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35 mb-3">Изменить статус</p>
+      <div className="rounded-2xl p-4" style={cardStyle}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: labelColor }}>Изменить статус</p>
         <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
       </div>
 
@@ -424,12 +445,12 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         {/* Навигация между заказами */}
         <div className="flex items-center justify-between px-4 pt-3 pb-1">
           <button onClick={goPrev} disabled={quickViewIdx <= 0}
-            className="flex items-center gap-1.5 text-xs text-white/40 disabled:opacity-20 hover:text-white/70 transition-colors">
+            className="flex items-center gap-1.5 text-xs text-muted-foreground disabled:opacity-20 hover:text-foreground transition-colors">
             <ChevronLeft className="w-4 h-4" /> Предыдущий
           </button>
-          <span className="text-xs text-white/30">{quickViewIdx + 1} / {filtered.length}</span>
+          <span className="text-xs text-muted-foreground">{quickViewIdx + 1} / {filtered.length}</span>
           <button onClick={goNext} disabled={quickViewIdx >= filtered.length - 1}
-            className="flex items-center gap-1.5 text-xs text-white/40 disabled:opacity-20 hover:text-white/70 transition-colors">
+            className="flex items-center gap-1.5 text-xs text-muted-foreground disabled:opacity-20 hover:text-foreground transition-colors">
             Следующий <ChevronRight className="w-4 h-4" />
           </button>
         </div>

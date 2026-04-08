@@ -617,7 +617,7 @@ const PAGE_PLACEHOLDERS: Record<string, string> = {
   "/admin/settings":      "Поиск Настроек...",
   "/admin/site":          "Поиск настроек Сайта...",
   "/admin/appearance":    "Поиск настроек Оформления...",
-  "/admin/help":          "Поиск в Помощи — вопросы, ответы...",
+  "/admin/help":          "Поиск заказов, товаров, клиентов...",
 };
 
 // ─── Sticky Search Bar + Smart Filter Chips ────────────────────────────────
