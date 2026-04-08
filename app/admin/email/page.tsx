@@ -1214,37 +1214,88 @@ export default function EmailPage() {
             </p>
           </div>
 
-          {/* Import manually */}
+          {/* Register clients */}
           <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-            <h3 className="font-semibold flex items-center gap-2">
-              <Upload className="w-4 h-4 text-muted-foreground" />
-              Добавить emails вручную
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Вставьте список email-адресов, по одному на строку
-            </p>
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <Users className="w-4 h-4 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold">Загрузить клиентов и создать аккаунты</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Система создаст личный кабинет каждому клиенту и отправит письмо с паролем
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-semibold text-foreground">Формат списка:</p>
+              <p><span className="font-mono bg-muted px-1 rounded">email@mail.ru</span> — только email</p>
+              <p><span className="font-mono bg-muted px-1 rounded">email@mail.ru, Иван Петров</span> — email + имя</p>
+              <p>Каждый клиент — отдельная строка. Дубликаты пропускаются.</p>
+            </div>
+
             <textarea
-              className="w-full h-28 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none font-mono"
-              placeholder={"example@mail.ru\nclient@yandex.ru\nanother@gmail.com"}
+              className="w-full h-36 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none font-mono"
+              placeholder={"ivan@mail.ru, Иван Петров\ndima@yandex.ru\nstroy@gmail.com, Стройком МО"}
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
             />
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                {importText.trim()
+                  ? `${importText.trim().split("\n").filter((l) => l.includes("@")).length} адресов`
+                  : "Введите список"}
+              </span>
+            </div>
+
             {importResult && (
-              <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
-                <CheckCircle className="w-4 h-4" /> {importResult}
+              <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3">
+                <CheckCircle className="w-4 h-4 shrink-0" /> {importResult}
               </div>
             )}
+
             <Button
-              variant="outline"
-              onClick={handleImport}
+              onClick={async () => {
+                const lines = importText.trim().split("\n").filter((l) => l.includes("@"));
+                if (!lines.length) return;
+                setImportLoading(true);
+                setImportResult(null);
+                try {
+                  const res = await fetch("/api/admin/email", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action: "register_clients", lines }),
+                  });
+                  const data = await res.json();
+                  if (data.ok) {
+                    setImportResult(
+                      `✅ Создано аккаунтов: ${data.created} · Уже были: ${data.existing} · Писем отправлено: ${data.emailsSent}${data.errors?.length ? ` · Ошибок: ${data.errors.length}` : ""}`
+                    );
+                    setImportText("");
+                    await loadSubscribers();
+                  } else {
+                    setImportResult(`❌ ${data.error}`);
+                  }
+                } finally {
+                  setImportLoading(false);
+                }
+              }}
               disabled={importLoading || !importText.trim()}
+              className="w-full"
             >
               {importLoading ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Добавление...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Создаю аккаунты и отправляю пароли...</>
               ) : (
-                <><Upload className="w-4 h-4 mr-2" /> Добавить</>
+                <><Users className="w-4 h-4 mr-2" /> Создать аккаунты и отправить пароли</>
               )}
             </Button>
+
+            <p className="text-[11px] text-muted-foreground/60">
+              Клиенты получат письмо «Ваш личный кабинет на pilo-rus.ru» с логином и паролем.
+              Пароль генерируется автоматически в формате «Слово99Слово».
+            </p>
           </div>
         </div>
       )}
