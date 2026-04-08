@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+
+const PER_PAGE = 12;
 import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor, Lightbulb } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
@@ -172,6 +174,7 @@ export function ReviewsClient({
   const [confirmSeed, setConfirmSeed] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPlatforms, setShowPlatforms] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     return reviews.filter((r) => {
@@ -183,6 +186,12 @@ export function ReviewsClient({
       return matchStatus && matchRating;
     });
   }, [reviews, statusFilter, ratingFilter]);
+
+  // Сброс страницы при смене фильтра
+  useEffect(() => { setPage(1); }, [statusFilter, ratingFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const toggleApprove = async (id: string, approved: boolean) => {
     setLoadingId(id);
@@ -384,7 +393,7 @@ export function ReviewsClient({
 
       {/* Список */}
       <div className="space-y-3">
-        {filtered.map((review) => {
+        {paginated.map((review) => {
           const isLoading = loadingId === review.id;
           return (
             <div
@@ -468,6 +477,45 @@ export function ReviewsClient({
           </div>
         )}
       </div>
+
+      {/* Пагинация */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-xs text-muted-foreground">
+            {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} из {filtered.length} отзывов
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              ← Назад
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button
+                key={p}
+                onClick={() => setPage(p)}
+                className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                  p === page
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Вперёд →
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <ConfirmDialog
         open={!!confirmDeleteId}
