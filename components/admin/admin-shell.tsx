@@ -485,27 +485,27 @@ function ArayControlCenter() {
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.45), hsl(var(--primary)/0.12))", boxShadow: "0 0 10px hsl(var(--primary)/0.3)" }}>
                 <Zap className="w-3 h-3 text-primary" />
               </div>
-              <span className="text-[11px] font-bold text-white/65 tracking-[0.12em] uppercase">ARAY Control</span>
+              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted-foreground">ARAY Control</span>
             </div>
             <button onClick={() => setOpen(false)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-              <X className="w-3 h-3 text-white/35" />
+              className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-muted/20 transition-colors">
+              <X className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
 
           {/* Tab switcher */}
-          <div className="flex gap-1 p-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="flex gap-1 p-2" style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.05)" }}>
             <button onClick={() => setTab("notif")}
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all"
               style={tab === "notif"
                 ? { background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }
-                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.38)", border: "1px solid transparent" }
+                : { background: classic ? "hsl(var(--muted)/0.5)" : "rgba(255,255,255,0.04)", color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)", border: "1px solid transparent" }
               }>
               <Bell className="w-3 h-3" />
               Уведомления
@@ -518,7 +518,7 @@ function ArayControlCenter() {
               className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all"
               style={tab === "style"
                 ? { background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }
-                : { background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.38)", border: "1px solid transparent" }
+                : { background: classic ? "hsl(var(--muted)/0.5)" : "rgba(255,255,255,0.04)", color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)", border: "1px solid transparent" }
               }>
               <Palette className="w-3 h-3" />
               Оформление
@@ -537,33 +537,33 @@ function ArayControlCenter() {
                   </div>
                 ) : orders.length === 0 ? (
                   <div className="text-center py-8">
-                    <Bell className="w-7 h-7 text-white/12 mx-auto mb-2" />
-                    <p className="text-white/30 text-xs">Нет новых заказов</p>
+                    <Bell className="w-7 h-7 text-muted-foreground/20 mx-auto mb-2" />
+                    <p className="text-muted-foreground text-xs">Нет новых заказов</p>
                   </div>
                 ) : (
                   <div className="py-1">
                     {orders.map((o: any) => (
                       <button key={o.id}
                         onClick={() => { router.push(`/admin/orders`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.05] transition-colors text-left">
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors text-left">
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: "hsl(var(--primary)/0.14)", border: "1px solid hsl(var(--primary)/0.22)" }}>
                           <ShoppingBag className="w-3 h-3 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold text-white/80 truncate">
+                          <p className="text-[11px] font-semibold text-foreground truncate">
                             #{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}
                           </p>
-                          <p className="text-[10px] text-white/30">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
+                          <p className="text-[10px] text-muted-foreground">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
                         </div>
-                        <ArrowRight className="w-3 h-3 text-white/20 shrink-0" />
+                        <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
                       </button>
                     ))}
                   </div>
                 )}
-                <div className="px-3 py-2" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="px-3 py-2" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
                   <button onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-                    className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-white/[0.06] transition-colors"
+                    className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-muted/20 transition-colors"
                     style={{ color: "hsl(var(--primary))" }}>
                     Все новые заказы →
                   </button>
@@ -577,7 +577,8 @@ function ArayControlCenter() {
 
                 {/* Палитра */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Цвет интерфейса</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
+                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Цвет интерфейса</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {PALETTES.map((p) => (
                       <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
@@ -585,7 +586,7 @@ function ArayControlCenter() {
                         style={{
                           background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
                           ...(palette === p.id
-                            ? { outline: "2px solid rgba(255,255,255,0.85)", outlineOffset: "2px" }
+                            ? { outline: classic ? "2px solid hsl(var(--primary))" : "2px solid rgba(255,255,255,0.85)", outlineOffset: "2px" }
                             : { opacity: 0.55 })
                         }} />
                     ))}
@@ -594,40 +595,48 @@ function ArayControlCenter() {
 
                 {/* Тема */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Тема</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
+                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Тема</p>
                   <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-white/[0.05]"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-muted/20"
+                    style={classic
+                      ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
+                      : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
                       {theme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
                     </div>
-                    <span className="flex-1 text-left text-[12px] font-medium text-white/75">
+                    <span className="flex-1 text-left text-[12px] font-medium"
+                      style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.75)" }}>
                       {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
                     </span>
                     <div className="relative w-9 h-5 rounded-full shrink-0"
-                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.15)", border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.1)" }}>
                       <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
+                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.5)", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
                     </div>
                   </button>
                 </div>
 
                 {/* Фон */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Фон панели</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
+                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Фон панели</p>
                   <button onClick={toggleClassic}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-white/[0.05]"
-                    style={{ background: "rgba(255,255,255,0.05)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.5)" : "rgba(255,255,255,0.07)"}` }}>
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-muted/20"
+                    style={classic
+                      ? { background: "hsl(var(--muted)/0.5)", border: `1.5px solid hsl(var(--primary)/0.5)` }
+                      : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(80,100,160,0.15)" }}>
                       <Monitor className={`w-3.5 h-3.5 ${classic ? "text-primary" : "text-blue-400/60"}`} />
                     </div>
-                    <span className="flex-1 text-left text-[12px] font-medium text-white/75">
+                    <span className="flex-1 text-left text-[12px] font-medium"
+                      style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.75)" }}>
                       {classic ? "Классический фон" : "Природный фон"}
                     </span>
                     <div className="relative w-9 h-5 rounded-full shrink-0"
-                      style={{ background: classic ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                      style={{ background: classic ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.12)", border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.1)" }}>
                       <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
                         style={{ background: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)", left: classic ? "calc(100% - 17px)" : "3px" }} />
                     </div>
@@ -636,18 +645,20 @@ function ArayControlCenter() {
 
                 {/* Шрифт */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Размер шрифта</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
+                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Размер шрифта</p>
                   <div className="flex items-end gap-1">
                     {FONT_SIZES_CC.map(s => (
                       <button key={s.id} onClick={() => pickFont(s.id)}
                         className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl transition-all"
                         style={fontActive === s.id
                           ? { background: "hsl(var(--primary)/0.18)", border: "1.5px solid hsl(var(--primary)/0.45)" }
+                          : classic
+                          ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
                           : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }
                         }>
-                        <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}
-                          className={fontActive === s.id ? "text-primary" : "text-white/40"}>A</span>
-                        <span className="text-[8px] text-white/35 leading-none">{s.label}</span>
+                        <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800, color: fontActive === s.id ? "hsl(var(--primary))" : classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.4)" }}>A</span>
+                        <span className="text-[8px] leading-none" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}>{s.label}</span>
                       </button>
                     ))}
                   </div>
@@ -655,7 +666,8 @@ function ArayControlCenter() {
 
                 {/* Язык */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-white/28 mb-2">Язык</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
+                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Язык</p>
                   <AdminLangPickerInline />
                 </div>
 

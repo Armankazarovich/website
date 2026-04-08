@@ -6,7 +6,8 @@ import nodemailer from "nodemailer";
 
 async function checkAdmin() {
   const session = await auth();
-  return session && (session.user as any).role === "ADMIN";
+  const role = (session?.user as any)?.role;
+  return session && (role === "ADMIN" || role === "SUPER_ADMIN");
 }
 
 async function getSmtpConfig() {
