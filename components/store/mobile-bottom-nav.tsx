@@ -185,16 +185,16 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
               }}
             />
 
-            {/* Внешнее дыхание — только CSS drop-shadow, без лишних div */}
-            <div className="relative w-[64px] h-[64px] flex items-center justify-center"
-              style={{ animation: "arayBreath 3s ease-in-out infinite" }}
-            >
+            {/* Шар — без лишних обёрток */}
+            <div className="relative w-[64px] h-[64px] flex items-center justify-center">
               <svg
                 width="60" height="60" viewBox="0 0 100 100"
                 className="relative z-10"
                 style={{
-                  overflow: "visible",
-                  filter: "drop-shadow(0 0 8px rgba(232,112,10,0.70)) drop-shadow(0 2px 12px rgba(160,40,0,0.55))",
+                  overflow: "hidden",
+                  borderRadius: "50%",
+                  filter: "drop-shadow(0 0 7px rgba(232,112,10,0.65)) drop-shadow(0 3px 10px rgba(140,35,0,0.50))",
+                  animation: "arayBreath 3s ease-in-out infinite",
                 }}
               >
                 <defs>

@@ -296,9 +296,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const [proactiveBubble, setProactiveBubble] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
-  // Клавиатура на мобильном
-  const [mobileH, setMobileH] = useState<number | null>(null);
-  const [mobileBottom, setMobileBottom] = useState(0);
   // Встроенный браузер Арая
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserUrl, setBrowserUrl] = useState("/");
@@ -332,22 +329,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     return () => clearTimeout(t);
   }, []);
 
-  // Клавиатура (только мобайл)
-  useEffect(() => {
-    if (!isMobile) return;
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const kbH = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      setMobileBottom(kbH);
-      if (open) setMobileH(vv.height * 0.96);
-    };
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
-  }, [isMobile, open]);
-
-  useEffect(() => { if (!open) { setMobileH(null); setMobileBottom(0); } }, [open]);
+  // Клавиатура убрана — используем CSS dvh + safe-area
 
   const startChat = useCallback(() => {
     if (messages.length > 0) return;
@@ -461,138 +443,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset",
   } as React.CSSProperties;
 
-  // ── Шапка ─────────────────────────────────────────────────────────────────
-  const Header = () => (
-    <div className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
-      style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-      <ArayIcon size={32} />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
-        <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-          {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
-        </p>
-      </div>
-      {/* Корзина мини */}
-      {cartCount > 0 && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
-          style={{ background: "hsl(var(--primary) / 0.1)", border: "1px solid hsl(var(--primary) / 0.2)" }}>
-          <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
-          <span className="text-[11px] font-semibold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
-            {formatPrice(cartPrice)}
-          </span>
-        </div>
-      )}
-      <div className="flex gap-0.5">
-        <button onClick={() => { setMessages([]); startChat(); }}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-          style={{ color: "rgba(255,255,255,0.40)" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-          title="Новый чат">
-          <RotateCcw className="w-3.5 h-3.5" />
-        </button>
-        <button onClick={() => setOpen(false)}
-          className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-          style={{ color: "rgba(255,255,255,0.40)" }}
-          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  );
-
-  // ── Чат-область ───────────────────────────────────────────────────────────
-  const ChatBody = () => (
-    <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
-      {messages.map(m => <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} />)}
-      {loading && (
-        <div className="flex gap-2.5 mb-3">
-          <ArayIcon size={24} />
-          <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
-            style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
-            <div className="flex gap-1.5 items-center h-4">
-              {[0, 1, 2].map(i => (
-                <span key={i} className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      <div ref={messagesEndRef} />
-    </div>
-  );
-
-  // ── Быстрые вопросы ───────────────────────────────────────────────────────
-  const Chips = () => (
-    messages.length <= 1 && !loading && chips.length > 0 ? (
-      <div className="px-4 pb-2 flex gap-2 flex-wrap">
-        {chips.map(q => (
-          <button key={q} onClick={() => sendMessage(q)}
-            className="text-xs px-3 py-1.5 rounded-full transition-all active:scale-95"
-            style={{
-              background: "hsl(var(--primary) / 0.08)",
-              border: "1px solid hsl(var(--primary) / 0.2)",
-              color: "hsl(var(--primary))",
-            }}>
-            {q}
-          </button>
-        ))}
-      </div>
-    ) : null
-  );
-
-  // ── Поле ввода ────────────────────────────────────────────────────────────
-  const InputBar = () => (
-    <div className="px-4 py-3 flex gap-2 items-end flex-shrink-0"
-      style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-      {/* Голос */}
-      <button onClick={listening ? stopVoice : startVoice}
-        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
-        style={{
-          background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
-          border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
-          boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
-        }}>
-        {listening && <span className="absolute inset-0 rounded-full animate-ping"
-          style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
-        {listening
-          ? <MicOff className="w-4 h-4 text-white relative z-10" />
-          : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
-      </button>
-
-      {/* Текст */}
-      <textarea
-        ref={inputRef} value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-        rows={1} placeholder={listening ? "🎤 Слушаю..." : "Написать Арaю..."}
-        className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
-        style={{
-          background: "rgba(255,255,255,0.07)",
-          border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
-          color: "rgba(255,255,255,0.90)",
-          maxHeight: "100px",
-        }}
-      />
-
-      {/* Отправить */}
-      <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
-        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-        style={{
-          background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
-          border: "1px solid hsl(var(--border))",
-          boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary) / 0.3)" : "none",
-        }}>
-        {loading
-          ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
-          : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
-      </button>
-    </div>
-  );
-
   return (
     <>
       {/* ══ Встроенный браузер Арая ══ */}
@@ -680,10 +530,113 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 boxShadow: "0 24px 64px rgba(0,0,0,0.18), 0 0 0 1px hsl(var(--border))",
                 ...panelBg,
               }}>
-              <Header />
-              <ChatBody />
-              <Chips />
-              <InputBar />
+              {/* Шапка */}
+              <div className="flex items-center gap-3 px-4 py-3 shrink-0"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <ArayIcon size={32} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
+                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                    {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
+                  </p>
+                </div>
+                {cartCount > 0 && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
+                    style={{ background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.2)" }}>
+                    <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
+                    <span className="text-[11px] font-semibold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
+                      {formatPrice(cartPrice)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex gap-0.5">
+                  <button onClick={() => { setMessages([]); startChat(); }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                    style={{ color: "rgba(255,255,255,0.40)" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                    title="Новый чат"><RotateCcw className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => setOpen(false)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                    style={{ color: "rgba(255,255,255,0.40)" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <X className="w-4 h-4" /></button>
+                </div>
+              </div>
+              {/* Сообщения */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
+                {messages.map(m => (
+                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} />
+                ))}
+                {loading && (
+                  <div className="flex gap-2.5 mb-3">
+                    <ArayIcon size={24} />
+                    <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
+                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                      <div className="flex gap-1.5 items-center h-4">
+                        {[0,1,2].map(i => (
+                          <span key={i} className="w-1.5 h-1.5 rounded-full"
+                            style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i*0.2}s infinite` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+              {/* Чипсы */}
+              {messages.length <= 1 && !loading && chips.length > 0 && (
+                <div className="px-4 pb-2 flex gap-2 flex-wrap">
+                  {chips.map(q => (
+                    <button key={q} onClick={() => sendMessage(q)}
+                      className="text-xs px-3 py-1.5 rounded-full transition-all active:scale-95"
+                      style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.2)", color: "hsl(var(--primary))" }}>
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Инпут */}
+              <div className="px-4 py-3 flex gap-2 items-end shrink-0"
+                style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                <button onClick={listening ? stopVoice : startVoice}
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
+                  style={{
+                    background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
+                    border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
+                    boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
+                  }}>
+                  {listening && <span className="absolute inset-0 rounded-full animate-ping"
+                    style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
+                  {listening ? <MicOff className="w-4 h-4 text-white relative z-10" /> : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
+                </button>
+                <textarea
+                  ref={inputRef} value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                  rows={1} placeholder={listening ? "🎤 Слушаю..." : "Написать Арaю..."}
+                  className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.07)",
+                    border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
+                    color: "rgba(255,255,255,0.90)",
+                    maxHeight: "100px",
+                  }}
+                />
+                <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
+                  style={{
+                    background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
+                    border: "1px solid hsl(var(--border))",
+                    boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
+                  }}>
+                  {loading
+                    ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
+                    : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
+                </button>
+              </div>
             </motion.div>
           </>
         )}
@@ -695,34 +648,137 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
           <>
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.18 }}
               className="fixed inset-0 z-[60]"
-              style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}
+              style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)" }}
               onClick={() => setOpen(false)}
             />
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 34, stiffness: 360 }}
-              drag="y" dragControls={dragControls}
-              dragConstraints={{ top: 0, bottom: 0 }} dragElastic={{ top: 0, bottom: 0.22 }}
-              onDragEnd={(_, info) => { if (info.offset.y > 100) setOpen(false); }}
-              className="fixed left-0 right-0 z-[61] flex flex-col overflow-hidden"
+              transition={{ type: "spring", damping: 32, stiffness: 340, mass: 0.9 }}
+              className="fixed left-0 right-0 bottom-0 z-[61] flex flex-col overflow-hidden"
               style={{
-                bottom: mobileBottom > 0 ? `${mobileBottom}px` : 0,
-                height: mobileH ? `${mobileH}px` : "92dvh",
+                height: "92dvh",
                 borderRadius: "20px 20px 0 0",
-                boxShadow: "0 -8px 48px rgba(0,0,0,0.2)",
+                boxShadow: "0 -8px 48px rgba(0,0,0,0.25)",
                 ...panelBg,
               }}>
-              {/* Ручка */}
-              <div className="flex justify-center pt-2.5 pb-1 shrink-0 cursor-grab active:cursor-grabbing"
-                onPointerDown={e => dragControls.start(e)}>
-                <div className="w-8 h-[3px] rounded-full" style={{ background: "hsl(var(--border))" }} />
+              {/* Ручка — свайп вниз для закрытия */}
+              <div
+                className="flex justify-center pt-2.5 pb-1 shrink-0"
+                onClick={() => setOpen(false)}
+              >
+                <div className="w-10 h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.20)" }} />
               </div>
-              <Header />
-              <ChatBody />
-              <Chips />
-              <InputBar />
+              {/* Шапка */}
+              <div className="flex items-center gap-3 px-4 py-3 shrink-0"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                <ArayIcon size={32} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
+                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
+                    {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
+                  </p>
+                </div>
+                {cartCount > 0 && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
+                    style={{ background: "hsl(var(--primary) / 0.1)", border: "1px solid hsl(var(--primary) / 0.2)" }}>
+                    <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
+                    <span className="text-[11px] font-semibold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
+                      {formatPrice(cartPrice)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex gap-0.5">
+                  <button onClick={() => { setMessages([]); startChat(); }}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ color: "rgba(255,255,255,0.40)" }} title="Новый чат">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => setOpen(false)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center"
+                    style={{ color: "rgba(255,255,255,0.40)" }}>
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {/* Сообщения */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
+                {messages.map(m => (
+                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} />
+                ))}
+                {loading && (
+                  <div className="flex gap-2.5 mb-3">
+                    <ArayIcon size={24} />
+                    <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
+                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                      <div className="flex gap-1.5 items-center h-4">
+                        {[0,1,2].map(i => (
+                          <span key={i} className="w-1.5 h-1.5 rounded-full"
+                            style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i*0.2}s infinite` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+              {/* Чипсы */}
+              {messages.length <= 1 && !loading && chips.length > 0 && (
+                <div className="px-4 pb-2 flex gap-2 flex-wrap shrink-0">
+                  {chips.map(q => (
+                    <button key={q} onClick={() => sendMessage(q)}
+                      className="text-xs px-3 py-1.5 rounded-full transition-all active:scale-95"
+                      style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.2)", color: "hsl(var(--primary))" }}>
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Инпут */}
+              <div className="px-4 py-3 flex gap-2 items-end shrink-0"
+                style={{
+                  borderTop: "1px solid rgba(255,255,255,0.08)",
+                  paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+                }}>
+                <button onClick={listening ? stopVoice : startVoice}
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative"
+                  style={{
+                    background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
+                    border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
+                  }}>
+                  {listening && <span className="absolute inset-0 rounded-full animate-ping"
+                    style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
+                  {listening
+                    ? <MicOff className="w-4 h-4 text-white relative z-10" />
+                    : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
+                </button>
+                <textarea
+                  ref={inputRef} value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                  rows={1} placeholder={listening ? "🎤 Слушаю..." : "Написать Арaю..."}
+                  className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none"
+                  style={{
+                    background: "rgba(255,255,255,0.07)",
+                    border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
+                    color: "rgba(255,255,255,0.90)",
+                    maxHeight: "100px",
+                  }}
+                />
+                <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
+                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"
+                  style={{
+                    background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
+                    border: "1px solid hsl(var(--border))",
+                    boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
+                  }}>
+                  {loading
+                    ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
+                    : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
+                </button>
+              </div>
             </motion.div>
           </>
         )}
