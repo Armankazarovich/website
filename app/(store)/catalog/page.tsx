@@ -91,7 +91,7 @@ export default async function CatalogPage({
       : { sortOrder: { lt: 900 } },
   };
 
-  const [categories, products, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
+  const [categories, productsRaw, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
     prisma.category.findMany({ where: { showInMenu: true }, orderBy: { sortOrder: "asc" } }),
     prisma.product.findMany({
       where,
@@ -120,6 +120,16 @@ export default async function CatalogPage({
   // Если запрошена скрытая или несуществующая категория — редирект в каталог
   if (searchParams.category && !categories.find((c) => c.slug === searchParams.category)) {
     redirect("/catalog");
+  }
+
+  // Price sort (JS post-fetch since Prisma can't orderBy on has-many aggregate)
+  const getMinPrice = (p: typeof productsRaw[0]) =>
+    Math.min(...p.variants.map((v) => Number(v.pricePerCube ?? v.pricePerPiece ?? 999999)));
+  const products = [...productsRaw];
+  if (searchParams.sort === "price_asc") {
+    products.sort((a, b) => getMinPrice(a) - getMinPrice(b));
+  } else if (searchParams.sort === "price_desc") {
+    products.sort((a, b) => getMinPrice(b) - getMinPrice(a));
   }
 
   // Доступные типы — только те, для которых есть товары в категории
@@ -325,6 +335,8 @@ export default async function CatalogPage({
               {[
                 { value: "", label: "Новые" },
                 { value: "name", label: "А–Я" },
+                { value: "price_asc", label: "Цена ↑" },
+                { value: "price_desc", label: "Цена ↓" },
               ].map((opt) => (
                 <Link
                   key={opt.value}

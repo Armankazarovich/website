@@ -14,11 +14,13 @@ import "./globals.css";
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
   variable: "--font-inter",
+  display: "swap",
 });
 
 const oswald = Oswald({
   subsets: ["latin", "cyrillic"],
   variable: "--font-oswald",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

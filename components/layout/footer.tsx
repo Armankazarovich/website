@@ -27,7 +27,7 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
           <div>
             <Link href="/" className="flex items-center gap-3 mb-4">
               <div className="relative w-16 h-16 shrink-0">
-                <Image src="/logo.png" alt="ПилоРус" fill className="object-contain" />
+                <Image src="/logo.png" alt="ПилоРус" fill className="object-contain" sizes="64px" />
               </div>
               <div>
                 <p className="font-display font-bold text-2xl text-white">ПилоРус</p>

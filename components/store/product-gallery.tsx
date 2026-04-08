@@ -75,6 +75,7 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
                   alt={name}
                   fill
                   className="object-cover"
+                  sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 600px"
                   unoptimized
                 />
               </div>
@@ -94,6 +95,7 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
                 fill
                 className="object-cover"
                 priority={active === 0}
+                sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 600px"
                 unoptimized
               />
             </div>
