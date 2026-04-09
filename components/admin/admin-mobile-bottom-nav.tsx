@@ -126,7 +126,7 @@ function MenuPopup({ role, onClose }: { role: string; onClose: () => void }) {
         className="fixed left-3 right-3 z-[60] rounded-[28px] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300"
         style={{
           bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))",
-          background: "rgba(10, 10, 12, 0.96)",
+          background: "rgba(5, 8, 20, 0.96)",
           backdropFilter: "blur(40px) saturate(200%)",
           WebkitBackdropFilter: "blur(40px) saturate(200%)",
           border: "1px solid rgba(255,255,255,0.13)",
@@ -242,7 +242,7 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
         <div
           className="flex items-stretch rounded-[26px] overflow-hidden"
           style={{
-            background: "rgba(10, 10, 12, 0.62)",
+            background: "rgba(5, 8, 20, 0.62)",
             backdropFilter: "blur(32px) saturate(200%) brightness(0.85)",
             WebkitBackdropFilter: "blur(32px) saturate(200%) brightness(0.85)",
             border: "1px solid rgba(255,255,255,0.13)",

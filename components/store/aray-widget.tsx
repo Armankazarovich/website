@@ -7,7 +7,6 @@ import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
-import { ArayOrb } from "@/components/ui/aray-orb";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -155,7 +154,87 @@ function ActionIcon({ icon }: { icon?: string }) {
 }
 interface ArayWidgetProps { page?: string; productName?: string; cartTotal?: number; enabled?: boolean; }
 
-// ArayOrb — импортирован из @/components/ui/aray-orb (единый шар для всего сайта)
+// ─── Живой SVG-шар — без фона снаружи, анимация внутри ───────────────────────
+
+function ArayIcon({ size = 40, glow = false }: { size?: number; glow?: boolean }) {
+  return (
+    <svg
+      width={size} height={size} viewBox="0 0 100 100"
+      style={{ display: "block", overflow: "visible" }}
+    >
+      <defs>
+        {/* Оранжевый ореол */}
+        <filter id="aig-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+          <feColorMatrix in="blur" type="matrix"
+            values="2 0.8 0 0 0  0.6 0.2 0 0 0  0 0 0 0 0  0 0 0 0.9 0"
+            result="glow" />
+          <feMerge>
+            <feMergeNode in="glow" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
+        {/* Базовый градиент сферы */}
+        <radialGradient id="aig-base" cx="38%" cy="32%" r="70%">
+          <stop offset="0%" stopColor="#fff8d0" />
+          <stop offset="18%" stopColor="#fbbf24">
+            <animate attributeName="stopColor"
+              values="#fbbf24;#f97316;#fde047;#fbbf24"
+              dur="5s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="50%" stopColor="#e8700a">
+            <animate attributeName="stopColor"
+              values="#e8700a;#c2410c;#f97316;#e8700a"
+              dur="7s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="82%" stopColor="#7c2d12" />
+          <stop offset="100%" stopColor="#1a0500" />
+        </radialGradient>
+
+        {/* Вращающийся внутренний жар */}
+        <radialGradient id="aig-hot" cx="50%" cy="22%" r="48%">
+          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.75">
+            <animate attributeName="stopOpacity"
+              values="0.75;1;0.5;0.75" dur="3s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
+        </radialGradient>
+
+        {/* Зеркальный блик */}
+        <radialGradient id="aig-hl" cx="30%" cy="24%" r="40%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.88" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </radialGradient>
+
+        {/* Клип для анимации внутри шара */}
+        <clipPath id="aig-clip">
+          <circle cx="50" cy="50" r="46" />
+        </clipPath>
+      </defs>
+
+      {/* Базовая сфера */}
+      <circle cx="50" cy="50" r="46" fill="url(#aig-base)"
+        filter={glow ? "url(#aig-glow)" : undefined} />
+
+      {/* Вращающиеся внутренние огни — clipped */}
+      <g clipPath="url(#aig-clip)">
+        <ellipse cx="50" cy="28" rx="36" ry="22" fill="url(#aig-hot)">
+          <animateTransform attributeName="transform" type="rotate"
+            from="0 50 50" to="360 50 50" dur="6s" repeatCount="indefinite" />
+        </ellipse>
+        <ellipse cx="50" cy="72" rx="26" ry="15" fill="#fb923c" opacity="0.18">
+          <animateTransform attributeName="transform" type="rotate"
+            from="180 50 50" to="-180 50 50" dur="9s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.18;0.28;0.1;0.18" dur="4.5s" repeatCount="indefinite" />
+        </ellipse>
+      </g>
+
+      {/* Блик (поверх всего) */}
+      <circle cx="50" cy="50" r="46" fill="url(#aig-hl)" />
+    </svg>
+  );
+}
 
 // ─── Голосовой ввод ───────────────────────────────────────────────────────────
 
@@ -230,7 +309,7 @@ function MessageBubble({
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3.5`}>
       {!isUser && (
-        <div className="shrink-0 mt-0.5"><ArayOrb size={24} id="aw-msg" /></div>
+        <div className="shrink-0 mt-0.5"><ArayIcon size={24} /></div>
       )}
       <div className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
         <div className="px-3.5 py-2.5 text-sm leading-relaxed" style={
@@ -461,7 +540,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
         // Show text without internal markers
         const displayText = rawText
-          .replace(/__ARAY_TOOL__/g, "")
           .replace(/\n__ARAY_META__[\s\S]*$/, "")
           .replace(/__ARAY_ERR__[\s\S]*$/, "");
 
@@ -475,7 +553,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       const errMatch = rawText.match(/__ARAY_ERR__(.+)$/);
       const cleanText = isError
         ? (errMatch?.[1] || "Не получилось. Попробуй снова 🙏")
-        : rawText.replace(/__ARAY_TOOL__/g, "").replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
+        : rawText.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
 
       const { text: parsedText, actions } = parseMessageActions(cleanText);
 
@@ -594,7 +672,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             aria-label="Открыть Арай"
             className="relative focus:outline-none"
             style={{ width: 56, height: 56, WebkitTapHighlightColor: "transparent" }}>
-            <ArayOrb size={56} pulse id="aw-fab" />
+            <ArayIcon size={56} glow />
             {hasNew && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 animate-pulse"
                 style={{ background: "hsl(var(--primary))", borderColor: "hsl(var(--background))" }} />
@@ -641,7 +719,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   style={{ background: "linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 35%, hsl(var(--primary)/0.6) 65%, transparent 100%)" }}/>
                 <div className="flex items-center gap-3 px-4 pt-4 pb-3">
                   <div className="relative shrink-0">
-                    <ArayOrb size={40} pulse id="aw-hdr" />
+                    <ArayIcon size={40} glow />
                     <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 bg-emerald-500"
                       style={{ borderColor: "rgba(13,12,11,0.96)" }}/>
                   </div>
@@ -688,7 +766,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 ))}
                 {loading && (
                   <div className="flex gap-2.5">
-                    <ArayOrb size={26} id="aw-welcome" />
+                    <ArayIcon size={26} />
                     <div className="px-4 py-3 rounded-2xl rounded-tl-[6px]"
                       style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
                       <div className="flex gap-1.5 items-center">
@@ -804,7 +882,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               {/* Шапка */}
               <div className="flex items-center gap-3 px-4 py-3 shrink-0"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <ArayOrb size={32} id="aw-mob" />
+                <ArayIcon size={32} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
                   <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
@@ -841,7 +919,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 ))}
                 {loading && (
                   <div className="flex gap-2.5 mb-3">
-                    <ArayOrb size={24} id="aw-msg" />
+                    <ArayIcon size={24} />
                     <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
                       style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
                       <div className="flex gap-1.5 items-center h-4">

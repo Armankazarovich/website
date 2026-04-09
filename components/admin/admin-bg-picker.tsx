@@ -105,7 +105,7 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
   };
 
   const glass = {
-    background: "linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 55%), rgba(12, 12, 14, 0.92)",
+    background: "linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 55%), rgba(8, 12, 28, 0.92)",
     backdropFilter: "blur(40px) saturate(180%)",
     WebkitBackdropFilter: "blur(40px) saturate(180%)",
     border: "1px solid rgba(255,255,255,0.14)",

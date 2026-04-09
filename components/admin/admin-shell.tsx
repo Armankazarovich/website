@@ -629,7 +629,7 @@ function ArayControlCenter() {
                       ? { background: "hsl(var(--muted)/0.5)", border: `1.5px solid hsl(var(--primary)/0.5)` }
                       : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(255,255,255,0.06)" }}>
+                      style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(80,100,160,0.15)" }}>
                       <Monitor className={`w-3.5 h-3.5 ${classic ? "text-primary" : "text-primary/50"}`} />
                     </div>
                     <span className="flex-1 text-left text-[12px] font-medium"
@@ -795,7 +795,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
-      style={classic ? undefined : { backgroundColor: "rgb(6, 6, 6)" }}>
+      style={classic ? undefined : { backgroundColor: "rgb(5, 5, 6)" }}>
       <AdminNatureBg enabled={!classic} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
@@ -1004,7 +1004,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
                 style={{ background: "rgba(255,255,255,0.06)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.09)"}` }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(255,255,255,0.06)" }}>
+                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(100,120,180,0.15)" }}>
                   <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-primary/70"}`} />
                 </div>
                 <div className="flex-1 text-left">
@@ -1066,7 +1066,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
             paddingBottom: "8px",
             paddingLeft: "12px",
             paddingRight: "12px",
-            background: classic ? "rgba(248,250,252,0.95)" : "rgba(10,10,12,0.88)",
+            background: classic ? "rgba(248,250,252,0.95)" : "rgba(4,5,13,0.88)",
             backdropFilter: "blur(24px) saturate(80%) brightness(0.70)",
             WebkitBackdropFilter: "blur(24px) saturate(80%) brightness(0.70)",
             borderBottom: "1px solid rgba(255,255,255,0.07)",

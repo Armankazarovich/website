@@ -180,7 +180,7 @@ function MediaCard({
       {/* Delete confirm */}
       {delConfirm && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3 z-10 rounded-2xl"
-          style={{ background: "rgba(10,10,12,0.88)", backdropFilter: "blur(12px)" }}
+          style={{ background: "rgba(5,8,20,0.88)", backdropFilter: "blur(12px)" }}
           onClick={(e) => e.stopPropagation()}>
           <Trash2 className="w-5 h-5 text-destructive" />
           <p className="text-xs font-medium text-center text-white/90">Удалить файл?</p>
@@ -206,7 +206,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
     border: "1px solid hsl(var(--border))",
     boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
   } : {
-    background: "rgba(12,12,14,0.82)",
+    background: "rgba(8,13,32,0.82)",
     backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     border: "1px solid rgba(255,255,255,0.14)",
@@ -548,7 +548,7 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
     border: "1px solid hsl(var(--border))",
     boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
   } : {
-    background: "rgba(12,12,14,0.82)",
+    background: "rgba(8,13,32,0.82)",
     backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     border: "1px solid rgba(255,255,255,0.14)",

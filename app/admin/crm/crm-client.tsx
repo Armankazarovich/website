@@ -323,7 +323,7 @@ function LeadForm({
     border: "1px solid hsl(var(--border))",
     boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
   } : {
-    background: "rgba(12,12,14,0.88)",
+    background: "rgba(8,13,32,0.88)",
     backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     border: "1px solid rgba(255,255,255,0.14)",
@@ -334,7 +334,7 @@ function LeadForm({
     background: "hsl(var(--card))",
   } : {
     borderBottom: "1px solid rgba(255,255,255,0.09)",
-    background: "rgba(12,12,14,0.70)",
+    background: "rgba(8,13,32,0.70)",
     backdropFilter: "blur(20px)",
   };
   const [name, setName] = useState(initial?.name || "");
@@ -578,7 +578,7 @@ function LeadDetailPanel({
     borderLeft: "1px solid hsl(var(--border))",
     boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
   } : {
-    background: "rgba(12,12,14,0.82)",
+    background: "rgba(8,13,32,0.82)",
     backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     borderLeft: "1px solid rgba(255,255,255,0.14)",
@@ -588,7 +588,7 @@ function LeadDetailPanel({
     background: "hsl(var(--card))",
     borderBottom: "1px solid hsl(var(--border))",
   } : {
-    background: "rgba(12,12,14,0.70)",
+    background: "rgba(8,13,32,0.70)",
     backdropFilter: "blur(20px)",
     borderBottom: "1px solid rgba(255,255,255,0.09)",
   };
@@ -868,7 +868,7 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
     border: "1px solid hsl(var(--border))",
     boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
   } : {
-    background: "rgba(12,12,14,0.82)",
+    background: "rgba(8,13,32,0.82)",
     backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
     border: "1px solid rgba(255,255,255,0.14)",

@@ -74,7 +74,7 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
           border: "1px solid hsl(var(--border))",
           boxShadow: "-8px 0 48px rgba(0,0,0,0.12)",
         } : {
-          background: "rgba(12, 12, 14, 0.82)",
+          background: "rgba(8, 13, 32, 0.82)",
           backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           border: "1px solid rgba(255,255,255,0.14)",

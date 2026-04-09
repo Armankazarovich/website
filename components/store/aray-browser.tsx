@@ -156,7 +156,7 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
         width: panelW,
         height: panelH,
         borderRadius: 20,
-        background: "rgba(12, 12, 14, 0.95)",
+        background: "rgba(8, 12, 28, 0.95)",
         backdropFilter: "blur(32px) saturate(200%)",
         WebkitBackdropFilter: "blur(32px) saturate(200%)",
         border: "1px solid rgba(255,255,255,0.13)",
@@ -259,7 +259,7 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
         {/* Загрузчик */}
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center"
-            style={{ background: "rgba(12,12,14,0.7)" }}>
+            style={{ background: "rgba(8,12,28,0.7)" }}>
             <div className="flex flex-col items-center gap-3">
               <motion.div
                 className="w-10 h-10 border-2 rounded-full"

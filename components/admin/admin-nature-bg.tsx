@@ -251,12 +251,12 @@ export function AdminNatureBg({ enabled }: { enabled: boolean }) {
       )}
 
       {/* ── Оверлеи для читабельности ── */}
-      <div className="aray-photo-overlay-dark  absolute inset-0" style={{ background: "rgba(10,10,12,0.46)" }} />
-      <div className="aray-photo-overlay-dark  absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.76) 0%, rgba(10,10,12,0.08) 42%, transparent 65%)" }} />
-      <div className="aray-photo-overlay-dark  absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.38) 0%, transparent 30%)" }} />
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(10,10,12,0.28)" }} />
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.55) 0%, transparent 52%)" }} />
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.32) 0%, transparent 28%)" }} />
+      <div className="aray-photo-overlay-dark  absolute inset-0" style={{ background: "rgba(4,8,18,0.46)" }} />
+      <div className="aray-photo-overlay-dark  absolute inset-0" style={{ background: "linear-gradient(to top, rgba(4,8,18,0.76) 0%, rgba(4,8,18,0.08) 42%, transparent 65%)" }} />
+      <div className="aray-photo-overlay-dark  absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(4,8,18,0.38) 0%, transparent 30%)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(10,20,40,0.28)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to top, rgba(4,8,18,0.55) 0%, transparent 52%)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(4,8,18,0.32) 0%, transparent 28%)" }} />
 
       {/* ── Лейбл фото ── */}
       <div className="absolute bottom-3 right-5 flex items-center gap-2" style={{ opacity: 0.22 }}>
