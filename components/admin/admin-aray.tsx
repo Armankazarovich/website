@@ -682,7 +682,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       const isErr = raw.includes("__ARAY_ERR__");
       const clean = isErr
         ? (raw.match(/__ARAY_ERR__(.+)$/)?.[1] || "Что-то пошло не так 🙏")
-        : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
+        : raw.replace(/__ARAY_TOOL__/g, "").replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
       const { text: final } = parseActions(clean);
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
     } catch {
@@ -817,6 +817,25 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
 
             {/* ── Лента сообщений ── */}
             <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+              {/* Welcome — когда нет сообщений */}
+              {messages.length === 0 && !loading && (
+                <div className="flex flex-col items-center justify-center h-full gap-4 py-8 select-none">
+                  <ArayOrb size={52} pulse={false}/>
+                  <div className="text-center space-y-1">
+                    <p className="text-[15px] font-bold" style={{ color: "hsl(var(--foreground))" }}>Привет, {staffName}!</p>
+                    <p className="text-[12px]" style={{ color: "hsl(var(--muted-foreground))" }}>Спрашивай — отвечу сразу</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center max-w-xs">
+                    {quickList.slice(0, 3).map(q => (
+                      <button key={q} onClick={() => send(q)}
+                        className="text-[11.5px] font-medium px-3.5 py-2 rounded-full transition-all active:scale-95"
+                        style={{ background: "hsl(var(--primary)/0.10)", border: "1px solid hsl(var(--primary)/0.22)", color: "hsl(var(--primary))" }}>
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {messages.map(msg => (
                 <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
               ))}
