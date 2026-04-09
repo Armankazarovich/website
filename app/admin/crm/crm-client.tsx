@@ -1119,9 +1119,7 @@ function OrdersKanban({ search }: { search: string }) {
               const cnt = (ordersByStatus[s.key] || []).length;
               return (
                 <button key={s.key} onClick={() => setMobileOrderStage(s.key)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                    mobileOrderStage === s.key ? "bg-card border-primary/60 text-foreground shadow-sm" : "border-transparent text-muted-foreground"
-                  }`}>
+                  className={`admin-pill-btn shrink-0 ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
                   <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
                   {s.label}
                   <span className={`px-1 rounded text-[9px] font-bold ${mobileOrderStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
@@ -1337,22 +1335,14 @@ export function CrmClient() {
         <div className="flex items-center gap-1 mb-3 p-1 bg-muted rounded-xl w-fit">
           <button
             onClick={() => setTab("orders")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              tab === "orders"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`admin-pill-btn ${tab === "orders" ? "admin-pill-btn-active" : ""}`}
           >
             <ShoppingBag className="w-4 h-4" />
             Заказы по статусам
           </button>
           <button
             onClick={() => setTab("leads")}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              tab === "leads"
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`admin-pill-btn ${tab === "leads" ? "admin-pill-btn-active" : ""}`}
           >
             <TrendingUp className="w-4 h-4" />
             Воронка лидов
@@ -1377,15 +1367,11 @@ export function CrmClient() {
                 <button
                   key={s.key}
                   onClick={() => setSourceFilter(s.key)}
-                  className="shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all"
-                  style={isActive
-                    ? { background: "hsl(var(--primary))", color: "#fff", border: "1.5px solid hsl(var(--primary))" }
-                    : { background: "rgba(5,8,20,0.65)", color: "rgba(255,255,255,0.75)", border: "1.5px solid rgba(255,255,255,0.18)", backdropFilter: "blur(12px)" }
-                  }
+                  className={`admin-pill-btn shrink-0 ${isActive ? "admin-pill-btn-active" : ""}`}
                 >
                   {s.label}
                   {s.key !== "ALL" && (
-                    <span className="ml-1" style={{ opacity: 0.55 }}>{leads.filter(l => l.source === s.key).length}</span>
+                    <span className="ml-1 opacity-60">{leads.filter(l => l.source === s.key).length}</span>
                   )}
                 </button>
               );
@@ -1407,11 +1393,7 @@ export function CrmClient() {
                     <button
                       key={s.key}
                       onClick={() => setMobileStage(s.key)}
-                      className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                        mobileStage === s.key
-                          ? "bg-card border-primary/60 text-foreground shadow-sm"
-                          : "border-transparent text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`admin-pill-btn shrink-0 ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
                     >
                       <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
                       {s.label}

@@ -225,17 +225,13 @@ export default function NotificationsPage() {
       <div className="flex gap-1 bg-muted/40 p-1 rounded-xl w-fit">
         <button
           onClick={() => setTab("send")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === "send" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`admin-pill-btn ${tab === "send" ? "admin-pill-btn-active" : ""}`}
         >
           Рассылка
         </button>
         <button
           onClick={() => setTab("subscribers")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            tab === "subscribers" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
-          }`}
+          className={`admin-pill-btn ${tab === "subscribers" ? "admin-pill-btn-active" : ""}`}
         >
           Подписчики {subs.length > 0 && <span className="ml-1 text-xs text-primary">({subs.length})</span>}
         </button>
@@ -346,11 +342,7 @@ export default function NotificationsPage() {
                     key={s.key}
                     type="button"
                     onClick={() => setSegment(s.key)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                      segment === s.key
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:text-foreground hover:border-foreground/30"
-                    }`}
+                    className={`admin-pill-btn ${segment === s.key ? "admin-pill-btn-active" : ""}`}
                   >
                     <s.icon className="w-3 h-3" />
                     {s.label}
@@ -423,11 +415,7 @@ export default function NotificationsPage() {
                 <button
                   key={f}
                   onClick={() => setSubsFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    subsFilter === f
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
-                  }`}
+                  className={`admin-pill-btn ${subsFilter === f ? "admin-pill-btn-active" : ""}`}
                 >
                   {f === "all" ? "Все" : f === "registered" ? "Зарег." : "Гости"}
                 </button>

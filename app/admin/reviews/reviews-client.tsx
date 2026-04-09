@@ -127,16 +127,12 @@ function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">)
         <div className="flex gap-2 flex-wrap">
           {PLATFORMS.map(p => (
             <button key={p.key} onClick={() => setSource(p.key)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                source === p.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-primary/[0.08]"
-              }`}>
+              className={`admin-pill-btn ${source === p.key ? "admin-pill-btn-active" : ""}`}>
               <p.icon className="w-3.5 h-3.5 inline mr-1" />{p.name}
             </button>
           ))}
           <button onClick={() => setSource("site")}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-              source === "site" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-primary/[0.08]"
-            }`}>
+            className={`admin-pill-btn ${source === "site" ? "admin-pill-btn-active" : ""}`}>
             <Monitor className="w-3.5 h-3.5 inline mr-1" />Сайт
           </button>
         </div>
@@ -352,11 +348,7 @@ export function ReviewsClient({
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === f.key
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08] hover:text-foreground"
-              }`}
+              className={`admin-pill-btn ${statusFilter === f.key ? "admin-pill-btn-active" : ""}`}
             >
               {f.label}
             </button>
