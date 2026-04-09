@@ -309,16 +309,18 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  // Стиль — как раздел сайдбара, тёмный непрозрачный
+  // Жидкое чёрное стекло — без цветного тинта
   const panelBg: React.CSSProperties = {
-    background: "rgba(8, 12, 30, 0.94)",
-    backdropFilter: "blur(32px) saturate(180%)",
-    WebkitBackdropFilter: "blur(32px) saturate(180%)",
-    borderTop: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(4, 5, 12, 0.97)",
+    backdropFilter: "blur(40px) saturate(80%) brightness(0.70)",
+    WebkitBackdropFilter: "blur(40px) saturate(80%) brightness(0.70)",
+    borderTop: "1px solid rgba(255,255,255,0.09)",
+    boxShadow: "0 -8px 40px rgba(0,0,0,0.70)",
   };
 
   const chatBg: React.CSSProperties = {
-    background: "rgba(5, 8, 22, 0.60)",
+    background: "rgba(3, 4, 10, 0.98)",
+    borderBottom: "1px solid rgba(255,255,255,0.06)",
   };
 
   return (
