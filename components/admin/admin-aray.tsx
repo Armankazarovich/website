@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, Maximize2 } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, X } from "lucide-react";
 
-// ─── Classic mode (синхронизация с темой администраторки) ─────────────────────
+// ─── Classic mode ──────────────────────────────────────────────────────────────
 function useClassicMode() {
   const [classic, setClassic] = useState(false);
   useEffect(() => {
@@ -16,6 +17,33 @@ function useClassicMode() {
   return classic;
 }
 
+// ─── Контекст страницы — умные чипсы под каждый раздел ──────────────────────
+const PAGE_CONTEXT: Record<string, { label: string; icon: string; quick: string[] }> = {
+  "/admin":            { label: "Дашборд",   icon: "📊", quick: ["Сводка за сегодня", "Новые заказы", "Выручка за неделю", "Что срочно сделать?"] },
+  "/admin/orders":     { label: "Заказы",    icon: "📦", quick: ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня", "Проблемные заказы"] },
+  "/admin/products":   { label: "Каталог",   icon: "🪵", quick: ["Что не в наличии?", "Топ продаж", "Как добавить товар?", "Актуальные цены"] },
+  "/admin/clients":    { label: "Клиенты",   icon: "👥", quick: ["Новые клиенты", "Постоянные покупатели", "Кто давно не покупал?", "Лучший клиент"] },
+  "/admin/analytics":  { label: "Аналитика", icon: "📈", quick: ["Выручка за месяц", "Лучшие товары", "Динамика продаж", "Конверсия"] },
+  "/admin/finance":    { label: "Финансы",   icon: "💰", quick: ["Выручка за месяц", "Средний чек", "Сравни с прошлым месяцем", "Прибыль"] },
+  "/admin/inventory":  { label: "Склад",     icon: "🏭", quick: ["Что заканчивается?", "Остатки по товарам", "Что пополнить срочно?", "Склад по категориям"] },
+  "/admin/crm":        { label: "CRM",       icon: "🎯", quick: ["Новые лиды", "Конверсия лидов", "Горячие клиенты", "Что в работе?"] },
+  "/admin/tasks":      { label: "Задачи",    icon: "✅", quick: ["Мои задачи", "Просроченные задачи", "Создай задачу", "Что сделано сегодня?"] },
+  "/admin/delivery":   { label: "Доставка",  icon: "🚚", quick: ["Активные доставки", "Задержки", "Маршруты сегодня", "Доставлено за неделю"] },
+  "/admin/staff":      { label: "Команда",   icon: "👤", quick: ["Кто в команде?", "Добавить сотрудника", "Роли и доступы", "Активность команды"] },
+  "/admin/settings":   { label: "Настройки", icon: "⚙️", quick: ["Как настроить сайт?", "SMTP email", "Telegram бот", "Домен и SSL"] },
+};
+const DEFAULT_QUICK = ["Сводка за сегодня", "Новые заказы", "Список товаров", "Что срочно?"];
+
+function getPageCtx(pathname: string) {
+  // Точное совпадение сначала
+  if (PAGE_CONTEXT[pathname]) return PAGE_CONTEXT[pathname];
+  // Потом по началу пути
+  const match = Object.keys(PAGE_CONTEXT)
+    .filter(k => k !== "/admin" && pathname.startsWith(k))
+    .sort((a, b) => b.length - a.length)[0];
+  return match ? PAGE_CONTEXT[match] : null;
+}
+
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: boolean };
 
@@ -24,19 +52,17 @@ function parseActions(raw: string) {
   return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
 }
 
-// ─── Markdown рендер ──────────────────────────────────────────────────────────
-// Inline: **bold**, *italic*, `code`
+// ─── Markdown рендер (inline) ─────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
   return parts.map((p, i) => {
     if (p.startsWith("**") && p.endsWith("**"))
       return <strong key={i} className="font-semibold">{p.slice(2, -2)}</strong>;
     if (p.startsWith("*") && p.endsWith("*"))
-      return <em key={i} className="italic">{p.slice(1, -1)}</em>;
+      return <em key={i}>{p.slice(1, -1)}</em>;
     if (p.startsWith("`") && p.endsWith("`"))
       return (
-        <code key={i}
-          className="px-1.5 py-0.5 rounded text-[11.5px] font-mono"
+        <code key={i} className="px-1.5 py-0.5 rounded-md text-[11.5px] font-mono"
           style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))" }}>
           {p.slice(1, -1)}
         </code>
@@ -45,97 +71,43 @@ function renderInline(text: string): React.ReactNode[] {
   });
 }
 
-// Таблица Markdown: | col | col |
-function renderTable(lines: string[]): React.ReactNode {
-  const rows = lines
-    .filter(l => l.trim().startsWith("|") && !l.match(/^\|[-| ]+\|$/))
-    .map(l => l.split("|").filter((_, i, a) => i > 0 && i < a.length - 1).map(c => c.trim()));
-  if (rows.length === 0) return null;
-  const [head, ...body] = rows;
-  return (
-    <div key={Math.random()} className="overflow-x-auto my-2 rounded-xl"
-      style={{ border: "1px solid hsl(var(--border)/0.5)" }}>
-      <table className="w-full text-[12px] border-collapse">
-        <thead>
-          <tr style={{ background: "hsl(var(--primary)/0.10)", borderBottom: "1px solid hsl(var(--border)/0.4)" }}>
-            {head.map((h, i) => (
-              <th key={i} className="px-3 py-2 text-left font-semibold"
-                style={{ color: "hsl(var(--primary))" }}>
-                {renderInline(h)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {body.map((row, ri) => (
-            <tr key={ri} style={{ borderBottom: ri < body.length - 1 ? "1px solid hsl(var(--border)/0.25)" : "none" }}>
-              {row.map((cell, ci) => (
-                <td key={ci} className="px-3 py-1.5">{renderInline(cell)}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// Блочный рендер — разбирает текст на параграфы, списки, таблицы, разделители
 function renderMarkdown(text: string): React.ReactNode[] {
   const lines = text.split("\n");
   const nodes: React.ReactNode[] = [];
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-
-    // Пустая строка — пропуск (параграфы разделяются визуально gap-ом)
     if (line.trim() === "") { i++; continue; }
 
-    // Разделитель ---
+    // --- разделитель
     if (/^---+$/.test(line.trim())) {
-      nodes.push(<hr key={i} style={{ border: "none", borderTop: "1px solid hsl(var(--border)/0.4)", margin: "6px 0" }} />);
+      nodes.push(<hr key={i} className="my-1.5 border-none" style={{ borderTop: "1px solid hsl(var(--border)/0.4)" }} />);
       i++; continue;
     }
 
-    // Заголовок ### или ## или #
-    const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
-    if (hMatch) {
-      const level = hMatch[1].length;
-      const sizes = ["text-[15px]", "text-[14px]", "text-[13px]"];
+    // ### заголовок
+    const hm = line.match(/^(#{1,3})\s+(.+)$/);
+    if (hm) {
       nodes.push(
-        <p key={i} className={`${sizes[level - 1]} font-bold mt-2 mb-1`}
-          style={{ color: "hsl(var(--primary))" }}>
-          {renderInline(hMatch[2])}
+        <p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>
+          {renderInline(hm[2])}
         </p>
       );
       i++; continue;
     }
 
-    // Таблица — собираем все строки таблицы вместе
-    if (line.trim().startsWith("|")) {
-      const tableLines: string[] = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) {
-        tableLines.push(lines[i]);
-        i++;
-      }
-      nodes.push(<div key={`t-${i}`}>{renderTable(tableLines)}</div>);
-      continue;
-    }
-
-    // Список - item или * item
+    // Список - item
     if (/^[\-\*]\s/.test(line.trim())) {
       const items: string[] = [];
       while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) {
-        items.push(lines[i].replace(/^[\-\*]\s/, "").trim());
-        i++;
+        items.push(lines[i].replace(/^[\-\*]\s/, "").trim()); i++;
       }
       nodes.push(
         <ul key={`ul-${i}`} className="space-y-0.5 my-1">
-          {items.map((item, ii) => (
+          {items.map((it, ii) => (
             <li key={ii} className="flex gap-1.5 items-start">
-              <span className="mt-[5px] shrink-0 w-1 h-1 rounded-full"
-                style={{ background: "hsl(var(--primary)/0.65)" }} />
-              <span>{renderInline(item)}</span>
+              <span className="mt-[6px] shrink-0 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary)/0.7)" }}/>
+              <span>{renderInline(it)}</span>
             </li>
           ))}
         </ul>
@@ -143,22 +115,21 @@ function renderMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
-    // Нумерованный список 1. item
+    // Нумерованный список
     if (/^\d+\.\s/.test(line.trim())) {
       const items: string[] = [];
       while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
-        items.push(lines[i].replace(/^\d+\.\s/, "").trim());
-        i++;
+        items.push(lines[i].replace(/^\d+\.\s/, "").trim()); i++;
       }
       nodes.push(
         <ol key={`ol-${i}`} className="space-y-0.5 my-1 list-none">
-          {items.map((item, ii) => (
+          {items.map((it, ii) => (
             <li key={ii} className="flex gap-2 items-start">
               <span className="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5"
                 style={{ background: "hsl(var(--primary)/0.15)", color: "hsl(var(--primary))" }}>
                 {ii + 1}
               </span>
-              <span>{renderInline(item)}</span>
+              <span>{renderInline(it)}</span>
             </li>
           ))}
         </ol>
@@ -166,14 +137,13 @@ function renderMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
-    // Обычный параграф
     nodes.push(<p key={i}>{renderInline(line)}</p>);
     i++;
   }
   return nodes;
 }
 
-// ─── Голосовой ввод ───────────────────────────────────────────────────────────
+// ─── Голос ────────────────────────────────────────────────────────────────────
 function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -208,9 +178,7 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   return { listening, supported, start, stop };
 }
 
-// ─── TTS — браузерный голос (бесплатно, Microsoft Irina / Natural) ────────────
-
-// Кэш голосов — загружаем один раз
+// ─── TTS (Chrome-safe) ────────────────────────────────────────────────────────
 const voicesCache: { list: SpeechSynthesisVoice[] } = { list: [] };
 
 function loadVoices() {
@@ -223,118 +191,74 @@ function pickBestRuVoice(): SpeechSynthesisVoice | null {
   const voices = voicesCache.list.length
     ? voicesCache.list
     : (typeof window !== "undefined" ? window.speechSynthesis?.getVoices() ?? [] : []);
-  const priority = [
+  const p = [
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Natural"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Microsoft"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Irina"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Pavel"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Google"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru"),
-    (v: SpeechSynthesisVoice) => v.lang.includes("ru"),
   ];
-  for (const fn of priority) { const f = voices.find(fn); if (f) return f; }
+  for (const fn of p) { const f = voices.find(fn); if (f) return f; }
   return null;
 }
 
-function cleanForSpeech(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, "$1")
-    .replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`|]/g, " ")
-    // Все emoji и спецсимволы
-    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-    .replace(/[\u{2600}-\u{27BF}]/gu, "")
-    .replace(/[\u{1F300}-\u{1FAD6}]/gu, "")
-    .replace(/ARAY_ACTIONS:\[.*?\]/gs, "")
-    .replace(/^---+$/mg, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+function cleanForSpeech(t: string) {
+  return t.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+    .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[\u2600-\u27BF]/g, "").replace(/ARAY_ACTIONS:\[.*?\]/gs, "")
+    .replace(/^---+$/mg, "").replace(/\s{2,}/g, " ").trim();
 }
 
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const [supported, setSupported] = useState(false);
   const speakingRef = useRef<string | null>(null);
+  const [supported, setSupported] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const hasTTS = "speechSynthesis" in window;
-    setSupported(hasTTS);
-    if (!hasTTS) return;
-    // Загружаем голоса сразу и по событию (Chrome грузит асинхронно)
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = () => {
-      voicesCache.list = window.speechSynthesis.getVoices();
-    };
+    setSupported("speechSynthesis" in window);
+    if (window.speechSynthesis) {
+      loadVoices();
+      window.speechSynthesis.onvoiceschanged = () => { voicesCache.list = window.speechSynthesis.getVoices(); };
+    }
   }, []);
 
-  // Синхронизируем ref со state (чтобы не было stale closure)
   useEffect(() => { speakingRef.current = speaking; }, [speaking]);
 
   const speak = useCallback((text: string, id: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
-
-    // Стоп если уже читает это сообщение
     if (speakingRef.current === id) {
-      window.speechSynthesis.cancel();
-      utterRef.current = null;
-      setSpeaking(null);
-      return;
+      window.speechSynthesis.cancel(); utterRef.current = null; setSpeaking(null); return;
     }
-
-    // Chrome баг: сначала cancel + resume чтобы разморозить
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
-
     const clean = cleanForSpeech(text);
     if (!clean) return;
-
     const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU";
-    utter.rate = 1.0;
-    utter.pitch = 1.0;
-    utter.volume = 1.0;
-
-    // Пробуем взять лучший голос, если нет — ждём немного и пробуем ещё раз
+    utter.lang = "ru-RU"; utter.rate = 1.0; utter.pitch = 1.0; utter.volume = 1.0;
     const voice = pickBestRuVoice();
-    if (voice) {
-      utter.voice = voice;
-    } else {
-      // Голоса ещё не загружены — ждём 300мс и пробуем
-      setTimeout(() => {
-        loadVoices();
-        const v2 = pickBestRuVoice();
-        if (v2) utter.voice = v2;
-      }, 300);
-    }
-
+    if (voice) utter.voice = voice;
+    else setTimeout(() => { loadVoices(); const v2 = pickBestRuVoice(); if (v2) utter.voice = v2; }, 300);
     utter.onstart = () => { setSpeaking(id); speakingRef.current = id; };
     utter.onend = () => { setSpeaking(null); speakingRef.current = null; utterRef.current = null; };
-    utter.onerror = (e) => {
-      // Игнорируем interrupted (это нормально при cancel)
-      if ((e as any).error === "interrupted") return;
-      setSpeaking(null); speakingRef.current = null; utterRef.current = null;
-    };
-
+    utter.onerror = (e) => { if ((e as any).error === "interrupted") return; setSpeaking(null); speakingRef.current = null; utterRef.current = null; };
     utterRef.current = utter;
     window.speechSynthesis.speak(utter);
   }, []);
 
   const stop = useCallback(() => {
-    window.speechSynthesis?.cancel();
-    utterRef.current = null;
-    setSpeaking(null);
-    speakingRef.current = null;
+    window.speechSynthesis?.cancel(); utterRef.current = null; setSpeaking(null); speakingRef.current = null;
   }, []);
 
   return { speaking, speak, stop, supported };
 }
 
-// ─── Шар ARAY (брендовый, не менять) ──────────────────────────────────────────
-function ArayOrb({ size = 28 }: { size?: number }) {
+// ─── Шар ARAY (брендовый) ─────────────────────────────────────────────────────
+function ArayOrb({ size = 28, pulse = false }: { size?: number; pulse?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", flexShrink: 0 }}>
+    <svg width={size} height={size} viewBox="0 0 100 100"
+      style={{ display: "block", flexShrink: 0, filter: pulse ? "drop-shadow(0 0 8px rgba(240,120,0,0.6))" : undefined }}>
       <defs>
         <radialGradient id="ao-base" cx="34%" cy="28%" r="70%">
           <stop offset="0%"   stopColor="#fffbe0"/>
@@ -358,8 +282,7 @@ function ArayOrb({ size = 28 }: { size?: number }) {
         </radialGradient>
         <clipPath id="ao-clip"><circle cx="50" cy="50" r="46"/></clipPath>
       </defs>
-      <circle cx="50" cy="50" r="46" fill="url(#ao-base)"
-        style={{ filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.5))" }}/>
+      <circle cx="50" cy="50" r="46" fill="url(#ao-base)"/>
       <circle cx="50" cy="50" r="46" fill="url(#ao-dark)"/>
       <circle cx="50" cy="50" r="46" fill="url(#ao-rim)"/>
       <g clipPath="url(#ao-clip)">
@@ -370,7 +293,7 @@ function ArayOrb({ size = 28 }: { size?: number }) {
       </g>
       <circle cx="50" cy="50" r="46" fill="url(#ao-hl)"/>
       <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.22)" strokeWidth="1">
-        <animate attributeName="stroke-opacity" values="0.22;0.50;0.22" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="stroke-opacity" values="0.22;0.55;0.22" dur="3s" repeatCount="indefinite"/>
       </circle>
     </svg>
   );
@@ -378,26 +301,20 @@ function ArayOrb({ size = 28 }: { size?: number }) {
 
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
 function Bubble({ msg, onSpeak, speaking }: {
-  msg: Msg;
-  onSpeak?: (text: string, id: string) => void;
-  speaking?: string | null;
+  msg: Msg; onSpeak?: (t: string, id: string) => void; speaking?: string | null;
 }) {
   const isUser = msg.role === "user";
   const isSpeaking = speaking === msg.id;
-
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      {!isUser && <div className="shrink-0 mt-1"><ArayOrb size={24} /></div>}
-      <div className="flex flex-col gap-1 max-w-[80%]">
+      {!isUser && <div className="shrink-0 mt-1"><ArayOrb size={22}/></div>}
+      <div className="flex flex-col gap-1 max-w-[82%]">
         <div className={`px-4 py-2.5 text-[13.5px] leading-relaxed ${isUser ? "aray-chat-bubble-user" : "aray-chat-bubble-assistant"}`}>
           {msg.text
             ? <div className="space-y-1">{renderMarkdown(msg.text)}</div>
             : !isUser && msg.streaming
             ? <span className="inline-flex gap-1.5 items-center py-0.5">
-                {[0,1,2].map(i => (
-                  <span key={i} className="aray-typing-dot animate-bounce"
-                    style={{ animationDelay: `${i * 160}ms` }}/>
-                ))}
+                {[0,1,2].map(i => <span key={i} className="aray-typing-dot animate-bounce" style={{ animationDelay: `${i*160}ms` }}/>)}
               </span>
             : null}
           {msg.streaming && msg.text && <span className="aray-stream-cursor"/>}
@@ -414,48 +331,48 @@ function Bubble({ msg, onSpeak, speaking }: {
   );
 }
 
-// ─── Быстрые вопросы ──────────────────────────────────────────────────────────
-const QUICK = ["Сколько заказов сегодня?", "Покажи сводку", "Новые заказы", "Список товаров"];
-
 // ─── Главный компонент ────────────────────────────────────────────────────────
-const HEADER_H = 57; // высота мобильного sticky хедера
-
 export function AdminAray({ staffName = "Коллега", userRole }: {
   staffName?: string;
   userRole?: string;
 }) {
   const classic = useClassicMode();
+  const pathname = usePathname();
+  const pageCtx = getPageCtx(pathname);
+  const quickList = pageCtx?.quick ?? DEFAULT_QUICK;
+
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { speaking, speak } = useTTS();
   const sendRef = useRef<(text?: string) => Promise<void>>();
+  const { speaking, speak } = useTTS();
 
   const addInput = useCallback((t: string) => { setInput(t); if (!expanded) setExpanded(true); }, [expanded]);
   const autoSend = useCallback(() => { sendRef.current?.(); }, []);
-  const { listening, supported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
+  const { listening, supported: micSupported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
 
-  // Приветствие при первом открытии
+  // Приветствие — с контекстом страницы
   useEffect(() => {
     if (expanded && messages.length === 0) {
       const h = new Date().getHours();
       const gr = h < 12 ? "Доброе утро" : h < 17 ? "Привет" : "Добрый вечер";
-      setMessages([{ id: "welcome", role: "assistant",
-        text: `${gr}, ${staffName}! 👋 Я Арай. Заказы, товары, аналитика, поиск — спрашивай всё что нужно.` }]);
+      const pageNote = pageCtx ? ` Ты сейчас в разделе **${pageCtx.label}** — могу сразу показать что нужно.` : "";
+      setMessages([{ id: "w", role: "assistant",
+        text: `${gr}, ${staffName}!${pageNote} Спрашивай всё — заказы, товары, аналитика, поиск в интернете. Я рядом.` }]);
     }
-  }, [expanded, messages.length, staffName]);
+  }, [expanded, messages.length, staffName, pageCtx]);
 
   // Автоскролл
   useEffect(() => {
     if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
   }, [messages, expanded]);
 
-  // Открытие через событие
+  // Открытие по событию
   useEffect(() => {
-    const h = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 300); };
+    const h = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 200); };
     window.addEventListener("aray:open", h);
     return () => window.removeEventListener("aray:open", h);
   }, []);
@@ -464,23 +381,28 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setInput("");
+    if (!expanded) setExpanded(true);
+
     const userMsg: Msg = { id: Date.now().toString(), role: "user", text: msg };
     const allMsgs = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
     const aid = (Date.now() + 1).toString();
+
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.text })),
-          context: { page: "admin" },
+          context: { page: pathname },
         }),
       });
-      if (!res.body) throw new Error("No stream");
+      if (!res.body) throw new Error("no stream");
+
       setMessages(prev => [...prev, { id: aid, role: "assistant", text: "", streaming: true }]);
       setLoading(false);
+
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let raw = "";
@@ -492,18 +414,20 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: disp } : m));
       }
       const isErr = raw.includes("__ARAY_ERR__");
-      const errM = raw.match(/__ARAY_ERR__(.+)$/);
-      const clean = isErr ? (errM?.[1] || "Что-то пошло не так 🙏") : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
+      const clean = isErr
+        ? (raw.match(/__ARAY_ERR__(.+)$/)?.[1] || "Что-то пошло не так 🙏")
+        : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
       const { text: final } = parseActions(clean);
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
     } catch {
       setMessages(prev => {
         const has = prev.some(m => m.id === aid);
-        if (has) return prev.map(m => m.id === aid ? { ...m, text: "Нет связи 🙏", streaming: false } : m);
-        return [...prev, { id: aid, role: "assistant", text: "Нет связи 🙏" }];
+        return has
+          ? prev.map(m => m.id === aid ? { ...m, text: "Нет связи 🙏", streaming: false } : m)
+          : [...prev, { id: aid, role: "assistant", text: "Нет связи 🙏" }];
       });
     } finally { setLoading(false); }
-  }, [input, messages, loading]);
+  }, [input, messages, loading, expanded, pathname]);
 
   useEffect(() => { sendRef.current = send; }, [send]);
 
@@ -512,91 +436,99 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   };
 
   const hasText = input.trim().length > 0;
-
-  // Цвет текста в зависимости от темы (classic vs nature)
   const textPrimary = classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.92)";
-  const textMuted   = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)";
+  const textMuted   = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.42)";
 
   return (
     <>
-      {/* ══ ПАНЕЛЬ ЧАТА ═══════════════════════════════════════════════════════ */}
+      {/* ══ ПАНЕЛЬ ЧАТА — полный экран, прозрачное стекло ══════════════════════ */}
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            transition={{ type: "spring", damping: 32, stiffness: 340 }}
-            className="fixed z-[25] flex flex-col aray-chat-panel"
-            style={{ left: 0, right: 0, top: `${HEADER_H}px`, bottom: "64px" }}>
-
-            <div className="lg:pl-60 flex flex-col h-full">
-
-              {/* Шапка */}
-              <div className="aray-chat-header flex items-center gap-3 px-5 py-3 shrink-0">
-                <ArayOrb size={30}/>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-bold tracking-tight" style={{ color: textPrimary }}>
-                      Арай
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ type: "spring", damping: 34, stiffness: 360 }}
+            className="fixed z-[25] left-0 lg:left-60 right-0 aray-chat-panel flex flex-col"
+            style={{ bottom: "72px" }}
+          >
+            {/* ── Шапка ── */}
+            <div className="aray-chat-header flex items-center gap-3 px-5 py-3 shrink-0">
+              <ArayOrb size={28} pulse={loading}/>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[14px] font-bold tracking-tight" style={{ color: textPrimary }}>Арай</span>
+                  <span className="aray-online-dot"/>
+                  {pageCtx && (
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                      style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.22)" }}>
+                      {pageCtx.icon} {pageCtx.label}
                     </span>
-                    <span className="aray-online-dot"/>
-                    <span className="text-[11px]" style={{ color: textMuted }}>
-                      Бизнес-ассистент · помнит всё
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setMessages([])} className="aray-chat-ctrl-btn p-2" title="Очистить">
-                    <RotateCcw className="w-3.5 h-3.5"/>
-                  </button>
-                  <button onClick={() => setExpanded(false)} className="aray-chat-ctrl-btn p-2" title="Свернуть">
-                    <ChevronDown className="w-4 h-4"/>
-                  </button>
+                  )}
+                  <span className="text-[10px] hidden sm:inline" style={{ color: textMuted }}>помнит всё · всегда рядом</span>
                 </div>
               </div>
+              <button onClick={() => setMessages([])} className="aray-chat-ctrl-btn p-2" title="Очистить">
+                <RotateCcw className="w-3.5 h-3.5"/>
+              </button>
+              <button onClick={() => setExpanded(false)} className="aray-chat-ctrl-btn p-2" title="Свернуть">
+                <ChevronDown className="w-4 h-4"/>
+              </button>
+            </div>
 
-              {/* Сообщения */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
-                {messages.map(msg => (
-                  <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
-                ))}
-                {messages.length === 1 && !loading && (
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {QUICK.map(q => (
-                      <button key={q} onClick={() => send(q)}
-                        className="aray-quick-btn px-3 py-1.5 active:scale-95">
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div ref={bottomRef}/>
-              </div>
+            {/* ── Лента сообщений ── */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+              {messages.map(msg => (
+                <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
+              ))}
+
+              {/* Быстрые чипсы — появляются после приветствия */}
+              {messages.length === 1 && !loading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                  className="flex flex-wrap gap-2 mt-1 pl-8">
+                  {quickList.map(q => (
+                    <button key={q} onClick={() => send(q)}
+                      className="aray-quick-btn px-3 py-1.5 text-[12px] active:scale-95 transition-transform">
+                      {q}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+              <div ref={bottomRef}/>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ══ INPUT BAR — всегда виден ═══════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 right-0 z-[26] lg:left-60 aray-chat-bar">
-        <div className="flex items-end gap-3 px-4 py-3">
+      {/* ══ INPUT BAR + QUICK CHIPS — всегда виден ══════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 lg:left-60 right-0 z-[26] aray-chat-bar">
 
-          {/* Шар */}
+        {/* Быстрые чипсы в свёрнутом виде */}
+        {!expanded && (
+          <div className="flex gap-1.5 px-4 pt-2.5 pb-1 overflow-x-auto scrollbar-none">
+            {quickList.map(q => (
+              <button key={q}
+                onClick={() => { send(q); setExpanded(true); }}
+                className="aray-quick-btn shrink-0 px-3 py-1 text-[11px] active:scale-95 transition-transform whitespace-nowrap">
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Input строка */}
+        <div className="flex items-end gap-2.5 px-4 py-2.5">
+
+          {/* Шар — открыть/закрыть */}
           <button
-            onClick={() => { setExpanded(v => !v); if (!expanded) setTimeout(() => inputRef.current?.focus(), 200); }}
-            className="shrink-0 mb-0.5 relative transition-transform hover:scale-105 active:scale-95"
-            style={{ WebkitTapHighlightColor: "transparent" }}>
-            <ArayOrb size={34}/>
-            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-              style={{
-                background: classic ? "hsl(var(--card))" : "rgba(4,5,13,0.98)",
-                border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.14)",
-              }}>
-              {expanded
-                ? <ChevronDown className="w-2 h-2" style={{ color: textMuted }}/>
-                : <Maximize2 className="w-2 h-2" style={{ color: textMuted }}/>}
-            </span>
+            onClick={() => { setExpanded(v => !v); if (!expanded) setTimeout(() => inputRef.current?.focus(), 150); }}
+            className="shrink-0 mb-0.5 transition-transform hover:scale-105 active:scale-95"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+            title={expanded ? "Свернуть" : "Открыть Арая"}>
+            <ArayOrb size={32} pulse={loading}/>
           </button>
 
           {/* Input */}
@@ -607,24 +539,24 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
               onFocus={() => !expanded && setExpanded(true)}
-              placeholder={listening ? "Слушаю..." : "Спроси Арая..."}
+              placeholder={listening ? "Слушаю..." : pageCtx ? `${pageCtx.icon} Спроси про ${pageCtx.label.toLowerCase()}...` : "Спроси Арая..."}
               rows={1}
-              className="aray-chat-input w-full resize-none text-[13.5px] leading-relaxed outline-none py-1"
-              style={{ maxHeight: 96, fontFamily: "inherit" }}
+              className="aray-chat-input w-full resize-none text-[13px] leading-relaxed outline-none py-1"
+              style={{ maxHeight: 88, fontFamily: "inherit" }}
               onInput={e => {
                 const t = e.currentTarget;
                 t.style.height = "auto";
-                t.style.height = Math.min(t.scrollHeight, 96) + "px";
+                t.style.height = Math.min(t.scrollHeight, 88) + "px";
               }}
             />
           </div>
 
           {/* Кнопки */}
-          <div className="flex items-center gap-1.5 shrink-0 mb-0.5">
-            {supported && (
+          <div className="flex items-center gap-1 shrink-0 mb-0.5">
+            {micSupported && (
               <button
                 onClick={listening ? stopMic : startMic}
-                className={`aray-chat-action-btn p-2.5 ${listening ? "aray-chat-action-btn-active" : ""}`}
+                className={`aray-chat-action-btn p-2 ${listening ? "aray-chat-action-btn-active" : ""}`}
                 title={listening ? "Стоп" : "Голос"}>
                 {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
               </button>
@@ -632,7 +564,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
             <button
               onClick={() => send()}
               disabled={!hasText || loading}
-              className="aray-chat-send-btn p-2.5"
+              className="aray-chat-send-btn p-2"
               data-ready={hasText && !loading}
               title="Отправить">
               <Send className="w-4 h-4"/>
@@ -640,11 +572,11 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
           </div>
         </div>
 
-        {/* Метка */}
-        <div className="text-center pb-2 -mt-0.5">
+        {/* Метка снизу */}
+        <div className="text-center pb-2 -mt-1">
           <span className="aray-chat-label text-[9px] tracking-wide">
-            Арай помнит каждый разговор ·{" "}
-            <span style={{ color: "hsl(var(--primary)/0.45)" }}>ARAY PRODUCTIONS</span>
+            {pageCtx ? `${pageCtx.icon} ${pageCtx.label} · ` : ""}Арай помнит всё ·{" "}
+            <span style={{ color: "hsl(var(--primary)/0.45)" }}>ARAY</span>
           </span>
         </div>
       </div>
