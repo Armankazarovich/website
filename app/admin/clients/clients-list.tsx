@@ -438,7 +438,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                       const label = STATUS_LABELS[order.status] || order.status;
                       return (
                         <Link key={order.id} href={`/admin/orders/${order.id}`}
-                          className="flex items-center justify-between px-4 py-2.5 hover:bg-muted/30 transition-colors">
+                          className="flex items-center justify-between px-4 py-2.5 hover:bg-primary/[0.05] transition-colors">
                           <div className="flex items-center gap-3">
                             <p className="text-xs font-medium text-muted-foreground">#{order.orderNumber}</p>
                             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${color}`}>{label}</span>

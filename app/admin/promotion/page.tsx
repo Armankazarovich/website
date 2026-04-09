@@ -240,7 +240,7 @@ function WeeklyTaskCard({ task }: { task: WeeklyTask }) {
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
       <button
-        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-primary/[0.06] transition-colors text-left"
         onClick={() => setOpen((v) => !v)}
       >
         <task.icon className="w-5 h-5 text-muted-foreground shrink-0" />
