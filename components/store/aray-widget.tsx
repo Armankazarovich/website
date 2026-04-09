@@ -44,6 +44,103 @@ function parseMessageActions(raw: string): { text: string; actions: ArayAction[]
   }
 }
 
+// ─── Markdown рендер (клиентский виджет) ─────────────────────────────────────
+function renderInline(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**"))
+      return <strong key={i} className="font-semibold text-white">{p.slice(2, -2)}</strong>;
+    if (p.startsWith("*") && p.endsWith("*"))
+      return <em key={i}>{p.slice(1, -1)}</em>;
+    if (p.startsWith("`") && p.endsWith("`"))
+      return <code key={i} className="px-1 py-0.5 rounded text-[11px] font-mono"
+        style={{ background: "rgba(255,255,255,0.12)", color: "hsl(var(--primary))" }}>{p.slice(1, -1)}</code>;
+    return p as React.ReactNode;
+  });
+}
+
+function renderMarkdownContent(text: string): React.ReactNode[] {
+  const lines = text.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (line.trim() === "") { i++; continue; }
+
+    if (/^---+$/.test(line.trim())) {
+      nodes.push(<hr key={i} className="my-1.5" style={{ borderColor: "rgba(255,255,255,0.12)" }} />);
+      i++; continue;
+    }
+
+    const hm = line.match(/^(#{1,3})\s+(.+)$/);
+    if (hm) {
+      nodes.push(<p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>{renderInline(hm[2])}</p>);
+      i++; continue;
+    }
+
+    if (/^[\-\*]\s/.test(line.trim())) {
+      const items: string[] = [];
+      while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) {
+        items.push(lines[i].replace(/^[\-\*]\s/, "").trim()); i++;
+      }
+      nodes.push(<ul key={`ul-${i}`} className="space-y-0.5 my-1">{items.map((it, ii) => (
+        <li key={ii} className="flex gap-1.5 items-start">
+          <span className="mt-[6px] shrink-0 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary)/0.8)" }} />
+          <span>{renderInline(it)}</span>
+        </li>
+      ))}</ul>);
+      continue;
+    }
+
+    if (/^\d+\.\s/.test(line.trim())) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        items.push(lines[i].replace(/^\d+\.\s/, "").trim()); i++;
+      }
+      nodes.push(<ol key={`ol-${i}`} className="space-y-0.5 my-1 list-none">{items.map((it, ii) => (
+        <li key={ii} className="flex gap-2 items-start">
+          <span className="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5"
+            style={{ background: "hsl(var(--primary)/0.2)", color: "hsl(var(--primary))" }}>{ii + 1}</span>
+          <span>{renderInline(it)}</span>
+        </li>
+      ))}</ol>);
+      continue;
+    }
+
+    if (line.trim().startsWith("|")) {
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) { tableLines.push(lines[i]); i++; }
+      const parseRow = (row: string) => row.split("|").slice(1, -1).map(c => c.trim());
+      const headers = parseRow(tableLines[0]);
+      const sepIdx = tableLines.findIndex(l => /^\|[\s\-:|]+\|$/.test(l.trim()));
+      const dataRows = tableLines.slice(sepIdx >= 0 ? sepIdx + 1 : 1).map(parseRow);
+      nodes.push(
+        <div key={`tbl-${i}`} className="my-2 overflow-x-auto rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
+          <table className="w-full text-[11.5px]">
+            <thead>
+              <tr style={{ background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
+                {headers.map((h, hi) => <th key={hi} className="px-3 py-2 text-left font-semibold" style={{ color: "hsl(var(--primary))" }}>{renderInline(h)}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {dataRows.filter(r => r.some(c => c)).map((row, ri) => (
+                <tr key={ri} style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                  {row.map((cell, ci) => <td key={ci} className="px-3 py-2" style={{ color: "rgba(255,255,255,0.85)" }}>{renderInline(cell)}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
+    nodes.push(<p key={i} className="leading-relaxed">{renderInline(line)}</p>);
+    i++;
+  }
+  return nodes;
+}
+
 // ─── Иконка для action-кнопки ─────────────────────────────────────────────────
 function ActionIcon({ icon }: { icon?: string }) {
   const cls = "w-3.5 h-3.5 shrink-0";
@@ -217,23 +314,25 @@ function MessageBubble({
       <div className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
         <div className="px-3.5 py-2.5 text-sm leading-relaxed" style={
           isUser
-            ? { background: "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)", color: "#fff", borderRadius: "16px 16px 4px 16px" }
+            ? { background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))", color: "#fff", borderRadius: "16px 16px 4px 16px" }
             : { background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.90)", borderRadius: "16px 16px 16px 4px", border: "1px solid rgba(255,255,255,0.10)" }
         }>
           {msg.content
-            ? msg.content.split("\n").map((line, i, arr) => (
-                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-              ))
+            ? isUser
+              ? msg.content.split("\n").map((line, i, arr) => (
+                  <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+                ))
+              : <div className="space-y-0.5">{renderMarkdownContent(msg.content)}</div>
             : !isUser && msg.streaming
             ? <span className="inline-flex gap-1 items-center py-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "hsl(var(--primary)/0.8)", animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "hsl(var(--primary)/0.8)", animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "hsl(var(--primary)/0.8)", animationDelay: "300ms" }} />
               </span>
             : null
           }
           {msg.streaming && msg.content && (
-            <span className="inline-block w-0.5 h-3.5 bg-orange-400 ml-0.5 align-middle animate-pulse" />
+            <span className="inline-block w-0.5 h-3.5 ml-0.5 align-middle animate-pulse" style={{ background: "hsl(var(--primary))" }} />
           )}
         </div>
 
