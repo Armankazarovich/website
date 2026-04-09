@@ -72,6 +72,11 @@
     --brand-primary: 168 58% 38%;
   }
   .dark[data-palette="forest"] {
+    --background: 160 10% 7%;
+    --card: 160 10% 10%;
+    --card-foreground: 160 15% 95%;
+    --popover: 160 10% 10%;
+    --popover-foreground: 160 15% 95%;
     --primary: 168 58% 48%;
     --ring: 168 58% 48%;
     --secondary: 162 20% 16%;
@@ -101,6 +106,11 @@
     --brand-primary: 217 91% 55%;
   }
   .dark[data-palette="ocean"] {
+    --background: 214 12% 7%;
+    --card: 214 12% 10%;
+    --card-foreground: 214 10% 95%;
+    --popover: 214 12% 10%;
+    --popover-foreground: 214 10% 95%;
     --primary: 217 91% 65%;
     --ring: 217 91% 65%;
     --secondary: 214 20% 16%;
@@ -164,6 +174,11 @@
     --brand-primary: 199 89% 45%;
   }
   .dark[data-palette="slate"] {
+    --background: 215 8% 7%;
+    --card: 215 8% 10%;
+    --card-foreground: 215 8% 95%;
+    --popover: 215 8% 10%;
+    --popover-foreground: 215 8% 95%;
     --primary: 199 89% 55%;
     --ring: 199 89% 55%;
     --secondary: 215 15% 16%;
@@ -193,6 +208,11 @@
     --brand-primary: 10 80% 50%;
   }
   .dark[data-palette="crimson"] {
+    --background: 355 10% 7%;
+    --card: 355 10% 10%;
+    --card-foreground: 355 10% 95%;
+    --popover: 355 10% 10%;
+    --popover-foreground: 355 10% 95%;
     --primary: 10 80% 60%;
     --ring: 10 80% 60%;
     --secondary: 355 15% 16%;
@@ -638,7 +658,7 @@ canvas,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
   backdrop-filter: blur(28px) saturate(160%) brightness(0.75) !important;
   -webkit-backdrop-filter: blur(28px) saturate(160%) brightness(0.75) !important;
-  background: rgba(5, 8, 20, 0.38) !important;
+  background: rgba(10, 10, 12, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.09) !important;
   box-shadow: none !important;
   color: rgba(255, 255, 255, 0.92) !important;
@@ -666,9 +686,9 @@ canvas,
 .aray-nature-mode [class*="bg-zinc-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-neutral-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]),
 .aray-nature-mode [class*="bg-stone-"][class*="rounded"]:not([class*="rounded-full"]):not([class*="rounded-md"]):not([class*="rounded-lg"]):not([class*="rounded-sm"]):not([class*="rounded-none"]):not([class*="h-8"]):not([class*="h-9"]):not([class*="h-10"]):not([class*="w-8"]):not([class*="w-9"]):not([class*="w-10"]) {
-  backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(0.88) !important;
-  background: rgba(5, 8, 20, 0.42) !important;
+  backdrop-filter: blur(20px) saturate(120%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) brightness(0.88) !important;
+  background: rgba(10, 10, 12, 0.42) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
@@ -716,9 +736,9 @@ canvas,
    Перекрываем глобально — не нужно трогать каждую страницу.
    ══════════════════════════════════════════════════════════════ */
 .aray-nature-mode [role="dialog"] {
-  background: rgba(10, 14, 30, 0.97) !important;
-  backdrop-filter: blur(32px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(200%) !important;
+  background: rgba(10, 10, 12, 0.97) !important;
+  backdrop-filter: blur(32px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(120%) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55) !important;
   color: rgba(255, 255, 255, 0.90) !important;
@@ -777,8 +797,8 @@ canvas,
 [data-theme="light"] .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
 [data-theme="light"] .aray-nature-mode textarea,
 [data-theme="light"] .aray-nature-mode select {
-  background: rgba(5, 8, 20, 0.52) !important;
-  background-color: rgba(5, 8, 20, 0.52) !important;
+  background: rgba(10, 10, 12, 0.52) !important;
+  background-color: rgba(10, 10, 12, 0.52) !important;
   border-color: rgba(255, 255, 255, 0.11) !important;
   color: rgba(255, 255, 255, 0.90) !important;
   color-scheme: dark !important;
@@ -866,9 +886,9 @@ a:focus-visible {
   padding: 4px 9px 4px 7px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(5, 8, 20, 0.48);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(10, 10, 12, 0.48);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
   box-shadow: none;
   color: rgba(255, 255, 255, 0.75) !important;
   text-shadow: none;
@@ -882,7 +902,7 @@ a:focus-visible {
 /* Светлая тема — тот же тёмный стиль (контраст на белом фросте) */
 .light .aray-nature-mode .aray-section-title,
 [data-theme="light"] .aray-nature-mode .aray-section-title {
-  background: rgba(5, 8, 20, 0.48);
+  background: rgba(10, 10, 12, 0.48);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: none;
   color: rgba(255, 255, 255, 0.85) !important;
@@ -971,7 +991,7 @@ a:focus-visible {
    ══════════════════════════════════════════════════════════════ */
 .aray-nature-mode button[class*="border-border"]:not([class*="bg-"]),
 .aray-nature-mode a[class*="border-border"]:not([class*="bg-"]) {
-  background: rgba(5, 8, 20, 0.30) !important;
+  background: rgba(10, 10, 12, 0.30) !important;
   backdrop-filter: blur(8px) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
   color: rgba(255, 255, 255, 0.80) !important;
@@ -1017,16 +1037,16 @@ a:focus-visible {
 
 /* bg-background с opacity — sticky заголовки страниц (bg-background/80, /60 и т.д.) */
 .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
-  backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(180%) brightness(0.82) !important;
-  background: rgba(5, 8, 20, 0.50) !important;
+  backdrop-filter: blur(22px) saturate(120%) brightness(0.82) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(120%) brightness(0.82) !important;
+  background: rgba(10, 10, 12, 0.50) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
 .light .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]),
 [data-theme="light"] .aray-nature-mode [class*="bg-background/"]:not([class*="inset-0"]):not([class*="h-4"]):not([class*="h-6"]) {
   backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
   -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.92) !important;
-  background: rgba(5, 8, 20, 0.38) !important;
+  background: rgba(10, 10, 12, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
@@ -1097,16 +1117,16 @@ a:focus-visible {
 
 /* ── ОСОБЕННЫЙ GLASSMORPHISM — многослойный blur из будущего ── */
 .aray-glass {
-  backdrop-filter: blur(20px) saturate(180%) brightness(1.05);
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(1.05);
+  backdrop-filter: blur(20px) saturate(120%) brightness(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(120%) brightness(1.05);
   background: hsl(var(--card) / 0.65);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .aray-glass-strong {
-  backdrop-filter: blur(32px) saturate(200%) brightness(1.08);
-  -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.08);
+  backdrop-filter: blur(32px) saturate(120%) brightness(1.08);
+  -webkit-backdrop-filter: blur(32px) saturate(120%) brightness(1.08);
   background: hsl(var(--card) / 0.50);
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
@@ -1116,9 +1136,9 @@ a:focus-visible {
 .aray-nature-card,
 .light .aray-nature-card,
 [data-theme="light"] .aray-nature-card {
-  backdrop-filter: blur(24px) saturate(180%) brightness(0.82);
-  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(0.82);
-  background: rgba(6, 10, 24, 0.52);
+  backdrop-filter: blur(24px) saturate(120%) brightness(0.82);
+  -webkit-backdrop-filter: blur(24px) saturate(120%) brightness(0.82);
+  background: rgba(10, 10, 12, 0.52);
   border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow: 0 4px 28px rgba(0, 0, 0, 0.32);
   color: rgba(255, 255, 255, 0.92);
@@ -1196,7 +1216,7 @@ a:focus-visible {
 .aray-nature-mode .aray-icon-spin:not(a):not(button) {
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  background: rgba(5, 8, 20, 0.38) !important;
+  background: rgba(10, 10, 12, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.10) !important;
 }
 /* hover — оранжевый тинт (Tailwind hover классы не работают из-за !important выше) */
@@ -1210,7 +1230,7 @@ a:focus-visible {
 .light .aray-nature-mode a.aray-icon-spin,
 [data-theme="light"] .aray-nature-mode button.aray-icon-spin,
 [data-theme="light"] .aray-nature-mode a.aray-icon-spin {
-  background: rgba(5, 8, 20, 0.38) !important;
+  background: rgba(10, 10, 12, 0.38) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
 }
 
@@ -1224,7 +1244,7 @@ a:focus-visible {
 /* Интерактивные карточки (ссылки/кнопки) — чистое тёмное стекло + hover эффект */
 .aray-nature-mode a.bg-card,
 .aray-nature-mode button.bg-card {
-  background: rgba(6, 10, 24, 0.52) !important;
+  background: rgba(10, 10, 12, 0.52) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
   outline: none !important;
@@ -1232,7 +1252,7 @@ a:focus-visible {
 }
 .aray-nature-mode a.bg-card:hover,
 .aray-nature-mode button.bg-card:hover {
-  background: rgba(10, 16, 40, 0.68) !important;
+  background: rgba(12, 12, 14, 0.68) !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
   transform: translateY(-2px);
@@ -1272,16 +1292,16 @@ a:focus-visible {
     hsl(var(--brand-sidebar) / 0.65) 50%,
     hsl(var(--brand-sidebar) / 0.60) 100%
   ) !important;
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 /* ── TOPBAR: тёмная тема — тёмный стеклянный фон с акцентом ── */
 .dark .aray-nature-mode .aray-topbar {
   background: linear-gradient(90deg, hsl(var(--primary)/0.12) 0%, rgba(8,12,30,0.90) 55%) !important;
-  backdrop-filter: blur(28px) saturate(200%);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  backdrop-filter: blur(28px) saturate(120%);
+  -webkit-backdrop-filter: blur(28px) saturate(120%);
   border-bottom: 1px solid hsl(var(--primary)/0.22) !important;
   box-shadow: 0 1px 0 hsl(var(--primary)/0.14), 0 4px 24px rgba(0,0,0,0.28) !important;
 }
@@ -1317,8 +1337,8 @@ a:focus-visible {
 .light .aray-nature-mode .aray-topbar,
 [data-theme="light"] .aray-nature-mode .aray-topbar {
   background: linear-gradient(90deg, hsl(var(--primary)/0.12) 0%, rgba(8,12,30,0.92) 55%) !important;
-  backdrop-filter: blur(28px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
+  backdrop-filter: blur(28px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(120%) !important;
   border-bottom: 1px solid hsl(var(--primary)/0.22) !important;
   box-shadow: 0 1px 0 hsl(var(--primary)/0.14), 0 4px 24px rgba(0,0,0,0.28) !important;
 }
@@ -1671,18 +1691,18 @@ a:focus-visible {
 /* Таблицы — строки без фона (bg-white/bg-gray) получают прозрачность */
 .aray-nature-mode tr.bg-white,
 .aray-nature-mode .bg-white:not([class*="rounded-full"]):not(span):not(input) {
-  background: rgba(5, 8, 20, 0.30) !important;
+  background: rgba(10, 10, 12, 0.30) !important;
 }
 .light .aray-nature-mode tr.bg-white,
 [data-theme="light"] .aray-nature-mode tr.bg-white {
-  background: rgba(5, 8, 20, 0.35) !important;
+  background: rgba(10, 10, 12, 0.35) !important;
 }
 
 /* ── ФИЛЬТР-ПИЛЮЛИ — тёмное стекло (bg-muted/40, bg-muted/60 и т.д.) ── */
 /* Кнопки фильтрации заказов, CRM, клиентов — видны на фото ✓ */
 .aray-nature-mode button[class*="bg-muted"],
 .aray-nature-mode a[class*="bg-muted"] {
-  background: rgba(5, 8, 20, 0.52) !important;
+  background: rgba(10, 10, 12, 0.52) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   color: rgba(255, 255, 255, 0.85) !important;
   backdrop-filter: blur(14px) saturate(140%);
@@ -1750,7 +1770,7 @@ a:focus-visible {
 .aray-nature-mode input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]),
 .aray-nature-mode textarea,
 .aray-nature-mode select {
-  background: rgba(6, 10, 24, 0.68) !important;
+  background: rgba(10, 10, 12, 0.68) !important;
   backdrop-filter: blur(12px) saturate(160%);
   -webkit-backdrop-filter: blur(12px) saturate(160%);
   border-color: rgba(255, 255, 255, 0.14) !important;
@@ -1784,25 +1804,25 @@ a:focus-visible {
 /* ── TaskModal панель — тёмное стекло (не dialog, inline panel) ── */
 .aray-nature-mode .aray-task-panel {
   background: rgba(8, 12, 28, 0.97) !important;
-  backdrop-filter: blur(40px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  backdrop-filter: blur(40px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(120%) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.10) !important;
   color: rgba(255, 255, 255, 0.90) !important;
 }
 
 /* ── Стикерные фильтр-полоски — только если остались ── */
 .aray-nature-mode .aray-filter-bar {
-  background: rgba(6, 10, 24, 0.85) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  background: rgba(10, 10, 12, 0.85) !important;
+  backdrop-filter: blur(24px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
 }
 
 /* ── Глобальные диалоги (role=dialog) — уже тёмные, усиливаем specificity ── */
 .aray-nature-mode [role="dialog"] {
   background: rgba(8, 12, 28, 0.97) !important;
-  backdrop-filter: blur(40px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(200%) !important;
+  backdrop-filter: blur(40px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(120%) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   color: rgba(255, 255, 255, 0.92) !important;
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.60) !important;
@@ -2135,8 +2155,8 @@ a:focus-visible {
 /* ── Input bar — светлая тема ─────────────────────────────────────────────── */
 .aray-chat-bar {
   background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
   border-top: 1px solid rgba(0, 0, 0, 0.07);
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.06);
 }

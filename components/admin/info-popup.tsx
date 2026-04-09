@@ -122,13 +122,13 @@ export function InfoPopup({
                     bottom: "-6px",
                     borderRight:  "1px solid rgba(255,255,255,0.12)",
                     borderBottom: "1px solid rgba(255,255,255,0.12)",
-                    background:   "rgba(8,12,28,0.97)",
+                    background:   "rgba(12,12,14,0.97)",
                   }
                 : {
                     top:        "-6px",
                     borderLeft: "1px solid rgba(255,255,255,0.12)",
                     borderTop:  "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(8,12,28,0.97)",
+                    background: "rgba(12,12,14,0.97)",
                   }
               ),
             }}
@@ -138,7 +138,7 @@ export function InfoPopup({
           <div
             className="animate-in fade-in-0 zoom-in-95 duration-150"
             style={{
-              background:             "rgba(8,12,28,0.97)",
+              background:             "rgba(12,12,14,0.97)",
               backdropFilter:         "blur(32px) saturate(200%)",
               WebkitBackdropFilter:   "blur(32px) saturate(200%)",
               border:                 "1px solid rgba(255,255,255,0.12)",

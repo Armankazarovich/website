@@ -228,7 +228,7 @@ export function AdminDayPlanner() {
           <div
             className="fixed top-0 right-0 h-full z-[71] w-full max-w-sm flex flex-col"
             style={{
-              background: "rgba(8, 12, 28, 0.90)",
+              background: "rgba(12, 12, 14, 0.90)",
               backdropFilter: "blur(32px) saturate(200%)",
               WebkitBackdropFilter: "blur(32px) saturate(200%)",
               borderLeft: "1px solid rgba(255,255,255,0.10)",
