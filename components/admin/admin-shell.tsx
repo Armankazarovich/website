@@ -133,9 +133,9 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-[70] w-80 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200"
           style={{
-            background: "rgba(10,14,30,0.96)",
-            backdropFilter: "blur(32px) saturate(200%)",
-            WebkitBackdropFilter: "blur(32px) saturate(200%)",
+            background: "rgba(10,10,12,0.96)",
+            backdropFilter: "blur(32px) saturate(120%)",
+            WebkitBackdropFilter: "blur(32px) saturate(120%)",
             border: "1px solid rgba(255,255,255,0.10)",
             boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset",
           }}>
@@ -294,7 +294,7 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
                 border: "1px solid hsl(var(--border))",
                 boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
               } : {
-                background: "rgba(10,14,30,0.97)",
+                background: "rgba(10,10,12,0.97)",
                 border: "1px solid rgba(255,255,255,0.10)",
                 backdropFilter: "blur(32px)",
                 boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
@@ -475,9 +475,9 @@ function ArayControlCenter() {
               border: "1px solid hsl(var(--border))",
               boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
             } : {
-              background: "rgba(7,11,26,0.98)",
-              backdropFilter: "blur(48px) saturate(200%)",
-              WebkitBackdropFilter: "blur(48px) saturate(200%)",
+              background: "rgba(10,10,12,0.98)",
+              backdropFilter: "blur(48px) saturate(120%)",
+              WebkitBackdropFilter: "blur(48px) saturate(120%)",
               border: "1px solid rgba(255,255,255,0.10)",
               boxShadow: "0 -12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.025) inset",
             }),
@@ -628,7 +628,7 @@ function ArayControlCenter() {
                       ? { background: "hsl(var(--muted)/0.5)", border: `1.5px solid hsl(var(--primary)/0.5)` }
                       : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(80,100,160,0.15)" }}>
+                      style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(120,120,120,0.12)" }}>
                       <Monitor className={`w-3.5 h-3.5 ${classic ? "text-primary" : "text-primary/50"}`} />
                     </div>
                     <span className="flex-1 text-left text-[12px] font-medium"
@@ -1003,7 +1003,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
                 style={{ background: "rgba(255,255,255,0.06)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.09)"}` }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(100,120,180,0.15)" }}>
+                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(120,120,120,0.12)" }}>
                   <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-primary/70"}`} />
                 </div>
                 <div className="flex-1 text-left">

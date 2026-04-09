@@ -460,7 +460,7 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
 
     if (name === "get_staff_list") {
       const staff = await prisma.user.findMany({
-        where: { role: { not: "CUSTOMER" } },
+        where: { role: { not: "CUSTOMER" as any } },
         select: { name: true, email: true, role: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       });
