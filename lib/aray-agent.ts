@@ -51,7 +51,7 @@ const ADMIN_SECTION_MAP: Record<string, { name: string; intro: string }> = {
   },
   "/admin/crm": {
     name: "CRM — Лиды",
-    intro: "Воронка продаж. Вызываю get_crm_leads сразу и показываю лиды по этапам воронки, горячих клиентов, кто в работе.",
+    intro: "Воронка продаж. Показываю лиды по статусам, горячих клиентов, конверсию, кто в работе прямо сейчас.",
   },
   "/admin/products": {
     name: "Каталог товаров",
@@ -71,11 +71,11 @@ const ADMIN_SECTION_MAP: Record<string, { name: string; intro: string }> = {
   },
   "/admin/inventory": {
     name: "Склад / Остатки",
-    intro: "Вызываю get_inventory_status сразу и показываю остатки — что заканчивается, чего нет в наличии.",
+    intro: "Остатки по товарам. Что заканчивается, что нужно пополнить, полный список наличия.",
   },
   "/admin/tasks": {
     name: "Задачи",
-    intro: "Вызываю get_tasks сразу и показываю задачи команды: просроченные, в работе, срочные. Умею создавать задачи через create_task.",
+    intro: "Задачи команды. Показываю все задачи, просроченные, срочные. Помогу создать или расставить приоритеты.",
   },
   "/admin/delivery": {
     name: "Доставка",
@@ -95,7 +95,7 @@ const ADMIN_SECTION_MAP: Record<string, { name: string; intro: string }> = {
   },
   "/admin/reviews": {
     name: "Отзывы",
-    intro: "Вызываю get_reviews сразу и показываю отзывы покупателей — рейтинг, опубликованные, на модерации.",
+    intro: "Отзывы покупателей. Показываю все, помогаю с ответами, нахожу нужный.",
   },
   "/admin/promotion": {
     name: "Продвижение",
@@ -402,68 +402,6 @@ export const ARAY_TOOLS = [
     input_schema: {
       type: "object" as const,
       properties: {},
-      required: [],
-    },
-  },
-  {
-    name: "get_tasks",
-    description: "Получить список задач. Вызывай ВСЕГДА на странице Задачи и когда спрашивают о задачах, просроченных, дедлайнах, кто что делает.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        status: { type: "string", description: "TODO, IN_PROGRESS, DONE, CANCELLED — или пусто для всех" },
-        limit: { type: "number", description: "Количество (по умолчанию 20)" },
-      },
-      required: [],
-    },
-  },
-  {
-    name: "create_task",
-    description: "Создать новую задачу. Вызывай когда просят добавить, создать, поставить задачу.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        title: { type: "string", description: "Название задачи" },
-        description: { type: "string", description: "Описание (опционально)" },
-        priority: { type: "string", description: "HIGH, MEDIUM, LOW", enum: ["HIGH", "MEDIUM", "LOW"] },
-        dueDate: { type: "string", description: "Дата дедлайна YYYY-MM-DD (опционально)" },
-      },
-      required: ["title"],
-    },
-  },
-  {
-    name: "get_crm_leads",
-    description: "Получить список лидов CRM по этапам воронки. Вызывай на странице CRM и когда спрашивают о лидах, воронке продаж.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        stage: { type: "string", description: "NEW, CONTACTED, QUALIFIED, PROPOSAL, NEGOTIATION, WON, LOST — или пусто для всех" },
-        limit: { type: "number", description: "Количество (по умолчанию 15)" },
-      },
-      required: [],
-    },
-  },
-  {
-    name: "get_reviews",
-    description: "Получить отзывы покупателей. Вызывай на странице Отзывы и когда спрашивают об отзывах, рейтинге.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        published: { type: "boolean", description: "true — только опубликованные, false — только на модерации" },
-        limit: { type: "number", description: "Количество (по умолчанию 10)" },
-      },
-      required: [],
-    },
-  },
-  {
-    name: "get_inventory_status",
-    description: "Получить состояние склада — остатки товаров, что заканчивается, чего нет. Вызывай на странице Склад/Остатки.",
-    input_schema: {
-      type: "object" as const,
-      properties: {
-        lowThreshold: { type: "number", description: "Порог 'мало' (по умолчанию 5)" },
-        limit: { type: "number", description: "Количество товаров (по умолчанию 20)" },
-      },
       required: [],
     },
   },

@@ -166,16 +166,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="shortcut icon" href="/icons/aray-192.png" />
         {yandexVerification && <meta name="yandex-verification" content={yandexVerification} />}
         {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
-        {/* Anti-flash: синхронно применяем тему И палитру ДО гидратации React */}
+        {/* Anti-flash: синхронно применяем палитру ДО гидратации React */}
         <script dangerouslySetInnerHTML={{ __html: `
 (function(){try{
-  /* 1. Тема dark/light — до next-themes */
-  var t=localStorage.getItem('theme');
-  if(t==='dark')document.documentElement.classList.add('dark');
-  else if(t==='light')document.documentElement.classList.remove('dark');
-  else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)
-    document.documentElement.classList.add('dark');
-  /* 2. Палитра цветов */
   var allowed=${JSON.stringify(enabledIds)};
   var def=${JSON.stringify(defaultPalette)};
   var stored=localStorage.getItem('color-palette');

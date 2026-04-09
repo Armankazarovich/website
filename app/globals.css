@@ -2096,12 +2096,10 @@ a:focus-visible {
 /* ── Панель чата — светлая тема (без .dark на html) ──────────────────────── */
 .aray-chat-panel {
   top: 57px;
-  background:
-    radial-gradient(ellipse 80% 35% at 50% 0%, hsl(var(--primary) / 0.05) 0%, transparent 65%),
-    rgba(255, 253, 250, 0.96);
-  backdrop-filter: blur(32px) saturate(150%);
-  -webkit-backdrop-filter: blur(32px) saturate(150%);
-  border-top: 1px solid hsl(var(--primary) / 0.12);
+  background: rgba(248, 249, 252, 0.88);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.02);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.02);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 @media (min-width: 1024px) {
   .aray-chat-panel { top: 0; border-top: none; }
@@ -2109,24 +2107,21 @@ a:focus-visible {
 
 /* ── Тёмная тема без природного фона ──────────────────────────────────────── */
 .dark .aray-chat-panel {
-  background:
-    radial-gradient(ellipse 80% 40% at 50% 0%, hsl(var(--primary) / 0.06) 0%, transparent 70%),
-    hsl(var(--card) / 0.97) !important;
-  backdrop-filter: blur(32px) !important;
-  -webkit-backdrop-filter: blur(32px) !important;
-  border-top: 1px solid hsl(var(--primary) / 0.15) !important;
+  background: hsl(var(--card) / 0.92) !important;
+  backdrop-filter: blur(32px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(140%) !important;
+  border-top: 1px solid hsl(var(--border) / 0.35) !important;
 }
 @media (min-width: 1024px) {
   .dark .aray-chat-panel { border-top: none !important; }
 }
 
 /* ── Природный режим — тёмное стекло как карточки сайта ───────────────────── */
-/* saturate(0%) убирает синий блюр фона полностью → нейтральный тёмный */
 .dark .aray-nature-mode .aray-chat-panel {
-  background: rgba(14, 13, 12, 0.62) !important;
-  backdrop-filter: blur(56px) saturate(0%) brightness(0.55) !important;
-  -webkit-backdrop-filter: blur(56px) saturate(0%) brightness(0.55) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: rgba(12, 12, 15, 0.78) !important;
+  backdrop-filter: blur(56px) saturate(120%) brightness(0.90) !important;
+  -webkit-backdrop-filter: blur(56px) saturate(120%) brightness(0.90) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 @media (min-width: 1024px) {
   .dark .aray-nature-mode .aray-chat-panel { border-top: none !important; }
@@ -2152,7 +2147,7 @@ a:focus-visible {
 
 /* ── Input bar — природный режим (ГЛАВНЫЙ СТИЛЬ) ─────────────────────────── */
 .dark .aray-nature-mode .aray-chat-bar {
-  background: rgba(10, 10, 12, 0.82) !important;
+  background: rgba(12, 12, 15, 0.94) !important;
   backdrop-filter: blur(48px) saturate(120%) brightness(0.90) !important;
   -webkit-backdrop-filter: blur(48px) saturate(120%) brightness(0.90) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
@@ -2193,9 +2188,10 @@ a:focus-visible {
 
 /* Тёмная тема без природного фона */
 .dark .aray-chat-bubble-assistant {
-  background: hsl(var(--secondary) / 0.90) !important;
-  border: 1px solid hsl(var(--border) / 0.6) !important;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.04) !important;
+  background: hsl(var(--secondary) / 0.80) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.20) !important;
   color: hsl(var(--foreground)) !important;
 }
 
@@ -2427,97 +2423,4 @@ a:focus-visible {
   background: hsl(var(--primary)/0.15) !important;
   border-color: hsl(var(--primary)/0.40) !important;
   color: hsl(var(--primary)) !important;
-}
-
-/* ── Вращение кольца орбиты ARAY ─────────────────────────────────────────── */
-@keyframes aray-ring-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* ── ARAY Chat Bar — улучшенный ВАУ стиль ────────────────────────────────── */
-/* Светлый: чистый белый с лёгкой тенью */
-.aray-chat-bar {
-  border-top: 1px solid rgba(0, 0, 0, 0.07) !important;
-  box-shadow:
-    0 -1px 0 hsl(var(--primary) / 0.10),
-    0 -10px 48px rgba(0, 0, 0, 0.06) !important;
-}
-/* Тёмный без природного фона */
-.dark .aray-chat-bar {
-  border-top: 1px solid hsl(var(--primary) / 0.18) !important;
-  box-shadow:
-    0 -1px 0 hsl(var(--primary) / 0.12),
-    0 -10px 48px rgba(0, 0, 0, 0.32) !important;
-}
-/* Природный режим */
-.dark .aray-nature-mode .aray-chat-bar {
-  background: rgba(10, 10, 12, 0.88) !important;
-  backdrop-filter: blur(48px) saturate(0%) brightness(0.70) !important;
-  -webkit-backdrop-filter: blur(48px) saturate(0%) brightness(0.70) !important;
-  border-top: 1px solid hsl(var(--primary) / 0.22) !important;
-  box-shadow:
-    0 -1px 0 hsl(var(--primary) / 0.15),
-    0 -12px 56px rgba(0, 0, 0, 0.60) !important;
-}
-
-/* ── Панель истории ARAY ──────────────────────────────────────────────────── */
-.aray-history-panel {
-  background: hsl(var(--background) / 0.97);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.dark .aray-history-panel {
-  background: hsl(var(--card) / 0.97) !important;
-}
-.dark .aray-nature-mode .aray-history-panel {
-  background: rgba(8, 8, 10, 0.97) !important;
-  backdrop-filter: blur(24px) saturate(0%) brightness(0.60) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(0%) brightness(0.60) !important;
-}
-
-.aray-history-header {
-  border-bottom: 1px solid hsl(var(--border) / 0.5);
-}
-.dark .aray-history-header {
-  border-bottom: 1px solid hsl(var(--border) / 0.35) !important;
-}
-.dark .aray-nature-mode .aray-history-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
-.aray-history-footer {
-  border-top: 1px solid hsl(var(--border) / 0.4);
-}
-.dark .aray-history-footer {
-  border-top: 1px solid hsl(var(--border) / 0.25) !important;
-}
-.dark .aray-nature-mode .aray-history-footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-}
-
-/* ── Пузырь: лучшая типографика ──────────────────────────────────────────── */
-.aray-chat-bubble-assistant,
-.aray-chat-bubble-user {
-  letter-spacing: -0.005em;
-  word-break: break-word;
-}
-.aray-chat-bubble-assistant p,
-.aray-chat-bubble-user p {
-  margin: 0;
-}
-
-/* Светлая тема history-panel кнопки элементов */
-.aray-history-item-btn {
-  transition: background 0.15s;
-  border-radius: 0.75rem;
-}
-.aray-history-item-btn:hover {
-  background: hsl(var(--primary) / 0.06);
-}
-.dark .aray-history-item-btn:hover {
-  background: hsl(var(--primary) / 0.08) !important;
-}
-.dark .aray-nature-mode .aray-history-item-btn:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
 }
