@@ -36,6 +36,7 @@ type Article = {
   steps: string[];
   tip: string;
   link?: { href: string; label: string } | null;
+  arayQ?: string;
 };
 
 /* ─── Articles — полная база инструкций ─── */
@@ -65,6 +66,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Фильтры статусов вверху страницы: нажмите «Новый» — увидите только необработанные заказы. Это самый быстрый способ не пропустить ничего важного.",
     link: { href: "/admin/orders", label: "Открыть Заказы" },
+    arayQ: "Как правильно обрабатывать заказы?",
   },
   {
     id: "orders-phone",
@@ -105,6 +107,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Заказы с сайта автоматически создают лид в CRM. Не создавайте вручную — просто обрабатывайте входящие карточки.",
     link: { href: "/admin/crm", label: "Открыть CRM" },
+    arayQ: "Как работать с CRM и лидами?",
   },
   {
     id: "delivery-manage",
@@ -123,6 +126,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Звонок клиенту перед выездом сокращает неудачные доставки на 40%. Используйте кнопку телефона прямо из карточки доставки.",
     link: { href: "/admin/delivery", label: "Открыть Доставку" },
+    arayQ: "Как настроить доставку и отслеживание?",
   },
   {
     id: "tasks-manage",
@@ -141,6 +145,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Создайте повторяющиеся задачи для ежедневных операций: «Проверить новые заказы», «Обновить остатки», «Связаться с лидами».",
     link: { href: "/admin/tasks", label: "Открыть Задачи" },
+    arayQ: "Как пользоваться задачами?",
   },
   {
     id: "clients-manage",
@@ -160,6 +165,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Регулярно звоните клиентам с фильтром «Давно не заказывали» — это самый дешёвый способ удержания. Конверсия повторных продаж 60%+.",
     link: { href: "/admin/clients", label: "Открыть Клиентов" },
+    arayQ: "Как работать с базой клиентов?",
   },
   {
     id: "analytics-reports",
@@ -179,6 +185,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Смотрите аналитику каждый понедельник утром — за 5 минут поймёте тренд недели и что нужно скорректировать в работе.",
     link: { href: "/admin/analytics", label: "Открыть Аналитику" },
+    arayQ: "Как читать аналитику продаж?",
   },
   {
     id: "finance-manage",
@@ -198,6 +205,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Вносите расходы еженедельно, а не в конце месяца — так картина прибыли всегда актуальна и не будет сюрпризов при сдаче отчётности.",
     link: { href: "/admin/finance", label: "Открыть Финансы" },
+    arayQ: "Как работают финансы и касса?",
   },
 
   // ═══════════════════════════════════════════
@@ -224,6 +232,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "SEO-совет: заполните поле «Описание» с ключевыми словами: порода дерева, размеры, применение. Slug (URL) генерируется автоматически из названия, но можно изменить вручную.",
     link: { href: "/admin/products", label: "Открыть Каталог" },
+    arayQ: "Как добавить новый товар в каталог?",
   },
   {
     id: "catalog-edit",
@@ -243,6 +252,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Массовое обновление цен — используйте «Импорт / Экспорт»: скачайте Excel, измените цены в таблице, загрузите обратно. Экономит часы работы.",
     link: { href: "/admin/products", label: "Открыть Каталог" },
+    arayQ: "Как редактировать и управлять товарами?",
   },
   {
     id: "categories-manage",
@@ -262,6 +272,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Не создавайте слишком много категорий — покупатели теряются. Оптимально 5–8 категорий в главном меню. Редкие позиции объедините в «Прочее».",
     link: { href: "/admin/categories", label: "Открыть Категории" },
+    arayQ: "Как управлять категориями товаров?",
   },
   {
     id: "inventory-stock",
@@ -283,6 +294,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Настройте пороги предупреждений (1–2 м³) — система сама напомнит когда нужно делать заказ у поставщика. Никогда не останетесь без товара.",
     link: { href: "/admin/inventory", label: "Открыть Склад" },
+    arayQ: "Как управлять складом и остатками?",
   },
   {
     id: "import-export",
@@ -303,6 +315,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Используйте импорт для сезонного обновления цен — займёт 5 минут вместо часов ручного редактирования. Первый столбец (ID) трогать нельзя — по нему система находит нужные записи.",
     link: { href: "/admin/import", label: "Открыть Импорт / Экспорт" },
+    arayQ: "Как импортировать и экспортировать товары?",
   },
   {
     id: "media-library",
@@ -323,6 +336,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Оптимальный размер фото товара: 800×800 пикселей, формат JPG, не более 300 КБ. Большие файлы замедляют загрузку страниц — сжимайте фото перед загрузкой.",
     link: { href: "/admin/media", label: "Открыть Медиабиблиотеку" },
+    arayQ: "Как работать с медиабиблиотекой?",
   },
 
   // ═══════════════════════════════════════════
@@ -348,6 +362,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Для SEO: пишите статьи объёмом 500–1500 слов. Используйте ключевые слова в заголовке и первом абзаце. Регулярность важнее объёма — 1 статья в неделю лучше 10 раз в месяц.",
     link: { href: "/admin/posts", label: "Открыть Статьи" },
+    arayQ: "Как писать статьи и новости?",
   },
   {
     id: "services-manage",
@@ -366,6 +381,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Добавьте 5–7 услуг: антисептирование, нарезка в размер, доставка, разгрузка. Клиенты часто не знают что это доступно — страница услуг увеличивает средний чек.",
     link: { href: "/admin/services", label: "Открыть Услуги" },
+    arayQ: "Как управлять услугами?",
   },
 
   // ═══════════════════════════════════════════
@@ -390,6 +406,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Делайте акции с чётким дедлайном («только до пятницы») — создаёт срочность. Акция без ограничения по времени воспринимается как обычная цена.",
     link: { href: "/admin/promotions", label: "Открыть Акции" },
+    arayQ: "Как создавать акции и скидки?",
   },
   {
     id: "reviews-manage",
@@ -408,6 +425,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Отвечайте на каждый отзыв, особенно негативный. Ответ показывает что компания работает с обратной связью — это важнее самого отзыва для новых клиентов.",
     link: { href: "/admin/reviews", label: "Открыть Отзывы" },
+    arayQ: "Как работать с отзывами?",
   },
   {
     id: "email-campaigns",
@@ -428,6 +446,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Лучшее время для рассылки: вторник–четверг, 10:00–12:00. Тема письма до 50 символов — не обрезается в мобильном. Персонализация («Иван, специально для вас») увеличивает открываемость на 25%.",
     link: { href: "/admin/email", label: "Открыть Email рассылку" },
+    arayQ: "Как делать email рассылки?",
   },
   {
     id: "promotion-seo",
@@ -447,6 +466,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Зарегистрируйте компанию на Яндекс.Картах и Google Maps с точным адресом. 30–40% локальных клиентов находят через карты — это бесплатный и мощный канал.",
     link: { href: "/admin/promotion", label: "Открыть Продвижение" },
+    arayQ: "Как настроить SEO и продвижение?",
   },
 
   // ═══════════════════════════════════════════
@@ -473,6 +493,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Обновляйте режим работы перед праздниками! Клиенты видят его в хедере сайта — неправильное время работы = потерянные звонки.",
     link: { href: "/admin/site", label: "Открыть Настройки сайта" },
+    arayQ: "Как настроить основные параметры сайта?",
   },
   {
     id: "appearance-settings",
@@ -492,6 +513,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Стиль «Витрина» лучше всего подходит для пиломатериалов — цена и акция видны прямо на фото без лишних кликов. Увеличивает конверсию в добавление в корзину.",
     link: { href: "/admin/appearance", label: "Открыть Оформление" },
+    arayQ: "Как изменить оформление и палитру?",
   },
   {
     id: "staff-manage",
@@ -513,6 +535,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "Принцип минимальных прав: давайте сотрудникам только тот доступ который нужен для работы. Курьеру не нужны финансы, менеджеру — настройки системы.",
     link: { href: "/admin/staff", label: "Открыть Команду" },
+    arayQ: "Как управлять командой и ролями?",
   },
   {
     id: "notifications-setup",
@@ -533,6 +556,7 @@ const ARTICLES: Article[] = [
     ],
     tip: "После настройки Telegram — отмените тестовый заказ и убедитесь что уведомление пришло. Кнопки «Принять/Отменить» в Telegram работают только при правильном webhook.",
     link: { href: "/admin/notifications", label: "Открыть Уведомления" },
+    arayQ: "Как настроить уведомления?",
   },
   {
     id: "health-check",
@@ -810,15 +834,28 @@ function ArticleCard({ art }: { art: Article }) {
             <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">{art.tip}</p>
           </div>
 
-          {/* Link */}
-          {art.link && (
-            <Link
-              href={art.link.href}
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-              {art.link.label}
-            </Link>
+          {/* Link + Ask ARAY */}
+          {(art.link || art.arayQ) && (
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              {art.link && (
+                <Link
+                  href={art.link.href}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  {art.link.label}
+                </Link>
+              )}
+              {art.arayQ && (
+                <button
+                  onClick={() => window.dispatchEvent(new CustomEvent("aray:fill", { detail: { text: art.arayQ } }))}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border border-primary/30 text-primary/80 hover:bg-primary/[0.08] hover:border-primary/50 hover:text-primary transition-all"
+                >
+                  <span className="text-[10px]">✦</span>
+                  Спросить Арая
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -913,11 +950,7 @@ export default function HelpPage() {
             <button
               key={r.key}
               onClick={() => setRole(r.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                isActive
-                  ? `${r.color} ring-2 ${r.ring} border-transparent`
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/[0.07]"
-              }`}
+              className={`admin-pill-btn ${isActive ? "admin-pill-btn-active" : ""}`}
             >
               <RIcon className="w-3.5 h-3.5" />
               {r.label}

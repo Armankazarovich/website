@@ -500,6 +500,20 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     return () => window.removeEventListener("aray:open", h);
   }, []);
 
+  // Заполнить инпут и открыть по событию (для кнопок "Спросить Арая")
+  useEffect(() => {
+    const h = (e: Event) => {
+      const { text } = (e as CustomEvent<{ text: string }>).detail || {};
+      if (text) {
+        addInput(text);
+        setExpanded(true);
+        setTimeout(() => inputRef.current?.focus(), 150);
+      }
+    };
+    window.addEventListener("aray:fill", h);
+    return () => window.removeEventListener("aray:fill", h);
+  }, [addInput]);
+
   const send = useCallback(async (text?: string) => {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
