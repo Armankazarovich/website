@@ -2,419 +2,509 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Send, Loader2, RotateCcw, ChevronRight, TrendingUp, ShoppingBag, Clock } from "lucide-react";
+import { X, Send, Loader2, RotateCcw, Mic, MicOff, Volume2, VolumeX, Sparkles, Zap } from "lucide-react";
+import { ArayIcon } from "@/components/store/aray-widget";
 
-// ─── Персонаж ARAY ────────────────────────────────────────────────────────────
-// Простой, чистый Android-стиль. Рубашка = цвет палитры.
+// ─── Типы ─────────────────────────────────────────────────────────────────────
 
-function ArayCharacter({ size = 64, blinking = false, waving = false }: {
-  size?: number;
-  blinking?: boolean;
-  waving?: boolean;
-}) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"
-      style={{ display: "block", overflow: "visible" }}>
-      <defs>
-        <radialGradient id="ac-face" cx="45%" cy="35%" r="65%">
-          <stop offset="0%" stopColor="#ffe8cc" />
-          <stop offset="100%" stopColor="#f5c89a" />
-        </radialGradient>
-        <radialGradient id="ac-shirt" cx="50%" cy="30%" r="70%">
-          <stop offset="0%" stopColor="hsl(var(--primary) / 0.95)" />
-          <stop offset="100%" stopColor="hsl(var(--primary) / 0.60)" />
-        </radialGradient>
-        <filter id="ac-shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="rgba(0,0,0,0.22)" />
-        </filter>
-      </defs>
+type Msg = {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  streaming?: boolean;
+};
 
-      {/* Тело / рубашка */}
-      <rect x="18" y="36" width="28" height="24" rx="8" fill="url(#ac-shirt)" filter="url(#ac-shadow)" />
-      {/* Воротник */}
-      <path d="M26 36 L32 42 L38 36" stroke="rgba(255,255,255,0.50)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-      {/* Пуговицы */}
-      <circle cx="32" cy="46" r="1.2" fill="rgba(255,255,255,0.40)" />
-      <circle cx="32" cy="50" r="1.2" fill="rgba(255,255,255,0.40)" />
-      <circle cx="32" cy="54" r="1.2" fill="rgba(255,255,255,0.40)" />
-
-      {/* Левая рука */}
-      <g style={{ transformOrigin: "18px 42px", animation: waving ? "acWave 0.8s ease-in-out 2" : "none" }}>
-        <rect x="9" y="38" width="10" height="9" rx="4.5" fill="url(#ac-shirt)" />
-        {/* Кисть */}
-        <circle cx="9" cy="44" r="4" fill="url(#ac-face)" />
-      </g>
-
-      {/* Правая рука */}
-      <rect x="45" y="38" width="10" height="9" rx="4.5" fill="url(#ac-shirt)" />
-      <circle cx="55" cy="44" r="4" fill="url(#ac-face)" />
-
-      {/* Шея */}
-      <rect x="27" y="31" width="10" height="8" rx="4" fill="url(#ac-face)" />
-
-      {/* Голова */}
-      <ellipse cx="32" cy="22" rx="14" ry="14" fill="url(#ac-face)" filter="url(#ac-shadow)" />
-
-      {/* Волосы */}
-      <path d="M18 20 Q18 8 32 8 Q46 8 46 20" fill="hsl(var(--primary) / 0.85)" />
-      {/* Чёлка */}
-      <path d="M21 16 Q26 12 32 13 Q38 12 43 16" stroke="hsl(var(--primary) / 0.60)" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-
-      {/* Глаза */}
-      {blinking ? (
-        <>
-          <ellipse cx="26" cy="22" rx="2.5" ry="0.8" fill="#2d1a08" />
-          <ellipse cx="38" cy="22" rx="2.5" ry="0.8" fill="#2d1a08" />
-        </>
-      ) : (
-        <>
-          <circle cx="26" cy="22" r="2.5" fill="#2d1a08" />
-          <circle cx="38" cy="22" r="2.5" fill="#2d1a08" />
-          {/* Блики */}
-          <circle cx="27.2" cy="21" r="0.9" fill="white" />
-          <circle cx="39.2" cy="21" r="0.9" fill="white" />
-        </>
-      )}
-
-      {/* Улыбка */}
-      <path d="M27 27 Q32 31 37 27" stroke="#c97c42" strokeWidth="1.8" fill="none" strokeLinecap="round" />
-
-      {/* Ушки */}
-      <ellipse cx="18" cy="22" rx="3" ry="4" fill="#f5c89a" />
-      <ellipse cx="46" cy="22" rx="3" ry="4" fill="#f5c89a" />
-      <ellipse cx="18" cy="22" rx="1.5" ry="2.5" fill="#e8a87a" />
-      <ellipse cx="46" cy="22" rx="1.5" ry="2.5" fill="#e8a87a" />
-
-      {/* Нашивка на рубашке */}
-      <rect x="22" y="40" width="12" height="6" rx="2" fill="rgba(255,255,255,0.18)" />
-      <text x="28" y="45" textAnchor="middle" fill="white" fontSize="3.5" fontWeight="700" fontFamily="system-ui">ARAY</text>
-
-      <style>{`
-        @keyframes acWave {
-          0%, 100% { transform: rotate(0deg); }
-          30% { transform: rotate(-25deg); }
-          70% { transform: rotate(10deg); }
-        }
-      `}</style>
-    </svg>
-  );
+function parseActions(raw: string) {
+  const marker = "ARAY_ACTIONS:";
+  const idx = raw.indexOf(marker);
+  if (idx === -1) return { text: raw, actions: [] };
+  return { text: raw.slice(0, idx).trim(), actions: [] };
 }
 
-// ─── Мини-инсайты ─────────────────────────────────────────────────────────────
+// ─── Голосовой ввод ───────────────────────────────────────────────────────────
 
-type Insight = { icon: React.ReactNode; label: string; value: string };
+function useVoice(onResult: (t: string) => void) {
+  const [listening, setListening] = useState(false);
+  const ref = useRef<any>(null);
+  const start = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = "ru-RU"; r.interimResults = false;
+    r.onstart = () => setListening(true);
+    r.onend = () => setListening(false);
+    r.onerror = () => setListening(false);
+    r.onresult = (e: any) => { const t = e.results[0]?.[0]?.transcript || ""; if (t) onResult(t); };
+    r.start(); ref.current = r;
+  }, [onResult]);
+  const stop = useCallback(() => { ref.current?.stop(); setListening(false); }, []);
+  return { listening, start, stop };
+}
 
-function InsightPill({ icon, label, value }: Insight) {
+// ─── TTS ─────────────────────────────────────────────────────────────────────
+
+function useTTS() {
+  const [speaking, setSpeaking] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speak = useCallback(async (text: string, id: string) => {
+    if (speaking === id) { audioRef.current?.pause(); audioRef.current = null; setSpeaking(null); return; }
+    audioRef.current?.pause();
+    setSpeaking(id);
+    try {
+      const res = await fetch("/api/ai/tts", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) { setSpeaking(null); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setSpeaking(null); URL.revokeObjectURL(url); };
+      audio.onerror = () => setSpeaking(null);
+      await audio.play();
+    } catch { setSpeaking(null); }
+  }, [speaking]);
+  return { speaking, speak };
+}
+
+// ─── Пузырь сообщения ─────────────────────────────────────────────────────────
+
+function Bubble({ msg, onSpeak, speaking }: {
+  msg: Msg;
+  onSpeak?: (text: string, id: string) => void;
+  speaking?: string | null;
+}) {
+  const isUser = msg.role === "user";
+  const isSpeaking = speaking === msg.id;
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
-      <span style={{ color: "hsl(var(--primary))" }}>{icon}</span>
-      <div>
-        <p className="text-[9px] text-white/40 leading-none">{label}</p>
-        <p className="text-[12px] font-semibold text-white leading-none mt-0.5">{value}</p>
+    <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+      {!isUser && (
+        <div className="shrink-0 mt-0.5">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <ArayIconSmall />
+        </div>
+      )}
+      <div className="flex flex-col gap-1 max-w-[82%]">
+        <div
+          className="px-3 py-2 text-[12px] leading-relaxed"
+          style={isUser ? {
+            background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))",
+            color: "#fff", borderRadius: "14px 14px 4px 14px",
+          } : {
+            background: "rgba(255,255,255,0.08)",
+            color: "rgba(255,255,255,0.90)",
+            borderRadius: "14px 14px 14px 4px",
+            border: "1px solid rgba(255,255,255,0.10)",
+          }}
+        >
+          {msg.text
+            ? msg.text.split("\n").map((line, i, arr) => (
+                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+              ))
+            : !isUser && msg.streaming
+            ? <span className="inline-flex gap-1 items-center py-0.5">
+                {[0, 1, 2].map(i => (
+                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce"
+                    style={{ animationDelay: `${i * 150}ms` }} />
+                ))}
+              </span>
+            : null
+          }
+          {msg.streaming && msg.text && (
+            <span className="inline-block w-0.5 h-3 bg-orange-400 ml-0.5 align-middle animate-pulse" />
+          )}
+        </div>
+        {!isUser && !msg.streaming && msg.text && onSpeak && (
+          <button
+            onClick={() => onSpeak(msg.text, msg.id)}
+            className="self-start flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] transition-all"
+            style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.30)" }}
+          >
+            {isSpeaking ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
+            {isSpeaking ? "стоп" : "озвучить"}
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
-// ─── Чат ──────────────────────────────────────────────────────────────────────
+// ─── Маленький шар ────────────────────────────────────────────────────────────
 
-type Msg = { id: string; role: "user" | "assistant"; text: string };
+function ArayIconSmall() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 100 100" style={{ display: "block" }}>
+      <defs>
+        <radialGradient id="ais-base" cx="34%" cy="28%" r="70%">
+          <stop offset="0%" stopColor="#fffbe0"/>
+          <stop offset="28%" stopColor="#f07800"/>
+          <stop offset="75%" stopColor="#6e1c00"/>
+          <stop offset="100%" stopColor="#160300"/>
+        </radialGradient>
+        <radialGradient id="ais-hl" cx="30%" cy="25%" r="34%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+          <stop offset="100%" stopColor="white" stopOpacity="0"/>
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="50" r="46" fill="url(#ais-base)"/>
+      <circle cx="50" cy="50" r="46" fill="url(#ais-hl)"/>
+    </svg>
+  );
+}
 
-const TIPS = [
-  "Привет! Я помогу разобраться с любым вопросом по системе 😊",
-  "Нажми «Заказы» → «Новые» чтобы быстро найти свежие заявки",
-  "Можешь спросить меня о выручке, клиентах или товарах — расскажу",
-  "Устал? Напиши мне — поддержу 💪",
-  "Для создания заказа — кнопка «Заказ по телефону» в разделе Заказы",
+// ─── Быстрые вопросы ──────────────────────────────────────────────────────────
+
+const QUICK_ADMIN = [
+  "Сколько новых заказов?",
+  "Покажи сводку за сегодня",
+  "Как добавить товар?",
+  "Что с доставкой?",
 ];
 
-function pickTip() { return TIPS[Math.floor(Math.random() * TIPS.length)]; }
+// ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function AdminAray({ staffName = "Коллега" }: { staffName?: string }) {
   const [open, setOpen] = useState(false);
-  const [blink, setBlink] = useState(false);
-  const [wave, setWave] = useState(false);
-  const [bubble, setBubble] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [insights, setInsights] = useState<Insight[]>([]);
+  const [bubble, setBubble] = useState<string | null>(null);
   const [hasNew, setHasNew] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { speaking, speak } = useTTS();
 
-  // Анимация мигания глаз
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBlink(true);
-      setTimeout(() => setBlink(false), 200);
-    }, 3500 + Math.random() * 2000);
-    return () => clearInterval(interval);
+  const addInput = useCallback((t: string) => {
+    setInput(prev => prev ? prev + " " + t : t);
+    inputRef.current?.focus();
   }, []);
+  const { listening, start: startMic, stop: stopMic } = useVoice(addInput);
 
-  // Проактивный пузырь через 15 секунд
+  // Проактивный пузырь
   useEffect(() => {
     const t = setTimeout(() => {
       if (!open) {
-        setBubble(pickTip());
+        const h = new Date().getHours();
+        const greeting = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
+        setBubble(`${greeting}, ${staffName}! Чем помочь? 👋`);
         setHasNew(true);
         setTimeout(() => setBubble(null), 6000);
       }
-    }, 15000);
+    }, 12000);
     return () => clearTimeout(t);
-  }, [open]);
+  }, [open, staffName]);
 
-  // Приветствие при открытии
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
   const initChat = useCallback(() => {
     if (messages.length > 0) return;
     const h = new Date().getHours();
     const time = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
     setMessages([{
-      id: "welcome",
-      role: "assistant",
-      text: `${time}, ${staffName}! 👋 Я ARAY — твой умный помощник. Спрашивай что угодно по системе, заказам или просто пообщаемся!`,
+      id: "welcome", role: "assistant",
+      text: `${time}, ${staffName}! 👋 Я Арай — твой помощник по всем вопросам. Заказы, товары, аналитика — спрашивай всё!`,
     }]);
   }, [messages.length, staffName]);
 
-  // Загрузка инсайтов
-  useEffect(() => {
-    fetch("/api/admin/notifications/count")
-      .then(r => r.json())
-      .then(d => {
-        setInsights([
-          { icon: <ShoppingBag className="w-3.5 h-3.5" />, label: "Ждут обработки", value: String(d.newOrders ?? "—") },
-          { icon: <Clock className="w-3.5 h-3.5" />, label: "Всего активных", value: String(d.total ?? "—") },
-        ]);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   const handleOpen = () => {
-    setOpen(true);
-    setHasNew(false);
-    setBubble(null);
-    setWave(true);
-    setTimeout(() => setWave(false), 1000);
+    setOpen(true); setHasNew(false); setBubble(null);
     initChat();
+    setTimeout(() => inputRef.current?.focus(), 300);
   };
 
   const send = async (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || loading) return;
     setInput("");
+
     const userMsg: Msg = { id: Date.now().toString(), role: "user", text: msg };
+    const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
+
+    const assistantId = (Date.now() + 1).toString();
+
     try {
-      const res = await fetch("/api/admin/aray", {
+      const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.text })),
+          messages: allMessages.map(m => ({ role: m.role, content: m.text })),
+          context: { page: "admin" },
         }),
       });
-      const data = await res.json();
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        text: data.message || "Не смог ответить, попробуй ещё раз.",
-      }]);
+
+      if (!res.body) throw new Error("No stream");
+
+      setMessages(prev => [...prev, { id: assistantId, role: "assistant", text: "", streaming: true }]);
+      setLoading(false);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let rawText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        rawText += decoder.decode(value, { stream: true });
+        const displayText = rawText
+          .replace(/\n__ARAY_META__[\s\S]*$/, "")
+          .replace(/__ARAY_ERR__[\s\S]*$/, "");
+        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: displayText } : m));
+      }
+
+      const isError = rawText.includes("__ARAY_ERR__");
+      const errMatch = rawText.match(/__ARAY_ERR__(.+)$/);
+      const cleanText = isError
+        ? (errMatch?.[1] || "Что-то пошло не так 🙏")
+        : rawText.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
+
+      const { text: finalText } = parseActions(cleanText);
+      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: finalText, streaming: false } : m));
+      if (!open) setHasNew(true);
+
     } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        text: "Нет связи 🙏 Попробуй позже.",
-      }]);
-    } finally { setLoading(false); }
+      setMessages(prev => {
+        const has = prev.some(m => m.id === assistantId);
+        if (has) return prev.map(m => m.id === assistantId ? { ...m, text: "Нет связи 🙏", streaming: false } : m);
+        return [...prev, { id: assistantId, role: "assistant", text: "Нет связи 🙏" }];
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Стекло панели
-  const glass = {
-    background: "linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 55%), rgba(8, 12, 28, 0.88)",
-    backdropFilter: "blur(32px) saturate(180%)",
-    WebkitBackdropFilter: "blur(32px) saturate(180%)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
-  } as React.CSSProperties;
-
-  const QUICK = ["Сколько новых заказов?", "Как создать заказ?", "Что с выручкой?", "Помогай!"];
+  // Стиль жидкого стекла
+  const glass: React.CSSProperties = {
+    background: "linear-gradient(135deg, rgba(232,112,10,0.06) 0%, rgba(8,12,28,0.82) 60%)",
+    backdropFilter: "blur(40px) saturate(200%) brightness(0.9)",
+    WebkitBackdropFilter: "blur(40px) saturate(200%) brightness(0.9)",
+    border: "1px solid rgba(255,255,255,0.13)",
+    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.10) inset, 0 -1px 0 rgba(0,0,0,0.20) inset",
+  };
 
   return (
     <>
-      {/* ── Персонаж в сайдбаре ── */}
+      {/* ── Кнопка в сайдбаре ── */}
       <div className="relative flex flex-col items-center px-3 pb-3 shrink-0">
-        {/* Пузырь */}
+        {/* Проактивный пузырь */}
         <AnimatePresence>
           {bubble && !open && (
             <motion.div
-              initial={{ opacity: 0, y: 6, scale: 0.94 }}
+              initial={{ opacity: 0, y: 8, scale: 0.92 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              className="absolute bottom-full mb-2 left-0 right-0 mx-2 z-50"
+              exit={{ opacity: 0, scale: 0.90 }}
+              className="absolute bottom-full mb-2 left-0 right-0 mx-2 z-50 cursor-pointer"
+              onClick={handleOpen}
             >
-              <div className="rounded-xl px-3 py-2 text-[11px] leading-snug text-white/85 cursor-pointer"
+              <div className="rounded-2xl px-3 py-2.5 text-[11px] leading-snug text-white/85"
                 style={{
-                  background: "rgba(8,12,28,0.90)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                }}
-                onClick={handleOpen}>
+                  background: "rgba(8,12,28,0.92)",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  boxShadow: "0 8px 28px rgba(0,0,0,0.45)",
+                  backdropFilter: "blur(20px)",
+                }}>
                 {bubble}
+                <div className="absolute -bottom-1.5 left-6 w-2.5 h-2.5 rotate-45"
+                  style={{ background: "rgba(8,12,28,0.92)", borderRight: "1px solid rgba(255,255,255,0.14)", borderBottom: "1px solid rgba(255,255,255,0.14)" }} />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Кнопка-персонаж */}
+        {/* Шар + метка */}
         <motion.button
           onClick={handleOpen}
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.96 }}
-          transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          className="relative focus:outline-none w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-colors"
+          whileHover={{ scale: 1.04, y: -2 }}
+          whileTap={{ scale: 0.94 }}
+          transition={{ type: "spring", stiffness: 420, damping: 22 }}
+          className="relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl focus:outline-none"
           style={{
-            background: open ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            background: open ? "rgba(232,112,10,0.12)" : "rgba(255,255,255,0.04)",
+            border: `1px solid ${open ? "rgba(232,112,10,0.25)" : "rgba(255,255,255,0.08)"}`,
+            transition: "background 0.2s, border-color 0.2s",
           }}
         >
-          <div style={{ animation: "arayFloat 3.5s ease-in-out infinite", flexShrink: 0 }}>
-            <ArayCharacter size={40} blinking={blink} waving={wave} />
+          {/* Шар с анимацией */}
+          <div className="shrink-0" style={{ animation: "adminArayFloat 3.5s ease-in-out infinite" }}>
+            <svg width="38" height="38" viewBox="0 0 100 100" style={{ display: "block" }}>
+              <defs>
+                <radialGradient id="aaib-base" cx="34%" cy="28%" r="70%">
+                  <stop offset="0%" stopColor="#fffbe0"/>
+                  <stop offset="10%" stopColor="#ffca40"/>
+                  <stop offset="28%" stopColor="#f07800"/>
+                  <stop offset="52%" stopColor="#c05000"/>
+                  <stop offset="75%" stopColor="#6e1c00"/>
+                  <stop offset="100%" stopColor="#160300"/>
+                </radialGradient>
+                <radialGradient id="aaib-dark" cx="72%" cy="74%" r="52%">
+                  <stop offset="0%" stopColor="#050000" stopOpacity="0.75"/>
+                  <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
+                </radialGradient>
+                <radialGradient id="aaib-hl" cx="30%" cy="25%" r="34%">
+                  <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+                  <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                </radialGradient>
+                <radialGradient id="aaib-rim" cx="50%" cy="50%" r="50%">
+                  <stop offset="76%" stopColor="transparent" stopOpacity="0"/>
+                  <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
+                </radialGradient>
+                <clipPath id="aaib-clip"><circle cx="50" cy="50" r="46"/></clipPath>
+              </defs>
+              <circle cx="50" cy="50" r="46" fill="url(#aaib-base)"
+                style={{ filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.5))" }}/>
+              <circle cx="50" cy="50" r="46" fill="url(#aaib-dark)"/>
+              <circle cx="50" cy="50" r="46" fill="url(#aaib-rim)"/>
+              <g clipPath="url(#aaib-clip)">
+                <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.12">
+                  <animateTransform attributeName="transform" type="rotate"
+                    from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
+                </ellipse>
+              </g>
+              <circle cx="50" cy="50" r="46" fill="url(#aaib-hl)"/>
+              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.20)" strokeWidth="1">
+                <animate attributeName="stroke-opacity" values="0.20;0.45;0.20" dur="3s" repeatCount="indefinite"/>
+              </circle>
+            </svg>
           </div>
+
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-[11px] font-semibold text-white/80 leading-none">ARAY</p>
-            <p className="text-[9px] text-white/40 mt-0.5 leading-none flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-              онлайн
+            <div className="flex items-center gap-1.5">
+              <p className="text-[11px] font-bold text-white/85 leading-none">АРАЙ</p>
+              <span className="text-[8px] px-1 py-0.5 rounded-full font-medium"
+                style={{ background: "hsl(var(--primary)/0.15)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.25)" }}>
+                4.6
+              </span>
+            </div>
+            <p className="text-[9px] text-white/38 mt-0.5 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"/>
+              всегда рядом
             </p>
           </div>
+
           {hasNew && !open && (
             <span className="w-2 h-2 rounded-full shrink-0 animate-pulse"
-              style={{ background: "hsl(var(--primary))" }} />
+              style={{ background: "hsl(var(--primary))" }}/>
           )}
         </motion.button>
       </div>
 
-      {/* ── Панель чата (попап) ── */}
+      {/* ── Чат-попап ── */}
       <AnimatePresence>
         {open && (
           <>
-            {/* Оверлей */}
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[45]"
-              style={{ background: "rgba(0,0,0,0.20)" }}
+              className="fixed inset-0 z-[200]"
+              style={{ background: "rgba(0,0,0,0.15)", backdropFilter: "blur(2px)" }}
               onClick={() => setOpen(false)}
             />
 
             {/* Панель */}
             <motion.div
-              initial={{ opacity: 0, x: -20, scale: 0.97 }}
+              initial={{ opacity: 0, x: -16, scale: 0.96 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -20, scale: 0.97 }}
-              transition={{ type: "spring", damping: 30, stiffness: 380 }}
-              className="fixed z-[46] flex flex-col"
+              exit={{ opacity: 0, x: -16, scale: 0.96 }}
+              transition={{ type: "spring", damping: 28, stiffness: 360 }}
+              className="fixed z-[201] flex flex-col"
               style={{
-                left: "248px",
+                left: "252px",
                 bottom: "16px",
-                width: "320px",
-                height: "480px",
-                borderRadius: "20px",
+                width: "340px",
+                height: "520px",
+                borderRadius: "22px",
                 ...glass,
               }}
+              onClick={e => e.stopPropagation()}
             >
-              {/* Шапка с персонажем */}
-              <div className="flex items-center gap-3 px-4 pt-4 pb-3 shrink-0"
+              {/* ── Шапка ── */}
+              <div className="flex items-center gap-3 px-4 py-3.5 shrink-0"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ animation: "arayFloat 3.5s ease-in-out infinite", flexShrink: 0 }}>
-                  <ArayCharacter size={44} waving={wave} blinking={blink} />
+                <div style={{ animation: "adminArayFloat 3.5s ease-in-out infinite", flexShrink: 0 }}>
+                  <svg width="36" height="36" viewBox="0 0 100 100" style={{ display: "block", filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.5))" }}>
+                    <defs>
+                      <radialGradient id="aah-base" cx="34%" cy="28%" r="70%">
+                        <stop offset="0%" stopColor="#fffbe0"/>
+                        <stop offset="28%" stopColor="#f07800"/>
+                        <stop offset="75%" stopColor="#6e1c00"/>
+                        <stop offset="100%" stopColor="#160300"/>
+                      </radialGradient>
+                      <radialGradient id="aah-hl" cx="30%" cy="25%" r="34%">
+                        <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+                        <stop offset="100%" stopColor="white" stopOpacity="0"/>
+                      </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="46" fill="url(#aah-base)"/>
+                    <circle cx="50" cy="50" r="46" fill="url(#aah-hl)"/>
+                  </svg>
                 </div>
+
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white leading-none">ARAY</p>
-                  <p className="text-[10px] text-white/45 mt-0.5 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
-                    Бизнес-ассистент
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-bold text-white leading-none">Арай</p>
+                    <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                      style={{ background: "rgba(232,112,10,0.15)", color: "hsl(var(--primary))", border: "1px solid rgba(232,112,10,0.25)" }}>
+                      <Zap className="w-2.5 h-2.5"/>
+                      Sonnet 4.6
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-white/40 mt-0.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"/>
+                    Бизнес-ассистент · помнит всё
                   </p>
                 </div>
+
                 <div className="flex gap-1">
-                  <button onClick={() => { setMessages([]); initChat(); }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors"
-                    title="Новый чат">
-                    <RotateCcw className="w-3 h-3 text-white/40" />
+                  <button
+                    onClick={() => { setMessages([]); setTimeout(initChat, 50); }}
+                    className="w-7 h-7 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
+                    title="Новый чат"
+                  >
+                    <RotateCcw className="w-3 h-3 text-white/40"/>
                   </button>
-                  <button onClick={() => setOpen(false)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-                    <X className="w-3.5 h-3.5 text-white/40" />
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="w-7 h-7 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
+                  >
+                    <X className="w-3.5 h-3.5 text-white/40"/>
                   </button>
                 </div>
               </div>
 
-              {/* Инсайты */}
-              {insights.length > 0 && messages.length <= 1 && (
-                <div className="px-4 pt-3 flex gap-2 shrink-0">
-                  {insights.map((ins, i) => <InsightPill key={i} {...ins} />)}
-                </div>
-              )}
-
-              {/* Сообщения */}
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+              {/* ── Сообщения ── */}
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 scrollbar-hide">
                 {messages.map(m => (
-                  <div key={m.id} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                    {m.role === "assistant" && (
-                      <div className="shrink-0 mt-0.5">
-                        <ArayCharacter size={22} />
-                      </div>
-                    )}
-                    <div
-                      className="max-w-[78%] px-3 py-2 text-[12px] leading-relaxed"
-                      style={m.role === "user" ? {
-                        background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))",
-                        color: "#fff",
-                        borderRadius: "14px 14px 4px 14px",
-                      } : {
-                        background: "rgba(255,255,255,0.08)",
-                        color: "rgba(255,255,255,0.88)",
-                        borderRadius: "14px 14px 14px 4px",
-                        border: "1px solid rgba(255,255,255,0.10)",
-                      }}
-                    >
-                      {m.text.split("\n").map((line, i, arr) => (
-                        <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-                      ))}
-                    </div>
-                  </div>
+                  <Bubble key={m.id} msg={m} onSpeak={speak} speaking={speaking}/>
                 ))}
                 {loading && (
                   <div className="flex gap-2">
-                    <ArayCharacter size={22} />
+                    <ArayIconSmall/>
                     <div className="px-3 py-2.5 rounded-2xl rounded-tl-[4px]"
                       style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
-                      <div className="flex gap-1 items-center">
-                        {[0, 1, 2].map(i => (
-                          <span key={i} className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: "hsl(var(--primary))", animation: `aDot 1.4s ease-in-out ${i * 0.2}s infinite` }} />
+                      <span className="inline-flex gap-1 items-center">
+                        {[0,1,2].map(i => (
+                          <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce"
+                            style={{ animationDelay: `${i*150}ms` }}/>
                         ))}
-                      </div>
+                      </span>
                     </div>
                   </div>
                 )}
-                <div ref={bottomRef} />
+                <div ref={bottomRef}/>
               </div>
 
-              {/* Быстрые вопросы */}
+              {/* ── Быстрые вопросы ── */}
               {messages.length <= 1 && !loading && (
                 <div className="px-4 pb-2 flex gap-1.5 flex-wrap shrink-0">
-                  {QUICK.map(q => (
+                  {QUICK_ADMIN.map(q => (
                     <button key={q} onClick={() => send(q)}
-                      className="text-[10px] px-2.5 py-1 rounded-full transition-all"
+                      className="text-[10px] px-2.5 py-1 rounded-full transition-all active:scale-95"
                       style={{
-                        background: "hsl(var(--primary) / 0.10)",
-                        border: "1px solid hsl(var(--primary) / 0.22)",
+                        background: "hsl(var(--primary)/0.10)",
+                        border: "1px solid hsl(var(--primary)/0.22)",
                         color: "hsl(var(--primary))",
                       }}>
                       {q}
@@ -423,32 +513,73 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
                 </div>
               )}
 
-              {/* Ввод */}
-              <div className="px-3 pb-3 flex gap-2 shrink-0"
+              {/* ── Ввод — жидкое стекло ── */}
+              <div className="px-3 pb-3 pt-2 shrink-0"
                 style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                <input
-                  ref={inputRef}
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") send(); }}
-                  placeholder="Спроси ARAY..."
-                  className="flex-1 rounded-xl px-3 py-2 text-[12px] focus:outline-none"
+                <div className="flex items-end gap-2 rounded-2xl px-3 py-2"
                   style={{
-                    background: "rgba(255,255,255,0.07)",
+                    background: "rgba(255,255,255,0.06)",
                     border: "1px solid rgba(255,255,255,0.12)",
-                    color: "rgba(255,255,255,0.90)",
-                  }}
-                />
-                <button onClick={() => send()} disabled={loading || !input.trim()}
-                  className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all disabled:opacity-30"
-                  style={{
-                    background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))" : "rgba(255,255,255,0.07)",
-                    border: "1px solid rgba(255,255,255,0.10)",
                   }}>
-                  {loading
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin text-white/50" />
-                    : <Send className="w-3.5 h-3.5" style={{ color: input.trim() ? "#fff" : "rgba(255,255,255,0.35)" }} />}
-                </button>
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 96) + "px"; }}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                    placeholder="Спроси Арая..."
+                    rows={1}
+                    className="flex-1 text-[12px] focus:outline-none resize-none bg-transparent leading-relaxed"
+                    style={{ color: "rgba(255,255,255,0.90)", maxHeight: "96px", minHeight: "20px" }}
+                  />
+
+                  <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
+                    {/* Модель */}
+                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full hidden sm:block"
+                      style={{ background: "rgba(232,112,10,0.12)", color: "hsl(var(--primary)/0.7)", border: "1px solid rgba(232,112,10,0.18)" }}>
+                      4.6
+                    </span>
+
+                    {/* Микрофон */}
+                    <button
+                      onClick={listening ? stopMic : startMic}
+                      className="w-7 h-7 rounded-xl flex items-center justify-center transition-all"
+                      style={{
+                        background: listening ? "hsl(var(--primary)/0.20)" : "rgba(255,255,255,0.06)",
+                        border: `1px solid ${listening ? "hsl(var(--primary)/0.40)" : "rgba(255,255,255,0.10)"}`,
+                        color: listening ? "hsl(var(--primary))" : "rgba(255,255,255,0.40)",
+                      }}
+                      title={listening ? "Остановить" : "Голосовой ввод"}
+                    >
+                      {listening
+                        ? <MicOff className="w-3 h-3"/>
+                        : <Mic className="w-3 h-3"/>}
+                    </button>
+
+                    {/* Отправить */}
+                    <button
+                      onClick={() => send()}
+                      disabled={loading || !input.trim()}
+                      className="w-7 h-7 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 active:scale-90"
+                      style={{
+                        background: input.trim()
+                          ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))"
+                          : "rgba(255,255,255,0.07)",
+                        border: "1px solid rgba(255,255,255,0.10)",
+                      }}
+                    >
+                      {loading
+                        ? <Loader2 className="w-3 h-3 animate-spin text-white/50"/>
+                        : <Send className="w-3 h-3" style={{ color: input.trim() ? "#fff" : "rgba(255,255,255,0.35)" }}/>
+                      }
+                    </button>
+                  </div>
+                </div>
+
+                {/* Подпись */}
+                <p className="text-center text-[9px] mt-1.5"
+                  style={{ color: "rgba(255,255,255,0.18)" }}>
+                  Арай помнит каждый разговор · <span style={{ color: "hsl(var(--primary)/0.5)" }}>ARAY PRODUCTIONS</span>
+                </p>
               </div>
             </motion.div>
           </>
@@ -456,13 +587,9 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
       </AnimatePresence>
 
       <style jsx global>{`
-        @keyframes arayFloat {
+        @keyframes adminArayFloat {
           0%, 100% { transform: translateY(0px); }
           50% { transform: translateY(-4px); }
-        }
-        @keyframes aDot {
-          0%, 60%, 100% { transform: scale(0.5); opacity: 0.3; }
-          30% { transform: scale(1); opacity: 1; }
         }
       `}</style>
     </>
