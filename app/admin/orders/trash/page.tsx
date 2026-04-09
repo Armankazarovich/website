@@ -52,7 +52,7 @@ export default async function OrdersTrashPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {deleted.map((order) => (
-                <tr key={order.id} className="hover:bg-muted/20 transition-colors">
+                <tr key={order.id} className="hover:bg-primary/[0.05] transition-colors">
                   <td className="px-4 py-3">
                     <span className="font-semibold">#{order.orderNumber}</span>
                     <p className="text-xs text-muted-foreground">{order.items.length} позиций</p>

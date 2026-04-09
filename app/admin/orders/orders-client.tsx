@@ -401,7 +401,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
                 <tr
                   key={order.id}
                   onClick={() => setQuickViewId(order.id)}
-                  className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                  className={`hover:bg-primary/[0.05] transition-colors cursor-pointer ${
                     selected.has(order.id) ? "bg-destructive/5" : ""
                   } ${quickViewId === order.id ? "bg-primary/15 border-l-2 border-primary" : ""}`}
                 >
