@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, Maximize2 } from "lucide-react";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ function useTTS() {
   return { speaking, speak };
 }
 
-// ─── Маленький шар ────────────────────────────────────────────────────────────
+// ─── Шар ─────────────────────────────────────────────────────────────────────
 
 function ArayOrb({ size = 28 }: { size?: number }) {
   return (
@@ -140,19 +140,19 @@ function Bubble({ msg, onSpeak, speaking }: {
   const isSpeaking = speaking === msg.id;
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      {!isUser && <div className="shrink-0 mt-0.5"><ArayOrb size={22} /></div>}
-      <div className="flex flex-col gap-1 max-w-[80%]">
-        <div className="px-3.5 py-2.5 text-[13px] leading-relaxed"
+      {!isUser && <div className="shrink-0 mt-1"><ArayOrb size={24} /></div>}
+      <div className="flex flex-col gap-1 max-w-[78%]">
+        <div className="px-4 py-2.5 text-[13.5px] leading-relaxed"
           style={isUser ? {
             background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.80))",
             color: "#fff",
-            borderRadius: "16px 16px 4px 16px",
-            boxShadow: "0 2px 12px hsl(var(--primary)/0.30)",
+            borderRadius: "18px 18px 4px 18px",
+            boxShadow: "0 2px 14px hsl(var(--primary)/0.30)",
           } : {
-            background: "rgba(255,255,255,0.09)",
+            background: "rgba(255,255,255,0.06)",
             color: "rgba(255,255,255,0.93)",
-            borderRadius: "16px 16px 16px 4px",
-            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "18px 18px 18px 4px",
+            border: "1px solid rgba(255,255,255,0.09)",
           }}>
           {msg.text
             ? msg.text.split("\n").map((line, i, arr) => (
@@ -160,22 +160,21 @@ function Bubble({ msg, onSpeak, speaking }: {
               ))
             : !isUser && msg.streaming
             ? <span className="inline-flex gap-1.5 items-center py-0.5">
-                {[0, 1, 2].map(i => (
+                {[0,1,2].map(i => (
                   <span key={i} className="w-2 h-2 rounded-full bg-orange-400 animate-bounce"
-                    style={{ animationDelay: `${i * 160}ms` }} />
+                    style={{ animationDelay: `${i*160}ms` }}/>
                 ))}
               </span>
-            : null
-          }
+            : null}
           {msg.streaming && msg.text && (
-            <span className="inline-block w-0.5 h-3.5 bg-orange-400 ml-0.5 align-middle animate-pulse" />
+            <span className="inline-block w-0.5 h-3.5 bg-orange-400 ml-0.5 align-middle animate-pulse"/>
           )}
         </div>
         {!isUser && !msg.streaming && msg.text && onSpeak && (
           <button onClick={() => onSpeak(msg.text, msg.id)}
-            className="self-start flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] transition-all hover:opacity-80"
-            style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.35)" }}>
-            {isSpeaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+            className="self-start flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] transition-all hover:opacity-80"
+            style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.32)" }}>
+            {isSpeaking ? <VolumeX className="w-3 h-3"/> : <Volume2 className="w-3 h-3"/>}
             {isSpeaking ? "стоп" : "озвучить"}
           </button>
         )}
@@ -190,10 +189,13 @@ const QUICK = [
   "Сколько заказов сегодня?",
   "Покажи сводку",
   "Как добавить товар?",
-  "Что с доставкой?",
+  "Помоги с доставкой",
 ];
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
+
+// Высота sticky-хедера в админке (py-3 + input ~40px)
+const HEADER_H = 57;
 
 export function AdminAray({ staffName = "Коллега" }: { staffName?: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -203,8 +205,6 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { speaking, speak } = useTTS();
-
-  // send нужен до useVoice
   const sendRef = useRef<(text?: string) => Promise<void>>();
 
   const addInput = useCallback((t: string) => {
@@ -212,20 +212,17 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
     if (!expanded) setExpanded(true);
   }, [expanded]);
 
-  const autoSend = useCallback(() => {
-    sendRef.current?.();
-  }, []);
-
+  const autoSend = useCallback(() => { sendRef.current?.(); }, []);
   const { listening, supported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
 
   // Приветствие
   useEffect(() => {
     if (expanded && messages.length === 0) {
       const h = new Date().getHours();
-      const time = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
+      const gr = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
       setMessages([{
         id: "welcome", role: "assistant",
-        text: `${time}, ${staffName}! 👋 Я Арай — твой ассистент. Заказы, товары, аналитика — спрашивай.`,
+        text: `${gr}, ${staffName}! 👋 Я Арай — твой ассистент. Заказы, товары, аналитика — спрашивай всё!`,
       }]);
     }
   }, [expanded, messages.length, staffName]);
@@ -234,7 +231,6 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
     if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
   }, [messages, expanded]);
 
-  // Открыть по событию от мобильного nav
   useEffect(() => {
     const handler = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 300); };
     window.addEventListener("aray:open", handler);
@@ -250,8 +246,7 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
     const allMsgs = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
-
-    const assistantId = (Date.now() + 1).toString();
+    const aid = (Date.now() + 1).toString();
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -262,130 +257,119 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
           context: { page: "admin" },
         }),
       });
-
       if (!res.body) throw new Error("No stream");
 
-      setMessages(prev => [...prev, { id: assistantId, role: "assistant", text: "", streaming: true }]);
+      setMessages(prev => [...prev, { id: aid, role: "assistant", text: "", streaming: true }]);
       setLoading(false);
 
       const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let rawText = "";
-
+      const dec = new TextDecoder();
+      let raw = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        rawText += decoder.decode(value, { stream: true });
-        const displayText = rawText
-          .replace(/\n__ARAY_META__[\s\S]*$/, "")
-          .replace(/__ARAY_ERR__[\s\S]*$/, "");
-        setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: displayText } : m));
+        raw += dec.decode(value, { stream: true });
+        const disp = raw.replace(/\n__ARAY_META__[\s\S]*$/, "").replace(/__ARAY_ERR__[\s\S]*$/, "");
+        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: disp } : m));
       }
-
-      const isError = rawText.includes("__ARAY_ERR__");
-      const errMatch = rawText.match(/__ARAY_ERR__(.+)$/);
-      const cleanText = isError
-        ? (errMatch?.[1] || "Что-то пошло не так 🙏")
-        : rawText.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
-
-      const { text: finalText } = parseActions(cleanText);
-      setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: finalText, streaming: false } : m));
-
+      const isErr = raw.includes("__ARAY_ERR__");
+      const errM = raw.match(/__ARAY_ERR__(.+)$/);
+      const clean = isErr ? (errM?.[1] || "Что-то пошло не так 🙏") : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
+      const { text: final } = parseActions(clean);
+      setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
     } catch {
       setMessages(prev => {
-        const has = prev.some(m => m.id === assistantId);
-        if (has) return prev.map(m => m.id === assistantId ? { ...m, text: "Нет связи 🙏", streaming: false } : m);
-        return [...prev, { id: assistantId, role: "assistant", text: "Нет связи 🙏" }];
+        const has = prev.some(m => m.id === aid);
+        if (has) return prev.map(m => m.id === aid ? { ...m, text: "Нет связи 🙏", streaming: false } : m);
+        return [...prev, { id: aid, role: "assistant", text: "Нет связи 🙏" }];
       });
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [input, messages, loading]);
 
-  // Регистрируем send в ref для голоса
   useEffect(() => { sendRef.current = send; }, [send]);
 
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  // Жидкое чёрное стекло — без цветного тинта
-  const panelBg: React.CSSProperties = {
-    background: "rgba(4, 5, 12, 0.97)",
-    backdropFilter: "blur(40px) saturate(80%) brightness(0.70)",
-    WebkitBackdropFilter: "blur(40px) saturate(80%) brightness(0.70)",
-    borderTop: "1px solid rgba(255,255,255,0.09)",
-    boxShadow: "0 -8px 40px rgba(0,0,0,0.70)",
+  // ── Чёрное стекло — без цветного тинта от фона
+  const darkGlass: React.CSSProperties = {
+    background: "rgba(4, 5, 13, 0.97)",
+    backdropFilter: "blur(40px) saturate(80%) brightness(0.65)",
+    WebkitBackdropFilter: "blur(40px) saturate(80%) brightness(0.65)",
   };
 
-  const chatBg: React.CSSProperties = {
-    background: "rgba(3, 4, 10, 0.98)",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
+  // ── INPUT BAR — всегда внизу, фиксированный
+  const inputBarStyle: React.CSSProperties = {
+    ...darkGlass,
+    borderTop: "1px solid rgba(255,255,255,0.09)",
+    boxShadow: "0 -6px 30px rgba(0,0,0,0.60)",
   };
 
   return (
     <>
-      {/* ── Основная панель — фиксирована снизу, правее сайдбара ── */}
-      <div
-        className="fixed bottom-0 left-0 right-0 lg:left-60 z-[150]"
-        style={panelBg}
-      >
-        {/* ── Чат-область (раскрывается вверх) ── */}
-        <AnimatePresence>
-          {expanded && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 340, opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ type: "spring", damping: 32, stiffness: 320 }}
-              className="overflow-hidden"
-              style={chatBg}
-            >
-              {/* Шапка чата */}
-              <div className="flex items-center gap-3 px-4 py-2.5"
+      {/* ═══════════════════════════════════════════════════
+          ПОЛНОЭКРАННАЯ ПАНЕЛЬ ЧАТА
+          fixed: left=sidebar(240px), top=header(57px), right=0, bottom=inputBar(~64px)
+          z-[25] — ниже sidebar(z-30) и ниже header(z-20 sticky но выше нас нет проблем)
+      ═══════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 30, stiffness: 320 }}
+            className="fixed z-[25] flex flex-col"
+            style={{
+              left: 0,
+              right: 0,
+              top: `${HEADER_H}px`,
+              bottom: "64px",          // высота input-бара
+              ...darkGlass,
+            }}
+          >
+            {/* На десктопе отступаем от сайдбара */}
+            <div className="lg:pl-60 flex flex-col h-full">
+
+              {/* ── Шапка чата ── */}
+              <div className="flex items-center gap-3 px-5 py-3 shrink-0"
                 style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <ArayOrb size={28} />
+                <ArayOrb size={30}/>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-bold text-white/92">Арай</span>
+                    <span className="text-[14px] font-bold text-white/92 tracking-tight">Арай</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
-                    <span className="text-[11px] text-white/40">Бизнес-ассистент</span>
+                    <span className="text-[11px] text-white/38">Бизнес-ассистент · помнит всё</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setMessages([])}
-                    className="p-1.5 rounded-lg text-white/30 hover:text-white/65 hover:bg-white/[0.07] transition-all"
-                    title="Очистить">
-                    <RotateCcw className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => setMessages([])}
+                    className="p-2 rounded-xl text-white/28 hover:text-white/65 hover:bg-white/[0.07] transition-all"
+                    title="Очистить чат">
+                    <RotateCcw className="w-3.5 h-3.5"/>
                   </button>
-                  <button
-                    onClick={() => setExpanded(false)}
-                    className="p-1.5 rounded-lg text-white/30 hover:text-white/65 hover:bg-white/[0.07] transition-all"
+                  <button onClick={() => setExpanded(false)}
+                    className="p-2 rounded-xl text-white/28 hover:text-white/65 hover:bg-white/[0.07] transition-all"
                     title="Свернуть">
-                    <ChevronDown className="w-3.5 h-3.5" />
+                    <ChevronDown className="w-4 h-4"/>
                   </button>
                 </div>
               </div>
 
-              {/* Сообщения */}
-              <div
-                className="flex flex-col gap-3 px-4 py-3 overflow-y-auto"
-                style={{ height: "calc(340px - 48px)" }}
-              >
+              {/* ── Сообщения ── */}
+              <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
                 {messages.map(msg => (
-                  <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking} />
+                  <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
                 ))}
-
-                {/* Быстрые вопросы — только после приветствия */}
                 {messages.length === 1 && !loading && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     {QUICK.map(q => (
                       <button key={q} onClick={() => send(q)}
-                        className="px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all hover:opacity-85 active:scale-95"
+                        className="px-4 py-2 rounded-xl text-[12px] font-medium transition-all hover:opacity-85 active:scale-95"
                         style={{
-                          background: "rgba(255,255,255,0.07)",
-                          border: "1px solid rgba(255,255,255,0.11)",
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
                           color: "rgba(255,255,255,0.72)",
                         }}>
                         {q}
@@ -393,36 +377,44 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
                     ))}
                   </div>
                 )}
-                <div ref={bottomRef} />
+                <div ref={bottomRef}/>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* ── Строка ввода — всегда видна — КАК CLAUDE ── */}
-        <div className="flex items-end gap-2.5 px-4 py-3"
-          style={{ borderTop: expanded ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+      {/* ═══════════════════════════════════════════════════
+          INPUT BAR — ВСЕГДА ВИДЕН (как Claude)
+          fixed bottom-0, offset sidebar на desktop
+      ═══════════════════════════════════════════════════ */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-[26] lg:left-60"
+        style={inputBarStyle}
+      >
+        <div className="flex items-end gap-3 px-4 py-3">
 
-          {/* Шар + кнопка раскрыть/свернуть */}
+          {/* Шар — открыть/закрыть */}
           <button
             onClick={() => {
               setExpanded(v => !v);
-              if (!expanded) setTimeout(() => inputRef.current?.focus(), 250);
+              if (!expanded) setTimeout(() => inputRef.current?.focus(), 200);
             }}
-            className="shrink-0 mb-0.5 relative transition-transform hover:scale-105 active:scale-95"
+            className="shrink-0 mb-0.5 relative transition-transform hover:scale-105 active:scale-92"
             style={{ WebkitTapHighlightColor: "transparent" }}
-            title={expanded ? "Свернуть Арая" : "Открыть Арая"}>
-            <ArayOrb size={34} />
+            title={expanded ? "Свернуть" : "Открыть Арая"}>
+            <ArayOrb size={34}/>
+            {/* Индикатор состояния */}
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(8,12,30,0.95)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              style={{ background: "rgba(4,5,13,0.98)", border: "1px solid rgba(255,255,255,0.14)" }}>
               {expanded
-                ? <ChevronDown className="w-2 h-2 text-white/50" />
-                : <ChevronUp className="w-2 h-2 text-white/50" />}
+                ? <ChevronDown className="w-2 h-2 text-white/45"/>
+                : <Maximize2 className="w-2 h-2 text-white/45"/>}
             </span>
           </button>
 
-          {/* Поле ввода */}
-          <div className="flex-1 relative">
+          {/* Textarea */}
+          <div className="flex-1 relative min-w-0">
             <textarea
               ref={inputRef}
               value={input}
@@ -431,64 +423,61 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
               onFocus={() => !expanded && setExpanded(true)}
               placeholder={listening ? "Слушаю..." : "Спроси Арая..."}
               rows={1}
-              className="w-full resize-none bg-transparent text-white/88 placeholder-white/28 text-[13px] leading-relaxed outline-none py-1 pr-1"
-              style={{ maxHeight: 100, fontFamily: "inherit" }}
+              className="w-full resize-none bg-transparent text-white/88 placeholder-white/28 text-[13.5px] leading-relaxed outline-none py-1 pr-1"
+              style={{ maxHeight: 96, fontFamily: "inherit" }}
               onInput={e => {
                 const t = e.currentTarget;
                 t.style.height = "auto";
-                t.style.height = Math.min(t.scrollHeight, 100) + "px";
+                t.style.height = Math.min(t.scrollHeight, 96) + "px";
               }}
             />
           </div>
 
           {/* Кнопки */}
           <div className="flex items-center gap-1.5 shrink-0 mb-0.5">
-            {/* Микрофон — только если браузер поддерживает */}
             {supported && (
               <button
                 onClick={listening ? stopMic : startMic}
-                className="p-2 rounded-xl transition-all"
+                className="p-2.5 rounded-xl transition-all"
                 style={{
-                  background: listening ? "hsl(var(--primary)/0.22)" : "rgba(255,255,255,0.07)",
-                  color: listening ? "hsl(var(--primary))" : "rgba(255,255,255,0.50)",
-                  border: `1.5px solid ${listening ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.10)"}`,
+                  background: listening ? "hsl(var(--primary)/0.20)" : "rgba(255,255,255,0.06)",
+                  color: listening ? "hsl(var(--primary))" : "rgba(255,255,255,0.48)",
+                  border: `1.5px solid ${listening ? "hsl(var(--primary)/0.40)" : "rgba(255,255,255,0.09)"}`,
                   animation: listening ? "micPulse 1.2s ease-in-out infinite" : "none",
                 }}>
-                {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
               </button>
             )}
-
-            {/* Отправить */}
             <button
               onClick={() => send()}
               disabled={!input.trim() || loading}
-              className="p-2 rounded-xl transition-all"
+              className="p-2.5 rounded-xl transition-all"
               style={{
                 background: input.trim() && !loading
                   ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.80))"
-                  : "rgba(255,255,255,0.07)",
-                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.28)",
-                border: "1.5px solid rgba(255,255,255,0.10)",
-                boxShadow: input.trim() && !loading ? "0 2px 12px hsl(var(--primary)/0.35)" : "none",
+                  : "rgba(255,255,255,0.06)",
+                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.25)",
+                border: "1.5px solid rgba(255,255,255,0.09)",
+                boxShadow: input.trim() && !loading ? "0 2px 14px hsl(var(--primary)/0.35)" : "none",
               }}>
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4"/>
             </button>
           </div>
         </div>
 
-        {/* Нижняя метка */}
-        <div className="text-center pb-1.5 -mt-0.5">
-          <span className="text-[9px] tracking-wide" style={{ color: "rgba(255,255,255,0.16)" }}>
+        {/* Метка */}
+        <div className="text-center pb-2 -mt-0.5">
+          <span className="text-[9px] tracking-wide" style={{ color: "rgba(255,255,255,0.14)" }}>
             Арай помнит каждый разговор ·{" "}
-            <span style={{ color: "hsl(var(--primary)/0.40)" }}>ARAY PRODUCTIONS</span>
+            <span style={{ color: "hsl(var(--primary)/0.38)" }}>ARAY PRODUCTIONS</span>
           </span>
         </div>
       </div>
 
       <style>{`
         @keyframes micPulse {
-          0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary)/0.4); }
-          50% { box-shadow: 0 0 0 6px hsl(var(--primary)/0); }
+          0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary)/0.35); }
+          50% { box-shadow: 0 0 0 7px hsl(var(--primary)/0); }
         }
       `}</style>
     </>

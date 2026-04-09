@@ -265,6 +265,182 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         guestName: order.guestName, totalAmount: Number(order.totalAmount), createdAt: order.createdAt,
       };
     }
+
+    // ── НОВЫЕ АДМИНСКИЕ ИНСТРУМЕНТЫ ──────────────────────────────────────────
+
+    if (name === "get_admin_dashboard") {
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const [todayOrders, weekOrders, monthOrders, newOrders, allStatuses] = await Promise.all([
+        prisma.order.findMany({
+          where: { createdAt: { gte: todayStart }, deletedAt: null },
+          select: { totalAmount: true, status: true },
+        }),
+        prisma.order.findMany({
+          where: { createdAt: { gte: weekStart }, deletedAt: null },
+          select: { totalAmount: true, status: true },
+        }),
+        prisma.order.findMany({
+          where: { createdAt: { gte: monthStart }, deletedAt: null },
+          select: { totalAmount: true },
+        }),
+        prisma.order.count({ where: { status: "NEW", deletedAt: null } }),
+        prisma.order.groupBy({ by: ["status"], _count: { _all: true }, where: { deletedAt: null } }),
+      ]);
+
+      const sum = (orders: { totalAmount: any }[]) =>
+        orders.reduce((s, o) => s + Number(o.totalAmount), 0);
+
+      return {
+        today: {
+          count: todayOrders.length,
+          revenue: sum(todayOrders),
+          new: todayOrders.filter(o => o.status === "NEW").length,
+        },
+        week: { count: weekOrders.length, revenue: sum(weekOrders) },
+        month: { count: monthOrders.length, revenue: sum(monthOrders) },
+        awaitingApproval: newOrders,
+        statusBreakdown: Object.fromEntries(allStatuses.map(s => [s.status, s._count._all])),
+        generatedAt: new Date().toLocaleString("ru-RU"),
+      };
+    }
+
+    if (name === "get_orders_list") {
+      const limit = Number(input.limit) || 10;
+      const statusFilter = input.status ? String(input.status) : undefined;
+      const orders = await prisma.order.findMany({
+        where: { deletedAt: null, ...(statusFilter ? { status: statusFilter as any } : {}) },
+        orderBy: { createdAt: "desc" },
+        take: limit,
+        select: {
+          orderNumber: true, status: true, guestName: true, guestPhone: true,
+          totalAmount: true, createdAt: true, deliveryType: true,
+          items: { select: { productName: true, quantity: true }, take: 2 },
+        },
+      });
+      const statusLabels: Record<string, string> = {
+        NEW: "Новый", CONFIRMED: "Подтверждён", PROCESSING: "В обработке",
+        SHIPPED: "Отгружен", IN_DELIVERY: "Доставляется",
+        READY_PICKUP: "Готов к выдаче", DELIVERED: "Доставлен",
+        COMPLETED: "Завершён", CANCELLED: "Отменён",
+      };
+      return orders.map(o => ({
+        номер: o.orderNumber,
+        клиент: o.guestName,
+        телефон: o.guestPhone,
+        статус: statusLabels[o.status] || o.status,
+        сумма: Number(o.totalAmount),
+        дата: o.createdAt.toLocaleDateString("ru-RU"),
+        доставка: o.deliveryType,
+        товары: o.items.map(i => `${i.productName} ×${i.quantity}`).join(", "),
+      }));
+    }
+
+    if (name === "get_clients_list") {
+      const limit = Number(input.limit) || 10;
+      const query = input.query ? String(input.query) : undefined;
+      const clients = await prisma.order.groupBy({
+        by: ["guestPhone"],
+        _count: { _all: true },
+        _sum: { totalAmount: true },
+        _max: { guestName: true, createdAt: true },
+        where: {
+          deletedAt: null,
+          ...(query ? {
+            OR: [
+              { guestName: { contains: query, mode: "insensitive" } },
+              { guestPhone: { contains: query } },
+            ],
+          } : {}),
+        },
+        orderBy: { _count: { guestPhone: "desc" } },
+        take: limit,
+      });
+      return clients.map(c => ({
+        имя: c._max.guestName,
+        телефон: c.guestPhone,
+        заказов: c._count._all,
+        сумма_всего: Number(c._sum.totalAmount || 0),
+        последний_заказ: c._max.createdAt?.toLocaleDateString("ru-RU"),
+      }));
+    }
+
+    if (name === "update_order_status") {
+      const orderNumber = Number(input.orderNumber);
+      const status = String(input.status);
+      const order = await prisma.order.findFirst({ where: { orderNumber, deletedAt: null } });
+      if (!order) return { error: "Заказ не найден" };
+      await prisma.order.update({ where: { id: order.id }, data: { status: status as any } });
+      return { success: true, orderNumber, newStatus: status, message: `Заказ #${orderNumber} → ${status}` };
+    }
+
+    if (name === "get_products_list") {
+      const limit = Number(input.limit) || 15;
+      const catFilter = input.category ? String(input.category) : undefined;
+      const inStockOnly = Boolean(input.inStockOnly);
+      const products = await prisma.product.findMany({
+        where: {
+          active: true,
+          ...(catFilter ? { category: { name: { contains: catFilter, mode: "insensitive" } } } : {}),
+          ...(inStockOnly ? { variants: { some: { inStock: true } } } : {}),
+        },
+        include: {
+          category: { select: { name: true } },
+          variants: { where: inStockOnly ? { inStock: true } : {}, take: 2 },
+        },
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      });
+      return products.map(p => ({
+        название: p.name,
+        категория: p.category.name,
+        slug: p.slug,
+        варианты: p.variants.map(v => ({
+          размер: v.size,
+          цена_куб: v.pricePerCube ? Number(v.pricePerCube) : null,
+          цена_шт: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+          в_наличии: v.inStock,
+        })),
+      }));
+    }
+
+    if (name === "web_search") {
+      const query = String(input.query || "");
+      try {
+        const res = await fetch(
+          `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5&lang=ru`,
+          { headers: { "X-Subscription-Token": process.env.BRAVE_SEARCH_KEY || "" } }
+        );
+        if (!res.ok) {
+          // Fallback: DuckDuckGo instant answer
+          const ddg = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`);
+          const ddgData = await ddg.json();
+          return {
+            query,
+            results: ddgData.RelatedTopics?.slice(0, 5).map((t: any) => ({
+              title: t.Text?.slice(0, 100) || "",
+              snippet: t.Text || "",
+            })) || [],
+            note: "Результаты DuckDuckGo",
+          };
+        }
+        const data = await res.json();
+        return {
+          query,
+          results: (data.web?.results || []).slice(0, 5).map((r: any) => ({
+            title: r.title,
+            snippet: r.description,
+            url: r.url,
+          })),
+        };
+      } catch {
+        return { query, error: "Поиск временно недоступен", note: "Попробуй переформулировать вопрос" };
+      }
+    }
+
   } catch (err) {
     console.error(`[Tool ${name}]`, err);
     return { error: "Ошибка инструмента" };
