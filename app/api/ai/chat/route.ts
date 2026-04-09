@@ -54,22 +54,19 @@ export async function POST(req: NextRequest) {
     const isNewSession = !sessionId && !userId;
     if (!sessionId) sessionId = generateSessionId();
 
-    // ── Память ───────────────────────────────────────────────────────────────
-    let memory = null;
-    try {
-      memory = await getOrCreateMemory(userId, userId ? null : sessionId);
-    } catch (memErr) {
-      console.error("[Aray] Memory error:", memErr);
-    }
-    const memoryContext = formatMemoryForPrompt(memory);
-
-    // ── Роль ─────────────────────────────────────────────────────────────────
+    // ── Параллельная загрузка: память + настройки сайта ─────────────────────
     let arayRole: ArayRole = "customer";
     if (["SUPER_ADMIN", "ADMIN"].includes(sessionRole || "")) arayRole = "admin";
     else if (["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"].includes(sessionRole || "")) arayRole = "staff";
 
-    // ── Настройки сайта ──────────────────────────────────────────────────────
-    const siteSettings = await getSiteSettings();
+    const [memory, siteSettings] = await Promise.all([
+      getOrCreateMemory(userId, userId ? null : sessionId).catch((e) => {
+        console.error("[Aray] Memory error:", e); return null;
+      }),
+      getSiteSettings().catch(() => []),
+    ]);
+    const memoryContext = formatMemoryForPrompt(memory);
+
     const siteName = getSetting(siteSettings, "site_name") || "ПилоРус";
     const phone = getSetting(siteSettings, "phone") || "";
     const address = getSetting(siteSettings, "address") || "";

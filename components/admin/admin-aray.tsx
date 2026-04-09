@@ -4,22 +4,176 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, Maximize2 } from "lucide-react";
 
-// ─── Типы ─────────────────────────────────────────────────────────────────────
+// ─── Classic mode (синхронизация с темой администраторки) ─────────────────────
+function useClassicMode() {
+  const [classic, setClassic] = useState(false);
+  useEffect(() => {
+    setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
+    window.addEventListener("aray-classic-change", h);
+    return () => window.removeEventListener("aray-classic-change", h);
+  }, []);
+  return classic;
+}
 
-type Msg = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  streaming?: boolean;
-};
+// ─── Типы ─────────────────────────────────────────────────────────────────────
+type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: boolean };
 
 function parseActions(raw: string) {
   const idx = raw.indexOf("ARAY_ACTIONS:");
   return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
 }
 
-// ─── Голосовой ввод ───────────────────────────────────────────────────────────
+// ─── Markdown рендер ──────────────────────────────────────────────────────────
+// Inline: **bold**, *italic*, `code`
+function renderInline(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**"))
+      return <strong key={i} className="font-semibold">{p.slice(2, -2)}</strong>;
+    if (p.startsWith("*") && p.endsWith("*"))
+      return <em key={i} className="italic">{p.slice(1, -1)}</em>;
+    if (p.startsWith("`") && p.endsWith("`"))
+      return (
+        <code key={i}
+          className="px-1.5 py-0.5 rounded text-[11.5px] font-mono"
+          style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))" }}>
+          {p.slice(1, -1)}
+        </code>
+      );
+    return p as React.ReactNode;
+  });
+}
 
+// Таблица Markdown: | col | col |
+function renderTable(lines: string[]): React.ReactNode {
+  const rows = lines
+    .filter(l => l.trim().startsWith("|") && !l.match(/^\|[-| ]+\|$/))
+    .map(l => l.split("|").filter((_, i, a) => i > 0 && i < a.length - 1).map(c => c.trim()));
+  if (rows.length === 0) return null;
+  const [head, ...body] = rows;
+  return (
+    <div key={Math.random()} className="overflow-x-auto my-2 rounded-xl"
+      style={{ border: "1px solid hsl(var(--border)/0.5)" }}>
+      <table className="w-full text-[12px] border-collapse">
+        <thead>
+          <tr style={{ background: "hsl(var(--primary)/0.10)", borderBottom: "1px solid hsl(var(--border)/0.4)" }}>
+            {head.map((h, i) => (
+              <th key={i} className="px-3 py-2 text-left font-semibold"
+                style={{ color: "hsl(var(--primary))" }}>
+                {renderInline(h)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {body.map((row, ri) => (
+            <tr key={ri} style={{ borderBottom: ri < body.length - 1 ? "1px solid hsl(var(--border)/0.25)" : "none" }}>
+              {row.map((cell, ci) => (
+                <td key={ci} className="px-3 py-1.5">{renderInline(cell)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Блочный рендер — разбирает текст на параграфы, списки, таблицы, разделители
+function renderMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split("\n");
+  const nodes: React.ReactNode[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Пустая строка — пропуск (параграфы разделяются визуально gap-ом)
+    if (line.trim() === "") { i++; continue; }
+
+    // Разделитель ---
+    if (/^---+$/.test(line.trim())) {
+      nodes.push(<hr key={i} style={{ border: "none", borderTop: "1px solid hsl(var(--border)/0.4)", margin: "6px 0" }} />);
+      i++; continue;
+    }
+
+    // Заголовок ### или ## или #
+    const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
+    if (hMatch) {
+      const level = hMatch[1].length;
+      const sizes = ["text-[15px]", "text-[14px]", "text-[13px]"];
+      nodes.push(
+        <p key={i} className={`${sizes[level - 1]} font-bold mt-2 mb-1`}
+          style={{ color: "hsl(var(--primary))" }}>
+          {renderInline(hMatch[2])}
+        </p>
+      );
+      i++; continue;
+    }
+
+    // Таблица — собираем все строки таблицы вместе
+    if (line.trim().startsWith("|")) {
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      nodes.push(<div key={`t-${i}`}>{renderTable(tableLines)}</div>);
+      continue;
+    }
+
+    // Список - item или * item
+    if (/^[\-\*]\s/.test(line.trim())) {
+      const items: string[] = [];
+      while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) {
+        items.push(lines[i].replace(/^[\-\*]\s/, "").trim());
+        i++;
+      }
+      nodes.push(
+        <ul key={`ul-${i}`} className="space-y-0.5 my-1">
+          {items.map((item, ii) => (
+            <li key={ii} className="flex gap-1.5 items-start">
+              <span className="mt-[5px] shrink-0 w-1 h-1 rounded-full"
+                style={{ background: "hsl(var(--primary)/0.65)" }} />
+              <span>{renderInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // Нумерованный список 1. item
+    if (/^\d+\.\s/.test(line.trim())) {
+      const items: string[] = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        items.push(lines[i].replace(/^\d+\.\s/, "").trim());
+        i++;
+      }
+      nodes.push(
+        <ol key={`ol-${i}`} className="space-y-0.5 my-1 list-none">
+          {items.map((item, ii) => (
+            <li key={ii} className="flex gap-2 items-start">
+              <span className="shrink-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center mt-0.5"
+                style={{ background: "hsl(var(--primary)/0.15)", color: "hsl(var(--primary))" }}>
+                {ii + 1}
+              </span>
+              <span>{renderInline(item)}</span>
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
+    // Обычный параграф
+    nodes.push(<p key={i}>{renderInline(line)}</p>);
+    i++;
+  }
+  return nodes;
+}
+
+// ─── Голосовой ввод ───────────────────────────────────────────────────────────
 function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -35,9 +189,7 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
     if (!SR) return;
     if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
     const r = new SR();
-    r.lang = "ru-RU";
-    r.interimResults = false;
-    r.continuous = false;
+    r.lang = "ru-RU"; r.interimResults = false; r.continuous = false;
     r.onstart = () => setListening(true);
     r.onend = () => { setListening(false); ref.current = null; };
     r.onerror = () => { setListening(false); ref.current = null; };
@@ -56,57 +208,88 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   return { listening, supported, start, stop };
 }
 
-// ─── TTS ─────────────────────────────────────────────────────────────────────
+// ─── TTS — браузерный голос (бесплатно, Microsoft Irina / Natural) ────────────
+function pickBestRuVoice(): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined" || !window.speechSynthesis) return null;
+  const voices = window.speechSynthesis.getVoices();
+  const priority = [
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Natural"),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Microsoft"),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Irina"),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Pavel"),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Google"),
+    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru"),
+    (v: SpeechSynthesisVoice) => v.lang.includes("ru"),
+  ];
+  for (const fn of priority) { const f = voices.find(fn); if (f) return f; }
+  return null;
+}
 
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const speak = useCallback(async (text: string, id: string) => {
-    if (speaking === id) { audioRef.current?.pause(); audioRef.current = null; setSpeaking(null); return; }
-    audioRef.current?.pause();
-    setSpeaking(id);
-    try {
-      const res = await fetch("/api/ai/tts", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      if (!res.ok) { setSpeaking(null); return; }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setSpeaking(null); URL.revokeObjectURL(url); };
-      audio.onerror = () => setSpeaking(null);
-      await audio.play();
-    } catch { setSpeaking(null); }
+  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [supported, setSupported] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setSupported("speechSynthesis" in window);
+    if (window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  }, []);
+
+  const speak = useCallback((text: string, id: string) => {
+    if (!window.speechSynthesis) return;
+    if (speaking === id) {
+      window.speechSynthesis.cancel(); utterRef.current = null; setSpeaking(null); return;
+    }
+    window.speechSynthesis.cancel();
+    const clean = text
+      .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+      .replace(/[#_`|]/g, "").replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
+      .replace(/ARAY_ACTIONS:\[.*\]/g, "").replace(/^---+$/mg, "").trim();
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "ru-RU"; utter.rate = 1.05; utter.pitch = 1.0; utter.volume = 1.0;
+    const voice = pickBestRuVoice();
+    if (voice) utter.voice = voice;
+    utter.onstart = () => setSpeaking(id);
+    utter.onend = () => { setSpeaking(null); utterRef.current = null; };
+    utter.onerror = () => { setSpeaking(null); utterRef.current = null; };
+    utterRef.current = utter;
+    window.speechSynthesis.speak(utter);
   }, [speaking]);
-  return { speaking, speak };
+
+  const stop = useCallback(() => {
+    window.speechSynthesis?.cancel(); utterRef.current = null; setSpeaking(null);
+  }, []);
+
+  return { speaking, speak, stop, supported };
 }
 
-// ─── Шар ─────────────────────────────────────────────────────────────────────
-
+// ─── Шар ARAY (брендовый, не менять) ──────────────────────────────────────────
 function ArayOrb({ size = 28 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", flexShrink: 0 }}>
       <defs>
         <radialGradient id="ao-base" cx="34%" cy="28%" r="70%">
-          <stop offset="0%" stopColor="#fffbe0"/>
-          <stop offset="10%" stopColor="#ffca40"/>
-          <stop offset="28%" stopColor="#f07800"/>
-          <stop offset="52%" stopColor="#c05000"/>
-          <stop offset="75%" stopColor="#6e1c00"/>
+          <stop offset="0%"   stopColor="#fffbe0"/>
+          <stop offset="10%"  stopColor="#ffca40"/>
+          <stop offset="28%"  stopColor="#f07800"/>
+          <stop offset="52%"  stopColor="#c05000"/>
+          <stop offset="75%"  stopColor="#6e1c00"/>
           <stop offset="100%" stopColor="#160300"/>
         </radialGradient>
         <radialGradient id="ao-dark" cx="72%" cy="74%" r="52%">
-          <stop offset="0%" stopColor="#050000" stopOpacity="0.75"/>
+          <stop offset="0%"   stopColor="#050000" stopOpacity="0.75"/>
           <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
         </radialGradient>
         <radialGradient id="ao-hl" cx="30%" cy="25%" r="34%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+          <stop offset="0%"   stopColor="white" stopOpacity="0.85"/>
           <stop offset="100%" stopColor="white" stopOpacity="0"/>
         </radialGradient>
         <radialGradient id="ao-rim" cx="50%" cy="50%" r="50%">
-          <stop offset="76%" stopColor="transparent" stopOpacity="0"/>
+          <stop offset="76%"  stopColor="transparent" stopOpacity="0"/>
           <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
         </radialGradient>
         <clipPath id="ao-clip"><circle cx="50" cy="50" r="46"/></clipPath>
@@ -130,7 +313,6 @@ function ArayOrb({ size = 28 }: { size?: number }) {
 }
 
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
-
 function Bubble({ msg, onSpeak, speaking }: {
   msg: Msg;
   onSpeak?: (text: string, id: string) => void;
@@ -138,42 +320,27 @@ function Bubble({ msg, onSpeak, speaking }: {
 }) {
   const isUser = msg.role === "user";
   const isSpeaking = speaking === msg.id;
+
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
       {!isUser && <div className="shrink-0 mt-1"><ArayOrb size={24} /></div>}
-      <div className="flex flex-col gap-1 max-w-[78%]">
-        <div className="px-4 py-2.5 text-[13.5px] leading-relaxed"
-          style={isUser ? {
-            background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.80))",
-            color: "#fff",
-            borderRadius: "18px 18px 4px 18px",
-            boxShadow: "0 2px 14px hsl(var(--primary)/0.30)",
-          } : {
-            background: "rgba(255,255,255,0.06)",
-            color: "rgba(255,255,255,0.93)",
-            borderRadius: "18px 18px 18px 4px",
-            border: "1px solid rgba(255,255,255,0.09)",
-          }}>
+      <div className="flex flex-col gap-1 max-w-[80%]">
+        <div className={`px-4 py-2.5 text-[13.5px] leading-relaxed ${isUser ? "aray-chat-bubble-user" : "aray-chat-bubble-assistant"}`}>
           {msg.text
-            ? msg.text.split("\n").map((line, i, arr) => (
-                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-              ))
+            ? <div className="space-y-1">{renderMarkdown(msg.text)}</div>
             : !isUser && msg.streaming
             ? <span className="inline-flex gap-1.5 items-center py-0.5">
                 {[0,1,2].map(i => (
-                  <span key={i} className="w-2 h-2 rounded-full bg-orange-400 animate-bounce"
-                    style={{ animationDelay: `${i*160}ms` }}/>
+                  <span key={i} className="aray-typing-dot animate-bounce"
+                    style={{ animationDelay: `${i * 160}ms` }}/>
                 ))}
               </span>
             : null}
-          {msg.streaming && msg.text && (
-            <span className="inline-block w-0.5 h-3.5 bg-orange-400 ml-0.5 align-middle animate-pulse"/>
-          )}
+          {msg.streaming && msg.text && <span className="aray-stream-cursor"/>}
         </div>
         {!isUser && !msg.streaming && msg.text && onSpeak && (
           <button onClick={() => onSpeak(msg.text, msg.id)}
-            className="self-start flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] transition-all hover:opacity-80"
-            style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.32)" }}>
+            className={`aray-speak-btn self-start px-2 py-0.5 text-[10px] ${isSpeaking ? "aray-speak-btn-active" : ""}`}>
             {isSpeaking ? <VolumeX className="w-3 h-3"/> : <Volume2 className="w-3 h-3"/>}
             {isSpeaking ? "стоп" : "озвучить"}
           </button>
@@ -184,20 +351,16 @@ function Bubble({ msg, onSpeak, speaking }: {
 }
 
 // ─── Быстрые вопросы ──────────────────────────────────────────────────────────
-
-const QUICK = [
-  "Сколько заказов сегодня?",
-  "Покажи сводку",
-  "Как добавить товар?",
-  "Помоги с доставкой",
-];
+const QUICK = ["Сколько заказов сегодня?", "Покажи сводку", "Новые заказы", "Список товаров"];
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
+const HEADER_H = 57; // высота мобильного sticky хедера
 
-// Высота sticky-хедера в админке (py-3 + input ~40px)
-const HEADER_H = 57;
-
-export function AdminAray({ staffName = "Коллега" }: { staffName?: string }) {
+export function AdminAray({ staffName = "Коллега", userRole }: {
+  staffName?: string;
+  userRole?: string;
+}) {
+  const classic = useClassicMode();
   const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -207,47 +370,41 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
   const { speaking, speak } = useTTS();
   const sendRef = useRef<(text?: string) => Promise<void>>();
 
-  const addInput = useCallback((t: string) => {
-    setInput(t);
-    if (!expanded) setExpanded(true);
-  }, [expanded]);
-
+  const addInput = useCallback((t: string) => { setInput(t); if (!expanded) setExpanded(true); }, [expanded]);
   const autoSend = useCallback(() => { sendRef.current?.(); }, []);
   const { listening, supported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
 
-  // Приветствие
+  // Приветствие при первом открытии
   useEffect(() => {
     if (expanded && messages.length === 0) {
       const h = new Date().getHours();
-      const gr = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
-      setMessages([{
-        id: "welcome", role: "assistant",
-        text: `${gr}, ${staffName}! 👋 Я Арай — твой ассистент. Заказы, товары, аналитика — спрашивай всё!`,
-      }]);
+      const gr = h < 12 ? "Доброе утро" : h < 17 ? "Привет" : "Добрый вечер";
+      setMessages([{ id: "welcome", role: "assistant",
+        text: `${gr}, ${staffName}! 👋 Я Арай. Заказы, товары, аналитика, поиск — спрашивай всё что нужно.` }]);
     }
   }, [expanded, messages.length, staffName]);
 
+  // Автоскролл
   useEffect(() => {
     if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
   }, [messages, expanded]);
 
+  // Открытие через событие
   useEffect(() => {
-    const handler = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 300); };
-    window.addEventListener("aray:open", handler);
-    return () => window.removeEventListener("aray:open", handler);
+    const h = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 300); };
+    window.addEventListener("aray:open", h);
+    return () => window.removeEventListener("aray:open", h);
   }, []);
 
   const send = useCallback(async (text?: string) => {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setInput("");
-
     const userMsg: Msg = { id: Date.now().toString(), role: "user", text: msg };
     const allMsgs = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
     const aid = (Date.now() + 1).toString();
-
     try {
       const res = await fetch("/api/ai/chat", {
         method: "POST",
@@ -258,10 +415,8 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
         }),
       });
       if (!res.body) throw new Error("No stream");
-
       setMessages(prev => [...prev, { id: aid, role: "assistant", text: "", streaming: true }]);
       setLoading(false);
-
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let raw = "";
@@ -292,86 +447,61 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  // ── Чёрное стекло — без цветного тинта от фона
-  const darkGlass: React.CSSProperties = {
-    background: "rgba(4, 5, 13, 0.97)",
-    backdropFilter: "blur(40px) saturate(80%) brightness(0.65)",
-    WebkitBackdropFilter: "blur(40px) saturate(80%) brightness(0.65)",
-  };
+  const hasText = input.trim().length > 0;
 
-  // ── INPUT BAR — всегда внизу, фиксированный
-  const inputBarStyle: React.CSSProperties = {
-    ...darkGlass,
-    borderTop: "1px solid rgba(255,255,255,0.09)",
-    boxShadow: "0 -6px 30px rgba(0,0,0,0.60)",
-  };
+  // Цвет текста в зависимости от темы (classic vs nature)
+  const textPrimary = classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.92)";
+  const textMuted   = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)";
 
   return (
     <>
-      {/* ═══════════════════════════════════════════════════
-          ПОЛНОЭКРАННАЯ ПАНЕЛЬ ЧАТА
-          fixed: left=sidebar(240px), top=header(57px), right=0, bottom=inputBar(~64px)
-          z-[25] — ниже sidebar(z-30) и ниже header(z-20 sticky но выше нас нет проблем)
-      ═══════════════════════════════════════════════════ */}
+      {/* ══ ПАНЕЛЬ ЧАТА ═══════════════════════════════════════════════════════ */}
       <AnimatePresence>
         {expanded && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 30, stiffness: 320 }}
-            className="fixed z-[25] flex flex-col"
-            style={{
-              left: 0,
-              right: 0,
-              top: `${HEADER_H}px`,
-              bottom: "64px",          // высота input-бара
-              ...darkGlass,
-            }}
-          >
-            {/* На десктопе отступаем от сайдбара */}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ type: "spring", damping: 32, stiffness: 340 }}
+            className="fixed z-[25] flex flex-col aray-chat-panel"
+            style={{ left: 0, right: 0, top: `${HEADER_H}px`, bottom: "64px" }}>
+
             <div className="lg:pl-60 flex flex-col h-full">
 
-              {/* ── Шапка чата ── */}
-              <div className="flex items-center gap-3 px-5 py-3 shrink-0"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              {/* Шапка */}
+              <div className="aray-chat-header flex items-center gap-3 px-5 py-3 shrink-0">
                 <ArayOrb size={30}/>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-bold text-white/92 tracking-tight">Арай</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
-                    <span className="text-[11px] text-white/38">Бизнес-ассистент · помнит всё</span>
+                    <span className="text-[14px] font-bold tracking-tight" style={{ color: textPrimary }}>
+                      Арай
+                    </span>
+                    <span className="aray-online-dot"/>
+                    <span className="text-[11px]" style={{ color: textMuted }}>
+                      Бизнес-ассистент · помнит всё
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button onClick={() => setMessages([])}
-                    className="p-2 rounded-xl text-white/28 hover:text-white/65 hover:bg-white/[0.07] transition-all"
-                    title="Очистить чат">
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setMessages([])} className="aray-chat-ctrl-btn p-2" title="Очистить">
                     <RotateCcw className="w-3.5 h-3.5"/>
                   </button>
-                  <button onClick={() => setExpanded(false)}
-                    className="p-2 rounded-xl text-white/28 hover:text-white/65 hover:bg-white/[0.07] transition-all"
-                    title="Свернуть">
+                  <button onClick={() => setExpanded(false)} className="aray-chat-ctrl-btn p-2" title="Свернуть">
                     <ChevronDown className="w-4 h-4"/>
                   </button>
                 </div>
               </div>
 
-              {/* ── Сообщения ── */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+              {/* Сообщения */}
+              <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
                 {messages.map(msg => (
                   <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
                 ))}
                 {messages.length === 1 && !loading && (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-1">
                     {QUICK.map(q => (
                       <button key={q} onClick={() => send(q)}
-                        className="px-4 py-2 rounded-xl text-[12px] font-medium transition-all hover:opacity-85 active:scale-95"
-                        style={{
-                          background: "rgba(255,255,255,0.06)",
-                          border: "1px solid rgba(255,255,255,0.10)",
-                          color: "rgba(255,255,255,0.72)",
-                        }}>
+                        className="aray-quick-btn px-3 py-1.5 active:scale-95">
                         {q}
                       </button>
                     ))}
@@ -384,37 +514,29 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
         )}
       </AnimatePresence>
 
-      {/* ═══════════════════════════════════════════════════
-          INPUT BAR — ВСЕГДА ВИДЕН (как Claude)
-          fixed bottom-0, offset sidebar на desktop
-      ═══════════════════════════════════════════════════ */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[26] lg:left-60"
-        style={inputBarStyle}
-      >
+      {/* ══ INPUT BAR — всегда виден ═══════════════════════════════════════════ */}
+      <div className="fixed bottom-0 left-0 right-0 z-[26] lg:left-60 aray-chat-bar">
         <div className="flex items-end gap-3 px-4 py-3">
 
-          {/* Шар — открыть/закрыть */}
+          {/* Шар */}
           <button
-            onClick={() => {
-              setExpanded(v => !v);
-              if (!expanded) setTimeout(() => inputRef.current?.focus(), 200);
-            }}
-            className="shrink-0 mb-0.5 relative transition-transform hover:scale-105 active:scale-92"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-            title={expanded ? "Свернуть" : "Открыть Арая"}>
+            onClick={() => { setExpanded(v => !v); if (!expanded) setTimeout(() => inputRef.current?.focus(), 200); }}
+            className="shrink-0 mb-0.5 relative transition-transform hover:scale-105 active:scale-95"
+            style={{ WebkitTapHighlightColor: "transparent" }}>
             <ArayOrb size={34}/>
-            {/* Индикатор состояния */}
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(4,5,13,0.98)", border: "1px solid rgba(255,255,255,0.14)" }}>
+              style={{
+                background: classic ? "hsl(var(--card))" : "rgba(4,5,13,0.98)",
+                border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.14)",
+              }}>
               {expanded
-                ? <ChevronDown className="w-2 h-2 text-white/45"/>
-                : <Maximize2 className="w-2 h-2 text-white/45"/>}
+                ? <ChevronDown className="w-2 h-2" style={{ color: textMuted }}/>
+                : <Maximize2 className="w-2 h-2" style={{ color: textMuted }}/>}
             </span>
           </button>
 
-          {/* Textarea */}
-          <div className="flex-1 relative min-w-0">
+          {/* Input */}
+          <div className="flex-1 min-w-0">
             <textarea
               ref={inputRef}
               value={input}
@@ -423,7 +545,7 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
               onFocus={() => !expanded && setExpanded(true)}
               placeholder={listening ? "Слушаю..." : "Спроси Арая..."}
               rows={1}
-              className="w-full resize-none bg-transparent text-white/88 placeholder-white/28 text-[13.5px] leading-relaxed outline-none py-1 pr-1"
+              className="aray-chat-input w-full resize-none text-[13.5px] leading-relaxed outline-none py-1"
               style={{ maxHeight: 96, fontFamily: "inherit" }}
               onInput={e => {
                 const t = e.currentTarget;
@@ -438,28 +560,17 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
             {supported && (
               <button
                 onClick={listening ? stopMic : startMic}
-                className="p-2.5 rounded-xl transition-all"
-                style={{
-                  background: listening ? "hsl(var(--primary)/0.20)" : "rgba(255,255,255,0.06)",
-                  color: listening ? "hsl(var(--primary))" : "rgba(255,255,255,0.48)",
-                  border: `1.5px solid ${listening ? "hsl(var(--primary)/0.40)" : "rgba(255,255,255,0.09)"}`,
-                  animation: listening ? "micPulse 1.2s ease-in-out infinite" : "none",
-                }}>
+                className={`aray-chat-action-btn p-2.5 ${listening ? "aray-chat-action-btn-active" : ""}`}
+                title={listening ? "Стоп" : "Голос"}>
                 {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
               </button>
             )}
             <button
               onClick={() => send()}
-              disabled={!input.trim() || loading}
-              className="p-2.5 rounded-xl transition-all"
-              style={{
-                background: input.trim() && !loading
-                  ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.80))"
-                  : "rgba(255,255,255,0.06)",
-                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.25)",
-                border: "1.5px solid rgba(255,255,255,0.09)",
-                boxShadow: input.trim() && !loading ? "0 2px 14px hsl(var(--primary)/0.35)" : "none",
-              }}>
+              disabled={!hasText || loading}
+              className="aray-chat-send-btn p-2.5"
+              data-ready={hasText && !loading}
+              title="Отправить">
               <Send className="w-4 h-4"/>
             </button>
           </div>
@@ -467,19 +578,12 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
 
         {/* Метка */}
         <div className="text-center pb-2 -mt-0.5">
-          <span className="text-[9px] tracking-wide" style={{ color: "rgba(255,255,255,0.14)" }}>
+          <span className="aray-chat-label text-[9px] tracking-wide">
             Арай помнит каждый разговор ·{" "}
-            <span style={{ color: "hsl(var(--primary)/0.38)" }}>ARAY PRODUCTIONS</span>
+            <span style={{ color: "hsl(var(--primary)/0.45)" }}>ARAY PRODUCTIONS</span>
           </span>
         </div>
       </div>
-
-      <style>{`
-        @keyframes micPulse {
-          0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary)/0.35); }
-          50% { box-shadow: 0 0 0 7px hsl(var(--primary)/0); }
-        }
-      `}</style>
     </>
   );
 }

@@ -629,7 +629,7 @@ function ArayControlCenter() {
                       : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(80,100,160,0.15)" }}>
-                      <Monitor className={`w-3.5 h-3.5 ${classic ? "text-primary" : "text-blue-400/60"}`} />
+                      <Monitor className={`w-3.5 h-3.5 ${classic ? "text-primary" : "text-primary/50"}`} />
                     </div>
                     <span className="flex-1 text-left text-[12px] font-medium"
                       style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.75)" }}>
@@ -1100,13 +1100,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       </main>
 
       {/* ── Арай — фиксированная панель снизу на всех страницах ── */}
-      <AdminAray staffName={email?.split("@")[0] || "Коллега"} />
-
-      {/* Контекстная подсказка для каждой страницы */}
-      <AdminPageHelp userRole={role} />
-
-      {/* Интерактивный тур — показывается автоматически при первом визите */}
-      <AdminTour autoShow={true} />
+      {/* AdminPageHelp и AdminTour убраны — ARAY обучает и помогает вместо них */}
+      <AdminAray staffName={email?.split("@")[0] || "Коллега"} userRole={role} />
     </div>
   );
 }
