@@ -464,7 +464,7 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
 
     if (name === "get_staff_list") {
       const staff = await prisma.user.findMany({
-        where: { role: { not: "CUSTOMER" } },
+        where: { role: { not: "CUSTOMER" as any } },
         select: { name: true, email: true, role: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       });
@@ -480,6 +480,125 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
           since: s.createdAt.toLocaleDateString("ru-RU"),
         })),
         total: staff.length,
+      };
+    }
+
+    // ── Задачи ────────────────────────────────────────────────────────────────
+    if (name === "get_tasks") {
+      const status = input.status as string | undefined;
+      const tasks = await (prisma as any).task.findMany({
+        where: status ? { status } : {},
+        include: { assignee: { select: { name: true } } },
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+        take: Number(input.limit) || 20,
+      });
+      const PRIORITY: Record<string, string> = { HIGH: "🔴 Срочно", MEDIUM: "🟡 Средний", LOW: "🟢 Низкий" };
+      const STATUS: Record<string, string> = { TODO: "К выполнению", IN_PROGRESS: "В работе", DONE: "Выполнено", CANCELLED: "Отменено" };
+      const overdue = tasks.filter((t: any) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "DONE");
+      return {
+        tasks: tasks.map((t: any) => ({
+          id: t.id,
+          title: t.title,
+          status: STATUS[t.status] || t.status,
+          priority: PRIORITY[t.priority] || t.priority,
+          assignee: t.assignee?.name || "Не назначен",
+          dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString("ru-RU") : null,
+          overdue: t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "DONE",
+        })),
+        total: tasks.length,
+        overdueCount: overdue.length,
+      };
+    }
+
+    if (name === "create_task") {
+      const task = await (prisma as any).task.create({
+        data: {
+          title: String(input.title),
+          description: input.description ? String(input.description) : null,
+          priority: (input.priority as string) || "MEDIUM",
+          dueDate: input.dueDate ? new Date(input.dueDate as string) : null,
+        },
+      });
+      return { success: true, taskId: task.id, title: task.title, message: `Задача "${task.title}" создана` };
+    }
+
+    // ── CRM Лиды ─────────────────────────────────────────────────────────────
+    if (name === "get_crm_leads") {
+      const stage = input.stage as string | undefined;
+      const leads = await (prisma as any).lead.findMany({
+        where: { deletedAt: null, ...(stage ? { stage } : {}) },
+        orderBy: { createdAt: "desc" },
+        take: Number(input.limit) || 15,
+      });
+      const STAGE: Record<string, string> = {
+        NEW: "Новый", CONTACTED: "Связались", QUALIFIED: "Квалифицирован",
+        PROPOSAL: "КП отправлено", NEGOTIATION: "Переговоры", WON: "✅ Успех", LOST: "❌ Провал",
+      };
+      const SOURCE: Record<string, string> = {
+        WEBSITE: "Сайт", TELEGRAM: "Telegram", PHONE: "Звонок",
+        WHATSAPP: "WhatsApp", EMAIL: "Email", OTHER: "Другое",
+      };
+      const byStage = leads.reduce((acc: any, l: any) => {
+        acc[STAGE[l.stage] || l.stage] = (acc[STAGE[l.stage] || l.stage] || 0) + 1;
+        return acc;
+      }, {});
+      return {
+        leads: leads.map((l: any) => ({
+          name: l.name,
+          phone: l.phone,
+          stage: STAGE[l.stage] || l.stage,
+          source: SOURCE[l.source] || l.source,
+          value: l.value ? `${Number(l.value).toLocaleString("ru-RU")} ₽` : null,
+          created: new Date(l.createdAt).toLocaleDateString("ru-RU"),
+        })),
+        total: leads.length,
+        byStage,
+      };
+    }
+
+    // ── Отзывы ────────────────────────────────────────────────────────────────
+    if (name === "get_reviews") {
+      const reviews = await (prisma as any).review.findMany({
+        where: input.published !== undefined ? { published: Boolean(input.published) } : {},
+        orderBy: { createdAt: "desc" },
+        take: Number(input.limit) || 10,
+      });
+      const avg = reviews.length ? (reviews.reduce((s: number, r: any) => s + (r.rating || 5), 0) / reviews.length).toFixed(1) : "—";
+      return {
+        reviews: reviews.map((r: any) => ({
+          author: r.author || "Аноним",
+          rating: r.rating ? "★".repeat(r.rating) : null,
+          text: (r.text || "").slice(0, 120),
+          published: r.published,
+          date: new Date(r.createdAt).toLocaleDateString("ru-RU"),
+        })),
+        total: reviews.length,
+        avgRating: avg,
+        unpublished: reviews.filter((r: any) => !r.published).length,
+      };
+    }
+
+    // ── Склад / Инвентарь ─────────────────────────────────────────────────────
+    if (name === "get_inventory_status") {
+      const items = await prisma.product.findMany({
+        where: { active: true },
+        select: { name: true, stock: true, price: true, category: { select: { name: true } } } as any,
+        orderBy: { stock: "asc" } as any,
+        take: Number(input.limit) || 20,
+      });
+      const low = items.filter((p: any) => (p.stock || 0) <= (Number(input.lowThreshold) || 5));
+      const outOfStock = items.filter((p: any) => (p.stock || 0) === 0);
+      return {
+        items: items.map((p: any) => ({
+          name: p.name,
+          stock: p.stock || 0,
+          price: `${Number(p.price).toLocaleString("ru-RU")} ₽`,
+          category: p.category?.name || "—",
+          status: (p.stock || 0) === 0 ? "❌ Нет" : (p.stock || 0) <= 5 ? "⚠️ Мало" : "✅ Есть",
+        })),
+        total: items.length,
+        lowStockCount: low.length,
+        outOfStockCount: outOfStock.length,
       };
     }
 

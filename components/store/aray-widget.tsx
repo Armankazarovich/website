@@ -416,6 +416,25 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dragControls = useDragControls();
+  const sessionIdRef = useRef<string>(Date.now().toString());
+
+  // Сохранение истории
+  useEffect(() => {
+    const userMsgs = messages.filter(m => m.role === "user");
+    if (userMsgs.length === 0) return;
+    try {
+      const title = userMsgs[0].content.slice(0, 70);
+      const existing = JSON.parse(localStorage.getItem("aray-client-sessions") || "[]");
+      const filtered = existing.filter((s: any) => s.id !== sessionIdRef.current);
+      const session = {
+        id: sessionIdRef.current,
+        date: Date.now(),
+        title,
+        messages: messages.map(m => ({ ...m, timestamp: m.timestamp.toISOString() })),
+      };
+      localStorage.setItem("aray-client-sessions", JSON.stringify([session, ...filtered].slice(0, 20)));
+    } catch {}
+  }, [messages]);
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
   const chips = buildArayChips({ page, productName, cartTotal });
@@ -593,11 +612,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   // ── Общие стили панели ────────────────────────────────────────────────────
   const panelBg = {
-    background: "rgba(8, 12, 28, 0.80)",
-    backdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
-    WebkitBackdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
-    border: "1px solid rgba(255, 255, 255, 0.12)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset",
+    background: "rgba(11, 11, 13, 0.92)",
+    backdropFilter: "blur(40px) saturate(0%) brightness(0.65)",
+    WebkitBackdropFilter: "blur(40px) saturate(0%) brightness(0.65)",
+    border: "1px solid rgba(255, 255, 255, 0.10)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.07) inset",
   } as React.CSSProperties;
 
   return (
@@ -708,7 +727,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   </div>
                 )}
                 <div className="flex gap-0.5">
-                  <button onClick={() => { setMessages([]); startChat(); }}
+                  <button onClick={() => { sessionIdRef.current = Date.now().toString(); setMessages([]); startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
                     style={{ color: "rgba(255,255,255,0.40)" }}
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}

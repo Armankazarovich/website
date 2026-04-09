@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, ArrowRight, ExternalLink, History, X, Clock } from "lucide-react";
 
 // ─── Classic mode ──────────────────────────────────────────────────────────────
 function useClassicMode() {
@@ -46,10 +46,54 @@ function getPageCtx(pathname: string) {
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: boolean };
+type AraySession = { id: string; date: number; title: string; messages: Msg[] };
 
-function parseActions(raw: string) {
-  const idx = raw.indexOf("ARAY_ACTIONS:");
-  return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
+// ─── История разговоров ────────────────────────────────────────────────────────
+const SESSIONS_KEY = "aray-sessions";
+const MAX_SESSIONS = 30;
+
+function loadSessions(): AraySession[] {
+  try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || "[]"); } catch { return []; }
+}
+function saveSessions(s: AraySession[]) {
+  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(s.slice(0, MAX_SESSIONS))); } catch {}
+}
+function upsertSession(sid: string, msgs: Msg[]) {
+  const userMsgs = msgs.filter(m => m.role === "user");
+  if (userMsgs.length === 0) return;
+  const title = userMsgs[0].text.slice(0, 70);
+  const all = loadSessions().filter(s => s.id !== sid);
+  saveSessions([{ id: sid, date: Date.now(), title, messages: msgs }, ...all]);
+}
+function formatSessionDate(ts: number): string {
+  const d = new Date(ts);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const time = d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return `Сегодня, ${time}`;
+  if (isYesterday) return `Вчера, ${time}`;
+  return d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }) + `, ${time}`;
+}
+
+type ArayAction = { label: string; href?: string; question?: string };
+
+function parseActions(raw: string): { text: string; actions: ArayAction[] } {
+  // Ищем блок [[ACTION:label|href]] или [[QUESTION:label|text]]
+  const actions: ArayAction[] = [];
+  const text = raw
+    .replace(/\[\[ACTION:([^\]|]+)\|([^\]]+)\]\]/g, (_, label, href) => {
+      actions.push({ label: label.trim(), href: href.trim() });
+      return "";
+    })
+    .replace(/\[\[QUESTION:([^\]|]+)\|([^\]]+)\]\]/g, (_, label, question) => {
+      actions.push({ label: label.trim(), question: question.trim() });
+      return "";
+    })
+    .replace(/ARAY_ACTIONS:[\s\S]*$/, "")
+    .trim();
+  return { text, actions };
 }
 
 // ─── Markdown рендер (inline) ─────────────────────────────────────────────────
@@ -183,8 +227,9 @@ function renderMarkdown(text: string): React.ReactNode[] {
 }
 
 // ─── Голос ────────────────────────────────────────────────────────────────────
-function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
+function useVoice(onSend: (t: string) => void) {
   const [listening, setListening] = useState(false);
+  const [interim, setInterim] = useState("");   // текст в процессе распознавания
   const [supported, setSupported] = useState(false);
   const ref = useRef<any>(null);
 
@@ -196,25 +241,46 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   const start = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
-    if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
+    if (ref.current) { try { ref.current.abort(); } catch {} ref.current = null; }
     const r = new SR();
-    r.lang = "ru-RU"; r.interimResults = false; r.continuous = false;
-    r.onstart = () => setListening(true);
-    r.onend = () => { setListening(false); ref.current = null; };
-    r.onerror = () => { setListening(false); ref.current = null; };
-    r.onresult = (e: any) => {
-      const t = e.results[0]?.[0]?.transcript?.trim() || "";
-      if (t) { onResult(t); setTimeout(onAutoSend, 120); }
+    r.lang = "ru-RU";
+    r.interimResults = true;   // показывать в процессе
+    r.continuous = false;
+    r.maxAlternatives = 1;
+    r.onstart = () => { setListening(true); setInterim(""); };
+    r.onend = () => { setListening(false); setInterim(""); ref.current = null; };
+    r.onerror = (e: any) => {
+      // Не показываем ошибку no-speech — это нормально
+      if (e.error !== "no-speech") console.warn("[Mic]", e.error);
+      setListening(false); setInterim(""); ref.current = null;
     };
-    try { r.start(); ref.current = r; } catch { setListening(false); }
-  }, [onResult, onAutoSend]);
+    r.onresult = (e: any) => {
+      let final = "";
+      let inter = "";
+      for (let i = 0; i < e.results.length; i++) {
+        const res = e.results[i];
+        if (res.isFinal) final += res[0].transcript;
+        else inter += res[0].transcript;
+      }
+      setInterim(inter);
+      if (final.trim()) {
+        setInterim("");
+        // Передаём текст НАПРЯМУЮ в send — без промежуточного state
+        onSend(final.trim());
+      }
+    };
+    try { r.start(); ref.current = r; } catch (err) {
+      console.warn("[Mic start]", err);
+      setListening(false);
+    }
+  }, [onSend]);
 
   const stop = useCallback(() => {
     if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
-    setListening(false);
+    setListening(false); setInterim("");
   }, []);
 
-  return { listening, supported, start, stop };
+  return { listening, interim, supported, start, stop };
 }
 
 // ─── TTS — ElevenLabs (primary) + браузер (fallback) ─────────────────────────
@@ -497,8 +563,14 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   }, []);
 
   const addInput = useCallback((t: string) => { setInput(t); if (!expanded) setExpanded(true); }, [expanded]);
-  const autoSend = useCallback(() => { sendRef.current?.(); }, []);
-  const { listening, supported: micSupported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
+  const { listening, interim: micInterim, supported: micSupported, start: startMic, stop: stopMic } = useVoice(
+    useCallback((t: string) => { sendRef.current?.(t); }, [])
+  );
+
+  // ─── История разговоров ───────────────────────────────────────────────────
+  const [showHistory, setShowHistory] = useState(false);
+  const [sessions, setSessions] = useState<AraySession[]>([]);
+  const sessionIdRef = useRef<string>(Date.now().toString());
 
   // Auto-озвучка: когда autoVoice включён — озвучивать каждый новый ответ Арая
   const lastMsgRef = useRef<string>("");
@@ -534,6 +606,11 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   useEffect(() => {
     if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
   }, [messages, expanded]);
+
+  // Сохранение текущей сессии при каждом новом сообщении
+  useEffect(() => {
+    upsertSession(sessionIdRef.current, messages);
+  }, [messages]);
 
   // Открытие по событию
   useEffect(() => {
@@ -638,12 +715,12 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
             transition={{ type: "spring", damping: 34, stiffness: 360 }}
-            className="fixed z-[25] left-0 lg:left-60 right-0 aray-chat-panel flex flex-col"
+            className="fixed z-[25] left-0 lg:left-60 right-0 aray-chat-panel flex flex-col overflow-hidden"
             style={{ bottom: "72px" }}
           >
             {/* ── Шапка ── */}
             <div className="aray-chat-header flex items-center gap-3 px-5 py-3 shrink-0">
-              <ArayOrb size={28} pulse={loading}/>
+              <ArayOrb size={32} pulse={loading}/>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[14px] font-bold tracking-tight" style={{ color: textPrimary }}>Арай</span>
@@ -657,13 +734,86 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                   <span className="text-[10px] hidden sm:inline" style={{ color: textMuted }}>помнит всё · всегда рядом</span>
                 </div>
               </div>
-              <button onClick={() => setMessages([])} className="aray-chat-ctrl-btn p-2" title="Очистить">
+              <button
+                onClick={() => { setShowHistory(v => !v); setSessions(loadSessions()); }}
+                className={`aray-chat-ctrl-btn p-2 ${showHistory ? "text-primary" : ""}`}
+                title="История разговоров">
+                <History className="w-3.5 h-3.5"/>
+              </button>
+              <button
+                onClick={() => {
+                  // Архивируем текущий и начинаем новый
+                  sessionIdRef.current = Date.now().toString();
+                  setMessages([]);
+                  setShowHistory(false);
+                }}
+                className="aray-chat-ctrl-btn p-2" title="Новый разговор">
                 <RotateCcw className="w-3.5 h-3.5"/>
               </button>
               <button onClick={() => setExpanded(false)} className="aray-chat-ctrl-btn p-2" title="Свернуть">
                 <ChevronDown className="w-4 h-4"/>
               </button>
             </div>
+
+            {/* ── Панель истории ── */}
+            {showHistory && (
+              <div className="absolute inset-0 z-20 flex flex-col aray-history-panel" style={{ top: 0, borderRadius: "inherit" }}>
+                {/* Шапка истории */}
+                <div className="flex items-center justify-between px-4 py-3 shrink-0 aray-history-header">
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4" style={{ color: "hsl(var(--primary))" }}/>
+                    <span className="text-[13px] font-bold" style={{ color: "hsl(var(--foreground))" }}>История разговоров</span>
+                  </div>
+                  <button onClick={() => setShowHistory(false)} className="aray-chat-ctrl-btn p-1.5">
+                    <X className="w-3.5 h-3.5"/>
+                  </button>
+                </div>
+                {/* Список сессий */}
+                <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                  {sessions.filter(s => s.messages.filter(m => m.role === "user").length > 0).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 gap-3">
+                      <Clock className="w-10 h-10" style={{ color: "hsl(var(--muted-foreground)/0.3)" }}/>
+                      <p className="text-[13px] text-muted-foreground/60">Нет сохранённых разговоров</p>
+                    </div>
+                  ) : sessions.filter(s => s.messages.filter(m => m.role === "user").length > 0).map(s => (
+                    <button key={s.id}
+                      onClick={() => {
+                        setMessages(s.messages);
+                        sessionIdRef.current = s.id;
+                        setShowHistory(false);
+                      }}
+                      className="w-full text-left px-3 py-2.5 rounded-xl transition-colors hover:bg-primary/[0.06] active:bg-primary/[0.10] group">
+                      <div className="flex items-center gap-2">
+                        <div className="text-[12.5px] font-medium truncate flex-1" style={{ color: "hsl(var(--foreground))" }}>
+                          {s.title}
+                        </div>
+                        <span className="text-[10px] shrink-0" style={{ color: "hsl(var(--muted-foreground)/0.5)" }}>
+                          {s.messages.filter(m => m.role === "user").length} вопр.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Clock className="w-2.5 h-2.5 shrink-0" style={{ color: "hsl(var(--muted-foreground)/0.4)" }}/>
+                        <span className="text-[11px]" style={{ color: "hsl(var(--muted-foreground)/0.55)" }}>
+                          {formatSessionDate(s.date)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {/* Футер очистки */}
+                <div className="px-4 py-3 shrink-0 aray-history-footer">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem(SESSIONS_KEY);
+                      setSessions([]);
+                    }}
+                    className="w-full text-center text-[11px] py-1.5 rounded-xl transition-colors hover:bg-destructive/10"
+                    style={{ color: "hsl(var(--destructive)/0.7)" }}>
+                    Очистить всю историю
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Лента сообщений ── */}
             <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
@@ -717,7 +867,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
             className="shrink-0 mb-0.5 transition-transform hover:scale-105 active:scale-95"
             style={{ WebkitTapHighlightColor: "transparent" }}
             title={expanded ? "Свернуть" : "Открыть Арая"}>
-            <ArayOrb size={32} pulse={loading}/>
+            <ArayOrb size={36} pulse={loading}/>
           </button>
 
           {/* Input */}
@@ -728,10 +878,16 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
               onFocus={() => !expanded && setExpanded(true)}
-              placeholder={listening ? "Слушаю..." : pageCtx ? `Спроси про ${pageCtx.label.toLowerCase()}...` : "Спроси Арая..."}
+              placeholder={
+                listening
+                  ? (micInterim || "Слушаю...")
+                  : pageCtx
+                  ? `Спроси про ${pageCtx.label.toLowerCase()}...`
+                  : "Спроси Арая..."
+              }
               rows={1}
-              className="aray-chat-input w-full resize-none text-[13px] leading-relaxed outline-none py-1"
-              style={{ maxHeight: 88, fontFamily: "inherit" }}
+              className="aray-chat-input w-full resize-none text-[14px] leading-relaxed outline-none py-1.5"
+              style={{ maxHeight: 96, fontFamily: "inherit", letterSpacing: "-0.01em", fontWeight: 450 }}
               onInput={e => {
                 const t = e.currentTarget;
                 t.style.height = "auto";

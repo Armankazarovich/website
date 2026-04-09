@@ -133,11 +133,11 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-[70] w-80 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200"
           style={{
-            background: "rgba(10,14,30,0.96)",
-            backdropFilter: "blur(32px) saturate(200%)",
-            WebkitBackdropFilter: "blur(32px) saturate(200%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset",
+            background: "rgba(11,11,13,0.96)",
+            backdropFilter: "blur(32px) saturate(0%) brightness(0.6)",
+            WebkitBackdropFilter: "blur(32px) saturate(0%) brightness(0.6)",
+            border: "1px solid rgba(255,255,255,0.09)",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.025) inset",
           }}>
 
           {/* Panel header */}
@@ -294,10 +294,11 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
                 border: "1px solid hsl(var(--border))",
                 boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
               } : {
-                background: "rgba(10,14,30,0.97)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                backdropFilter: "blur(32px)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+                background: "rgba(11,11,13,0.97)",
+                border: "1px solid rgba(255,255,255,0.09)",
+                backdropFilter: "blur(32px) saturate(0%) brightness(0.55)",
+                WebkitBackdropFilter: "blur(32px) saturate(0%) brightness(0.55)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.60)",
               }}>
               <div className="px-4 py-3" style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Новые заказы</p>
@@ -475,11 +476,11 @@ function ArayControlCenter() {
               border: "1px solid hsl(var(--border))",
               boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
             } : {
-              background: "rgba(7,11,26,0.98)",
-              backdropFilter: "blur(48px) saturate(200%)",
-              WebkitBackdropFilter: "blur(48px) saturate(200%)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              boxShadow: "0 -12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.025) inset",
+              background: "rgba(11,11,13,0.98)",
+              backdropFilter: "blur(48px) saturate(0%) brightness(0.55)",
+              WebkitBackdropFilter: "blur(48px) saturate(0%) brightness(0.55)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              boxShadow: "0 -12px 48px rgba(0,0,0,0.60), 0 0 0 1px rgba(255,255,255,0.025) inset",
             }),
           }}>
 
@@ -794,7 +795,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
-      style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
+      style={classic ? undefined : { backgroundColor: "rgb(5, 5, 6)" }}>
       <AdminNatureBg enabled={!classic} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
