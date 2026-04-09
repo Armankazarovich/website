@@ -178,7 +178,7 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   return { listening, supported, start, stop };
 }
 
-// ─── TTS (Chrome-safe) ────────────────────────────────────────────────────────
+// ─── TTS — ElevenLabs (primary) + браузер (fallback) ─────────────────────────
 const voicesCache: { list: SpeechSynthesisVoice[] } = { list: [] };
 
 function loadVoices() {
@@ -204,20 +204,22 @@ function pickBestRuVoice(): SpeechSynthesisVoice | null {
 
 function cleanForSpeech(t: string) {
   return t.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-    .replace(/[\u2600-\u27BF]/g, "").replace(/ARAY_ACTIONS:\[.*?\]/gs, "")
+    .replace(/[#_`|]/g, " ")
+    .replace(/[\uD800-\uDFFF]/g, "")   // surrogate pairs (emoji)
+    .replace(/[\u2600-\u27BF]/g, "")   // misc symbols
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "") // emoji (es2018+)
+    .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
     .replace(/^---+$/mg, "").replace(/\s{2,}/g, " ").trim();
 }
 
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
   const speakingRef = useRef<string | null>(null);
-  const [supported, setSupported] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setSupported("speechSynthesis" in window);
     if (window.speechSynthesis) {
       loadVoices();
       window.speechSynthesis.onvoiceschanged = () => { voicesCache.list = window.speechSynthesis.getVoices(); };
@@ -226,32 +228,89 @@ function useTTS() {
 
   useEffect(() => { speakingRef.current = speaking; }, [speaking]);
 
-  const speak = useCallback((text: string, id: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    if (speakingRef.current === id) {
-      window.speechSynthesis.cancel(); utterRef.current = null; setSpeaking(null); return;
+  const stopAll = useCallback(() => {
+    // Стоп ElevenLabs аудио
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    // Стоп браузерный TTS
+    if (typeof window !== "undefined") {
+      window.speechSynthesis?.cancel();
+      utterRef.current = null;
     }
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
+    setSpeaking(null);
+    speakingRef.current = null;
+  }, []);
+
+  const speak = useCallback(async (text: string, id: string) => {
+    // Повторный клик — остановить
+    if (speakingRef.current === id) { stopAll(); return; }
+    stopAll();
+
     const clean = cleanForSpeech(text);
     if (!clean) return;
+
+    setSpeaking(id);
+    speakingRef.current = id;
+
+    // ── Пробуем ElevenLabs ──────────────────────────────────────────────────
+    try {
+      const res = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; }
+          audioRef.current = null;
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; }
+          audioRef.current = null;
+        };
+        audio.play().catch(() => {
+          URL.revokeObjectURL(url);
+          audioRef.current = null;
+          if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; }
+        });
+        return; // ElevenLabs работает — выходим
+      }
+    } catch {
+      // ElevenLabs недоступен — падаем на браузерный TTS
+    }
+
+    // ── Fallback: браузерный TTS ────────────────────────────────────────────
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setSpeaking(null); speakingRef.current = null; return;
+    }
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume(); // Chrome fix
+
     const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU"; utter.rate = 1.0; utter.pitch = 1.0; utter.volume = 1.0;
+    utter.lang = "ru-RU"; utter.rate = 1.05; utter.pitch = 1.0; utter.volume = 1.0;
     const voice = pickBestRuVoice();
     if (voice) utter.voice = voice;
     else setTimeout(() => { loadVoices(); const v2 = pickBestRuVoice(); if (v2) utter.voice = v2; }, 300);
-    utter.onstart = () => { setSpeaking(id); speakingRef.current = id; };
-    utter.onend = () => { setSpeaking(null); speakingRef.current = null; utterRef.current = null; };
-    utter.onerror = (e) => { if ((e as any).error === "interrupted") return; setSpeaking(null); speakingRef.current = null; utterRef.current = null; };
+    utter.onend = () => {
+      if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; }
+      utterRef.current = null;
+    };
+    utter.onerror = (e) => {
+      if ((e as any).error === "interrupted") return;
+      if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; }
+      utterRef.current = null;
+    };
     utterRef.current = utter;
     window.speechSynthesis.speak(utter);
-  }, []);
+  }, [stopAll]);
 
-  const stop = useCallback(() => {
-    window.speechSynthesis?.cancel(); utterRef.current = null; setSpeaking(null); speakingRef.current = null;
-  }, []);
-
-  return { speaking, speak, stop, supported };
+  return { speaking, speak, stop: stopAll, supported: true };
 }
 
 // ─── Шар ARAY (брендовый) ─────────────────────────────────────────────────────

@@ -2093,52 +2093,76 @@ a:focus-visible {
 
 /* ── Панель чата — прозрачное стекло, полный экран ───────────────────────── */
 
-/* Светлая тема — матовое молочное стекло */
+/* ── Панель чата — светлая тема (без .dark на html) ──────────────────────── */
 .aray-chat-panel {
-  top: 57px;  /* мобильный хедер */
-  background: rgba(248, 249, 252, 0.82);
+  top: 57px;
+  background: rgba(248, 249, 252, 0.88);
   backdrop-filter: blur(32px) saturate(180%) brightness(1.02);
   -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.02);
   border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
-/* Десктоп — хедера нет, панель с самого верха */
 @media (min-width: 1024px) {
   .aray-chat-panel { top: 0; border-top: none; }
 }
 
-/* Тёмная / природная тема — тёмное прозрачное стекло */
-.aray-nature-mode .aray-chat-panel {
-  background: rgba(5, 7, 20, 0.76) !important;
-  backdrop-filter: blur(48px) saturate(80%) brightness(0.70) !important;
-  -webkit-backdrop-filter: blur(48px) saturate(80%) brightness(0.70) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+/* ── Тёмная тема без природного фона ──────────────────────────────────────── */
+.dark .aray-chat-panel {
+  background: hsl(var(--card) / 0.92) !important;
+  backdrop-filter: blur(32px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(140%) !important;
+  border-top: 1px solid hsl(var(--border) / 0.35) !important;
 }
 @media (min-width: 1024px) {
-  .aray-nature-mode .aray-chat-panel { border-top: none !important; }
+  .dark .aray-chat-panel { border-top: none !important; }
 }
 
-/* ── Input bar внизу — стекло ─────────────────────────────────────────────── */
+/* ── Природный режим — тёмное стекло как карточки сайта ───────────────────── */
+.dark .aray-nature-mode .aray-chat-panel {
+  background: rgba(5, 8, 22, 0.72) !important;
+  backdrop-filter: blur(56px) saturate(160%) brightness(0.78) !important;
+  -webkit-backdrop-filter: blur(56px) saturate(160%) brightness(0.78) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+@media (min-width: 1024px) {
+  .dark .aray-nature-mode .aray-chat-panel { border-top: none !important; }
+}
+
+/* ── Input bar — светлая тема ─────────────────────────────────────────────── */
 .aray-chat-bar {
-  background: rgba(255, 255, 255, 0.90);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(24px) saturate(200%);
   -webkit-backdrop-filter: blur(24px) saturate(200%);
   border-top: 1px solid rgba(0, 0, 0, 0.07);
   box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.06);
 }
-.aray-nature-mode .aray-chat-bar {
-  background: rgba(5, 7, 20, 0.94) !important;
-  backdrop-filter: blur(40px) saturate(80%) brightness(0.65) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(80%) brightness(0.65) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
-  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.55) !important;
+
+/* ── Input bar — тёмная тема ──────────────────────────────────────────────── */
+.dark .aray-chat-bar {
+  background: hsl(var(--card) / 0.95) !important;
+  backdrop-filter: blur(24px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
+  border-top: 1px solid hsl(var(--border) / 0.35) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ── Input bar — природный режим (ГЛАВНЫЙ СТИЛЬ) ─────────────────────────── */
+.dark .aray-nature-mode .aray-chat-bar {
+  background: rgba(6, 9, 24, 0.90) !important;
+  backdrop-filter: blur(48px) saturate(160%) brightness(0.85) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(160%) brightness(0.85) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.50) !important;
 }
 
 /* ── Шапка чата ────────────────────────────────────────────────────────────── */
 .aray-chat-header {
   border-bottom: 1px solid hsl(var(--border) / 0.5);
 }
-.aray-nature-mode .aray-chat-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+.dark .aray-chat-header {
+  border-bottom: 1px solid hsl(var(--border) / 0.35) !important;
+}
+.dark .aray-nature-mode .aray-chat-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 /* ── Пузырь пользователя — следует палитре автоматически ──────────────────── */
@@ -2162,14 +2186,23 @@ a:focus-visible {
   border-radius: 18px 18px 18px 4px;
 }
 
-/* Тёмная тема / nature mode — прозрачное тёмное стекло */
-.aray-nature-mode .aray-chat-bubble-assistant {
-  background: rgba(255, 255, 255, 0.055) !important;
-  backdrop-filter: blur(20px) saturate(120%) brightness(1.1) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(120%) brightness(1.1) !important;
+/* Тёмная тема без природного фона */
+.dark .aray-chat-bubble-assistant {
+  background: hsl(var(--secondary) / 0.80) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.20) !important;
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Природный режим — стекло как карточки сайта */
+.dark .aray-nature-mode .aray-chat-bubble-assistant {
+  background: rgba(8, 12, 28, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(160%) brightness(0.90) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) brightness(0.90) !important;
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25) !important;
-  color: rgba(255, 255, 255, 0.93) !important;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.35) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
 }
 
 /* ── Текст в пузыре ассистента — secondary/muted элементы ─────────────────── */
@@ -2192,9 +2225,11 @@ a:focus-visible {
   color: hsl(var(--foreground));
   caret-color: hsl(var(--primary));
 }
-.aray-nature-mode .aray-chat-input { color: rgba(255, 255, 255, 0.88) !important; }
+.dark .aray-chat-input { color: hsl(var(--foreground)) !important; }
+.dark .aray-nature-mode .aray-chat-input { color: rgba(255, 255, 255, 0.90) !important; }
 .aray-chat-input::placeholder { color: hsl(var(--muted-foreground) / 0.45); }
-.aray-nature-mode .aray-chat-input::placeholder { color: rgba(255, 255, 255, 0.28) !important; }
+.dark .aray-chat-input::placeholder { color: hsl(var(--muted-foreground) / 0.55) !important; }
+.dark .aray-nature-mode .aray-chat-input::placeholder { color: rgba(255, 255, 255, 0.30) !important; }
 
 /* ── Кнопки действий (mic, send) ──────────────────────────────────────────── */
 .aray-chat-action-btn {

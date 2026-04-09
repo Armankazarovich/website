@@ -794,7 +794,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
-      style={classic ? undefined : { backgroundColor: "rgb(8, 12, 30)" }}>
+      style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
       <AdminNatureBg enabled={!classic} />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}

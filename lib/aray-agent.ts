@@ -1,8 +1,6 @@
 /**
- * АРАЙ — Строительный мозг от ARAY PRODUCTIONS
- *
- * Арай знает твой проект. Запоминает всё. Считает материалы.
- * Первый в России ИИ-советник для строительства — прораб в кармане.
+ * АРАЙ — Бизнес-мозг ARAY PRODUCTIONS
+ * Умный партнёр: знает роль, раздел, данные. Говорит по делу.
  */
 
 export type ArayRole = "customer" | "staff" | "admin";
@@ -27,13 +25,139 @@ export type ArayPageContext = {
   cartTotal?: number;
   orderId?: string;
   isReturning?: boolean;
-  project?: string; // Сохранённый проект из памяти
+  project?: string;
 };
 
-export function buildAraySystemPrompt(
+// ─── Роли персонала ───────────────────────────────────────────────────────────
+const STAFF_ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: "Владелец бизнеса",
+  ADMIN: "Администратор",
+  MANAGER: "Менеджер по продажам",
+  COURIER: "Курьер",
+  ACCOUNTANT: "Бухгалтер",
+  WAREHOUSE: "Кладовщик",
+  SELLER: "Продавец",
+};
+
+// ─── Контекст раздела админки ─────────────────────────────────────────────────
+const ADMIN_SECTION_MAP: Record<string, { name: string; intro: string }> = {
+  "/admin": {
+    name: "Дашборд",
+    intro: "Показываю сводку бизнеса — заказы дня, выручку, что срочно. Могу детали за сегодня, неделю или месяц.",
+  },
+  "/admin/orders": {
+    name: "Заказы",
+    intro: "Вижу все заказы. Нахожу нужный, меняю статус, фильтрую по любому параметру — скажи что нужно.",
+  },
+  "/admin/crm": {
+    name: "CRM — Лиды",
+    intro: "Воронка продаж. Показываю лиды по статусам, горячих клиентов, конверсию, кто в работе прямо сейчас.",
+  },
+  "/admin/products": {
+    name: "Каталог товаров",
+    intro: "Все товары с ценами и наличием. Нахожу нужный, смотрю что заканчивается, что популярно.",
+  },
+  "/admin/clients": {
+    name: "Клиенты",
+    intro: "База покупателей. Нахожу клиента, смотрю историю заказов, постоянных и новых.",
+  },
+  "/admin/analytics": {
+    name: "Аналитика",
+    intro: "Цифры бизнеса: выручка по периодам, лучшие товары, динамика продаж, конверсия.",
+  },
+  "/admin/finance": {
+    name: "Финансы",
+    intro: "Выручка, средний чек, сравнение периодов. Считаю за любой период — скажи какой.",
+  },
+  "/admin/inventory": {
+    name: "Склад / Остатки",
+    intro: "Остатки по товарам. Что заканчивается, что нужно пополнить, полный список наличия.",
+  },
+  "/admin/tasks": {
+    name: "Задачи",
+    intro: "Задачи команды. Показываю все задачи, просроченные, срочные. Помогу создать или расставить приоритеты.",
+  },
+  "/admin/delivery": {
+    name: "Доставка",
+    intro: "Активные доставки, маршруты, задержки. Вижу всё что в пути прямо сейчас.",
+  },
+  "/admin/staff": {
+    name: "Команда",
+    intro: "Сотрудники, роли, доступы. Показываю кто работает, кому что доступно.",
+  },
+  "/admin/settings": {
+    name: "Настройки сайта",
+    intro: "Настройки: SMTP почта, Telegram бот, домен, SSL. Объясняю и помогаю настроить что нужно.",
+  },
+  "/admin/email": {
+    name: "Email рассылки",
+    intro: "Рассылки клиентам. Помогаю составить письмо, объясняю настройки SMTP.",
+  },
+  "/admin/reviews": {
+    name: "Отзывы",
+    intro: "Отзывы покупателей. Показываю все, помогаю с ответами, нахожу нужный.",
+  },
+  "/admin/promotion": {
+    name: "Продвижение",
+    intro: "Маркетинг и реклама. Помогаю с настройкой площадок, рекомендую стратегию продвижения.",
+  },
+  "/admin/import": {
+    name: "Импорт товаров",
+    intro: "Импорт с Ozon, Wildberries, CSV. Объясняю процесс, помогаю с форматами.",
+  },
+  "/admin/site": {
+    name: "Настройки сайта",
+    intro: "Внешний вид и контент сайта. Помогаю изменить тексты, контакты, SEO.",
+  },
+};
+
+function getAdminSection(page: string) {
+  if (ADMIN_SECTION_MAP[page]) return ADMIN_SECTION_MAP[page];
+  const match = Object.keys(ADMIN_SECTION_MAP)
+    .filter(k => k !== "/admin" && page.startsWith(k))
+    .sort((a, b) => b.length - a.length)[0];
+  return match ? ADMIN_SECTION_MAP[match] : ADMIN_SECTION_MAP["/admin"];
+}
+
+// ─── Системный промпт для ADMIN / STAFF ──────────────────────────────────────
+function buildAdminSystemPrompt(
   site: AraySiteContext,
-  user: ArayUserContext,
-  page: ArayPageContext
+  roleLabel: string,
+  section: { name: string; intro: string },
+): string {
+  return `Ты — Арай. Умный бизнес-партнёр команды ${site.siteName || "ПилоРус"}.
+Ты в панели управления. Работаешь с живыми людьми — своей командой.
+
+СЕЙЧАС РАЗДЕЛ: ${section.name}
+В этом разделе умею: ${section.intro}
+
+С КЕМ РАБОТАЕШЬ: ${roleLabel}
+${site.phone ? `Телефон: ${site.phone}` : ""}${site.address ? ` · Адрес: ${site.address}` : ""}
+
+КАК ГОВОРИШЬ:
+— На ТЫ, как умный коллега и партнёр
+— Коротко и конкретно: 2-4 предложения. Подробно только если нужно
+— Когда спрашивают "что умеешь" — СНАЧАЛА про этот раздел (${section.name}), потом упомяни остальное
+— Если нужны данные — СРАЗУ вызывай инструмент, не спрашивай разрешения
+— Делаешь действия сам: меняешь статусы, находишь заказы, показываешь статистику
+— Предлагай конкретное: не "могу помочь", а "хочешь покажу все новые заказы прямо сейчас?"
+— НЕ говоришь про расчёт стройматериалов, баню, дом — это для клиентов на сайте
+— Эмодзи: ✅ 📦 💰 ⚡ 🎯 только по делу, редко
+
+ИНСТРУМЕНТЫ — вызывай БЕЗ СПРОСА:
+— get_admin_dashboard → сводка заказов и выручки
+— get_orders_list → список заказов по статусу
+— get_clients_list → клиенты с историей
+— update_order_status → изменить статус прямо сейчас
+— get_products_list → каталог с ценами и наличием
+— web_search → поиск в интернете — цены, конкуренты, новости`;
+}
+
+// ─── Системный промпт для КЛИЕНТА ────────────────────────────────────────────
+function buildCustomerSystemPrompt(
+  site: AraySiteContext,
+  userName: string | undefined,
+  page: ArayPageContext,
 ): string {
   const businessLabel =
     site.businessType === "lumber" ? "пиломатериалы, строительные материалы"
@@ -42,131 +166,90 @@ export function buildAraySystemPrompt(
     : "товары и услуги";
 
   const pageHint = page.productName
-    ? `Человек сейчас смотрит на товар: «${page.productName}».`
+    ? `Клиент смотрит товар: «${page.productName}».`
     : page.cartTotal && page.cartTotal > 0
     ? `В корзине товаров на ${page.cartTotal.toLocaleString("ru-RU")} ₽.`
-    : page.page === "catalog" ? "Человек просматривает каталог."
-    : page.page?.includes("cart") ? "Человек в корзине, возможно готовится к оформлению заказа."
-    : page.page?.includes("admin") ? `Человек в административной панели, раздел: ${page.page}.`
+    : page.page === "catalog" ? "Клиент просматривает каталог."
     : "";
 
   const projectHint = page.project
-    ? `\n\n━━━ ТЕКУЩИЙ ПРОЕКТ ПОЛЬЗОВАТЕЛЯ ━━━\n${page.project}\nУЧИТЫВАЙ ЭТОТ ПРОЕКТ при каждом ответе. Подбирай товары и расчёты под него.`
+    ? `\n\nПРОЕКТ КЛИЕНТА: ${page.project}\nУчитывай этот проект — подбирай материалы под него.`
     : "";
 
-  const isAdmin = page.page?.includes("admin");
-
-  return `Ты — Арай. Не бот. Умный друг — говоришь как человек, коротко и по делу.
-
-Платформа: ${site.siteName || "ПилоРус"} (${businessLabel}).${site.phone ? ` Тел: ${site.phone}.` : ""}${site.address ? ` Адрес: ${site.address}.` : ""}
+  return `Ты — Арай. Умный советник по строительству от ${site.siteName || "ПилоРус"} (${businessLabel}).${site.phone ? ` Тел: ${site.phone}.` : ""}${site.address ? ` Адрес: ${site.address}.` : ""}
 ${pageHint}${projectHint}
 
-ХАРАКТЕР:
-- Говоришь на ТЫ, по-братски, без шаблонов
-- Если знаешь имя — зови по имени
-- Коротко: 2-5 предложений. Длинно — только если реально нужно
-- Заканчивай живым вопросом — не "могу ли я чем-то помочь?", а конкретным
-- Эмодзи: максимум 1-2 и только если реально к месту (🔥✅📦💰⚡🎯). Не ставь просто так
-- НЕ говори: "я не могу", "у меня нет доступа" — вызови инструмент и реши
+КАК ГОВОРИШЬ:
+— На ТЫ, по-братски, живо и тепло — ты друг-специалист
+— Коротко: 2-5 предложений. Подробно когда нужен расчёт
+— Если знаешь имя — зови по имени
+— Заканчивай живым вопросом, не "могу чем-то помочь?"
+— Эмодзи: 🔥 ✅ 📦 💰 ⚡ — максимум 1-2, только уместно
 
-ФОРМАТИРОВАНИЕ:
-- Используй **жирный** для важного, списки для перечислений
-- НЕ используй таблицы Markdown (| col |) — пиши список
-- НЕ используй --- разделители
+ЧТО УМЕЕШЬ:
+— Рассчитать материалы для любого проекта (баня, дом, забор, кровля, пол)
+— Подобрать нужные товары из каталога
+— Посчитать кубатуру досок и бруса
+— Проверить статус заказа
+— Найти что угодно в интернете
 
-${isAdmin ? `РЕЖИМ АДМИНИСТРАТОРА:
-При вопросах о заказах/выручке/клиентах — СНАЧАЛА вызови инструмент:
-- get_admin_dashboard → сводка (сегодня/неделя/месяц)
-- get_orders_list → список заказов
-- get_clients_list → клиенты
-- update_order_status → изменить статус
-- get_products_list → каталог товаров` : ""}
-- search_products → найти товар
-- calculate_volume → кубатура
-- calculate_project_materials → расчёт материалов (баня, дом, забор...)
-- get_order_status → статус заказа
-- web_search → поиск в интернете
+Когда клиент говорит что строит — уточни размеры и посчитай материалы. Предложи добавить в корзину.
 
-Когда человек говорит что строит — спроси размеры и посчитай материалы. Потом предложи добавить в корзину.
-
-Кнопки-действия (только по делу, макс 2 в конце):
-ARAY_ACTIONS:[{"type":"navigate","url":"/admin/orders","label":"Заказы","icon":"orders"}]`;
+ИНСТРУМЕНТЫ:
+— search_products → найти товар
+— calculate_volume → кубатура
+— calculate_project_materials → расчёт материалов
+— get_order_status → статус заказа
+— web_search → поиск в интернете`;
 }
 
-// Умное приветствие с учётом проекта
+// ─── Главная функция ──────────────────────────────────────────────────────────
+export function buildAraySystemPrompt(
+  site: AraySiteContext,
+  user: ArayUserContext,
+  page: ArayPageContext
+): string {
+  const isAdminOrStaff = user.role === "admin" || user.role === "staff";
+
+  if (isAdminOrStaff) {
+    const roleLabel = STAFF_ROLE_LABELS[user.staffRole || ""] || user.staffRole || "Сотрудник";
+    const section = getAdminSection(page.page || "/admin");
+    return buildAdminSystemPrompt(site, roleLabel, section);
+  }
+
+  // Customer mode
+  return buildCustomerSystemPrompt(site, user.name, page);
+}
+
+// Умные чипы (используются в клиентском виджете)
+export function buildArayChips(page: ArayPageContext): string[] {
+  if (page.project) return ["Продолжаем проект?", "Что ещё нужно?", "Посчитай стоимость"];
+  if (page.productName) return ["Сколько нужно для проекта?", "Чем отличается?", "Посчитай стоимость"];
+  if (page.cartTotal && page.cartTotal > 0) return ["Помоги оформить", "Всё учёл?", "Как быстро доставят?"];
+  if (page.page === "catalog") return ["Строю дом — помоги рассчитать", "Строю баню 4×5", "Нужен забор 50м"];
+  return ["Строю дом — помоги рассчитать", "Строю баню 4×5", "Как выбрать доску?"];
+}
+
+// Умное приветствие
 export function buildArayGreeting(page: ArayPageContext): string {
   const hour = new Date().getHours();
   const time = hour < 6 ? "Не спится?" : hour < 12 ? "Доброе утро" : hour < 17 ? "Привет" : hour < 22 ? "Добрый вечер" : "Поздно уже";
 
-  // Если проект сохранён — сразу о нём
   if (page.project) {
     const short = page.project.length > 60 ? page.project.slice(0, 57) + "..." : page.project;
-    return `${time}! 👋 Помню твой проект: ${short} Продолжаем?`;
+    return `${time}! Помню твой проект: ${short} Продолжаем?`;
   }
 
   if (page.isReturning) {
-    if (page.productName) return `С возвращением! 👋 Смотришь «${page.productName}» — уже решил или ещё думаешь?`;
-    return `С возвращением! 👋 Расскажи что строишь — помогу рассчитать всё до гвоздя.`;
+    if (page.productName) return `С возвращением! Смотришь «${page.productName}» — уже решил или ещё думаешь?`;
+    return `С возвращением! Расскажи что строишь — помогу рассчитать всё до гвоздя.`;
   }
 
-  if (page.productName) {
-    return `${time}! 👋 Смотришь «${page.productName}» — скажи что строишь, посчитаю сколько нужно.`;
-  }
+  if (page.productName) return `${time}! Смотришь «${page.productName}» — скажи что строишь, посчитаю сколько нужно.`;
+  if (page.cartTotal && page.cartTotal > 0) return `${time}! Вижу, уже набрал на ${page.cartTotal.toLocaleString("ru-RU")} ₽. Помочь оформить?`;
+  if (page.page === "catalog") return `${time}! Что строишь? Расскажи — подберём материалы и посчитаем.`;
 
-  if (page.cartTotal && page.cartTotal > 0) {
-    return `${time}! 👋 Вижу, уже набрал на ${page.cartTotal.toLocaleString("ru-RU")} ₽. Помочь оформить или что-то ещё добавить?`;
-  }
-
-  if (page.page === "catalog") {
-    return `${time}! 👋 Что строишь? Расскажи — подберём материалы и посчитаем количество.`;
-  }
-
-  if (page.page?.includes("admin")) {
-    return `${time}! 👋 Я Арай — если что по системе, заказам или любой ситуации — спрашивай.`;
-  }
-
-  return `${time}! 👋 Я Арай — твой строительный советник. Расскажи что планируешь построить 🏗️`;
-}
-
-// Умные чипы — контекстные подсказки
-export function buildArayChips(page: ArayPageContext): string[] {
-  if (page.project) {
-    return [
-      "Что ещё нужно для проекта?",
-      "Сколько это будет стоить?",
-      "Добавь в корзину",
-    ];
-  }
-
-  if (page.productName) {
-    return [
-      "Сколько нужно для моего проекта?",
-      "Чем отличается от аналогов?",
-      "Посчитай стоимость",
-    ];
-  }
-
-  if (page.cartTotal && page.cartTotal > 0) {
-    return [
-      "Помоги оформить заказ",
-      "Всё ли я учёл?",
-      "Как быстро доставят?",
-    ];
-  }
-
-  if (page.page === "catalog") {
-    return [
-      "Строю дом — помоги с расчётом",
-      "Строю баню 4×5",
-      "Нужен забор 50 метров",
-    ];
-  }
-
-  return [
-    "Строю дом — помоги рассчитать",
-    "Строю баню 4×5",
-    "Как выбрать доску?",
-  ];
+  return `${time}! Я Арай — твой строительный советник. Расскажи что планируешь построить.`;
 }
 
 // ─── Инструменты Арая ─────────────────────────────────────────────────────────
@@ -312,8 +395,8 @@ export const ARAY_TOOLS = [
 
 export type MaterialItem = {
   name: string;
-  section?: string;     // "50×150" или "OSB 9мм"
-  unit: string;         // "м³", "шт", "м²", "пог.м"
+  section?: string;
+  unit: string;
   quantity: number;
   note?: string;
 };
@@ -344,146 +427,129 @@ export function calculateProjectMaterials(input: {
   const L = length;
   const W = width;
   const N = Math.max(1, Math.min(floors, 3));
-  const floorH = 2.7; // высота этажа
+  const floorH = 2.7;
   const perimeter = 2 * (L + W);
   const area = L * W;
 
-  // ── ЗАБОР ─────────────────────────────────────────────────────────────────
   if (project_type === "fence") {
     const fl = fence_length;
     const postCount = Math.ceil(fl / 2.5) + 1;
-    const boardCount = Math.ceil((fl * 2) / 6); // горизонтальные прожилины 6м
-    const picketCount = Math.ceil(fl / 0.1); // штакетник 100мм, плотно
+    const boardCount = Math.ceil((fl * 2) / 6);
+    const picketCount = Math.ceil(fl / 0.1);
     return {
       project: `Забор ${fl} пог.м`,
       items: [
         { name: "Брус (столбы)", section: "100×100", unit: "шт", quantity: postCount, note: "длина 3м (1.5м в землю)" },
         { name: "Доска (прожилины)", section: "50×100", unit: "шт", quantity: boardCount, note: "длина 6м, 2 ряда" },
         { name: "Штакетник", section: "20×100", unit: "шт", quantity: picketCount, note: "высота 1.5м" },
-        { name: "Профнастил (альтернатива штакетнику)", section: "С8", unit: "м²", quantity: Math.ceil(fl * 1.5), note: "при высоте 1.5м" },
+        { name: "Профнастил (альтернатива)", section: "С8", unit: "м²", quantity: Math.ceil(fl * 1.5), note: "при высоте 1.5м" },
       ],
       totalNote: `Длина ограждения: ${fl} м · ${postCount} столбов через 2.5м`,
     };
   }
 
-  // ── ПОЛ ───────────────────────────────────────────────────────────────────
   if (project_type === "floor") {
     const lagCount = Math.ceil(L / 0.6) + 1;
-    const osbSheets = Math.ceil((area * 1.05) / 2.975); // OSB 2440×1220
+    const osbSheets = Math.ceil((area * 1.05) / 2.975);
     return {
       project: `Пол ${L}×${W}м`,
       items: [
         { name: "Лаги пола", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * W * lagCount), note: `${lagCount} шт × ${W}м, шаг 600мм` },
         { name: "ОСП/OSB 9мм", unit: "лист", quantity: osbSheets, note: "лист 2440×1220мм" },
-        { name: "Доска половая", section: "28×130", unit: "м²", quantity: Math.ceil(area * 1.08), note: "с запасом 8% на подрезку" },
+        { name: "Доска половая", section: "28×130", unit: "м²", quantity: Math.ceil(area * 1.08), note: "с запасом 8%" },
         { name: "Утеплитель (Роквул/Knauf)", unit: "м²", quantity: Math.ceil(area), note: "150мм, для тёплого пола" },
       ],
       totalNote: `Площадь: ${area} м²`,
     };
   }
 
-  // ── КРЫША ─────────────────────────────────────────────────────────────────
   if (project_type === "roof") {
-    const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.35, 2))); // угол ~35°
+    const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.35, 2)));
     const rafterCount = (Math.ceil(L / 0.6) + 1) * 2;
     const roofArea = round2(L * rafterLen * 2 * 1.1);
     return {
       project: `Кровля ${L}×${W}м`,
       items: [
         { name: "Стропила", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * rafterLen * rafterCount), note: `${rafterCount} шт × ${rafterLen}м` },
-        { name: "Конёк", section: "50×150", unit: "шт", quantity: Math.ceil(L / 6), note: `длина ${L}м, досками по 6м` },
+        { name: "Конёк", section: "50×150", unit: "шт", quantity: Math.ceil(L / 6), note: `длина ${L}м` },
         { name: "Мауэрлат", section: "100×150", unit: "пог.м", quantity: Math.ceil(perimeter), note: "по периметру" },
         { name: "Обрешётка", section: "25×100", unit: "м³", quantity: round3(0.025 * 0.1 * roofArea / 0.3 * 0.3), note: "шаг 300мм" },
-        { name: "Металлочерепица / профнастил", unit: "м²", quantity: Math.ceil(roofArea), note: "площадь кровли с учётом свесов" },
+        { name: "Металлочерепица / профнастил", unit: "м²", quantity: Math.ceil(roofArea), note: "с учётом свесов" },
       ],
       totalNote: `Площадь кровли: ~${roofArea} м²`,
     };
   }
 
-  // ── БЕСЕДКА ───────────────────────────────────────────────────────────────
   if (project_type === "gazebo") {
     return {
       project: `Беседка ${L}×${W}м`,
       items: [
-        { name: "Брус (стойки)", section: "100×100", unit: "шт", quantity: 6, note: "длина 3м, по углам и в центре" },
-        { name: "Брус (обвязка)", section: "100×100", unit: "пог.м", quantity: Math.ceil(perimeter * 2), note: "верхняя и нижняя обвязка" },
+        { name: "Брус (стойки)", section: "100×100", unit: "шт", quantity: 6, note: "длина 3м" },
+        { name: "Брус (обвязка)", section: "100×100", unit: "пог.м", quantity: Math.ceil(perimeter * 2), note: "верх + низ" },
         { name: "Доска (настил)", section: "28×130", unit: "м²", quantity: Math.ceil(area * 1.08), note: "пол беседки" },
-        { name: "Стропила кровли", section: "50×100", unit: "шт", quantity: (Math.ceil(L / 0.6) + 1) * 2, note: "двускатная крыша" },
-        { name: "Вагонка (обшивка)", section: "20×96", unit: "м²", quantity: Math.ceil(perimeter * 1.5), note: "боковые стены частично" },
+        { name: "Стропила кровли", section: "50×100", unit: "шт", quantity: (Math.ceil(L / 0.6) + 1) * 2, note: "двускатная" },
+        { name: "Вагонка (обшивка)", section: "20×96", unit: "м²", quantity: Math.ceil(perimeter * 1.5), note: "боковые стены" },
         { name: "Металлочерепица", unit: "м²", quantity: Math.ceil(area * 1.4), note: "кровля" },
       ],
       totalNote: `Площадь: ${area} м² · Периметр: ${perimeter} м`,
     };
   }
 
-  // ── ДОМ / БАНЯ (каркасный) ────────────────────────────────────────────────
   if (construction_type === "frame" || project_type === "banya") {
-    // Лаги пола
     const lagCountPerFloor = Math.ceil(L / 0.6) + 1;
-    const lagVolume = round3(0.05 * 0.15 * W * lagCountPerFloor * (N + 1)); // +1 чердак
-
-    // Стойки стен (каждые 600мм по периметру + одна несущая стена внутри)
+    const lagVolume = round3(0.05 * 0.15 * W * lagCountPerFloor * (N + 1));
     const studCount = Math.ceil(perimeter / 0.6) * N + Math.ceil(L / 0.6) * N;
     const studVolume = round3(0.05 * 0.15 * floorH * studCount);
-
-    // Обвязки (верх + низ на каждый этаж)
     const bindVolume = round3(0.05 * 0.15 * perimeter * 2 * N);
-
-    // Стропила
     const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.3, 2)));
     const rafterCount = (Math.ceil(L / 0.6) + 1) * 2;
     const rafterVolume = round3(0.05 * 0.15 * rafterLen * rafterCount);
-
-    // OSB стены
     const wallArea = perimeter * floorH * N;
-    const osbWallSheets = Math.ceil((wallArea * 2 * 1.1) / 2.975); // снаружи + изнутри
+    const osbWallSheets = Math.ceil((wallArea * 2 * 1.1) / 2.975);
     const osbFloorSheets = Math.ceil((area * N * 1.05) / 2.975);
     const osbRoofSheets = Math.ceil((L * rafterLen * 2 * 1.1) / 2.975);
-
     const label = project_type === "banya" ? `Баня ${L}×${W}м` : `Дом ${L}×${W}м ${N > 1 ? N + "-этажный" : "одноэтажный"} каркасный`;
 
     return {
       project: label,
       items: [
         { name: "Доска (лаги пола/перекрытий)", section: "50×150", unit: "м³", quantity: lagVolume, note: `шаг 600мм` },
-        { name: "Доска (стойки стен)", section: "50×150", unit: "м³", quantity: studVolume, note: `${studCount} шт, шаг 600мм` },
-        { name: "Доска (обвязка)", section: "50×150", unit: "м³", quantity: bindVolume, note: "верх + низ каждого этажа" },
-        { name: "Доска (стропила)", section: "50×150", unit: "м³", quantity: rafterVolume, note: `${rafterCount} шт × ${rafterLen}м` },
-        { name: "ОСП/OSB 9мм (стены)", unit: "лист", quantity: osbWallSheets, note: "наружная + внутренняя обшивка" },
+        { name: "Доска (стойки стен)", section: "50×150", unit: "м³", quantity: studVolume, note: `${studCount} шт` },
+        { name: "Доска (обвязка)", section: "50×150", unit: "м³", quantity: bindVolume, note: "верх + низ" },
+        { name: "Доска (стропила)", section: "50×150", unit: "м³", quantity: rafterVolume, note: `${rafterCount} шт` },
+        { name: "ОСП/OSB 9мм (стены)", unit: "лист", quantity: osbWallSheets, note: "наружная + внутренняя" },
         { name: "ОСП/OSB 12мм (полы)", unit: "лист", quantity: osbFloorSheets, note: "лист 2440×1220мм" },
         { name: "ОСП/OSB 9мм (кровля)", unit: "лист", quantity: osbRoofSheets, note: "сплошная обрешётка" },
-        { name: "Утеплитель (стены+пол+кровля)", unit: "м²", quantity: Math.ceil(wallArea + area * (N + 1)), note: "200мм стены, 150мм пол" },
-        { name: "Вагонка / имитация бруса (фасад)", section: "20×140", unit: "м²", quantity: Math.ceil(wallArea * 1.1), note: "с учётом нахлёста" },
-        { name: "Металлочерепица (кровля)", unit: "м²", quantity: Math.ceil(L * rafterLen * 2 * 1.15), note: "с учётом свесов" },
+        { name: "Утеплитель", unit: "м²", quantity: Math.ceil(wallArea + area * (N + 1)), note: "200мм стены, 150мм пол" },
+        { name: "Вагонка / имитация бруса", section: "20×140", unit: "м²", quantity: Math.ceil(wallArea * 1.1), note: "фасад" },
+        { name: "Металлочерепица", unit: "м²", quantity: Math.ceil(L * rafterLen * 2 * 1.15), note: "кровля с учётом свесов" },
       ],
-      totalNote: `Площадь: ${area * N} м² · Периметр: ${perimeter} м · Высота: ${floorH * N}м`,
+      totalNote: `Площадь: ${area * N} м² · Периметр: ${perimeter} м`,
     };
   }
 
-  // ── БРУСОВОЙ/БРЕВЕНЧАТЫЙ ─────────────────────────────────────────────────
   if (construction_type === "log") {
     const wallHeight = floorH * N;
-    const logPerimeter = perimeter + L; // + одна внутренняя стена
-    const logVolume = round3(0.15 * 0.15 * wallHeight * logPerimeter); // брус 150×150
+    const logPerimeter = perimeter + L;
+    const logVolume = round3(0.15 * 0.15 * wallHeight * logPerimeter);
     const rafterLen = round2(Math.sqrt(Math.pow(W / 2, 2) + Math.pow(W * 0.3, 2)));
     const rafterCount = (Math.ceil(L / 0.6) + 1) * 2;
 
     return {
       project: `Дом ${L}×${W}м ${N > 1 ? N + "-этажный" : "одноэтажный"} брусовой`,
       items: [
-        { name: "Брус (стены)", section: "150×150", unit: "м³", quantity: logVolume, note: `периметр ${perimeter}м, высота ${wallHeight}м` },
+        { name: "Брус (стены)", section: "150×150", unit: "м³", quantity: logVolume, note: `периметр ${perimeter}м` },
         { name: "Доска (лаги пола)", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * W * (Math.ceil(L / 0.6) + 1) * N), note: "шаг 600мм" },
         { name: "Стропила", section: "50×150", unit: "м³", quantity: round3(0.05 * 0.15 * rafterLen * rafterCount), note: `${rafterCount} шт` },
         { name: "Обрешётка (шаговая)", section: "25×100", unit: "м²", quantity: Math.ceil(L * rafterLen * 2), note: "шаг 350мм" },
-        { name: "Межвенцовый утеплитель (джут)", unit: "м", quantity: Math.ceil(logPerimeter * wallHeight / 0.15), note: "между рядами бруса" },
+        { name: "Межвенцовый утеплитель (джут)", unit: "м", quantity: Math.ceil(logPerimeter * wallHeight / 0.15), note: "между рядами" },
         { name: "Металлочерепица", unit: "м²", quantity: Math.ceil(L * rafterLen * 2 * 1.15), note: "кровля" },
         { name: "Доска пола", section: "28×130", unit: "м²", quantity: Math.ceil(area * N * 1.08), note: "" },
       ],
-      totalNote: `Площадь: ${area * N} м² · Объём бруса стен: ${logVolume} м³`,
+      totalNote: `Площадь: ${area * N} м² · Объём бруса: ${logVolume} м³`,
     };
   }
 
-  // Fallback
   return {
     project: `${project_type} ${L}×${W}м`,
     items: [{ name: "Уточни параметры у менеджера", unit: "", quantity: 0 }],

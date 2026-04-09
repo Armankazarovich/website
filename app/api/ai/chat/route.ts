@@ -63,23 +63,27 @@ export async function POST(req: NextRequest) {
       getOrCreateMemory(userId, userId ? null : sessionId).catch((e) => {
         console.error("[Aray] Memory error:", e); return null;
       }),
-      getSiteSettings().catch(() => []),
+      getSiteSettings().catch(() => [] as unknown as Awaited<ReturnType<typeof getSiteSettings>>),
     ]);
     const memoryContext = formatMemoryForPrompt(memory);
 
-    const siteName = getSetting(siteSettings, "site_name") || "ПилоРус";
-    const phone = getSetting(siteSettings, "phone") || "";
-    const address = getSetting(siteSettings, "address") || "";
-    const businessType = getSetting(siteSettings, "business_type") || "lumber";
+    const siteName = getSetting(siteSettings as any, "site_name") || "ПилоРус";
+    const phone = getSetting(siteSettings as any, "phone") || "";
+    const address = getSetting(siteSettings as any, "address") || "";
+    const businessType = getSetting(siteSettings as any, "business_type") || "lumber";
 
     const memoryFacts = memory?.facts as Record<string, string | number | boolean> | null;
     const savedProject = memoryFacts?.проект ? String(memoryFacts.проект)
       : memoryFacts?.project ? String(memoryFacts.project) : undefined;
 
+    // Клиентский контекст (проект, корзина, товар) — только для клиентов, не для персонала
+    const isAdminPage = context?.page?.includes("/admin");
     const basePrompt = buildAraySystemPrompt(
       { siteName, businessType, phone, address },
       { role: arayRole, name: sessionName, staffRole: sessionRole },
-      { page: context?.page, productName: context?.productName, cartTotal: context?.cartTotal, project: savedProject }
+      isAdminPage
+        ? { page: context?.page }
+        : { page: context?.page, productName: context?.productName, cartTotal: context?.cartTotal, project: savedProject }
     );
     const systemPrompt = basePrompt + memoryContext;
 
@@ -314,7 +318,7 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         take: limit,
         select: {
           orderNumber: true, status: true, guestName: true, guestPhone: true,
-          totalAmount: true, createdAt: true, deliveryType: true,
+          totalAmount: true, createdAt: true, deliveryAddress: true,
           items: { select: { productName: true, quantity: true }, take: 2 },
         },
       });
@@ -331,8 +335,8 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         статус: statusLabels[o.status] || o.status,
         сумма: Number(o.totalAmount),
         дата: o.createdAt.toLocaleDateString("ru-RU"),
-        доставка: o.deliveryType,
-        товары: o.items.map(i => `${i.productName} ×${i.quantity}`).join(", "),
+        адрес: o.deliveryAddress,
+        товары: (o.items as { productName: string; quantity: any }[]).map(i => `${i.productName} ×${i.quantity}`).join(", "),
       }));
     }
 
