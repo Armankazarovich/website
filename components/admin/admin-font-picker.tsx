@@ -75,7 +75,7 @@ export function AdminFontPicker() {
         onClick={() => setOpen(o => !o)}
         title="Размер шрифта"
         className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors aray-icon-spin
-          ${open ? "bg-muted text-foreground" : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"}`}
+          ${open ? "bg-muted text-foreground" : "hover:bg-primary/[0.10] text-muted-foreground hover:text-foreground"}`}
       >
         <ALargeSmall className="w-4 h-4" />
       </button>
@@ -97,7 +97,7 @@ export function AdminFontPicker() {
                 className={`flex flex-col items-center gap-1 flex-1 py-1.5 rounded-xl transition-all ${
                   active === s.id
                     ? "bg-primary/15 ring-1 ring-primary/40"
-                    : "hover:bg-muted/60"
+                    : "hover:bg-primary/[0.08]"
                 }`}
               >
                 <span
@@ -115,7 +115,7 @@ export function AdminFontPicker() {
           <div className="border-t border-border/50 pt-1.5">
             <button
               onClick={resetToAuto}
-              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-left hover:bg-muted/60 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-xl text-left hover:bg-primary/[0.08] transition-colors"
             >
               <span className="text-xs text-muted-foreground">Авто по устройству</span>
               {isAuto && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}

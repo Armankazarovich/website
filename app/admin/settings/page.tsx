@@ -341,7 +341,7 @@ function SettingCard({ section: s }: { section: SettingSection }) {
 
   const card = (
     <div
-      className={`group flex items-start gap-4 p-4 rounded-2xl border bg-card hover:border-primary/30 hover:bg-muted/20 transition-all cursor-pointer ${
+      className={`group flex items-start gap-4 p-4 rounded-2xl border bg-card hover:border-primary/30 hover:bg-primary/[0.04] transition-all cursor-pointer ${
         s.status === "ok"
           ? "border-emerald-500/30"
           : s.status === "error"

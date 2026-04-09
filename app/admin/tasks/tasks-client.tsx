@@ -253,7 +253,7 @@ function TaskModal({
             >
               Удалить
             </button>
-            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-muted transition-colors">
+            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-primary/[0.08] transition-colors">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -479,7 +479,7 @@ function NewTaskForm({
       </div>
       <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="w-full text-xs border border-border rounded-xl px-2 py-1.5 bg-card focus:outline-none" />
       <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 py-1.5 rounded-xl border border-border text-xs text-muted-foreground hover:bg-muted transition-colors">Отмена</button>
+        <button onClick={onClose} className="flex-1 py-1.5 rounded-xl border border-border text-xs text-muted-foreground hover:bg-primary/[0.08] transition-colors">Отмена</button>
         <button onClick={submit} disabled={saving || !title.trim()} className="flex-1 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
           {saving ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Добавить"}
         </button>

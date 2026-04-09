@@ -622,7 +622,7 @@ export default function AdminSitePage() {
                     className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
                       (settings["widget_enabled"] ?? "true") === opt.v
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border hover:bg-muted text-muted-foreground"
+                        : "border-border hover:bg-primary/[0.08] text-muted-foreground"
                     }`}>{opt.l}</button>
                 ))}
               </div>
@@ -635,7 +635,7 @@ export default function AdminSitePage() {
                     className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
                       (settings["widget_position"] ?? "right") === opt.v
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border hover:bg-muted text-muted-foreground"
+                        : "border-border hover:bg-primary/[0.08] text-muted-foreground"
                     }`}>{opt.l}</button>
                 ))}
               </div>
@@ -690,7 +690,7 @@ export default function AdminSitePage() {
               className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors shrink-0 ${
                 settings["widget_show_email"] === "true"
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:bg-muted"
+                  : "border-border text-muted-foreground hover:bg-primary/[0.08]"
               }`}>{settings["widget_show_email"] === "true" ? "Показывается" : "Скрыт"}</button>
           </div>
 

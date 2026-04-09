@@ -353,7 +353,7 @@ export default function AnalyticsPage() {
         <p className="text-sm text-muted-foreground max-w-xs">{error}</p>
         <button
           onClick={() => load()}
-          className="text-xs px-4 py-2 rounded-xl border border-border hover:bg-muted transition-colors"
+          className="text-xs px-4 py-2 rounded-xl border border-border hover:bg-primary/[0.08] transition-colors"
         >
           Попробовать снова
         </button>
@@ -396,7 +396,7 @@ export default function AnalyticsPage() {
         <button
           onClick={() => load(true)}
           disabled={refreshing}
-          className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-muted transition-colors disabled:opacity-50 shrink-0"
+          className="flex items-center gap-2 text-xs px-3 py-2 rounded-xl border border-border bg-muted/40 hover:bg-primary/[0.08] transition-colors disabled:opacity-50 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
           Обновить

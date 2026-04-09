@@ -275,7 +275,7 @@ export default function AdminProductEditPage() {
               <button
                 onClick={() => prevId && router.push(`/admin/products/${prevId}`)}
                 disabled={!prevId}
-                className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-primary/[0.08] disabled:opacity-30 transition-colors"
                 title="Предыдущий товар"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -283,7 +283,7 @@ export default function AdminProductEditPage() {
               <button
                 onClick={() => nextId && router.push(`/admin/products/${nextId}`)}
                 disabled={!nextId}
-                className="p-1.5 rounded-lg hover:bg-muted disabled:opacity-30 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-primary/[0.08] disabled:opacity-30 transition-colors"
                 title="Следующий товар"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -300,7 +300,7 @@ export default function AdminProductEditPage() {
             <a
               href={`/product/${slug}`}
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-border hover:bg-muted transition-colors text-muted-foreground"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-border hover:bg-primary/[0.08] transition-colors text-muted-foreground"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               На сайте
@@ -368,7 +368,7 @@ export default function AdminProductEditPage() {
                 </button>
                 <button
                   onClick={() => setMediaPickerOpen(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-muted transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-primary/[0.08] transition-colors"
                 >
                   <Images className="w-3.5 h-3.5" /> Библиотека
                 </button>
@@ -406,14 +406,14 @@ export default function AdminProductEditPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setPhotoEditorOpen(true)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border/50 text-xs font-medium hover:bg-muted transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border/50 text-xs font-medium hover:bg-primary/[0.08] transition-colors"
                       >
                         <PenTool className="w-3.5 h-3.5 text-primary" /> Редактор
                       </button>
                       <button
                         onClick={handleRemoveBackground}
                         disabled={removingBg}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border/50 text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border/50 text-xs font-medium hover:bg-primary/[0.08] disabled:opacity-50 transition-colors"
                       >
                         {removingBg ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5 text-primary" />}
                         {removingBg ? "Убираем..." : "Убрать фон"}
@@ -426,7 +426,7 @@ export default function AdminProductEditPage() {
                       "w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-medium border transition-all",
                       autoPipeline
                         ? "bg-primary/10 border-primary/30 text-primary"
-                        : "border-border/40 text-muted-foreground/70 hover:bg-muted"
+                        : "border-border/40 text-muted-foreground/70 hover:bg-primary/[0.08]"
                     )}
                   >
                     <span className={cn("w-1.5 h-1.5 rounded-full", autoPipeline ? "bg-primary" : "bg-muted-foreground/30")} />
@@ -541,7 +541,7 @@ export default function AdminProductEditPage() {
                       "px-4 py-2 rounded-xl text-sm font-medium border transition-colors",
                       saleUnit === opt.value
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-card border-border hover:bg-muted"
+                        : "bg-card border-border hover:bg-primary/[0.08]"
                     )}
                   >
                     {opt.label}

@@ -707,7 +707,7 @@ export default function EmailPage() {
                         setHtml(t.html());
                         setShowTemplates(false);
                       }}
-                      className="flex items-center gap-2 p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/60 text-left transition-all active:scale-[0.98]"
+                      className="flex items-center gap-2 p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 hover:bg-primary/[0.08] text-left transition-all active:scale-[0.98]"
                     >
                       <Icon className="w-4 h-4 text-primary shrink-0" />
                       <div>
@@ -820,14 +820,14 @@ export default function EmailPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setPreviewMode("desktop")}
-                        className={`p-1 rounded-lg transition-colors ${previewMode === "desktop" ? "bg-primary/15 text-primary" : "hover:bg-muted text-muted-foreground"}`}
+                        className={`p-1 rounded-lg transition-colors ${previewMode === "desktop" ? "bg-primary/15 text-primary" : "hover:bg-primary/[0.08] text-muted-foreground"}`}
                         title="Десктоп"
                       >
                         <Monitor className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setPreviewMode("mobile")}
-                        className={`p-1 rounded-lg transition-colors ${previewMode === "mobile" ? "bg-primary/15 text-primary" : "hover:bg-muted text-muted-foreground"}`}
+                        className={`p-1 rounded-lg transition-colors ${previewMode === "mobile" ? "bg-primary/15 text-primary" : "hover:bg-primary/[0.08] text-muted-foreground"}`}
                         title="Мобильный"
                       >
                         <Smartphone className="w-3.5 h-3.5" />
@@ -1092,7 +1092,7 @@ export default function EmailPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {subscribers.map((s) => (
-                      <tr key={s.email} className="hover:bg-muted/20 transition-colors">
+                      <tr key={s.email} className="hover:bg-primary/[0.04] transition-colors">
                         <td className="px-4 py-3 font-mono text-xs">{s.email}</td>
                         <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
                           {s.name || "—"}
@@ -1175,7 +1175,7 @@ export default function EmailPage() {
                 ) : (
                   <div className="max-h-48 overflow-y-auto rounded-xl border border-border divide-y divide-border">
                     {scanResult.emails.map((email) => (
-                      <label key={email} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 cursor-pointer">
+                      <label key={email} className="flex items-center gap-3 px-3 py-2 hover:bg-primary/[0.06] cursor-pointer">
                         <input
                           type="checkbox"
                           checked={selectedEmails.has(email)}

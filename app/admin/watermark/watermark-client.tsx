@@ -310,7 +310,7 @@ export function WatermarkClient({
 
           {backupDate && (
             <button onClick={() => setConfirmRestore(true)} disabled={restoring}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted disabled:opacity-50 transition-colors">
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] disabled:opacity-50 transition-colors">
               {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
               {restoring ? "Восстанавливаем..." : "Отменить — вернуть оригиналы"}
             </button>

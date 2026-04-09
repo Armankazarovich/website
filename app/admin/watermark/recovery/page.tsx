@@ -204,7 +204,7 @@ export default function WatermarkRecoveryPage() {
                   {restoring ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
                   {restoring ? "Восстанавливаем..." : `Применить (${preview.matched.length} товаров)`}
                 </button>
-                <button onClick={() => setPreview(null)} className="px-4 py-3 rounded-xl border border-border text-sm hover:bg-muted transition-colors">
+                <button onClick={() => setPreview(null)} className="px-4 py-3 rounded-xl border border-border text-sm hover:bg-primary/[0.08] transition-colors">
                   Отмена
                 </button>
               </div>

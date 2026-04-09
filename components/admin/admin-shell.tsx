@@ -157,7 +157,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
                   {count} новых
                 </span>
               )}
-              <button onClick={() => setOpen(false)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-muted/20 transition-colors">
+              <button onClick={() => setOpen(false)} className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-primary/[0.04] transition-colors">
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
             </div>
@@ -183,7 +183,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
                 {orders.slice(0, 5).map((order: any) => (
                   <button key={order.id}
                     onClick={() => { router.push(`/admin/orders/${order.id}`); setOpen(false); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-muted/20 transition-colors group">
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left hover:bg-primary/[0.04] transition-colors group">
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary)/0.08))" }}>
                       <ShoppingBag className="w-4 h-4 text-primary" />
@@ -208,7 +208,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
           <div className="px-4 py-2.5" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
             <button
               onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-              className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-muted/20"
+              className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-primary/[0.04]"
               style={{ color: "hsl(var(--primary))" }}>
               Все новые заказы →
             </button>
@@ -312,7 +312,7 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
                 <div className="py-1.5 max-h-64 overflow-y-auto">
                   {orders.map((o: any) => (
                     <button key={o.id} onClick={() => { router.push(`/admin/orders/${o.id}`); setBellOpen(false); }}
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted/20 transition-colors text-left">
+                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-primary/[0.04] transition-colors text-left">
                       <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">#{o.orderNumber} {o.guestName || "—"}</p>
@@ -494,7 +494,7 @@ function ArayControlCenter() {
               <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted-foreground">ARAY Control</span>
             </div>
             <button onClick={() => setOpen(false)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-muted/20 transition-colors">
+              className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-primary/[0.04] transition-colors">
               <X className="w-3 h-3 text-muted-foreground" />
             </button>
           </div>
@@ -545,7 +545,7 @@ function ArayControlCenter() {
                     {orders.map((o: any) => (
                       <button key={o.id}
                         onClick={() => { router.push(`/admin/orders`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors text-left">
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: "hsl(var(--primary)/0.14)", border: "1px solid hsl(var(--primary)/0.22)" }}>
                           <ShoppingBag className="w-3 h-3 text-primary" />
@@ -563,7 +563,7 @@ function ArayControlCenter() {
                 )}
                 <div className="px-3 py-2" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
                   <button onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-                    className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-muted/20 transition-colors"
+                    className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-primary/[0.04] transition-colors"
                     style={{ color: "hsl(var(--primary))" }}>
                     Все новые заказы →
                   </button>
@@ -598,7 +598,7 @@ function ArayControlCenter() {
                   <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
                     style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Тема</p>
                   <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-muted/20"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-primary/[0.04]"
                     style={classic
                       ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
                       : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
@@ -623,7 +623,7 @@ function ArayControlCenter() {
                   <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
                     style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Фон панели</p>
                   <button onClick={toggleClassic}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-muted/20"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-primary/[0.04]"
                     style={classic
                       ? { background: "hsl(var(--muted)/0.5)", border: `1.5px solid hsl(var(--primary)/0.5)` }
                       : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>

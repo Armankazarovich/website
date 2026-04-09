@@ -213,7 +213,7 @@ export default function DeliveryRatesPage() {
                 {rates.map((rate) => {
                   const isEditing = editingId === rate.id;
                   return (
-                    <tr key={rate.id} className={isEditing ? "bg-primary/15" : "hover:bg-muted/20 transition-colors"}>
+                    <tr key={rate.id} className={isEditing ? "bg-primary/15" : "hover:bg-primary/[0.04] transition-colors"}>
                       <td className="px-4 py-3">
                         {isEditing ? (
                           <input
@@ -276,7 +276,7 @@ export default function DeliveryRatesPage() {
                             <button
                               onClick={cancelEdit}
                               disabled={saving}
-                              className="p-1.5 text-muted-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                              className="p-1.5 text-muted-foreground hover:bg-primary/[0.07] rounded-lg transition-colors"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -285,7 +285,7 @@ export default function DeliveryRatesPage() {
                           <div className="flex items-center gap-1 justify-end">
                             <button
                               onClick={() => startEdit(rate)}
-                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                              className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-primary/[0.07] rounded-lg transition-colors"
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
@@ -358,7 +358,7 @@ export default function DeliveryRatesPage() {
                         </button>
                         <button
                           onClick={() => { setShowAdd(false); setNewRate(emptyNew); }}
-                          className="p-1.5 text-muted-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                          className="p-1.5 text-muted-foreground hover:bg-primary/[0.07] rounded-lg transition-colors"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>

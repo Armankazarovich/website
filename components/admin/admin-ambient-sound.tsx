@@ -357,7 +357,7 @@ export function AdminAmbientSound() {
       <button
         onClick={() => setOpen(o => !o)}
         title="Природные звуки"
-        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative aray-icon-spin"
+        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-primary/[0.10] transition-colors relative aray-icon-spin"
       >
         {active ? (
           <Volume2 className="w-4 h-4" style={{ color: activeSound?.color || "hsl(var(--primary))" }} />

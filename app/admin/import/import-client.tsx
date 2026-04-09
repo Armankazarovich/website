@@ -230,7 +230,7 @@ export function ImportClient() {
                 placeholder="https://docs.google.com/spreadsheets/d/... или ID"
                 className="flex-1 text-sm bg-background border border-border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 min-w-0"
               />
-              <button onClick={saveSheetId} className="px-3 py-2 rounded-lg border border-border text-sm hover:bg-muted transition-colors shrink-0">
+              <button onClick={saveSheetId} className="px-3 py-2 rounded-lg border border-border text-sm hover:bg-primary/[0.08] transition-colors shrink-0">
                 Сохранить
               </button>
             </div>
@@ -238,7 +238,7 @@ export function ImportClient() {
             <button
               onClick={() => gsAction("create_template")}
               disabled={gsLoading === "create_template" || !credsOk}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background text-sm font-medium hover:bg-muted/50 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-background text-sm font-medium hover:bg-primary/[0.07] disabled:opacity-50 transition-colors"
             >
               {gsLoading === "create_template" ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 text-emerald-600" />}
               Создать шаблон в Google Таблицах
@@ -261,7 +261,7 @@ export function ImportClient() {
               <button
                 onClick={() => gsAction("sync_to_sheet")}
                 disabled={!!gsLoading || !credsOk || !sheetUrl}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-background hover:bg-muted/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-background hover:bg-primary/[0.07] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {gsLoading === "sync_to_sheet"
                   ? <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -272,7 +272,7 @@ export function ImportClient() {
               <button
                 onClick={() => gsAction("sync_from_sheet")}
                 disabled={!!gsLoading || !credsOk || !sheetUrl}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-background hover:bg-muted/50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-background hover:bg-primary/[0.07] transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {gsLoading === "sync_from_sheet"
                   ? <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -369,7 +369,7 @@ export function ImportClient() {
           onDrop={handleFileDrop}
           onClick={() => fileRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
-            file ? "border-primary bg-primary/15" : "border-border hover:border-primary/50 hover:bg-muted/30"
+            file ? "border-primary bg-primary/15" : "border-border hover:border-primary/50 hover:bg-primary/[0.05]"
           }`}
         >
           <input ref={fileRef} type="file" accept=".xlsx,.csv" className="hidden" onChange={handleFileChange} />
@@ -577,7 +577,7 @@ function MarketplacesSection() {
               key={t.key}
               onClick={() => setActiveTab(t.key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors ${
-                activeTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                activeTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.07]"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />

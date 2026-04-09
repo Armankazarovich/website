@@ -170,7 +170,7 @@ function ImagePicker({
             <button
               type="button"
               onClick={() => setShowUrlInput(false)}
-              className="px-3 py-2 rounded-xl border border-border text-xs hover:bg-muted transition-colors"
+              className="px-3 py-2 rounded-xl border border-border text-xs hover:bg-primary/[0.08] transition-colors"
             >
               <X className="w-4 h-4" />
             </button>

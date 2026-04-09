@@ -52,7 +52,7 @@ export function AdminBack({ className }: { className?: string }) {
     <button
       onClick={() => canGoBack ? router.back() : router.push(parentHref)}
       className={`group inline-flex items-center gap-2 pl-2.5 pr-3.5 py-2 rounded-xl
-        border border-border/50 bg-background hover:bg-muted
+        border border-border/50 bg-background hover:bg-primary/[0.08]
         text-muted-foreground hover:text-foreground
         transition-all duration-200 active:scale-[0.96] shrink-0
         ${className ?? ""}`}

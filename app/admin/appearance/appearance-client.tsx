@@ -289,7 +289,7 @@ export function AppearanceClient({
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
                   isActive
                     ? "border-primary bg-primary/15"
-                    : "border-border hover:border-primary/40 hover:bg-muted/30"
+                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05]"
                 }`}
               >
                 {style.preview(isActive)}
@@ -323,7 +323,7 @@ export function AppearanceClient({
                 className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
                   isActive
                     ? "border-primary bg-primary/15"
-                    : "border-border hover:border-primary/40 hover:bg-muted/30"
+                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05]"
                 }`}
               >
                 {/* Visual preview of ratio */}

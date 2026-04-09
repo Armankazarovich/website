@@ -394,7 +394,7 @@ export default function StaffPage() {
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
                 isActive && panel?.type === "role"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -405,7 +405,7 @@ export default function StaffPage() {
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
                 isActive && panel?.type === "password"
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
               }`}
             >
               <KeyRound className="w-3.5 h-3.5" />
@@ -417,7 +417,7 @@ export default function StaffPage() {
               className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
                 member.staffStatus === "SUSPENDED"
                   ? "border-primary/40 text-primary hover:bg-primary/10 dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
-                  : "border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
               }`}
             >
               {member.staffStatus === "SUSPENDED" ? (
@@ -493,7 +493,7 @@ export default function StaffPage() {
                 {panelLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Сохранить
               </button>
-              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted">
+              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
                 Отмена
               </button>
             </div>
@@ -530,7 +530,7 @@ export default function StaffPage() {
               <button
                 type="button"
                 onClick={() => { setPanelPassword(generatePassword()); setShowPanelPwd(true); }}
-                className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted flex items-center gap-1.5"
+                className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-primary/[0.08] flex items-center gap-1.5"
                 title="Сгенерировать пароль"
               >
                 <Shuffle className="w-3.5 h-3.5" />
@@ -544,7 +544,7 @@ export default function StaffPage() {
                 {panelLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Сохранить пароль
               </button>
-              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted">
+              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
                 Отмена
               </button>
             </div>
@@ -566,7 +566,7 @@ export default function StaffPage() {
                 {panelLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                 Удалить
               </button>
-              <button onClick={() => setPanel(null)} className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground hover:bg-muted">
+              <button onClick={() => setPanel(null)} className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground hover:bg-primary/[0.08]">
                 Отмена
               </button>
             </div>
@@ -748,7 +748,7 @@ export default function StaffPage() {
             <button
               type="button"
               onClick={() => { setShowForm(false); setFormError(""); }}
-              className="h-10 px-4 rounded-xl border border-border text-sm text-muted-foreground hover:bg-muted"
+              className="h-10 px-4 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]"
             >
               Отмена
             </button>
@@ -760,7 +760,7 @@ export default function StaffPage() {
       <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <button
           onClick={() => setMatrixOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-primary/[0.07] transition-colors"
         >
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-muted-foreground" />

@@ -101,7 +101,7 @@ export default async function DeliveryPage({
         <div className="flex flex-wrap gap-3 text-sm">
           <Link
             href="/admin/delivery/rates"
-            className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-sm hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-sm hover:bg-primary/[0.07] transition-colors"
           >
             <Calculator className="w-4 h-4" />
             Тарифы и калькулятор
@@ -185,7 +185,7 @@ export default async function DeliveryPage({
               </thead>
               <tbody className="divide-y divide-border">
                 {archiveOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-muted/20 transition-colors">
+                  <tr key={order.id} className="hover:bg-primary/[0.04] transition-colors">
                     <td className="px-4 py-3 font-medium">#{order.orderNumber}</td>
                     <td className="px-4 py-3">
                       <p className="font-medium">{order.guestName || "—"}</p>
@@ -320,7 +320,7 @@ function OrderCard({ order }: { order: any }) {
             target="_blank"
             rel="noopener noreferrer"
             title="Скачать счёт PDF"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-muted/50 rounded-lg"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-primary/[0.07] rounded-lg"
           >
             <FileDown className="w-3.5 h-3.5" />
             PDF

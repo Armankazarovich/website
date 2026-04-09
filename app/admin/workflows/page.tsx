@@ -232,7 +232,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             <Zap className="w-5 h-5 text-primary" />
             Новый воркфлоу
           </h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-muted/20 transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-primary/[0.04] transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-6 space-y-5">
@@ -355,7 +355,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         </div>
 
         <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-border text-sm hover:bg-muted transition-colors">Отмена</button>
+          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-border text-sm hover:bg-primary/[0.08] transition-colors">Отмена</button>
           <button onClick={save} disabled={saving || !name.trim()} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             Создать воркфлоу
@@ -505,7 +505,7 @@ export default function WorkflowsPage() {
           <p className="text-sm text-muted-foreground">
             Нажмите «Установить всё» выше или создайте воркфлоу вручную
           </p>
-          <button onClick={() => setShowCreate(true)} className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm hover:bg-muted transition-colors">
+          <button onClick={() => setShowCreate(true)} className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm hover:bg-primary/[0.08] transition-colors">
             <Plus className="w-4 h-4" />
             Создать вручную
           </button>

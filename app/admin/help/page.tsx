@@ -916,7 +916,7 @@ export default function HelpPage() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
                 isActive
                   ? `${r.color} ring-2 ${r.ring} border-transparent`
-                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-muted/50"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-primary/30 hover:bg-primary/[0.07]"
               }`}
             >
               <RIcon className="w-3.5 h-3.5" />

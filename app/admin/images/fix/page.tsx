@@ -109,7 +109,7 @@ export default function ImageFixPage() {
         <button
           onClick={scan}
           disabled={loading}
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card hover:bg-muted text-sm font-medium transition-colors disabled:opacity-50"
+          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card hover:bg-primary/[0.08] text-sm font-medium transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Сканировать
@@ -256,7 +256,7 @@ export default function ImageFixPage() {
           </Link>
           <Link
             href="/admin/media"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-primary/[0.08] transition-colors"
           >
             Медиа-библиотека
           </Link>

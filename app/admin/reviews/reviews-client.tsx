@@ -128,14 +128,14 @@ function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">)
           {PLATFORMS.map(p => (
             <button key={p.key} onClick={() => setSource(p.key)}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                source === p.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                source === p.key ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-primary/[0.08]"
               }`}>
               <p.icon className="w-3.5 h-3.5 inline mr-1" />{p.name}
             </button>
           ))}
           <button onClick={() => setSource("site")}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-              source === "site" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-muted"
+              source === "site" ? "bg-primary text-primary-foreground" : "bg-muted/60 text-muted-foreground hover:bg-primary/[0.08]"
             }`}>
             <Monitor className="w-3.5 h-3.5 inline mr-1" />Сайт
           </button>
@@ -355,7 +355,7 @@ export function ReviewsClient({
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 statusFilter === f.key
                   ? "bg-primary text-primary-foreground"
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08] hover:text-foreground"
               }`}
             >
               {f.label}
@@ -370,7 +370,7 @@ export function ReviewsClient({
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               ratingFilter === null
                 ? "bg-amber-500 text-white"
-                : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
             }`}
           >
             ★ Все
@@ -382,7 +382,7 @@ export function ReviewsClient({
               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 ratingFilter === r
                   ? "bg-amber-500 text-white"
-                  : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                  : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
               }`}
             >
               {"★".repeat(r)}
@@ -488,7 +488,7 @@ export function ReviewsClient({
             <button
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-primary/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               ← Назад
             </button>
@@ -499,7 +499,7 @@ export function ReviewsClient({
                 className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
                   p === page
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                    : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
                 }`}
               >
                 {p}
@@ -508,7 +508,7 @@ export function ReviewsClient({
             <button
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-primary/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Вперёд →
             </button>

@@ -118,7 +118,7 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
       <button
         onClick={() => setOpen(true)}
         title="Мой фон рабочего места"
-        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-muted/80 transition-colors relative aray-icon-spin"
+        className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-primary/[0.10] transition-colors relative aray-icon-spin"
       >
         <ImageIcon className="w-4 h-4 text-muted-foreground" />
         {photos.length > 0 && (

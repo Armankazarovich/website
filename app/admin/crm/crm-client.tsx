@@ -373,7 +373,7 @@ function LeadForm({
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10"
           style={headerStyle}>
           <h2 className="font-bold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{initial?.id ? "Редактировать лид" : "Новый лид"}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted flex items-center justify-center transition-colors">
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.08] flex items-center justify-center transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -490,7 +490,7 @@ function LeadForm({
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors">
               Отмена
             </button>
             <button type="submit" disabled={saving}
@@ -610,13 +610,13 @@ function LeadDetailPanel({
             )}
           </div>
           <div className="flex items-center gap-2 ml-3">
-            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
               <Pencil className="w-4 h-4" />
             </button>
             <button onClick={() => setConfirmDelete(true)} className="w-8 h-8 rounded-xl hover:bg-destructive/10 flex items-center justify-center transition-colors">
               <Trash2 className="w-4 h-4 text-destructive" />
             </button>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -887,7 +887,7 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
             <h2 className="font-bold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Пресеты по отраслям</h2>
             <p className="text-xs mt-0.5" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>Загрузить демо-лиды для вашей сферы</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -903,7 +903,7 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
           ))}
         </div>
         <div className="flex gap-3 px-5 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors">
             Отмена
           </button>
           <button
@@ -1093,7 +1093,7 @@ function OrdersKanban({ search }: { search: string }) {
         <button
           onClick={handleSyncToLeads}
           disabled={syncing}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-primary/[0.08] transition-colors disabled:opacity-50"
         >
           {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
           Синхронизировать с лидами
@@ -1314,12 +1314,12 @@ export function CrmClient() {
             {tab === "leads" && (
               <>
                 <button onClick={() => setShowPresets(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground">
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors text-muted-foreground">
                   <Zap className="w-4 h-4" />
                   <span className="hidden sm:inline">Пресеты</span>
                 </button>
                 <button onClick={fetchLeads}
-                  className="w-9 h-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors text-muted-foreground">
+                  className="w-9 h-9 rounded-xl border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors text-muted-foreground">
                   <RefreshCw className="w-4 h-4" />
                 </button>
                 <button

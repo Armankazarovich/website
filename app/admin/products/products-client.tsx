@@ -262,7 +262,7 @@ export function ProductsClient({
             if (noPhotoOnly) { params.delete("nophoto"); } else { params.set("nophoto", "1"); }
             router.push(`${pathname}?${params.toString()}`);
           }}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700" : "border-border text-muted-foreground hover:bg-muted"}`}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700" : "border-border text-muted-foreground hover:bg-primary/[0.08]"}`}
         >
           <ImageOff className="w-4 h-4" />
           Без фото {noPhotoOnly && `(${products.filter(p => p.images.length === 0).length})`}
@@ -458,7 +458,7 @@ export function ProductsClient({
               {filtered.map(p => (
                 <tr
                   key={p.id}
-                  className={`hover:bg-muted/30 transition-colors ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "bg-primary/15" : ""}`}
+                  className={`hover:bg-primary/[0.05] transition-colors ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "bg-primary/15" : ""}`}
                 >
                   <td className="px-4 py-3">
                     <button onClick={() => toggleSelect(p.id)} className="text-muted-foreground hover:text-primary transition-colors">

@@ -30,7 +30,7 @@ export default async function AdminOrdersPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/admin/orders/trash"
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground border border-border rounded-xl hover:bg-muted/50 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground border border-border rounded-xl hover:bg-primary/[0.07] transition-colors"
           >
             <Trash2 className="w-4 h-4" />
             Корзина

@@ -349,7 +349,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               Диагностика фото
             </Link>
             <button onClick={autoGenerateAlt} disabled={autoAltLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm hover:bg-muted transition-colors disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm hover:bg-primary/[0.08] transition-colors disabled:opacity-50">
               {autoAltLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 text-primary" />}
               Авто ALT по товарам
             </button>
@@ -359,7 +359,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
                 bulkMode
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border bg-card hover:bg-muted text-foreground"
+                  : "border-border bg-card hover:bg-primary/[0.08] text-foreground"
               }`}
             >
               {bulkMode ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
@@ -383,14 +383,14 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
           <div className="flex gap-2 ml-auto flex-wrap">
             <button
               onClick={selectAllBulk}
-              className="px-3 py-1.5 rounded-xl border border-border text-xs font-medium hover:bg-muted transition-colors"
+              className="px-3 py-1.5 rounded-xl border border-border text-xs font-medium hover:bg-primary/[0.08] transition-colors"
             >
               Выбрать все свободные ({bulkDeletable.length})
             </button>
             {bulkSelectedCount > 0 && (
               <button
                 onClick={clearBulkSelect}
-                className="px-3 py-1.5 rounded-xl border border-border text-xs font-medium hover:bg-muted transition-colors"
+                className="px-3 py-1.5 rounded-xl border border-border text-xs font-medium hover:bg-primary/[0.08] transition-colors"
               >
                 Снять выделение
               </button>
@@ -416,7 +416,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
         onClick={() => fileRef.current?.click()}
         className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
-          dragOver ? "border-primary bg-primary/15" : "border-border hover:border-primary/40 hover:bg-muted/30"
+          dragOver ? "border-primary bg-primary/15" : "border-border hover:border-primary/40 hover:bg-primary/[0.05]"
         }`}
       >
         <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
@@ -522,7 +522,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
             <div className="flex gap-2">
               <button
                 onClick={() => setBulkConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors"
               >
                 Отмена
               </button>
@@ -561,7 +561,7 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
       <div className="relative rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden" style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted/20 flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>

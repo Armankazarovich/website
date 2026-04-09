@@ -263,7 +263,7 @@ export default function NotificationsPage() {
                   type="button"
                   onClick={checkDebug}
                   disabled={debugLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted/40 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-muted/40 hover:bg-primary/[0.08] rounded-lg transition-colors disabled:opacity-50"
                 >
                   {debugLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
                   Проверить
@@ -426,7 +426,7 @@ export default function NotificationsPage() {
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                     subsFilter === f
                       ? "bg-primary text-primary-foreground"
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                      : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
                   }`}
                 >
                   {f === "all" ? "Все" : f === "registered" ? "Зарег." : "Гости"}
@@ -511,7 +511,7 @@ export default function NotificationsPage() {
           <button
             onClick={checkTelegram}
             disabled={tgLoading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08] transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${tgLoading ? "animate-spin" : ""}`} />
             Проверить
@@ -577,7 +577,7 @@ export default function NotificationsPage() {
             <button
               onClick={testTelegram}
               disabled={tgTesting}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border hover:bg-muted text-sm font-medium transition-colors disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-border hover:bg-primary/[0.08] text-sm font-medium transition-colors disabled:opacity-50"
             >
               {tgTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               Отправить тест

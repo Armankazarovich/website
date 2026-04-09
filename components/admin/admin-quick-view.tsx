@@ -101,7 +101,7 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ml-3 transition-all active:scale-90 hover:bg-muted/40"
+            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ml-3 transition-all active:scale-90 hover:bg-primary/[0.06]"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <X className="w-4 h-4" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.6)" }} />

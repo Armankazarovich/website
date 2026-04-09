@@ -573,7 +573,7 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
                 </div>
                 <button
                   onClick={() => setOpen(false)}
-                  className="w-7 h-7 rounded-xl hover:bg-muted flex items-center justify-center transition-colors shrink-0 ml-2"
+                  className="w-7 h-7 rounded-xl hover:bg-primary/[0.08] flex items-center justify-center transition-colors shrink-0 ml-2"
                 >
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
@@ -655,7 +655,7 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
                         key={item.href}
                         href={item.href}
                         onClick={() => setOpen(false)}
-                        className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-muted transition-colors"
+                        className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-primary/[0.08] transition-colors"
                       >
                         <ArrowRight className="w-3.5 h-3.5 text-primary" />
                         <span className="text-sm text-foreground/80">{item.label}</span>

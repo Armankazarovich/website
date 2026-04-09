@@ -337,7 +337,7 @@ export default function NewPhoneOrderPage() {
               <button
                 key={cat.slug}
                 onClick={() => setActiveCategory(cat.slug)}
-                className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${activeCategory === cat.slug ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted/50"}`}
+                className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${activeCategory === cat.slug ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.07]"}`}
               >
                 {cat.name}
               </button>
@@ -369,7 +369,7 @@ export default function NewPhoneOrderPage() {
                         className={`relative flex flex-col items-start p-3 rounded-xl border text-left transition-all active:scale-[0.97] ${
                           isSelected
                             ? "bg-primary/10 border-primary shadow-sm ring-1 ring-primary/30"
-                            : "bg-card border-border hover:border-primary/40 hover:bg-muted/30"
+                            : "bg-card border-border hover:border-primary/40 hover:bg-primary/[0.05]"
                         }`}
                       >
                         {!hasStock && (
@@ -424,7 +424,7 @@ export default function NewPhoneOrderPage() {
                               isSelected
                                 ? "bg-primary/10 border-primary/50"
                                 : v.inStock
-                                ? "border-border hover:border-primary/30 hover:bg-muted/50"
+                                ? "border-border hover:border-primary/30 hover:bg-primary/[0.07]"
                                 : "border-border/40 opacity-50"
                             }`}
                           >
@@ -469,7 +469,7 @@ export default function NewPhoneOrderPage() {
                     <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Количество</p>
                     <div className="flex items-center gap-1">
                       <button type="button" onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
-                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors"><Minus className="w-3.5 h-3.5" /></button>
+                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors"><Minus className="w-3.5 h-3.5" /></button>
                       <input
                         type="number"
                         min={0.01}
@@ -479,7 +479,7 @@ export default function NewPhoneOrderPage() {
                         className="flex-1 text-center py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/30"
                       />
                       <button type="button" onClick={() => setQuantity((q) => +(q + (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
-                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-muted transition-colors"><Plus className="w-3.5 h-3.5" /></button>
+                        className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors"><Plus className="w-3.5 h-3.5" /></button>
                     </div>
                     {selectedVariant && itemPrice > 0 && (
                       <div className="mt-2 p-2 bg-white/[0.04] rounded-xl border border-white/10">
@@ -532,7 +532,7 @@ export default function NewPhoneOrderPage() {
           <div className="border-b border-border shrink-0">
             <button
               onClick={() => setShowClientForm((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-primary/[0.05] transition-colors"
             >
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-primary" />
@@ -616,7 +616,7 @@ export default function NewPhoneOrderPage() {
                         <button
                           type="button"
                           onClick={() => updateQty(i, Math.max(0.1, +(item.quantity - (item.unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
-                          className="w-6 h-6 rounded-md border border-border flex items-center justify-center text-xs hover:bg-muted"
+                          className="w-6 h-6 rounded-md border border-border flex items-center justify-center text-xs hover:bg-primary/[0.08]"
                         >−</button>
                         <span className="text-sm font-mono w-12 text-center">
                           {item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
@@ -624,7 +624,7 @@ export default function NewPhoneOrderPage() {
                         <button
                           type="button"
                           onClick={() => updateQty(i, +(item.quantity + (item.unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
-                          className="w-6 h-6 rounded-md border border-border flex items-center justify-center text-xs hover:bg-muted"
+                          className="w-6 h-6 rounded-md border border-border flex items-center justify-center text-xs hover:bg-primary/[0.08]"
                         >+</button>
                       </div>
                       <p className="text-sm font-bold">{fmt(item.quantity * item.price)}</p>
@@ -855,7 +855,7 @@ export default function NewPhoneOrderPage() {
                 <p className="text-sm font-semibold line-clamp-1">{selectedProduct.name}</p>
               </div>
               <button type="button" onClick={() => setSelectedProductId("")}
-                className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground">
+                className="p-2 rounded-xl hover:bg-primary/[0.08] transition-colors text-muted-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -874,7 +874,7 @@ export default function NewPhoneOrderPage() {
                     return (
                       <button key={v.id} type="button" onClick={() => setSelectedVariantId(v.id)}
                         className={`flex flex-col items-start px-3 py-2.5 rounded-xl text-left transition-colors border relative ${
-                          isSel ? "bg-primary/10 border-primary/50" : v.inStock ? "border-border hover:border-primary/30 hover:bg-muted/50" : "border-border/40 opacity-50"
+                          isSel ? "bg-primary/10 border-primary/50" : v.inStock ? "border-border hover:border-primary/30 hover:bg-primary/[0.07]" : "border-border/40 opacity-50"
                         }`}>
                         {isSel && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary" />}
                         <span className={`font-mono text-xs leading-tight ${isSel ? "text-primary font-semibold" : ""}`}>{v.size}</span>
@@ -908,13 +908,13 @@ export default function NewPhoneOrderPage() {
                 <div className="flex items-center gap-2">
                   <button type="button"
                     onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
-                    className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-muted active:scale-95">−</button>
+                    className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-primary/[0.08] active:scale-95">−</button>
                   <input type="number" min={0.01} step={unitType === "CUBE" ? 0.1 : 1} value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     className="flex-1 text-center py-3 text-base bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
                   <button type="button"
                     onClick={() => setQuantity((q) => +(q + (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
-                    className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-muted active:scale-95">+</button>
+                    className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-primary/[0.08] active:scale-95">+</button>
                 </div>
                 {selectedVariant && itemPrice > 0 && (
                   <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/10 flex items-center justify-between">

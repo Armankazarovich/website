@@ -55,7 +55,7 @@ export function QuickPriceEdit({ variantId, field, initialValue, unit, onSaved }
             <button onClick={save} className="w-6 h-6 flex items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
               <Check className="w-3 h-3" />
             </button>
-            <button onClick={() => setEditing(false)} className="w-6 h-6 flex items-center justify-center rounded-lg border border-border hover:bg-muted">
+            <button onClick={() => setEditing(false)} className="w-6 h-6 flex items-center justify-center rounded-lg border border-border hover:bg-primary/[0.08]">
               <X className="w-3 h-3" />
             </button>
           </>

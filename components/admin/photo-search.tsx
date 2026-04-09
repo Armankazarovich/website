@@ -99,7 +99,7 @@ export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: P
               Pixabay — бесплатно
             </span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-muted transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-primary/[0.08] transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -264,7 +264,7 @@ export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: P
                   <button
                     onClick={() => search(searchedQuery, page - 1)}
                     disabled={page <= 1 || loading}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-sm hover:bg-muted disabled:opacity-40 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-sm hover:bg-primary/[0.08] disabled:opacity-40 transition-colors"
                   >
                     <ChevronLeft className="w-4 h-4" /> Назад
                   </button>
@@ -274,7 +274,7 @@ export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: P
                   <button
                     onClick={() => search(searchedQuery, page + 1)}
                     disabled={page >= totalPages || loading}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-sm hover:bg-muted disabled:opacity-40 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-xl border border-border text-sm hover:bg-primary/[0.08] disabled:opacity-40 transition-colors"
                   >
                     Вперёд <ChevronRight className="w-4 h-4" />
                   </button>
