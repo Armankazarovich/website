@@ -3,11 +3,11 @@
 import React from "react";
 
 /**
- * ArayOrb — единый шар Арая для всего сайта (админка + клиент).
- * Оранжевая сфера с вращающимся кольцом-орбитой.
+ * ArayOrb — единый живой шар Арая для всего сайта (админка + клиент).
+ * Живая оранжевая сфера с анимацией огня внутри + вращающееся кольцо-орбита.
  *
  * @param size  — диаметр шара (px), по умолчанию 28
- * @param pulse — яркий режим (при загрузке / стриминге)
+ * @param pulse — яркий режим: glow-фильтр + яркое кольцо (при загрузке / стриминге)
  * @param id    — уникальный prefix для SVG id (если несколько на странице)
  */
 export function ArayOrb({
@@ -32,7 +32,7 @@ export function ArayOrb({
         display: "block",
       }}
     >
-      {/* Вращающееся кольцо-орбита */}
+      {/* ── Вращающееся кольцо-орбита ── */}
       <svg
         width={ringSize}
         height={ringSize}
@@ -54,10 +54,7 @@ export function ArayOrb({
           </linearGradient>
         </defs>
         <circle
-          cx="50"
-          cy="50"
-          r="43"
-          fill="none"
+          cx="50" cy="50" r="43" fill="none"
           stroke={`url(#${id}-rg)`}
           strokeWidth="4"
           strokeDasharray="55 220"
@@ -65,74 +62,116 @@ export function ArayOrb({
         />
       </svg>
 
-      {/* Основной шар */}
+      {/* ── Живой шар с анимацией огня ── */}
       <svg
         width={size}
         height={size}
         viewBox="0 0 100 100"
-        style={{
-          display: "block",
-          filter: pulse
-            ? "drop-shadow(0 0 10px rgba(240,120,0,0.75)) drop-shadow(0 0 4px rgba(255,180,0,0.5))"
-            : "drop-shadow(0 0 5px rgba(240,110,0,0.45))",
-        }}
+        style={{ display: "block", overflow: "visible" }}
       >
         <defs>
-          <radialGradient id={`${id}-base`} cx="34%" cy="28%" r="70%">
-            <stop offset="0%" stopColor="#fffbe0" />
-            <stop offset="10%" stopColor="#ffca40" />
-            <stop offset="28%" stopColor="#f07800" />
-            <stop offset="52%" stopColor="#c05000" />
-            <stop offset="75%" stopColor="#6e1c00" />
-            <stop offset="100%" stopColor="#160300" />
+          {/* Glow-фильтр (оранжевый ореол) */}
+          <filter id={`${id}-glow`} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+            <feColorMatrix
+              in="blur"
+              type="matrix"
+              values="2 0.8 0 0 0  0.6 0.2 0 0 0  0 0 0 0 0  0 0 0 0.9 0"
+              result="glow"
+            />
+            <feMerge>
+              <feMergeNode in="glow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          {/* Базовый градиент сферы — анимация цвета */}
+          <radialGradient id={`${id}-base`} cx="38%" cy="32%" r="70%">
+            <stop offset="0%" stopColor="#fff8d0" />
+            <stop offset="18%" stopColor="#fbbf24">
+              <animate
+                attributeName="stopColor"
+                values="#fbbf24;#f97316;#fde047;#fbbf24"
+                dur="5s"
+                repeatCount="indefinite"
+              />
+            </stop>
+            <stop offset="50%" stopColor="#e8700a">
+              <animate
+                attributeName="stopColor"
+                values="#e8700a;#c2410c;#f97316;#e8700a"
+                dur="7s"
+                repeatCount="indefinite"
+              />
+            </stop>
+            <stop offset="82%" stopColor="#7c2d12" />
+            <stop offset="100%" stopColor="#1a0500" />
           </radialGradient>
-          <radialGradient id={`${id}-dark`} cx="72%" cy="74%" r="52%">
-            <stop offset="0%" stopColor="#050000" stopOpacity="0.75" />
-            <stop offset="100%" stopColor="#050000" stopOpacity="0" />
+
+          {/* Вращающийся внутренний жар */}
+          <radialGradient id={`${id}-hot`} cx="50%" cy="22%" r="48%">
+            <stop offset="0%" stopColor="#fde68a" stopOpacity="0.75">
+              <animate
+                attributeName="stopOpacity"
+                values="0.75;1;0.5;0.75"
+                dur="3s"
+                repeatCount="indefinite"
+              />
+            </stop>
+            <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id={`${id}-hl`} cx="30%" cy="25%" r="34%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.90" />
+
+          {/* Зеркальный блик */}
+          <radialGradient id={`${id}-hl`} cx="30%" cy="24%" r="40%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.88" />
             <stop offset="100%" stopColor="white" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id={`${id}-rim`} cx="50%" cy="50%" r="50%">
-            <stop offset="76%" stopColor="transparent" stopOpacity="0" />
-            <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55" />
-          </radialGradient>
+
+          {/* Клип для анимации внутри шара */}
           <clipPath id={`${id}-clip`}>
             <circle cx="50" cy="50" r="46" />
           </clipPath>
         </defs>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`} />
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-dark)`} />
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-rim)`} />
+
+        {/* Базовая сфера */}
+        <circle
+          cx="50" cy="50" r="46"
+          fill={`url(#${id}-base)`}
+          filter={pulse ? `url(#${id}-glow)` : undefined}
+        />
+
+        {/* Вращающиеся внутренние огни — clipped */}
         <g clipPath={`url(#${id}-clip)`}>
-          <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.14">
+          <ellipse cx="50" cy="28" rx="36" ry="22" fill={`url(#${id}-hot)`}>
             <animateTransform
               attributeName="transform"
               type="rotate"
               from="0 50 50"
               to="360 50 50"
+              dur="6s"
+              repeatCount="indefinite"
+            />
+          </ellipse>
+          <ellipse cx="50" cy="72" rx="26" ry="15" fill="#fb923c" opacity="0.18">
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="180 50 50"
+              to="-180 50 50"
               dur="9s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0.18;0.28;0.1;0.18"
+              dur="4.5s"
               repeatCount="indefinite"
             />
           </ellipse>
         </g>
+
+        {/* Блик (поверх всего) */}
         <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`} />
-        <circle
-          cx="50"
-          cy="50"
-          r="46"
-          fill="none"
-          stroke="rgba(255,200,60,0.25)"
-          strokeWidth="1.5"
-        >
-          <animate
-            attributeName="stroke-opacity"
-            values="0.25;0.60;0.25"
-            dur="3s"
-            repeatCount="indefinite"
-          />
-        </circle>
       </svg>
     </div>
   );
