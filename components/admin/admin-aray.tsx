@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Send, Loader2, RotateCcw, Mic, MicOff, Volume2, VolumeX, Sparkles, Zap } from "lucide-react";
-import { ArayIcon } from "@/components/store/aray-widget";
+import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -15,30 +14,46 @@ type Msg = {
 };
 
 function parseActions(raw: string) {
-  const marker = "ARAY_ACTIONS:";
-  const idx = raw.indexOf(marker);
-  if (idx === -1) return { text: raw, actions: [] };
-  return { text: raw.slice(0, idx).trim(), actions: [] };
+  const idx = raw.indexOf("ARAY_ACTIONS:");
+  return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
 }
 
 // ─── Голосовой ввод ───────────────────────────────────────────────────────────
 
-function useVoice(onResult: (t: string) => void) {
+function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   const [listening, setListening] = useState(false);
+  const [supported, setSupported] = useState(false);
   const ref = useRef<any>(null);
+
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setSupported(!!SR);
+  }, []);
+
   const start = useCallback(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SR) return;
+    if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
     const r = new SR();
-    r.lang = "ru-RU"; r.interimResults = false;
+    r.lang = "ru-RU";
+    r.interimResults = false;
+    r.continuous = false;
     r.onstart = () => setListening(true);
-    r.onend = () => setListening(false);
-    r.onerror = () => setListening(false);
-    r.onresult = (e: any) => { const t = e.results[0]?.[0]?.transcript || ""; if (t) onResult(t); };
-    r.start(); ref.current = r;
-  }, [onResult]);
-  const stop = useCallback(() => { ref.current?.stop(); setListening(false); }, []);
-  return { listening, start, stop };
+    r.onend = () => { setListening(false); ref.current = null; };
+    r.onerror = () => { setListening(false); ref.current = null; };
+    r.onresult = (e: any) => {
+      const t = e.results[0]?.[0]?.transcript?.trim() || "";
+      if (t) { onResult(t); setTimeout(onAutoSend, 120); }
+    };
+    try { r.start(); ref.current = r; } catch { setListening(false); }
+  }, [onResult, onAutoSend]);
+
+  const stop = useCallback(() => {
+    if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
+    setListening(false);
+  }, []);
+
+  return { listening, supported, start, stop };
 }
 
 // ─── TTS ─────────────────────────────────────────────────────────────────────
@@ -68,6 +83,52 @@ function useTTS() {
   return { speaking, speak };
 }
 
+// ─── Маленький шар ────────────────────────────────────────────────────────────
+
+function ArayOrb({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", flexShrink: 0 }}>
+      <defs>
+        <radialGradient id="ao-base" cx="34%" cy="28%" r="70%">
+          <stop offset="0%" stopColor="#fffbe0"/>
+          <stop offset="10%" stopColor="#ffca40"/>
+          <stop offset="28%" stopColor="#f07800"/>
+          <stop offset="52%" stopColor="#c05000"/>
+          <stop offset="75%" stopColor="#6e1c00"/>
+          <stop offset="100%" stopColor="#160300"/>
+        </radialGradient>
+        <radialGradient id="ao-dark" cx="72%" cy="74%" r="52%">
+          <stop offset="0%" stopColor="#050000" stopOpacity="0.75"/>
+          <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
+        </radialGradient>
+        <radialGradient id="ao-hl" cx="30%" cy="25%" r="34%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+          <stop offset="100%" stopColor="white" stopOpacity="0"/>
+        </radialGradient>
+        <radialGradient id="ao-rim" cx="50%" cy="50%" r="50%">
+          <stop offset="76%" stopColor="transparent" stopOpacity="0"/>
+          <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
+        </radialGradient>
+        <clipPath id="ao-clip"><circle cx="50" cy="50" r="46"/></clipPath>
+      </defs>
+      <circle cx="50" cy="50" r="46" fill="url(#ao-base)"
+        style={{ filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.5))" }}/>
+      <circle cx="50" cy="50" r="46" fill="url(#ao-dark)"/>
+      <circle cx="50" cy="50" r="46" fill="url(#ao-rim)"/>
+      <g clipPath="url(#ao-clip)">
+        <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.14">
+          <animateTransform attributeName="transform" type="rotate"
+            from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
+        </ellipse>
+      </g>
+      <circle cx="50" cy="50" r="46" fill="url(#ao-hl)"/>
+      <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.22)" strokeWidth="1">
+        <animate attributeName="stroke-opacity" values="0.22;0.50;0.22" dur="3s" repeatCount="indefinite"/>
+      </circle>
+    </svg>
+  );
+}
+
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
 
 function Bubble({ msg, onSpeak, speaking }: {
@@ -78,50 +139,43 @@ function Bubble({ msg, onSpeak, speaking }: {
   const isUser = msg.role === "user";
   const isSpeaking = speaking === msg.id;
   return (
-    <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      {!isUser && (
-        <div className="shrink-0 mt-0.5">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <ArayIconSmall />
-        </div>
-      )}
-      <div className="flex flex-col gap-1 max-w-[82%]">
-        <div
-          className="px-3 py-2 text-[12px] leading-relaxed"
+    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+      {!isUser && <div className="shrink-0 mt-0.5"><ArayOrb size={22} /></div>}
+      <div className="flex flex-col gap-1 max-w-[80%]">
+        <div className="px-3.5 py-2.5 text-[13px] leading-relaxed"
           style={isUser ? {
-            background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))",
-            color: "#fff", borderRadius: "14px 14px 4px 14px",
+            background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.80))",
+            color: "#fff",
+            borderRadius: "16px 16px 4px 16px",
+            boxShadow: "0 2px 12px hsl(var(--primary)/0.30)",
           } : {
-            background: "rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.90)",
-            borderRadius: "14px 14px 14px 4px",
-            border: "1px solid rgba(255,255,255,0.10)",
-          }}
-        >
+            background: "rgba(255,255,255,0.09)",
+            color: "rgba(255,255,255,0.93)",
+            borderRadius: "16px 16px 16px 4px",
+            border: "1px solid rgba(255,255,255,0.12)",
+          }}>
           {msg.text
             ? msg.text.split("\n").map((line, i, arr) => (
                 <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
               ))
             : !isUser && msg.streaming
-            ? <span className="inline-flex gap-1 items-center py-0.5">
+            ? <span className="inline-flex gap-1.5 items-center py-0.5">
                 {[0, 1, 2].map(i => (
-                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce"
-                    style={{ animationDelay: `${i * 150}ms` }} />
+                  <span key={i} className="w-2 h-2 rounded-full bg-orange-400 animate-bounce"
+                    style={{ animationDelay: `${i * 160}ms` }} />
                 ))}
               </span>
             : null
           }
           {msg.streaming && msg.text && (
-            <span className="inline-block w-0.5 h-3 bg-orange-400 ml-0.5 align-middle animate-pulse" />
+            <span className="inline-block w-0.5 h-3.5 bg-orange-400 ml-0.5 align-middle animate-pulse" />
           )}
         </div>
         {!isUser && !msg.streaming && msg.text && onSpeak && (
-          <button
-            onClick={() => onSpeak(msg.text, msg.id)}
-            className="self-start flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] transition-all"
-            style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.30)" }}
-          >
-            {isSpeaking ? <VolumeX className="w-2.5 h-2.5" /> : <Volume2 className="w-2.5 h-2.5" />}
+          <button onClick={() => onSpeak(msg.text, msg.id)}
+            className="self-start flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] transition-all hover:opacity-80"
+            style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.35)" }}>
+            {isSpeaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
             {isSpeaking ? "стоп" : "озвучить"}
           </button>
         )}
@@ -130,34 +184,11 @@ function Bubble({ msg, onSpeak, speaking }: {
   );
 }
 
-// ─── Маленький шар ────────────────────────────────────────────────────────────
-
-function ArayIconSmall() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 100 100" style={{ display: "block" }}>
-      <defs>
-        <radialGradient id="ais-base" cx="34%" cy="28%" r="70%">
-          <stop offset="0%" stopColor="#fffbe0"/>
-          <stop offset="28%" stopColor="#f07800"/>
-          <stop offset="75%" stopColor="#6e1c00"/>
-          <stop offset="100%" stopColor="#160300"/>
-        </radialGradient>
-        <radialGradient id="ais-hl" cx="30%" cy="25%" r="34%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
-          <stop offset="100%" stopColor="white" stopOpacity="0"/>
-        </radialGradient>
-      </defs>
-      <circle cx="50" cy="50" r="46" fill="url(#ais-base)"/>
-      <circle cx="50" cy="50" r="46" fill="url(#ais-hl)"/>
-    </svg>
-  );
-}
-
 // ─── Быстрые вопросы ──────────────────────────────────────────────────────────
 
-const QUICK_ADMIN = [
-  "Сколько новых заказов?",
-  "Покажи сводку за сегодня",
+const QUICK = [
+  "Сколько заказов сегодня?",
+  "Покажи сводку",
   "Как добавить товар?",
   "Что с доставкой?",
 ];
@@ -165,61 +196,58 @@ const QUICK_ADMIN = [
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function AdminAray({ staffName = "Коллега" }: { staffName?: string }) {
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [bubble, setBubble] = useState<string | null>(null);
-  const [hasNew, setHasNew] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { speaking, speak } = useTTS();
 
+  // send нужен до useVoice
+  const sendRef = useRef<(text?: string) => Promise<void>>();
+
   const addInput = useCallback((t: string) => {
-    setInput(prev => prev ? prev + " " + t : t);
-    inputRef.current?.focus();
+    setInput(t);
+    if (!expanded) setExpanded(true);
+  }, [expanded]);
+
+  const autoSend = useCallback(() => {
+    sendRef.current?.();
   }, []);
-  const { listening, start: startMic, stop: stopMic } = useVoice(addInput);
 
-  // Проактивный пузырь
+  const { listening, supported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
+
+  // Приветствие
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (!open) {
-        const h = new Date().getHours();
-        const greeting = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
-        setBubble(`${greeting}, ${staffName}! Чем помочь? 👋`);
-        setHasNew(true);
-        setTimeout(() => setBubble(null), 6000);
-      }
-    }, 12000);
-    return () => clearTimeout(t);
-  }, [open, staffName]);
+    if (expanded && messages.length === 0) {
+      const h = new Date().getHours();
+      const time = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
+      setMessages([{
+        id: "welcome", role: "assistant",
+        text: `${time}, ${staffName}! 👋 Я Арай — твой ассистент. Заказы, товары, аналитика — спрашивай.`,
+      }]);
+    }
+  }, [expanded, messages.length, staffName]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  useEffect(() => {
+    if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+  }, [messages, expanded]);
 
-  const initChat = useCallback(() => {
-    if (messages.length > 0) return;
-    const h = new Date().getHours();
-    const time = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : "Добрый вечер";
-    setMessages([{
-      id: "welcome", role: "assistant",
-      text: `${time}, ${staffName}! 👋 Я Арай — твой помощник по всем вопросам. Заказы, товары, аналитика — спрашивай всё!`,
-    }]);
-  }, [messages.length, staffName]);
+  // Открыть по событию от мобильного nav
+  useEffect(() => {
+    const handler = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 300); };
+    window.addEventListener("aray:open", handler);
+    return () => window.removeEventListener("aray:open", handler);
+  }, []);
 
-  const handleOpen = () => {
-    setOpen(true); setHasNew(false); setBubble(null);
-    initChat();
-    setTimeout(() => inputRef.current?.focus(), 300);
-  };
-
-  const send = async (text?: string) => {
-    const msg = (text || input).trim();
+  const send = useCallback(async (text?: string) => {
+    const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setInput("");
 
     const userMsg: Msg = { id: Date.now().toString(), role: "user", text: msg };
-    const allMessages = [...messages, userMsg];
+    const allMsgs = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
 
@@ -230,7 +258,7 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: allMessages.map(m => ({ role: m.role, content: m.text })),
+          messages: allMsgs.map(m => ({ role: m.role, content: m.text })),
           context: { page: "admin" },
         }),
       });
@@ -262,7 +290,6 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
 
       const { text: finalText } = parseActions(cleanText);
       setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, text: finalText, streaming: false } : m));
-      if (!open) setHasNew(true);
 
     } catch {
       setMessages(prev => {
@@ -273,323 +300,193 @@ export function AdminAray({ staffName = "Коллега" }: { staffName?: string
     } finally {
       setLoading(false);
     }
+  }, [input, messages, loading]);
+
+  // Регистрируем send в ref для голоса
+  useEffect(() => { sendRef.current = send; }, [send]);
+
+  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
-  // Стиль жидкого стекла
-  const glass: React.CSSProperties = {
-    background: "linear-gradient(135deg, rgba(232,112,10,0.06) 0%, rgba(8,12,28,0.82) 60%)",
-    backdropFilter: "blur(40px) saturate(200%) brightness(0.9)",
-    WebkitBackdropFilter: "blur(40px) saturate(200%) brightness(0.9)",
-    border: "1px solid rgba(255,255,255,0.13)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.10) inset, 0 -1px 0 rgba(0,0,0,0.20) inset",
+  // Стиль — как раздел сайдбара, тёмный непрозрачный
+  const panelBg: React.CSSProperties = {
+    background: "rgba(8, 12, 30, 0.94)",
+    backdropFilter: "blur(32px) saturate(180%)",
+    WebkitBackdropFilter: "blur(32px) saturate(180%)",
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+  };
+
+  const chatBg: React.CSSProperties = {
+    background: "rgba(5, 8, 22, 0.60)",
   };
 
   return (
     <>
-      {/* ── Кнопка в сайдбаре ── */}
-      <div className="relative flex flex-col items-center px-3 pb-3 shrink-0">
-        {/* Проактивный пузырь */}
+      {/* ── Основная панель — фиксирована снизу, правее сайдбара ── */}
+      <div
+        className="fixed bottom-0 left-0 right-0 lg:left-60 z-[150]"
+        style={panelBg}
+      >
+        {/* ── Чат-область (раскрывается вверх) ── */}
         <AnimatePresence>
-          {bubble && !open && (
+          {expanded && (
             <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.92 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.90 }}
-              className="absolute bottom-full mb-2 left-0 right-0 mx-2 z-50 cursor-pointer"
-              onClick={handleOpen}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 340, opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 32, stiffness: 320 }}
+              className="overflow-hidden"
+              style={chatBg}
             >
-              <div className="rounded-2xl px-3 py-2.5 text-[11px] leading-snug text-white/85"
-                style={{
-                  background: "rgba(8,12,28,0.92)",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  boxShadow: "0 8px 28px rgba(0,0,0,0.45)",
-                  backdropFilter: "blur(20px)",
-                }}>
-                {bubble}
-                <div className="absolute -bottom-1.5 left-6 w-2.5 h-2.5 rotate-45"
-                  style={{ background: "rgba(8,12,28,0.92)", borderRight: "1px solid rgba(255,255,255,0.14)", borderBottom: "1px solid rgba(255,255,255,0.14)" }} />
+              {/* Шапка чата */}
+              <div className="flex items-center gap-3 px-4 py-2.5"
+                style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <ArayOrb size={28} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[13px] font-bold text-white/92">Арай</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>
+                    <span className="text-[11px] text-white/40">Бизнес-ассистент</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setMessages([])}
+                    className="p-1.5 rounded-lg text-white/30 hover:text-white/65 hover:bg-white/[0.07] transition-all"
+                    title="Очистить">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setExpanded(false)}
+                    className="p-1.5 rounded-lg text-white/30 hover:text-white/65 hover:bg-white/[0.07] transition-all"
+                    title="Свернуть">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Сообщения */}
+              <div
+                className="flex flex-col gap-3 px-4 py-3 overflow-y-auto"
+                style={{ height: "calc(340px - 48px)" }}
+              >
+                {messages.map(msg => (
+                  <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking} />
+                ))}
+
+                {/* Быстрые вопросы — только после приветствия */}
+                {messages.length === 1 && !loading && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {QUICK.map(q => (
+                      <button key={q} onClick={() => send(q)}
+                        className="px-3 py-1.5 rounded-xl text-[11px] font-medium transition-all hover:opacity-85 active:scale-95"
+                        style={{
+                          background: "rgba(255,255,255,0.07)",
+                          border: "1px solid rgba(255,255,255,0.11)",
+                          color: "rgba(255,255,255,0.72)",
+                        }}>
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div ref={bottomRef} />
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Шар + метка */}
-        <motion.button
-          onClick={handleOpen}
-          whileHover={{ scale: 1.04, y: -2 }}
-          whileTap={{ scale: 0.94 }}
-          transition={{ type: "spring", stiffness: 420, damping: 22 }}
-          className="relative w-full flex items-center gap-2.5 px-3 py-2 rounded-xl focus:outline-none"
-          style={{
-            background: open ? "rgba(232,112,10,0.12)" : "rgba(255,255,255,0.04)",
-            border: `1px solid ${open ? "rgba(232,112,10,0.25)" : "rgba(255,255,255,0.08)"}`,
-            transition: "background 0.2s, border-color 0.2s",
-          }}
-        >
-          {/* Шар с анимацией */}
-          <div className="shrink-0" style={{ animation: "adminArayFloat 3.5s ease-in-out infinite" }}>
-            <svg width="38" height="38" viewBox="0 0 100 100" style={{ display: "block" }}>
-              <defs>
-                <radialGradient id="aaib-base" cx="34%" cy="28%" r="70%">
-                  <stop offset="0%" stopColor="#fffbe0"/>
-                  <stop offset="10%" stopColor="#ffca40"/>
-                  <stop offset="28%" stopColor="#f07800"/>
-                  <stop offset="52%" stopColor="#c05000"/>
-                  <stop offset="75%" stopColor="#6e1c00"/>
-                  <stop offset="100%" stopColor="#160300"/>
-                </radialGradient>
-                <radialGradient id="aaib-dark" cx="72%" cy="74%" r="52%">
-                  <stop offset="0%" stopColor="#050000" stopOpacity="0.75"/>
-                  <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
-                </radialGradient>
-                <radialGradient id="aaib-hl" cx="30%" cy="25%" r="34%">
-                  <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
-                  <stop offset="100%" stopColor="white" stopOpacity="0"/>
-                </radialGradient>
-                <radialGradient id="aaib-rim" cx="50%" cy="50%" r="50%">
-                  <stop offset="76%" stopColor="transparent" stopOpacity="0"/>
-                  <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
-                </radialGradient>
-                <clipPath id="aaib-clip"><circle cx="50" cy="50" r="46"/></clipPath>
-              </defs>
-              <circle cx="50" cy="50" r="46" fill="url(#aaib-base)"
-                style={{ filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.5))" }}/>
-              <circle cx="50" cy="50" r="46" fill="url(#aaib-dark)"/>
-              <circle cx="50" cy="50" r="46" fill="url(#aaib-rim)"/>
-              <g clipPath="url(#aaib-clip)">
-                <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.12">
-                  <animateTransform attributeName="transform" type="rotate"
-                    from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
-                </ellipse>
-              </g>
-              <circle cx="50" cy="50" r="46" fill="url(#aaib-hl)"/>
-              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.20)" strokeWidth="1">
-                <animate attributeName="stroke-opacity" values="0.20;0.45;0.20" dur="3s" repeatCount="indefinite"/>
-              </circle>
-            </svg>
+        {/* ── Строка ввода — всегда видна — КАК CLAUDE ── */}
+        <div className="flex items-end gap-2.5 px-4 py-3"
+          style={{ borderTop: expanded ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+
+          {/* Шар + кнопка раскрыть/свернуть */}
+          <button
+            onClick={() => {
+              setExpanded(v => !v);
+              if (!expanded) setTimeout(() => inputRef.current?.focus(), 250);
+            }}
+            className="shrink-0 mb-0.5 relative transition-transform hover:scale-105 active:scale-95"
+            style={{ WebkitTapHighlightColor: "transparent" }}
+            title={expanded ? "Свернуть Арая" : "Открыть Арая"}>
+            <ArayOrb size={34} />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(8,12,30,0.95)", border: "1px solid rgba(255,255,255,0.15)" }}>
+              {expanded
+                ? <ChevronDown className="w-2 h-2 text-white/50" />
+                : <ChevronUp className="w-2 h-2 text-white/50" />}
+            </span>
+          </button>
+
+          {/* Поле ввода */}
+          <div className="flex-1 relative">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              onFocus={() => !expanded && setExpanded(true)}
+              placeholder={listening ? "Слушаю..." : "Спроси Арая..."}
+              rows={1}
+              className="w-full resize-none bg-transparent text-white/88 placeholder-white/28 text-[13px] leading-relaxed outline-none py-1 pr-1"
+              style={{ maxHeight: 100, fontFamily: "inherit" }}
+              onInput={e => {
+                const t = e.currentTarget;
+                t.style.height = "auto";
+                t.style.height = Math.min(t.scrollHeight, 100) + "px";
+              }}
+            />
           </div>
 
-          <div className="flex-1 min-w-0 text-left">
-            <div className="flex items-center gap-1.5">
-              <p className="text-[11px] font-bold text-white/85 leading-none">АРАЙ</p>
-              <span className="text-[8px] px-1 py-0.5 rounded-full font-medium"
-                style={{ background: "hsl(var(--primary)/0.15)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.25)" }}>
-                4.6
-              </span>
-            </div>
-            <p className="text-[9px] text-white/38 mt-0.5 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"/>
-              всегда рядом
-            </p>
-          </div>
+          {/* Кнопки */}
+          <div className="flex items-center gap-1.5 shrink-0 mb-0.5">
+            {/* Микрофон — только если браузер поддерживает */}
+            {supported && (
+              <button
+                onClick={listening ? stopMic : startMic}
+                className="p-2 rounded-xl transition-all"
+                style={{
+                  background: listening ? "hsl(var(--primary)/0.22)" : "rgba(255,255,255,0.07)",
+                  color: listening ? "hsl(var(--primary))" : "rgba(255,255,255,0.50)",
+                  border: `1.5px solid ${listening ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.10)"}`,
+                  animation: listening ? "micPulse 1.2s ease-in-out infinite" : "none",
+                }}>
+                {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            )}
 
-          {hasNew && !open && (
-            <span className="w-2 h-2 rounded-full shrink-0 animate-pulse"
-              style={{ background: "hsl(var(--primary))" }}/>
-          )}
-        </motion.button>
+            {/* Отправить */}
+            <button
+              onClick={() => send()}
+              disabled={!input.trim() || loading}
+              className="p-2 rounded-xl transition-all"
+              style={{
+                background: input.trim() && !loading
+                  ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.80))"
+                  : "rgba(255,255,255,0.07)",
+                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.28)",
+                border: "1.5px solid rgba(255,255,255,0.10)",
+                boxShadow: input.trim() && !loading ? "0 2px 12px hsl(var(--primary)/0.35)" : "none",
+              }}>
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Нижняя метка */}
+        <div className="text-center pb-1.5 -mt-0.5">
+          <span className="text-[9px] tracking-wide" style={{ color: "rgba(255,255,255,0.16)" }}>
+            Арай помнит каждый разговор ·{" "}
+            <span style={{ color: "hsl(var(--primary)/0.40)" }}>ARAY PRODUCTIONS</span>
+          </span>
+        </div>
       </div>
 
-      {/* ── Чат-попап ── */}
-      <AnimatePresence>
-        {open && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[200]"
-              style={{ background: "rgba(0,0,0,0.15)", backdropFilter: "blur(2px)" }}
-              onClick={() => setOpen(false)}
-            />
-
-            {/* Панель */}
-            <motion.div
-              initial={{ opacity: 0, x: -16, scale: 0.96 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -16, scale: 0.96 }}
-              transition={{ type: "spring", damping: 28, stiffness: 360 }}
-              className="fixed z-[201] flex flex-col"
-              style={{
-                left: "252px",
-                bottom: "16px",
-                width: "340px",
-                height: "520px",
-                borderRadius: "22px",
-                ...glass,
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              {/* ── Шапка ── */}
-              <div className="flex items-center gap-3 px-4 py-3.5 shrink-0"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <div style={{ animation: "adminArayFloat 3.5s ease-in-out infinite", flexShrink: 0 }}>
-                  <svg width="36" height="36" viewBox="0 0 100 100" style={{ display: "block", filter: "drop-shadow(0 2px 8px rgba(200,80,0,0.5))" }}>
-                    <defs>
-                      <radialGradient id="aah-base" cx="34%" cy="28%" r="70%">
-                        <stop offset="0%" stopColor="#fffbe0"/>
-                        <stop offset="28%" stopColor="#f07800"/>
-                        <stop offset="75%" stopColor="#6e1c00"/>
-                        <stop offset="100%" stopColor="#160300"/>
-                      </radialGradient>
-                      <radialGradient id="aah-hl" cx="30%" cy="25%" r="34%">
-                        <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
-                        <stop offset="100%" stopColor="white" stopOpacity="0"/>
-                      </radialGradient>
-                    </defs>
-                    <circle cx="50" cy="50" r="46" fill="url(#aah-base)"/>
-                    <circle cx="50" cy="50" r="46" fill="url(#aah-hl)"/>
-                  </svg>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-bold text-white leading-none">Арай</p>
-                    <span className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                      style={{ background: "rgba(232,112,10,0.15)", color: "hsl(var(--primary))", border: "1px solid rgba(232,112,10,0.25)" }}>
-                      <Zap className="w-2.5 h-2.5"/>
-                      Sonnet 4.6
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-white/40 mt-0.5 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse"/>
-                    Бизнес-ассистент · помнит всё
-                  </p>
-                </div>
-
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => { setMessages([]); setTimeout(initChat, 50); }}
-                    className="w-7 h-7 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
-                    title="Новый чат"
-                  >
-                    <RotateCcw className="w-3 h-3 text-white/40"/>
-                  </button>
-                  <button
-                    onClick={() => setOpen(false)}
-                    className="w-7 h-7 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
-                  >
-                    <X className="w-3.5 h-3.5 text-white/40"/>
-                  </button>
-                </div>
-              </div>
-
-              {/* ── Сообщения ── */}
-              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 scrollbar-hide">
-                {messages.map(m => (
-                  <Bubble key={m.id} msg={m} onSpeak={speak} speaking={speaking}/>
-                ))}
-                {loading && (
-                  <div className="flex gap-2">
-                    <ArayIconSmall/>
-                    <div className="px-3 py-2.5 rounded-2xl rounded-tl-[4px]"
-                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
-                      <span className="inline-flex gap-1 items-center">
-                        {[0,1,2].map(i => (
-                          <span key={i} className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce"
-                            style={{ animationDelay: `${i*150}ms` }}/>
-                        ))}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div ref={bottomRef}/>
-              </div>
-
-              {/* ── Быстрые вопросы ── */}
-              {messages.length <= 1 && !loading && (
-                <div className="px-4 pb-2 flex gap-1.5 flex-wrap shrink-0">
-                  {QUICK_ADMIN.map(q => (
-                    <button key={q} onClick={() => send(q)}
-                      className="text-[10px] px-2.5 py-1 rounded-full transition-all active:scale-95"
-                      style={{
-                        background: "hsl(var(--primary)/0.10)",
-                        border: "1px solid hsl(var(--primary)/0.22)",
-                        color: "hsl(var(--primary))",
-                      }}>
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* ── Ввод — жидкое стекло ── */}
-              <div className="px-3 pb-3 pt-2 shrink-0"
-                style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                <div className="flex items-end gap-2 rounded-2xl px-3 py-2"
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                  }}>
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={e => { setInput(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 96) + "px"; }}
-                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-                    placeholder="Спроси Арая..."
-                    rows={1}
-                    className="flex-1 text-[12px] focus:outline-none resize-none bg-transparent leading-relaxed"
-                    style={{ color: "rgba(255,255,255,0.90)", maxHeight: "96px", minHeight: "20px" }}
-                  />
-
-                  <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
-                    {/* Модель */}
-                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full hidden sm:block"
-                      style={{ background: "rgba(232,112,10,0.12)", color: "hsl(var(--primary)/0.7)", border: "1px solid rgba(232,112,10,0.18)" }}>
-                      4.6
-                    </span>
-
-                    {/* Микрофон */}
-                    <button
-                      onClick={listening ? stopMic : startMic}
-                      className="w-7 h-7 rounded-xl flex items-center justify-center transition-all"
-                      style={{
-                        background: listening ? "hsl(var(--primary)/0.20)" : "rgba(255,255,255,0.06)",
-                        border: `1px solid ${listening ? "hsl(var(--primary)/0.40)" : "rgba(255,255,255,0.10)"}`,
-                        color: listening ? "hsl(var(--primary))" : "rgba(255,255,255,0.40)",
-                      }}
-                      title={listening ? "Остановить" : "Голосовой ввод"}
-                    >
-                      {listening
-                        ? <MicOff className="w-3 h-3"/>
-                        : <Mic className="w-3 h-3"/>}
-                    </button>
-
-                    {/* Отправить */}
-                    <button
-                      onClick={() => send()}
-                      disabled={loading || !input.trim()}
-                      className="w-7 h-7 rounded-xl flex items-center justify-center transition-all disabled:opacity-30 active:scale-90"
-                      style={{
-                        background: input.trim()
-                          ? "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))"
-                          : "rgba(255,255,255,0.07)",
-                        border: "1px solid rgba(255,255,255,0.10)",
-                      }}
-                    >
-                      {loading
-                        ? <Loader2 className="w-3 h-3 animate-spin text-white/50"/>
-                        : <Send className="w-3 h-3" style={{ color: input.trim() ? "#fff" : "rgba(255,255,255,0.35)" }}/>
-                      }
-                    </button>
-                  </div>
-                </div>
-
-                {/* Подпись */}
-                <p className="text-center text-[9px] mt-1.5"
-                  style={{ color: "rgba(255,255,255,0.18)" }}>
-                  Арай помнит каждый разговор · <span style={{ color: "hsl(var(--primary)/0.5)" }}>ARAY PRODUCTIONS</span>
-                </p>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      <style jsx global>{`
-        @keyframes adminArayFloat {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-4px); }
+      <style>{`
+        @keyframes micPulse {
+          0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary)/0.4); }
+          50% { box-shadow: 0 0 0 6px hsl(var(--primary)/0); }
         }
       `}</style>
     </>

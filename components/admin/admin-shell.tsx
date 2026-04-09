@@ -822,7 +822,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
         {/* ── Подвал сайдбара: палитра + пользователь + контролы ── */}
         <div className="shrink-0 border-t border-white/10 p-3 space-y-2">
-          <AdminAray staffName={email?.split("@")[0] || "Коллега"} />
           <AdminPwaInstall />
 
           {/* ── User Card — профессиональная карточка пользователя ── */}
@@ -1107,6 +1106,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>
+
+      {/* ── Арай — фиксированная панель снизу на всех страницах ── */}
+      <AdminAray staffName={email?.split("@")[0] || "Коллега"} />
 
       {/* Контекстная подсказка для каждой страницы */}
       <AdminPageHelp userRole={role} />
