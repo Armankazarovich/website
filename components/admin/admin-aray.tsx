@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown, X } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown } from "lucide-react";
 
 // ─── Classic mode ──────────────────────────────────────────────────────────────
 function useClassicMode() {
@@ -404,23 +404,48 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [autoVoice, setAutoVoice] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const sendRef = useRef<(text?: string) => Promise<void>>();
-  const { speaking, speak } = useTTS();
+  const { speaking, speak, stop: stopVoice } = useTTS();
+
+  // Загрузка autoVoice из localStorage
+  useEffect(() => {
+    setAutoVoice(localStorage.getItem("aray-auto-voice") === "1");
+  }, []);
 
   const addInput = useCallback((t: string) => { setInput(t); if (!expanded) setExpanded(true); }, [expanded]);
   const autoSend = useCallback(() => { sendRef.current?.(); }, []);
   const { listening, supported: micSupported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
 
-  // Приветствие — с контекстом страницы
+  // Auto-озвучка: когда autoVoice включён — озвучивать каждый новый ответ Арая
+  const lastMsgRef = useRef<string>("");
+  useEffect(() => {
+    if (!autoVoice) return;
+    const last = messages[messages.length - 1];
+    if (last?.role === "assistant" && !last.streaming && last.text && last.id !== lastMsgRef.current) {
+      lastMsgRef.current = last.id;
+      speak(last.text, last.id);
+    }
+  }, [messages, autoVoice, speak]);
+
+  const toggleAutoVoice = useCallback(() => {
+    const next = !autoVoice;
+    setAutoVoice(next);
+    localStorage.setItem("aray-auto-voice", next ? "1" : "0");
+    if (!next) stopVoice();
+  }, [autoVoice, stopVoice]);
+
+  // Приветствие — конкретное по разделу
   useEffect(() => {
     if (expanded && messages.length === 0) {
       const h = new Date().getHours();
       const gr = h < 12 ? "Доброе утро" : h < 17 ? "Привет" : "Добрый вечер";
-      const pageNote = pageCtx ? ` Ты сейчас в разделе **${pageCtx.label}** — могу сразу показать что нужно.` : "";
-      setMessages([{ id: "w", role: "assistant",
-        text: `${gr}, ${staffName}!${pageNote} Спрашивай всё — заказы, товары, аналитика, поиск в интернете. Я рядом.` }]);
+      const pageNote = pageCtx
+        ? ` Ты в **${pageCtx.label}**. ${pageCtx.quick[0]} — хочешь покажу прямо сейчас?`
+        : " Что нужно — спрашивай, всё сделаю.";
+      setMessages([{ id: "w", role: "assistant", text: `${gr}, ${staffName}!${pageNote}` }]);
     }
   }, [expanded, messages.length, staffName, pageCtx]);
 
@@ -521,7 +546,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                   {pageCtx && (
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                       style={{ background: "hsl(var(--primary)/0.12)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.22)" }}>
-                      {pageCtx.icon} {pageCtx.label}
+                      {pageCtx.label}
                     </span>
                   )}
                   <span className="text-[10px] hidden sm:inline" style={{ color: textMuted }}>помнит всё · всегда рядом</span>
@@ -598,7 +623,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKey}
               onFocus={() => !expanded && setExpanded(true)}
-              placeholder={listening ? "Слушаю..." : pageCtx ? `${pageCtx.icon} Спроси про ${pageCtx.label.toLowerCase()}...` : "Спроси Арая..."}
+              placeholder={listening ? "Слушаю..." : pageCtx ? `Спроси про ${pageCtx.label.toLowerCase()}...` : "Спроси Арая..."}
               rows={1}
               className="aray-chat-input w-full resize-none text-[13px] leading-relaxed outline-none py-1"
               style={{ maxHeight: 88, fontFamily: "inherit" }}
@@ -612,20 +637,31 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
 
           {/* Кнопки */}
           <div className="flex items-center gap-1 shrink-0 mb-0.5">
+            {/* Глобальный toggle голоса */}
+            <button
+              onClick={toggleAutoVoice}
+              className={`aray-chat-action-btn p-2 ${autoVoice ? "aray-chat-action-btn-active" : ""}`}
+              title={autoVoice ? "Голос ВКЛ — нажми чтобы выключить" : "Включить голос (все ответы)"}>
+              {autoVoice ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
+            </button>
+
+            {/* Микрофон */}
             {micSupported && (
               <button
                 onClick={listening ? stopMic : startMic}
                 className={`aray-chat-action-btn p-2 ${listening ? "aray-chat-action-btn-active" : ""}`}
-                title={listening ? "Стоп" : "Голос"}>
+                title={listening ? "Стоп" : "Говори — пойму"}>
                 {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
               </button>
             )}
+
+            {/* Отправить */}
             <button
               onClick={() => send()}
               disabled={!hasText || loading}
               className="aray-chat-send-btn p-2"
               data-ready={hasText && !loading}
-              title="Отправить">
+              title="Отправить (Enter)">
               <Send className="w-4 h-4"/>
             </button>
           </div>
@@ -634,7 +670,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         {/* Метка снизу */}
         <div className="text-center pb-2 -mt-1">
           <span className="aray-chat-label text-[9px] tracking-wide">
-            {pageCtx ? `${pageCtx.icon} ${pageCtx.label} · ` : ""}Арай помнит всё ·{" "}
+            {pageCtx ? `${pageCtx.label} · ` : ""}Арай помнит всё ·{" "}
             <span style={{ color: "hsl(var(--primary)/0.45)" }}>ARAY</span>
           </span>
         </div>
