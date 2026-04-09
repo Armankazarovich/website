@@ -2118,7 +2118,7 @@ a:focus-visible {
 
 /* ── Природный режим — тёмное стекло как карточки сайта ───────────────────── */
 .dark .aray-nature-mode .aray-chat-panel {
-  background: rgba(12, 12, 15, 0.78) !important;
+  background: rgba(10, 10, 12, 0.56) !important;
   backdrop-filter: blur(56px) saturate(120%) brightness(0.90) !important;
   -webkit-backdrop-filter: blur(56px) saturate(120%) brightness(0.90) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -2147,7 +2147,7 @@ a:focus-visible {
 
 /* ── Input bar — природный режим (ГЛАВНЫЙ СТИЛЬ) ─────────────────────────── */
 .dark .aray-nature-mode .aray-chat-bar {
-  background: rgba(12, 12, 15, 0.94) !important;
+  background: rgba(10, 10, 12, 0.82) !important;
   backdrop-filter: blur(48px) saturate(120%) brightness(0.90) !important;
   -webkit-backdrop-filter: blur(48px) saturate(120%) brightness(0.90) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
@@ -2423,4 +2423,10 @@ a:focus-visible {
   background: hsl(var(--primary)/0.15) !important;
   border-color: hsl(var(--primary)/0.40) !important;
   color: hsl(var(--primary)) !important;
+}
+
+/* ── Вращение кольца орбиты ARAY ─────────────────────────────────────────── */
+@keyframes aray-ring-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }

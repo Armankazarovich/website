@@ -110,9 +110,10 @@ export async function POST(req: NextRequest) {
       let fullText = "";
       try {
         // ── Первый вызов (может вернуть tool_use) ────────────────────────────
+        // max_tokens=600 — только для решения "нужен инструмент?" → быстрее
         const firstStream = anthropic.messages.stream({
           model: "claude-sonnet-4-6",
-          max_tokens: 1500,
+          max_tokens: 600,
           system: systemPrompt,
           messages: formattedMessages,
           tools: ARAY_TOOLS as any,
@@ -130,6 +131,9 @@ export async function POST(req: NextRequest) {
 
         // ── Обработка инструментов ───────────────────────────────────────────
         if (toolBlocks.length > 0) {
+          // Сигнал клиенту: загружаю данные
+          await writer.write(encoder.encode("__ARAY_TOOL__"));
+
           const toolResults = await Promise.all(
             toolBlocks.map(async (block: any) => ({
               type: "tool_result" as const,

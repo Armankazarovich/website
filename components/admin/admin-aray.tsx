@@ -354,46 +354,78 @@ function useTTS() {
 
 // ─── Шар ARAY (брендовый) ─────────────────────────────────────────────────────
 function ArayOrb({ size = 28, pulse = false }: { size?: number; pulse?: boolean }) {
+  const uid = "ao"; // stable id to avoid conflicts
+  const ringSize = Math.round(size * 1.55); // ring is bigger than orb
+  const offset = Math.round((ringSize - size) / 2);
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100"
-      style={{ display: "block", flexShrink: 0, filter: pulse ? "drop-shadow(0 0 8px rgba(240,120,0,0.6))" : undefined }}>
-      <defs>
-        <radialGradient id="ao-base" cx="34%" cy="28%" r="70%">
-          <stop offset="0%"   stopColor="#fffbe0"/>
-          <stop offset="10%"  stopColor="#ffca40"/>
-          <stop offset="28%"  stopColor="#f07800"/>
-          <stop offset="52%"  stopColor="#c05000"/>
-          <stop offset="75%"  stopColor="#6e1c00"/>
-          <stop offset="100%" stopColor="#160300"/>
-        </radialGradient>
-        <radialGradient id="ao-dark" cx="72%" cy="74%" r="52%">
-          <stop offset="0%"   stopColor="#050000" stopOpacity="0.75"/>
-          <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="ao-hl" cx="30%" cy="25%" r="34%">
-          <stop offset="0%"   stopColor="white" stopOpacity="0.85"/>
-          <stop offset="100%" stopColor="white" stopOpacity="0"/>
-        </radialGradient>
-        <radialGradient id="ao-rim" cx="50%" cy="50%" r="50%">
-          <stop offset="76%"  stopColor="transparent" stopOpacity="0"/>
-          <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
-        </radialGradient>
-        <clipPath id="ao-clip"><circle cx="50" cy="50" r="46"/></clipPath>
-      </defs>
-      <circle cx="50" cy="50" r="46" fill="url(#ao-base)"/>
-      <circle cx="50" cy="50" r="46" fill="url(#ao-dark)"/>
-      <circle cx="50" cy="50" r="46" fill="url(#ao-rim)"/>
-      <g clipPath="url(#ao-clip)">
-        <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.14">
-          <animateTransform attributeName="transform" type="rotate"
-            from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
-        </ellipse>
-      </g>
-      <circle cx="50" cy="50" r="46" fill="url(#ao-hl)"/>
-      <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.22)" strokeWidth="1">
-        <animate attributeName="stroke-opacity" values="0.22;0.55;0.22" dur="3s" repeatCount="indefinite"/>
-      </circle>
-    </svg>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0, display: "block" }}>
+      {/* Вращающееся кольцо-орбита */}
+      <svg
+        width={ringSize} height={ringSize} viewBox="0 0 100 100"
+        style={{
+          position: "absolute",
+          top: -offset, left: -offset,
+          animation: "aray-ring-spin 5s linear infinite",
+          opacity: pulse ? 0.95 : 0.65,
+          pointerEvents: "none",
+        }}>
+        <defs>
+          <linearGradient id={`${uid}-rg`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stopColor="#ffaa20" stopOpacity="0.9"/>
+            <stop offset="40%"  stopColor="#ff6600" stopOpacity="0.5"/>
+            <stop offset="100%" stopColor="#ff6600" stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="43" fill="none"
+          stroke={`url(#${uid}-rg)`} strokeWidth="4"
+          strokeDasharray="55 220" strokeLinecap="round"/>
+      </svg>
+      {/* Основной шар */}
+      <svg width={size} height={size} viewBox="0 0 100 100"
+        style={{
+          display: "block",
+          filter: pulse
+            ? "drop-shadow(0 0 10px rgba(240,120,0,0.75)) drop-shadow(0 0 4px rgba(255,180,0,0.5))"
+            : "drop-shadow(0 0 5px rgba(240,110,0,0.45))",
+        }}>
+        <defs>
+          <radialGradient id={`${uid}-base`} cx="34%" cy="28%" r="70%">
+            <stop offset="0%"   stopColor="#fffbe0"/>
+            <stop offset="10%"  stopColor="#ffca40"/>
+            <stop offset="28%"  stopColor="#f07800"/>
+            <stop offset="52%"  stopColor="#c05000"/>
+            <stop offset="75%"  stopColor="#6e1c00"/>
+            <stop offset="100%" stopColor="#160300"/>
+          </radialGradient>
+          <radialGradient id={`${uid}-dark`} cx="72%" cy="74%" r="52%">
+            <stop offset="0%"   stopColor="#050000" stopOpacity="0.75"/>
+            <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id={`${uid}-hl`} cx="30%" cy="25%" r="34%">
+            <stop offset="0%"   stopColor="white" stopOpacity="0.90"/>
+            <stop offset="100%" stopColor="white" stopOpacity="0"/>
+          </radialGradient>
+          <radialGradient id={`${uid}-rim`} cx="50%" cy="50%" r="50%">
+            <stop offset="76%"  stopColor="transparent" stopOpacity="0"/>
+            <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
+          </radialGradient>
+          <clipPath id={`${uid}-clip`}><circle cx="50" cy="50" r="46"/></clipPath>
+        </defs>
+        <circle cx="50" cy="50" r="46" fill={`url(#${uid}-base)`}/>
+        <circle cx="50" cy="50" r="46" fill={`url(#${uid}-dark)`}/>
+        <circle cx="50" cy="50" r="46" fill={`url(#${uid}-rim)`}/>
+        <g clipPath={`url(#${uid}-clip)`}>
+          <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.14">
+            <animateTransform attributeName="transform" type="rotate"
+              from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
+          </ellipse>
+        </g>
+        <circle cx="50" cy="50" r="46" fill={`url(#${uid}-hl)`}/>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.25)" strokeWidth="1.5">
+          <animate attributeName="stroke-opacity" values="0.25;0.60;0.25" dur="3s" repeatCount="indefinite"/>
+        </circle>
+      </svg>
+    </div>
   );
 }
 
@@ -408,14 +440,24 @@ function Bubble({ msg, onSpeak, speaking }: {
       {!isUser && <div className="shrink-0 mt-1"><ArayOrb size={22}/></div>}
       <div className="flex flex-col gap-1 max-w-[82%]">
         <div className={`px-4 py-2.5 text-[13.5px] leading-relaxed ${isUser ? "aray-chat-bubble-user" : "aray-chat-bubble-assistant"}`}>
-          {msg.text
+          {msg.text === "__loading__"
+            ? <span className="inline-flex items-center gap-2 py-0.5" style={{ color: "hsl(var(--primary)/0.75)" }}>
+                <span className="inline-flex gap-1">
+                  {[0,1,2].map(i => <span key={i} className="aray-typing-dot animate-bounce" style={{ animationDelay: `${i*160}ms`, width: 5, height: 5 }}/>)}
+                </span>
+                <span className="text-[11px] font-medium">Загружаю данные...</span>
+              </span>
+            : msg.text
             ? <div className="space-y-1">{renderMarkdown(msg.text)}</div>
             : !isUser && msg.streaming
-            ? <span className="inline-flex gap-1.5 items-center py-0.5">
-                {[0,1,2].map(i => <span key={i} className="aray-typing-dot animate-bounce" style={{ animationDelay: `${i*160}ms` }}/>)}
+            ? <span className="inline-flex items-center gap-2 py-0.5" style={{ color: "hsl(var(--primary)/0.7)" }}>
+                <span className="inline-flex gap-1">
+                  {[0,1,2].map(i => <span key={i} className="aray-typing-dot animate-bounce" style={{ animationDelay: `${i*160}ms`, width: 5, height: 5 }}/>)}
+                </span>
+                <span className="text-[11px] font-medium opacity-70">Думаю...</span>
               </span>
             : null}
-          {msg.streaming && msg.text && <span className="aray-stream-cursor"/>}
+          {msg.streaming && msg.text && msg.text !== "__loading__" && <span className="aray-stream-cursor"/>}
         </div>
         {!isUser && !msg.streaming && msg.text && onSpeak && (
           <button onClick={() => onSpeak(msg.text, msg.id)}
@@ -547,8 +589,18 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         const { done, value } = await reader.read();
         if (done) break;
         raw += dec.decode(value, { stream: true });
-        const disp = raw.replace(/\n__ARAY_META__[\s\S]*$/, "").replace(/__ARAY_ERR__[\s\S]*$/, "");
-        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: disp } : m));
+        // Убираем технические маркеры из отображения
+        const disp = raw
+          .replace("__ARAY_TOOL__", "")
+          .replace(/\n__ARAY_META__[\s\S]*$/, "")
+          .replace(/__ARAY_ERR__[\s\S]*$/, "")
+          .trim();
+        // Показываем "Загружаю..." если инструмент запущен, но текст ещё не пришёл
+        const isLoadingTool = raw.includes("__ARAY_TOOL__") && disp.length === 0;
+        setMessages(prev => prev.map(m => m.id === aid
+          ? { ...m, text: isLoadingTool ? "__loading__" : disp }
+          : m
+        ));
       }
       const isErr = raw.includes("__ARAY_ERR__");
       const clean = isErr
