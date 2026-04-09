@@ -91,7 +91,7 @@ export function AdminLangPicker() {
             boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
             width: "260px",
           } : {
-            background: "rgba(10,14,30,0.96)",
+            background: "rgba(12,12,14,0.96)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
             border: "1px solid rgba(255,255,255,0.12)",

@@ -252,7 +252,7 @@ export function AdminDesktopSearch() {
       {/* Input bar */}
       <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl"
         style={{
-          background: classic ? "hsl(var(--background))" : "rgba(10,15,35,0.75)",
+          background: classic ? "hsl(var(--background))" : "rgba(12,12,14,0.75)",
           border: classic ? "1.5px solid hsl(var(--border))" : "1.5px solid rgba(255,255,255,0.18)",
         }}>
         <Search className="w-4 h-4 text-primary/70 shrink-0" />
@@ -280,7 +280,7 @@ export function AdminDesktopSearch() {
       {results.length > 0 && (
         <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: classic ? "hsl(var(--card))" : "rgba(10,14,30,0.96)",
+            background: classic ? "hsl(var(--card))" : "rgba(12,12,14,0.96)",
             backdropFilter: "blur(32px) saturate(200%)",
             WebkitBackdropFilter: "blur(32px) saturate(200%)",
             border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.10)",
@@ -391,7 +391,7 @@ export function AdminSearch() {
           className="w-full lg:w-[620px] rounded-t-[28px] lg:rounded-[24px] overflow-hidden flex flex-col"
           style={{
             maxHeight: "88dvh",
-            background: classic ? "hsl(var(--card))" : "rgba(7,11,28,0.88)",
+            background: classic ? "hsl(var(--card))" : "rgba(10,10,12,0.88)",
             backdropFilter: "blur(56px) saturate(240%) brightness(0.80)",
             WebkitBackdropFilter: "blur(56px) saturate(240%) brightness(0.80)",
             border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.13)",
@@ -774,7 +774,7 @@ export function AdminStickySearchBar() {
       {focused && results.length > 0 && (
         <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: "rgba(7,11,28,0.88)",
+            background: "rgba(10,10,12,0.88)",
             backdropFilter: "blur(48px) saturate(220%) brightness(0.80)",
             WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.80)",
             border: "1px solid rgba(255,255,255,0.12)",

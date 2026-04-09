@@ -390,7 +390,7 @@ export function AdminAmbientSound() {
                 right: "140px",
                 width: "300px",
                 borderRadius: "18px",
-                background: "linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(8,12,28,0.92)",
+                background: "linear-gradient(135deg, hsl(var(--primary) / 0.10) 0%, transparent 55%), rgba(12,12,14,0.92)",
                 backdropFilter: "blur(32px) saturate(200%)",
                 WebkitBackdropFilter: "blur(32px) saturate(200%)",
                 border: "1px solid rgba(255,255,255,0.12)",

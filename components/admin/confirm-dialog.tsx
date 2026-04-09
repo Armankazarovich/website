@@ -93,7 +93,7 @@ export function ConfirmDialog({
           boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
           animation: "dialog-pop 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
         } : {
-          background: "rgba(8, 13, 32, 0.82)",
+          background: "rgba(12, 12, 14, 0.82)",
           backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
           border: "1px solid rgba(255,255,255,0.14)",

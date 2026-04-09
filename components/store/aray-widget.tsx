@@ -593,7 +593,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   // ── Общие стили панели ────────────────────────────────────────────────────
   const panelBg = {
-    background: "rgba(8, 12, 28, 0.80)",
+    background: "rgba(12, 12, 14, 0.80)",
     backdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
     WebkitBackdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
     border: "1px solid rgba(255, 255, 255, 0.12)",
