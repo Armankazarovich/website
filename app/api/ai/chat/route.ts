@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
@@ -19,17 +19,18 @@ const anthropic = new Anthropic({
   ...(process.env.ANTHROPIC_BASE_URL ? { baseURL: process.env.ANTHROPIC_BASE_URL } : {}),
 });
 
-// Генерация sessionId для гостей
 function generateSessionId(): string {
   return `aray_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
 
 export async function POST(req: NextRequest) {
+  const encoder = new TextEncoder();
+
   try {
     if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json(
-        { error: "ANTHROPIC_API_KEY не настроен на сервере." },
-        { status: 503 }
+      return new Response(
+        encoder.encode("__ARAY_ERR__ANTHROPIC_API_KEY не настроен на сервере."),
+        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
       );
     }
 
@@ -37,190 +38,162 @@ export async function POST(req: NextRequest) {
     const { messages, context } = body;
 
     if (!messages?.length) {
-      return NextResponse.json({ error: "Нет сообщений" }, { status: 400 });
+      return new Response(encoder.encode("__ARAY_ERR__Нет сообщений"), {
+        status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" }
+      });
     }
 
-    // ── Идентификация пользователя ────────────────────────────────────────────
+    // ── Идентификация ────────────────────────────────────────────────────────
     const session = await auth();
     const userId = (session?.user as any)?.id as string | undefined;
     const sessionRole = (session?.user as any)?.role as string | undefined;
     const sessionName = (session?.user as any)?.name as string | undefined;
 
-    // Получаем или создаём sessionId для гостей
     const cookieStore = await cookies();
     let sessionId = cookieStore.get("aray_sid")?.value;
     const isNewSession = !sessionId && !userId;
     if (!sessionId) sessionId = generateSessionId();
 
-    // ── Память Арая (graceful — не ломаем чат при ошибке БД) ─────────────────
+    // ── Память ───────────────────────────────────────────────────────────────
     let memory = null;
     try {
       memory = await getOrCreateMemory(userId, userId ? null : sessionId);
     } catch (memErr) {
-      console.error("[Aray] Memory error (non-fatal):", memErr);
+      console.error("[Aray] Memory error:", memErr);
     }
     const memoryContext = formatMemoryForPrompt(memory);
 
-    // ── Роль пользователя ─────────────────────────────────────────────────────
+    // ── Роль ─────────────────────────────────────────────────────────────────
     let arayRole: ArayRole = "customer";
     if (["SUPER_ADMIN", "ADMIN"].includes(sessionRole || "")) arayRole = "admin";
     else if (["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"].includes(sessionRole || "")) arayRole = "staff";
 
-    // ── Настройки сайта ───────────────────────────────────────────────────────
+    // ── Настройки сайта ──────────────────────────────────────────────────────
     const siteSettings = await getSiteSettings();
     const siteName = getSetting(siteSettings, "site_name") || "ПилоРус";
     const phone = getSetting(siteSettings, "phone") || "";
     const address = getSetting(siteSettings, "address") || "";
     const businessType = getSetting(siteSettings, "business_type") || "lumber";
 
-    // ── Проект из памяти — передаём Арaю контекст ────────────────────────────
     const memoryFacts = memory?.facts as Record<string, string | number | boolean> | null;
-    const savedProject = memoryFacts?.проект
-      ? String(memoryFacts.проект)
-      : memoryFacts?.project
-      ? String(memoryFacts.project)
-      : undefined;
+    const savedProject = memoryFacts?.проект ? String(memoryFacts.проект)
+      : memoryFacts?.project ? String(memoryFacts.project) : undefined;
 
-    // ── Системный промпт с памятью ────────────────────────────────────────────
     const basePrompt = buildAraySystemPrompt(
       { siteName, businessType, phone, address },
       { role: arayRole, name: sessionName, staffRole: sessionRole },
-      {
-        page: context?.page,
-        productName: context?.productName,
-        cartTotal: context?.cartTotal,
-        project: savedProject,
-      }
+      { page: context?.page, productName: context?.productName, cartTotal: context?.cartTotal, project: savedProject }
     );
-
     const systemPrompt = basePrompt + memoryContext;
 
-    // ── Форматируем сообщения ─────────────────────────────────────────────────
+    // ── Сообщения ────────────────────────────────────────────────────────────
     type ChatMessage = { role: "user" | "assistant"; content: string };
-
-    const rawMessages: ChatMessage[] = messages
-      .slice(-20) // Не больше 20 сообщений в контексте
-      .map((m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant",
-        content: m.content,
-      }));
-
-    // Anthropic требует: первое сообщение всегда user
-    // Срезаем ведущие assistant-сообщения (локальные приветствия виджета)
+    const rawMessages: ChatMessage[] = messages.slice(-20).map((m: any) => ({
+      role: m.role as "user" | "assistant", content: m.content,
+    }));
     const firstUserIdx = rawMessages.findIndex(m => m.role === "user");
     const formattedMessages: ChatMessage[] = firstUserIdx >= 0 ? rawMessages.slice(firstUserIdx) : rawMessages;
 
-    // ── Вызов Claude ──────────────────────────────────────────────────────────
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: formattedMessages,
-      tools: ARAY_TOOLS as any,
-    });
-
-    // ── Обработка tool calls ──────────────────────────────────────────────────
-    let finalText = "";
-    const toolResults: { tool: string; result: unknown }[] = [];
-
-    for (const block of response.content) {
-      if (block.type === "text") {
-        finalText += block.text;
-      } else if (block.type === "tool_use") {
-        const result = await handleTool(block.name, block.input as Record<string, unknown>);
-        toolResults.push({ tool: block.name, result });
-      }
-    }
-
-    // Если были инструменты — продолжаем диалог
-    if (toolResults.length > 0 && !finalText) {
-      const toolUseBlocks = response.content.filter(b => b.type === "tool_use");
-      const toolResultMessages = toolUseBlocks.map((block: any, i: number) => ({
-        type: "tool_result" as const,
-        tool_use_id: block.id,
-        content: JSON.stringify(toolResults[i]?.result || {}),
-      }));
-
-      const followUp = await anthropic.messages.create({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: [
-          ...formattedMessages,
-          { role: "assistant", content: response.content },
-          { role: "user", content: toolResultMessages },
-        ],
-      });
-
-      for (const block of followUp.content) {
-        if (block.type === "text") finalText += block.text;
-      }
-    }
-
-    // ── Сохраняем память асинхронно (не блокируем ответ) ─────────────────────
-    if (memory) {
-      const allMessages = [
-        ...formattedMessages,
-        { role: "assistant", content: finalText },
-      ];
-
-      // Фоновое обновление памяти — не ждём
-      Promise.all([
-        extractAndUpdateMemory(
-          memory.id,
-          memory.facts as Record<string, string | number | boolean>,
-          allMessages,
-          anthropic
-        ),
-        userId ? updateCustomerLevel(memory.id, userId) : Promise.resolve(),
-      ]).catch(err => console.error("[ArayMemory] background update error:", err));
-    }
-
-    // ── Ответ с установкой cookie ─────────────────────────────────────────────
-    const responseData = NextResponse.json({
-      message: finalText || "Я здесь, чем могу помочь?",
-      role: arayRole,
-      memoryId: memory?.id,
-      level: memory?.level,
-    });
-
-    // Устанавливаем sessionId cookie для гостей (30 дней)
+    // ── Streaming response ───────────────────────────────────────────────────
+    const responseHeaders = new Headers({ "Content-Type": "text/plain; charset=utf-8" });
     if (isNewSession && sessionId) {
-      responseData.cookies.set("aray_sid", sessionId, {
-        maxAge: 30 * 24 * 60 * 60,
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-      });
+      responseHeaders.set("Set-Cookie",
+        `aray_sid=${sessionId}; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; SameSite=Lax; Path=/`
+      );
     }
 
-    return responseData;
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
+
+    (async () => {
+      let fullText = "";
+      try {
+        // ── Первый вызов (может вернуть tool_use) ────────────────────────────
+        const firstStream = anthropic.messages.stream({
+          model: "claude-sonnet-4-6",
+          max_tokens: 800,
+          system: systemPrompt,
+          messages: formattedMessages,
+          tools: ARAY_TOOLS as any,
+        });
+
+        for await (const event of firstStream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            fullText += event.delta.text;
+            await writer.write(encoder.encode(event.delta.text));
+          }
+        }
+
+        const firstMsg = await firstStream.finalMessage();
+        const toolBlocks = firstMsg.content.filter((b: any) => b.type === "tool_use");
+
+        // ── Обработка инструментов ───────────────────────────────────────────
+        if (toolBlocks.length > 0) {
+          const toolResults = await Promise.all(
+            toolBlocks.map(async (block: any) => ({
+              type: "tool_result" as const,
+              tool_use_id: block.id,
+              content: JSON.stringify(await handleTool(block.name, block.input)),
+            }))
+          );
+
+          const followStream = anthropic.messages.stream({
+            model: "claude-sonnet-4-6",
+            max_tokens: 800,
+            system: systemPrompt,
+            messages: [
+              ...formattedMessages,
+              { role: "assistant", content: firstMsg.content },
+              { role: "user", content: toolResults },
+            ],
+          });
+
+          for await (const event of followStream) {
+            if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+              fullText += event.delta.text;
+              await writer.write(encoder.encode(event.delta.text));
+            }
+          }
+        }
+
+        // ── Обновление памяти в фоне ─────────────────────────────────────────
+        if (memory && fullText) {
+          const allMsgs = [...formattedMessages, { role: "assistant", content: fullText }];
+          Promise.all([
+            extractAndUpdateMemory(memory.id, memory.facts as any, allMsgs, anthropic),
+            userId ? updateCustomerLevel(memory.id, userId) : Promise.resolve(),
+          ]).catch(err => console.error("[ArayMemory]", err));
+        }
+
+        // Мета-данные в конце
+        await writer.write(encoder.encode(
+          `\n__ARAY_META__${JSON.stringify({ role: arayRole, memoryId: memory?.id })}`
+        ));
+
+      } catch (err: any) {
+        console.error("[Aray stream error]", err?.message || err);
+        let errMsg = "Арай временно недоступен. Попробуй через минуту 🙏";
+        if (err?.status === 401) errMsg = "Ошибка API ключа Anthropic.";
+        if (err?.message?.includes("credit")) errMsg = "На счёте Anthropic закончились кредиты 💳";
+        if (err?.status === 529) errMsg = "Anthropic перегружен, подожди минуту 🙏";
+        await writer.write(encoder.encode(`__ARAY_ERR__${errMsg}`));
+      } finally {
+        await writer.close();
+      }
+    })();
+
+    return new Response(readable, { headers: responseHeaders });
 
   } catch (err: any) {
-    console.error("[Aray API error]", err?.message || err);
-
-    if (err?.status === 401 || err?.message?.includes("401")) {
-      return NextResponse.json({ error: "Неверный API ключ Anthropic. Проверь настройки." }, { status: 401 });
-    }
-    if (err?.message?.includes("credit balance is too low") || err?.message?.includes("billing")) {
-      return NextResponse.json({ error: "На счёте Anthropic закончились кредиты. Пополни баланс на console.anthropic.com 💳" }, { status: 503 });
-    }
-    if (err?.status === 529 || err?.message?.includes("overloaded")) {
-      return NextResponse.json({ error: "Anthropic перегружен, попробуй через минуту 🙏" }, { status: 503 });
-    }
-    if (err?.message?.includes("fetch") || err?.code === "ECONNREFUSED") {
-      return NextResponse.json({ error: "Нет связи с Anthropic. Проверь интернет на сервере." }, { status: 503 });
-    }
-
-    const devMsg = process.env.NODE_ENV === "development" ? ` [${err?.message}]` : "";
-    return NextResponse.json(
-      { error: `Арай временно недоступен${devMsg}. Попробуй через минуту.` },
-      { status: 500 }
+    console.error("[Aray POST error]", err?.message);
+    return new Response(
+      encoder.encode("__ARAY_ERR__Ошибка сервера. Попробуй через минуту."),
+      { status: 500, headers: { "Content-Type": "text/plain; charset=utf-8" } }
     );
   }
 }
 
-// ─── Обработчик инструментов ──────────────────────────────────────────────────
+// ─── Инструменты ─────────────────────────────────────────────────────────────
 
 async function handleTool(name: string, input: Record<string, unknown>): Promise<unknown> {
   try {
@@ -240,14 +213,10 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         },
         take: 5,
       });
-
       return products.map(p => ({
-        name: p.name,
-        slug: p.slug,
-        category: p.category.name,
+        name: p.name, slug: p.slug, category: p.category.name,
         variants: p.variants.map(v => ({
-          id: v.id,
-          size: v.size,
+          id: v.id, size: v.size,
           pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
           pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
           inStock: v.inStock,
@@ -268,7 +237,7 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
     }
 
     if (name === "calculate_project_materials") {
-      const result = calculateProjectMaterials({
+      return calculateProjectMaterials({
         project_type: String(input.project_type || "house"),
         length: input.length ? Number(input.length) : undefined,
         width: input.width ? Number(input.width) : undefined,
@@ -276,40 +245,29 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         fence_length: input.fence_length ? Number(input.fence_length) : undefined,
         construction_type: input.construction_type ? String(input.construction_type) : undefined,
       });
-      return result;
     }
 
     if (name === "get_order_status") {
       const orderNumber = Number(input.orderNumber);
       const order = await prisma.order.findFirst({
         where: { orderNumber, deletedAt: null },
-        select: {
-          orderNumber: true, status: true, guestName: true,
-          totalAmount: true, createdAt: true,
-        },
+        select: { orderNumber: true, status: true, guestName: true, totalAmount: true, createdAt: true },
       });
-
       if (!order) return { error: "Заказ не найден" };
-
       const statusLabels: Record<string, string> = {
         NEW: "Новый", CONFIRMED: "Подтверждён", PROCESSING: "В обработке",
         SHIPPED: "Отгружен", IN_DELIVERY: "Доставляется",
         READY_PICKUP: "Готов к выдаче", DELIVERED: "Доставлен",
         COMPLETED: "Завершён", CANCELLED: "Отменён",
       };
-
       return {
-        orderNumber: order.orderNumber,
-        status: statusLabels[order.status] || order.status,
-        guestName: order.guestName,
-        totalAmount: Number(order.totalAmount),
-        createdAt: order.createdAt,
+        orderNumber: order.orderNumber, status: statusLabels[order.status] || order.status,
+        guestName: order.guestName, totalAmount: Number(order.totalAmount), createdAt: order.createdAt,
       };
     }
   } catch (err) {
-    console.error(`[Tool ${name} error]`, err);
+    console.error(`[Tool ${name}]`, err);
     return { error: "Ошибка инструмента" };
   }
-
   return { error: "Неизвестный инструмент" };
 }

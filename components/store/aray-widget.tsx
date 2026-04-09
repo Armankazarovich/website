@@ -26,6 +26,7 @@ type Message = {
   content: string;
   timestamp: Date;
   actions?: ArayAction[];
+  streaming?: boolean;
 };
 
 // ─── Парсим ARAY_ACTIONS из текста ответа ────────────────────────────────────
@@ -219,9 +220,21 @@ function MessageBubble({
             ? { background: "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)", color: "#fff", borderRadius: "16px 16px 4px 16px" }
             : { background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.90)", borderRadius: "16px 16px 16px 4px", border: "1px solid rgba(255,255,255,0.10)" }
         }>
-          {msg.content.split("\n").map((line, i, arr) => (
-            <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
-          ))}
+          {msg.content
+            ? msg.content.split("\n").map((line, i, arr) => (
+                <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
+              ))
+            : !isUser && msg.streaming
+            ? <span className="inline-flex gap-1 items-center py-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-bounce" style={{ animationDelay: "300ms" }} />
+              </span>
+            : null
+          }
+          {msg.streaming && msg.content && (
+            <span className="inline-block w-0.5 h-3.5 bg-orange-400 ml-0.5 align-middle animate-pulse" />
+          )}
         </div>
 
         {/* ── Action cards — кнопки от Арая ── */}
@@ -374,41 +387,86 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     if (!msg || loading) return;
     setInput("");
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: msg, timestamp: new Date() };
+    const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
     setLoading(true);
+
+    const assistantId = (Date.now() + 1).toString();
+
     try {
       const res = await fetch("/api/ai/chat", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map(m => ({ role: m.role, content: m.content })),
+          messages: allMessages.map(m => ({ role: m.role, content: m.content })),
           context: { page, productName, cartTotal },
         }),
       });
-      const data = await res.json();
-      // Обновить имя если Арай его узнал
-      if (data.message?.includes("звать") || data.message?.includes("имя")) {
-        fetch("/api/ai/me").then(r => r.json()).then(d => { if (d.name) setUserName(d.name); }).catch(() => {});
+
+      if (!res.body) throw new Error("No stream");
+
+      // Add empty streaming placeholder
+      setMessages(prev => [...prev, {
+        id: assistantId, role: "assistant", content: "", timestamp: new Date(), streaming: true,
+      }]);
+      setLoading(false);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let rawText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        rawText += decoder.decode(value, { stream: true });
+
+        // Show text without internal markers
+        const displayText = rawText
+          .replace(/\n__ARAY_META__[\s\S]*$/, "")
+          .replace(/__ARAY_ERR__[\s\S]*$/, "");
+
+        setMessages(prev => prev.map(m =>
+          m.id === assistantId ? { ...m, content: displayText } : m
+        ));
       }
-      const raw = data.message || data.error || "Не получилось 🙏";
-      const { text, actions } = parseMessageActions(raw);
-      // Если первое действие — навигация, сразу открываем браузер
+
+      // Parse final content
+      const isError = rawText.includes("__ARAY_ERR__");
+      const errMatch = rawText.match(/__ARAY_ERR__(.+)$/);
+      const cleanText = isError
+        ? (errMatch?.[1] || "Не получилось. Попробуй снова 🙏")
+        : rawText.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
+
+      const { text: parsedText, actions } = parseMessageActions(cleanText);
+
       if (actions.length > 0 && actions[0].type === "navigate" && actions[0].url) {
         setBrowserUrl(actions[0].url);
         setBrowserOpen(true);
       }
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), role: "assistant",
-        content: text,
-        actions,
-        timestamp: new Date(),
-      }]);
+
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId ? { ...m, content: parsedText, actions, streaming: false } : m
+      ));
+
       if (!open) setHasNew(true);
+
     } catch {
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(), role: "assistant",
-        content: "Нет связи. Попробуй снова 🙏", timestamp: new Date(),
-      }]);
-    } finally { setLoading(false); }
+      setMessages(prev => {
+        const hasPlaceholder = prev.some(m => m.id === assistantId);
+        if (hasPlaceholder) {
+          return prev.map(m => m.id === assistantId
+            ? { ...m, content: "Нет связи. Попробуй снова 🙏", streaming: false }
+            : m
+          );
+        }
+        return [...prev, {
+          id: assistantId, role: "assistant",
+          content: "Нет связи. Попробуй снова 🙏", timestamp: new Date(),
+        }];
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const { listening, start: startVoice, stop: stopVoice } = useVoiceInput(text => {

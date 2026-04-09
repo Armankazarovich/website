@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 
-// Голос Арая — Rachel (multilingual, хорошо звучит по-русски)
-const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+// Antoni — warm, friendly voice, works great for Russian with multilingual v2
+const VOICE_ID = "ErXwobaYiN019PkySvjV";
 const MODEL_ID = "eleven_multilingual_v2";
 
 export async function POST(req: NextRequest) {
@@ -46,10 +46,11 @@ export async function POST(req: NextRequest) {
           text: cleanText,
           model_id: MODEL_ID,
           voice_settings: {
-            stability: 0.55,
-            similarity_boost: 0.85,
-            style: 0.20,
+            stability: 0.42,       // More natural variation
+            similarity_boost: 0.88, // Faithful to voice character
+            style: 0.28,           // Slight expressiveness
             use_speaker_boost: true,
+            speed: 1.0,
           },
         }),
       }
