@@ -40,12 +40,13 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 15m
-          envs: ANTHROPIC_API_KEY
+          envs: ANTHROPIC_API_KEY,ELEVENLABS_API_KEY
           script: |
             set -eo pipefail
             APP_DIR="/home/armankmb/pilo-rus/app"
@@ -66,6 +67,14 @@ jobs:
                 echo "ANTHROPIC_API_KEY=\"$ANTHROPIC_API_KEY\"" >> .env
               fi
               echo "✅ ANTHROPIC_API_KEY set"
+            fi
+            if [ -n "$ELEVENLABS_API_KEY" ]; then
+              if grep -q "^ELEVENLABS_API_KEY=" .env 2>/dev/null; then
+                sed -i "s|^ELEVENLABS_API_KEY=.*|ELEVENLABS_API_KEY=\"$ELEVENLABS_API_KEY\"|" .env
+              else
+                echo "ELEVENLABS_API_KEY=\"$ELEVENLABS_API_KEY\"" >> .env
+              fi
+              echo "✅ ELEVENLABS_API_KEY set"
             fi
 
             echo "📦 Installing dependencies..."
