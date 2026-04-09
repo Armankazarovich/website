@@ -2134,15 +2134,25 @@ a:focus-visible {
 }
 
 /* ── Пузырь ассистента ─────────────────────────────────────────────────────── */
+
+/* Светлая тема / classic mode — матовое белое стекло */
 .aray-chat-bubble-assistant {
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   color: hsl(var(--foreground));
   border-radius: 18px 18px 18px 4px;
 }
+
+/* Тёмная тема / nature mode — прозрачное тёмное стекло */
 .aray-nature-mode .aray-chat-bubble-assistant {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  backdrop-filter: blur(20px) saturate(120%) brightness(1.1) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(120%) brightness(1.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25) !important;
   color: rgba(255, 255, 255, 0.93) !important;
 }
 

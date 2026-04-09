@@ -209,9 +209,20 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
 }
 
 // ─── TTS — браузерный голос (бесплатно, Microsoft Irina / Natural) ────────────
+
+// Кэш голосов — загружаем один раз
+const voicesCache: { list: SpeechSynthesisVoice[] } = { list: [] };
+
+function loadVoices() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const v = window.speechSynthesis.getVoices();
+  if (v.length) voicesCache.list = v;
+}
+
 function pickBestRuVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  const voices = window.speechSynthesis.getVoices();
+  const voices = voicesCache.list.length
+    ? voicesCache.list
+    : (typeof window !== "undefined" ? window.speechSynthesis?.getVoices() ?? [] : []);
   const priority = [
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Natural"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Microsoft"),
@@ -225,43 +236,96 @@ function pickBestRuVoice(): SpeechSynthesisVoice | null {
   return null;
 }
 
+function cleanForSpeech(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/[#_`|]/g, " ")
+    // Все emoji и спецсимволы
+    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[\u{2600}-\u{27BF}]/gu, "")
+    .replace(/[\u{1F300}-\u{1FAD6}]/gu, "")
+    .replace(/ARAY_ACTIONS:\[.*?\]/gs, "")
+    .replace(/^---+$/mg, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
   const [supported, setSupported] = useState(false);
+  const speakingRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setSupported("speechSynthesis" in window);
-    if (window.speechSynthesis) {
-      window.speechSynthesis.getVoices();
-      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }
+    const hasTTS = "speechSynthesis" in window;
+    setSupported(hasTTS);
+    if (!hasTTS) return;
+    // Загружаем голоса сразу и по событию (Chrome грузит асинхронно)
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = () => {
+      voicesCache.list = window.speechSynthesis.getVoices();
+    };
   }, []);
 
+  // Синхронизируем ref со state (чтобы не было stale closure)
+  useEffect(() => { speakingRef.current = speaking; }, [speaking]);
+
   const speak = useCallback((text: string, id: string) => {
-    if (!window.speechSynthesis) return;
-    if (speaking === id) {
-      window.speechSynthesis.cancel(); utterRef.current = null; setSpeaking(null); return;
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+
+    // Стоп если уже читает это сообщение
+    if (speakingRef.current === id) {
+      window.speechSynthesis.cancel();
+      utterRef.current = null;
+      setSpeaking(null);
+      return;
     }
+
+    // Chrome баг: сначала cancel + resume чтобы разморозить
     window.speechSynthesis.cancel();
-    const clean = text
-      .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-      .replace(/[#_`|]/g, "").replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
-      .replace(/ARAY_ACTIONS:\[.*\]/g, "").replace(/^---+$/mg, "").trim();
+    window.speechSynthesis.resume();
+
+    const clean = cleanForSpeech(text);
+    if (!clean) return;
+
     const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU"; utter.rate = 1.05; utter.pitch = 1.0; utter.volume = 1.0;
+    utter.lang = "ru-RU";
+    utter.rate = 1.0;
+    utter.pitch = 1.0;
+    utter.volume = 1.0;
+
+    // Пробуем взять лучший голос, если нет — ждём немного и пробуем ещё раз
     const voice = pickBestRuVoice();
-    if (voice) utter.voice = voice;
-    utter.onstart = () => setSpeaking(id);
-    utter.onend = () => { setSpeaking(null); utterRef.current = null; };
-    utter.onerror = () => { setSpeaking(null); utterRef.current = null; };
+    if (voice) {
+      utter.voice = voice;
+    } else {
+      // Голоса ещё не загружены — ждём 300мс и пробуем
+      setTimeout(() => {
+        loadVoices();
+        const v2 = pickBestRuVoice();
+        if (v2) utter.voice = v2;
+      }, 300);
+    }
+
+    utter.onstart = () => { setSpeaking(id); speakingRef.current = id; };
+    utter.onend = () => { setSpeaking(null); speakingRef.current = null; utterRef.current = null; };
+    utter.onerror = (e) => {
+      // Игнорируем interrupted (это нормально при cancel)
+      if ((e as any).error === "interrupted") return;
+      setSpeaking(null); speakingRef.current = null; utterRef.current = null;
+    };
+
     utterRef.current = utter;
     window.speechSynthesis.speak(utter);
-  }, [speaking]);
+  }, []);
 
   const stop = useCallback(() => {
-    window.speechSynthesis?.cancel(); utterRef.current = null; setSpeaking(null);
+    window.speechSynthesis?.cancel();
+    utterRef.current = null;
+    setSpeaking(null);
+    speakingRef.current = null;
   }, []);
 
   return { speaking, speak, stop, supported };
