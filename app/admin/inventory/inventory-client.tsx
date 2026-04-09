@@ -451,7 +451,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                     </td></tr>
                   )}
                   {filtered.map(v => (
-                    <tr key={v.id} className={`hover:bg-muted/20 transition-colors ${!v.inStock ? "opacity-60" : ""}`}>
+                    <tr key={v.id} className={`hover:bg-primary/[0.04] transition-colors ${!v.inStock ? "opacity-60" : ""}`}>
                       <td className="px-4 py-3">
                         <Link href={`/admin/products/${v.product.id}`} className="font-medium hover:text-primary transition-colors line-clamp-1">
                           {v.product.name}

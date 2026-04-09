@@ -765,7 +765,7 @@ export default function EmailPage() {
                           key={p.id}
                           type="button"
                           onClick={() => insertProduct(p)}
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors text-left"
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-primary/[0.05] transition-colors text-left"
                         >
                           <div className="flex items-center gap-2">
                             <Package className="w-4 h-4 text-primary shrink-0" />

@@ -459,7 +459,7 @@ export default function NotificationsPage() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {filteredSubs.map((s) => (
-                      <tr key={s.id} className="hover:bg-muted/20 transition-colors">
+                      <tr key={s.id} className="hover:bg-primary/[0.04] transition-colors">
                         <td className="px-4 py-3 font-medium">{s.name}</td>
                         <td className="px-4 py-3 text-muted-foreground text-xs hidden sm:table-cell">
                           {s.email || s.phone || "—"}
