@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         // ── Первый вызов (может вернуть tool_use) ────────────────────────────
         const firstStream = anthropic.messages.stream({
           model: "claude-sonnet-4-6",
-          max_tokens: 800,
+          max_tokens: 1500,
           system: systemPrompt,
           messages: formattedMessages,
           tools: ARAY_TOOLS as any,
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
           const followStream = anthropic.messages.stream({
             model: "claude-sonnet-4-6",
-            max_tokens: 800,
+            max_tokens: 1500,
             system: systemPrompt,
             messages: [
               ...formattedMessages,
@@ -456,6 +456,27 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
       } catch {
         return { query, error: "Поиск недоступен", note: "Попробуй чуть позже" };
       }
+    }
+
+    if (name === "get_staff_list") {
+      const staff = await prisma.user.findMany({
+        where: { role: { not: "CUSTOMER" } },
+        select: { name: true, email: true, role: true, createdAt: true },
+        orderBy: { createdAt: "asc" },
+      });
+      const ROLE_LABELS: Record<string, string> = {
+        SUPER_ADMIN: "Владелец", ADMIN: "Администратор", MANAGER: "Менеджер",
+        COURIER: "Курьер", ACCOUNTANT: "Бухгалтер", WAREHOUSE: "Кладовщик", SELLER: "Продавец",
+      };
+      return {
+        staff: staff.map(s => ({
+          name: s.name || "—",
+          role: ROLE_LABELS[s.role] || s.role,
+          email: s.email,
+          since: s.createdAt.toLocaleDateString("ru-RU"),
+        })),
+        total: staff.length,
+      };
     }
 
   } catch (err) {

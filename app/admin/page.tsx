@@ -311,7 +311,7 @@ export default async function AdminDashboard() {
             const color = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
             const label = ORDER_STATUS_LABELS[order.status] || order.status;
             return (
-              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/30 active:bg-muted/50 transition-colors">
+              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-5 py-3.5 hover:bg-primary/[0.06] active:bg-primary/10 transition-colors">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
                   <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>

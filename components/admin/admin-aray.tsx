@@ -137,6 +137,45 @@ function renderMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
+    // Markdown таблица |...|...|
+    if (line.trim().startsWith("|")) {
+      const tableLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i]);
+        i++;
+      }
+      const parseRow = (row: string) =>
+        row.split("|").slice(1, -1).map(cell => cell.trim());
+      const headers = parseRow(tableLines[0]);
+      const sepIdx = tableLines.findIndex(l => /^\|[\s\-:|]+\|$/.test(l.trim()));
+      const dataRows = tableLines.slice(sepIdx >= 0 ? sepIdx + 1 : 1).map(parseRow);
+      nodes.push(
+        <div key={`tbl-${i}`} className="my-2 overflow-x-auto rounded-xl border"
+          style={{ borderColor: "hsl(var(--border)/0.5)" }}>
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr style={{ background: "hsl(var(--primary)/0.08)", borderBottom: "1px solid hsl(var(--border)/0.5)" }}>
+                {headers.map((h, hi) => (
+                  <th key={hi} className="px-3 py-2 text-left font-semibold"
+                    style={{ color: "hsl(var(--primary))" }}>{renderInline(h)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {dataRows.filter(r => r.some(c => c)).map((row, ri) => (
+                <tr key={ri} style={{ borderTop: "1px solid hsl(var(--border)/0.25)" }}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="px-3 py-2">{renderInline(cell)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
     nodes.push(<p key={i}>{renderInline(line)}</p>);
     i++;
   }
