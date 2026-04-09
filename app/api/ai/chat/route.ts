@@ -409,35 +409,51 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
 
     if (name === "web_search") {
       const query = String(input.query || "");
+      const braveKey = process.env.BRAVE_SEARCH_KEY;
+
       try {
-        const res = await fetch(
-          `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5&lang=ru`,
-          { headers: { "X-Subscription-Token": process.env.BRAVE_SEARCH_KEY || "" } }
-        );
-        if (!res.ok) {
-          // Fallback: DuckDuckGo instant answer
-          const ddg = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`);
-          const ddgData = await ddg.json();
-          return {
-            query,
-            results: ddgData.RelatedTopics?.slice(0, 5).map((t: any) => ({
-              title: t.Text?.slice(0, 100) || "",
-              snippet: t.Text || "",
-            })) || [],
-            note: "Результаты DuckDuckGo",
-          };
+        // Brave Search (если ключ есть)
+        if (braveKey) {
+          const res = await fetch(
+            `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=6&lang=ru&country=ru`,
+            { headers: { "X-Subscription-Token": braveKey, "Accept": "application/json" } }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            return {
+              query, source: "Brave Search",
+              results: (data.web?.results || []).slice(0, 6).map((r: any) => ({
+                title: r.title, snippet: r.description, url: r.url,
+              })),
+            };
+          }
         }
-        const data = await res.json();
+
+        // DuckDuckGo — работает без ключа
+        const [ddgRes, ddgAbstractRes] = await Promise.all([
+          fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`),
+          fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query + " site:ru")}&format=json&no_html=1`),
+        ]);
+        const ddg = await ddgRes.json();
+
+        const results: any[] = [];
+
+        if (ddg.AbstractText) {
+          results.push({ title: ddg.Heading || query, snippet: ddg.AbstractText, url: ddg.AbstractURL });
+        }
+
+        (ddg.RelatedTopics || []).slice(0, 5).forEach((t: any) => {
+          if (t.Text) results.push({ title: t.Text.slice(0, 80), snippet: t.Text, url: t.FirstURL });
+        });
+
         return {
-          query,
-          results: (data.web?.results || []).slice(0, 5).map((r: any) => ({
-            title: r.title,
-            snippet: r.description,
-            url: r.url,
-          })),
+          query, source: "DuckDuckGo",
+          results: results.slice(0, 6),
+          note: results.length === 0 ? "Ничего не нашёл — попробуй другой запрос" : undefined,
         };
+
       } catch {
-        return { query, error: "Поиск временно недоступен", note: "Попробуй переформулировать вопрос" };
+        return { query, error: "Поиск недоступен", note: "Попробуй чуть позже" };
       }
     }
 

@@ -219,7 +219,6 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-import { AdminDesktopSearch, AdminSearch, AdminStickySearchBar } from "@/components/admin/admin-search";
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
 import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { useTheme } from "next-themes";
@@ -1059,50 +1058,43 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
 
-        {/* ── Mobile compact sticky bar (replaces removed header) ── */}
+        {/* ── Mobile: только hamburger + bell (без поиска — поиск через Арая) ── */}
         <div className="lg:hidden sticky top-0 z-20"
           style={{
-            paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)",
-            paddingBottom: "10px",
+            paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
+            paddingBottom: "8px",
             paddingLeft: "12px",
             paddingRight: "12px",
-            background: classic ? "rgba(248,250,252,0.95)" : "rgba(6,9,22,0.60)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            borderBottom: classic ? "1px solid rgba(0,0,0,0.07)" : "1px solid rgba(255,255,255,0.08)",
+            background: classic ? "rgba(248,250,252,0.95)" : "rgba(4,5,13,0.88)",
+            backdropFilter: "blur(24px) saturate(80%) brightness(0.70)",
+            WebkitBackdropFilter: "blur(24px) saturate(80%) brightness(0.70)",
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
           }}>
-          {/* Первая строка: hamburger + search + bell */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setOpen(true)}
               className="p-2 rounded-xl shrink-0 active:scale-90 transition-colors"
-              style={{ WebkitTapHighlightColor: "transparent", background: "rgba(255,255,255,0.07)" }}
+              style={{ WebkitTapHighlightColor: "transparent", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)" }}
               aria-label="Меню">
               <Menu className="w-5 h-5 text-white/70" />
             </button>
-            <div className="flex-1 min-w-0">
-              <AdminStickySearchBar />
-            </div>
+            {/* Подсказка — поиск через Арая */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent("aray:open"))}
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-white/35 text-[13px] transition-all active:scale-98"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", WebkitTapHighlightColor: "transparent" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              Спроси Арая...
+            </button>
             <AdminNotificationBell mobile />
           </div>
         </div>
 
-        {/* ── Desktop sticky search bar ── */}
-        <div className="hidden lg:block sticky top-0 z-20 px-5 py-3"
-          style={{
-            background: classic
-              ? "rgba(248,250,252,0.94)"
-              : "rgba(6,9,22,0.45)",
-            backdropFilter: "blur(28px) saturate(180%)",
-            WebkitBackdropFilter: "blur(28px) saturate(180%)",
-            borderBottom: classic
-              ? "1px solid rgba(0,0,0,0.06)"
-              : "1px solid rgba(255,255,255,0.07)",
-          }}>
-          <AdminStickySearchBar />
-        </div>
+        {/* Desktop: хедер убран полностью — поиск через Арая снизу */}
 
-        <div className="pt-0" style={{ paddingBottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))" }}>
+        <div className="pt-0" style={{ paddingBottom: "calc(72px + max(16px, env(safe-area-inset-bottom, 16px)))" }}>
           <div className="p-4 lg:p-6">{children}</div>
         </div>
       </main>
