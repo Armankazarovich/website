@@ -7,68 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  SUPER_ADMIN  // Владелец системы — все права
-  ADMIN
-  MANAGER     // Менеджер по продажам
-  COURIER     // Курьер
-  ACCOUNTANT  // Бухгалтер
-  WAREHOUSE   // Складчик
-  SELLER      // Продавец
-}
-
-enum StaffStatus {
-  PENDING    // Ждёт подтверждения
-  ACTIVE     // Активен
-  SUSPENDED  // Заблокирован
-}
-
-enum SaleUnit {
-  CUBE
-  PIECE
-  BOTH
-}
-
-enum UnitType {
-  CUBE
-  PIECE
-}
-
-enum OrderStatus {
-  NEW
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  IN_DELIVERY
-  READY_PICKUP
-  DELIVERED
-  COMPLETED   // Завершён (самовывоз — клиент забрал)
-  CANCELLED
-}
-
 model User {
-  id           String             @id @default(cuid())
-  name         String?
-  email        String             @unique
-  phone        String?
-  passwordHash String
-  role         Role               @default(USER)
-  staffStatus  StaffStatus?
-  customRole   String?
-  address      String?
-  orders          Order[]
-  reviews         Review[]
-  pushSubs        PushSubscription[]
-  assignedTasks   Task[]           @relation("TaskAssignee")
-  createdTasks    Task[]           @relation("TaskCreator")
-  taskComments    TaskComment[]
-  assignedLeads   Lead[]           @relation("LeadAssignee")
-  leadActivities  LeadActivity[]   @relation("LeadActivityUser")
-  arayMemory      ArayMemory?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  lastActiveAt    DateTime?        // Последняя активность в системе
+  id             String             @id @default(cuid())
+  name           String?
+  email          String             @unique
+  phone          String?
+  passwordHash   String
+  role           Role               @default(USER)
+  address        String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  customRole     String?
+  staffStatus    StaffStatus?
+  lastActiveAt   DateTime?
+  arayMemory     ArayMemory?
+  assignedLeads  Lead[]             @relation("LeadAssignee")
+  leadActivities LeadActivity[]     @relation("LeadActivityUser")
+  orders         Order[]
+  pushSubs       PushSubscription[]
+  reviews        Review[]
+  assignedTasks  Task[]             @relation("TaskAssignee")
+  createdTasks   Task[]             @relation("TaskCreator")
+  taskComments   TaskComment[]
 }
 
 model Category {
@@ -77,22 +37,15 @@ model Category {
   slug           String     @unique
   image          String?
   sortOrder      Int        @default(0)
-
-  // Подкатегории
   parentId       String?
+  seoDescription String?
+  seoTitle       String?
+  showInFooter   Boolean    @default(true)
+  showInMenu     Boolean    @default(true)
+  updatedAt      DateTime   @default(now()) @updatedAt
   parent         Category?  @relation("sub", fields: [parentId], references: [id])
   children       Category[] @relation("sub")
-
-  // SEO
-  seoTitle       String?
-  seoDescription String?
-
-  // Навигация
-  showInMenu     Boolean    @default(true)
-  showInFooter   Boolean    @default(true)
-
   products       Product[]
-  updatedAt      DateTime   @updatedAt @default(now())
 }
 
 model Product {
@@ -101,81 +54,81 @@ model Product {
   name        String
   description String?
   categoryId  String
-  category    Category         @relation(fields: [categoryId], references: [id])
   images      String[]
   saleUnit    SaleUnit         @default(BOTH)
-  variants    ProductVariant[]
   active      Boolean          @default(true)
   featured    Boolean          @default(false)
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+  category    Category         @relation(fields: [categoryId], references: [id])
+  variants    ProductVariant[]
 }
 
 model ProductVariant {
   id            String      @id @default(cuid())
   productId     String
-  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   size          String
   pricePerCube  Decimal?    @db.Decimal(10, 2)
   pricePerPiece Decimal?    @db.Decimal(10, 2)
   piecesPerCube Int?
   inStock       Boolean     @default(true)
-  stockQty      Int?        // null = не отслеживается; 0 = нет; ≥1 = в наличии
-  orderItems    OrderItem[]
+  stockQty      Int?
   costPrice     CostPrice?
+  orderItems    OrderItem[]
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     Int         @default(autoincrement())
-  userId          String?
-  user            User?       @relation(fields: [userId], references: [id])
-  guestName       String?
-  guestEmail      String?
-  guestPhone      String?
-  status          OrderStatus @default(NEW)
-  totalAmount     Decimal     @db.Decimal(10, 2)
-  deliveryCost    Decimal     @default(0) @db.Decimal(10, 2)
-  paymentMethod   String      @default("Наличные / Счёт")
-  deliveryAddress String?
-  comment         String?
-  items             OrderItem[]
-  tasks             Task[]
+  id                String      @id @default(cuid())
+  orderNumber       Int         @default(autoincrement())
+  userId            String?
+  guestName         String?
+  guestEmail        String?
+  guestPhone        String?
+  status            OrderStatus @default(NEW)
+  totalAmount       Decimal     @db.Decimal(10, 2)
+  paymentMethod     String      @default("Наличные / Счёт")
+  deliveryAddress   String?
+  comment           String?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+  deliveryCost      Decimal     @default(0) @db.Decimal(10, 2)
   deletedAt         DateTime?
-  telegramMessageId String?     // ID сообщения в Telegram группе для авто-удаления
-  promoCode         String?     // применённый промокод
-  discountAmount    Decimal     @default(0) @db.Decimal(10, 2) // сумма скидки
-  contactMethod     String?     // Телефон | WhatsApp | Telegram | SMS
-  contactUsername   String?     // @username для Telegram/WhatsApp
+  telegramMessageId String?
+  contactMethod     String?
+  contactUsername   String?
+  discountAmount    Decimal     @default(0) @db.Decimal(10, 2)
+  promoCode         String?
+  user              User?       @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+  tasks             Task[]
 }
 
 model OrderItem {
-  id        String         @id @default(cuid())
-  orderId   String
-  order     Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  variantId String
-  variant   ProductVariant @relation(fields: [variantId], references: [id])
-  productName  String
-  variantSize  String
-  unitType  UnitType
-  quantity  Decimal        @db.Decimal(10, 3)
-  price     Decimal        @db.Decimal(10, 2)
+  id          String         @id @default(cuid())
+  orderId     String
+  variantId   String
+  productName String
+  variantSize String
+  unitType    UnitType
+  quantity    Decimal        @db.Decimal(10, 3)
+  price       Decimal        @db.Decimal(10, 2)
+  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant     ProductVariant @relation(fields: [variantId], references: [id])
 }
 
 model Review {
   id         String   @id @default(cuid())
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
   name       String
   rating     Int
   text       String
   approved   Boolean  @default(false)
-  source     String   @default("internal") // internal | google | yandex | vk | 2gis
-  sourceUrl  String?  // ссылка на оригинальный отзыв
-  externalId String?  // ID отзыва на платформе (для дедупликации)
   createdAt  DateTime @default(now())
+  externalId String?
+  source     String   @default("internal")
+  sourceUrl  String?
+  user       User?    @relation(fields: [userId], references: [id])
 }
 
 model Promotion {
@@ -191,21 +144,21 @@ model Promotion {
 
 model DeliveryRate {
   id          String @id @default(cuid())
-  vehicleName String          // "Газель"
-  payload     String          // "1.5 т"
-  maxVolume   Float           // 3.5 (м³)
-  basePrice   Int             // 3000 (руб.)
+  vehicleName String
+  payload     String
+  maxVolume   Float
+  basePrice   Int
   sortOrder   Int    @default(0)
 }
 
 model PushSubscription {
   id        String   @id @default(cuid())
   userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
   endpoint  String   @unique
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model SiteSettings {
@@ -214,32 +167,30 @@ model SiteSettings {
   value String
 }
 
-// Явные подписчики с сайта (opt-in email/push/telegram)
 model NewsletterSubscriber {
   id           String   @id @default(cuid())
   email        String   @unique
   name         String?
   pushEnabled  Boolean  @default(false)
-  telegramChat String?  // chat_id если подписался через бота
-  source       String   @default("site") // site | checkout | import
+  telegramChat String?
+  source       String   @default("site")
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 }
 
-// Промокоды и скидки
 model PromoCode {
-  id           String    @id @default(cuid())
-  code         String    @unique  // PILORUS10, SUMMER2026
-  type         String    // percent | fixed | free_delivery
-  value        Int       // 10 = 10% или 1000 = 1000₽
-  minAmount    Int       @default(0)  // минимальная сумма заказа
-  maxUses      Int?      // null = безлимит
-  usedCount    Int       @default(0)
-  active       Boolean   @default(true)
-  validFrom    DateTime?
-  validUntil   DateTime?
-  description  String?
-  createdAt    DateTime  @default(now())
+  id          String    @id @default(cuid())
+  code        String    @unique
+  type        String
+  value       Int
+  minAmount   Int       @default(0)
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  active      Boolean   @default(true)
+  validFrom   DateTime?
+  validUntil  DateTime?
+  description String?
+  createdAt   DateTime  @default(now())
 }
 
 model PartnershipLead {
@@ -262,8 +213,8 @@ model PasswordResetToken {
 
 model CategoryRedirect {
   id        String   @id @default(cuid())
-  fromSlug  String   @unique   // старый slug (напр: "kedr", "dsp-mdf-osb")
-  toSlug    String?            // новый slug (null = просто /catalog)
+  fromSlug  String   @unique
+  toSlug    String?
   permanent Boolean  @default(true)
   createdAt DateTime @default(now())
 }
@@ -271,28 +222,205 @@ model CategoryRedirect {
 model Expense {
   id          String   @id @default(cuid())
   amount      Decimal  @db.Decimal(10, 2)
-  category    String   // "Аренда", "Зарплата", "Транспорт", "Реклама", "Прочее"
+  category    String
   description String?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
 }
 
 model CostPrice {
-  id        String  @id @default(cuid())
-  variantId String  @unique
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  costPerCube  Decimal? @db.Decimal(10, 2)  // себестоимость за м³
-  costPerPiece Decimal? @db.Decimal(10, 2)  // себестоимость за шт
+  id           String         @id @default(cuid())
+  variantId    String         @unique
+  costPerCube  Decimal?       @db.Decimal(10, 2)
+  costPerPiece Decimal?       @db.Decimal(10, 2)
+  variant      ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
 }
 
-// ── Задачи и Канбан ────────────────────────────────────────────────────────────
+model Task {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus    @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  sortOrder   Int           @default(0)
+  assigneeId  String?
+  createdById String?
+  orderId     String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  tags        String[]      @default([])
+  assignee    User?         @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy   User?         @relation("TaskCreator", fields: [createdById], references: [id])
+  order       Order?        @relation(fields: [orderId], references: [id])
+  comments    TaskComment[]
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String?
+  text      String
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model Lead {
+  id               String         @id @default(cuid())
+  name             String
+  phone            String?
+  email            String?
+  company          String?
+  source           LeadSource     @default(WEBSITE)
+  stage            LeadStage      @default(NEW)
+  value            Decimal?       @db.Decimal(10, 2)
+  currency         String         @default("RUB")
+  comment          String?
+  tags             String[]       @default([])
+  assigneeId       String?
+  convertedOrderId String?
+  convertedAt      DateTime?
+  sortOrder        Int            @default(0)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  deletedAt        DateTime?
+  assignee         User?          @relation("LeadAssignee", fields: [assigneeId], references: [id])
+  activities       LeadActivity[]
+}
+
+model LeadActivity {
+  id           String           @id @default(cuid())
+  leadId       String
+  type         LeadActivityType @default(NOTE)
+  text         String
+  scheduledFor DateTime?
+  completedAt  DateTime?
+  userId       String?
+  createdAt    DateTime         @default(now())
+  lead         Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user         User?            @relation("LeadActivityUser", fields: [userId], references: [id])
+}
+
+model Workflow {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  active      Boolean       @default(true)
+  trigger     String
+  conditions  Json          @default("{}")
+  actions     Json          @default("[]")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  logs        WorkflowLog[]
+}
+
+model WorkflowLog {
+  id         String   @id @default(cuid())
+  workflowId String
+  trigger    String
+  payload    Json     @default("{}")
+  result     String
+  error      String?
+  createdAt  DateTime @default(now())
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model ArayMemory {
+  id           String    @id @default(cuid())
+  userId       String?   @unique
+  sessionId    String?   @unique
+  facts        Json      @default("{}")
+  summary      String    @default("")
+  lastMessages Json      @default("[]")
+  level        ArayLevel @default(NOVICE)
+  totalChats   Int       @default(0)
+  totalPoints  Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  excerpt     String
+  content     String
+  coverImage  String?
+  published   Boolean  @default(false)
+  featured    Boolean  @default(false)
+  aiGenerated Boolean  @default(false)
+  topic       String?
+  readTime    Int      @default(5)
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  content     String
+  price       String?
+  unit        String?
+  image       String?
+  icon        String?
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(100)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  MANAGER
+  COURIER
+  ACCOUNTANT
+  WAREHOUSE
+  SELLER
+  SUPER_ADMIN
+}
+
+enum StaffStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum SaleUnit {
+  CUBE
+  PIECE
+  BOTH
+}
+
+enum UnitType {
+  CUBE
+  PIECE
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  IN_DELIVERY
+  READY_PICKUP
+  COMPLETED
+}
 
 enum TaskStatus {
-  BACKLOG    // Очередь
-  TODO       // Сделать
-  IN_PROGRESS // В работе
-  REVIEW     // На проверке
-  DONE       // Готово
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
 }
 
 enum TaskPriority {
@@ -302,216 +430,39 @@ enum TaskPriority {
   URGENT
 }
 
-model Task {
-  id          String       @id @default(cuid())
-  title       String
-  description String?
-  status      TaskStatus   @default(TODO)
-  priority    TaskPriority @default(MEDIUM)
-  sortOrder   Int          @default(0)
-
-  // Связи
-  assigneeId  String?
-  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdById String?
-  createdBy   User?        @relation("TaskCreator", fields: [createdById], references: [id])
-
-  // Опциональная привязка к заказу
-  orderId     String?
-  order       Order?       @relation(fields: [orderId], references: [id])
-
-  // Даты
-  dueDate     DateTime?
-  completedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  comments    TaskComment[]
-  tags        String[]     @default([])
-}
-
-model TaskComment {
-  id        String   @id @default(cuid())
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  text      String
-  createdAt DateTime @default(now())
-}
-
-// ── CRM — Лиды и Воронка продаж ───────────────────────────────────────────────
-
 enum LeadSource {
-  WEBSITE    // Форма на сайте
-  TELEGRAM   // Telegram
-  PHONE      // Звонок
-  REFERRAL   // Рекомендация
-  PARTNER    // Партнёр
-  OTHER      // Другое
+  WEBSITE
+  TELEGRAM
+  PHONE
+  REFERRAL
+  PARTNER
+  OTHER
 }
 
 enum LeadStage {
-  NEW           // Новый лид
-  CONTACTED     // Связались
-  QUALIFIED     // Квалифицирован
-  MEETING       // Встреча/замер
-  PROPOSAL      // КП отправлено
-  NEGOTIATION   // Переговоры
-  WON           // Успех / Оплата
-  LOST          // Отказ
+  NEW
+  CONTACTED
+  QUALIFIED
+  MEETING
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
 }
 
 enum LeadActivityType {
-  NOTE        // Заметка
-  CALL        // Звонок
-  EMAIL       // Email
-  MEETING     // Встреча
-  TASK        // Задача
-  STAGE_CHANGE // Смена этапа
-  SYSTEM      // Системное
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  TASK
+  STAGE_CHANGE
+  SYSTEM
 }
-
-model Lead {
-  id          String      @id @default(cuid())
-  name        String
-  phone       String?
-  email       String?
-  company     String?
-  source      LeadSource  @default(WEBSITE)
-  stage       LeadStage   @default(NEW)
-  value       Decimal?    @db.Decimal(10, 2)   // Сумма сделки
-  currency    String      @default("RUB")
-  comment     String?
-  tags        String[]    @default([])
-
-  // Ответственный
-  assigneeId  String?
-  assignee    User?       @relation("LeadAssignee", fields: [assigneeId], references: [id])
-
-  // Связанный заказ (если конвертирован)
-  convertedOrderId String?
-  convertedAt      DateTime?
-
-  // Позиция в колонке Kanban
-  sortOrder   Int         @default(0)
-
-  activities  LeadActivity[]
-
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  deletedAt   DateTime?
-}
-
-model LeadActivity {
-  id          String           @id @default(cuid())
-  leadId      String
-  lead        Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  type        LeadActivityType @default(NOTE)
-  text        String
-  scheduledFor DateTime?       // Для задач/встреч
-  completedAt  DateTime?
-  userId      String?
-  user        User?            @relation("LeadActivityUser", fields: [userId], references: [id])
-  createdAt   DateTime         @default(now())
-}
-
-// ── Автоворкфлоу ──────────────────────────────────────────────────────────────
-
-model Workflow {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  active      Boolean  @default(true)
-
-  // Триггер: order_created | order_status_changed | task_overdue | manual
-  trigger     String
-  // Условия в JSON: { "status": "NEW", "minAmount": 5000 }
-  conditions  Json     @default("{}")
-  // Действия в JSON: [{ "type": "create_task", "title": "...", "assigneeId": "..." }]
-  actions     Json     @default("[]")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  logs        WorkflowLog[]
-}
-
-model WorkflowLog {
-  id         String   @id @default(cuid())
-  workflowId String
-  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  trigger    String
-  payload    Json     @default("{}")
-  result     String   // "ok" | "error"
-  error      String?
-  createdAt  DateTime @default(now())
-}
-
-// ── Арай — Память о людях ─────────────────────────────────────────────────────
 
 enum ArayLevel {
-  NOVICE      // Новичок (1-2 заказа)
-  BUILDER     // Строитель (3-9 заказов)
-  MASTER      // Мастер (10-24 заказа)
-  PARTNER     // Партнёр ARAY (25+)
-}
-
-model ArayMemory {
-  id          String     @id @default(cuid())
-
-  // Идентификация — userId для авторизованных, sessionId для гостей
-  userId      String?    @unique
-  sessionId   String?    @unique
-  user        User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Факты о человеке — автоматически извлекаются из диалогов
-  facts       Json       @default("{}")
-  // Резюме истории общения (сжатая память)
-  summary     String     @default("")
-  // Последние 10 сообщений для контекста
-  lastMessages Json      @default("[]")
-
-  // Геймификация
-  level       ArayLevel  @default(NOVICE)
-  totalChats  Int        @default(0)
-  totalPoints Int        @default(0)
-
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
-
-
-// ── Блог / Новости ────────────────────────────────────────────────────────────
-model Post {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  excerpt     String   // краткое описание (для карточки и meta description)
-  content     String   // HTML или Markdown
-  coverImage  String?  // URL обложки
-  published   Boolean  @default(false)
-  featured    Boolean  @default(false)
-  aiGenerated Boolean  @default(false)  // сгенерирована Арайем
-  topic       String?  // тег / тема: "lumber", "construction", "painting" и т.д.
-  readTime    Int      @default(5)       // минут на чтение
-  views       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-// ── Услуги ────────────────────────────────────────────────────────────────────
-model Service {
-  id          String   @id @default(cuid())
-  slug        String   @unique
-  title       String
-  description String   // краткое
-  content     String   // полное описание, HTML
-  price       String?  // "от 5 000 ₽" или null (по запросу)
-  unit        String?  // "за м²", "за м³", "за изделие"
-  image       String?  // URL картинки
-  icon        String?  // lucide icon name: "Paintbrush", "Truck", "Scissors"
-  active      Boolean  @default(true)
-  sortOrder   Int      @default(100)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  NOVICE
+  BUILDER
+  MASTER
+  PARTNER
 }
