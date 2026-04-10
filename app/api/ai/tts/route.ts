@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 
-// Antoni — warm, friendly voice, works great for Russian with multilingual v2
+// Antoni — warm, friendly male voice for Russian (multilingual v2)
+// Настроен как «нежный мужской голос, настоящий друг»
 const VOICE_ID = "ErXwobaYiN019PkySvjV";
 const MODEL_ID = "eleven_multilingual_v2";
 
@@ -46,11 +47,11 @@ export async function POST(req: NextRequest) {
           text: cleanText,
           model_id: MODEL_ID,
           voice_settings: {
-            stability: 0.42,       // More natural variation
-            similarity_boost: 0.88, // Faithful to voice character
-            style: 0.28,           // Slight expressiveness
+            stability: 0.50,       // Баланс стабильности и естественности
+            similarity_boost: 0.85, // Верность характеру голоса
+            style: 0.35,           // Выразительный и тёплый
             use_speaker_boost: true,
-            speed: 1.0,
+            speed: 0.95,           // Чуть медленнее — нежнее и дружелюбнее
           },
         }),
       }

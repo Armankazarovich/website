@@ -2095,139 +2095,237 @@ a:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════════
-   ARAY CHAT — Единая дизайн-система (следует палитре + classic mode)
-   Все цвета через CSS переменные — автоматически меняются при смене темы.
+   ARAY CHAT — Next-gen дизайн-система (жидкое стекло + 3 темы + мобильная)
+   Все цвета через CSS переменные — автоматически меняются при смене палитры.
+   Три слоя: светлая → тёмная классическая → тёмная природный режим
    ══════════════════════════════════════════════════════════════════════════════ */
 
-/* ── Панель чата — прозрачное стекло, полный экран ───────────────────────── */
+/* ── Панель чата — жидкое стекло ──────────────────────────────────────────── */
 
-/* ── Панель чата — светлая тема (без .dark на html) ──────────────────────── */
+/* СВЕТЛАЯ тема */
 .aray-chat-panel {
   top: 57px;
-  background: rgba(248, 249, 252, 0.88);
-  backdrop-filter: blur(32px) saturate(120%) brightness(1.02);
-  -webkit-backdrop-filter: blur(32px) saturate(120%) brightness(1.02);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(248, 249, 252, 0.85);
+  backdrop-filter: blur(40px) saturate(130%) brightness(1.02);
+  -webkit-backdrop-filter: blur(40px) saturate(130%) brightness(1.02);
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
 }
 @media (min-width: 1024px) {
   .aray-chat-panel { top: 0; border-top: none; }
 }
 
-/* ── Тёмная тема без природного фона ──────────────────────────────────────── */
+/* ТЁМНАЯ классическая */
 .dark .aray-chat-panel {
-  background: hsl(var(--card) / 0.92) !important;
-  backdrop-filter: blur(32px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(140%) !important;
-  border-top: 1px solid hsl(var(--border) / 0.35) !important;
+  background: hsl(var(--card) / 0.90) !important;
+  backdrop-filter: blur(40px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(140%) !important;
+  border-top: 1px solid hsl(var(--border) / 0.30) !important;
 }
 @media (min-width: 1024px) {
   .dark .aray-chat-panel { border-top: none !important; }
 }
 
-/* ── Природный режим — тёмное стекло как карточки сайта ───────────────────── */
+/* ТЁМНАЯ природная */
 .dark .aray-nature-mode .aray-chat-panel {
-  background: rgba(12, 12, 15, 0.78) !important;
-  backdrop-filter: blur(56px) saturate(120%) brightness(0.90) !important;
-  -webkit-backdrop-filter: blur(56px) saturate(120%) brightness(0.90) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(10, 10, 14, 0.75) !important;
+  backdrop-filter: blur(60px) saturate(120%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(120%) brightness(0.88) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 @media (min-width: 1024px) {
   .dark .aray-nature-mode .aray-chat-panel { border-top: none !important; }
 }
 
-/* ── Input bar — светлая тема ─────────────────────────────────────────────── */
+/* ── Input bar ────────────────────────────────────────────────────────────── */
+
+/* СВЕТЛАЯ */
 .aray-chat-bar {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(24px) saturate(120%);
-  -webkit-backdrop-filter: blur(24px) saturate(120%);
-  border-top: 1px solid rgba(0, 0, 0, 0.07);
-  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.90);
+  backdrop-filter: blur(28px) saturate(120%);
+  -webkit-backdrop-filter: blur(28px) saturate(120%);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.05);
 }
 
-/* ── Input bar — тёмная тема ──────────────────────────────────────────────── */
+/* ТЁМНАЯ классическая */
 .dark .aray-chat-bar {
-  background: hsl(var(--card) / 0.95) !important;
-  backdrop-filter: blur(24px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(140%) !important;
-  border-top: 1px solid hsl(var(--border) / 0.35) !important;
+  background: hsl(var(--card) / 0.94) !important;
+  backdrop-filter: blur(28px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(140%) !important;
+  border-top: 1px solid hsl(var(--border) / 0.30) !important;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* ── Input bar — природный режим (ГЛАВНЫЙ СТИЛЬ) ─────────────────────────── */
+/* ТЁМНАЯ природная */
 .dark .aray-nature-mode .aray-chat-bar {
-  background: rgba(12, 12, 15, 0.94) !important;
-  backdrop-filter: blur(48px) saturate(120%) brightness(0.90) !important;
-  -webkit-backdrop-filter: blur(48px) saturate(120%) brightness(0.90) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.55) !important;
+  background: rgba(10, 10, 14, 0.92) !important;
+  backdrop-filter: blur(52px) saturate(120%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(52px) saturate(120%) brightness(0.88) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 -8px 48px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* ── Шапка чата ────────────────────────────────────────────────────────────── */
+/* ── Шапка чата ───────────────────────────────────────────────────────────── */
 .aray-chat-header {
-  border-bottom: 1px solid hsl(var(--border) / 0.5);
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
 }
 .dark .aray-chat-header {
-  border-bottom: 1px solid hsl(var(--border) / 0.35) !important;
+  border-bottom: 1px solid hsl(var(--border) / 0.30) !important;
 }
 .dark .aray-nature-mode .aray-chat-header {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
-/* ── Пузырь пользователя — следует палитре автоматически ──────────────────── */
-.aray-chat-bubble-user {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.80));
-  color: hsl(var(--primary-foreground));
-  border-radius: 18px 18px 4px 18px;
-  box-shadow: 0 2px 14px hsl(var(--primary) / 0.30);
-}
-
-/* ── Пузырь ассистента ─────────────────────────────────────────────────────── */
-
-/* Светлая тема / classic mode — матовое белое стекло */
-.aray-chat-bubble-assistant {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(0, 0, 0, 0.07);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+/* ── Имя «Арай» с легким свечением ────────────────────────────────────────── */
+.aray-name-glow {
   color: hsl(var(--foreground));
-  border-radius: 18px 18px 18px 4px;
+  text-shadow: 0 0 20px hsl(var(--primary) / 0.15);
+}
+.dark .aray-name-glow {
+  color: hsl(var(--foreground)) !important;
+  text-shadow: 0 0 24px hsl(var(--primary) / 0.25) !important;
+}
+.dark .aray-nature-mode .aray-name-glow {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 0 28px hsl(var(--primary) / 0.35) !important;
 }
 
-/* Тёмная тема без природного фона */
+/* ── Бейдж раздела ────────────────────────────────────────────────────────── */
+.aray-section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: hsl(var(--primary) / 0.10);
+  color: hsl(var(--primary));
+  border: 1px solid hsl(var(--primary) / 0.18);
+}
+.dark .aray-nature-mode .aray-section-badge {
+  background: hsl(var(--primary) / 0.14) !important;
+  border-color: hsl(var(--primary) / 0.25) !important;
+}
+
+/* ── Capability pills ─────────────────────────────────────────────────────── */
+.aray-capability-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: hsl(var(--muted) / 0.6);
+  color: hsl(var(--muted-foreground) / 0.55);
+  letter-spacing: 0.02em;
+}
+.dark .aray-capability-pill {
+  background: hsl(var(--secondary) / 0.5) !important;
+  color: hsl(var(--muted-foreground) / 0.6) !important;
+}
+.dark .aray-nature-mode .aray-capability-pill {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+
+/* ── Пузырь пользователя ──────────────────────────────────────────────────── */
+.aray-chat-bubble-user {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.78));
+  color: hsl(var(--primary-foreground));
+  border-radius: 20px 20px 6px 20px;
+  box-shadow: 0 3px 16px hsl(var(--primary) / 0.25);
+}
+
+/* ── Пузырь ассистента ────────────────────────────────────────────────────── */
+
+/* СВЕТЛАЯ — матовое стекло */
+.aray-chat-bubble-assistant {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.05);
+  color: hsl(var(--foreground));
+  border-radius: 20px 20px 20px 6px;
+}
+
+/* ТЁМНАЯ классическая */
 .dark .aray-chat-bubble-assistant {
-  background: hsl(var(--secondary) / 0.80) !important;
-  backdrop-filter: blur(16px) !important;
-  border: 1px solid hsl(var(--border) / 0.5) !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.20) !important;
+  background: hsl(var(--secondary) / 0.75) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid hsl(var(--border) / 0.45) !important;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.20) !important;
   color: hsl(var(--foreground)) !important;
 }
 
-/* Природный режим — стекло как карточки сайта */
+/* ТЁМНАЯ природная — стекло */
 .dark .aray-nature-mode .aray-chat-bubble-assistant {
-  background: rgba(255, 255, 255, 0.07) !important;
-  backdrop-filter: blur(24px) saturate(120%) brightness(0.90) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(120%) brightness(0.90) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.35) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(28px) saturate(120%) brightness(0.88) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(120%) brightness(0.88) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 22px rgba(0, 0, 0, 0.30) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 
-/* ── Текст в пузыре ассистента — secondary/muted элементы ─────────────────── */
-.aray-chat-bubble-assistant code {
-  background: hsl(var(--muted));
+/* ── Inline code в пузырях ────────────────────────────────────────────────── */
+.aray-code-inline {
+  background: hsl(var(--primary) / 0.10);
   color: hsl(var(--primary));
   padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-family: ui-monospace, monospace;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-family: ui-monospace, SFMono-Regular, monospace;
 }
-.aray-nature-mode .aray-chat-bubble-assistant code {
-  background: rgba(255, 255, 255, 0.10) !important;
+.dark .aray-nature-mode .aray-code-inline {
+  background: rgba(255, 255, 255, 0.08) !important;
   color: hsl(var(--primary)) !important;
 }
 
-/* ── Textarea ввода ────────────────────────────────────────────────────────── */
+/* ── Numbered list bullet ─────────────────────────────────────────────────── */
+.aray-list-number {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  background: hsl(var(--primary) / 0.12);
+  color: hsl(var(--primary));
+}
+
+/* ── Таблицы ──────────────────────────────────────────────────────────────── */
+.aray-table-wrap {
+  border-radius: 12px;
+  border: 1px solid hsl(var(--border) / 0.4);
+  overflow: hidden;
+}
+.aray-table-header {
+  background: hsl(var(--primary) / 0.06);
+  border-bottom: 1px solid hsl(var(--border) / 0.4);
+}
+.aray-table-row {
+  border-top: 1px solid hsl(var(--border) / 0.2);
+}
+.dark .aray-nature-mode .aray-table-wrap {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dark .aray-nature-mode .aray-table-header {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+.dark .aray-nature-mode .aray-table-row {
+  border-top-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ── Textarea ввода ───────────────────────────────────────────────────────── */
 .aray-chat-input {
   background: transparent;
   color: hsl(var(--foreground));
@@ -2235,138 +2333,216 @@ a:focus-visible {
 }
 .dark .aray-chat-input { color: hsl(var(--foreground)) !important; }
 .dark .aray-nature-mode .aray-chat-input { color: rgba(255, 255, 255, 0.90) !important; }
-.aray-chat-input::placeholder { color: hsl(var(--muted-foreground) / 0.45); }
-.dark .aray-chat-input::placeholder { color: hsl(var(--muted-foreground) / 0.55) !important; }
-.dark .aray-nature-mode .aray-chat-input::placeholder { color: rgba(255, 255, 255, 0.30) !important; }
+.aray-chat-input::placeholder { color: hsl(var(--muted-foreground) / 0.40); }
+.dark .aray-chat-input::placeholder { color: hsl(var(--muted-foreground) / 0.50) !important; }
+.dark .aray-nature-mode .aray-chat-input::placeholder { color: rgba(255, 255, 255, 0.28) !important; }
 
-/* ── Кнопки действий (mic, send) ──────────────────────────────────────────── */
+/* ── Кнопки действий (mic, voice) ─────────────────────────────────────────── */
 .aray-chat-action-btn {
   background: hsl(var(--secondary));
   border: 1.5px solid hsl(var(--border));
   color: hsl(var(--muted-foreground));
   border-radius: 0.75rem;
-  transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 .aray-chat-action-btn:hover {
-  background: hsl(var(--primary) / 0.12);
-  border-color: hsl(var(--primary) / 0.35);
+  background: hsl(var(--primary) / 0.10);
+  border-color: hsl(var(--primary) / 0.30);
   color: hsl(var(--primary));
+  transform: scale(1.04);
+}
+.aray-chat-action-btn:active {
+  transform: scale(0.96);
 }
 .aray-chat-action-btn-active,
 .aray-chat-action-btn[data-active="true"] {
-  background: hsl(var(--primary) / 0.18) !important;
-  border-color: hsl(var(--primary) / 0.45) !important;
+  background: hsl(var(--primary) / 0.16) !important;
+  border-color: hsl(var(--primary) / 0.40) !important;
   color: hsl(var(--primary)) !important;
-  box-shadow: 0 0 0 6px hsl(var(--primary) / 0.10);
-  animation: aray-mic-pulse 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 5px hsl(var(--primary) / 0.08);
+  animation: aray-mic-pulse 1.4s ease-in-out infinite;
 }
 .aray-nature-mode .aray-chat-action-btn {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.09) !important;
-  color: rgba(255, 255, 255, 0.48) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.45) !important;
 }
 .aray-nature-mode .aray-chat-action-btn:hover {
-  background: hsl(var(--primary) / 0.20) !important;
-  border-color: hsl(var(--primary) / 0.40) !important;
+  background: hsl(var(--primary) / 0.18) !important;
+  border-color: hsl(var(--primary) / 0.35) !important;
   color: hsl(var(--primary)) !important;
 }
 
-/* Send кнопка — активна когда есть текст */
+/* ── Send кнопка ──────────────────────────────────────────────────────────── */
 .aray-chat-send-btn {
   background: hsl(var(--secondary));
   border: 1.5px solid hsl(var(--border));
-  color: hsl(var(--muted-foreground) / 0.4);
+  color: hsl(var(--muted-foreground) / 0.35);
   border-radius: 0.75rem;
-  transition: all 0.18s;
+  transition: all 0.2s;
 }
+.aray-chat-send-btn:active { transform: scale(0.92); }
 .aray-chat-send-btn[data-ready="true"] {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.80));
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.75));
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 2px 14px hsl(var(--primary) / 0.35);
+  box-shadow: 0 3px 16px hsl(var(--primary) / 0.30);
 }
 .aray-nature-mode .aray-chat-send-btn {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.09) !important;
-  color: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.20) !important;
   box-shadow: none !important;
 }
 .aray-nature-mode .aray-chat-send-btn[data-ready="true"] {
-  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.80)) !important;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary) / 0.75)) !important;
   border-color: transparent !important;
   color: #fff !important;
-  box-shadow: 0 2px 14px hsl(var(--primary) / 0.35) !important;
+  box-shadow: 0 3px 16px hsl(var(--primary) / 0.30) !important;
 }
 
-/* ── Быстрые кнопки-вопросы ───────────────────────────────────────────────── */
-.aray-quick-btn {
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
-  color: hsl(var(--muted-foreground));
-  border-radius: 0.75rem;
-  font-size: 12px;
-  font-weight: 500;
-  transition: background 0.18s, border-color 0.18s, color 0.18s;
+/* ── Кнопка генерации (sparkles) ──────────────────────────────────────────── */
+.aray-gen-btn {
+  color: hsl(var(--muted-foreground) / 0.35);
+  border-radius: 8px;
+  transition: color 0.2s, background 0.2s;
 }
-.aray-quick-btn:hover {
-  border-color: hsl(var(--primary) / 0.45);
+.aray-gen-btn:hover {
   color: hsl(var(--primary));
   background: hsl(var(--primary) / 0.08);
 }
-.aray-nature-mode .aray-quick-btn {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border-color: rgba(255, 255, 255, 0.10) !important;
-  color: rgba(255, 255, 255, 0.72) !important;
+.dark .aray-nature-mode .aray-gen-btn {
+  color: rgba(255, 255, 255, 0.25) !important;
 }
-.aray-nature-mode .aray-quick-btn:hover {
-  border-color: hsl(var(--primary) / 0.45) !important;
+.dark .aray-nature-mode .aray-gen-btn:hover {
   color: hsl(var(--primary)) !important;
   background: hsl(var(--primary) / 0.12) !important;
 }
 
-/* ── Кнопки управления (сброс, свернуть) ──────────────────────────────────── */
+/* ── Меню генерации ───────────────────────────────────────────────────────── */
+.aray-gen-menu {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  min-width: 160px;
+}
+.dark .aray-nature-mode .aray-gen-menu {
+  background: rgba(20, 20, 25, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4) !important;
+}
+.aray-gen-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: hsl(var(--foreground));
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.aray-gen-menu-item:hover {
+  background: hsl(var(--primary) / 0.08);
+  color: hsl(var(--primary));
+}
+.dark .aray-nature-mode .aray-gen-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.dark .aray-nature-mode .aray-gen-menu-item:hover {
+  background: hsl(var(--primary) / 0.14) !important;
+  color: hsl(var(--primary)) !important;
+}
+
+/* ── Быстрые кнопки ──────────────────────────────────────────────────────── */
+.aray-quick-btn {
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.aray-quick-btn:hover {
+  border-color: hsl(var(--primary) / 0.40);
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.06);
+  box-shadow: 0 2px 12px hsl(var(--primary) / 0.08);
+}
+.aray-quick-btn:active { transform: scale(0.95); }
+.aray-quick-btn-special {
+  border-color: hsl(var(--primary) / 0.25) !important;
+  color: hsl(var(--primary)) !important;
+  background: hsl(var(--primary) / 0.05) !important;
+}
+.aray-quick-btn-special:hover {
+  background: hsl(var(--primary) / 0.12) !important;
+  box-shadow: 0 2px 16px hsl(var(--primary) / 0.12) !important;
+}
+.aray-nature-mode .aray-quick-btn {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.68) !important;
+}
+.aray-nature-mode .aray-quick-btn:hover {
+  border-color: hsl(var(--primary) / 0.40) !important;
+  color: hsl(var(--primary)) !important;
+  background: hsl(var(--primary) / 0.10) !important;
+}
+.aray-nature-mode .aray-quick-btn-special {
+  border-color: hsl(var(--primary) / 0.22) !important;
+  color: hsl(var(--primary)) !important;
+}
+
+/* ── Кнопки управления (reset, collapse) ──────────────────────────────────── */
 .aray-chat-ctrl-btn {
   border-radius: 0.75rem;
-  color: hsl(var(--muted-foreground) / 0.45);
-  transition: background 0.15s, color 0.15s;
+  color: hsl(var(--muted-foreground) / 0.40);
+  transition: background 0.15s, color 0.15s, transform 0.15s;
 }
 .aray-chat-ctrl-btn:hover {
   color: hsl(var(--foreground));
   background: hsl(var(--secondary));
+  transform: scale(1.05);
 }
-.aray-nature-mode .aray-chat-ctrl-btn { color: rgba(255, 255, 255, 0.28) !important; }
+.aray-chat-ctrl-btn:active { transform: scale(0.92); }
+.aray-nature-mode .aray-chat-ctrl-btn { color: rgba(255, 255, 255, 0.25) !important; }
 .aray-nature-mode .aray-chat-ctrl-btn:hover {
-  color: rgba(255, 255, 255, 0.65) !important;
-  background: rgba(255, 255, 255, 0.07) !important;
+  color: rgba(255, 255, 255, 0.60) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* ── Кнопка "Озвучить" ─────────────────────────────────────────────────────── */
+/* ── Кнопка «Озвучить» ────────────────────────────────────────────────────── */
 .aray-speak-btn {
-  color: hsl(var(--muted-foreground) / 0.4);
+  color: hsl(var(--muted-foreground) / 0.35);
   border-radius: 9999px;
-  transition: opacity 0.15s, color 0.15s;
+  transition: opacity 0.15s, color 0.2s;
   display: flex;
   align-items: center;
   gap: 4px;
 }
-.aray-speak-btn:hover { opacity: 0.85; }
+.aray-speak-btn:hover { opacity: 0.85; color: hsl(var(--muted-foreground) / 0.6); }
 .aray-speak-btn-active { color: hsl(var(--primary)) !important; }
-.aray-nature-mode .aray-speak-btn { color: rgba(255, 255, 255, 0.30) !important; }
+.aray-nature-mode .aray-speak-btn { color: rgba(255, 255, 255, 0.25) !important; }
+.aray-nature-mode .aray-speak-btn:hover { color: rgba(255, 255, 255, 0.50) !important; }
 .aray-nature-mode .aray-speak-btn-active { color: hsl(var(--primary)) !important; }
 
-/* ── Метка "Арай помнит" ───────────────────────────────────────────────────── */
-.aray-chat-label { color: hsl(var(--muted-foreground) / 0.35); }
-.aray-nature-mode .aray-chat-label { color: rgba(255, 255, 255, 0.14) !important; }
+/* ── Метка внизу ──────────────────────────────────────────────────────────── */
+.aray-chat-label { color: hsl(var(--muted-foreground) / 0.30); }
+.aray-nature-mode .aray-chat-label { color: rgba(255, 255, 255, 0.12) !important; }
 
-/* ── Индикатор набора (три точки) ──────────────────────────────────────────── */
+/* ── Typing indicator dots ────────────────────────────────────────────────── */
 .aray-typing-dot {
-  width: 8px; height: 8px;
-  background: hsl(var(--primary) / 0.65);
+  width: 7px; height: 7px;
+  background: hsl(var(--primary) / 0.60);
   border-radius: 9999px;
 }
-.aray-nature-mode .aray-typing-dot { background: hsl(var(--primary) / 0.75) !important; }
+.aray-nature-mode .aray-typing-dot { background: hsl(var(--primary) / 0.70) !important; }
 
-/* ── Курсор стриминга ──────────────────────────────────────────────────────── */
+/* ── Streaming cursor ─────────────────────────────────────────────────────── */
 .aray-stream-cursor {
   display: inline-block;
   width: 2px; height: 14px;
@@ -2377,22 +2553,121 @@ a:focus-visible {
 }
 @keyframes aray-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
-/* ── Пульс микрофона ───────────────────────────────────────────────────────── */
-@keyframes aray-mic-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35); }
-  50%       { box-shadow: 0 0 0 7px hsl(var(--primary) / 0.00); }
+/* ── Media preview (images) ───────────────────────────────────────────────── */
+.aray-media-preview {
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 280px;
+}
+.aray-media-img {
+  width: 100%;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.aray-media-img:hover { transform: scale(1.02); }
+@media (max-width: 640px) {
+  .aray-media-preview { max-width: 220px; }
 }
 
-/* ── Online индикатор ──────────────────────────────────────────────────────── */
+/* ── Generating shimmer ───────────────────────────────────────────────────── */
+.aray-generating-indicator {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border) / 0.4);
+}
+.aray-generating-shimmer {
+  position: absolute;
+  top: 0; left: -100%; width: 200%; height: 100%;
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.08), transparent);
+  animation: aray-shimmer 1.5s ease-in-out infinite;
+}
+.dark .aray-nature-mode .aray-generating-indicator {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+.dark .aray-nature-mode .aray-generating-shimmer {
+  background: linear-gradient(90deg, transparent, hsl(var(--primary) / 0.12), transparent) !important;
+}
+@keyframes aray-shimmer {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+/* ── Scrollbar messages area ──────────────────────────────────────────────── */
+.aray-messages-area::-webkit-scrollbar { width: 4px; }
+.aray-messages-area::-webkit-scrollbar-track { background: transparent; }
+.aray-messages-area::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.15);
+  border-radius: 4px;
+}
+.aray-messages-area::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.25);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes aray-mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.30); }
+  50%       { box-shadow: 0 0 0 7px hsl(var(--primary) / 0.00); }
+}
+@keyframes aray-pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scale(1.7); }
+  50%       { opacity: 0.7; transform: scale(2.0); }
+}
+@keyframes aray-speak-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1.6); }
+  25%       { opacity: 0.6; transform: scale(2.1); }
+  50%       { opacity: 0.4; transform: scale(1.8); }
+  75%       { opacity: 0.7; transform: scale(2.2); }
+}
+
+/* ── Online dot ───────────────────────────────────────────────────────────── */
 .aray-online-dot {
-  width: 6px; height: 6px;
+  width: 7px; height: 7px;
   background: #34d399;
   border-radius: 9999px;
   animation: aray-pulse-dot 2s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(52, 211, 153, 0.4);
 }
 @keyframes aray-pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.7; transform: scale(0.85); }
+  50%       { opacity: 0.65; transform: scale(0.8); }
+}
+
+/* ── Mobile optimizations ─────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .aray-chat-bubble-user,
+  .aray-chat-bubble-assistant {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  .aray-chat-panel {
+    top: 50px;
+  }
+  .aray-capability-pill {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+  .aray-section-badge {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+}
+
+/* ── Touch-friendly tap targets on mobile ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .aray-chat-action-btn,
+  .aray-chat-send-btn,
+  .aray-chat-ctrl-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .aray-quick-btn {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
 }
 
 /* ══ Пилл-кнопки — единый стиль фильтров по всей админке ═══════════════════ */
