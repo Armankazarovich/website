@@ -41,12 +41,13 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 15m
-          envs: ANTHROPIC_API_KEY,ELEVENLABS_API_KEY
+          envs: ANTHROPIC_API_KEY,ELEVENLABS_API_KEY,GOOGLE_AI_API_KEY
           script: |
             set -eo pipefail
             APP_DIR="/home/armankmb/pilo-rus/app"
@@ -75,6 +76,14 @@ jobs:
                 echo "ELEVENLABS_API_KEY=\"$ELEVENLABS_API_KEY\"" >> .env
               fi
               echo "✅ ELEVENLABS_API_KEY set"
+            fi
+            if [ -n "$GOOGLE_AI_API_KEY" ]; then
+              if grep -q "^GOOGLE_AI_API_KEY=" .env 2>/dev/null; then
+                sed -i "s|^GOOGLE_AI_API_KEY=.*|GOOGLE_AI_API_KEY=\"$GOOGLE_AI_API_KEY\"|" .env
+              else
+                echo "GOOGLE_AI_API_KEY=\"$GOOGLE_AI_API_KEY\"" >> .env
+              fi
+              echo "✅ GOOGLE_AI_API_KEY set"
             fi
 
             echo "📦 Installing dependencies..."
