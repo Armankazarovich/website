@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 
 async function checkAdmin() {
   const session = await auth();
-  return session && session.user.role === "ADMIN";
+  return session && (session.user as any).role === "ADMIN";
 }
 
 export async function GET() {

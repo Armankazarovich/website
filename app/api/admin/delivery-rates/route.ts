@@ -8,7 +8,7 @@ const STAFF_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "
 
 export async function GET() {
   const session = await auth();
-  if (!session || !STAFF_ROLES.includes(session.user.role)) {
+  if (!session || !STAFF_ROLES.includes((session.user as any).role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const rates = await prisma.deliveryRate.findMany({ orderBy: { sortOrder: "asc" } });
@@ -17,7 +17,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const body = await req.json();
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || (session.user as any).role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const { searchParams } = new URL(req.url);

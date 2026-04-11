@@ -28,7 +28,7 @@ export function AdminLangPickerInline() {
           style={
             lang === l.code
               ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
-              : { background: "var(--admin-popup-bg, rgba(255,255,255,0.06))", border: "1.5px solid var(--admin-popup-border, rgba(255,255,255,0.08))" }
+              : { background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.08)" }
           }
         >
           <span className="text-2xl leading-none">{l.flag}</span>
@@ -83,11 +83,27 @@ export function AdminLangPicker() {
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-150 glass-popup"
-          style={{ borderRadius: "20px", width: "260px" }}>
+        <div className="absolute top-full right-0 mt-2 z-50 animate-in slide-in-from-top-2 fade-in duration-150"
+          style={classic ? {
+            background: "hsl(var(--card))",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: "20px",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+            width: "260px",
+          } : {
+            background: "rgba(12,12,14,0.96)",
+            backdropFilter: "blur(32px) saturate(200%)",
+            WebkitBackdropFilter: "blur(32px) saturate(200%)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "20px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+            width: "260px",
+          }}>
 
-          <div className="px-4 pt-3 pb-2 glass-popup-divider" style={{ borderBottom: "1px solid" }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] glass-text-label">
+          <div className="px-4 pt-3 pb-2"
+            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em]"
+              style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}>
               Язык / Language
             </p>
           </div>
@@ -104,7 +120,7 @@ export function AdminLangPicker() {
                     ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
                     : classic
                     ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
-                    : { background: "var(--admin-popup-bg, rgba(255,255,255,0.06))", border: "1.5px solid var(--admin-popup-border, rgba(255,255,255,0.08))" }
+                    : { background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.08)" }
                 }
               >
                 <span className="text-2xl leading-none group-hover:scale-110 transition-transform">{l.flag}</span>

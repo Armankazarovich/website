@@ -62,9 +62,6 @@ model Product {
   updatedAt   DateTime         @updatedAt
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
-
-  @@index([categoryId])
-  @@index([active])
 }
 
 model ProductVariant {
@@ -79,8 +76,6 @@ model ProductVariant {
   costPrice     CostPrice?
   orderItems    OrderItem[]
   product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
 }
 
 model Order {
@@ -107,10 +102,6 @@ model Order {
   user              User?       @relation(fields: [userId], references: [id])
   items             OrderItem[]
   tasks             Task[]
-
-  @@index([userId, createdAt])
-  @@index([status, deletedAt])
-  @@index([createdAt])
 }
 
 model OrderItem {
@@ -297,10 +288,6 @@ model Lead {
   deletedAt        DateTime?
   assignee         User?          @relation("LeadAssignee", fields: [assigneeId], references: [id])
   activities       LeadActivity[]
-
-  @@index([assigneeId, stage])
-  @@index([stage])
-  @@index([createdAt])
 }
 
 model LeadActivity {
@@ -314,8 +301,6 @@ model LeadActivity {
   createdAt    DateTime         @default(now())
   lead         Lead             @relation(fields: [leadId], references: [id], onDelete: Cascade)
   user         User?            @relation("LeadActivityUser", fields: [userId], references: [id])
-
-  @@index([leadId])
 }
 
 model Workflow {
@@ -480,24 +465,4 @@ enum ArayLevel {
   BUILDER
   MASTER
   PARTNER
-}
-
-// ── Учёт токенов ARAY ───────────────────────────────────────────────────────
-// ARAY бесплатен для всех. Мы платим Anthropic из 50% дохода ARAY.
-// Эта таблица — для отслеживания расходов и оптимизации.
-model ArayTokenLog {
-  id           String   @id @default(cuid())
-  userId       String?  // null = гость
-  sessionId    String?  // aray_sid из cookie
-  model        String   // claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-6
-  tier         String   // haiku, sonnet, opus
-  inputTokens  Int      @default(0)
-  outputTokens Int      @default(0)
-  costUsd      Float    @default(0) // Расчётная стоимость в $
-  feature      String   @default("chat") // chat, tts, image, search
-  createdAt    DateTime @default(now())
-
-  @@index([userId, createdAt])
-  @@index([createdAt])
-  @@index([tier, createdAt])
 }

@@ -10,7 +10,7 @@ import { ClearTrashButton } from "./clear-trash-button";
 
 export default async function OrdersTrashPage() {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") redirect("/admin/orders");
+  if (!session || (session.user as any).role !== "ADMIN") redirect("/admin/orders");
 
   const deleted = await prisma.order.findMany({
     where: { deletedAt: { not: null } },
