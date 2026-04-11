@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ══════════════════════════════════════════════════════════════
+   GOOGLE TRANSLATE — прячем стандартный UI, оставляем перевод
+   ══════════════════════════════════════════════════════════════ */
+.goog-te-banner-frame,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-tooltip,
+.goog-tooltip:hover,
+.goog-text-highlight {
+  display: none !important;
+}
+.goog-te-gadget { display: none !important; }
+/* Убираем сдвиг body от Google Translate banner */
+body { top: 0 !important; }
+/* Убираем подчёркивания Google Translate */
+.goog-te-menu-value span { text-decoration: none !important; }
+/* Сохраняем наши стили при переводе */
+font[style], font { font-size: inherit !important; font-family: inherit !important; }
+.translated-ltr, .translated-rtl { font-family: inherit !important; }
+
 @layer base {
   :root {
     --mobile-nav-bg: rgba(255, 255, 255, 0.82);

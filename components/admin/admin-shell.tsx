@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
-import { NeuralBg } from "@/components/admin/neural-bg";
-import { CursorGlow } from "@/components/admin/cursor-glow";
+import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdminPageHelp, LazyAdminTour } from "@/components/admin/lazy-components";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -241,7 +240,6 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-import { AdminVideoBg } from "@/components/admin/admin-video-bg";
 import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { useTheme } from "next-themes";
@@ -249,11 +247,9 @@ import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 import { AdminPushPrompt } from "@/components/admin/admin-push-prompt";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { AdminAray } from "@/components/admin/admin-aray";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminSidebarWeather } from "@/components/admin/admin-dashboard-widgets";
-import { AdminPageHelp } from "@/components/admin/admin-page-help";
-import { AdminTour, TourTriggerButton } from "@/components/admin/admin-tour";
+import { TourTriggerButton } from "@/components/admin/admin-tour";
 
 // ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
 function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
@@ -757,9 +753,11 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
-      {bgMode === "video" && <AdminVideoBg enabled />}
-      {bgMode === "classic" && <NeuralBg enabled />}
-      <CursorGlow />
+      {/* Google Translate скрытый контейнер — переводит страницу целиком */}
+      <div id="google_translate_element" style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }} />
+      {bgMode === "video" && <LazyAdminVideoBg enabled />}
+      {bgMode === "classic" && <LazyNeuralBg enabled />}
+      <LazyCursorGlow />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
@@ -1053,7 +1051,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
       {/* ── Арай — фиксированная панель снизу на всех страницах ── */}
       {/* AdminPageHelp и AdminTour убраны — ARAY обучает и помогает вместо них */}
-      <AdminAray staffName={email?.split("@")[0] || "Коллега"} userRole={role} />
+      <LazyAdminAray staffName={email?.split("@")[0] || "Коллега"} userRole={role} />
     </div>
   );
 }

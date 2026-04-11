@@ -159,6 +159,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
+        <link rel="preload" href="/fonts/Roboto-Regular.woff" as="font" type="font/woff" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/Roboto-Bold.woff" as="font" type="font/woff" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://videos.pexels.com" />
+        <link rel="dns-prefetch" href="https://videos.pexels.com" />
+        <link rel="preconnect" href="https://translate.google.com" />
+        <link rel="preconnect" href="https://translate.googleapis.com" />
+        <link rel="dns-prefetch" href="https://translate.google.com" />
         <link rel="icon" href="/icons/aray-192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/aray-96.png" type="image/png" sizes="96x96" />
         <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
