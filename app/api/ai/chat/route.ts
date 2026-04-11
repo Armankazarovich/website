@@ -13,6 +13,7 @@ import {
   extractAndUpdateMemory,
   updateCustomerLevel,
 } from "@/lib/aray-memory";
+import { classifyQuery, getModelConfig, getBrevityInstruction, estimateCost } from "@/lib/aray-router";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -45,9 +46,9 @@ export async function POST(req: NextRequest) {
 
     // ── Идентификация ────────────────────────────────────────────────────────
     const session = await auth();
-    const userId = (session?.user as any)?.id as string | undefined;
-    const sessionRole = (session?.user as any)?.role as string | undefined;
-    const sessionName = (session?.user as any)?.name as string | undefined;
+    const userId = session?.user?.id;
+    const sessionRole = session?.user?.role;
+    const sessionName = session?.user?.name ?? undefined;
 
     const cookieStore = await cookies();
     let sessionId = cookieStore.get("aray_sid")?.value;
@@ -85,7 +86,12 @@ export async function POST(req: NextRequest) {
         ? { page: context?.page }
         : { page: context?.page, productName: context?.productName, cartTotal: context?.cartTotal, project: savedProject }
     );
-    const systemPrompt = basePrompt + memoryContext;
+    // ── Умная маршрутизация модели ──────────────────────────────────────────
+    const lastUserMessage = formattedMessages.filter(m => m.role === "user").pop()?.content || "";
+    const hasTools = arayRole !== "customer" || !!context?.productName;
+    const tier = classifyQuery(lastUserMessage, { role: arayRole, hasTools, messageCount: formattedMessages.length });
+    const modelConfig = getModelConfig(tier);
+    const systemPrompt = basePrompt + memoryContext + getBrevityInstruction(tier);
 
     // ── Сообщения ────────────────────────────────────────────────────────────
     type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -111,11 +117,11 @@ export async function POST(req: NextRequest) {
       try {
         // ── Первый вызов (может вернуть tool_use) ────────────────────────────
         const firstStream = anthropic.messages.stream({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1500,
+          model: modelConfig.model,
+          max_tokens: modelConfig.maxTokens,
           system: systemPrompt,
           messages: formattedMessages,
-          tools: ARAY_TOOLS as any,
+          ...(tier !== "haiku" ? { tools: ARAY_TOOLS as any } : {}),
         });
 
         for await (const event of firstStream) {
@@ -139,8 +145,8 @@ export async function POST(req: NextRequest) {
           );
 
           const followStream = anthropic.messages.stream({
-            model: "claude-sonnet-4-6",
-            max_tokens: 1500,
+            model: modelConfig.model,
+            max_tokens: modelConfig.maxTokens,
             system: systemPrompt,
             messages: [
               ...formattedMessages,
@@ -166,9 +172,26 @@ export async function POST(req: NextRequest) {
           ]).catch(err => console.error("[ArayMemory]", err));
         }
 
+        // ── Логирование токенов в фоне ──────────────────────────────────────
+        const inputTokensEst = Math.ceil(systemPrompt.length / 4) + formattedMessages.reduce((s, m) => s + Math.ceil(m.content.length / 4), 0);
+        const outputTokensEst = Math.ceil(fullText.length / 4);
+        const costEst = estimateCost(tier, inputTokensEst, outputTokensEst);
+        (prisma as any).arayTokenLog?.create({
+          data: {
+            userId: userId || null,
+            sessionId: sessionId || null,
+            model: modelConfig.model,
+            tier,
+            inputTokens: inputTokensEst,
+            outputTokens: outputTokensEst,
+            costUsd: costEst,
+            feature: "chat",
+          },
+        }).catch((err: unknown) => console.error("[ArayTokenLog]", err));
+
         // Мета-данные в конце
         await writer.write(encoder.encode(
-          `\n__ARAY_META__${JSON.stringify({ role: arayRole, memoryId: memory?.id })}`
+          `\n__ARAY_META__${JSON.stringify({ role: arayRole, model: tier, memoryId: memory?.id })}`
         ));
 
       } catch (err: any) {

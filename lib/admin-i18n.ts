@@ -48,7 +48,8 @@ export type TranslationKey =
   | "larger" | "auto_device" | "sales" | "products" | "marketing"
   | "system" | "search" | "logout" | "light_theme" | "dark_theme"
   | "language" | "save" | "cancel" | "delete" | "edit" | "add"
-  | "loading" | "error" | "success" | "confirm" | "back";
+  | "loading" | "error" | "success" | "confirm" | "back"
+  | "bg_panel" | "bg_classic" | "bg_photo" | "bg_video" | "font_size";
 
 type Translations = Record<TranslationKey, string>;
 
@@ -71,6 +72,7 @@ const T: Record<LangCode, Translations> = {
     language: "Язык", save: "Сохранить", cancel: "Отмена", delete: "Удалить",
     edit: "Редактировать", add: "Добавить", loading: "Загрузка...",
     error: "Ошибка", success: "Успешно", confirm: "Подтвердить", back: "Назад",
+    bg_panel: "Фон панели", bg_classic: "Классика", bg_photo: "Фото", bg_video: "Видео", font_size: "Размер шрифта",
   },
   en: {
     dashboard: "Dashboard", orders: "Orders", crm: "CRM — Leads",
@@ -90,6 +92,7 @@ const T: Record<LangCode, Translations> = {
     language: "Language", save: "Save", cancel: "Cancel", delete: "Delete",
     edit: "Edit", add: "Add", loading: "Loading...",
     error: "Error", success: "Success", confirm: "Confirm", back: "Back",
+    bg_panel: "Panel Background", bg_classic: "Classic", bg_photo: "Photo", bg_video: "Video", font_size: "Font Size",
   },
   kk: {
     dashboard: "Бақылау тақтасы", orders: "Тапсырыстар", crm: "CRM — Лидтер",
@@ -109,6 +112,7 @@ const T: Record<LangCode, Translations> = {
     language: "Тіл", save: "Сақтау", cancel: "Болдырмау", delete: "Жою",
     edit: "Өңдеу", add: "Қосу", loading: "Жүктелуде...",
     error: "Қате", success: "Сәтті", confirm: "Растау", back: "Артқа",
+    bg_panel: "Панель фоны", bg_classic: "Классика", bg_photo: "Фото", bg_video: "Видео", font_size: "Қаріп өлшемі",
   },
   uk: {
     dashboard: "Дашборд", orders: "Замовлення", crm: "CRM — Ліди",
@@ -128,6 +132,7 @@ const T: Record<LangCode, Translations> = {
     language: "Мова", save: "Зберегти", cancel: "Скасувати", delete: "Видалити",
     edit: "Редагувати", add: "Додати", loading: "Завантаження...",
     error: "Помилка", success: "Успішно", confirm: "Підтвердити", back: "Назад",
+    bg_panel: "Фон панелі", bg_classic: "Класика", bg_photo: "Фото", bg_video: "Відео", font_size: "Розмір шрифту",
   },
   uz: {
     dashboard: "Boshqaruv paneli", orders: "Buyurtmalar", crm: "CRM — Lidlar",
@@ -147,6 +152,7 @@ const T: Record<LangCode, Translations> = {
     language: "Til", save: "Saqlash", cancel: "Bekor qilish", delete: "O'chirish",
     edit: "Tahrirlash", add: "Qo'shish", loading: "Yuklanmoqda...",
     error: "Xato", success: "Muvaffaqiyat", confirm: "Tasdiqlash", back: "Orqaga",
+    bg_panel: "Panel foni", bg_classic: "Klassik", bg_photo: "Foto", bg_video: "Video", font_size: "Shrift hajmi",
   },
   az: {
     dashboard: "İdarə paneli", orders: "Sifarişlər", crm: "CRM — Lidlər",
@@ -166,6 +172,7 @@ const T: Record<LangCode, Translations> = {
     language: "Dil", save: "Saxla", cancel: "Ləğv et", delete: "Sil",
     edit: "Redaktə et", add: "Əlavə et", loading: "Yüklənir...",
     error: "Xəta", success: "Uğurlu", confirm: "Təsdiq", back: "Geri",
+    bg_panel: "Panel fonu", bg_classic: "Klassik", bg_photo: "Foto", bg_video: "Video", font_size: "Şrift ölçüsü",
   },
   hy: {
     dashboard: "Վահանակ", orders: "Պատվերներ", crm: "CRM — Լիդեր",
@@ -185,6 +192,7 @@ const T: Record<LangCode, Translations> = {
     language: "Լեզու", save: "Պահել", cancel: "Չեղարկել", delete: "Ջնջել",
     edit: "Խմբագրել", add: "Ավելացնել", loading: "Բեռնվում է...",
     error: "Սխալ", success: "Հաջողություն", confirm: "Հաստատել", back: "Հետ",
+    bg_panel: "Վահանակի ֆdelays", bg_classic: "Դասական", bg_photo: "Ֆoto", bg_video: "Տideo", font_size: "Տառաչափ",
   },
   tr: {
     dashboard: "Gösterge Paneli", orders: "Siparişler", crm: "CRM — Adaylar",
@@ -204,6 +212,7 @@ const T: Record<LangCode, Translations> = {
     language: "Dil", save: "Kaydet", cancel: "İptal", delete: "Sil",
     edit: "Düzenle", add: "Ekle", loading: "Yükleniyor...",
     error: "Hata", success: "Başarılı", confirm: "Onayla", back: "Geri",
+    bg_panel: "Panel Arkaplanı", bg_classic: "Klasik", bg_photo: "Fotoğraf", bg_video: "Video", font_size: "Yazı Boyutu",
   },
   de: {
     dashboard: "Dashboard", orders: "Bestellungen", crm: "CRM — Leads",
@@ -223,6 +232,7 @@ const T: Record<LangCode, Translations> = {
     language: "Sprache", save: "Speichern", cancel: "Abbrechen", delete: "Löschen",
     edit: "Bearbeiten", add: "Hinzufügen", loading: "Lädt...",
     error: "Fehler", success: "Erfolg", confirm: "Bestätigen", back: "Zurück",
+    bg_panel: "Panel-Hintergrund", bg_classic: "Klassisch", bg_photo: "Foto", bg_video: "Video", font_size: "Schriftgröße",
   },
   fr: {
     dashboard: "Tableau de bord", orders: "Commandes", crm: "CRM — Leads",
@@ -242,6 +252,7 @@ const T: Record<LangCode, Translations> = {
     language: "Langue", save: "Sauvegarder", cancel: "Annuler", delete: "Supprimer",
     edit: "Modifier", add: "Ajouter", loading: "Chargement...",
     error: "Erreur", success: "Succès", confirm: "Confirmer", back: "Retour",
+    bg_panel: "Fond du panneau", bg_classic: "Classique", bg_photo: "Photo", bg_video: "Vidéo", font_size: "Taille de police",
   },
   es: {
     dashboard: "Panel de control", orders: "Pedidos", crm: "CRM — Leads",
@@ -261,6 +272,7 @@ const T: Record<LangCode, Translations> = {
     language: "Idioma", save: "Guardar", cancel: "Cancelar", delete: "Eliminar",
     edit: "Editar", add: "Agregar", loading: "Cargando...",
     error: "Error", success: "Éxito", confirm: "Confirmar", back: "Atrás",
+    bg_panel: "Fondo del panel", bg_classic: "Clásico", bg_photo: "Foto", bg_video: "Video", font_size: "Tamaño de fuente",
   },
   ar: {
     dashboard: "لوحة التحكم", orders: "الطلبات", crm: "CRM — العملاء المحتملون",
@@ -280,6 +292,7 @@ const T: Record<LangCode, Translations> = {
     language: "اللغة", save: "حفظ", cancel: "إلغاء", delete: "حذف",
     edit: "تعديل", add: "إضافة", loading: "جاري التحميل...",
     error: "خطأ", success: "نجاح", confirm: "تأكيد", back: "رجوع",
+    bg_panel: "خلفية اللوحة", bg_classic: "كلاسيكي", bg_photo: "صور", bg_video: "فيديو", font_size: "حجم الخط",
   },
   zh: {
     dashboard: "仪表盘", orders: "订单", crm: "CRM — 潜在客户",
@@ -299,6 +312,7 @@ const T: Record<LangCode, Translations> = {
     language: "语言", save: "保存", cancel: "取消", delete: "删除",
     edit: "编辑", add: "添加", loading: "加载中...",
     error: "错误", success: "成功", confirm: "确认", back: "返回",
+    bg_panel: "面板背景", bg_classic: "经典", bg_photo: "照片", bg_video: "视频", font_size: "字体大小",
   },
   hi: {
     dashboard: "डैशबोर्ड", orders: "ऑर्डर", crm: "CRM — लीड",
@@ -318,6 +332,7 @@ const T: Record<LangCode, Translations> = {
     language: "भाषा", save: "सहेजें", cancel: "रद्द करें", delete: "हटाएँ",
     edit: "संपादित करें", add: "जोड़ें", loading: "लोड हो रहा है...",
     error: "त्रुटि", success: "सफलता", confirm: "पुष्टि करें", back: "वापस",
+    bg_panel: "पैनल पृष्ठभूमि", bg_classic: "क्लासिक", bg_photo: "फोटो", bg_video: "वीडियो", font_size: "फ़ॉन्ट आकार",
   },
   pt: {
     dashboard: "Painel de controlo", orders: "Pedidos", crm: "CRM — Leads",
@@ -337,6 +352,7 @@ const T: Record<LangCode, Translations> = {
     language: "Idioma", save: "Salvar", cancel: "Cancelar", delete: "Excluir",
     edit: "Editar", add: "Adicionar", loading: "Carregando...",
     error: "Erro", success: "Sucesso", confirm: "Confirmar", back: "Voltar",
+    bg_panel: "Fundo do painel", bg_classic: "Clássico", bg_photo: "Foto", bg_video: "Vídeo", font_size: "Tamanho da fonte",
   },
   ja: {
     dashboard: "ダッシュボード", orders: "注文", crm: "CRM — リード",
@@ -356,6 +372,7 @@ const T: Record<LangCode, Translations> = {
     language: "言語", save: "保存", cancel: "キャンセル", delete: "削除",
     edit: "編集", add: "追加", loading: "読み込み中...",
     error: "エラー", success: "成功", confirm: "確認", back: "戻る",
+    bg_panel: "パネル背景", bg_classic: "クラシック", bg_photo: "写真", bg_video: "動画", font_size: "フォントサイズ",
   },
   ko: {
     dashboard: "대시보드", orders: "주문", crm: "CRM — 리드",
@@ -375,6 +392,7 @@ const T: Record<LangCode, Translations> = {
     language: "언어", save: "저장", cancel: "취소", delete: "삭제",
     edit: "편집", add: "추가", loading: "로딩 중...",
     error: "오류", success: "성공", confirm: "확인", back: "뒤로",
+    bg_panel: "패널 배경", bg_classic: "클래식", bg_photo: "사진", bg_video: "동영상", font_size: "글꼴 크기",
   },
   pl: {
     dashboard: "Panel główny", orders: "Zamówienia", crm: "CRM — Leady",
@@ -394,6 +412,7 @@ const T: Record<LangCode, Translations> = {
     language: "Język", save: "Zapisz", cancel: "Anuluj", delete: "Usuń",
     edit: "Edytuj", add: "Dodaj", loading: "Ładowanie...",
     error: "Błąd", success: "Sukces", confirm: "Potwierdź", back: "Wstecz",
+    bg_panel: "Tło panelu", bg_classic: "Klasyczny", bg_photo: "Zdjęcie", bg_video: "Wideo", font_size: "Rozmiar czcionki",
   },
   it: {
     dashboard: "Pannello di controllo", orders: "Ordini", crm: "CRM — Lead",
@@ -413,6 +432,7 @@ const T: Record<LangCode, Translations> = {
     language: "Lingua", save: "Salva", cancel: "Annulla", delete: "Elimina",
     edit: "Modifica", add: "Aggiungi", loading: "Caricamento...",
     error: "Errore", success: "Successo", confirm: "Conferma", back: "Indietro",
+    bg_panel: "Sfondo pannello", bg_classic: "Classico", bg_photo: "Foto", bg_video: "Video", font_size: "Dimensione carattere",
   },
   nl: {
     dashboard: "Dashboard", orders: "Bestellingen", crm: "CRM — Leads",
@@ -432,6 +452,7 @@ const T: Record<LangCode, Translations> = {
     language: "Taal", save: "Opslaan", cancel: "Annuleren", delete: "Verwijderen",
     edit: "Bewerken", add: "Toevoegen", loading: "Laden...",
     error: "Fout", success: "Succes", confirm: "Bevestigen", back: "Terug",
+    bg_panel: "Paneel achtergrond", bg_classic: "Klassiek", bg_photo: "Foto", bg_video: "Video", font_size: "Lettergrootte",
   },
 };
 
@@ -443,7 +464,4 @@ export function detectBrowserLang(): LangCode {
   if (typeof window === "undefined") return "ru";
   const nav = navigator.language?.split("-")[0] as LangCode;
   const supported = ADMIN_LANGUAGES.map(l => l.code);
-  return supported.includes(nav) ? nav : "ru";
-}
-
-export const LANG_LS_KEY = "aray-admin-lang";
+  return supported.includes(n

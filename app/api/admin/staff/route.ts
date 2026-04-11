@@ -11,13 +11,13 @@ const VALID_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"];
 
 async function checkAdmin() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   return session && (role === "ADMIN" || role === "SUPER_ADMIN");
 }
 
 async function checkSuperAdmin() {
   const session = await auth();
-  return session && (session.user as any)?.role === "SUPER_ADMIN";
+  return session && session.user?.role === "SUPER_ADMIN";
 }
 
 // GET — list all non-USER staff
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
   if (action === "delete") {
     const { userId } = body;
     const session = await auth();
-    if ((session?.user as any)?.id === userId)
+    if (session?.user?.id === userId)
       return NextResponse.json({ error: "Нельзя удалить свой аккаунт" }, { status: 400 });
 
     await prisma.user.delete({ where: { id: userId } });

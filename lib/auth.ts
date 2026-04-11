@@ -72,7 +72,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!valid) return null;
 
         // Block pending/suspended staff from logging in (SUPER_ADMIN always allowed)
-        if (user.role !== "USER" && user.role !== "SUPER_ADMIN" && (user as any).staffStatus && (user as any).staffStatus !== "ACTIVE") {
+        if (user.role !== "USER" && user.role !== "SUPER_ADMIN" && user.staffStatus && user.staffStatus !== "ACTIVE") {
           return null;
         }
 
@@ -81,7 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
-          staffStatus: (user as any).staffStatus ?? null,
+          staffStatus: user.staffStatus ?? null,
           rememberMe: rememberMe === "true",
         };
       },
@@ -90,18 +90,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.staffStatus = (user as any).staffStatus ?? null;
-        token.rememberMe = (user as any).rememberMe ?? false;
+        token.id = user.id!;
+        token.role = user.role;
+        token.staffStatus = user.staffStatus ?? null;
+        token.rememberMe = user.rememberMe ?? false;
       }
       return token;
     },
     session({ session, token }) {
       if (token) {
-        session.user.id = token.id as string;
-        (session.user as any).role = token.role;
-        (session.user as any).staffStatus = token.staffStatus ?? null;
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.staffStatus = token.staffStatus ?? null;
       }
       return session;
     },
