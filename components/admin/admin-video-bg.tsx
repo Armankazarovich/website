@@ -335,13 +335,13 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
         />
       )}
 
-      {/* ── Оверлеи для читабельности ── */}
-      <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "rgba(10,10,12,0.50)" }} />
-      <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.78) 0%, rgba(10,10,12,0.10) 42%, transparent 65%)" }} />
-      <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.40) 0%, transparent 30%)" }} />
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(10,10,12,0.32)" }} />
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.58) 0%, transparent 52%)" }} />
-      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.34) 0%, transparent 28%)" }} />
+      {/* ── Оверлеи — видео как тонкий фон, не отвлекает ── */}
+      <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "rgba(10,10,12,0.68)" }} />
+      <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.88) 0%, rgba(10,10,12,0.20) 50%, transparent 70%)" }} />
+      <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.55) 0%, transparent 35%)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "rgba(10,10,12,0.52)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.72) 0%, transparent 55%)" }} />
+      <div className="aray-photo-overlay-light absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.48) 0%, transparent 30%)" }} />
 
       {/* ── Лейбл ── */}
       <div className="absolute bottom-3 right-5 flex items-center gap-2" style={{ opacity: 0.22 }}>

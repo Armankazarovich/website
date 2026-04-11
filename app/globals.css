@@ -769,11 +769,11 @@ canvas,
 [data-theme="light"] .aray-nature-mode .bg-white,
 .light .aray-nature-mode .aray-stat-card,
 [data-theme="light"] .aray-nature-mode .aray-stat-card {
-  backdrop-filter: blur(28px) saturate(120%) brightness(0.75) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(120%) brightness(0.75) !important;
-  background: rgba(10, 10, 12, 0.38) !important;
-  border-color: rgba(255, 255, 255, 0.09) !important;
-  box-shadow: none !important;
+  backdrop-filter: blur(24px) saturate(110%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(110%) !important;
+  background: rgba(10, 10, 12, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
   color: rgba(255, 255, 255, 0.92) !important;
 }
 /* Большие цветные блоки → тёмное стекло (маленькие иконки w-8/h-8/h-9/h-10 исключены) */
@@ -2856,30 +2856,31 @@ a:focus-visible {
    ══════════════════════════════════════════════════════════════ */
 
 /* Светлая тема — белое матовое стекло с лёгкой прозрачностью */
+/* Светлая классика — почти непрозрачные карточки, лёгкий матовый эффект */
 .aray-classic-mode .bg-card {
-  backdrop-filter: blur(12px) saturate(110%);
-  -webkit-backdrop-filter: blur(12px) saturate(110%);
-  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.92) !important;
   border: 1px solid rgba(0, 0, 0, 0.06) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .aray-classic-mode .bg-card:hover {
-  background: rgba(255, 255, 255, 0.82) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
-/* Тёмная классика — тёмное стекло */
+/* Тёмная классика — плотные карточки с еле заметным стеклом */
 .dark.aray-classic-mode .bg-card,
 .dark .aray-classic-mode .bg-card {
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
-  background: rgba(18, 18, 22, 0.75) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(18, 18, 22, 0.92) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .dark.aray-classic-mode .bg-card:hover,
 .dark .aray-classic-mode .bg-card:hover {
-  background: rgba(22, 22, 28, 0.82) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(22, 22, 28, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
 }
 
 /* Классический фон body — лёгкий оттенок вместо чисто белого */

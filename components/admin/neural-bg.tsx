@@ -18,15 +18,15 @@ interface Props {
 }
 
 // ── Настройки сети ───────────────────────────────────────────────────────────
-const NODE_COUNT_DESKTOP = 65;
-const NODE_COUNT_MOBILE = 28;
-const MAX_LINK_DIST = 180;       // макс расстояние для линии между узлами
-const CURSOR_RADIUS = 220;       // радиус притяжения к курсору
-const CURSOR_STRENGTH = 0.035;   // сила притяжения (0-1)
-const NODE_SPEED = 0.25;         // скорость дрейфа узлов
-const LINE_WIDTH = 0.6;          // толщина линий
-const NODE_RADIUS = 1.5;         // радиус точки узла
-const PULSE_NODES = 4;           // сколько узлов "пульсируют" одновременно
+const NODE_COUNT_DESKTOP = 40;   // было 65 — меньше, спокойнее
+const NODE_COUNT_MOBILE = 18;    // было 28
+const MAX_LINK_DIST = 160;       // макс расстояние для линии
+const CURSOR_RADIUS = 200;       // радиус притяжения к курсору
+const CURSOR_STRENGTH = 0.025;   // сила притяжения (мягче)
+const NODE_SPEED = 0.18;         // скорость дрейфа (медленнее)
+const LINE_WIDTH = 0.4;          // толщина линий (тоньше)
+const NODE_RADIUS = 1.2;         // радиус точки узла
+const PULSE_NODES = 2;           // меньше пульсаций
 
 interface Node {
   x: number;
@@ -129,7 +129,7 @@ export function NeuralBg({ enabled = true }: Props) {
     }
 
     // ── Рисуем линии между близкими узлами ──────────────────────────────
-    const lineAlphaBase = isDark ? 0.15 : 0.10;
+    const lineAlphaBase = isDark ? 0.08 : 0.05;
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[i].x - nodes[j].x;
@@ -149,7 +149,7 @@ export function NeuralBg({ enabled = true }: Props) {
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
           ctx.lineTo(nodes[j].x, nodes[j].y);
-          ctx.strokeStyle = hslToRgba(brandHSL, Math.min(alpha * cursorBoost, isDark ? 0.35 : 0.22));
+          ctx.strokeStyle = hslToRgba(brandHSL, Math.min(alpha * cursorBoost, isDark ? 0.18 : 0.12));
           ctx.lineWidth = LINE_WIDTH;
           ctx.stroke();
         }
@@ -167,8 +167,8 @@ export function NeuralBg({ enabled = true }: Props) {
       const radius = NODE_RADIUS + cursorScale + pulseScale;
 
       // Альфа: ярче у курсора
-      const baseAlpha = isDark ? 0.35 : 0.25;
-      const alpha = Math.min(baseAlpha + cursorScale * 0.3 + pulseScale * 0.2, isDark ? 0.9 : 0.6);
+      const baseAlpha = isDark ? 0.18 : 0.12;
+      const alpha = Math.min(baseAlpha + cursorScale * 0.2 + pulseScale * 0.15, isDark ? 0.5 : 0.35);
 
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);

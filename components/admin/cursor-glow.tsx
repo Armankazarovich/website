@@ -19,18 +19,13 @@ const GLOW_SELECTORS = [
   "[data-glow]",
   "main .bg-card",
   ".aray-stat-card",
-  ".aray-sidebar a",
-  ".aray-sidebar button",
-  ".glass-card",
 ].join(",");
 
-// Радиус свечения — большой для мягкого эффекта
-const GLOW_RADIUS = 340;
-// Выход за границы карточки (px) — для мягкого "перелива"
-const GLOW_PADDING = 60;
-// Интенсивность (0-1)
-const GLOW_OPACITY_DARK = 0.18;
-const GLOW_OPACITY_LIGHT = 0.10;
+// Деликатное свечение — едва заметное, премиальное
+const GLOW_RADIUS = 260;
+const GLOW_PADDING = 40;
+const GLOW_OPACITY_DARK = 0.09;
+const GLOW_OPACITY_LIGHT = 0.05;
 
 export function CursorGlow() {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -67,10 +62,10 @@ export function CursorGlow() {
       .getPropertyValue("--brand-primary").trim();
     const color = brandHSL ? `hsl(${brandHSL})` : "hsl(27 91% 48%)";
 
-    // Мягкий многослойный градиент — ядро яркое, края плавно растворяются
-    overlay.style.background = `radial-gradient(${GLOW_RADIUS}px circle at ${x}px ${y}px, ${color} 0%, ${color} 8%, transparent 65%)`;
+    // Тонкий градиент — мягкое пятно, без резких переходов
+    overlay.style.background = `radial-gradient(${GLOW_RADIUS}px circle at ${x}px ${y}px, ${color} 0%, transparent 70%)`;
     overlay.style.opacity = String(opacity);
-    overlay.style.filter = "blur(8px)";
+    overlay.style.filter = "blur(12px)";
 
     if (!visibleRef.current) {
       overlay.style.visibility = "visible";
