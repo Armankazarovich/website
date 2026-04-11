@@ -28,6 +28,19 @@
     /* Brand colors as CSS vars for theme switching */
     --brand-sidebar: 20 64% 25%;
     --brand-primary: 27 91% 48%;
+    /* Admin popup/panel theme variables — light */
+    --admin-popup-bg: hsl(0 0% 100%);
+    --admin-popup-border: hsl(27 20% 88%);
+    --admin-popup-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04) inset;
+    --admin-popup-blur: blur(12px);
+    --admin-popup-text: hsl(20 14% 10%);
+    --admin-popup-text-muted: hsl(20 10% 45%);
+    --admin-popup-divider: hsl(27 20% 92%);
+    /* Mobile bottom nav — light */
+    --admin-dock-bg: rgba(255, 255, 255, 0.88);
+    --admin-dock-border: rgba(0, 0, 0, 0.08);
+    --admin-dock-text: hsl(20 10% 35%);
+    --admin-dock-text-active: hsl(var(--primary));
   }
 
   .dark {
@@ -53,6 +66,19 @@
     --ring: 27 91% 55%;
     --brand-sidebar: 20 64% 20%;
     --brand-primary: 27 91% 55%;
+    /* Admin popup/panel theme variables — dark */
+    --admin-popup-bg: rgba(10, 10, 12, 0.96);
+    --admin-popup-border: rgba(255, 255, 255, 0.10);
+    --admin-popup-shadow: 0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    --admin-popup-blur: blur(32px) saturate(120%);
+    --admin-popup-text: rgba(255, 255, 255, 0.92);
+    --admin-popup-text-muted: rgba(255, 255, 255, 0.55);
+    --admin-popup-divider: rgba(255, 255, 255, 0.07);
+    /* Mobile bottom nav — dark */
+    --admin-dock-bg: rgba(10, 10, 12, 0.62);
+    --admin-dock-border: rgba(255, 255, 255, 0.13);
+    --admin-dock-text: rgba(255, 255, 255, 0.58);
+    --admin-dock-text-active: hsl(var(--primary));
   }
 
   /* ── Forest ─────────────────────────────────────── */

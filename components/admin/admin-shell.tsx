@@ -15,19 +15,29 @@ const LS_CLASSIC = "aray-classic-mode";
 const LS_FONT    = "aray-font-size";
 
 function useClassicMode() {
-  const [classic, setClassic] = useState(false);
+  const [classicLS, setClassicLS] = useState(false);
+  const [isLight, setIsLight] = useState(false);
   useEffect(() => {
-    setClassic(localStorage.getItem(LS_CLASSIC) === "1");
-    const handler = () => setClassic(localStorage.getItem(LS_CLASSIC) === "1");
+    setClassicLS(localStorage.getItem(LS_CLASSIC) === "1");
+    // Detect light theme — force classic styles when light so dark rgba() never shows
+    const checkLight = () => {
+      const html = document.documentElement;
+      setIsLight(html.classList.contains("light") || html.getAttribute("data-theme") === "light" || (!html.classList.contains("dark") && window.matchMedia("(prefers-color-scheme: light)").matches));
+    };
+    checkLight();
+    const obs = new MutationObserver(checkLight);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    const handler = () => setClassicLS(localStorage.getItem(LS_CLASSIC) === "1");
     window.addEventListener("aray-classic-change", handler);
-    return () => window.removeEventListener("aray-classic-change", handler);
+    return () => { window.removeEventListener("aray-classic-change", handler); obs.disconnect(); };
   }, []);
   const toggle = () => {
     const next = !(localStorage.getItem(LS_CLASSIC) === "1");
     localStorage.setItem(LS_CLASSIC, next ? "1" : "0");
     window.dispatchEvent(new Event("aray-classic-change"));
   };
-  return { classic, toggle };
+  // In light theme, ALWAYS use classic (CSS-variable-based) styles
+  return { classic: classicLS || isLight, rawClassic: classicLS, toggle };
 }
 
 // ── Звук нового заказа (Web Audio API, без файлов) ───────────────────────────
@@ -133,22 +143,22 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
       {open && (
         <div className="absolute top-full right-0 mt-2 z-[70] w-80 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200"
           style={{
-            background: "rgba(10,10,12,0.96)",
-            backdropFilter: "blur(32px) saturate(120%)",
-            WebkitBackdropFilter: "blur(32px) saturate(120%)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03) inset",
+            background: "var(--admin-popup-bg)",
+            backdropFilter: "var(--admin-popup-blur)",
+            WebkitBackdropFilter: "var(--admin-popup-blur)",
+            border: `1px solid var(--admin-popup-border)`,
+            boxShadow: "var(--admin-popup-shadow)",
           }}>
 
           {/* Panel header */}
           <div className="px-4 py-3 flex items-center justify-between"
-            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+            style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #f59e0b33, #f59e0b11)" }}>
                 <Bell className="w-3.5 h-3.5 text-amber-400" />
               </div>
-              <p className="text-sm font-semibold" style={{ color: classic ? "hsl(var(--foreground))" : "white" }}>Уведомления</p>
+              <p className="text-sm font-semibold" style={{ color: "var(--admin-popup-text)" }}>Уведомления</p>
             </div>
             <div className="flex items-center gap-2">
               {count > 0 && (
@@ -172,7 +182,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
             ) : orders.length === 0 ? (
               <div className="text-center py-10 px-4">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
-                  style={{ background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.05)" }}>
+                  style={{ background: "hsl(var(--muted))" }}>
                   <Bell className="w-6 h-6 text-muted-foreground/30" />
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">Нет новых уведомлений</p>
@@ -205,7 +215,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2.5" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="px-4 py-2.5" style={{ borderTop: `1px solid var(--admin-popup-divider)` }}>
             <button
               onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
               className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-primary/[0.04]"
@@ -289,17 +299,14 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
           <>
             <div className="fixed inset-0 z-[80]" onClick={() => setBellOpen(false)} />
             <div className="absolute right-0 top-full mt-2 z-[81] w-72 rounded-2xl overflow-hidden"
-              style={classic ? {
-                background: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-              } : {
-                background: "rgba(10,10,12,0.97)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                backdropFilter: "blur(32px)",
-                boxShadow: "0 20px 60px rgba(0,0,0,0.55)",
+              style={{
+                background: "var(--admin-popup-bg)",
+                border: `1px solid var(--admin-popup-border)`,
+                backdropFilter: "var(--admin-popup-blur)",
+                WebkitBackdropFilter: "var(--admin-popup-blur)",
+                boxShadow: "var(--admin-popup-shadow)",
               }}>
-              <div className="px-4 py-3" style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="px-4 py-3" style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Новые заказы</p>
               </div>
               {loadingOrders ? (
@@ -470,22 +477,16 @@ function ArayControlCenter() {
           style={{
             bottom: panelPos.bottom,
             left: panelPos.left,
-            ...(classic ? {
-              background: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            } : {
-              background: "rgba(10,10,12,0.98)",
-              backdropFilter: "blur(48px) saturate(120%)",
-              WebkitBackdropFilter: "blur(48px) saturate(120%)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              boxShadow: "0 -12px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.025) inset",
-            }),
+            background: "var(--admin-popup-bg)",
+              border: `1px solid var(--admin-popup-border)`,
+              backdropFilter: "var(--admin-popup-blur)",
+              WebkitBackdropFilter: "var(--admin-popup-blur)",
+              boxShadow: "var(--admin-popup-shadow)",
           }}>
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3"
-            style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+            style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.45), hsl(var(--primary)/0.12))", boxShadow: "0 0 10px hsl(var(--primary)/0.3)" }}>

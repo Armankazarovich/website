@@ -126,20 +126,20 @@ function MenuPopup({ role, onClose }: { role: string; onClose: () => void }) {
         className="fixed left-3 right-3 z-[60] rounded-[28px] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300"
         style={{
           bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))",
-          background: "rgba(10, 10, 12, 0.96)",
-          backdropFilter: "blur(40px) saturate(200%)",
-          WebkitBackdropFilter: "blur(40px) saturate(200%)",
-          border: "1px solid rgba(255,255,255,0.13)",
-          boxShadow: "0 -8px 48px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.08) inset",
+          background: "var(--admin-popup-bg)",
+          backdropFilter: "var(--admin-popup-blur)",
+          WebkitBackdropFilter: "var(--admin-popup-blur)",
+          border: `1px solid var(--admin-popup-border)`,
+          boxShadow: "var(--admin-popup-shadow)",
           maxHeight: "72dvh",
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/08">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/40">Навигация</p>
+        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Навигация</p>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-xl bg-white/08 flex items-center justify-center active:scale-90 transition-transform"
+            className="w-7 h-7 rounded-xl bg-muted flex items-center justify-center active:scale-90 transition-transform"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <X className="w-3.5 h-3.5 text-white/60" />
@@ -171,18 +171,18 @@ function MenuPopup({ role, onClose }: { role: string; onClose: () => void }) {
                           onClick={onClose}
                           className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-all active:scale-90 text-center"
                           style={{
-                            background: isActive ? "hsl(var(--primary)/0.22)" : "rgba(255,255,255,0.05)",
-                            border: isActive ? "1.5px solid hsl(var(--primary)/0.5)" : "1.5px solid rgba(255,255,255,0.07)",
+                            background: isActive ? "hsl(var(--primary)/0.22)" : "hsl(var(--muted)/0.5)",
+                            border: isActive ? "1.5px solid hsl(var(--primary)/0.5)" : `1.5px solid var(--admin-popup-border)`,
                             WebkitTapHighlightColor: "transparent",
                           }}
                         >
                           <item.icon
                             className="w-[18px] h-[18px] transition-colors"
-                            style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }}
+                            style={{ color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}
                           />
                           <span
                             className="text-[9px] font-semibold leading-tight"
-                            style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }}
+                            style={{ color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}
                           >
                             {item.label}
                           </span>
@@ -200,10 +200,10 @@ function MenuPopup({ role, onClose }: { role: string; onClose: () => void }) {
                 href="/"
                 onClick={onClose}
                 className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors active:scale-95"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.07)", WebkitTapHighlightColor: "transparent" }}
+                style={{ background: "hsl(var(--muted)/0.5)", border: `1.5px solid var(--admin-popup-border)`, WebkitTapHighlightColor: "transparent" }}
               >
-                <LogOut className="w-4 h-4 text-white/40" />
-                <span className="text-sm text-white/55">На сайт</span>
+                <LogOut className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">На сайт</span>
               </Link>
             </div>
 
@@ -242,11 +242,11 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
         <div
           className="flex items-stretch rounded-[26px] overflow-hidden"
           style={{
-            background: "rgba(10, 10, 12, 0.62)",
-            backdropFilter: "blur(32px) saturate(200%) brightness(0.85)",
-            WebkitBackdropFilter: "blur(32px) saturate(200%) brightness(0.85)",
-            border: "1px solid rgba(255,255,255,0.13)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.50), 0 1px 0 rgba(255,255,255,0.08) inset",
+            background: "var(--admin-dock-bg)",
+            backdropFilter: "var(--admin-popup-blur)",
+            WebkitBackdropFilter: "var(--admin-popup-blur)",
+            border: `1px solid var(--admin-dock-border)`,
+            boxShadow: "var(--admin-popup-shadow)",
           }}
         >
           {/* Основные табы */}
@@ -272,7 +272,7 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
                     <tab.icon
                       className="w-[22px] h-[22px] transition-all duration-200"
                       style={{
-                        color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.58)",
+                        color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)",
                         filter: isActive ? "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))" : "none",
                       }}
                     />
@@ -284,7 +284,7 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
                     )}
                   </div>
                   <span className="text-[10px] font-semibold leading-none mt-1.5 z-10 transition-all duration-200"
-                    style={{ color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.62)", letterSpacing: "0.02em" }}>
+                    style={{ color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)", letterSpacing: "0.02em" }}>
                     {tab.label}
                   </span>
                 </div>
@@ -305,10 +305,10 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
               )}
               <MoreHorizontal
                 className="w-[22px] h-[22px] z-10 transition-all duration-200"
-                style={{ color: menuOpen ? "hsl(var(--primary))" : "rgba(255,255,255,0.58)" }}
+                style={{ color: menuOpen ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}
               />
               <span className="text-[10px] font-semibold leading-none mt-1.5 z-10"
-                style={{ color: menuOpen ? "hsl(var(--primary))" : "rgba(255,255,255,0.62)" }}>
+                style={{ color: menuOpen ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}>
                 Меню
               </span>
             </div>
