@@ -10,9 +10,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
-// AdminDashboardWidgets moved to sidebar
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { DashboardTopItems } from "@/components/admin/dashboard-top-items";
+import { DashboardGreeting } from "@/components/admin/dashboard-greeting";
+import { DashboardMetrics, CourierMetrics } from "@/components/admin/dashboard-metrics";
+import { DashboardChart } from "@/components/admin/dashboard-chart";
 
 // ── Быстрые действия по ролям ──────────────────────────────────────────────
 // Все иконки = text-primary (следуют палитре), фон = bg-card (тёмное стекло в nature-mode)
@@ -133,7 +135,7 @@ export default async function AdminDashboard() {
     prisma.user.count({ where: { staffStatus: "PENDING" } }).catch(() => 0),
   ]);
 
-  // Chart
+  // Chart data
   const chartDays: { label: string; amount: number; date: Date }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(now); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
@@ -144,11 +146,6 @@ export default async function AdminDashboard() {
     const slot = chartDays.find(c => c.date.getTime() === d.getTime());
     if (slot) slot.amount += Number(o.totalAmount);
   }
-  const maxAmount = Math.max(...chartDays.map(d => d.amount), 1);
-
-  const topItemsSorted = [...topItems].sort((a, b) => Number(b._sum.price || 0) - Number(a._sum.price || 0)).slice(0, 5);
-  const statusMap: Record<string, number> = {};
-  for (const s of statusCounts) statusMap[s.status] = s._count._all;
 
   const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
   const revenue30total = Number(revenue30._sum.totalAmount || 0);
@@ -160,11 +157,18 @@ export default async function AdminDashboard() {
     <div className="space-y-4 pb-6">
       <AutoRefresh intervalMs={60000} />
 
+      {/* ── ПРИВЕТСТВИЕ ── */}
+      <DashboardGreeting
+        userName={userName}
+        roleLabel={ROLE_GREETINGS[role] || role}
+        roleColor={ROLE_COLORS[role] || "bg-primary/10 text-primary"}
+      />
+
       {/* ── АЛЕРТЫ ── */}
       {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (
         <div className="flex flex-col gap-2">
           {newOrders > 0 && (
-            <Link href="/admin/orders?status=NEW" className="flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl">
+            <Link href="/admin/orders?status=NEW" className="flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl hover:border-orange-400 transition-colors">
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                 <span className="text-sm font-semibold text-orange-800 dark:text-orange-200">{newOrders} новых заказов</span>
@@ -173,7 +177,7 @@ export default async function AdminDashboard() {
             </Link>
           )}
           {pendingReviews > 0 && isOwner && (
-            <Link href="/admin/reviews" className="flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-2xl">
+            <Link href="/admin/reviews" className="flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-2xl hover:border-yellow-400 transition-colors">
               <div className="flex items-center gap-2.5">
                 <Star className="w-4 h-4 text-yellow-600" />
                 <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">{pendingReviews} отзывов ждут модерации</span>
@@ -182,7 +186,7 @@ export default async function AdminDashboard() {
             </Link>
           )}
           {pendingStaff > 0 && isOwner && (
-            <Link href="/admin/staff" className="flex items-center justify-between px-4 py-3 bg-primary/10 dark:bg-primary/15 border border-primary/30 rounded-2xl">
+            <Link href="/admin/staff" className="flex items-center justify-between px-4 py-3 bg-primary/10 dark:bg-primary/15 border border-primary/30 rounded-2xl hover:border-primary/50 transition-colors">
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">{pendingStaff} сотрудников ждут одобрения</span>
@@ -193,61 +197,19 @@ export default async function AdminDashboard() {
         </div>
       )}
 
-      {/* ── ГЛАВНЫЕ МЕТРИКИ (владелец/менеджер) ── */}
+      {/* ── ГЛАВНЫЕ МЕТРИКИ (владелец/менеджер/бухгалтер) ── */}
       {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/admin/finance" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-primary/25">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "hsl(var(--primary)/0.12)" }}>
-              <TrendingUp className="w-[18px] h-[18px] text-primary" />
-            </div>
-            <p className="text-2xl font-display font-bold leading-tight">{formatPrice(revenue30total)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Выручка за 30 дн.</p>
-          </Link>
-
-          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-primary/25">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "hsl(var(--primary)/0.12)" }}>
-              <BarChart3 className="w-[18px] h-[18px] text-primary" />
-            </div>
-            <p className="text-2xl font-display font-bold leading-tight">{formatPrice(revenueTodayTotal)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Сегодня</p>
-          </Link>
-
-          <Link href="/admin/orders" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-primary/25">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "hsl(var(--primary)/0.12)" }}>
-              <Clock className="w-[18px] h-[18px] text-primary" />
-            </div>
-            <p className="text-2xl font-display font-bold leading-tight">{newOrders}</p>
-            <p className="text-xs text-muted-foreground mt-1">Новых заказов</p>
-          </Link>
-
-          <Link href="/admin/analytics" className="bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all group relative overflow-hidden hover:border-primary/25">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: "hsl(var(--primary)/0.12)" }}>
-              <ArrowUpRight className="w-[18px] h-[18px] text-primary" />
-            </div>
-            <p className="text-2xl font-display font-bold leading-tight">{formatPrice(avgOrder)}</p>
-            <p className="text-xs text-muted-foreground mt-1">Средний чек</p>
-          </Link>
-        </div>
+        <DashboardMetrics
+          revenue30={revenue30total}
+          revenueToday={revenueTodayTotal}
+          newOrders={newOrders}
+          avgOrder={avgOrder}
+        />
       )}
 
       {/* ── КУРЬЕР: его доставки ── */}
       {roleGroup === "courier" && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "hsl(var(--primary)/0.12)" }}>
-              <Clock className="w-[18px] h-[18px] text-primary" />
-            </div>
-            <p className="text-2xl font-display font-bold leading-tight">{newOrders}</p>
-            <p className="text-xs text-muted-foreground mt-1">Новых заказов</p>
-          </div>
-          <div className="bg-card rounded-2xl border border-border p-4">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: "hsl(var(--primary)/0.12)" }}>
-              <Truck className="w-[18px] h-[18px] text-primary" />
-            </div>
-            <p className="text-2xl font-display font-bold leading-tight">{todayOrders}</p>
-            <p className="text-xs text-muted-foreground mt-1">Заказов сегодня</p>
-          </div>
-        </div>
+        <CourierMetrics newOrders={newOrders} todayOrders={todayOrders} />
       )}
 
       {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
@@ -269,42 +231,20 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-
       {/* ── ГРАФИК 7 ДНЕЙ ── */}
       {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
-        <Link href="/admin/analytics" className="block bg-card rounded-2xl border border-border p-5 active:scale-[0.99] transition-transform">
-          <div className="flex items-center justify-between mb-4">
-            <AdminSectionTitle icon={BarChart3} title="Выручка — 7 дней" className="mb-0" />
-            <span className="text-xs text-primary flex items-center gap-1">Аналитика <ChevronRight className="w-3 h-3" /></span>
-          </div>
-          <div className="flex items-end gap-1.5 h-24">
-            {chartDays.map((d) => {
-              const pct = Math.max((d.amount / maxAmount) * 100, d.amount > 0 ? 5 : 0);
-              return (
-                <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="relative flex-1 w-full flex items-end">
-                    <div
-                      className="w-full bg-primary/25 hover:bg-primary/50 rounded-t-lg transition-colors"
-                      style={{ height: `${pct}%`, minHeight: d.amount > 0 ? "4px" : "0" }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{d.label}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-3 pt-3 border-t border-border flex justify-between text-xs text-muted-foreground">
-            <span>7 дн: <strong className="text-foreground">{formatPrice(revenue7total)}</strong></span>
-            <span>30 дн: <strong className="text-foreground">{formatPrice(revenue30total)}</strong></span>
-          </div>
-        </Link>
+        <DashboardChart
+          days={chartDays.map(d => ({ label: d.label, amount: d.amount }))}
+          revenue7={formatPrice(revenue7total)}
+          revenue30={formatPrice(revenue30total)}
+        />
       )}
 
       {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ ── */}
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
           <AdminSectionTitle icon={ShoppingBag} title="Последние заказы" className="mb-0" />
-          <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5">Все <ChevronRight className="w-3 h-3" /></Link>
+          <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all">Все <ChevronRight className="w-3 h-3" /></Link>
         </div>
         <div className="divide-y divide-border">
           {recentOrders.map((order) => {
