@@ -5,16 +5,16 @@ import { useTheme } from "next-themes";
 
 // ── Видео-фоны: Pexels CDN ─────────────────────────────────────────────────
 // ✅ Pexels CDN работает из России без VPN
-// ✅ HD 1080p — компромисс: хорошее качество, малый размер (~5-15 МБ)
-// ✅ Если видео не грузится за LOAD_TIMEOUT_MS — автоматически fallback на CSS-градиент
-// ✅ На мобильном (< 1024px) — только CSS-градиент (экономим трафик и батарею)
+// ✅ HD 1080p — хорошее качество, малый размер (~5-15 МБ)
+// ✅ Если видео не грузится за LOAD_TIMEOUT_MS — fallback на CSS-градиент
+// ✅ На мобильном (< 1024px) — только CSS-градиент
 
 interface VideoItem {
   mp4: string;
   label: string;
 }
 
-// День: природа, горы, вода, облака — HD 1080p для экономии трафика
+// День: природа, горы, вода, облака — HD 1080p
 const DAY_VIDEOS: VideoItem[] = [
   { mp4: "https://videos.pexels.com/video-files/2491284/2491284-hd_1920_1080_24fps.mp4", label: "Лесная река" },
   { mp4: "https://videos.pexels.com/video-files/1409899/1409899-hd_1920_1080_25fps.mp4", label: "Океан на закате" },
@@ -33,8 +33,8 @@ const NIGHT_VIDEOS: VideoItem[] = [
   { mp4: "https://videos.pexels.com/video-files/856236/856236-hd_1920_1080_25fps.mp4", label: "Горный рассвет" },
 ];
 
-const FADE_MS = 2000;
-const LOAD_TIMEOUT_MS = 8000; // 8 сек на загрузку — если не успело, показываем градиент
+const FADE_MS = 2500;
+const LOAD_TIMEOUT_MS = 12000;
 
 function guessIsDark(): boolean {
   if (typeof window === "undefined") return true;
@@ -48,39 +48,65 @@ function guessIsDark(): boolean {
   }
 }
 
+/**
+ * AdminVideoBg — видеофон с плавным кроссфейдом.
+ *
+ * Использует 2 постоянных video-элемента (A и B) которые чередуются:
+ * - Когда A заканчивается → загружаем следующее в B → кроссфейд A→B
+ * - Когда B заканчивается → загружаем следующее в A → кроссфейд B→A
+ *
+ * Это избегает пересоздания DOM-элементов и потери загруженного видео.
+ */
 export function AdminVideoBg({ enabled }: { enabled: boolean }) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [cur, setCur] = useState(0);
-  const [next, setNext] = useState<number | null>(null);
-  const [fading, setFading] = useState(false);
-  const [tabHidden, setTabHidden] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [videoReady, setVideoReady] = useState(false); // Видео загрузилось и играет
-  const [loadFailed, setLoadFailed] = useState<Record<number, boolean>>({});
-  const [fallbackToGradient, setFallbackToGradient] = useState(false); // Если видео не загрузилось за LOAD_TIMEOUT_MS
-  const curVideoRef = useRef<HTMLVideoElement>(null);
-  const nextVideoRef = useRef<HTMLVideoElement>(null);
+  const [tabHidden, setTabHidden] = useState(false);
+  const [fallbackToGradient, setFallbackToGradient] = useState(false);
+
+  // A/B видео элементы — чередуются
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
+
+  // Какой элемент сейчас активен: "A" или "B"
+  const activeSlotRef = useRef<"A" | "B">("A");
+  const [activeSlot, setActiveSlot] = useState<"A" | "B">("A");
+
+  // Текущий индекс видео в плейлисте
+  const currentIdxRef = useRef(0);
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  // Opacities для кроссфейда
+  const [opacityA, setOpacityA] = useState(1);
+  const [opacityB, setOpacityB] = useState(0);
+
+  // Первое видео загрузилось?
+  const [firstReady, setFirstReady] = useState(false);
+
+  // Таймеры
   const loadTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const prevIsDark = useRef<boolean | null>(null);
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Page Visibility API — пауза когда вкладка скрыта
+  // Page Visibility API
   useEffect(() => {
     const onChange = () => {
       setTabHidden(document.hidden);
       if (document.hidden) {
-        curVideoRef.current?.pause();
-        nextVideoRef.current?.pause();
+        videoARef.current?.pause();
+        videoBRef.current?.pause();
       } else {
-        curVideoRef.current?.play().catch(() => {});
+        const active = activeSlotRef.current === "A" ? videoARef.current : videoBRef.current;
+        active?.play().catch(() => {});
       }
     };
     document.addEventListener("visibilitychange", onChange);
     return () => document.removeEventListener("visibilitychange", onChange);
   }, []);
 
+  // Resize
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -90,82 +116,175 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
 
   const isDark = mounted ? resolvedTheme !== "light" : guessIsDark();
   const VIDEOS = isDark ? NIGHT_VIDEOS : DAY_VIDEOS;
+  const videosRef = useRef(VIDEOS);
+  videosRef.current = VIDEOS;
 
   // Сброс при смене темы
   useEffect(() => {
     if (!mounted) return;
     if (prevIsDark.current !== null && prevIsDark.current !== isDark) {
-      setCur(0);
-      setNext(null);
-      setFading(false);
-      setVideoReady(false);
-      setLoadFailed({});
+      // Сбрасываем всё
+      currentIdxRef.current = 0;
+      setCurrentIdx(0);
+      activeSlotRef.current = "A";
+      setActiveSlot("A");
+      setOpacityA(1);
+      setOpacityB(0);
+      setFirstReady(false);
+      setFallbackToGradient(false);
+
+      // Загружаем первое видео новой темы в слот A
+      const vA = videoARef.current;
+      if (vA) {
+        const newVideos = isDark ? NIGHT_VIDEOS : DAY_VIDEOS;
+        vA.src = newVideos[0].mp4;
+        vA.load();
+        vA.play().catch(() => {});
+      }
     }
     prevIsDark.current = isDark;
   }, [isDark, mounted]);
 
-  // Таймаут загрузки — если видео не начало играть за LOAD_TIMEOUT_MS, переходим на градиент
+  // Инициализация — загружаем первое видео в слот A
   useEffect(() => {
-    if (isMobile || !enabled) return;
-    setVideoReady(false);
-    setFallbackToGradient(false);
+    if (isMobile || !enabled || !mounted) return;
+    const vA = videoARef.current;
+    if (!vA) return;
+
+    vA.src = VIDEOS[0].mp4;
+    vA.load();
+    vA.play().catch(() => {});
+
+    // Таймаут загрузки
     loadTimerRef.current = setTimeout(() => {
-      // Если за 8 сек не загрузилось — fallback на анимированный градиент
-      if (!videoReady) {
-        setFallbackToGradient(true);
-      }
+      if (!firstReady) setFallbackToGradient(true);
     }, LOAD_TIMEOUT_MS);
+
     return () => { if (loadTimerRef.current) clearTimeout(loadTimerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cur, isMobile, enabled]);
+  }, [mounted, isMobile, enabled]);
 
-  const handleCanPlay = useCallback(() => {
-    setVideoReady(true);
+  // Первое видео готово
+  const handleFirstCanPlay = useCallback(() => {
+    setFirstReady(true);
     setFallbackToGradient(false);
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
   }, []);
 
-  // Переключение видео по окончании текущего — плавный кроссфейд через 2 видео элемента
-  const handleEnded = useCallback(() => {
-    const nextIdx = (cur + 1) % VIDEOS.length;
-    setNext(nextIdx);
-    setFading(true);
-    setVideoReady(false);
+  // Видео закончилось — запускаем кроссфейд к следующему
+  const handleVideoEnded = useCallback(() => {
+    const videos = videosRef.current;
+    const nextIdx = (currentIdxRef.current + 1) % videos.length;
+    currentIdxRef.current = nextIdx;
+    setCurrentIdx(nextIdx);
 
-    setTimeout(() => {
-      setCur(nextIdx);
-      setNext(null);
-      setFading(false);
-    }, FADE_MS);
-  }, [cur, VIDEOS.length]);
+    const currentSlot = activeSlotRef.current;
+    const nextSlot = currentSlot === "A" ? "B" : "A";
+    const nextVideoEl = nextSlot === "A" ? videoARef.current : videoBRef.current;
 
-  const handleError = useCallback((idx: number) => {
-    if (idx === cur) {
-      // При ошибке загрузки — переходим на следующее видео
-      const nextIdx = (cur + 1) % VIDEOS.length;
-      setCur(nextIdx);
-      setVideoReady(false);
-      setFallbackToGradient(false);
+    if (!nextVideoEl) return;
+
+    // Загружаем следующее видео в неактивный слот
+    nextVideoEl.src = videos[nextIdx].mp4;
+    nextVideoEl.load();
+
+    const startCrossfade = () => {
+      nextVideoEl.play().catch(() => {});
+
+      // Кроссфейд: плавно показываем новый, скрываем старый
+      if (nextSlot === "A") {
+        setOpacityA(1);
+        setOpacityB(0);
+      } else {
+        setOpacityA(0);
+        setOpacityB(1);
+      }
+
+      activeSlotRef.current = nextSlot;
+      setActiveSlot(nextSlot);
+
+      // После завершения анимации — останавливаем старое видео
+      fadeTimerRef.current = setTimeout(() => {
+        const oldVideoEl = currentSlot === "A" ? videoARef.current : videoBRef.current;
+        if (oldVideoEl) {
+          oldVideoEl.pause();
+          oldVideoEl.removeAttribute("src");
+          oldVideoEl.load(); // Освобождаем память
+        }
+      }, FADE_MS + 200);
+    };
+
+    // Когда следующее видео готово — начинаем кроссфейд
+    const onReady = () => {
+      nextVideoEl.removeEventListener("canplay", onReady);
+      startCrossfade();
+    };
+
+    // Если уже готово (закешировано)
+    if (nextVideoEl.readyState >= 3) {
+      startCrossfade();
+    } else {
+      nextVideoEl.addEventListener("canplay", onReady);
+      // Таймаут — если не загрузилось, пропускаем
+      setTimeout(() => {
+        nextVideoEl.removeEventListener("canplay", onReady);
+        // Попробуем следующее видео
+        const skipIdx = (nextIdx + 1) % videos.length;
+        currentIdxRef.current = skipIdx;
+        setCurrentIdx(skipIdx);
+        // Пробуем следующее
+        nextVideoEl.src = videos[skipIdx].mp4;
+        nextVideoEl.load();
+        nextVideoEl.addEventListener("canplay", () => {
+          nextVideoEl.removeEventListener("canplay", onReady);
+          startCrossfade();
+        }, { once: true });
+      }, LOAD_TIMEOUT_MS);
     }
-  }, [cur, VIDEOS.length]);
+  }, []);
+
+  // Ошибка загрузки — пропускаем видео
+  const handleError = useCallback((slot: "A" | "B") => {
+    const videos = videosRef.current;
+    const nextIdx = (currentIdxRef.current + 1) % videos.length;
+    currentIdxRef.current = nextIdx;
+    setCurrentIdx(nextIdx);
+
+    const videoEl = slot === "A" ? videoARef.current : videoBRef.current;
+    if (videoEl) {
+      videoEl.src = videos[nextIdx].mp4;
+      videoEl.load();
+      videoEl.play().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+    };
+  }, []);
 
   if (!enabled || !mounted) return null;
 
-  const curVideo = VIDEOS[cur];
-  const nextVideo = next !== null ? VIDEOS[next] : null;
   const showVideo = !isMobile && !fallbackToGradient;
+  const curLabel = VIDEOS[currentIdx]?.label || (isDark ? "ARAY · Ночь" : "ARAY · День");
 
   return (
     <div className="fixed inset-0 z-[0] overflow-hidden pointer-events-none select-none" aria-hidden>
 
-      {/* ── Слой 0: Базовый цвет (мгновенно, 0 байт) ── */}
+      {/* ── Слой 0: Базовый цвет ── */}
       <div
         className="absolute inset-0 transition-colors duration-1000"
         style={{ background: isDark ? "#040b14" : "#daedf5" }}
       />
 
-      {/* ── Слой 1: CSS градиент-блобы (всегда видны, фоллбэк для медленного интернета) ── */}
-      <div className="absolute inset-0" style={{ filter: isMobile ? "none" : "blur(100px)", opacity: videoReady && !fallbackToGradient ? 0.3 : 0.85, transition: "opacity 3s ease" }}>
+      {/* ── Слой 1: CSS градиент-блобы (фоллбэк + подложка) ── */}
+      <div className="absolute inset-0" style={{
+        filter: isMobile ? "none" : "blur(100px)",
+        opacity: firstReady && !fallbackToGradient ? 0.3 : 0.85,
+        transition: "opacity 3s ease",
+      }}>
         {isDark ? (
           <>
             <div className="absolute rounded-full" style={{ width: "65%", height: "65%", top: "5%", left: "-5%", background: "radial-gradient(circle, #0d3d28 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-1 20s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
@@ -181,47 +300,42 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
         )}
       </div>
 
-      {/* ── Слой 2: Текущее видео (desktop, с плавным появлением когда загрузилось) ── */}
-      {showVideo && curVideo && (
+      {/* ── Слой 2: Видео A ── */}
+      {showVideo && (
         <video
-          ref={curVideoRef}
-          key={`video-cur-${cur}-${isDark}`}
+          ref={videoARef}
           className="absolute inset-0 w-full h-full object-cover"
           style={{
-            opacity: videoReady && !fading ? 1 : 0,
+            opacity: firstReady ? opacityA : 0,
             transition: `opacity ${FADE_MS}ms cubic-bezier(0.4,0,0.2,1)`,
           }}
-          src={curVideo.mp4}
-          autoPlay
           muted
           playsInline
           preload="auto"
-          onCanPlay={handleCanPlay}
-          onEnded={handleEnded}
-          onError={() => handleError(cur)}
+          onCanPlay={activeSlot === "A" && !firstReady ? handleFirstCanPlay : undefined}
+          onEnded={activeSlot === "A" ? handleVideoEnded : undefined}
+          onError={() => handleError("A")}
         />
       )}
 
-      {/* ── Слой 3: Следующее видео (fade-in при переключении) ── */}
-      {showVideo && nextVideo && next !== null && (
+      {/* ── Слой 3: Видео B ── */}
+      {showVideo && (
         <video
-          ref={nextVideoRef}
-          key={`video-next-${next}-${isDark}`}
+          ref={videoBRef}
           className="absolute inset-0 w-full h-full object-cover"
           style={{
-            opacity: fading ? 1 : 0,
+            opacity: firstReady ? opacityB : 0,
             transition: `opacity ${FADE_MS}ms cubic-bezier(0.4,0,0.2,1)`,
           }}
-          src={nextVideo.mp4}
-          autoPlay
           muted
           playsInline
           preload="auto"
-          onError={() => handleError(next)}
+          onEnded={activeSlot === "B" ? handleVideoEnded : undefined}
+          onError={() => handleError("B")}
         />
       )}
 
-      {/* ── Оверлеи для читабельности текста ── */}
+      {/* ── Оверлеи для читабельности ── */}
       <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "rgba(10,10,12,0.50)" }} />
       <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,12,0.78) 0%, rgba(10,10,12,0.10) 42%, transparent 65%)" }} />
       <div className="aray-photo-overlay-dark absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(10,10,12,0.40) 0%, transparent 30%)" }} />
@@ -234,9 +348,9 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
         <span className="text-white text-[9px]">{isDark ? "🌙" : "☀️"}</span>
         <span className="w-px h-3 bg-white/50" />
         <span className="text-white text-[9px] tracking-[0.22em] uppercase font-light">
-          {videoReady ? "🎬" : "⏳"} {curVideo?.label || (isDark ? "ARAY · Ночь" : "ARAY · День")}
+          {firstReady ? "🎬" : "⏳"} {curLabel}
         </span>
-        {videoReady && <span className="w-1 h-1 rounded-full bg-white animate-pulse" />}
+        {firstReady && <span className="w-1 h-1 rounded-full bg-white animate-pulse" />}
       </div>
     </div>
   );

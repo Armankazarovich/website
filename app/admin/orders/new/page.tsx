@@ -612,20 +612,20 @@ export default function NewPhoneOrderPage() {
                       </button>
                     </div>
                     <div className="flex items-center justify-between mt-2">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => updateQty(i, Math.max(0.1, +(item.quantity - (item.unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
-                          className="w-6 h-6 rounded-md border border-border flex items-center justify-center text-xs hover:bg-primary/[0.08]"
-                        >−</button>
-                        <span className="text-sm font-mono w-12 text-center">
+                          className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors"
+                        ><Minus className="w-3 h-3" /></button>
+                        <span className="text-sm font-mono w-14 text-center font-semibold">
                           {item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
                         </span>
                         <button
                           type="button"
                           onClick={() => updateQty(i, +(item.quantity + (item.unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
-                          className="w-6 h-6 rounded-md border border-border flex items-center justify-center text-xs hover:bg-primary/[0.08]"
-                        >+</button>
+                          className="w-7 h-7 rounded-lg border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors"
+                        ><Plus className="w-3 h-3" /></button>
                       </div>
                       <p className="text-sm font-bold">{fmt(item.quantity * item.price)}</p>
                     </div>

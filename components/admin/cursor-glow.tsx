@@ -19,13 +19,18 @@ const GLOW_SELECTORS = [
   "[data-glow]",
   "main .bg-card",
   ".aray-stat-card",
+  ".aray-sidebar a",
+  ".aray-sidebar button",
+  ".glass-card",
 ].join(",");
 
-// Радиус свечения
-const GLOW_RADIUS = 280;
+// Радиус свечения — большой для мягкого эффекта
+const GLOW_RADIUS = 340;
+// Выход за границы карточки (px) — для мягкого "перелива"
+const GLOW_PADDING = 60;
 // Интенсивность (0-1)
-const GLOW_OPACITY_DARK = 0.12;
-const GLOW_OPACITY_LIGHT = 0.08;
+const GLOW_OPACITY_DARK = 0.18;
+const GLOW_OPACITY_LIGHT = 0.10;
 
 export function CursorGlow() {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -40,15 +45,18 @@ export function CursorGlow() {
     if (!overlay || !card) return;
 
     const rect = card.getBoundingClientRect();
-    const x = mouseRef.current.x - rect.left;
-    const y = mouseRef.current.y - rect.top;
+    // Координаты курсора относительно расширенного overlay (с padding)
+    const x = mouseRef.current.x - rect.left + GLOW_PADDING;
+    const y = mouseRef.current.y - rect.top + GLOW_PADDING;
 
-    // Позиционируем overlay точно поверх карточки
-    overlay.style.left = `${rect.left + window.scrollX}px`;
-    overlay.style.top = `${rect.top + window.scrollY}px`;
-    overlay.style.width = `${rect.width}px`;
-    overlay.style.height = `${rect.height}px`;
-    overlay.style.borderRadius = getComputedStyle(card).borderRadius;
+    // Позиционируем overlay ШИРЕ карточки — свечение мягко выходит за края
+    overlay.style.left = `${rect.left + window.scrollX - GLOW_PADDING}px`;
+    overlay.style.top = `${rect.top + window.scrollY - GLOW_PADDING}px`;
+    overlay.style.width = `${rect.width + GLOW_PADDING * 2}px`;
+    overlay.style.height = `${rect.height + GLOW_PADDING * 2}px`;
+    // Скруглённые углы больше чем у карточки — для мягкости
+    const cardRadius = parseInt(getComputedStyle(card).borderRadius) || 12;
+    overlay.style.borderRadius = `${cardRadius + GLOW_PADDING}px`;
 
     // Определяем тему
     const isDark = document.documentElement.classList.contains("dark");
@@ -59,8 +67,10 @@ export function CursorGlow() {
       .getPropertyValue("--brand-primary").trim();
     const color = brandHSL ? `hsl(${brandHSL})` : "hsl(27 91% 48%)";
 
-    overlay.style.background = `radial-gradient(${GLOW_RADIUS}px circle at ${x}px ${y}px, ${color}, transparent 70%)`;
+    // Мягкий многослойный градиент — ядро яркое, края плавно растворяются
+    overlay.style.background = `radial-gradient(${GLOW_RADIUS}px circle at ${x}px ${y}px, ${color} 0%, ${color} 8%, transparent 65%)`;
     overlay.style.opacity = String(opacity);
+    overlay.style.filter = "blur(8px)";
 
     if (!visibleRef.current) {
       overlay.style.visibility = "visible";
@@ -126,12 +136,13 @@ export function CursorGlow() {
         top: 0,
         left: 0,
         pointerEvents: "none",
-        zIndex: 1,
+        zIndex: 50,
         opacity: 0,
         visibility: "hidden",
-        transition: "opacity 0.25s ease",
-        willChange: "opacity, background",
-        mixBlendMode: "screen",
+        transition: "opacity 0.3s ease",
+        willChange: "opacity, background, filter",
+        mixBlendMode: "plus-lighter",
+        filter: "blur(8px)",
       }}
     />
   );

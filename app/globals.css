@@ -655,6 +655,19 @@ canvas,
   background: hsl(var(--muted) / 0.5);
   border-color: hsl(var(--border));
 }
+/* Внутри сайдбара — glass-card ВСЕГДА тёмная, даже в светлой теме */
+.aray-sidebar .glass-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* Внутри сайдбара текст ВСЕГДА белый */
+.aray-classic-mode .aray-sidebar .text-foreground,
+.aray-classic-mode .aray-sidebar .text-muted-foreground,
+.aray-classic-mode .aray-sidebar p,
+.aray-classic-mode .aray-sidebar span:not([class*="bg-"]) {
+  color: inherit !important;
+}
 
 /* .glass-control — кнопки-переключатели, контролы внутри попапов */
 .glass-control {
