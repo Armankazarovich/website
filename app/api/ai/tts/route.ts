@@ -34,28 +34,39 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });
     }
 
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": apiKey,
-          "Content-Type": "application/json",
-          "Accept": "audio/mpeg",
-        },
-        body: JSON.stringify({
-          text: cleanText,
-          model_id: MODEL_ID,
-          voice_settings: {
-            stability: 0.50,       // Баланс стабильности и естественности
-            similarity_boost: 0.85, // Верность характеру голоса
-            style: 0.35,           // Выразительный и тёплый
-            use_speaker_boost: true,
-            speed: 0.95,           // Чуть медленнее — нежнее и дружелюбнее
-          },
-        }),
-      }
-    );
+    // ElevenLabs может блокировать по geo (302 redirect) — обрабатываем
+    const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
+    const ttsBody = JSON.stringify({
+      text: cleanText,
+      model_id: MODEL_ID,
+      voice_settings: {
+        stability: 0.50,
+        similarity_boost: 0.85,
+        style: 0.35,
+        use_speaker_boost: true,
+        speed: 0.95,
+      },
+    });
+
+    const response = await fetch(ttsUrl, {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+        "Accept": "audio/mpeg",
+      },
+      redirect: "manual", // Ловим 302 вместо следования за редиректом
+      body: ttsBody,
+    });
+
+    // Geo-блокировка: ElevenLabs возвращает 302 для заблокированных регионов
+    if (response.status === 302 || response.status === 301) {
+      console.warn("[ElevenLabs TTS] Geo-blocked (302). Falling back to browser speech.");
+      return NextResponse.json(
+        { error: "voice_blocked", fallback: "browser", text: cleanText },
+        { status: 200 } // 200 чтобы клиент обработал fallback, а не ошибку
+      );
+    }
 
     if (!response.ok) {
       const err = await response.text();
@@ -66,7 +77,10 @@ export async function POST(req: NextRequest) {
       if (response.status === 429) {
         return NextResponse.json({ error: "Лимит ElevenLabs исчерпан" }, { status: 429 });
       }
-      return NextResponse.json({ error: "Ошибка синтеза речи" }, { status: 500 });
+      return NextResponse.json(
+        { error: "voice_blocked", fallback: "browser", text: cleanText },
+        { status: 200 }
+      );
     }
 
     const audioBuffer = await response.arrayBuffer();

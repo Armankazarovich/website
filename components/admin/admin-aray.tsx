@@ -283,7 +283,7 @@ function useTTS() {
     setSpeaking(id);
     speakingRef.current = id;
 
-    // Try ElevenLabs first
+    // Try ElevenLabs first, with smart fallback
     try {
       const res = await fetch("/api/ai/tts", {
         method: "POST",
@@ -291,14 +291,21 @@ function useTTS() {
         body: JSON.stringify({ text: clean }),
       });
       if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } audioRef.current = null; };
-        audio.onerror = () => { URL.revokeObjectURL(url); if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } audioRef.current = null; };
-        audio.play().catch(() => { URL.revokeObjectURL(url); audioRef.current = null; if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } });
-        return;
+        const contentType = res.headers.get("content-type") || "";
+        // ElevenLabs geo-blocked: API returns JSON with fallback instruction
+        if (contentType.includes("application/json")) {
+          // Fall through to browser TTS below
+        } else {
+          // Got real audio from ElevenLabs
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } audioRef.current = null; };
+          audio.onerror = () => { URL.revokeObjectURL(url); if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } audioRef.current = null; };
+          audio.play().catch(() => { URL.revokeObjectURL(url); audioRef.current = null; if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } });
+          return;
+        }
       }
     } catch {}
 

@@ -1,4 +1,6 @@
 @echo off
 cd /d D:\pilorus\website
-git commit -m "fix: light theme support - CSS vars for popups, dock, panels"
+git add -A
+git status
+git commit -m "feat: dashboard v2 + TTS browser fallback + API fixes"
 git push origin main

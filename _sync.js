@@ -1,27 +1,29 @@
 const fs = require('fs');
 const path = require('path');
 
+const SRC = 'D:\\ПилоРус\\website';
+const DST = 'D:\\pilorus\\website';
+
 const files = [
   'app/admin/page.tsx',
+  'app/api/ai/tts/route.ts',
+  'components/admin/admin-aray.tsx',
   'components/admin/animated-counter.tsx',
   'components/admin/dashboard-greeting.tsx',
   'components/admin/dashboard-metrics.tsx',
   'components/admin/dashboard-chart.tsx',
 ];
 
-const src = 'D:\\ПилоРус\\website';
-const dst = 'D:\\pilorus\\website';
-
 for (const f of files) {
-  const from = path.join(src, f);
-  const to = path.join(dst, f);
+  const src = path.join(SRC, f);
+  const dst = path.join(DST, f);
   try {
-    // Ensure target directory exists
-    fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.copyFileSync(from, to);
-    console.log('OK: ' + f);
+    const dir = path.dirname(dst);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.copyFileSync(src, dst);
+    console.log('OK:', f);
   } catch (e) {
-    console.log('FAIL: ' + f + ' - ' + e.message);
+    console.error('FAIL:', f, e.message);
   }
 }
 console.log('Done');
