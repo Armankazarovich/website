@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 
 async function checkAdmin(req: NextRequest) {
   const session = await auth();
-  if (!session || (session.user as any).role !== "ADMIN") return false;
+  if (!session || session.user.role !== "ADMIN") return false;
   return true;
 }
 

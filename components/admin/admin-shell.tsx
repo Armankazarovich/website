@@ -7,18 +7,31 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
-  ArrowRight, ALargeSmall, Monitor, Zap, Palette,
+  ArrowRight, ALargeSmall, Monitor, Zap, Palette, Image, Film,
 } from "lucide-react";
 
 // ── Ключи localStorage ────────────────────────────────────────────────────────
 const LS_CLASSIC = "aray-classic-mode";
+const LS_BG_MODE = "aray-bg-mode"; // "classic" | "photo" | "video"
 const LS_FONT    = "aray-font-size";
 
+type BgMode = "classic" | "photo" | "video";
+
 function useClassicMode() {
-  const [classicLS, setClassicLS] = useState(false);
+  const [bgMode, setBgMode] = useState<BgMode>("photo");
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
-    setClassicLS(localStorage.getItem(LS_CLASSIC) === "1");
+    // Миграция: если старый LS_CLASSIC = "1" → bgMode = "classic"
+    const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
+    const stored = localStorage.getItem(LS_BG_MODE) as BgMode | null;
+    if (stored && ["classic", "photo", "video"].includes(stored)) {
+      setBgMode(stored);
+    } else if (legacyClassic) {
+      setBgMode("classic");
+      localStorage.setItem(LS_BG_MODE, "classic");
+    } else {
+      setBgMode("photo");
+    }
     // Detect light theme — force classic styles when light so dark rgba() never shows
     const checkLight = () => {
       const html = document.documentElement;
@@ -27,17 +40,22 @@ function useClassicMode() {
     checkLight();
     const obs = new MutationObserver(checkLight);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
-    const handler = () => setClassicLS(localStorage.getItem(LS_CLASSIC) === "1");
+    const handler = () => {
+      const m = localStorage.getItem(LS_BG_MODE) as BgMode | null;
+      if (m) setBgMode(m);
+    };
     window.addEventListener("aray-classic-change", handler);
     return () => { window.removeEventListener("aray-classic-change", handler); obs.disconnect(); };
   }, []);
-  const toggle = () => {
-    const next = !(localStorage.getItem(LS_CLASSIC) === "1");
-    localStorage.setItem(LS_CLASSIC, next ? "1" : "0");
+  const setBg = (mode: BgMode) => {
+    localStorage.setItem(LS_BG_MODE, mode);
+    // Совместимость со старым ключом
+    localStorage.setItem(LS_CLASSIC, mode === "classic" ? "1" : "0");
     window.dispatchEvent(new Event("aray-classic-change"));
   };
-  // In light theme, ALWAYS use classic (CSS-variable-based) styles
-  return { classic: classicLS || isLight, rawClassic: classicLS, toggle };
+  const toggle = () => setBg(bgMode === "classic" ? "photo" : "classic");
+  const classic = isLight || bgMode === "classic";
+  return { classic, rawClassic: bgMode === "classic", bgMode: isLight ? "classic" as BgMode : bgMode, setBg, toggle };
 }
 
 // ── Звук нового заказа (Web Audio API, без файлов) ───────────────────────────
@@ -141,24 +159,16 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 mt-2 z-[70] w-80 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200"
-          style={{
-            background: "var(--admin-popup-bg)",
-            backdropFilter: "var(--admin-popup-blur)",
-            WebkitBackdropFilter: "var(--admin-popup-blur)",
-            border: `1px solid var(--admin-popup-border)`,
-            boxShadow: "var(--admin-popup-shadow)",
-          }}>
+        <div className="glass-popup absolute top-full right-0 mt-2 z-[70] w-80 rounded-2xl overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
 
           {/* Panel header */}
-          <div className="px-4 py-3 flex items-center justify-between"
-            style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
+          <div className="px-4 py-3 flex items-center justify-between border-b glass-popup-divider">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, #f59e0b33, #f59e0b11)" }}>
                 <Bell className="w-3.5 h-3.5 text-amber-400" />
               </div>
-              <p className="text-sm font-semibold" style={{ color: "var(--admin-popup-text)" }}>Уведомления</p>
+              <p className="text-sm font-semibold text-foreground">Уведомления</p>
             </div>
             <div className="flex items-center gap-2">
               {count > 0 && (
@@ -215,7 +225,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2.5" style={{ borderTop: `1px solid var(--admin-popup-divider)` }}>
+          <div className="px-4 py-2.5 border-t glass-popup-divider">
             <button
               onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
               className="w-full text-center text-xs font-semibold py-1.5 rounded-xl transition-colors hover:bg-primary/[0.04]"
@@ -230,7 +240,9 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
 }
 
 import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
+import { AdminVideoBg } from "@/components/admin/admin-video-bg";
 import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
+import { useAdminLang } from "@/lib/admin-lang-context";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
@@ -281,10 +293,9 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
         <button
           onClick={openBell}
           style={{ WebkitTapHighlightColor: "transparent",
-            background: count > 0 ? "hsl(var(--primary)/0.20)" : classic ? "hsl(var(--muted)/0.6)" : "rgba(255,255,255,0.08)",
-            border: count > 0 ? "1px solid hsl(var(--primary)/0.40)" : classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
+            ...(count > 0 ? { background: "hsl(var(--primary)/0.20)", border: "1px solid hsl(var(--primary)/0.40)" } : {}),
           }}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all active:scale-95 ${count > 0 ? "" : "glass-pill"}`}
         >
           <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }} />
           {count > 0 && (
@@ -298,15 +309,8 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
         {bellOpen && (
           <>
             <div className="fixed inset-0 z-[80]" onClick={() => setBellOpen(false)} />
-            <div className="absolute right-0 top-full mt-2 z-[81] w-72 rounded-2xl overflow-hidden"
-              style={{
-                background: "var(--admin-popup-bg)",
-                border: `1px solid var(--admin-popup-border)`,
-                backdropFilter: "var(--admin-popup-blur)",
-                WebkitBackdropFilter: "var(--admin-popup-blur)",
-                boxShadow: "var(--admin-popup-shadow)",
-              }}>
-              <div className="px-4 py-3" style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
+            <div className="glass-popup absolute right-0 top-full mt-2 z-[81] w-72 rounded-2xl overflow-hidden">
+              <div className="px-4 py-3 border-b glass-popup-divider">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Новые заказы</p>
               </div>
               {loadingOrders ? (
@@ -332,7 +336,7 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
                   ))}
                 </div>
               )}
-              <div style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="border-t glass-popup-divider">
                 <button onClick={() => { router.push("/admin/orders"); setBellOpen(false); }}
                   className="w-full py-3 text-center text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
                   Все заказы →
@@ -346,12 +350,10 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
       {/* Настройки — gear pill */}
       <button
         onClick={onSettingsOpen}
-        style={{ WebkitTapHighlightColor: "transparent",
-          background: classic ? "hsl(var(--muted)/0.6)" : "rgba(255,255,255,0.08)",
-          border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)" }}
-        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
+        style={{ WebkitTapHighlightColor: "transparent" }}
+        className="glass-pill flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
       >
-        <Settings className="w-4 h-4" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.55)" }} />
+        <Settings className="w-4 h-4 glass-text-secondary" />
       </button>
     </div>
   );
@@ -368,7 +370,8 @@ function ArayControlCenter() {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
-  const { classic, toggle: toggleClassic } = useClassicMode();
+  const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
+  const { t } = useAdminLang();
   const ref = useRef<HTMLDivElement>(null);
   const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
   const router = useRouter();
@@ -473,20 +476,11 @@ function ArayControlCenter() {
 
       {/* ══ ARAY Control Center Panel ════════════════════════════ */}
       {open && panelPos && (
-        <div className="fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
-          style={{
-            bottom: panelPos.bottom,
-            left: panelPos.left,
-            background: "var(--admin-popup-bg)",
-              border: `1px solid var(--admin-popup-border)`,
-              backdropFilter: "var(--admin-popup-blur)",
-              WebkitBackdropFilter: "var(--admin-popup-blur)",
-              boxShadow: "var(--admin-popup-shadow)",
-          }}>
+        <div className="glass-popup fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
+          style={{ bottom: panelPos.bottom, left: panelPos.left }}>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3"
-            style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b glass-popup-divider">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.45), hsl(var(--primary)/0.12))", boxShadow: "0 0 10px hsl(var(--primary)/0.3)" }}>
@@ -501,13 +495,9 @@ function ArayControlCenter() {
           </div>
 
           {/* Tab switcher */}
-          <div className="flex gap-1 p-2" style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="flex gap-1 p-2 border-b glass-popup-divider">
             <button onClick={() => setTab("notif")}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all"
-              style={tab === "notif"
-                ? { background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }
-                : { background: classic ? "hsl(var(--muted)/0.5)" : "rgba(255,255,255,0.04)", color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)", border: "1px solid transparent" }
-              }>
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "notif" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
               <Bell className="w-3 h-3" />
               Уведомления
               {count > 0 && (
@@ -516,11 +506,7 @@ function ArayControlCenter() {
               )}
             </button>
             <button onClick={() => setTab("style")}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all"
-              style={tab === "style"
-                ? { background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }
-                : { background: classic ? "hsl(var(--muted)/0.5)" : "rgba(255,255,255,0.04)", color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.38)", border: "1px solid transparent" }
-              }>
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "style" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
               <Palette className="w-3 h-3" />
               Оформление
             </button>
@@ -562,7 +548,7 @@ function ArayControlCenter() {
                     ))}
                   </div>
                 )}
-                <div className="px-3 py-2" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
+                <div className="px-3 py-2 border-t glass-popup-divider">
                   <button onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
                     className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-primary/[0.04] transition-colors"
                     style={{ color: "hsl(var(--primary))" }}>
@@ -578,8 +564,7 @@ function ArayControlCenter() {
 
                 {/* Палитра */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
-                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Цвет интерфейса</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Цвет интерфейса</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {PALETTES.map((p) => (
                       <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
@@ -596,70 +581,51 @@ function ArayControlCenter() {
 
                 {/* Тема */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
-                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Тема</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Тема</p>
                   <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-primary/[0.04]"
-                    style={classic
-                      ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
-                      : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
+                    className="glass-control w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
                       {theme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
                     </div>
-                    <span className="flex-1 text-left text-[12px] font-medium"
-                      style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.75)" }}>
+                    <span className="flex-1 text-left text-[12px] font-medium glass-text-primary">
                       {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
                     </span>
-                    <div className="relative w-9 h-5 rounded-full shrink-0"
-                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.15)", border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.1)" }}>
+                    <div className="relative w-9 h-5 rounded-full shrink-0 glass-pill"
+                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
                       <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.5)", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
+                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
                     </div>
                   </button>
                 </div>
 
                 {/* Фон */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
-                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Фон панели</p>
-                  <button onClick={toggleClassic}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all hover:bg-primary/[0.04]"
-                    style={classic
-                      ? { background: "hsl(var(--muted)/0.5)", border: `1.5px solid hsl(var(--primary)/0.5)` }
-                      : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }}>
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: classic ? "hsl(var(--primary)/0.2)" : "rgba(120,120,120,0.12)" }}>
-                      <Monitor className={`w-3.5 h-3.5 ${classic ? "text-primary" : "text-primary/50"}`} />
-                    </div>
-                    <span className="flex-1 text-left text-[12px] font-medium"
-                      style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.75)" }}>
-                      {classic ? "Классический фон" : "Природный фон"}
-                    </span>
-                    <div className="relative w-9 h-5 rounded-full shrink-0"
-                      style={{ background: classic ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.12)", border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.1)" }}>
-                      <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)", left: classic ? "calc(100% - 17px)" : "3px" }} />
-                    </div>
-                  </button>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("bg_panel")}</p>
+                  <div className="flex gap-1">
+                    {([
+                      { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic") },
+                      { id: "photo" as BgMode, icon: Image, label: t("bg_photo") },
+                      { id: "video" as BgMode, icon: Film, label: t("bg_video") },
+                    ]).map(opt => (
+                      <button key={opt.id} onClick={() => setBg(opt.id)}
+                        className={`flex flex-col items-center gap-1 flex-1 py-2.5 rounded-xl transition-all border ${bgMode === opt.id ? "glass-control-active" : "glass-control"}`}>
+                        <opt.icon className={`w-4 h-4 ${bgMode === opt.id ? "text-primary" : "glass-text-muted"}`} />
+                        <span className={`text-[9px] leading-none ${bgMode === opt.id ? "text-primary font-semibold" : "glass-text-muted"}`}>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Шрифт */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
-                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Размер шрифта</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("font_size")}</p>
                   <div className="flex items-end gap-1">
                     {FONT_SIZES_CC.map(s => (
                       <button key={s.id} onClick={() => pickFont(s.id)}
-                        className="flex flex-col items-center gap-1 flex-1 py-2 rounded-xl transition-all"
-                        style={fontActive === s.id
-                          ? { background: "hsl(var(--primary)/0.18)", border: "1.5px solid hsl(var(--primary)/0.45)" }
-                          : classic
-                          ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
-                          : { background: "rgba(255,255,255,0.05)", border: "1.5px solid rgba(255,255,255,0.07)" }
-                        }>
-                        <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800, color: fontActive === s.id ? "hsl(var(--primary))" : classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.4)" }}>A</span>
-                        <span className="text-[8px] leading-none" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}>{s.label}</span>
+                        className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl transition-all border ${fontActive === s.id ? "glass-control-active" : "glass-control"}`}>
+                        <span className={fontActive === s.id ? "text-primary" : "glass-text-muted"} style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}>A</span>
+                        <span className="text-[8px] leading-none glass-text-muted">{s.label}</span>
                       </button>
                     ))}
                   </div>
@@ -667,8 +633,7 @@ function ArayControlCenter() {
 
                 {/* Язык */}
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2"
-                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.28)" }}>Язык</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Язык</p>
                   <AdminLangPickerInline />
                 </div>
 
@@ -754,12 +719,7 @@ function MobileFontControl() {
     <div className="flex items-end justify-between gap-1.5">
       {FONT_SIZES.map(s => (
         <button key={s.id} onClick={() => pick(s.id)}
-          className="flex flex-col items-center gap-1 flex-1 py-2 rounded-2xl transition-all"
-          style={
-            active === s.id
-              ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
-              : { background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.08)" }
-          }>
+          className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-2xl transition-all border ${active === s.id ? "glass-control-active" : "glass-control"}`}>
           <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}
             className={active === s.id ? "text-primary" : "text-white/50"}>A</span>
           <span className="text-[9px] font-medium text-white/40 leading-none">{s.label.slice(0, 4)}</span>
@@ -774,7 +734,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
-  const { classic, toggle: toggleClassic } = useClassicMode();
+  const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
+  const { t } = useAdminLang();
   const pageTitle = usePageTitle();
 
   // Свайп от левого края → открыть меню
@@ -796,7 +757,8 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
-      <AdminNatureBg enabled={!classic} />
+      {bgMode === "photo" && <AdminNatureBg enabled />}
+      {bgMode === "video" && <AdminVideoBg enabled />}
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
@@ -825,8 +787,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
           <AdminPwaInstall />
 
           {/* ── User Card — профессиональная карточка пользователя ── */}
-          <div className="rounded-2xl overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.09)" }}>
+          <div className="glass-card rounded-2xl overflow-hidden">
 
             {/* Верх карточки — аватар + имя + роль */}
             <div className="flex items-center gap-3 px-3 py-3">
@@ -964,8 +925,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               </p>
               <button
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-                style={{ background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(255,255,255,0.09)" }}>
+                className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
                   {theme === "dark"
@@ -996,27 +956,23 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               </button>
             </div>
 
-            {/* Классический режим */}
+            {/* Режим фона */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">Оформление</p>
-              <button
-                onClick={toggleClassic}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
-                style={{ background: "rgba(255,255,255,0.06)", border: `1.5px solid ${classic ? "hsl(var(--primary)/0.6)" : "rgba(255,255,255,0.09)"}` }}>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: classic ? "hsl(var(--primary)/0.25)" : "rgba(120,120,120,0.12)" }}>
-                  <Monitor className={`w-4 h-4 ${classic ? "text-primary" : "text-primary/70"}`} />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-white/85">{classic ? "Классический" : "С фото-фоном"}</p>
-                  <p className="text-[11px] text-white/35">{classic ? "Чистый фон" : "Природные фото"}</p>
-                </div>
-                <div className="relative w-10 h-[22px] rounded-full flex-shrink-0"
-                  style={{ background: classic ? "hsl(var(--primary)/0.45)" : "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <div className="absolute top-[3px] w-4 h-4 rounded-full transition-all duration-200"
-                    style={{ background: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)", left: classic ? "calc(100% - 19px)" : "3px" }} />
-                </div>
-              </button>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">{t("bg_panel")}</p>
+              <div className="flex gap-2">
+                {([
+                  { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic"), desc: "—" },
+                  { id: "photo" as BgMode, icon: Image, label: t("bg_photo"), desc: "—" },
+                  { id: "video" as BgMode, icon: Film, label: t("bg_video"), desc: "—" },
+                ]).map(opt => (
+                  <button key={opt.id} onClick={() => setBg(opt.id)}
+                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all border ${bgMode === opt.id ? "glass-control-active" : "glass-control"}`}>
+                    <opt.icon className={`w-5 h-5 ${bgMode === opt.id ? "text-primary" : "glass-text-muted"}`} />
+                    <span className={`text-[11px] font-semibold ${bgMode === opt.id ? "text-primary" : "text-white/60"}`}>{opt.label}</span>
+                    <span className="text-[9px] glass-text-muted">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Палитра */}
@@ -1040,8 +996,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
             {/* На сайт */}
             <Link href="/"
-              className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors hover:bg-white/[0.07]"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1.5px solid rgba(255,255,255,0.07)" }}
+              className="glass-control flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
               onClick={() => setMobileSettingsOpen(false)}>
               <LogOut className="w-4 h-4 text-white/45" />
               <span className="text-sm text-white/60">Перейти на сайт</span>
@@ -1060,30 +1015,26 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
 
         {/* ── Mobile: только hamburger + bell (без поиска — поиск через Арая) ── */}
-        <div className="lg:hidden sticky top-0 z-20"
+        <div className="lg:hidden sticky top-0 z-20 glass-mobile-header"
           style={{
             paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
             paddingBottom: "8px",
             paddingLeft: "12px",
             paddingRight: "12px",
-            background: classic ? "rgba(248,250,252,0.95)" : "rgba(4,5,13,0.88)",
-            backdropFilter: "blur(24px) saturate(80%) brightness(0.70)",
-            WebkitBackdropFilter: "blur(24px) saturate(80%) brightness(0.70)",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
           }}>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setOpen(true)}
-              className="p-2 rounded-xl shrink-0 active:scale-90 transition-colors"
-              style={{ WebkitTapHighlightColor: "transparent", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)" }}
+              className="glass-pill p-2 rounded-xl shrink-0 active:scale-90 transition-colors"
+              style={{ WebkitTapHighlightColor: "transparent" }}
               aria-label="Меню">
               <Menu className="w-5 h-5 text-white/70" />
             </button>
             {/* Подсказка — поиск через Арая */}
             <button
               onClick={() => window.dispatchEvent(new CustomEvent("aray:open"))}
-              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-white/35 text-[13px] transition-all active:scale-98"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", WebkitTapHighlightColor: "transparent" }}>
+              className="glass-control flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-white/35 text-[13px] transition-all active:scale-98"
+              style={{ WebkitTapHighlightColor: "transparent" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>

@@ -9,7 +9,7 @@ import { existsSync } from "fs";
 
 async function checkAdmin() {
   const session = await auth();
-  return session && (session.user as any).role === "ADMIN";
+  return session && session.user.role === "ADMIN";
 }
 
 // ─── Smart slug-based matching ────────────────────────────────────────────────

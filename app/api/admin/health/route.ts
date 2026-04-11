@@ -6,7 +6,7 @@ import os from "os";
 
 async function checkAdmin() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   return session && (role === "ADMIN" || role === "SUPER_ADMIN");
 }
 
@@ -398,6 +398,43 @@ export async function GET() {
       });
     }
   } catch {}
+
+  // 16. ARAY Token Economy
+  try {
+    const day30 = new Date(Date.now() - 30 * 86400000);
+    const totalReqs = await (prisma as any).arayTokenLog?.count({ where: { createdAt: { gte: day30 } } }).catch(() => 0) || 0;
+    if (totalReqs > 0) {
+      const costAgg = await (prisma as any).arayTokenLog?.aggregate({
+        where: { createdAt: { gte: day30 } },
+        _sum: { costUsd: true },
+      }).catch(() => null);
+      const totalCost = costAgg?._sum?.costUsd || 0;
+      checks.push({
+        id: "aray_economy", name: "ARAY Token Economy", category: "aray",
+        status: totalCost > 50 ? "warn" : "ok",
+        message: `${totalReqs} запросов, $${totalCost.toFixed(4)} за 30 дней`,
+        detail: totalCost > 50 ? "Расход выше нормы — проверь маршрутизацию" : "Экономия в норме",
+      });
+    } else {
+      checks.push({
+        id: "aray_economy", name: "ARAY Token Economy", category: "aray",
+        status: "ok", message: "Нет данных за 30 дней", detail: "Логирование активно после деплоя",
+      });
+    }
+  } catch {
+    checks.push({
+      id: "aray_economy", name: "ARAY Token Economy", category: "aray",
+      status: "warn", message: "Таблица ArayTokenLog не готова", detail: "Нужен prisma db push",
+    });
+  }
+
+  // 17. ARAY API Key
+  checks.push({
+    id: "aray_api_key", name: "ARAY API ключ", category: "aray",
+    status: process.env.ANTHROPIC_API_KEY ? "ok" : "error",
+    message: process.env.ANTHROPIC_API_KEY ? "Настроен" : "ОТСУТСТВУЕТ",
+    detail: "ANTHROPIC_API_KEY для Арая",
+  });
 
   const summary = {
     ok:    checks.filter(c => c.status === "ok").length,

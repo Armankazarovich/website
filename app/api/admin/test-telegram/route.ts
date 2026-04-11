@@ -7,7 +7,7 @@ const STAFF_ROLES = ["ADMIN", "MANAGER"];
 
 export async function POST() {
   const session = await auth();
-  if (!session || !STAFF_ROLES.includes((session.user as any).role)) {
+  if (!session || !STAFF_ROLES.includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
