@@ -2815,3 +2815,77 @@ a:focus-visible {
   border-color: hsl(var(--primary)/0.40) !important;
   color: hsl(var(--primary)) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   GLOW CARD — курсорное свечение на карточках админки
+   Добавь data-glow или class="glow-card" к любому элементу.
+   Автоматически: .bg-card с border внутри админки.
+   ══════════════════════════════════════════════════════════════ */
+.glow-card,
+[data-glow] {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.glow-card:hover,
+[data-glow]:hover {
+  border-color: hsl(var(--primary) / 0.30) !important;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.08), 0 4px 24px hsl(var(--primary) / 0.06);
+}
+.dark .glow-card:hover,
+.dark [data-glow]:hover {
+  border-color: hsl(var(--primary) / 0.35) !important;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.12), 0 4px 32px hsl(var(--primary) / 0.10);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   КЛАССИЧЕСКИЙ РЕЖИМ — стекло в обоих темах
+   ══════════════════════════════════════════════════════════════ */
+
+/* Светлая тема — белое матовое стекло с лёгкой прозрачностью */
+.aray-classic-mode .bg-card {
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.aray-classic-mode .bg-card:hover {
+  background: rgba(255, 255, 255, 0.82) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+/* Тёмная классика — тёмное стекло */
+.dark.aray-classic-mode .bg-card,
+.dark .aray-classic-mode .bg-card {
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  background: rgba(18, 18, 22, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+.dark.aray-classic-mode .bg-card:hover,
+.dark .aray-classic-mode .bg-card:hover {
+  background: rgba(22, 22, 28, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Классический фон body — лёгкий оттенок вместо чисто белого */
+.aray-classic-mode {
+  background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%) !important;
+}
+.dark.aray-classic-mode,
+.dark .aray-classic-mode {
+  background: linear-gradient(135deg, hsl(20 14% 7%) 0%, hsl(20 10% 10%) 100%) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   AUTO GLOW — карточки в админке автоматически получают glow
+   ══════════════════════════════════════════════════════════════ */
+.aray-classic-mode main .bg-card[class*="rounded"],
+.aray-classic-mode main .bg-card[class*="border"],
+.aray-nature-mode main .bg-card[class*="rounded"],
+.aray-nature-mode main .bg-card[class*="border"] {
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}

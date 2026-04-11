@@ -3,34 +3,36 @@
 import { useState, useRef, useEffect } from "react";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
+import { NeuralBg } from "@/components/admin/neural-bg";
+import { CursorGlow } from "@/components/admin/cursor-glow";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
-  ArrowRight, ALargeSmall, Monitor, Zap, Palette, Image, Film,
+  ArrowRight, ALargeSmall, Monitor, Zap, Palette, Film,
 } from "lucide-react";
 
 // ── Ключи localStorage ────────────────────────────────────────────────────────
 const LS_CLASSIC = "aray-classic-mode";
-const LS_BG_MODE = "aray-bg-mode"; // "classic" | "photo" | "video"
+const LS_BG_MODE = "aray-bg-mode"; // "classic" | "video"
 const LS_FONT    = "aray-font-size";
 
-type BgMode = "classic" | "photo" | "video";
+type BgMode = "classic" | "video";
 
 function useClassicMode() {
-  const [bgMode, setBgMode] = useState<BgMode>("photo");
+  const [bgMode, setBgMode] = useState<BgMode>("classic");
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
     // Миграция: если старый LS_CLASSIC = "1" → bgMode = "classic"
     const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
     const stored = localStorage.getItem(LS_BG_MODE) as BgMode | null;
-    if (stored && ["classic", "photo", "video"].includes(stored)) {
+    if (stored && ["classic", "video"].includes(stored)) {
       setBgMode(stored);
     } else if (legacyClassic) {
       setBgMode("classic");
       localStorage.setItem(LS_BG_MODE, "classic");
     } else {
-      setBgMode("photo");
+      setBgMode("classic");
     }
     // Detect light theme — force classic styles when light so dark rgba() never shows
     const checkLight = () => {
@@ -53,7 +55,7 @@ function useClassicMode() {
     localStorage.setItem(LS_CLASSIC, mode === "classic" ? "1" : "0");
     window.dispatchEvent(new Event("aray-classic-change"));
   };
-  const toggle = () => setBg(bgMode === "classic" ? "photo" : "classic");
+  const toggle = () => setBg(bgMode === "classic" ? "video" : "classic");
   const classic = isLight || bgMode === "classic";
   return { classic, rawClassic: bgMode === "classic", bgMode: isLight ? "classic" as BgMode : bgMode, setBg, toggle };
 }
@@ -239,7 +241,6 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-import { AdminNatureBg } from "@/components/admin/admin-nature-bg";
 import { AdminVideoBg } from "@/components/admin/admin-video-bg";
 import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { useAdminLang } from "@/lib/admin-lang-context";
@@ -605,7 +606,6 @@ function ArayControlCenter() {
                   <div className="flex gap-1">
                     {([
                       { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic") },
-                      { id: "photo" as BgMode, icon: Image, label: t("bg_photo") },
                       { id: "video" as BgMode, icon: Film, label: t("bg_video") },
                     ]).map(opt => (
                       <button key={opt.id} onClick={() => setBg(opt.id)}
@@ -757,8 +757,9 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
-      {bgMode === "photo" && <AdminNatureBg enabled />}
       {bgMode === "video" && <AdminVideoBg enabled />}
+      {bgMode === "classic" && <NeuralBg enabled />}
+      <CursorGlow />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
@@ -962,7 +963,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               <div className="flex gap-2">
                 {([
                   { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic"), desc: "—" },
-                  { id: "photo" as BgMode, icon: Image, label: t("bg_photo"), desc: "—" },
                   { id: "video" as BgMode, icon: Film, label: t("bg_video"), desc: "—" },
                 ]).map(opt => (
                   <button key={opt.id} onClick={() => setBg(opt.id)}

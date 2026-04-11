@@ -34,7 +34,7 @@ const NIGHT_VIDEOS: VideoItem[] = [
 ];
 
 const FADE_MS = 2000;
-const LOAD_TIMEOUT_MS = 12_000; // 12 сек на загрузку — если не успело, показываем градиент
+const LOAD_TIMEOUT_MS = 8000; // 8 сек на загрузку — если не успело, показываем градиент
 
 function guessIsDark(): boolean {
   if (typeof window === "undefined") return true;
@@ -58,6 +58,7 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
   const [isMobile, setIsMobile] = useState(false);
   const [videoReady, setVideoReady] = useState(false); // Видео загрузилось и играет
   const [loadFailed, setLoadFailed] = useState<Record<number, boolean>>({});
+  const [fallbackToGradient, setFallbackToGradient] = useState(false); // Если видео не загрузилось за LOAD_TIMEOUT_MS
   const curVideoRef = useRef<HTMLVideoElement>(null);
   const nextVideoRef = useRef<HTMLVideoElement>(null);
   const loadTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -103,14 +104,15 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
     prevIsDark.current = isDark;
   }, [isDark, mounted]);
 
-  // Таймаут загрузки — если видео не начало играть за LOAD_TIMEOUT_MS, не показываем
+  // Таймаут загрузки — если видео не начало играть за LOAD_TIMEOUT_MS, переходим на градиент
   useEffect(() => {
     if (isMobile || !enabled) return;
     setVideoReady(false);
+    setFallbackToGradient(false);
     loadTimerRef.current = setTimeout(() => {
-      // Если за 12 сек не загрузилось — помечаем как failed
+      // Если за 8 сек не загрузилось — fallback на анимированный градиент
       if (!videoReady) {
-        setLoadFailed(prev => ({ ...prev, [cur]: true }));
+        setFallbackToGradient(true);
       }
     }, LOAD_TIMEOUT_MS);
     return () => { if (loadTimerRef.current) clearTimeout(loadTimerRef.current); };
@@ -119,34 +121,31 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
 
   const handleCanPlay = useCallback(() => {
     setVideoReady(true);
+    setFallbackToGradient(false);
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
   }, []);
 
-  // Переключение видео по окончании текущего
+  // Переключение видео по окончании текущего — плавный кроссфейд через 2 видео элемента
   const handleEnded = useCallback(() => {
-    let nextIdx = (cur + 1) % VIDEOS.length;
-    // Пропускаем видео с ошибкой загрузки
-    for (let i = 0; i < VIDEOS.length; i++) {
-      if (!loadFailed[nextIdx]) break;
-      nextIdx = (nextIdx + 1) % VIDEOS.length;
-    }
+    const nextIdx = (cur + 1) % VIDEOS.length;
     setNext(nextIdx);
     setFading(true);
+    setVideoReady(false);
 
     setTimeout(() => {
       setCur(nextIdx);
       setNext(null);
       setFading(false);
-      setVideoReady(false);
     }, FADE_MS);
-  }, [cur, VIDEOS.length, loadFailed]);
+  }, [cur, VIDEOS.length]);
 
   const handleError = useCallback((idx: number) => {
-    setLoadFailed(prev => ({ ...prev, [idx]: true }));
     if (idx === cur) {
+      // При ошибке загрузки — переходим на следующее видео
       const nextIdx = (cur + 1) % VIDEOS.length;
       setCur(nextIdx);
       setVideoReady(false);
+      setFallbackToGradient(false);
     }
   }, [cur, VIDEOS.length]);
 
@@ -154,7 +153,7 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
 
   const curVideo = VIDEOS[cur];
   const nextVideo = next !== null ? VIDEOS[next] : null;
-  const showVideo = !isMobile && !loadFailed[cur];
+  const showVideo = !isMobile && !fallbackToGradient;
 
   return (
     <div className="fixed inset-0 z-[0] overflow-hidden pointer-events-none select-none" aria-hidden>
@@ -166,18 +165,18 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
       />
 
       {/* ── Слой 1: CSS градиент-блобы (всегда видны, фоллбэк для медленного интернета) ── */}
-      <div className="absolute inset-0" style={{ filter: isMobile ? "none" : "blur(100px)", opacity: videoReady ? 0.3 : 0.85, transition: "opacity 3s ease" }}>
+      <div className="absolute inset-0" style={{ filter: isMobile ? "none" : "blur(100px)", opacity: videoReady && !fallbackToGradient ? 0.3 : 0.85, transition: "opacity 3s ease" }}>
         {isDark ? (
           <>
-            <div className="absolute rounded-full" style={{ width: "65%", height: "65%", top: "5%", left: "-5%", background: "radial-gradient(circle, #0d3d28 0%, transparent 70%)", animation: "aray-blob-1 20s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
-            <div className="absolute rounded-full" style={{ width: "58%", height: "58%", top: "45%", left: "48%", background: "radial-gradient(circle, #0a1e3d 0%, transparent 70%)", animation: "aray-blob-2 24s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
-            <div className="absolute rounded-full" style={{ width: "52%", height: "52%", top: "25%", left: "35%", background: "radial-gradient(circle, #14093a 0%, transparent 70%)", animation: "aray-blob-3 18s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width: "65%", height: "65%", top: "5%", left: "-5%", background: "radial-gradient(circle, #0d3d28 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-1 20s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width: "58%", height: "58%", top: "45%", left: "48%", background: "radial-gradient(circle, #0a1e3d 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-2 24s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width: "52%", height: "52%", top: "25%", left: "35%", background: "radial-gradient(circle, #14093a 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-3 18s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
           </>
         ) : (
           <>
-            <div className="absolute rounded-full" style={{ width: "70%", height: "70%", top: "-5%", left: "-8%", background: "radial-gradient(circle, #60c5a8 0%, transparent 70%)", animation: "aray-blob-1 20s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
-            <div className="absolute rounded-full" style={{ width: "60%", height: "60%", top: "40%", left: "45%", background: "radial-gradient(circle, #6ab8e0 0%, transparent 70%)", animation: "aray-blob-2 24s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
-            <div className="absolute rounded-full" style={{ width: "55%", height: "55%", top: "20%", left: "30%", background: "radial-gradient(circle, #78c895 0%, transparent 70%)", animation: "aray-blob-3 18s ease-in-out infinite", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width: "70%", height: "70%", top: "-5%", left: "-8%", background: "radial-gradient(circle, #60c5a8 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-1 20s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width: "60%", height: "60%", top: "40%", left: "45%", background: "radial-gradient(circle, #6ab8e0 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-2 24s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
+            <div className="absolute rounded-full" style={{ width: "55%", height: "55%", top: "20%", left: "30%", background: "radial-gradient(circle, #78c895 0%, transparent 70%)", animation: fallbackToGradient ? "aray-blob-3 18s ease-in-out infinite" : "none", animationPlayState: tabHidden ? "paused" : "running" }} />
           </>
         )}
       </div>
@@ -204,7 +203,7 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
       )}
 
       {/* ── Слой 3: Следующее видео (fade-in при переключении) ── */}
-      {showVideo && nextVideo && next !== null && !loadFailed[next] && (
+      {showVideo && nextVideo && next !== null && (
         <video
           ref={nextVideoRef}
           key={`video-next-${next}-${isDark}`}

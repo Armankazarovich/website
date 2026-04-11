@@ -192,7 +192,7 @@ const T: Record<LangCode, Translations> = {
     language: "Լեզու", save: "Պահել", cancel: "Չեղարկել", delete: "Ջնջել",
     edit: "Խմբագրել", add: "Ավելացնել", loading: "Բեռնվում է...",
     error: "Սխալ", success: "Հաջողություն", confirm: "Հաստատել", back: "Հետ",
-    bg_panel: "Ֆdelays վahh", bg_classic: "Դasakan", bg_photo: "Լuusan", bg_video: "Видеo", font_size: "Տarri չafh",
+    bg_panel: "Վահանակի ֆdelays", bg_classic: "Դասական", bg_photo: "Ֆoto", bg_video: "Տideo", font_size: "Տառաչափ",
   },
   tr: {
     dashboard: "Gösterge Paneli", orders: "Siparişler", crm: "CRM — Adaylar",
@@ -212,7 +212,7 @@ const T: Record<LangCode, Translations> = {
     language: "Dil", save: "Kaydet", cancel: "İptal", delete: "Sil",
     edit: "Düzenle", add: "Ekle", loading: "Yükleniyor...",
     error: "Hata", success: "Başarılı", confirm: "Onayla", back: "Geri",
-    bg_panel: "Panel Arka Planı", bg_classic: "Klasik", bg_photo: "Fotoğraf", bg_video: "Video", font_size: "Yazı Boyutu",
+    bg_panel: "Panel Arkaplanı", bg_classic: "Klasik", bg_photo: "Fotoğraf", bg_video: "Video", font_size: "Yazı Boyutu",
   },
   de: {
     dashboard: "Dashboard", orders: "Bestellungen", crm: "CRM — Leads",
@@ -272,7 +272,7 @@ const T: Record<LangCode, Translations> = {
     language: "Idioma", save: "Guardar", cancel: "Cancelar", delete: "Eliminar",
     edit: "Editar", add: "Agregar", loading: "Cargando...",
     error: "Error", success: "Éxito", confirm: "Confirmar", back: "Atrás",
-    bg_panel: "Fondo del panel", bg_classic: "Clásico", bg_photo: "Foto", bg_video: "Vídeo", font_size: "Tamaño de fuente",
+    bg_panel: "Fondo del panel", bg_classic: "Clásico", bg_photo: "Foto", bg_video: "Video", font_size: "Tamaño de fuente",
   },
   ar: {
     dashboard: "لوحة التحكم", orders: "الطلبات", crm: "CRM — العملاء المحتملون",
@@ -292,7 +292,7 @@ const T: Record<LangCode, Translations> = {
     language: "اللغة", save: "حفظ", cancel: "إلغاء", delete: "حذف",
     edit: "تعديل", add: "إضافة", loading: "جاري التحميل...",
     error: "خطأ", success: "نجاح", confirm: "تأكيد", back: "رجوع",
-    bg_panel: "خلفية اللوحة", bg_classic: "كلاسيكي", bg_photo: "صورة", bg_video: "فيديو", font_size: "حجم الخط",
+    bg_panel: "خلفية اللوحة", bg_classic: "كلاسيكي", bg_photo: "صور", bg_video: "فيديو", font_size: "حجم الخط",
   },
   zh: {
     dashboard: "仪表盘", orders: "订单", crm: "CRM — 潜在客户",
@@ -372,7 +372,7 @@ const T: Record<LangCode, Translations> = {
     language: "言語", save: "保存", cancel: "キャンセル", delete: "削除",
     edit: "編集", add: "追加", loading: "読み込み中...",
     error: "エラー", success: "成功", confirm: "確認", back: "戻る",
-    bg_panel: "パネル背景", bg_classic: "クラシック", bg_photo: "写真", bg_video: "動画", font_size: "文字サイズ",
+    bg_panel: "パネル背景", bg_classic: "クラシック", bg_photo: "写真", bg_video: "動画", font_size: "フォントサイズ",
   },
   ko: {
     dashboard: "대시보드", orders: "주문", crm: "CRM — 리드",
