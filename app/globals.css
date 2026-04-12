@@ -2081,6 +2081,45 @@ a:focus-visible {
 .aray-classic-mode .aray-sidebar .text-primary {
   color: hsl(var(--primary)) !important;
 }
+/* ═══ ТЁМНЫЕ ПАНЕЛИ — ВСЕГДА тёмный стиль, даже в светлой классике ═══ */
+/* Применяется к: сайдбар, ARAY Control Center попап, мобильные панели */
+.aray-classic-mode .aray-dark-panel,
+.aray-classic-mode .aray-dark-panel * {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.aray-classic-mode .aray-dark-panel .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.50) !important;
+}
+.aray-classic-mode .aray-dark-panel .text-foreground {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.aray-classic-mode .aray-dark-panel .text-primary {
+  color: hsl(var(--primary)) !important;
+}
+.aray-classic-mode .aray-dark-panel .glass-popup-divider {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.aray-classic-mode .aray-dark-panel .glass-control {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.aray-classic-mode .aray-dark-panel .glass-control:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+.aray-classic-mode .aray-dark-panel .glass-control-active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: hsl(var(--primary) / 0.5) !important;
+}
+.aray-classic-mode .aray-dark-panel .glass-text-muted {
+  color: rgba(255, 255, 255, 0.38) !important;
+}
+.aray-classic-mode .aray-dark-panel .glass-text-label {
+  color: rgba(255, 255, 255, 0.28) !important;
+}
+.aray-classic-mode .aray-dark-panel [class*="hover:bg-primary"] {
+  --tw-bg-opacity: 0.06;
+}
+
 /* Glass-контролы внутри сайдбара — ВСЕГДА тёмные, даже в светлой классике */
 .aray-classic-mode .aray-sidebar .glass-control {
   background: rgba(255, 255, 255, 0.06) !important;

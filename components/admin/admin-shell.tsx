@@ -556,8 +556,8 @@ function ArayControlCenter() {
 
       {/* ══ ARAY Control Center Panel ════════════════════════════ */}
       {open && panelPos && (
-        <div className="glass-popup fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
-          style={{ bottom: panelPos.bottom, left: panelPos.left }}>
+        <div className="aray-dark-panel fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
+          style={{ bottom: panelPos.bottom, left: panelPos.left, background: "linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.95))", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(24px)" }}>
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b glass-popup-divider">
