@@ -87,8 +87,8 @@ function buildAdminSystemPrompt(ctx: Awaited<ReturnType<typeof getBusinessContex
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role as string;
-    const staffName = (session?.user as any)?.name as string || "Сотрудник";
+    const role = session?.user?.role as string;
+    const staffName = session?.user?.name as string || "Сотрудник";
 
     if (!session || !role || role === "USER") {
       return NextResponse.json({ error: "Нет доступа" }, { status: 401 });

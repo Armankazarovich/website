@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 
 async function checkAdmin() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   return session && (role === "ADMIN" || role === "SUPER_ADMIN");
 }
 

@@ -698,7 +698,7 @@ canvas,
 .aray-classic-mode .aray-sidebar .text-muted-foreground,
 .aray-classic-mode .aray-sidebar p,
 .aray-classic-mode .aray-sidebar span:not([class*="bg-"]) {
-  color: inherit !important;
+  color: rgba(255, 255, 255, 0.92) !important;
 }
 
 /* .glass-control — кнопки-переключатели, контролы внутри попапов */
@@ -2029,6 +2029,7 @@ a:focus-visible {
 .aray-classic-mode {
   color-scheme: light dark;
 }
+/* Classic mode: белый текст → тёмный в контенте */
 .aray-classic-mode .text-white\/90,
 .aray-classic-mode .text-white\/85,
 .aray-classic-mode .text-white\/80,
@@ -2049,6 +2050,36 @@ a:focus-visible {
 .aray-classic-mode .text-white\/18,
 .aray-classic-mode .text-white\/15 {
   color: hsl(var(--muted-foreground)) !important;
+}
+
+/* ═══ САЙДБАР — ВСЕГДА белый текст, даже в светлой классике ═══ */
+.aray-classic-mode .aray-sidebar,
+.aray-classic-mode .aray-sidebar * {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+.aray-classic-mode .aray-sidebar .text-white {
+  color: white !important;
+}
+.aray-classic-mode .aray-sidebar [class*="text-white/9"],
+.aray-classic-mode .aray-sidebar [class*="text-white/8"],
+.aray-classic-mode .aray-sidebar [class*="text-white/7"],
+.aray-classic-mode .aray-sidebar [class*="text-white/6"] {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.aray-classic-mode .aray-sidebar [class*="text-white/5"],
+.aray-classic-mode .aray-sidebar [class*="text-white/4"],
+.aray-classic-mode .aray-sidebar [class*="text-white/3"] {
+  color: rgba(255, 255, 255, 0.50) !important;
+}
+.aray-classic-mode .aray-sidebar .text-muted-foreground {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+.aray-classic-mode .aray-sidebar .text-foreground {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+/* Группы навигации (ПРОДАЖИ, ТОВАРЫ, МАРКЕТИНГ) */
+.aray-classic-mode .aray-sidebar .text-primary {
+  color: hsl(var(--primary)) !important;
 }
 
 /* Классический режим — фон с rgba dark colors → белый/карточный */

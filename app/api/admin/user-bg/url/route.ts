@@ -11,8 +11,8 @@ function getUserBgKey(userId: string) {
 // POST /api/admin/user-bg/url — добавить URL (например Unsplash) без загрузки файла
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role as string;
-  const userId = (session?.user as any)?.id as string;
+  const role = session?.user?.role as string;
+  const userId = session?.user?.id as string;
 
   if (!session || !role || role === "USER" || !userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

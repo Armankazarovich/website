@@ -86,6 +86,13 @@ export async function POST(req: NextRequest) {
         ? { page: context?.page }
         : { page: context?.page, productName: context?.productName, cartTotal: context?.cartTotal, project: savedProject }
     );
+    // ── Умная маршрутизация модели ──────────────────────────────────────────
+    const lastUserMessage = formattedMessages.filter(m => m.role === "user").pop()?.content || "";
+    const hasTools = arayRole !== "customer" || !!context?.productName;
+    const tier = classifyQuery(lastUserMessage, { role: arayRole, hasTools, messageCount: formattedMessages.length });
+    const modelConfig = getModelConfig(tier);
+    const systemPrompt = basePrompt + memoryContext + getBrevityInstruction(tier);
+
     // ── Сообщения ────────────────────────────────────────────────────────────
     type ChatMessage = { role: "user" | "assistant"; content: string };
     const rawMessages: ChatMessage[] = messages.slice(-20).map((m: any) => ({
@@ -93,13 +100,6 @@ export async function POST(req: NextRequest) {
     }));
     const firstUserIdx = rawMessages.findIndex(m => m.role === "user");
     const formattedMessages: ChatMessage[] = firstUserIdx >= 0 ? rawMessages.slice(firstUserIdx) : rawMessages;
-
-    // ── Умная маршрутизация модели ──────────────────────────────────────────
-    const lastUserMessage = formattedMessages.filter(m => m.role === "user").pop()?.content || "";
-    const hasTools = arayRole !== "customer" || !!context?.productName;
-    const tier = classifyQuery(lastUserMessage, { role: arayRole, hasTools, messageCount: formattedMessages.length });
-    const modelConfig = getModelConfig(tier);
-    const systemPrompt = basePrompt + memoryContext + getBrevityInstruction(tier);
 
     // ── Streaming response ───────────────────────────────────────────────────
     const responseHeaders = new Headers({ "Content-Type": "text/plain; charset=utf-8" });

@@ -77,12 +77,14 @@ export function PaletteProvider({
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && PALETTES.find((p) => p.id === stored) && allowed.includes(stored)) {
-      // User has a saved preference — use it
+    // Если есть сохранённая палитра (любая валидная) — всегда применяем
+    // Ограничение по allowed действует только в UI выбора (для клиентов),
+    // а не при восстановлении предпочтения пользователя
+    if (stored && PALETTES.find((p) => p.id === stored)) {
       setPaletteState(stored);
       applyPalette(stored);
     } else {
-      // No saved preference — apply the default palette set by admin
+      // Нет сохранённого — применяем дефолт из настроек админки
       const def = defaultPalette || "timber";
       setPaletteState(def);
       applyPalette(def);

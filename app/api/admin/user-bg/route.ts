@@ -13,8 +13,8 @@ function getUserBgKey(userId: string) {
 
 async function getStaffSession() {
   const session = await auth();
-  const role = (session?.user as any)?.role as string;
-  const userId = (session?.user as any)?.id as string;
+  const role = session?.user?.role as string;
+  const userId = session?.user?.id as string;
   if (!session || !role || role === "USER" || !userId) return null;
   return { userId, role };
 }

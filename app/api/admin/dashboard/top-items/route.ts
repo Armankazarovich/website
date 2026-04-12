@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const role = session?.user?.role;
     if (!role || !["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"].includes(role)) {
       return NextResponse.json({ items: [] });
     }

@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 
 export async function GET() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   if (!session || !["ADMIN", "SUPER_ADMIN"].includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }

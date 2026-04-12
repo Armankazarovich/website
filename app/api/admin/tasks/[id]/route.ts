@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 
 async function getSession() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
-  const id = (session?.user as any)?.id;
+  const role = session?.user?.role;
+  const id = session?.user?.id;
   if (!session || !["ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role)) return null;
   return { role, id };
 }

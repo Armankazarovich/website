@@ -38,9 +38,9 @@ export async function POST(req: NextRequest) {
 
   // ── Auth ───────────────────────────────────────────────────────────────────
   const session = await auth();
-  const userId = (session?.user as any)?.id as string | undefined;
-  const sessionRole = (session?.user as any)?.role as string | undefined;
-  const sessionName = (session?.user as any)?.name as string | undefined;
+  const userId = session?.user?.id as string | undefined;
+  const sessionRole = session?.user?.role as string | undefined;
+  const sessionName = session?.user?.name as string | undefined;
 
   const cookieStore = await cookies();
   let sessionId = cookieStore.get("aray_sid")?.value;

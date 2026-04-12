@@ -22,7 +22,7 @@ const ORDER_STATUS_TO_LEAD_STAGE: Record<string, string> = {
 // POST /api/admin/crm/sync-orders — импортировать все заказы в CRM
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   if (!session || !STAFF_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 // GET — статистика синхронизации
 export async function GET(req: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   if (!session || !STAFF_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -8,8 +8,8 @@ const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT",
 
 async function getSession() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
-  const id = (session?.user as any)?.id;
+  const role = session?.user?.role;
+  const id = session?.user?.id;
   if (!session || !STAFF_ROLES.includes(role)) return null;
   return { role, id };
 }

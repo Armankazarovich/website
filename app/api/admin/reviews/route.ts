@@ -6,7 +6,7 @@ import { auth } from "@/lib/auth";
 
 async function checkAdmin() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   return role === "ADMIN" || role === "SUPER_ADMIN" || role === "MANAGER";
 }
 

@@ -10,7 +10,7 @@ const VALID_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"];
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -51,12 +51,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Запретить удалять самого себя
-  if ((session?.user as any)?.id === params.id) {
+  if (session?.user?.id === params.id) {
     return NextResponse.json({ error: "Нельзя удалить свой аккаунт" }, { status: 400 });
   }
 

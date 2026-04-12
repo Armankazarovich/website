@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 async function checkAdmin() {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   return session && ["ADMIN", "MANAGER"].includes(role);
 }
 

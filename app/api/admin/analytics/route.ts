@@ -8,7 +8,7 @@ const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT"];
 
 export async function GET() {
   const session = await auth();
-  if (!session || !STAFF_ROLES.includes((session?.user as any)?.role)) {
+  if (!session || !STAFF_ROLES.includes(session?.user?.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

@@ -176,10 +176,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* Anti-flash: синхронно применяем палитру ДО гидратации React */}
         <script dangerouslySetInnerHTML={{ __html: `
 (function(){try{
-  var allowed=${JSON.stringify(enabledIds)};
   var def=${JSON.stringify(defaultPalette)};
   var stored=localStorage.getItem('color-palette');
-  var p=(stored&&allowed.includes(stored))?stored:def;
+  var p=stored||def;
   if(p&&p!=='timber')document.documentElement.setAttribute('data-palette',p);
   else document.documentElement.removeAttribute('data-palette');
 }catch(e){}}());

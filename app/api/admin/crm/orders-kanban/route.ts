@@ -34,7 +34,7 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
 // GET /api/admin/crm/orders-kanban — заказы для Kanban по статусам
 export async function GET(req: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   if (!session || !STAFF_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
 // PATCH /api/admin/crm/orders-kanban — сменить статус + отправить все уведомления
 export async function PATCH(req: NextRequest) {
   const session = await auth();
-  const role = (session?.user as any)?.role;
+  const role = session?.user?.role;
   if (!session || !STAFF_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

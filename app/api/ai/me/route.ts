@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 export async function GET() {
   try {
     const session = await auth();
-    const userId = (session?.user as any)?.id as string | undefined;
+    const userId = session?.user?.id as string | undefined;
     const cookieStore = await cookies();
     const sessionId = cookieStore.get("aray_sid")?.value;
 
