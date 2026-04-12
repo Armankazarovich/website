@@ -820,6 +820,15 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
   const { t } = useAdminLang();
   const pageTitle = usePageTitle();
 
+  // Синхронизируем aray-classic-mode на <body> для порталов (Sheet, Dialog)
+  useEffect(() => {
+    document.body.classList.toggle("aray-classic-mode", classic);
+    document.body.classList.toggle("aray-nature-mode", !classic);
+    return () => {
+      document.body.classList.remove("aray-classic-mode", "aray-nature-mode");
+    };
+  }, [classic]);
+
   // Свайп от левого края → открыть меню
   const touchStartX = useRef(0);
   useEffect(() => {
@@ -913,7 +922,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)" }}
+          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)", background: `linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.92))` }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
@@ -961,7 +970,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
       <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
         <SheetContent side="right" className="lg:hidden w-80 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)" }}
+          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)", background: `linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.92))` }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
 

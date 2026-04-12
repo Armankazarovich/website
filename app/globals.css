@@ -2081,6 +2081,29 @@ a:focus-visible {
 .aray-classic-mode .aray-sidebar .text-primary {
   color: hsl(var(--primary)) !important;
 }
+/* Glass-контролы внутри сайдбара — ВСЕГДА тёмные, даже в светлой классике */
+.aray-classic-mode .aray-sidebar .glass-control {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.aray-classic-mode .aray-sidebar .glass-control:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+.aray-classic-mode .aray-sidebar .glass-control-active {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: hsl(var(--primary) / 0.5) !important;
+}
+/* Границы и разделители внутри сайдбара */
+.aray-classic-mode .aray-sidebar [class*="border-white/"] {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+/* Input/select внутри сайдбара */
+.aray-classic-mode .aray-sidebar input,
+.aray-classic-mode .aray-sidebar select {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
 
 /* Классический режим — фон с rgba dark colors → белый/карточный */
 .aray-classic-mode [style*="rgba(12,12,14"],
