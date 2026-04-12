@@ -251,6 +251,89 @@ import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminSidebarWeather } from "@/components/admin/admin-dashboard-widgets";
 import { TourTriggerButton } from "@/components/admin/admin-tour";
 
+// ── ARAY Translation Check — проверка грамматики перевода ────────────────────
+function ArayTranslationCheck() {
+  const { lang } = useAdminLang();
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; issues: string[] } | null>(null);
+
+  if (lang === "ru") return null; // Русский — проверка не нужна
+
+  async function checkGrammar() {
+    setChecking(true);
+    setResult(null);
+    try {
+      // Собираем видимый текст страницы (main контент, не сайдбар)
+      const main = document.querySelector("main");
+      if (!main) { setResult({ ok: true, issues: [] }); return; }
+      const text = main.innerText.substring(0, 2000); // Первые 2000 символов
+      const langName = lang === "en" ? "English" : lang === "de" ? "German" : lang === "fr" ? "French" : lang === "es" ? "Spanish" : lang;
+
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{
+            role: "user",
+            content: `You are a professional translator and grammar checker. Check this ${langName} translation for grammar errors, awkward phrasing, or untranslated words. The original language is Russian. Reply in JSON format: {"ok": true/false, "issues": ["issue1", "issue2"]}. Max 5 issues. If translation is good, return {"ok": true, "issues": []}. Be concise.\n\nText to check:\n${text}`
+          }],
+          context: "translation_check"
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const reply = data.reply || data.message || "";
+        try {
+          const jsonMatch = reply.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            setResult(JSON.parse(jsonMatch[0]));
+          } else {
+            setResult({ ok: true, issues: [reply.substring(0, 200)] });
+          }
+        } catch {
+          setResult({ ok: true, issues: [] });
+        }
+      }
+    } catch {
+      setResult({ ok: false, issues: ["Не удалось проверить — попробуйте позже"] });
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  return (
+    <div className="pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+      <button
+        onClick={checkGrammar}
+        disabled={checking}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-semibold transition-all"
+        style={{
+          background: result?.ok === true ? "rgba(34,197,94,0.15)" : result?.ok === false ? "rgba(239,68,68,0.15)" : "hsl(var(--primary)/0.12)",
+          color: result?.ok === true ? "#22c55e" : result?.ok === false ? "#ef4444" : "hsl(var(--primary))",
+          border: "1px solid " + (result?.ok === true ? "rgba(34,197,94,0.25)" : result?.ok === false ? "rgba(239,68,68,0.25)" : "hsl(var(--primary)/0.2)"),
+        }}
+      >
+        {checking ? (
+          <><span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" /> Проверяю...</>
+        ) : result?.ok === true ? (
+          "✓ Перевод OK"
+        ) : result?.ok === false ? (
+          "⚠ Найдены замечания"
+        ) : (
+          "🔍 ARAY: Проверить перевод"
+        )}
+      </button>
+      {result && result.issues.length > 0 && (
+        <div className="mt-2 p-2 rounded-xl text-[10px] space-y-1" style={{ background: "rgba(239,68,68,0.08)" }}>
+          {result.issues.map((issue, i) => (
+            <p key={i} className="text-white/70">• {issue}</p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
 function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
   const [count, setCount] = useState(0);
@@ -632,6 +715,9 @@ function ArayControlCenter() {
                   <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Язык</p>
                   <AdminLangPickerInline />
                 </div>
+
+                {/* ARAY грамматика — проверка качества перевода */}
+                <ArayTranslationCheck />
 
               </div>
             )}

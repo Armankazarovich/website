@@ -14,6 +14,36 @@ const GTRANSLATE_MAP: Record<LangCode, string> = {
 };
 
 /**
+ * Убивает баннер Google Translate — вызывается постоянно через MutationObserver.
+ */
+function hideGoogleBanner() {
+  // Убираем iframe-баннер
+  document.querySelectorAll<HTMLElement>(".goog-te-banner-frame, .skiptranslate").forEach(el => {
+    el.style.display = "none";
+    el.style.height = "0";
+    el.style.overflow = "hidden";
+    el.style.visibility = "hidden";
+  });
+  // Убираем top offset на body
+  document.body.style.top = "0px";
+  document.documentElement.style.marginTop = "0px";
+}
+
+// Следим за DOM — Google вставляет баннер динамически после перевода
+let _bannerObserver: MutationObserver | null = null;
+function startBannerKiller() {
+  if (_bannerObserver) return;
+  _bannerObserver = new MutationObserver(() => hideGoogleBanner());
+  _bannerObserver.observe(document.body, { childList: true, subtree: false });
+  // Также чекаем каждую секунду первые 10 сек (Google может задержать вставку)
+  let checks = 0;
+  const timer = setInterval(() => {
+    hideGoogleBanner();
+    if (++checks > 10) clearInterval(timer);
+  }, 1000);
+}
+
+/**
  * Активирует Google Translate для перевода страницы.
  * Google Translate Element API загружается один раз, затем переключается программно.
  */
@@ -42,11 +72,17 @@ function triggerGoogleTranslate(langCode: LangCode) {
   document.cookie = `googtrans=/ru/${gtCode}; path=/`;
   document.cookie = `googtrans=/ru/${gtCode}; path=/; domain=.${location.hostname}`;
 
+  // Запускаем убийцу баннера
+  startBannerKiller();
+  setTimeout(hideGoogleBanner, 300);
+  setTimeout(hideGoogleBanner, 1500);
+
   // Если Google Translate уже инициализирован — переключаем
   const sel = document.querySelector<HTMLSelectElement>(".goog-te-combo");
   if (sel) {
     sel.value = gtCode;
     sel.dispatchEvent(new Event("change"));
+    setTimeout(hideGoogleBanner, 500);
     return;
   }
 
@@ -57,11 +93,14 @@ function triggerGoogleTranslate(langCode: LangCode) {
         { pageLanguage: "ru", autoDisplay: false, layout: 0 },
         "google_translate_element"
       );
-      // После инициализации — выбираем нужный язык
+      // После инициализации — выбираем нужный язык + прячем баннер
       setTimeout(() => {
         const s = document.querySelector<HTMLSelectElement>(".goog-te-combo");
         if (s) { s.value = gtCode; s.dispatchEvent(new Event("change")); }
+        hideGoogleBanner();
       }, 500);
+      setTimeout(hideGoogleBanner, 1500);
+      setTimeout(hideGoogleBanner, 3000);
     };
     // Загружаем скрипт
     const script = document.createElement("script");

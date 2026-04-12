@@ -10,12 +10,24 @@
 #goog-gt-tt,
 .goog-tooltip,
 .goog-tooltip:hover,
-.goog-text-highlight {
+.goog-text-highlight,
+.goog-te-spinner-pos,
+#goog-gt-vt,
+.goog-te-ftab-link {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 .goog-te-gadget { display: none !important; }
+/* iframe баннер Google Translate — убиваем полностью */
+iframe.goog-te-banner-frame { display: none !important; height: 0 !important; border: none !important; }
+body > .skiptranslate { display: none !important; height: 0 !important; overflow: hidden !important; }
 /* Убираем сдвиг body от Google Translate banner */
-body { top: 0 !important; }
+body { top: 0 !important; position: static !important; min-height: 100vh !important; }
+html.translated-ltr { margin-top: 0 !important; }
+html.translated-rtl { margin-top: 0 !important; }
+html.translated-ltr > body { top: 0 !important; }
 /* Убираем подчёркивания Google Translate */
 .goog-te-menu-value span { text-decoration: none !important; }
 /* Сохраняем наши стили при переводе */
