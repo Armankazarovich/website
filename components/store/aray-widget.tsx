@@ -12,6 +12,13 @@ import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-bro
 import { useTheme } from "next-themes";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
+// ─── Haptic / Vibration ──────────────────────────────────────────────────────
+function haptic(style: "light" | "medium" | "heavy" = "light") {
+  if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  const ms = style === "heavy" ? 30 : style === "medium" ? 15 : 8;
+  try { navigator.vibrate(ms); } catch {}
+}
+
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 export type ArayAction = {
@@ -737,6 +744,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }
     setMessages([{ id: "welcome", role: "assistant", content: greeting, timestamp: new Date() }]);
     if (typeof document !== "undefined") document.cookie = "aray_visited=1; max-age=2592000; path=/";
+    // Голосовое приветствие в voice-режиме (короткое)
+    if (voiceModeRef.current === "voice") {
+      const shortGreeting = name ? `${t}, ${name.split(" ")[0]}!` : t + "!";
+      setTimeout(() => speak(shortGreeting), 400);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, staffName, userName, page, productName, cartTotal, isAdmin]);
 
@@ -776,7 +788,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
 
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const handleOpen = () => { setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); };
+  const handleOpen = () => { haptic("medium"); setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); };
 
   // ── Отправка сообщения ────────────────────────────────────────────────────
   const sendMessage = async (text?: string) => {
@@ -932,9 +944,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
 
   // Голосовой ввод
   const startVoice = useCallback(async () => {
+    haptic("medium");
     try {
       const text = await micListen();
       if (text) {
+        haptic("light");
         if (voiceModeRef.current === "voice") {
           sendMessage(text);
         } else {
@@ -1204,7 +1218,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     {chips.length > 0 && messages.length <= 1 && (
                       <div className="flex gap-2 flex-wrap justify-center mt-1">
                         {chips.map(q => (
-                          <button key={q} onClick={() => sendMessage(q)}
+                          <button key={q} onClick={() => { haptic("light"); sendMessage(q); }}
                             className="text-[11px] px-3 py-1.5 rounded-full transition-all active:scale-95"
                             style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.18)", color: "hsl(var(--primary))" }}>
                             {q}
@@ -1270,7 +1284,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2 focus:outline-none transition-all"
                     style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "80px" }}
                   />
-                  <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
+                  <button onClick={() => { haptic("light"); sendMessage(); }} disabled={loading || !input.trim()}
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
                     style={{
                       background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
@@ -1433,7 +1447,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     {chips.length > 0 && messages.length <= 1 && (
                       <div className="flex gap-2 flex-wrap justify-center mt-2">
                         {chips.map(q => (
-                          <button key={q} onClick={() => sendMessage(q)}
+                          <button key={q} onClick={() => { haptic("light"); sendMessage(q); }}
                             className="text-[12px] px-3.5 py-2 rounded-full transition-all active:scale-95"
                             style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.18)", color: "hsl(var(--primary))" }}>
                             {q}
@@ -1489,7 +1503,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       <MessageSquare className="w-4 h-4" style={{ color: txtSub }} />
                     </button>
                     <button
-                      onClick={listening ? stopVoice : startVoice}
+                      onClick={() => { haptic("heavy"); listening ? stopVoice() : startVoice(); }}
                       className="w-16 h-16 rounded-full flex items-center justify-center relative transition-all active:scale-90"
                       style={{
                         background: listening
@@ -1529,7 +1543,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2.5 focus:outline-none"
                       style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "100px" }}
                     />
-                    <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
+                    <button onClick={() => { haptic("light"); sendMessage(); }} disabled={loading || !input.trim()}
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"
                       style={{
                         background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
