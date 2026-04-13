@@ -37,28 +37,51 @@ function useWeather() {
       } catch { /* тихо */ }
     }
 
-    // Шаг 1: сразу Химки (без ожидания)
-    fetchWeather(55.8945, 37.3877, "Химки");
+    // Проверяем кэш геолокации (не спрашиваем каждый раз!)
+    const GEO_KEY = "aray-geo-cache";
+    const cached = (() => {
+      try {
+        const raw = localStorage.getItem(GEO_KEY);
+        if (!raw) return null;
+        const d = JSON.parse(raw);
+        // Кэш на 1 час
+        if (Date.now() - d.ts > 3600_000) return null;
+        return d as { lat: number; lon: number; city: string; ts: number };
+      } catch { return null; }
+    })();
 
-    // Шаг 2: если разрешат геолокацию — обновим
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude: la, longitude: lo } = pos.coords;
-          let city = "Ваш город";
-          try {
-            const geo = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&accept-language=ru`,
-              { headers: { "User-Agent": "PiloRus-Admin/1.0" } }
-            );
-            const gd = await geo.json();
-            city = gd.address?.city || gd.address?.town || gd.address?.village || gd.address?.suburb || city;
-          } catch { /* оставим координаты */ }
-          fetchWeather(la, lo, city);
-        },
-        () => { /* отказал — Химки уже показаны */ },
-        { timeout: 6000, maximumAge: 300_000 }
-      );
+    if (cached) {
+      // Есть свежий кэш — используем без запроса геолокации
+      fetchWeather(cached.lat, cached.lon, cached.city);
+    } else {
+      // Нет кэша — показываем Химки по умолчанию
+      fetchWeather(55.8945, 37.3877, "Химки");
+
+      // Запрашиваем геолокацию ТОЛЬКО если разрешение уже дано (без popup!)
+      if ("geolocation" in navigator && "permissions" in navigator) {
+        navigator.permissions.query({ name: "geolocation" }).then(perm => {
+          if (perm.state !== "granted") return; // Не спрашиваем, если не дано
+          navigator.geolocation.getCurrentPosition(
+            async (pos) => {
+              const { latitude: la, longitude: lo } = pos.coords;
+              let city = "Ваш город";
+              try {
+                const geo = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${lo}&format=json&accept-language=ru`,
+                  { headers: { "User-Agent": "PiloRus-Admin/1.0" } }
+                );
+                const gd = await geo.json();
+                city = gd.address?.city || gd.address?.town || gd.address?.village || gd.address?.suburb || city;
+              } catch { /* оставим координаты */ }
+              // Кэшируем на 1 час
+              try { localStorage.setItem(GEO_KEY, JSON.stringify({ lat: la, lon: lo, city, ts: Date.now() })); } catch {}
+              fetchWeather(la, lo, city);
+            },
+            () => { /* отказал — Химки уже показаны */ },
+            { timeout: 6000, maximumAge: 3600_000 }
+          );
+        }).catch(() => {}); // permissions API не поддерживается
+      }
     }
   }, []);
 
