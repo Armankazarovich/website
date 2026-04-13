@@ -130,27 +130,51 @@ function useMic() {
   }, []);
 
   const listen = useCallback((): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
       const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (!SR) { resolve(""); return; }
+      if (!SR) {
+        console.warn("[Aray Mic] SpeechRecognition не поддерживается в этом браузере");
+        resolve("");
+        return;
+      }
+
+      // Сначала запросим разрешение на микрофон
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        console.warn("[Aray Mic] Микрофон заблокирован:", err);
+        resolve("");
+        return;
+      }
+
       if (recRef.current) { try { recRef.current.stop(); } catch {} }
 
       const r = new SR();
       r.lang = "ru-RU";
       r.interimResults = false;
       r.continuous = false;
+      r.maxAlternatives = 1;
       let resolved = false;
 
-      r.onstart = () => setActive(true);
+      r.onstart = () => { console.log("[Aray Mic] Слушаю..."); setActive(true); };
       r.onend = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
-      r.onerror = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
+      r.onerror = (e: any) => {
+        console.warn("[Aray Mic] Ошибка:", e.error);
+        setActive(false); recRef.current = null;
+        if (!resolved) { resolved = true; resolve(""); }
+      };
       r.onresult = (e: any) => {
         const text = e.results[0]?.[0]?.transcript?.trim() || "";
+        console.log("[Aray Mic] Распознано:", text);
         if (!resolved) { resolved = true; resolve(text); }
       };
 
       try { r.start(); recRef.current = r; }
-      catch { setActive(false); if (!resolved) { resolved = true; resolve(""); } }
+      catch (err) {
+        console.warn("[Aray Mic] Не удалось запустить:", err);
+        setActive(false);
+        if (!resolved) { resolved = true; resolve(""); }
+      }
     });
   }, []);
 
@@ -173,16 +197,27 @@ function useTTS() {
     const clean = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
       .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/\s{2,}/g, " ").trim();
     if (!clean) { setSpeaking(false); return; }
-    const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU";
-    utter.rate = 1.05;
-    // Пробуем найти лучший русский голос
+
+    // ОБЯЗАТЕЛЬНО найти РУССКИЙ голос — если нет, НЕ говорить (чтобы не было английского робота)
     const voices = window.speechSynthesis.getVoices();
     const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
       || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
       || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Google"))
+      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Yandex"))
       || voices.find(v => v.lang.startsWith("ru"));
-    if (ruVoice) utter.voice = ruVoice;
+
+    if (!ruVoice) {
+      // Нет русского голоса — не говорим английским роботом
+      console.warn("[Aray TTS] No Russian voice found. Available:", voices.map(v => `${v.name}(${v.lang})`).join(", "));
+      setSpeaking(false);
+      return;
+    }
+
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "ru-RU";
+    utter.voice = ruVoice;
+    utter.rate = 1.0;
+    utter.pitch = 0.95; // Чуть ниже = более мужской
     utter.onend = () => setSpeaking(false);
     utter.onerror = () => setSpeaking(false);
     window.speechSynthesis.speak(utter);

@@ -262,21 +262,29 @@ function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fallback на браузерный TTS (работает везде — Chrome, Safari, Firefox, Edge)
+  // Fallback на браузерный TTS — ТОЛЬКО русский голос (не английский робот!)
   const browserSpeak = useCallback((text: string, msgId: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(null); return; }
     window.speechSynthesis.cancel();
     const clean = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
       .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/\s{2,}/g, " ").trim();
     if (!clean) { setSpeaking(null); return; }
-    const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU";
-    utter.rate = 1.05;
+
     const voices = window.speechSynthesis.getVoices();
     const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
       || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
+      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Google"))
+      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Yandex"))
       || voices.find(v => v.lang.startsWith("ru"));
-    if (ruVoice) utter.voice = ruVoice;
+
+    // Нет русского голоса → НЕ говорим (лучше молчание чем английский робот)
+    if (!ruVoice) { setSpeaking(null); return; }
+
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "ru-RU";
+    utter.voice = ruVoice;
+    utter.rate = 1.0;
+    utter.pitch = 0.95;
     utter.onend = () => setSpeaking(null);
     utter.onerror = () => setSpeaking(null);
     window.speechSynthesis.speak(utter);
