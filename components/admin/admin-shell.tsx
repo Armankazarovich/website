@@ -1108,35 +1108,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
 
-        {/* ── Mobile: только hamburger + bell (без поиска — поиск через Арая) ── */}
-        <div className="lg:hidden sticky top-0 z-20 glass-mobile-header"
-          style={{
-            paddingTop: "calc(env(safe-area-inset-top, 0px) + 6px)",
-            paddingBottom: "6px",
-            paddingLeft: "10px",
-            paddingRight: "10px",
-          }}>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setOpen(true)}
-              className="glass-pill p-2 rounded-xl shrink-0 active:scale-90 transition-colors"
-              style={{ WebkitTapHighlightColor: "transparent" }}
-              aria-label="Меню">
-              <Menu className="w-5 h-5 text-white/70" />
-            </button>
-            {/* Подсказка — поиск через Арая */}
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("aray:open"))}
-              className="glass-control flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-white/35 text-[13px] transition-all active:scale-98"
-              style={{ WebkitTapHighlightColor: "transparent" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              Спроси Арая...
-            </button>
-            <AdminNotificationBell mobile />
-          </div>
-        </div>
+        {/* Mobile header убран — навигация через нижний dock + Арай */}
 
         {/* Desktop: хедер убран полностью — поиск через Арая снизу */}
 

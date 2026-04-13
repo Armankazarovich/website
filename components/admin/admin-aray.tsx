@@ -573,9 +573,14 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         }}
         onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
         onTouchCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-        className="fixed z-[30] right-4 bottom-4 w-14 h-14 rounded-full flex items-center justify-center"
+        className="fixed z-[55] right-4 w-14 h-14 rounded-full flex items-center justify-center"
         style={{
-          background: open ? "hsl(var(--muted))" : "transparent",
+          ...({
+            bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))",
+          }),
+          background: micActive
+            ? "rgba(59,130,246,0.15)"
+            : open ? "hsl(var(--muted))" : "transparent",
           boxShadow: micActive
             ? "0 4px 24px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2)"
             : open
@@ -627,12 +632,15 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.96 }}
             transition={{ type: "spring", damping: 26, stiffness: 300 }}
-            className="fixed z-[29] right-4 bottom-[84px] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
+            className={`fixed z-[54] flex flex-col overflow-hidden shadow-2xl ${isMobile ? "inset-0 rounded-none" : "right-4 rounded-2xl"}`}
             style={{
-              width: "min(400px, calc(100vw - 32px))",
-              height: "min(540px, calc(100vh - 120px))",
+              ...(!isMobile ? {
+                bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)) + 64px)",
+                width: "min(400px, calc(100vw - 32px))",
+                height: "min(540px, calc(100vh - 120px))",
+              } : {}),
               background: "hsl(var(--background))",
-              border: "1px solid hsl(var(--border))",
+              border: isMobile ? "none" : "1px solid hsl(var(--border))",
               boxShadow: "0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px hsl(var(--border)/0.5)",
             }}
           >
