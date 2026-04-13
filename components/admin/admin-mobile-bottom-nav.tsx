@@ -117,7 +117,7 @@ export function AdminMobileBottomNav({
           <div className="relative flex flex-col items-center justify-center" style={{ width: 72, minWidth: 72 }}>
             <button
               onClick={onArayOpen}
-              className="absolute flex flex-col items-center justify-center focus:outline-none"
+              className="absolute flex flex-col items-center justify-center focus:outline-none transition-transform duration-150 active:scale-[0.88]"
               style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
             >
               <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />

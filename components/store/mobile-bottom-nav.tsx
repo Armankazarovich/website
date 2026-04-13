@@ -199,22 +199,21 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
         </div>
 
         {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
+        {/* НЕ motion.button! framer-motion ставит CSS transform → мобилка растеризует SVG → анимации замирают */}
         {arayEnabled && <div className="flex flex-col items-center" style={{ marginTop: "-18px", minWidth: "72px" }}>
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          <button
             onClick={openAray}
             onPointerDown={onArayPointerDown}
             onPointerUp={onArayPointerUp}
             onPointerCancel={onArayPointerUp}
             aria-label="Удерживай для голоса, нажми для чата"
-            className="flex flex-col items-center"
-            style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "flex" }}
+            className="flex flex-col items-center transition-transform duration-150 active:scale-[0.88] focus:outline-none"
+            style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
             <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
               style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
-          </motion.button>
+          </button>
         </div>}
 
         {/* Правые пункты */}

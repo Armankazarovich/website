@@ -282,18 +282,25 @@ function useMic() {
       };
 
       r.onstart = () => { setActive(true); lastResultTime = Date.now(); };
+      let restartCount = 0;
+      const maxRestarts = 4; // iOS: до 4 перезапусков (~10 сек суммарно)
+
       r.onend = () => {
         // iOS: single-shot завершается после каждой фразы
-        // Если прошло мало времени и нет текста — рестарт
-        if (!resolved && isIOS && !fullText && Date.now() - lastResultTime < 1000) {
+        // Если текст есть → финишируем, если нет → рестартим до maxRestarts
+        if (!resolved && isIOS && !fullText && restartCount < maxRestarts) {
+          restartCount++;
           try { r.start(); return; } catch { /* fallthrough */ }
         }
         finishWithText();
       };
       r.onerror = (e: any) => {
-        // "no-speech" — не ошибка, просто тишина
+        // "no-speech" — не ошибка, просто тишина → рестарт на iOS
         if (e.error === "no-speech" && !resolved) {
-          if (isIOS) { try { r.start(); return; } catch { /* fallthrough */ } }
+          if (isIOS && restartCount < maxRestarts) {
+            restartCount++;
+            try { r.start(); return; } catch { /* fallthrough */ }
+          }
         }
         if (!resolved) { resolved = true; setActive(false); recRef.current = null; resolve(fullText.trim() || ""); }
       };
@@ -460,7 +467,7 @@ function useTTS() {
     stop();
     lockRef.current = true;
     const clean = cleanForTTS(text);
-    if (!clean) { lockRef.current = false; return; }
+    if (!clean) { lockRef.current = false; onFinished?.(); return; }
     setSpeaking(true);
     onDoneRef.current = onFinished || null;
     const abort = new AbortController();
@@ -506,15 +513,17 @@ function useTTS() {
           const ruVoice = voices.find(v => v.lang.startsWith("ru"));
           if (ruVoice) {
             const utter = new SpeechSynthesisUtterance(clean);
-            utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.0;
+            utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.05;
             utter.onend = () => { lockRef.current = false; setSpeaking(false); onDoneRef.current?.(); };
-            utter.onerror = () => { lockRef.current = false; setSpeaking(false); };
+            utter.onerror = () => { lockRef.current = false; setSpeaking(false); onDoneRef.current?.(); };
             window.speechSynthesis.speak(utter);
             return;
           }
         }
       } catch {}
+      // Нет голоса — всё равно вызываем callback чтобы цепочка диалога не прерывалась
       lockRef.current = false; setSpeaking(false);
+      onDoneRef.current?.();
     }
   }, [stop]);
 
@@ -772,10 +781,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }
     setMessages([{ id: "welcome", role: "assistant", content: greeting, timestamp: new Date() }]);
     if (typeof document !== "undefined") document.cookie = "aray_visited=1; max-age=2592000; path=/";
-    // Голосовое приветствие в voice-режиме (короткое)
+    // Голосовое приветствие в voice-режиме (короткое) → потом автослушание
     if (voiceModeRef.current === "voice") {
       const shortGreeting = name ? `${t}, ${name.split(" ")[0]}!` : t + "!";
-      setTimeout(() => speak(shortGreeting), 400);
+      setTimeout(() => speak(shortGreeting, () => {
+        // После приветствия автоматически слушаем юзера
+        setTimeout(async () => {
+          if (voiceModeRef.current !== "voice") return;
+          try { const txt = await micListen(); if (txt) sendMessage(txt); } catch {}
+        }, 400);
+      }), 400);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length, staffName, userName, page, productName, cartTotal, isAdmin]);
@@ -946,12 +961,21 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       ));
       saveMessageToDB("assistant", finalParsed);
 
-      // Автоозвучка → после ответа автослушание (как Алиса)
+      // Автоозвучка → после ответа автослушание (как Алиса/Siri)
       if (voiceModeRef.current === "voice" && finalParsed) {
         speak(finalParsed, () => {
+          // Небольшая пауза после речи → автоматически начинаем слушать
           setTimeout(async () => {
-            try { const t = await micListen(); if (t) sendMessage(t); } catch {}
-          }, 300);
+            if (voiceModeRef.current !== "voice") return; // юзер мог переключить на текст
+            try {
+              const t = await micListen();
+              if (t) {
+                haptic("light");
+                sendMessage(t);
+              }
+              // Если пустой результат — не запускаем повторно, юзер нажмёт орб
+            } catch {}
+          }, 400);
         });
       }
       if (!open) setHasNew(true);
@@ -1158,17 +1182,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Орб-зона — voice-first центральный элемент */}
                 {!showMessages && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center gap-4 py-6 px-4">
-                    {/* Орб */}
-                    <motion.div
-                      className="relative cursor-pointer"
+                  <div className="flex flex-col items-center justify-center gap-4 py-6 px-4 animate-in fade-in zoom-in-95 duration-300">
+                    {/* Орб — БЕЗ motion.div! CSS transform убивает SVG анимации на мобилке */}
+                    <div
+                      className="relative cursor-pointer transition-transform duration-150 active:scale-[0.92]"
                       onClick={listening ? stopVoice : startVoice}
-                      whileTap={{ scale: 0.92 }}
-                      animate={listening ? { scale: [1, 1.05, 1] } : speaking ? { scale: [1, 1.03, 1] } : {}}
-                      transition={listening || speaking ? { duration: 1.5, repeat: Infinity } : {}}
                     >
                       {/* Ambient glow */}
                       <div className="absolute inset-[-20px] rounded-full pointer-events-none transition-all duration-700" style={{
@@ -1179,7 +1197,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                             : "radial-gradient(circle, rgba(255,140,0,0.15) 0%, transparent 70%)",
                       }} />
                       <ArayOrb size={100} id="center" pulse={orbStatus} />
-                    </motion.div>
+                    </div>
 
                     {/* Статус */}
                     <p className="text-[13px] font-medium" style={{
@@ -1249,7 +1267,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                         ))}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 )}
 
                 {/* Сообщения (текстовый режим или по кнопке) */}
@@ -1392,13 +1410,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     animate={{ opacity: 1, scale: 1 }}
                     className="flex flex-col items-center justify-center gap-5 py-8 px-4 flex-1">
 
-                    {/* Большой орб — главный элемент */}
-                    <motion.div
-                      className="relative cursor-pointer"
-                      onClick={listening ? stopVoice : startVoice}
-                      whileTap={{ scale: 0.90 }}
-                      animate={listening ? { scale: [1, 1.06, 1] } : speaking ? { scale: [1, 1.04, 1] } : {}}
-                      transition={listening || speaking ? { duration: 1.5, repeat: Infinity } : {}}
+                    {/* Большой орб — БЕЗ motion.div! CSS transform убивает SVG анимации на мобилке */}
+                    <div
+                      className="relative cursor-pointer transition-transform duration-150 active:scale-[0.92]"
+                      onClick={() => { haptic("medium"); listening ? stopVoice() : startVoice(); }}
                     >
                       <div className="absolute inset-[-28px] rounded-full pointer-events-none transition-all duration-700" style={{
                         background: listening
@@ -1408,7 +1423,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                             : "radial-gradient(circle, rgba(255,140,0,0.18) 0%, transparent 70%)",
                       }} />
                       <ArayOrb size={120} id="mcenter" pulse={orbStatus} />
-                    </motion.div>
+                    </div>
 
                     {/* Статус */}
                     <p className="text-[15px] font-medium" style={{
