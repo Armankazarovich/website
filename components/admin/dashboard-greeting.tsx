@@ -25,10 +25,12 @@ interface DashboardGreetingProps {
 
 export function DashboardGreeting({ userName, roleLabel, roleColor }: DashboardGreetingProps) {
   const [mounted, setMounted] = useState(false);
-  const greeting = getGreeting();
-  const dateStr = getDateString();
 
   useEffect(() => { setMounted(true); }, []);
+
+  // Compute greeting/date only after mount to avoid server/client timezone mismatch (React #425)
+  const greeting = mounted ? getGreeting() : { text: "Добро пожаловать", emoji: "" };
+  const dateStr = mounted ? getDateString() : "";
 
   return (
     <div
@@ -46,7 +48,7 @@ export function DashboardGreeting({ userName, roleLabel, roleColor }: DashboardG
           <p className="text-lg font-bold leading-tight">
             {greeting.text}, {userName.split(" ")[0]}!
           </p>
-          <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>
+          {dateStr && <p className="text-xs text-muted-foreground capitalize">{dateStr}</p>}
         </div>
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${roleColor}`}>
           {roleLabel}

@@ -454,6 +454,10 @@ function ArayControlCenter() {
   const { t } = useAdminLang();
   const ref = useRef<HTMLDivElement>(null);
   const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
+  // Mounted guard for hydration safety (useTheme returns undefined on server)
+  const [ccMounted, setCcMounted] = useState(false);
+  useEffect(() => setCcMounted(true), []);
+  const safeTheme = ccMounted ? theme : "dark";
   const router = useRouter();
   const prevCountRef = useRef<number | null>(null);
 
