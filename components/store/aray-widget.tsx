@@ -896,7 +896,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="fixed inset-0 z-[60]"
+              className="fixed inset-0 z-[105]"
               onClick={() => setOpen(false)}
               style={{ background: "rgba(0,0,0,0.12)", backdropFilter: "blur(2px)" }}
             />
@@ -905,7 +905,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.93, y: 16 }}
               transition={{ type: "spring", damping: 28, stiffness: 380 }}
-              className="fixed z-[61] flex flex-col overflow-hidden"
+              className="fixed z-[110] flex flex-col overflow-hidden"
               style={{
                 bottom: "6rem", right: "1.5rem",
                 width: "380px", height: "560px",
@@ -1048,14 +1048,14 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
-              className="fixed inset-0 z-[60]"
+              className="fixed inset-0 z-[105]"
               style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)" }}
               onClick={() => setOpen(false)}
             />
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 32, stiffness: 340, mass: 0.9 }}
-              className="fixed left-0 right-0 bottom-0 z-[61] flex flex-col overflow-hidden"
+              className="fixed left-0 right-0 bottom-0 z-[110] flex flex-col overflow-hidden"
               style={{
                 height: "92dvh",
                 borderRadius: "20px 20px 0 0",
