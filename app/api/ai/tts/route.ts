@@ -51,7 +51,7 @@ async function directElevenLabs(cleanText: string, apiKey: string): Promise<Arra
 
 // ── Запрос через Cloudflare Worker прокси ───────────────────────────────────
 async function cloudflareProxy(cleanText: string, apiKey: string): Promise<ArrayBuffer | null> {
-  const proxyUrl = process.env.TTS_PROXY_URL; // https://tts-proxy.pilorus.workers.dev
+  const proxyUrl = process.env.TTS_PROXY_URL || "https://pilorus-tts.armankazarovich.workers.dev";
   if (!proxyUrl) return null;
 
   try {
