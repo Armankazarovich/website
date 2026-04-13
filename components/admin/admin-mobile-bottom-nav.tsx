@@ -2,13 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import {
-  LayoutDashboard, ShoppingBag, Package, Users, MoreHorizontal,
-  Truck, CheckSquare, Warehouse, Wallet, Target, X,
-  Tag, Images, Megaphone, Star, Mail, TrendingUp,
-  BarChart2, Globe, Settings, Palette, Stamp, Bell,
-  HelpCircle, FileDown, HeartPulse, LogOut, UserCircle,
+  LayoutDashboard, ShoppingBag, Package, MoreHorizontal,
+  Truck, CheckSquare, Warehouse, Wallet, Target,
 } from "lucide-react";
 
 // ── Нижние 4 таба по роли ────────────────────────────────────────────────────
@@ -47,172 +43,9 @@ const ROLE_TABS: Record<string, { href: string; label: string; icon: React.Eleme
   ],
 };
 
-// ── Все разделы для попапа "Меню" ────────────────────────────────────────────
-type MenuSection = { label: string; items: { href: string; label: string; icon: React.ElementType; roles: string[] }[] };
-
-const MENU_SECTIONS: MenuSection[] = [
-  {
-    label: "Продажи",
-    items: [
-      { href: "/admin/orders",   label: "Заказы",    icon: ShoppingBag, roles: ["owner","manager","courier","accountant","warehouse","seller"] },
-      { href: "/admin/crm",      label: "CRM — Лиды", icon: Target,     roles: ["owner","manager","seller"] },
-      { href: "/admin/tasks",    label: "Задачи",     icon: CheckSquare, roles: ["owner","manager","courier","accountant","warehouse","seller"] },
-      { href: "/admin/delivery", label: "Доставка",   icon: Truck,       roles: ["owner","manager","courier"] },
-    ],
-  },
-  {
-    label: "Товары",
-    items: [
-      { href: "/admin/products",   label: "Каталог",        icon: Package,   roles: ["owner","manager","warehouse","seller"] },
-      { href: "/admin/categories", label: "Категории",       icon: Tag,       roles: ["owner"] },
-      { href: "/admin/inventory",  label: "Склад / Остатки", icon: Warehouse, roles: ["owner","manager","warehouse"] },
-      { href: "/admin/import",     label: "Импорт / Экспорт",icon: FileDown,  roles: ["owner","manager","warehouse"] },
-      { href: "/admin/media",      label: "Медиабиблиотека", icon: Images,    roles: ["owner","manager"] },
-    ],
-  },
-  {
-    label: "Маркетинг",
-    items: [
-      { href: "/admin/promotions", label: "Акции",         icon: Megaphone,  roles: ["owner","manager"] },
-      { href: "/admin/reviews",    label: "Отзывы",         icon: Star,       roles: ["owner","manager"] },
-      { href: "/admin/email",      label: "Email рассылка", icon: Mail,       roles: ["owner"] },
-      { href: "/admin/promotion",  label: "Продвижение",    icon: TrendingUp, roles: ["owner","manager"] },
-    ],
-  },
-  {
-    label: "Финансы и клиенты",
-    items: [
-      { href: "/admin/finance",  label: "Финансы",  icon: Wallet,      roles: ["owner","accountant"] },
-      { href: "/admin/clients",  label: "Клиенты",  icon: UserCircle,  roles: ["owner","manager"] },
-      { href: "/admin/analytics",label: "Аналитика",icon: BarChart2,   roles: ["owner","accountant"] },
-    ],
-  },
-  {
-    label: "Настройки",
-    items: [
-      { href: "/admin/health",        label: "Здоровье системы", icon: HeartPulse, roles: ["owner"] },
-      { href: "/admin/site",          label: "Сайт",              icon: Globe,     roles: ["owner"] },
-      { href: "/admin/settings",      label: "Настройки",         icon: Settings,  roles: ["owner"] },
-      { href: "/admin/appearance",    label: "Оформление",        icon: Palette,   roles: ["owner"] },
-      { href: "/admin/watermark",     label: "Водяной знак",      icon: Stamp,     roles: ["owner"] },
-      { href: "/admin/staff",         label: "Команда",           icon: Users,     roles: ["owner"] },
-      { href: "/admin/notifications", label: "Уведомления",       icon: Bell,      roles: ["owner"] },
-      { href: "/admin/help",          label: "Помощь",            icon: HelpCircle,roles: ["owner","manager","courier","accountant","warehouse","seller"] },
-    ],
-  },
-];
-
 function getRoleGroup(role: string): string {
   if (["SUPER_ADMIN", "ADMIN"].includes(role)) return "owner";
   return role.toLowerCase();
-}
-
-// ── Попап меню ───────────────────────────────────────────────────────────────
-function MenuPopup({ role, onClose }: { role: string; onClose: () => void }) {
-  const pathname = usePathname();
-  const group = getRoleGroup(role);
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[55] bg-black/50"
-        style={{ backdropFilter: "blur(4px)" }}
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div
-        className="fixed left-3 right-3 z-[60] rounded-[28px] overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300"
-        style={{
-          bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))",
-          background: "var(--admin-popup-bg)",
-          backdropFilter: "var(--admin-popup-blur)",
-          WebkitBackdropFilter: "var(--admin-popup-blur)",
-          border: `1px solid var(--admin-popup-border)`,
-          boxShadow: "var(--admin-popup-shadow)",
-          maxHeight: "72dvh",
-        }}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid var(--admin-popup-divider)` }}>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Навигация</p>
-          <button
-            onClick={onClose}
-            className="w-7 h-7 rounded-xl bg-muted flex items-center justify-center active:scale-90 transition-transform"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-          >
-            <X className="w-3.5 h-3.5 text-white/60" />
-          </button>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="overflow-y-auto overscroll-contain" style={{ maxHeight: "calc(72dvh - 56px)" }}>
-          <div className="p-3 space-y-1">
-            {MENU_SECTIONS.map((section) => {
-              const visibleItems = section.items.filter(item => item.roles.includes(group));
-              if (!visibleItems.length) return null;
-              return (
-                <div key={section.label}>
-                  {/* Section label */}
-                  <p className="text-[9px] font-bold uppercase tracking-[0.20em] text-white/30 px-3 pt-3 pb-1.5">
-                    {section.label}
-                  </p>
-                  {/* Items grid */}
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {visibleItems.map((item) => {
-                      const isActive = item.href === "/admin"
-                        ? pathname === item.href
-                        : pathname.startsWith(item.href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={onClose}
-                          className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-all active:scale-90 text-center"
-                          style={{
-                            background: isActive ? "hsl(var(--primary)/0.22)" : "hsl(var(--muted)/0.5)",
-                            border: isActive ? "1.5px solid hsl(var(--primary)/0.5)" : `1.5px solid var(--admin-popup-border)`,
-                            WebkitTapHighlightColor: "transparent",
-                          }}
-                        >
-                          <item.icon
-                            className="w-[18px] h-[18px] transition-colors"
-                            style={{ color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}
-                          />
-                          <span
-                            className="text-[9px] font-semibold leading-tight"
-                            style={{ color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}
-                          >
-                            {item.label}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* На сайт */}
-            <div className="pt-2 pb-1">
-              <Link
-                href="/"
-                onClick={onClose}
-                className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors active:scale-95"
-                style={{ background: "hsl(var(--muted)/0.5)", border: `1.5px solid var(--admin-popup-border)`, WebkitTapHighlightColor: "transparent" }}
-              >
-                <LogOut className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">На сайт</span>
-              </Link>
-            </div>
-
-            <div style={{ height: "env(safe-area-inset-bottom, 8px)" }} />
-          </div>
-        </div>
-      </div>
-    </>
-  );
 }
 
 // ── Основной компонент ────────────────────────────────────────────────────────
@@ -230,13 +63,15 @@ export function AdminMobileBottomNav({ role, onMenuOpen, menuOpen, newOrdersCoun
 
   return (
     <>
-      {/* Bottom dock */}
+      {/* Bottom dock — hides when Sheet drawer is open */}
       <nav
-        className="lg:hidden fixed z-50"
+        className="lg:hidden fixed z-50 transition-all duration-300"
         style={{
-          bottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+          bottom: menuOpen ? "-100px" : "max(12px, env(safe-area-inset-bottom, 12px))",
           left: 12,
           right: 12,
+          opacity: menuOpen ? 0 : 1,
+          pointerEvents: menuOpen ? "none" : "auto",
         }}
       >
         <div

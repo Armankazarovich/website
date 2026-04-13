@@ -935,10 +935,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         )}
       </AnimatePresence>
 
-      {/* ══ КНОПКА — чистая сфера, без тёмного фона ══ */}
+      {/* ══ КНОПКА — сфера на ВСЕХ устройствах ══ */}
       {!open && (
-        <div className="hidden lg:flex fixed z-50 flex-col items-end gap-2.5"
-          style={{ bottom: "1.5rem", right: "1.5rem" }}>
+        <div className="flex fixed z-[101] flex-col items-end gap-2.5"
+          style={{ bottom: isMobile ? "calc(68px + env(safe-area-inset-bottom, 0px))" : "1.5rem", right: "1rem" }}>
           {/* Проактивный пузырь */}
           <AnimatePresence>
             {proactiveBubble && (
@@ -961,20 +961,27 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             )}
           </AnimatePresence>
 
-          {/* Живая сфера — пульс, свечение, индикаторы (как в админке) */}
+          {/* Живая сфера — пульс, свечение, push-to-talk */}
           <motion.button
-            onClick={() => { if (!longPressTriggered.current) handleOpen(); }}
-            onTouchStart={() => {
+            onClick={() => {
+              if (longPressTriggered.current) return;
+              handleOpen();
+            }}
+            onPointerDown={() => {
               longPressTriggered.current = false;
-              longPressTimer.current = window.setTimeout(() => {
+              longPressTimer.current = window.setTimeout(async () => {
                 longPressTriggered.current = true;
-                if (!open) { setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); }
+                // Push-to-talk: слушаем БЕЗ открытия чата (как Алиса)
+                startChat(); // на всякий случай инициализируем
                 if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
-                startVoice();
+                try {
+                  const text = await micListen();
+                  if (text) sendMessage(text);
+                } catch {}
               }, 400);
             }}
-            onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-            onTouchCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+            onPointerUp={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+            onPointerCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 400, damping: 18 }}
             aria-label={listening ? "Слушаю..." : "Арай — удерживай для голоса"}
@@ -982,49 +989,47 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             style={{
               WebkitTapHighlightColor: "transparent",
               boxShadow: listening
-                ? "0 4px 24px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2)"
+                ? "0 4px 30px rgba(59,130,246,0.55), 0 0 60px rgba(59,130,246,0.2)"
                 : speaking
-                  ? "0 4px 24px rgba(52,211,153,0.4), 0 0 40px rgba(52,211,153,0.15)"
-                  : "0 4px 24px rgba(255,130,0,0.35), 0 0 40px rgba(255,130,0,0.12)",
+                  ? "0 4px 30px rgba(52,211,153,0.45), 0 0 60px rgba(52,211,153,0.15)"
+                  : "0 4px 30px rgba(255,130,0,0.4), 0 0 60px rgba(255,130,0,0.15)",
             }}>
 
-            {/* Пульсирующий ореол — всегда видно */}
-            <motion.span className="absolute inset-[-5px] rounded-full"
+            {/* Пульсирующий ореол — от самого края шара */}
+            <motion.span className="absolute inset-0 rounded-full"
               style={{
                 background: listening
-                  ? "radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)"
+                  ? "radial-gradient(circle, rgba(59,130,246,0.4) 40%, transparent 70%)"
                   : speaking
-                    ? "radial-gradient(circle, rgba(52,211,153,0.3) 0%, transparent 70%)"
-                    : "radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 70%)",
+                    ? "radial-gradient(circle, rgba(52,211,153,0.35) 40%, transparent 70%)"
+                    : "radial-gradient(circle, rgba(255,140,0,0.35) 40%, transparent 70%)",
               }}
-              animate={{ scale: [1, 1.35], opacity: [0.7, 0] }}
-              transition={{ duration: speaking ? 1.5 : 2.5, repeat: Infinity, ease: "easeOut" }}
+              animate={{ scale: [1, 1.8], opacity: [0.8, 0] }}
+              transition={{ duration: speaking ? 1.2 : 2.5, repeat: Infinity, ease: "easeOut" }}
             />
 
             {/* Второй ореол для глубины */}
             {!listening && (
-              <motion.span className="absolute inset-[-3px] rounded-full"
-                style={{ background: "radial-gradient(circle, rgba(255,180,50,0.15) 0%, transparent 60%)" }}
-                animate={{ scale: [1.1, 1.5], opacity: [0.4, 0] }}
+              <motion.span className="absolute inset-0 rounded-full"
+                style={{ background: "radial-gradient(circle, rgba(255,180,50,0.2) 30%, transparent 65%)" }}
+                animate={{ scale: [1.1, 2], opacity: [0.5, 0] }}
                 transition={{ duration: 3.5, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
               />
             )}
 
             <ArayIcon size={48} glow id="aig2" />
 
-            {/* Бейдж — новое сообщение */}
+            {/* Бейджи */}
             {hasNew && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full border-2 animate-pulse"
                 style={{ background: "hsl(var(--primary))", borderColor: "hsl(var(--background))" }} />
             )}
-            {/* Бейдж — корзина */}
-            {cartCount > 0 && !hasNew && !speaking && (
+            {!isAdmin && cartCount > 0 && !hasNew && !speaking && (
               <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5"
                 style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)" }}>
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
             )}
-            {/* Индикатор говорит / слушает */}
             {speaking && (
               <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
             )}
