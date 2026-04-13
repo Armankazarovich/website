@@ -13,6 +13,7 @@ import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react
 import { ProductGallery } from "@/components/store/product-gallery";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+// ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
   params: { slug: string };
@@ -173,7 +174,7 @@ export default async function ProductPage({ params }: Props) {
       )}
 
       {/* Main product section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 mb-16">
         {/* Gallery */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <ProductGallery
@@ -341,55 +342,27 @@ export default async function ProductPage({ params }: Props) {
         </section>
       )}
 
-      {/* Description accordion */}
+      {/* Unified accordion: Description + Reviews + Review form */}
       <section className="mb-16">
         <DescriptionAccordion
           name={product.name}
           category={product.category.name}
           description={product.description}
+          reviews={reviews.map((r) => ({
+            id: r.id,
+            name: r.name,
+            rating: r.rating,
+            text: r.text || "",
+            createdAt: r.createdAt.toISOString(),
+          }))}
+          showReviews={showReviewsBlock}
+          productId={product.id}
+          productName={product.name}
+          userName={session?.user?.name || null}
+          userEmail={session?.user?.email || null}
+          isLoggedIn={!!session?.user}
         />
       </section>
-
-      {/* Reviews block */}
-      {showReviewsBlock && reviews.length > 0 && (
-        <section className="mb-16">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display font-bold text-2xl">Отзывы покупателей</h2>
-            <div className="flex items-center gap-2">
-              <div className="flex">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg key={i} className={`w-4 h-4 ${i < Math.round(Number((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1))) ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/30 fill-current"}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                ))}
-              </div>
-              <span className="text-sm font-semibold">{(reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)}</span>
-              <span className="text-sm text-muted-foreground">· {reviews.length} отзывов</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {reviews.slice(0, 6).map((review) => (
-              <div key={review.id} className="bg-card border border-border rounded-2xl p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                      {review.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="font-semibold text-sm">{review.name}</span>
-                  </div>
-                  <div className="flex">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <svg key={i} className={`w-3.5 h-3.5 ${i < review.rating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground/20 fill-current"}`} viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                    ))}
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
-                <p className="text-[11px] text-muted-foreground/50 mt-2">
-                  {new Date(review.createdAt).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Yandex Maps review widget */}
       {yandexMapsUrl && (
@@ -419,7 +392,7 @@ export default async function ProductPage({ params }: Props) {
       {related.length > 0 && (
         <section>
           <h2 className="font-display font-bold text-2xl mb-6">Похожие товары</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {related.map((product) => (
               <ProductCard
                 key={product.id}

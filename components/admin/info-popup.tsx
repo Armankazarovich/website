@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -38,6 +39,7 @@ export function InfoPopup({
   const [activeSide, setActiveSide] = useState<"top" | "bottom">("top");
   const wrapRef    = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const classic = useClassicMode();
 
   // ── Авто-определение стороны при открытии ──────────────────────────────────
   useEffect(() => {
@@ -92,7 +94,9 @@ export function InfoPopup({
           "inline-flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
           open
             ? "bg-primary/25 text-primary scale-110"
-            : "text-white/35 hover:text-white/80 hover:bg-white/10 hover:scale-110",
+            : classic
+              ? "text-muted-foreground/60 hover:text-foreground hover:bg-muted hover:scale-110"
+              : "text-white/35 hover:text-white/80 hover:bg-white/10 hover:scale-110",
           triggerClassName,
         )}
       >
@@ -120,15 +124,15 @@ export function InfoPopup({
               ...(activeSide === "top"
                 ? {
                     bottom: "-6px",
-                    borderRight:  "1px solid rgba(255,255,255,0.12)",
-                    borderBottom: "1px solid rgba(255,255,255,0.12)",
-                    background:   "rgba(12,12,14,0.97)",
+                    borderRight:  classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
+                    borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
+                    background:   classic ? "hsl(var(--card))" : "rgba(12,12,14,0.97)",
                   }
                 : {
                     top:        "-6px",
-                    borderLeft: "1px solid rgba(255,255,255,0.12)",
-                    borderTop:  "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(12,12,14,0.97)",
+                    borderLeft: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
+                    borderTop:  classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
+                    background: classic ? "hsl(var(--card))" : "rgba(12,12,14,0.97)",
                   }
               ),
             }}
@@ -137,7 +141,12 @@ export function InfoPopup({
           {/* Панель */}
           <div
             className="animate-in fade-in-0 zoom-in-95 duration-150"
-            style={{
+            style={classic ? {
+              background:   "hsl(var(--card))",
+              border:       "1px solid hsl(var(--border))",
+              borderRadius: "16px",
+              boxShadow:    "0 12px 32px rgba(0,0,0,0.12)",
+            } : {
               background:             "rgba(12,12,14,0.97)",
               backdropFilter:         "blur(32px) saturate(200%)",
               WebkitBackdropFilter:   "blur(32px) saturate(200%)",
@@ -148,9 +157,9 @@ export function InfoPopup({
           >
             <div className="p-4">
               {typeof content === "string" ? (
-                <p className="text-sm text-white/80 leading-relaxed">{content}</p>
+                <p className={`text-sm leading-relaxed ${classic ? "text-foreground" : "text-white/80"}`}>{content}</p>
               ) : (
-                content
+                <div className={classic ? "info-popup-classic text-foreground" : "text-white/80"}>{content}</div>
               )}
             </div>
           </div>
@@ -207,9 +216,9 @@ export function InfoCard({
       className={className}
       content={
         <div className="space-y-1.5">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">{title}</p>
-          <p className="text-sm text-white/80 leading-relaxed">{body}</p>
-          {extra && <div className="pt-1 border-t border-white/10">{extra}</div>}
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
+          <p className="text-sm leading-relaxed text-foreground/80">{body}</p>
+          {extra && <div className="pt-1 border-t border-border">{extra}</div>}
         </div>
       }
     />
@@ -242,7 +251,7 @@ export function InfoList({
       content={
         <div className="space-y-2">
           {title && (
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/35">{title}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{title}</p>
           )}
           <div className="space-y-1.5">
             {items.map((item, i) => (
@@ -251,10 +260,10 @@ export function InfoList({
                   {item.color && (
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
                   )}
-                  <span className="text-xs text-white/60">{item.label}</span>
+                  <span className="text-xs text-muted-foreground">{item.label}</span>
                 </div>
                 {item.value && (
-                  <span className="text-xs font-medium text-white/90 tabular-nums">{item.value}</span>
+                  <span className="text-xs font-medium text-foreground/90 tabular-nums">{item.value}</span>
                 )}
               </div>
             ))}

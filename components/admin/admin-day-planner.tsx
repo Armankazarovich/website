@@ -5,6 +5,7 @@ import {
   CalendarCheck, X, Plus, Trash2, Bell, BellOff,
   Check, Clock, ChevronDown, ChevronUp, Sunrise, Sun, Moon,
 } from "lucide-react";
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 // ─── Типы ────────────────────────────────────────────────────────────────────
 type Priority = "low" | "medium" | "high";
@@ -72,17 +73,18 @@ function saveTasks(tasks: DayTask[]) {
 
 // ─── Компонент задачи ─────────────────────────────────────────────────────────
 function TaskRow({
-  task, onToggle, onDelete, onToggleReminder,
+  task, onToggle, onDelete, onToggleReminder, classic = false,
 }: {
   task: DayTask;
   onToggle: () => void;
   onDelete: () => void;
   onToggleReminder: () => void;
+  classic?: boolean;
 }) {
   const pm = PRIORITY_META[task.priority];
   return (
     <div className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all group
-      ${task.done ? "opacity-50" : "hover:bg-white/[0.05]"}`}>
+      ${task.done ? "opacity-50" : classic ? "hover:bg-muted/50" : "hover:bg-white/[0.05]"}`}>
       {/* Приоритет */}
       <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${pm.dot}`} />
 
@@ -92,21 +94,21 @@ function TaskRow({
         className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all
           ${task.done
             ? "bg-primary border-primary"
-            : "border-white/20 hover:border-primary/60"
+            : classic ? "border-border hover:border-primary/60" : "border-white/20 hover:border-primary/60"
           }`}
       >
-        {task.done && <Check className="w-3 h-3 text-white" />}
+        {task.done && <Check className={`w-3 h-3 ${classic ? "text-primary-foreground" : "text-white"}`} />}
       </button>
 
       {/* Текст */}
       <span className={`flex-1 text-sm leading-snug min-w-0 truncate
-        ${task.done ? "line-through text-white/35" : "text-white/80"}`}>
+        ${task.done ? classic ? "line-through text-muted-foreground/50" : "line-through text-white/35" : classic ? "text-foreground" : "text-white/80"}`}>
         {task.text}
       </span>
 
       {/* Время */}
       {task.time && (
-        <span className="text-[10px] font-mono text-white/35 shrink-0">{task.time}</span>
+        <span className={`text-[10px] font-mono shrink-0 ${classic ? "text-muted-foreground/40" : "text-white/35"}`}>{task.time}</span>
       )}
 
       {/* Напоминание */}
@@ -114,7 +116,7 @@ function TaskRow({
         onClick={onToggleReminder}
         title={task.reminder ? "Отключить напоминание" : "Включить напоминание"}
         className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all shrink-0 aray-icon-spin
-          ${task.reminder ? "text-primary bg-primary/15" : "text-white/25 opacity-0 group-hover:opacity-100"}`}
+          ${task.reminder ? "text-primary bg-primary/15" : classic ? "text-muted-foreground/30 opacity-0 group-hover:opacity-100" : "text-white/25 opacity-0 group-hover:opacity-100"}`}
       >
         {task.reminder ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
       </button>
@@ -122,7 +124,7 @@ function TaskRow({
       {/* Удалить */}
       <button
         onClick={onDelete}
-        className="w-6 h-6 rounded-lg flex items-center justify-center text-white/20 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0 aray-icon-spin"
+        className={`w-6 h-6 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shrink-0 aray-icon-spin ${classic ? "text-muted-foreground/30 hover:text-destructive" : "text-white/20 hover:text-red-400"}`}
       >
         <Trash2 className="w-3 h-3" />
       </button>
@@ -132,6 +134,7 @@ function TaskRow({
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
 export function AdminDayPlanner() {
+  const classic = useClassicMode();
   const [open, setOpen]       = useState(false);
   const [tasks, setTasks]     = useState<DayTask[]>([]);
   const [text, setText]       = useState("");
@@ -227,7 +230,11 @@ export function AdminDayPlanner() {
           {/* Panel */}
           <div
             className="fixed top-0 right-0 h-full z-[71] w-full max-w-sm flex flex-col"
-            style={{
+            style={classic ? {
+              background: "hsl(var(--card))",
+              border: "1px solid hsl(var(--border))",
+              boxShadow: "-24px 0 64px rgba(0,0,0,0.15)",
+            } : {
               background: "rgba(12, 12, 14, 0.90)",
               backdropFilter: "blur(32px) saturate(200%)",
               WebkitBackdropFilter: "blur(32px) saturate(200%)",
@@ -237,25 +244,34 @@ export function AdminDayPlanner() {
           >
             {/* Шапка */}
             <div className="px-5 py-4 flex items-center justify-between shrink-0"
-              style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+              style={classic ? {
+                borderBottom: "1px solid hsl(var(--border))",
+              } : {
+                borderBottom: "1px solid rgba(255,255,255,0.07)",
+              }}>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Мой день</p>
-                <p className="text-sm font-medium text-white/80 capitalize mt-0.5">{todayLabel}</p>
+                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/60" : "text-white/30"}`}>Мой день</p>
+                <p className={`text-sm font-medium capitalize mt-0.5 ${classic ? "text-foreground" : "text-white/80"}`}>{todayLabel}</p>
               </div>
               <button onClick={() => setOpen(false)}
-                className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors">
-                <X className="w-4 h-4 text-white/50" />
+                className={`w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/10 transition-colors`}
+                style={classic ? { color: "hsl(var(--muted-foreground))" } : {}}>
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Прогресс */}
             {total > 0 && (
-              <div className="px-5 py-3 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-                <div className="flex items-center justify-between text-[11px] text-white/40 mb-1.5">
+              <div className="px-5 py-3 shrink-0" style={classic ? {
+                borderBottom: "1px solid hsl(var(--border))",
+              } : {
+                borderBottom: "1px solid rgba(255,255,255,0.07)",
+              }}>
+                <div className={`flex items-center justify-between text-[11px] mb-1.5 ${classic ? "text-muted-foreground/60" : "text-white/40"}`}>
                   <span>Выполнено {done} из {total}</span>
                   <span className="text-primary font-semibold">{pct}%</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div className={`h-1.5 rounded-full overflow-hidden ${classic ? "bg-muted" : "bg-white/10"}`}>
                   <div
                     className="h-full rounded-full transition-all duration-500"
                     style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}
@@ -267,7 +283,7 @@ export function AdminDayPlanner() {
             {/* Список задач */}
             <div className="flex-1 overflow-y-auto py-2">
               {total === 0 && (
-                <p className="text-center text-white/25 text-sm py-10">
+                <p className={`text-center text-sm py-10 ${classic ? "text-muted-foreground/40" : "text-white/25"}`}>
                   Добавь первую задачу на сегодня 👇
                 </p>
               )}
@@ -280,20 +296,21 @@ export function AdminDayPlanner() {
                   <div key={sec.label} className="mb-1">
                     <button
                       onClick={() => setCollapsed(c => ({ ...c, [sec.label]: !c[sec.label] }))}
-                      className="w-full flex items-center gap-2 px-4 py-1.5 text-left hover:bg-white/[0.04] transition-colors"
+                      className={`w-full flex items-center gap-2 px-4 py-1.5 text-left transition-colors ${classic ? "hover:bg-muted/50" : "hover:bg-white/[0.04]"}`}
                     >
-                      <sec.icon className="w-3 h-3 text-white/30" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/30 flex-1">
+                      <sec.icon className={`w-3 h-3 ${classic ? "text-muted-foreground/50" : "text-white/30"}`} />
+                      <span className={`text-[10px] font-bold uppercase tracking-[0.16em] flex-1 ${classic ? "text-muted-foreground/60" : "text-white/30"}`}>
                         {sec.label}
                       </span>
-                      <span className="text-[10px] text-white/20">{secTasks.length}</span>
-                      {isCollapsed ? <ChevronDown className="w-3 h-3 text-white/20" /> : <ChevronUp className="w-3 h-3 text-white/20" />}
+                      <span className={`text-[10px] ${classic ? "text-muted-foreground/40" : "text-white/20"}`}>{secTasks.length}</span>
+                      {isCollapsed ? <ChevronDown className={`w-3 h-3 ${classic ? "text-muted-foreground/40" : "text-white/20"}`} /> : <ChevronUp className={`w-3 h-3 ${classic ? "text-muted-foreground/40" : "text-white/20"}`} />}
                     </button>
                     {!isCollapsed && secTasks.map(t => (
                       <TaskRow key={t.id} task={t}
                         onToggle={() => toggleDone(t.id)}
                         onDelete={() => deleteTask(t.id)}
                         onToggleReminder={() => toggleRemind(t.id)}
+                        classic={classic}
                       />
                     ))}
                   </div>
@@ -304,14 +321,15 @@ export function AdminDayPlanner() {
               {noTimeTasks.length > 0 && (
                 <div className="mb-1">
                   <div className="flex items-center gap-2 px-4 py-1.5">
-                    <Clock className="w-3 h-3 text-white/30" />
-                    <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">Без времени</span>
+                    <Clock className={`w-3 h-3 ${classic ? "text-muted-foreground/50" : "text-white/30"}`} />
+                    <span className={`text-[10px] font-bold uppercase tracking-[0.16em] ${classic ? "text-muted-foreground/60" : "text-white/30"}`}>Без времени</span>
                   </div>
                   {noTimeTasks.map(t => (
                     <TaskRow key={t.id} task={t}
                       onToggle={() => toggleDone(t.id)}
                       onDelete={() => deleteTask(t.id)}
                       onToggleReminder={() => toggleRemind(t.id)}
+                      classic={classic}
                     />
                   ))}
                 </div>
@@ -320,15 +338,19 @@ export function AdminDayPlanner() {
 
             {/* Форма добавления */}
             <div className="shrink-0 p-4 space-y-2.5"
-              style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              style={classic ? {
+                borderTop: "1px solid hsl(var(--border))",
+              } : {
+                borderTop: "1px solid rgba(255,255,255,0.07)",
+              }}>
               {/* Текст задачи */}
               <input
                 value={text}
                 onChange={e => setText(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && addTask()}
                 placeholder="Новая задача на сегодня..."
-                className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none text-white placeholder:text-white/25"
-                style={{
+                className={`w-full px-3.5 py-2.5 rounded-xl text-sm outline-none ${classic ? "bg-muted text-foreground placeholder:text-muted-foreground/50 border border-border" : "text-white placeholder:text-white/25"}`}
+                style={classic ? {} : {
                   background: "rgba(255,255,255,0.07)",
                   border: "1px solid rgba(255,255,255,0.10)",
                 }}
@@ -340,8 +362,10 @@ export function AdminDayPlanner() {
                   type="time"
                   value={time}
                   onChange={e => setTime(e.target.value)}
-                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none text-white/70"
-                  style={{
+                  className={`flex-1 px-3 py-2 rounded-xl text-sm outline-none ${classic ? "bg-muted text-foreground border border-border" : "text-white/70"}`}
+                  style={classic ? {
+                    colorScheme: "light",
+                  } : {
                     background: "rgba(255,255,255,0.07)",
                     border: "1px solid rgba(255,255,255,0.08)",
                     colorScheme: "dark",
@@ -352,8 +376,10 @@ export function AdminDayPlanner() {
                 <select
                   value={priority}
                   onChange={e => setPriority(e.target.value as Priority)}
-                  className="flex-1 px-3 py-2 rounded-xl text-sm outline-none text-white/70"
-                  style={{
+                  className={`flex-1 px-3 py-2 rounded-xl text-sm outline-none ${classic ? "bg-muted text-foreground border border-border" : "text-white/70"}`}
+                  style={classic ? {
+                    colorScheme: "light",
+                  } : {
                     background: "rgba(255,255,255,0.07)",
                     border: "1px solid rgba(255,255,255,0.08)",
                     colorScheme: "dark",
@@ -369,8 +395,12 @@ export function AdminDayPlanner() {
                   onClick={() => setReminder(r => !r)}
                   title="Push-напоминание"
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all
-                    ${reminder ? "bg-primary/20 text-primary" : "text-white/30 hover:text-white/60"}`}
-                  style={{ border: `1px solid ${reminder ? "hsl(var(--primary)/0.3)" : "rgba(255,255,255,0.08)"}` }}
+                    ${reminder ? "bg-primary/20 text-primary" : classic ? "text-muted-foreground/40 hover:text-muted-foreground/70" : "text-white/30 hover:text-white/60"}`}
+                  style={classic ? {
+                    border: `1px solid ${reminder ? "hsl(var(--primary)/0.3)" : "hsl(var(--border))"}`,
+                  } : {
+                    border: `1px solid ${reminder ? "hsl(var(--primary)/0.3)" : "rgba(255,255,255,0.08)"}`,
+                  }}
                 >
                   <Bell className="w-4 h-4" />
                 </button>
@@ -380,8 +410,8 @@ export function AdminDayPlanner() {
               <button
                 onClick={addTask}
                 disabled={!text.trim()}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-30"
-                style={{
+                className={`w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-30 ${classic ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
+                style={classic ? {} : {
                   background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.7))",
                   boxShadow: "0 4px 16px hsl(var(--primary)/0.30)",
                 }}

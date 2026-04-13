@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 // This reduces the initial JS bundle for the admin panel significantly.
 
 export const LazyAdminAray = dynamic(
-  () => import("@/components/admin/admin-aray").then(m => ({ default: m.AdminAray })),
+  () => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })),
   { loading: () => null, ssr: false }
 );
 

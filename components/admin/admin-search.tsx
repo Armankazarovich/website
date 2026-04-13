@@ -1,19 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-
-// ── Classic mode hook (читает localStorage, реагирует на событие) ────────────
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useClassicMode } from "@/lib/use-classic-mode";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,
@@ -629,6 +618,7 @@ export function AdminStickySearchBar() {
   const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const classic = useClassicMode();
 
   // Найти самый подходящий плейсхолдер по текущему URL
   const placeholder = (() => {
@@ -704,8 +694,12 @@ export function AdminStickySearchBar() {
         style={{
           background: "transparent",
           border: focused
-            ? "1.5px solid rgba(255,255,255,0.30)"
-            : "1.5px solid rgba(255,255,255,0.13)",
+            ? classic
+              ? "1.5px solid hsl(var(--border))"
+              : "1.5px solid rgba(255,255,255,0.30)"
+            : classic
+              ? "1.5px solid hsl(var(--border)/0.5)"
+              : "1.5px solid rgba(255,255,255,0.13)",
         }}
       >
         <Search className="w-4 h-4 text-primary/70 shrink-0" />
@@ -716,18 +710,24 @@ export function AdminStickySearchBar() {
           onFocus={() => setFocused(true)}
           onKeyDown={handleKey}
           placeholder={placeholder}
-          className="aray-search-input flex-1 bg-transparent outline-none min-w-0 text-white/90 placeholder:text-white/38 text-[13px] tracking-[0.01em]"
+          className={`aray-search-input flex-1 bg-transparent outline-none min-w-0 text-[13px] tracking-[0.01em] ${
+            classic ? "text-foreground placeholder:text-muted-foreground" : "text-white/90 placeholder:text-white/38"
+          }`}
           autoComplete="off"
           spellCheck={false}
         />
         {loading
           ? <div className="w-3.5 h-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin shrink-0" />
           : query
-            ? <button onClick={() => { setQuery(""); setFocused(false); }} className="shrink-0 text-white/25 hover:text-white/60 transition-colors">
+            ? <button onClick={() => { setQuery(""); setFocused(false); }} className={`shrink-0 transition-colors ${
+                classic ? "text-muted-foreground hover:text-foreground" : "text-white/25 hover:text-white/60"
+              }`}>
                 <X className="w-3.5 h-3.5" />
               </button>
-            : <kbd className="hidden sm:flex items-center gap-0.5 text-[10px] font-mono text-white/20 shrink-0">
-                <span className="px-1 py-0.5 rounded bg-white/10">⌘K</span>
+            : <kbd className={`hidden sm:flex items-center gap-0.5 text-[10px] font-mono shrink-0 ${
+                classic ? "text-muted-foreground" : "text-white/20"
+              }`}>
+                <span className={`px-1 py-0.5 rounded ${classic ? "bg-secondary" : "bg-white/10"}`}>⌘K</span>
               </kbd>
         }
       </div>
@@ -737,20 +737,28 @@ export function AdminStickySearchBar() {
         <div className="flex items-center gap-1.5 mt-2 flex-wrap">
           {pageFilters.map((chip) => {
             const isActive = searchParams.get(chip.param) === chip.value;
-            const bg = isActive
-              ? (chip.color ? CHIP_COLORS[chip.color] : "hsl(var(--primary)/0.25)")
-              : "rgba(255,255,255,0.10)";
-            const textColor = isActive
-              ? (chip.color ? CHIP_COLORS_TEXT[chip.color] : "hsl(var(--primary))")
-              : "rgba(255,255,255,0.60)";
-            const border = isActive
-              ? (chip.color ? `1.5px solid ${CHIP_COLORS_TEXT[chip.color]}55` : "1.5px solid hsl(var(--primary)/0.45)")
-              : "1px solid rgba(255,255,255,0.15)";
+            const bg = classic
+              ? (isActive ? "hsl(var(--primary)/0.15)" : "hsl(var(--muted))")
+              : (isActive
+                ? (chip.color ? CHIP_COLORS[chip.color] : "hsl(var(--primary)/0.25)")
+                : "rgba(255,255,255,0.10)");
+            const textColor = classic
+              ? (isActive ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))")
+              : (isActive
+                ? (chip.color ? CHIP_COLORS_TEXT[chip.color] : "hsl(var(--primary))")
+                : "rgba(255,255,255,0.60)");
+            const border = classic
+              ? (isActive ? "1.5px solid hsl(var(--primary)/0.45)" : "1px solid hsl(var(--border))")
+              : (isActive
+                ? (chip.color ? `1.5px solid ${CHIP_COLORS_TEXT[chip.color]}55` : "1.5px solid hsl(var(--primary)/0.45)")
+                : "1px solid rgba(255,255,255,0.15)");
             return (
               <button
                 key={`${chip.param}-${chip.value}`}
                 onClick={() => toggleChip(chip)}
-                className="px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-150 active:scale-95 hover:brightness-125"
+                className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all duration-150 active:scale-95 ${
+                  classic ? "hover:brightness-100" : "hover:brightness-125"
+                }`}
                 style={{ background: bg, color: textColor, border }}
               >
                 {chip.label}
@@ -761,8 +769,13 @@ export function AdminStickySearchBar() {
           {pageFilters.some(c => searchParams.get(c.param) === c.value) && (
             <button
               onClick={() => router.push(pathname)}
-              className="px-2.5 py-1 rounded-full text-[10px] transition-all duration-150 flex items-center gap-1 hover:brightness-125"
-              style={{ color: "rgba(255,255,255,0.40)", border: "1px solid rgba(255,255,255,0.14)" }}
+              className={`px-2.5 py-1 rounded-full text-[10px] transition-all duration-150 flex items-center gap-1 ${
+                classic ? "hover:brightness-100" : "hover:brightness-125"
+              }`}
+              style={{
+                color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.40)",
+                border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.14)"
+              }}
             >
               <X className="w-2.5 h-2.5" /> сброс
             </button>
@@ -774,27 +787,37 @@ export function AdminStickySearchBar() {
       {focused && results.length > 0 && (
         <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-[80] rounded-2xl overflow-hidden"
           style={{
-            background: "rgba(10,10,12,0.88)",
-            backdropFilter: "blur(48px) saturate(220%) brightness(0.80)",
-            WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.80)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset",
+            background: classic ? "hsl(var(--popover))" : "rgba(10,10,12,0.88)",
+            backdropFilter: classic ? "none" : "blur(48px) saturate(220%) brightness(0.80)",
+            WebkitBackdropFilter: classic ? "none" : "blur(48px) saturate(220%) brightness(0.80)",
+            border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
+            boxShadow: classic ? "0 4px 12px rgba(0,0,0,0.08)" : "0 24px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04) inset",
           }}>
           {!query.trim() && (
-            <p className="px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.22em] text-white/25">
+            <p className={`px-4 pt-3 pb-1 text-[9px] font-bold uppercase tracking-[0.22em] ${
+              classic ? "text-muted-foreground" : "text-white/25"
+            }`}>
               Навигация
             </p>
           )}
           <div className="py-1 max-h-[320px] overflow-y-auto">
             {results.map((r, i) => (
-              <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} />
+              <ResultItem key={i} r={r} i={i} selected={selected} onSelect={setSelected} onGo={go} classic={classic} />
             ))}
           </div>
-          <div className="px-4 py-2 flex items-center gap-3 text-[9px] text-white/18"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <span><kbd className="font-mono bg-white/08 px-1 py-0.5 rounded text-white/25">↑↓</kbd></span>
-            <span><kbd className="font-mono bg-white/08 px-1 py-0.5 rounded text-white/25">↵</kbd> открыть</span>
-            <span className="ml-auto text-white/15 flex items-center gap-0.5"><Command className="w-3 h-3" />K полный поиск</span>
+          <div className={`px-4 py-2 flex items-center gap-3 text-[9px] ${
+            classic ? "text-muted-foreground" : "text-white/18"
+          }`}
+            style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
+            <span><kbd className={`font-mono px-1 py-0.5 rounded ${
+              classic ? "bg-secondary text-muted-foreground" : "bg-white/08 text-white/25"
+            }`}>↑↓</kbd></span>
+            <span><kbd className={`font-mono px-1 py-0.5 rounded ${
+              classic ? "bg-secondary text-muted-foreground" : "bg-white/08 text-white/25"
+            }`}>↵</kbd> открыть</span>
+            <span className={`ml-auto flex items-center gap-0.5 ${
+              classic ? "text-muted-foreground" : "text-white/15"
+            }`}><Command className="w-3 h-3" />K полный поиск</span>
           </div>
         </div>
       )}

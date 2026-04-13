@@ -215,14 +215,15 @@ export default async function AdminDashboard() {
       {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
       <div>
         <AdminSectionTitle icon={Zap} title="Быстрый доступ" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {quickActions.map((action) => (
             <Link
               key={action.href}
               href={action.href}
-              className={`group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-primary/20 p-3 min-h-[72px] active:scale-[0.95] transition-all duration-200 aray-icon-spin hover:border-primary/55 hover:bg-primary/[0.10] hover:scale-[1.03] hover:shadow-[0_0_18px_hsl(var(--primary)/0.22)] ${action.bg}`}
+              className={`group flex flex-col items-center justify-center gap-2 rounded-2xl border border-primary/20 p-2.5 min-h-[76px] active:scale-[0.93] transition-all duration-200 aray-icon-spin hover:border-primary/55 hover:bg-primary/[0.10] hover:scale-[1.03] hover:shadow-[0_0_18px_hsl(var(--primary)/0.22)] ${action.bg}`}
+              style={{ WebkitTapHighlightColor: "transparent" }}
             >
-              <action.icon className={`w-5 h-5 ${action.color} transition-all duration-200 group-hover:scale-110`} />
+              <action.icon className={`w-6 h-6 ${action.color} transition-all duration-200 group-hover:scale-110`} />
               <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
                 {action.label}
               </span>
@@ -251,7 +252,7 @@ export default async function AdminDashboard() {
             const color = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
             const label = ORDER_STATUS_LABELS[order.status] || order.status;
             return (
-              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-5 py-3.5 hover:bg-primary/[0.06] active:bg-primary/10 transition-colors">
+              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-4 py-3.5 hover:bg-primary/[0.06] active:bg-primary/10 transition-colors" style={{ WebkitTapHighlightColor: "transparent" }}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
                   <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>

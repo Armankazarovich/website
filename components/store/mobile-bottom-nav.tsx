@@ -14,6 +14,7 @@ import {
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
+import { ArayOrb } from "@/components/shared/aray-orb";
 
 export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean }) {
   const pathname = usePathname();
@@ -199,93 +200,26 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
 
         {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
         {arayEnabled && <div className="flex flex-col items-center" style={{ marginTop: "-18px", minWidth: "72px" }}>
-          <motion.button
-            whileTap={{ scale: 0.88 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+          <button
             onClick={openAray}
             onPointerDown={onArayPointerDown}
             onPointerUp={onArayPointerUp}
             onPointerCancel={onArayPointerUp}
             aria-label="Удерживай для голоса, нажми для чата"
-            style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "block" }}
+            className="flex flex-col items-center transition-transform duration-150 active:scale-[0.88] focus:outline-none"
+            style={{ WebkitTapHighlightColor: "transparent" }}
           >
-            {/* Ping при добавлении в корзину */}
-            {arayPulse && (
-              <span className="absolute inset-0 rounded-full animate-ping"
-                style={{ background: "rgba(232,112,10,0.25)", animationDuration: "0.7s" }} />
-            )}
+            <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
+            <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
+              style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
+          </button>
+        </div>}
 
-            {/* Шар */}
-            <svg
-              width="52" height="52" viewBox="0 0 100 100"
-              style={{
-                display: "block",
-                filter: "drop-shadow(0 3px 10px rgba(200,80,0,0.55)) drop-shadow(0 0 6px rgba(232,112,10,0.35))",
-              }}
-            >
-              <defs>
-                {/* Основной градиент шара */}
-                <radialGradient id="mob-base" cx="34%" cy="28%" r="70%">
-                  <stop offset="0%"   stopColor="#fffbe0"/>
-                  <stop offset="10%"  stopColor="#ffca40"/>
-                  <stop offset="28%"  stopColor="#f07800"/>
-                  <stop offset="52%"  stopColor="#c05000"/>
-                  <stop offset="75%"  stopColor="#6e1c00"/>
-                  <stop offset="100%" stopColor="#160300"/>
-                </radialGradient>
-
-                {/* Тень */}
-                <radialGradient id="mob-dark" cx="72%" cy="74%" r="52%">
-                  <stop offset="0%"   stopColor="#050000" stopOpacity="0.82"/>
-                  <stop offset="60%"  stopColor="#100200" stopOpacity="0.32"/>
-                  <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
-                </radialGradient>
-
-                {/* Ободок */}
-                <radialGradient id="mob-rim" cx="50%" cy="50%" r="50%">
-                  <stop offset="76%"  stopColor="transparent" stopOpacity="0"/>
-                  <stop offset="90%"  stopColor="#ff9500"  stopOpacity="0.45"/>
-                  <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.70"/>
-                </radialGradient>
-
-                {/* Основной блик — неподвижный */}
-                <radialGradient id="mob-hl" cx="30%" cy="25%" r="34%">
-                  <stop offset="0%"   stopColor="white" stopOpacity="0.85"/>
-                  <stop offset="50%"  stopColor="white" stopOpacity="0.25"/>
-                  <stop offset="100%" stopColor="white" stopOpacity="0"/>
-                </radialGradient>
-
-                {/* Орбитальный блик для анимации вращения */}
-                <radialGradient id="mob-orbit-hl" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%"   stopColor="white" stopOpacity="0.55"/>
-                  <stop offset="60%"  stopColor="white" stopOpacity="0.12"/>
-                  <stop offset="100%" stopColor="white" stopOpacity="0"/>
-                </radialGradient>
-
-                {/* Clip для шара */}
-                <clipPath id="mob-clip">
-                  <circle cx="50" cy="50" r="46"/>
-                </clipPath>
-              </defs>
-
-              {/* Базовый шар */}
-              <circle cx="50" cy="50" r="46" fill="url(#mob-base)"/>
-              <circle cx="50" cy="50" r="46" fill="url(#mob-dark)"/>
-              <circle cx="50" cy="50" r="46" fill="url(#mob-rim)"/>
-
-              {/* === ВРАЩАЮЩАЯСЯ ГРУППА === */}
-              <g clipPath="url(#mob-clip)">
-                {/* Орбитальный блик — эллипс который движется по экватору */}
-                <ellipse cx="50" cy="50" rx="28" ry="10" fill="url(#mob-orbit-hl)" opacity="0.55">
-                  <animateTransform
-                    attributeName="transform"
-                    type="rotate"
-                    from="0 50 50"
-                    to="360 50 50"
-                    dur="9s"
-                    repeatCount="indefinite"
-                  />
-                </ellipse>
-
-                {/* Маленькая яркая искра — летит чуть быстрее */}
-                <ellipse cx="72" cy="38" rx="5" ry="
+        {/* Правые пункты */}
+        <div className="flex items-center justify-around flex-1 pt-1">
+          {rightItems.map(renderNavItem)}
+        </div>
+      </div>
+    </nav>
+  );
+}

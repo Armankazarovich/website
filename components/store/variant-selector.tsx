@@ -120,7 +120,7 @@ export function VariantSelector({
               onClick={() => setSelectedVariant(v)}
               disabled={!v.inStock}
               className={cn(
-                "px-3 py-1.5 rounded-lg border text-sm font-medium transition-all",
+                "px-3 py-2.5 sm:py-1.5 rounded-lg border text-sm font-medium transition-all",
                 selectedVariant?.id === v.id
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:border-primary/50",
@@ -141,7 +141,7 @@ export function VariantSelector({
             <button
               onClick={() => { setUnitType("CUBE"); setQuantity(1); }}
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                "px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-all",
                 unitType === "CUBE"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -152,7 +152,7 @@ export function VariantSelector({
             <button
               onClick={() => { setUnitType("PIECE"); setQuantity(1); }}
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                "px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-all",
                 unitType === "PIECE"
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -172,7 +172,7 @@ export function VariantSelector({
               <p className="text-sm text-muted-foreground">
                 Цена за {unitType === "CUBE" ? "1 м³" : "1 шт"}
               </p>
-              <p className="text-3xl font-display font-bold text-primary">
+              <p className="text-2xl sm:text-3xl font-display font-bold text-primary">
                 {formatPrice(Number(currentPrice))}
               </p>
             </div>
@@ -209,7 +209,7 @@ export function VariantSelector({
                 const v = parseFloat(e.target.value);
                 if (!isNaN(v) && v > 0) setQuantity(v);
               }}
-              className="w-20 text-center py-3 bg-background border-x border-border font-medium focus:outline-none"
+              className="w-20 text-center text-base py-3 bg-background border-x border-border font-medium focus:outline-none"
               step={unitType === "CUBE" ? "0.1" : "1"}
               min={unitType === "CUBE" ? "0.1" : "1"}
             />

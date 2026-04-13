@@ -499,8 +499,8 @@ export default function AdminCategoriesPage() {
         </Button>
       </div>
 
-      <div className="border border-white/10 rounded-xl px-4 py-3 text-sm text-white/45 bg-white/[0.04]">
-        Стрелки ↑↓ — порядок в меню и каталоге. <strong className="text-white/65 font-medium">Настройки</strong> — фото, SEO, навигация, подкатегория.
+      <div className="border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground bg-muted/30">
+        Стрелки ↑↓ — порядок в меню и каталоге. <strong className="text-foreground/70 font-medium">Настройки</strong> — фото, SEO, навигация, подкатегория.
       </div>
 
       {/* Видимые */}

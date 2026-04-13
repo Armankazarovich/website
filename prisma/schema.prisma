@@ -63,6 +63,7 @@ model Product {
   updatedAt   DateTime         @updatedAt
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
+  reviews     Review[]
 
   @@index([categoryId])
   @@index([active])
@@ -130,6 +131,7 @@ model OrderItem {
 model Review {
   id         String   @id @default(cuid())
   userId     String?
+  productId  String?
   name       String
   rating     Int
   text       String
@@ -139,6 +141,7 @@ model Review {
   source     String   @default("internal")
   sourceUrl  String?
   user       User?    @relation(fields: [userId], references: [id])
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
 }
 
 model Promotion {

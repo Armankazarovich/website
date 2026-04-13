@@ -1,21 +1,25 @@
-export const dynamic = "force-dynamic";
+// Кэш категорий/настроек на 60 секунд (ISR вместо force-dynamic)
+export const revalidate = 60;
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { MobileBottomNav } from "@/components/store/mobile-bottom-nav";
-import { CookieConsent } from "@/components/store/cookie-consent";
-import { ScrollToTop } from "@/components/ui/scroll-to-top";
-import { ArayWidget } from "@/components/store/aray-widget";
-import { PwaInstall } from "@/components/store/pwa-install";
-import { AccountDrawer } from "@/components/store/account-drawer";
-import { FiltersDrawer } from "@/components/store/filters-drawer";
-import { SearchDrawer } from "@/components/store/search-drawer";
-import { CartDrawer } from "@/components/store/cart-drawer";
 import { PageTransition } from "@/components/layout/page-transition";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
+
+// ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
+const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
+const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
+const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
+const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
+const CartDrawer = dynamic(() => import("@/components/store/cart-drawer").then(m => ({ default: m.CartDrawer })), { ssr: false });
+const CookieConsent = dynamic(() => import("@/components/store/cookie-consent").then(m => ({ default: m.CookieConsent })), { ssr: false });
+const PwaInstall = dynamic(() => import("@/components/store/pwa-install").then(m => ({ default: m.PwaInstall })), { ssr: false });
+const ScrollToTop = dynamic(() => import("@/components/ui/scroll-to-top").then(m => ({ default: m.ScrollToTop })), { ssr: false });
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
   const [categories, footerCategories, siteSettings] = await Promise.all([
@@ -39,12 +43,15 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   return (
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
     <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
-      {/* Хедер на всех устройствах */}
+      {/* Хедер — критичный для LCP, рендерим сразу */}
       <Header categories={categories} phones={getPhones(siteSettings)} workingHours={getSetting(siteSettings, "working_hours") || undefined} />
       <main className="flex-1 pb-20 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
 
+      {/* Нав — критичный для мобилки, рендерим сразу */}
       <MobileBottomNav arayEnabled={arayEnabled} />
+
+      {/* Всё остальное — lazy (не блокирует первую отрисовку) */}
       <CookieConsent />
       <PwaInstall />
       <AccountDrawer />
@@ -52,9 +59,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SearchDrawer />
       <CartDrawer />
       <ScrollToTop />
-      <ArayWidget
-        enabled={getSetting(siteSettings, "aray_enabled") !== "false"}
-      />
+      <ArayWidget enabled={arayEnabled} />
     </div>
     </StoreSettingsProvider>
   );

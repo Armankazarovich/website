@@ -1691,6 +1691,142 @@ a:focus-visible {
   display: none;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARAY ORB v5 — The Conscious AI Presence
+   Premium animation suite that feels ALIVE across all devices
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Main breathing glow (the "heartbeat" of consciousness) ─── */
+@keyframes aray-orb-glow {
+  0% {
+    box-shadow:
+      0 0 12px 2px hsl(var(--primary) / 0.28),
+      0 0 28px 6px hsl(var(--primary) / 0.12),
+      inset 0 0 16px 0 hsl(var(--primary) / 0.08);
+  }
+  25% {
+    box-shadow:
+      0 0 16px 3px hsl(var(--primary) / 0.38),
+      0 0 36px 8px hsl(var(--primary) / 0.18),
+      inset 0 0 20px 2px hsl(var(--primary) / 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 24px 5px hsl(var(--primary) / 0.48),
+      0 0 48px 12px hsl(var(--primary) / 0.24),
+      inset 0 0 24px 4px hsl(var(--primary) / 0.16);
+  }
+  75% {
+    box-shadow:
+      0 0 18px 4px hsl(var(--primary) / 0.40),
+      0 0 40px 10px hsl(var(--primary) / 0.20),
+      inset 0 0 20px 2px hsl(var(--primary) / 0.12);
+  }
+  100% {
+    box-shadow:
+      0 0 12px 2px hsl(var(--primary) / 0.28),
+      0 0 28px 6px hsl(var(--primary) / 0.12),
+      inset 0 0 16px 0 hsl(var(--primary) / 0.08);
+  }
+}
+
+/* ─── Secondary pulse layer (adds depth) ─── */
+@keyframes aray-orb-pulse-deep {
+  0%, 100% {
+    filter: brightness(0.98) saturate(1.0);
+  }
+  50% {
+    filter: brightness(1.08) saturate(1.15);
+  }
+}
+
+/* ─── Subtle shimmer effect (consciousness awareness) ─── */
+@keyframes aray-orb-shimmer {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.97;
+  }
+}
+
+/* ─── Adaptive listening state (faster breathing) ─── */
+@keyframes aray-orb-listening {
+  0% {
+    box-shadow:
+      0 0 14px 2.5px rgba(96, 165, 250, 0.35),
+      0 0 32px 7px rgba(96, 165, 250, 0.16),
+      inset 0 0 18px 1px rgba(96, 165, 250, 0.14);
+  }
+  25% {
+    box-shadow:
+      0 0 20px 4px rgba(96, 165, 250, 0.48),
+      0 0 44px 10px rgba(96, 165, 250, 0.24),
+      inset 0 0 24px 3px rgba(96, 165, 250, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px rgba(96, 165, 250, 0.58),
+      0 0 56px 14px rgba(96, 165, 250, 0.32),
+      inset 0 0 28px 5px rgba(96, 165, 250, 0.22);
+  }
+  75% {
+    box-shadow:
+      0 0 22px 5px rgba(96, 165, 250, 0.48),
+      0 0 48px 12px rgba(96, 165, 250, 0.26),
+      inset 0 0 24px 3px rgba(96, 165, 250, 0.18);
+  }
+  100% {
+    box-shadow:
+      0 0 14px 2.5px rgba(96, 165, 250, 0.35),
+      0 0 32px 7px rgba(96, 165, 250, 0.16),
+      inset 0 0 18px 1px rgba(96, 165, 250, 0.14);
+  }
+}
+
+/* ─── Adaptive speaking state (super active) ─── */
+@keyframes aray-orb-speaking {
+  0% {
+    box-shadow:
+      0 0 14px 2.5px rgba(52, 211, 153, 0.35),
+      0 0 32px 7px rgba(52, 211, 153, 0.16),
+      inset 0 0 18px 1px rgba(52, 211, 153, 0.14);
+  }
+  25% {
+    box-shadow:
+      0 0 22px 4px rgba(52, 211, 153, 0.50),
+      0 0 48px 11px rgba(52, 211, 153, 0.26),
+      inset 0 0 26px 3px rgba(52, 211, 153, 0.20);
+  }
+  50% {
+    box-shadow:
+      0 0 32px 7px rgba(52, 211, 153, 0.65),
+      0 0 64px 16px rgba(52, 211, 153, 0.36),
+      inset 0 0 32px 6px rgba(52, 211, 153, 0.26);
+  }
+  75% {
+    box-shadow:
+      0 0 24px 5.5px rgba(52, 211, 153, 0.52),
+      0 0 52px 13px rgba(52, 211, 153, 0.28),
+      inset 0 0 26px 4px rgba(52, 211, 153, 0.20);
+  }
+  100% {
+    box-shadow:
+      0 0 14px 2.5px rgba(52, 211, 153, 0.35),
+      0 0 32px 7px rgba(52, 211, 153, 0.16),
+      inset 0 0 18px 1px rgba(52, 211, 153, 0.14);
+  }
+}
+
+.aray-orb-alive {
+  border-radius: 50%;
+  will-change: box-shadow, filter, opacity;
+  animation: aray-orb-glow 3.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: drop-shadow(0 0 0 transparent);
+}
+
 /* Вырез (нотч) в навбаре под центральную кнопку */
 .aray-nav-notch {
   position: absolute;
@@ -2029,6 +2165,17 @@ a:focus-visible {
 .aray-classic-mode {
   color-scheme: light dark;
 }
+/* Светлый фон админки — чуть серый чтобы белые карточки выделялись */
+.light .aray-classic-mode.bg-background {
+  background: hsl(220 14% 96%) !important;
+}
+/* Карточки в светлой теме — мягкие тени для отделения от фона */
+.light .aray-classic-mode .bg-card {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+.light .aray-classic-mode main .bg-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05) !important;
+}
 /* Classic mode: белый текст → тёмный в контенте */
 .aray-classic-mode .text-white\/90,
 .aray-classic-mode .text-white\/85,
@@ -2052,7 +2199,16 @@ a:focus-visible {
   color: hsl(var(--muted-foreground)) !important;
 }
 
-/* ═══ САЙДБАР — ВСЕГДА белый текст, даже в светлой классике ═══ */
+/* ═══ САЙДБАР — ВСЕГДА тёмный фон + белый текст, даже в светлой теме ═══ */
+/* НЕ используем !important — inline style из admin-shell.tsx (sidebarBg) должен работать для мобильных Sheet */
+aside.aray-sidebar {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--brand-sidebar)) 0%,
+    hsl(var(--brand-sidebar) / 0.92) 50%,
+    hsl(var(--brand-sidebar) / 0.85) 100%
+  );
+}
 .aray-classic-mode .aray-sidebar,
 .aray-classic-mode .aray-sidebar * {
   color: rgba(255, 255, 255, 0.92) !important;
@@ -2202,6 +2358,76 @@ a:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   CLASSIC MODE — ПОЛНЫЙ ФИКС СВЕТЛОЙ ТЕМЫ КОНТЕНТА
+   Всё что вне сайдбара (.aray-sidebar) и вне тёмных панелей
+   (.aray-dark-panel) получает правильные светлые стили.
+   Используем :where() для минимальной специфичности.
+   ══════════════════════════════════════════════════════════════ */
+
+/* --- bg-white/XX классы → нормальные карточные цвета --- */
+.aray-classic-mode .bg-white\/\[0\.04\],
+.aray-classic-mode .bg-white\/\[0\.05\],
+.aray-classic-mode .bg-white\/\[0\.06\],
+.aray-classic-mode .bg-white\/\[0\.08\],
+.aray-classic-mode .bg-white\/5,
+.aray-classic-mode .bg-white\/10 {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+/* Восстановить в сайдбаре и тёмных панелях */
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.04\],
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.05\],
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.06\],
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.08\],
+.aray-classic-mode .aray-sidebar .bg-white\/5,
+.aray-classic-mode .aray-sidebar .bg-white\/10,
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.04\],
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.05\],
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.06\],
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.08\],
+.aray-classic-mode .aray-dark-panel .bg-white\/5,
+.aray-classic-mode .aray-dark-panel .bg-white\/10 {
+  background: rgba(255,255,255,0.05) !important;
+}
+
+/* --- border-white/XX → border-border --- */
+.aray-classic-mode .border-white\/5,
+.aray-classic-mode .border-white\/7,
+.aray-classic-mode .border-white\/8,
+.aray-classic-mode .border-white\/10,
+.aray-classic-mode .border-white\/12,
+.aray-classic-mode .border-white\/14,
+.aray-classic-mode .border-white\/15,
+.aray-classic-mode .border-white\/20 {
+  border-color: hsl(var(--border)) !important;
+}
+/* Восстановить для сайдбара — уже есть правило выше (line ~2144) */
+
+/* --- bg-black/XX overlays → lighter in classic mode (только в контенте) --- */
+.aray-classic-mode main .bg-black\/40,
+.aray-classic-mode main .bg-black\/50,
+.aray-classic-mode main .bg-black\/60,
+.aray-classic-mode main .bg-black\/70,
+.aray-classic-mode main .bg-black\/80 {
+  background: hsl(var(--background) / 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* --- text-white (standalone) в main контенте → foreground --- */
+.aray-classic-mode main .text-white:not([class*="bg-destructive"]):not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="bg-black"]):not([class*="bg-green"]):not([class*="bg-emerald"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* --- Кнопки/бейджи с цветным фоном — text-white остаётся белым --- */
+.aray-classic-mode [class*="bg-destructive"].text-white,
+.aray-classic-mode [class*="bg-primary"].text-white,
+.aray-classic-mode [class*="bg-red-"].text-white,
+.aray-classic-mode [class*="bg-green-"].text-white,
+.aray-classic-mode [class*="bg-emerald-"].text-white,
+.aray-classic-mode [class*="bg-black/"].text-white {
+  color: white !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
    TOGGLE SWITCHES — красивые переключатели с glow по палитре
    ══════════════════════════════════════════════════════════════ */
 
@@ -2290,7 +2516,93 @@ a:focus-visible {
 .aray-classic-mode .aray-dialog-overlay {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  background: rgba(0, 0, 0, 0.5) !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+/* classic-mode glass-dialog: все дочерние элементы наследуют нормальные цвета */
+.aray-classic-mode .aray-glass-dialog input,
+.aray-classic-mode .aray-glass-dialog select,
+.aray-classic-mode .aray-glass-dialog textarea {
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+  background: hsl(var(--background)) !important;
+}
+.aray-classic-mode .aray-glass-dialog button[class*="absolute"] svg {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.aray-classic-mode .aray-glass-dialog button[class*="absolute"]:hover svg {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── Info popup classic mode: text-white/XX → proper colors ── */
+.aray-classic-mode .info-popup-classic .text-white\/80,
+.aray-classic-mode .info-popup-classic .text-white\/60,
+.aray-classic-mode .info-popup-classic .text-white\/90 {
+  color: hsl(var(--foreground)) !important;
+}
+.aray-classic-mode .info-popup-classic .text-white\/35 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.aray-classic-mode .info-popup-classic .border-white\/10 {
+  border-color: hsl(var(--border)) !important;
+}
+
+/* ── Classic mode dialog animations fix — prevent flickering ── */
+/* Remove glass blur from animations in classic mode to prevent flicker */
+.aray-classic-mode .aray-glass-dialog[data-state="open"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  animation: aray-classic-dialog-in 0.2s ease-out forwards !important;
+}
+.aray-classic-mode .aray-glass-dialog[data-state="closed"] {
+  animation: aray-classic-dialog-out 0.15s ease-in forwards !important;
+}
+
+@keyframes aray-classic-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes aray-classic-dialog-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
+/* Overlay in classic mode — simple fade, no blur */
+.aray-classic-mode .aray-dialog-overlay[data-state="open"] {
+  animation: aray-classic-overlay-in 0.2s ease-out forwards !important;
+}
+.aray-classic-mode .aray-dialog-overlay[data-state="closed"] {
+  animation: aray-classic-overlay-out 0.15s ease-in forwards !important;
+}
+
+@keyframes aray-classic-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes aray-classic-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2858,6 +3170,18 @@ a:focus-visible {
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.30); }
   50%       { box-shadow: 0 0 0 7px hsl(var(--primary) / 0.00); }
 }
+@keyframes arayPulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes arayBreath {
+  0%, 100% { transform: scale(1); opacity: 0.7; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+@keyframes arayGlow {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
 @keyframes aray-pulse-glow {
   0%, 100% { opacity: 0.4; transform: scale(1.7); }
   50%       { opacity: 0.7; transform: scale(2.0); }
@@ -2880,6 +3204,19 @@ a:focus-visible {
 @keyframes aray-pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.65; transform: scale(0.8); }
+}
+
+/* ── Mobile keyboard fix — предотвращает "прыжки" при фокусе на input ───── */
+@media (max-width: 1024px) {
+  /* Когда клавиатура открыта — фиксированные элементы не прыгают */
+  input:focus, textarea:focus, select:focus, [contenteditable]:focus {
+    /* Не скроллим к элементу автоматически — iOS Safari иначе прыгает */
+    scroll-margin-bottom: 120px;
+  }
+  /* Формы не сжимаются под клавиатурой */
+  .admin-form-scroll, form {
+    overscroll-behavior: contain;
+  }
 }
 
 /* ── Mobile optimizations ─────────────────────────────────────────────────── */

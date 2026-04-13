@@ -12,7 +12,7 @@ export function SheetOverlay({ className, ...props }: React.ComponentPropsWithou
   return (
     <DialogPrimitive.Overlay
       className={cn(
-        "fixed inset-0 z-[70] bg-black/55",
+        "fixed inset-0 z-[70] bg-black/70",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "duration-300",
@@ -45,6 +45,7 @@ export function SheetContent({
         )}
         {...props}
       >
+        <DialogPrimitive.Title className="sr-only">Меню</DialogPrimitive.Title>
         {children}
       </DialogPrimitive.Content>
     </SheetPortal>

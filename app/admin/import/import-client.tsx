@@ -613,7 +613,7 @@ function MarketplacesSection() {
       </div>
 
       <div className="px-4 pb-4">
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-muted/30 border border-border text-xs text-muted-foreground">
           <Zap className="w-4 h-4 text-primary shrink-0" />
           <span>
             <strong className="text-foreground">Уже сейчас работает:</strong> Google Таблицы (двусторонняя), Excel/CSV (импорт).

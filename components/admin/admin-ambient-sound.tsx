@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Volume2, VolumeX, X, Music } from "lucide-react";
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -323,6 +324,7 @@ class AmbientAudioEngine {
 // ─── Компонент ────────────────────────────────────────────────────────────────
 
 export function AdminAmbientSound() {
+  const classic = useClassicMode();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<SoundId | null>(null);
   const [volume, setVolume] = useState(0.35);
@@ -385,7 +387,15 @@ export function AdminAmbientSound() {
               exit={{ opacity: 0, y: -10, scale: 0.97 }}
               transition={{ type: "spring", damping: 28, stiffness: 400 }}
               className="fixed z-[56]"
-              style={{
+              style={classic ? {
+                top: "60px",
+                right: "140px",
+                width: "300px",
+                borderRadius: "18px",
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              } : {
                 top: "60px",
                 right: "140px",
                 width: "300px",
@@ -399,17 +409,22 @@ export function AdminAmbientSound() {
             >
               {/* Шапка */}
               <div className="flex items-center gap-2.5 px-4 py-3.5"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                <Music className="w-4 h-4 text-white/70 shrink-0" />
+                style={classic ? {
+                  borderBottom: "1px solid hsl(var(--border))",
+                } : {
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}>
+                <Music className={`w-4 h-4 shrink-0 ${classic ? "text-muted-foreground/70" : "text-white/70"}`} />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-white/90">Природные звуки</p>
-                  <p className="text-[10px] text-white/40">
+                  <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/90"}`}>Природные звуки</p>
+                  <p className={`text-[10px] ${classic ? "text-muted-foreground/60" : "text-white/40"}`}>
                     {active ? `▶ ${activeSound?.label} играет` : "Выбери атмосферу"}
                   </p>
                 </div>
                 <button onClick={() => setOpen(false)}
-                  className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-                  <X className="w-3.5 h-3.5 text-white/40" />
+                  className={`w-6 h-6 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors`}
+                  style={classic ? { color: "hsl(var(--muted-foreground))" } : {}}>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -422,7 +437,14 @@ export function AdminAmbientSound() {
                       key={s.id}
                       onClick={() => play(s.id)}
                       className="flex flex-col items-center gap-1.5 p-2.5 rounded-xl transition-all"
-                      style={{
+                      style={classic ? {
+                        background: isActive
+                          ? `${s.color}18`
+                          : "hsl(var(--muted))",
+                        border: `1px solid ${isActive ? s.color + "40" : "hsl(var(--border))"}`,
+                        boxShadow: isActive ? `0 0 16px ${s.color}20` : "none",
+                        transform: isActive ? "scale(1.04)" : "scale(1)",
+                      } : {
                         background: isActive
                           ? `${s.color}28`
                           : "rgba(255,255,255,0.05)",
@@ -439,7 +461,7 @@ export function AdminAmbientSound() {
                         {s.emoji}
                       </span>
                       <span className="text-[11px] font-medium"
-                        style={{ color: isActive ? s.color : "rgba(255,255,255,0.65)" }}>
+                        style={{ color: isActive ? s.color : (classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.65)") }}>
                         {s.label}
                       </span>
                       {isActive && (
@@ -462,7 +484,7 @@ export function AdminAmbientSound() {
               {/* Громкость */}
               <div className="px-4 pb-4 pt-1">
                 <div className="flex items-center gap-3">
-                  <VolumeX className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                  <VolumeX className={`w-3.5 h-3.5 shrink-0 ${classic ? "text-muted-foreground/40" : "text-white/30"}`} />
                   <div className="flex-1 relative">
                     <input
                       type="range"
@@ -470,16 +492,19 @@ export function AdminAmbientSound() {
                       value={volume}
                       onChange={e => handleVolume(Number(e.target.value))}
                       className="w-full h-1 rounded-full appearance-none cursor-pointer"
-                      style={{
+                      style={classic ? {
+                        background: `linear-gradient(to right, hsl(var(--primary)) ${volume * 100}%, hsl(var(--muted)) ${volume * 100}%)`,
+                        accentColor: "hsl(var(--primary))",
+                      } : {
                         background: `linear-gradient(to right, hsl(var(--primary)) ${volume * 100}%, rgba(255,255,255,0.15) ${volume * 100}%)`,
                         accentColor: "hsl(var(--primary))",
                       }}
                     />
                   </div>
-                  <Volume2 className="w-3.5 h-3.5 text-white/30 shrink-0" />
+                  <Volume2 className={`w-3.5 h-3.5 shrink-0 ${classic ? "text-muted-foreground/40" : "text-white/30"}`} />
                 </div>
                 {active && (
-                  <p className="text-[10px] text-white/25 text-center mt-2">
+                  <p className={`text-[10px] text-center mt-2 ${classic ? "text-muted-foreground/40" : "text-white/25"}`}>
                     Нажми на активный звук чтобы выключить
                   </p>
                 )}

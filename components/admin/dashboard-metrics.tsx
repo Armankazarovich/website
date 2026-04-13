@@ -24,11 +24,12 @@ function MetricCard({ href, icon: Icon, value, label, prefix = "", suffix = "", 
   return (
     <Link
       href={href}
-      className="dash-metric-card group bg-card rounded-2xl border border-border p-4 active:scale-[0.97] transition-all duration-300 relative overflow-hidden hover:border-primary/30"
+      className="dash-metric-card group bg-card rounded-2xl border border-border px-3.5 py-3 lg:p-4 active:scale-[0.97] transition-all duration-300 relative overflow-hidden hover:border-primary/30"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(12px)",
         transition: "opacity 0.5s ease, transform 0.5s ease",
+        WebkitTapHighlightColor: "transparent",
       }}
     >
       {/* Glow on hover */}
@@ -38,17 +39,17 @@ function MetricCard({ href, icon: Icon, value, label, prefix = "", suffix = "", 
 
       <div className="relative">
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform duration-300 group-hover:scale-110"
+          className="w-8 h-8 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center mb-2 lg:mb-3 transition-transform duration-300 group-hover:scale-110"
           style={{ background: "hsl(var(--primary)/0.12)" }}
         >
-          <Icon className="w-[18px] h-[18px] text-primary" />
+          <Icon className="w-4 h-4 lg:w-[18px] lg:h-[18px] text-primary" />
         </div>
-        <p className="text-2xl font-display font-bold leading-tight">
-          {prefix && <span className="text-lg">{prefix}</span>}
+        <p className="text-xl lg:text-2xl font-display font-bold leading-tight">
+          {prefix && <span className="text-base lg:text-lg">{prefix}</span>}
           <AnimatedCounter value={value} duration={1400} />
-          {suffix && <span className="text-base ml-0.5">{suffix}</span>}
+          {suffix && <span className="text-sm lg:text-base ml-0.5">{suffix}</span>}
         </p>
-        <p className="text-xs text-muted-foreground mt-1">{label}</p>
+        <p className="text-[10px] lg:text-xs text-muted-foreground mt-0.5 lg:mt-1">{label}</p>
       </div>
     </Link>
   );
@@ -68,7 +69,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
   const avg = Math.round(avgOrder);
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 gap-2 lg:gap-3">
       <MetricCard href="/admin/finance" icon={TrendingUp} value={r30} label="Выручка за 30 дн." suffix=" ₽" delay={0} />
       <MetricCard href="/admin/analytics" icon={BarChart3} value={rToday} label="Сегодня" suffix=" ₽" delay={80} />
       <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" delay={160} />

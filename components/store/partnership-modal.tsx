@@ -216,3 +216,4 @@ export function PartnershipModal({ onClose }: Props) {
       </div>
     </div>
   );
+}

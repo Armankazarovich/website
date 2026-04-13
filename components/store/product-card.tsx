@@ -80,10 +80,9 @@ export function ProductCard({
   // Expand all sizes on "+N" click
   const [showAllSizes, setShowAllSizes] = useState(false);
 
-  // Unit type — for BOTH products starts null until user picks
-  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(
-    saleUnit === "BOTH" ? null : saleUnit === "PIECE" ? "PIECE" : "CUBE"
-  );
+  // Unit type — BOTH: null (покажет пикер), CUBE/PIECE: сразу выбран → 1 тап
+  const defaultUnit: UnitType | null = saleUnit === "BOTH" ? null : saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(defaultUnit);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
 
   const effectiveUnit: UnitType = selectedUnit ?? "CUBE";
@@ -93,8 +92,8 @@ export function ProductCard({
     ? Number(effectiveUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
     : null;
 
-  // Live quantity from cart store — only tracked when unit is chosen
-  const cartItemId = selectedVariant && selectedUnit ? `${selectedVariant.id}-${selectedUnit}` : null;
+  // Live quantity from cart store
+  const cartItemId = selectedVariant ? `${selectedVariant.id}-${selectedUnit}` : null;
   const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
 
   // Core add logic — reused by direct add and unit picker
@@ -150,13 +149,11 @@ export function ProductCard({
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!selectedVariant || !hasStock) return;
-
-    // For BOTH products with no unit chosen — show picker
+    // BOTH products: show unit picker so user chooses куб/шт
     if (saleUnit === "BOTH" && selectedUnit === null) {
       setShowUnitPicker(true);
       return;
     }
-
     doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
   };
 
@@ -169,17 +166,14 @@ export function ProductCard({
 
   const handleIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
-
-    // For BOTH products with no unit chosen — show picker first
-    if (saleUnit === "BOTH" && selectedUnit === null) {
-      setShowUnitPicker(true);
-      return;
-    }
-
-    if (!cartItemId) return;
     if (cartQty === 0) {
+      // Same logic as handleAdd for first item
+      if (saleUnit === "BOTH" && selectedUnit === null) {
+        setShowUnitPicker(true);
+        return;
+      }
       doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
-    } else {
+    } else if (cartItemId) {
       updateQuantity(cartItemId, parseFloat((cartQty + 1).toFixed(1)));
     }
   };
@@ -272,14 +266,14 @@ export function ProductCard({
           <div className="relative">
             {cartQty > 0 ? (
               <div className="flex items-center gap-2">
-                <button onClick={handleDecrement} className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/30 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90">
+                <button onClick={handleDecrement} className="flex items-center justify-center w-9 h-9 sm:w-8 sm:h-8 rounded-xl border border-white/30 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90">
                   <Minus className="w-3 h-3" />
                 </button>
                 <div className="flex-1 text-center">
                   <span className="font-display font-bold text-base text-white tabular-nums">{cartQty}</span>
                   <span className="text-[10px] text-white/60 ml-0.5">{unit}</span>
                 </div>
-                <button onClick={handleIncrement} className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 shadow-sm">
+                <button onClick={handleIncrement} className="flex items-center justify-center w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 shadow-sm">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
@@ -446,7 +440,7 @@ export function ProductCard({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDecrement}
-                className="flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
+                className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -458,7 +452,7 @@ export function ProductCard({
 
               <button
                 onClick={handleIncrement}
-                className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
+                className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>

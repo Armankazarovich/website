@@ -173,12 +173,11 @@ function RoleBadge({ role, customRole }: { role: string; customRole?: string | n
         align="start"
         content={
           <div className="space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">{def.label}</p>
-            <p className="text-xs text-white/70 leading-relaxed">{def.description}</p>
-            <div className="pt-1.5 border-t border-white/10 flex flex-wrap gap-1.5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">{def.label}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{def.description}</p>
+            <div className="pt-1.5 border-t border-border flex flex-wrap gap-1.5">
               {def.sections.map((s) => (
-                <span key={s} className="text-[10px] px-2 py-0.5 rounded-md text-white/60"
-                  style={{ background: "rgba(255,255,255,0.09)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <span key={s} className="text-[10px] px-2 py-0.5 rounded-md text-muted-foreground bg-muted/50 border border-border">
                   {s}
                 </span>
               ))}

@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ARAY — Concept</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --aray-bg: #06080f;
+    --aray-surface: rgba(255,255,255,0.04);
+    --aray-border: rgba(255,255,255,0.08);
+    --aray-text: rgba(255,255,255,0.92);
+    --aray-sub: rgba(255,255,255,0.45);
+    --aray-accent: #3b82f6;
+    --aray-gold: #f59e0b;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Inter', system-ui, sans-serif;
+    background: var(--aray-bg);
+    color: var(--aray-text);
+    height: 100dvh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ═══ LAYOUT ═══ */
+  .aray-app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    position: relative;
+  }
+
+  /* ═══ AMBIENT BACKGROUND ═══ */
+  .ambient {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ambient::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.03) 50%, transparent 70%);
+    animation: ambientPulse 6s ease-in-out infinite;
+  }
+  .ambient::after {
+    content: '';
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 60%);
+    animation: ambientPulse 8s ease-in-out 2s infinite;
+  }
+  @keyframes ambientPulse {
+    0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+  }
+
+  /* ═══ HEADER — минимал ═══ */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    position: relative;
+    z-index: 10;
+  }
+  .header-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--aray-sub);
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: statusPulse 2s ease infinite;
+  }
+  @keyframes statusPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .header-actions {
+    display: flex;
+    gap: 4px;
+  }
+  .header-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: none;
+    background: var(--aray-surface);
+    color: var(--aray-sub);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.08); color: var(--aray-text); }
+
+  /* ═══ MESSAGES AREA ═══ */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    z-index: 5;
+    scrollbar-width: none;
+  }
+  .messages::-webkit-scrollbar { display: none; }
+
+  /* ═══ AVATAR ЦЕНТРАЛЬНЫЙ — когда нет сообщений ═══ */
+  .avatar-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 20px;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 5;
+  }
+  .avatar-ring {
+    position: relative;
+    width: 140px;
+    height: 140px;
+  }
+  .avatar-ring::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #3b82f6, #8b5cf6, #f59e0b, #3b82f6);
+    animation: ringRotate 8s linear infinite;
+    opacity: 0.5;
+    filter: blur(2px);
+  }
+  @keyframes ringRotate {
+    to { transform: rotate(360deg); }
+  }
+  .avatar-img {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+    background: radial-gradient(circle at 30% 30%, #1e3a5f, #0a1628);
+    border: 2px solid rgba(59,130,246,0.3);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar-inner-glow {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 40% 35%, rgba(59,130,246,0.4) 0%, rgba(59,130,246,0.1) 40%, transparent 70%);
+    animation: innerGlow 4s ease-in-out infinite;
+  }
+  @keyframes innerGlow {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+  }
+  .avatar-label {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: linear-gradient(135deg, #60a5fa, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .avatar-hint {
+    font-size: 13px;
+    color: var(--aray-sub);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 260px;
+  }
+
+  /* ═══ QUICK CHIPS ═══ */
+  .chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 20px 12px;
+    position: relative;
+    z-index: 5;
+  }
+  .chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--aray-border);
+    background: var(--aray-surface);
+    color: var(--aray-sub);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .chip:hover {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.3);
+    color: var(--aray-text);
+  }
+
+  /* ═══ MESSAGE BUBBLES ═══ */
+  .msg {
+    display: flex;
+    gap: 10px;
+    max-width: 88%;
+    animation: msgIn 0.3s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+  }
+  .msg.user {
+    align-self: flex-end;
+    flex-direction: row-reverse;
+  }
+  .msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1e3a5f, #0a1628);
+    border: 1px solid rgba(59,130,246,0.3);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg-bubble {
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .msg:not(.user) .msg-bubble {
+    background: var(--aray-surface);
+    border: 1px solid var(--aray-border);
+    border-top-left-radius: 4px;
+    color: var(--aray-text);
+  }
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border-top-right-radius: 4px;
+    color: white;
+  }
+  .msg-time {
+    font-size: 10px;
+    color: var(--aray-sub);
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+  .msg.user .msg-time { text-align: right; }
+
+  /* ═══ INPUT AREA — главная фишка ═══ */
+  .input-area {
+    padding: 12px 16px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    position: relative;
+    z-index: 10;
+    border-top: 1px solid var(--aray-border);
+    background: rgba(6,8,15,0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* ── Mode Tabs — переключатель режимов ── */
+  .mode-tabs {
+    display: flex;
+    gap: 2px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 3px;
+    margin-bottom: 12px;
+  }
+  .mode-tab {
+    flex: 1;
+    padding: 8px 0;
+    border: none;
+    background: transparent;
+    color: var(--aray-sub);
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .mode-tab.active {
+    background: rgba(59,130,246,0.15);
+    color: #60a5fa;
+  }
+  .mode-tab svg { width: 14px; height: 14px; }
+
+  /* ── Text Input ── */
+  .text-input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .text-input {
+    flex: 1;
+    resize: none;
+    border: 1px solid var(--aray-border);
+    background: var(--aray-surface);
+    color: var(--aray-text);
+    border-radius: 16px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    max-height: 100px;
+    transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: rgba(59,130,246,0.4); }
+  .text-input::placeholder { color: var(--aray-sub); }
+  .send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+  }
+  .send-btn:hover { transform: scale(1.05); }
+  .send-btn:active { transform: scale(0.95); }
+
+  /* ── Voice Mode ── */
+  .voice-mode {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0 4px;
+  }
+  .voice-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 0.2s;
+    box-shadow: 0 8px 24px rgba(59,130,246,0.3);
+  }
+  .voice-btn:active { transform: scale(0.92); }
+  .voice-btn.recording {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 8px 24px rgba(239,68,68,0.4);
+  }
+  .voice-btn.recording::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px solid rgba(239,68,68,0.3);
+    animation: voiceRing 1.5s ease-out infinite;
+  }
+  @keyframes voiceRing {
+    to { transform: scale(1.6); opacity: 0; }
+  }
+  .voice-label {
+    font-size: 12px;
+    color: var(--aray-sub);
+  }
+
+  /* ── Waveform visualizer ── */
+  .waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 32px;
+  }
+  .wave-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: #60a5fa;
+    transition: height 0.15s;
+  }
+
+  /* ── Listen/Speaking State ── */
+  .speaking-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 0 4px;
+  }
+  .speaking-wave {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 24px;
+  }
+  .speaking-bar {
+    width: 3px;
+    border-radius: 2px;
+    background: linear-gradient(to top, #3b82f6, #f59e0b);
+    animation: speakBar 0.6s ease-in-out infinite alternate;
+  }
+  @keyframes speakBar {
+    from { height: 4px; }
+    to { height: 20px; }
+  }
+
+  /* ═══ ACTIVE STATES ═══ */
+  .mode-voice .avatar-ring::before {
+    opacity: 0.8;
+    animation-duration: 3s;
+  }
+  .mode-listen .avatar-ring::before {
+    background: conic-gradient(from 0deg, #22c55e, #3b82f6, #22c55e);
+    opacity: 0.8;
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (min-width: 600px) {
+    .aray-app {
+      max-width: 420px;
+      margin: 0 auto;
+      border-left: 1px solid var(--aray-border);
+      border-right: 1px solid var(--aray-border);
+    }
+  }
+
+  /* Hidden states */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="aray-app" id="app">
+  <div class="ambient"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <div class="header-title">Арай</div>
+      <div class="header-status">
+        <span class="status-dot"></span>
+        <span id="statusText">AI ассистент · онлайн</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn" title="Новый чат" onclick="resetChat()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+      <button class="header-btn" title="Закрыть">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Avatar (visible when no messages) -->
+  <div class="avatar-hero" id="heroSection">
+    <div class="avatar-ring">
+      <div class="avatar-img">
+        <div class="avatar-inner-glow"></div>
+      </div>
+    </div>
+    <div class="avatar-label">ARAY</div>
+    <div class="avatar-hint">Привет! Я Арай — твой AI-ассистент. Говори, пиши или просто слушай.</div>
+  </div>
+
+  <!-- Messages (hidden initially) -->
+  <div class="messages hidden" id="messagesSection">
+    <!-- messages go here -->
+  </div>
+
+  <!-- Quick chips -->
+  <div class="chips" id="chips">
+    <div class="chip" onclick="sendMsg('Что есть в каталоге?')">Каталог</div>
+    <div class="chip" onclick="sendMsg('Цены на доставку')">Доставка</div>
+    <div class="chip" onclick="sendMsg('Помоги с заказом')">Заказать</div>
+    <div class="chip" onclick="sendMsg('Расскажи о ПилоРус')">О нас</div>
+  </div>
+
+  <!-- Input Area -->
+  <div class="input-area">
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="text" onclick="setMode('text')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 5 5L20 7"/><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" fill="none"/></svg>
+        Текст
+      </button>
+      <button class="mode-tab" data-mode="voice" onclick="setMode('voice')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        Голос
+      </button>
+      <button class="mode-tab" data-mode="listen" onclick="setMode('listen')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        Слушать
+      </button>
+    </div>
+
+    <!-- Text Mode -->
+    <div id="textMode" class="text-input-wrap">
+      <textarea class="text-input" rows="1" placeholder="Написать Араю..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}" oninput="autoGrow(this)" id="textInput"></textarea>
+      <button class="send-btn" onclick="sendMsg()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+
+    <!-- Voice Mode -->
+    <div id="voiceMode" class="voice-mode hidden">
+      <div class="waveform" id="waveform">
+        <!-- bars generated by JS -->
+      </div>
+      <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+      </button>
+      <div class="voice-label" id="voiceLabel">Нажми чтобы говорить</div>
+    </div>
+
+    <!-- Listen Mode -->
+    <div id="listenMode" class="speaking-indicator hidden">
+      <div class="speaking-wave" id="speakingWave">
+        <!-- bars generated by JS -->
+      </div>
+      <span style="font-size: 13px; color: var(--aray-sub);">Арай говорит...</span>
+      <button class="header-btn" onclick="setMode('text')" style="width:32px;height:32px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentMode = 'text';
+  let recording = false;
+  let messages = [];
+
+  // Generate waveform bars
+  const wf = document.getElementById('waveform');
+  for (let i = 0; i < 24; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'wave-bar';
+    bar.style.height = '4px';
+    wf.appendChild(bar);
+  }
+
+  // Generate speaking bars
+  const sw = document.getElementById('speakingWave');
+  for (let i = 0; i < 16; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'speaking-bar';
+    bar.style.animationDelay = (i * 0.08) + 's';
+    sw.appendChild(bar);
+  }
+
+  function setMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.mode === mode);
+    });
+    document.getElementById('textMode').classList.toggle('hidden', mode !== 'text');
+    document.getElementById('voiceMode').classList.toggle('hidden', mode !== 'voice');
+    document.getElementById('listenMode').classList.toggle('hidden', mode !== 'listen');
+
+    document.getElementById('app').className = 'aray-app mode-' + mode;
+
+    if (mode === 'text') document.getElementById('textInput').focus();
+    if (mode === 'voice') animateWave(false);
+  }
+
+  function toggleVoice() {
+    recording = !recording;
+    const btn = document.getElementById('voiceBtn');
+    const label = document.getElementById('voiceLabel');
+    btn.classList.toggle('recording', recording);
+    label.textContent = recording ? 'Слушаю... нажми для отправки' : 'Нажми чтобы говорить';
+    animateWave(recording);
+
+    if (!recording) {
+      // Simulate sending voice message
+      setTimeout(() => sendMsg('Голосовое сообщение (демо)'), 300);
+    }
+  }
+
+  let waveInterval;
+  function animateWave(active) {
+    clearInterval(waveInterval);
+    const bars = document.querySelectorAll('#waveform .wave-bar');
+    if (active) {
+      waveInterval = setInterval(() => {
+        bars.forEach(bar => {
+          bar.style.height = (4 + Math.random() * 24) + 'px';
+          bar.style.background = `hsl(${210 + Math.random() * 30}, 80%, ${55 + Math.random() * 15}%)`;
+        });
+      }, 100);
+    } else {
+      bars.forEach(bar => { bar.style.height = '4px'; bar.style.background = '#60a5fa'; });
+    }
+  }
+
+  function sendMsg(text) {
+    const input = document.getElementById('textInput');
+    const msg = text || input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    autoGrow(input);
+    addMessage('user', msg);
+
+    // Simulate response
+    setTimeout(() => {
+      addMessage('assistant', 'Спасибо за вопрос! Это прототип интерфейса Арая — здесь будет умный ответ на ваш запрос. Арай может помочь с каталогом, заказами, доставкой и многим другим.');
+    }, 800);
+  }
+
+  function addMessage(role, content) {
+    const section = document.getElementById('messagesSection');
+    const hero = document.getElementById('heroSection');
+    const chips = document.getElementById('chips');
+
+    if (messages.length === 0) {
+      hero.classList.add('hidden');
+      section.classList.remove('hidden');
+      chips.classList.add('hidden');
+    }
+
+    messages.push({ role, content });
+
+    const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const isUser = role === 'user';
+
+    const div = document.createElement('div');
+    div.className = `msg ${isUser ? 'user' : ''}`;
+    div.innerHTML = `
+      ${!isUser ? '<div class="msg-avatar"></div>' : ''}
+      <div>
+        <div class="msg-bubble">${content}</div>
+        <div class="msg-time">${time}</div>
+      </div>
+    `;
+    section.appendChild(div);
+    section.scrollTop = section.scrollHeight;
+  }
+
+  function resetChat() {
+    messages = [];
+    document.getElementById('messagesSection').innerHTML = '';
+    document.getElementById('messagesSection').classList.add('hidden');
+    document.getElementById('heroSection').classList.remove('hidden');
+    document.getElementById('chips').classList.remove('hidden');
+  }
+
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+</script>
+</body>
+</html>

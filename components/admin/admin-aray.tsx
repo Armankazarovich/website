@@ -1,703 +1,408 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown,
-  ImagePlus, Sparkles, X, Download, Maximize2,
-  Globe, Zap, Brain, MessageCircle
+  Send, Mic, MicOff, Volume2, VolumeX, RotateCcw,
+  X, Sparkles,
 } from "lucide-react";
+import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
+import { ArayOrb } from "@/components/shared/aray-orb";
+import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
-// ─── Classic mode detection ──────────────────────────────────────────────────
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
-
-// ─── Контекст страницы — умные чипсы + capabilities ──────────────────────────
-const PAGE_CONTEXT: Record<string, { label: string; icon: string; quick: string[]; capabilities?: string[] }> = {
-  "/admin":            { label: "Дашборд",    icon: "📊", quick: ["Сводка за сегодня", "Новые заказы", "Выручка за неделю", "Что срочно?"], capabilities: ["analytics", "orders"] },
-  "/admin/orders":     { label: "Заказы",     icon: "📦", quick: ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня", "Проблемные заказы"], capabilities: ["orders", "status"] },
-  "/admin/products":   { label: "Каталог",    icon: "🪵", quick: ["Что не в наличии?", "Топ продаж", "Как добавить товар?", "Актуальные цены"], capabilities: ["products", "search"] },
-  "/admin/clients":    { label: "Клиенты",    icon: "👥", quick: ["Новые клиенты", "Постоянные покупатели", "Кто давно не покупал?", "Лучший клиент"], capabilities: ["clients", "analytics"] },
-  "/admin/analytics":  { label: "Аналитика",  icon: "📈", quick: ["Выручка за месяц", "Лучшие товары", "Динамика продаж", "Конверсия"], capabilities: ["analytics", "charts"] },
-  "/admin/finance":    { label: "Финансы",    icon: "💰", quick: ["Выручка за месяц", "Средний чек", "Сравни с прошлым месяцем", "Прибыль"], capabilities: ["finance", "analytics"] },
-  "/admin/inventory":  { label: "Склад",      icon: "🏭", quick: ["Что заканчивается?", "Остатки по товарам", "Что пополнить?", "Склад по категориям"], capabilities: ["inventory", "products"] },
-  "/admin/crm":        { label: "CRM",        icon: "🎯", quick: ["Новые лиды", "Конверсия лидов", "Горячие клиенты", "Что в работе?"], capabilities: ["crm", "clients"] },
-  "/admin/tasks":      { label: "Задачи",     icon: "✅", quick: ["Мои задачи", "Просроченные", "Создай задачу", "Что сделано сегодня?"], capabilities: ["tasks"] },
-  "/admin/delivery":   { label: "Доставка",   icon: "🚚", quick: ["Активные доставки", "Задержки", "Маршруты сегодня", "Доставлено за неделю"], capabilities: ["delivery", "orders"] },
-  "/admin/staff":      { label: "Команда",    icon: "👤", quick: ["Кто в команде?", "Добавить сотрудника", "Роли и доступы", "Активность"], capabilities: ["staff"] },
-  "/admin/settings":   { label: "Настройки",  icon: "⚙️", quick: ["Как настроить сайт?", "SMTP email", "Telegram бот", "Домен и SSL"], capabilities: ["settings"] },
-  "/admin/appearance": { label: "Оформление", icon: "🎨", quick: ["Сменить тему", "Палитры", "Как выглядит сайт?", "Логотип"], capabilities: ["appearance"] },
+// ─── Page context for smart chips ───────────────────────────────────────────
+const PAGE_CHIPS: Record<string, string[]> = {
+  "/admin": ["Сводка за сегодня", "Новые заказы", "Что срочно?"],
+  "/admin/orders": ["Новые заказы", "Подтверди все новые", "Заказы за сегодня"],
+  "/admin/products": ["Что не в наличии?", "Покажи все цены", "Актуальные цены"],
+  "/admin/clients": ["Новые клиенты", "Постоянные покупатели", "Топ клиентов"],
+  "/admin/delivery": ["Активные доставки", "Что доставляется?", "Задержки"],
+  "/admin/staff": ["Кто в команде?", "Онлайн-статус", "Добавь задачу"],
+  "/admin/tasks": ["Все задачи", "Срочные задачи", "Создай задачу"],
+  "/admin/crm": ["Новые лиды", "Горячие клиенты", "Добавь лид"],
+  "/admin/analytics": ["Выручка за месяц", "Топ товаров", "Динамика продаж"],
+  "/admin/finance": ["Выручка сегодня", "Сравни с прошлой неделей", "Средний чек"],
+  "/admin/settings": ["Проверь настройки", "Тест Telegram", "SMTP работает?"],
+  "/admin/notifications": ["Отправь push всем", "Сколько подписчиков?", "Тест уведомления"],
 };
-const DEFAULT_QUICK = ["Сводка за сегодня", "Новые заказы", "Список товаров", "Что срочно?"];
+const DEFAULT_CHIPS = ["Сводка за сегодня", "Новые заказы", "Создай задачу"];
 
-function getPageCtx(pathname: string) {
-  if (PAGE_CONTEXT[pathname]) return PAGE_CONTEXT[pathname];
-  const match = Object.keys(PAGE_CONTEXT)
+function getChips(pathname: string): string[] {
+  if (PAGE_CHIPS[pathname]) return PAGE_CHIPS[pathname];
+  const match = Object.keys(PAGE_CHIPS)
     .filter(k => k !== "/admin" && pathname.startsWith(k))
     .sort((a, b) => b.length - a.length)[0];
-  return match ? PAGE_CONTEXT[match] : null;
+  return match ? PAGE_CHIPS[match] : DEFAULT_CHIPS;
 }
 
-// ─── Типы ────────────────────────────────────────────────────────────────────
-type MediaAttachment = {
-  type: "image" | "video";
-  data: string; // base64 or URL
-  prompt?: string;
-};
+// ─── Types ──────────────────────────────────────────────────────────────────
+type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: boolean };
 
-type Msg = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  streaming?: boolean;
-  media?: MediaAttachment[];
-  generating?: boolean; // image/video is being generated
-};
+// ─── Parse and clean ARAY commands from response ─────────────────────────────
+type ArayAction =
+  | { type: "navigate"; path: string }
+  | { type: "refresh" }
+  | { type: "popup"; url: string; title: string }
+  | { type: "show_url"; url: string; title: string };
 
-function parseActions(raw: string) {
-  const idx = raw.indexOf("ARAY_ACTIONS:");
-  return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
-}
-
-// ─── Markdown рендер (inline) ────────────────────────────────────────────────
-function renderInline(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
-  return parts.map((p, i) => {
-    if (p.startsWith("**") && p.endsWith("**"))
-      return <strong key={i} className="font-semibold">{p.slice(2, -2)}</strong>;
-    if (p.startsWith("*") && p.endsWith("*"))
-      return <em key={i}>{p.slice(1, -1)}</em>;
-    if (p.startsWith("`") && p.endsWith("`"))
-      return (
-        <code key={i} className="aray-code-inline">
-          {p.slice(1, -1)}
-        </code>
-      );
-    return p as React.ReactNode;
-  });
-}
-
-function renderMarkdown(text: string): React.ReactNode[] {
-  const lines = text.split("\n");
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim() === "") { i++; continue; }
-
-    if (/^---+$/.test(line.trim())) {
-      nodes.push(<hr key={i} className="my-2 border-none" style={{ borderTop: "1px solid hsl(var(--border)/0.3)" }} />);
-      i++; continue;
-    }
-
-    const hm = line.match(/^(#{1,3})\s+(.+)$/);
-    if (hm) {
-      nodes.push(
-        <p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>
-          {renderInline(hm[2])}
-        </p>
-      );
-      i++; continue;
-    }
-
-    if (/^[\-\*]\s/.test(line.trim())) {
-      const items: string[] = [];
-      while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) {
-        items.push(lines[i].replace(/^[\-\*]\s/, "").trim()); i++;
-      }
-      nodes.push(
-        <ul key={`ul-${i}`} className="space-y-0.5 my-1">
-          {items.map((it, ii) => (
-            <li key={ii} className="flex gap-1.5 items-start">
-              <span className="mt-[6px] shrink-0 w-1.5 h-1.5 rounded-full" style={{ background: "hsl(var(--primary)/0.6)" }}/>
-              <span>{renderInline(it)}</span>
-            </li>
-          ))}
-        </ul>
-      );
-      continue;
-    }
-
-    if (/^\d+\.\s/.test(line.trim())) {
-      const items: string[] = [];
-      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
-        items.push(lines[i].replace(/^\d+\.\s/, "").trim()); i++;
-      }
-      nodes.push(
-        <ol key={`ol-${i}`} className="space-y-0.5 my-1 list-none">
-          {items.map((it, ii) => (
-            <li key={ii} className="flex gap-2 items-start">
-              <span className="aray-list-number">{ii + 1}</span>
-              <span>{renderInline(it)}</span>
-            </li>
-          ))}
-        </ol>
-      );
-      continue;
-    }
-
-    if (line.trim().startsWith("|")) {
-      const tableLines: string[] = [];
-      while (i < lines.length && lines[i].trim().startsWith("|")) { tableLines.push(lines[i]); i++; }
-      const parseRow = (row: string) => row.split("|").slice(1, -1).map(cell => cell.trim());
-      const headers = parseRow(tableLines[0]);
-      const sepIdx = tableLines.findIndex(l => /^\|[\s\-:|]+\|$/.test(l.trim()));
-      const dataRows = tableLines.slice(sepIdx >= 0 ? sepIdx + 1 : 1).map(parseRow);
-      nodes.push(
-        <div key={`tbl-${i}`} className="my-2 overflow-x-auto aray-table-wrap">
-          <table className="w-full text-[12px]">
-            <thead>
-              <tr className="aray-table-header">
-                {headers.map((h, hi) => (
-                  <th key={hi} className="px-3 py-2 text-left font-semibold" style={{ color: "hsl(var(--primary))" }}>{renderInline(h)}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {dataRows.filter(r => r.some(c => c)).map((row, ri) => (
-                <tr key={ri} className="aray-table-row">
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="px-3 py-2">{renderInline(cell)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-      continue;
-    }
-
-    nodes.push(<p key={i}>{renderInline(line)}</p>);
-    i++;
+function parseActions(raw: string): ArayAction[] {
+  const actions: ArayAction[] = [];
+  // __ARAY_POPUP:{"url":"/admin/orders","title":"Заказы"}__
+  for (const m of raw.matchAll(/__ARAY_POPUP:(\{.+?\})__/g)) {
+    try {
+      const { url, title } = JSON.parse(m[1]);
+      if (url) actions.push({ type: "popup", url, title: title || url });
+    } catch {}
   }
-  return nodes;
+  // __ARAY_NAVIGATE:/admin/tasks__
+  for (const m of raw.matchAll(/__ARAY_NAVIGATE:(.+?)__/g)) {
+    actions.push({ type: "navigate", path: m[1] });
+  }
+  // __ARAY_SHOW_URL:https://....:Title__
+  for (const m of raw.matchAll(/__ARAY_SHOW_URL:(.+?):(.+?)__/g)) {
+    actions.push({ type: "popup", url: m[1], title: m[2] });
+  }
+  // __ARAY_REFRESH__
+  if (raw.includes("__ARAY_REFRESH__")) actions.push({ type: "refresh" });
+  return actions;
 }
 
-// ─── Голосовой ввод ──────────────────────────────────────────────────────────
-function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
-  const [listening, setListening] = useState(false);
+function cleanResponse(raw: string): string {
+  return raw
+    .replace(/\n?__ARAY_META__[\s\S]*$/, "")
+    .replace(/__ARAY_ERR__/, "")
+    .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
+    .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+    .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+    .replace(/__ARAY_REFRESH__/g, "")
+    .replace(/__ARAY_ADD_CART:.+?__/g, "")
+    .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
+    .trim();
+}
+
+// ArayOrb импортирован из @/components/shared/aray-orb — единый глобус везде
+
+// ─── Simple markdown rendering ──────────────────────────────────────────────
+function MdText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        if (!line.trim()) return null;
+        const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+          p.startsWith("**") && p.endsWith("**")
+            ? <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>
+            : p
+        );
+        if (/^[\-\*—]\s/.test(line.trim())) {
+          return (
+            <div key={i} className="flex gap-2 items-start pl-1">
+              <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "hsl(var(--primary)/0.5)" }}/>
+              <span>{parts}</span>
+            </div>
+          );
+        }
+        return <p key={i}>{parts}</p>;
+      })}
+    </div>
+  );
+}
+
+// ─── Push-to-talk microphone ────────────────────────────────────────────────
+function useMic() {
+  const [active, setActive] = useState(false);
   const [supported, setSupported] = useState(false);
-  const ref = useRef<any>(null);
+  const recRef = useRef<any>(null);
 
   useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setSupported(!!SR);
+    setSupported(!!(
+      typeof window !== "undefined" &&
+      ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    ));
   }, []);
 
-  const start = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
-    const r = new SR();
-    r.lang = "ru-RU"; r.interimResults = false; r.continuous = false;
-    r.onstart = () => setListening(true);
-    r.onend = () => { setListening(false); ref.current = null; };
-    r.onerror = () => { setListening(false); ref.current = null; };
-    r.onresult = (e: any) => {
-      const t = e.results[0]?.[0]?.transcript?.trim() || "";
-      if (t) { onResult(t); setTimeout(onAutoSend, 120); }
-    };
-    try { r.start(); ref.current = r; } catch { setListening(false); }
-  }, [onResult, onAutoSend]);
+  const listen = useCallback((): Promise<string> => {
+    return new Promise(async (resolve) => {
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SR) {
+        console.warn("[Aray Mic] SpeechRecognition не поддерживается в этом браузере");
+        resolve("");
+        return;
+      }
 
-  const stop = useCallback(() => {
-    if (ref.current) { try { ref.current.stop(); } catch {} ref.current = null; }
-    setListening(false);
+      // Сначала запросим разрешение на микрофон
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (err) {
+        console.warn("[Aray Mic] Микрофон заблокирован:", err);
+        resolve("");
+        return;
+      }
+
+      if (recRef.current) { try { recRef.current.stop(); } catch {} }
+
+      const r = new SR();
+      r.lang = "ru-RU";
+      r.interimResults = false;
+      r.continuous = false;
+      r.maxAlternatives = 1;
+      let resolved = false;
+
+      r.onstart = () => { console.log("[Aray Mic] Слушаю..."); setActive(true); };
+      r.onend = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
+      r.onerror = (e: any) => {
+        console.warn("[Aray Mic] Ошибка:", e.error);
+        setActive(false); recRef.current = null;
+        if (!resolved) { resolved = true; resolve(""); }
+      };
+      r.onresult = (e: any) => {
+        const text = e.results[0]?.[0]?.transcript?.trim() || "";
+        console.log("[Aray Mic] Распознано:", text);
+        if (!resolved) { resolved = true; resolve(text); }
+      };
+
+      try { r.start(); recRef.current = r; }
+      catch (err) {
+        console.warn("[Aray Mic] Не удалось запустить:", err);
+        setActive(false);
+        if (!resolved) { resolved = true; resolve(""); }
+      }
+    });
   }, []);
 
-  return { listening, supported, start, stop };
+  const cancel = useCallback(() => {
+    if (recRef.current) { try { recRef.current.stop(); } catch {} recRef.current = null; }
+    setActive(false);
+  }, []);
+
+  return { active, supported, listen, cancel };
 }
 
-// ─── TTS — ElevenLabs (primary) + браузер (fallback) ─────────────────────────
-const voicesCache: { list: SpeechSynthesisVoice[] } = { list: [] };
+// ─── TTS: Streaming ElevenLabs (Leonid, Flash) → Browser Speech ─────────────
+const ELEVEN_VOICE = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
+const ELEVEN_MODEL = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
+const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
+const ELEVEN_SPEED = 1.08; // чуть быстрее нормы — живой, без артефактов
 
-function loadVoices() {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  const v = window.speechSynthesis.getVoices();
-  if (v.length) voicesCache.list = v;
-}
-
-function pickBestRuVoice(): SpeechSynthesisVoice | null {
-  const voices = voicesCache.list.length
-    ? voicesCache.list
-    : (typeof window !== "undefined" ? window.speechSynthesis?.getVoices() ?? [] : []);
-  const p = [
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Natural"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Microsoft"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Irina"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Google"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru"),
-  ];
-  for (const fn of p) { const f = voices.find(fn); if (f) return f; }
-  return null;
-}
-
-function cleanForSpeech(t: string) {
-  return t.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`|]/g, " ")
-    .replace(/[\uD800-\uDFFF]/g, "")
-    .replace(/[\u2600-\u27BF]/g, "")
-    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-    .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
-    .replace(/^---+$/mg, "").replace(/\s{2,}/g, " ").trim();
+function cleanTTSText(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+    .replace(/[#_`~|>]/g, " ")
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, "") // все эмодзи
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")  // [ссылки](url) → текст
+    .replace(/https?:\/\/\S+/g, "")           // голые URL
+    .replace(/\d{4,}/g, (m) => m.split("").join(" ")) // длинные числа по цифрам
+    .replace(/₽/g, " рублей").replace(/м³/g, " кубов")
+    .replace(/\s{2,}/g, " ").trim().slice(0, 800);
 }
 
 function useTTS() {
-  const [speaking, setSpeaking] = useState<string | null>(null);
+  const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const speakingRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const onDoneRef = useRef<(() => void) | null>(null);
+  const lockRef = useRef(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (window.speechSynthesis) {
-      loadVoices();
-      window.speechSynthesis.onvoiceschanged = () => { voicesCache.list = window.speechSynthesis.getVoices(); };
+  const stop = useCallback(() => {
+    lockRef.current = false;
+    abortRef.current?.abort(); abortRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      try { URL.revokeObjectURL(audioRef.current.src); } catch {}
+      audioRef.current = null;
     }
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    setSpeaking(false);
   }, []);
 
-  useEffect(() => { speakingRef.current = speaking; }, [speaking]);
+  const speak = useCallback(async (text: string, onFinished?: () => void) => {
+    if (lockRef.current) { stop(); await new Promise(r => setTimeout(r, 50)); }
+    stop();
+    lockRef.current = true;
 
-  const stopAll = useCallback(() => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (typeof window !== "undefined") { window.speechSynthesis?.cancel(); utterRef.current = null; }
-    setSpeaking(null);
-    speakingRef.current = null;
-  }, []);
+    const clean = cleanTTSText(text);
+    if (!clean) { lockRef.current = false; return; }
+    setSpeaking(true);
+    onDoneRef.current = onFinished || null;
 
-  const speak = useCallback(async (text: string, id: string) => {
-    if (speakingRef.current === id) { stopAll(); return; }
-    stopAll();
-    const clean = cleanForSpeech(text);
-    if (!clean) return;
-    setSpeaking(id);
-    speakingRef.current = id;
+    const abort = new AbortController();
+    abortRef.current = abort;
 
-    // Try ElevenLabs first, with smart fallback
+    // Через серверный прокси — обходит блокировку ElevenLabs в РФ
     try {
       const res = await fetch("/api/ai/tts", {
-        method: "POST",
+        method: "POST", signal: abort.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: clean }),
       });
+
       if (res.ok) {
-        const contentType = res.headers.get("content-type") || "";
-        // ElevenLabs geo-blocked: API returns JSON with fallback instruction
-        if (contentType.includes("application/json")) {
-          // Fall through to browser TTS below
-        } else {
-          // Got real audio from ElevenLabs
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("audio")) {
           const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = () => { URL.revokeObjectURL(url); if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } audioRef.current = null; };
-          audio.onerror = () => { URL.revokeObjectURL(url); if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } audioRef.current = null; };
-          audio.play().catch(() => { URL.revokeObjectURL(url); audioRef.current = null; if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } });
-          return;
+          if (blob.size > 100 && !abort.signal.aborted) {
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            await new Promise<void>(resolve => {
+              audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+              audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+              audio.play().catch(() => resolve());
+            });
+            if (!abort.signal.aborted) {
+              lockRef.current = false; setSpeaking(false); audioRef.current = null;
+              onDoneRef.current?.();
+            }
+            return;
+          }
         }
       }
-    } catch {}
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
+    }
 
-    // Fallback: browser TTS
-    if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(null); speakingRef.current = null; return; }
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
-    const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU"; utter.rate = 1.05; utter.pitch = 1.0; utter.volume = 1.0;
-    const voice = pickBestRuVoice();
-    if (voice) utter.voice = voice;
-    else setTimeout(() => { loadVoices(); const v2 = pickBestRuVoice(); if (v2) utter.voice = v2; }, 300);
-    utter.onend = () => { if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } utterRef.current = null; };
-    utter.onerror = (e) => { if ((e as any).error === "interrupted") return; if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } utterRef.current = null; };
-    utterRef.current = utter;
-    window.speechSynthesis.speak(utter);
-  }, [stopAll]);
+    // Фоллбэк — браузерный голос
+    if (!abort.signal.aborted) {
+      try {
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const voices = window.speechSynthesis.getVoices();
+          const ruVoice = voices.find(v => v.lang.startsWith("ru"));
+          if (ruVoice) {
+            const utter = new SpeechSynthesisUtterance(clean);
+            utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.0;
+            utter.onend = () => { lockRef.current = false; setSpeaking(false); onDoneRef.current?.(); };
+            utter.onerror = () => { lockRef.current = false; setSpeaking(false); };
+            window.speechSynthesis.speak(utter);
+            return;
+          }
+        }
+      } catch {}
+      lockRef.current = false; setSpeaking(false);
+    }
+  }, [stop]);
 
-  return { speaking, speak, stop: stopAll, supported: true };
+  return { speaking, speak, stop };
 }
 
-// ─── Шар ARAY (единый брендовый — огненный) ─────────────────────────────────
-function ArayOrb({ size = 28, pulse = false, speaking = false, id = "ao" }: {
-  size?: number; pulse?: boolean; speaking?: boolean; id?: string;
-}) {
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      {/* Glow ring when active */}
-      {(pulse || speaking) && (
-        <div className="absolute inset-0 rounded-full aray-orb-glow" style={{
-          background: `radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, transparent 70%)`,
-          transform: "scale(1.8)",
-          animation: speaking ? "aray-speak-glow 1.5s ease-in-out infinite" : "aray-pulse-glow 2s ease-in-out infinite",
-        }}/>
-      )}
-      <svg width={size} height={size} viewBox="0 0 100 100"
-        style={{ display: "block", flexShrink: 0, position: "relative", zIndex: 1 }}>
-        <defs>
-          <radialGradient id={`${id}-base`} cx="34%" cy="28%" r="70%">
-            <stop offset="0%"   stopColor="#fffbe0"/>
-            <stop offset="10%"  stopColor="#ffca40"/>
-            <stop offset="28%"  stopColor="#f07800"/>
-            <stop offset="52%"  stopColor="#c05000"/>
-            <stop offset="75%"  stopColor="#6e1c00"/>
-            <stop offset="100%" stopColor="#160300"/>
-          </radialGradient>
-          <radialGradient id={`${id}-dark`} cx="72%" cy="74%" r="52%">
-            <stop offset="0%"   stopColor="#050000" stopOpacity="0.75"/>
-            <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id={`${id}-hl`} cx="30%" cy="25%" r="34%">
-            <stop offset="0%"   stopColor="white" stopOpacity="0.85"/>
-            <stop offset="100%" stopColor="white" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id={`${id}-rim`} cx="50%" cy="50%" r="50%">
-            <stop offset="76%"  stopColor="transparent" stopOpacity="0"/>
-            <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
-          </radialGradient>
-          <clipPath id={`${id}-clip`}><circle cx="50" cy="50" r="46"/></clipPath>
-        </defs>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-dark)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-rim)`}/>
-        <g clipPath={`url(#${id}-clip)`}>
-          <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.14">
-            <animateTransform attributeName="transform" type="rotate"
-              from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
-          </ellipse>
-        </g>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`}/>
-        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.22)" strokeWidth="1">
-          <animate attributeName="stroke-opacity" values="0.22;0.55;0.22" dur="3s" repeatCount="indefinite"/>
-        </circle>
-      </svg>
-    </div>
-  );
-}
-
-// ─── Визуализация голоса (волны) ─────────────────────────────────────────────
-function VoiceWaveform({ active }: { active: boolean }) {
-  if (!active) return null;
-  return (
-    <div className="flex items-center gap-[2px] h-4">
-      {[0,1,2,3,4].map(i => (
-        <motion.div
-          key={i}
-          className="w-[3px] rounded-full"
-          style={{ background: "hsl(var(--primary))" }}
-          animate={{ height: active ? [4, 14, 6, 16, 4] : 4 }}
-          transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Image preview component ─────────────────────────────────────────────────
-function MediaPreview({ media, onClose }: { media: MediaAttachment; onClose?: () => void }) {
-  const [fullscreen, setFullscreen] = useState(false);
-  const src = media.data.startsWith("data:") ? media.data : `data:image/png;base64,${media.data}`;
-
-  return (
-    <>
-      <div className="aray-media-preview group relative">
-        <img src={src} alt={media.prompt || "Generated"} className="aray-media-img" onClick={() => setFullscreen(true)} />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="flex gap-2">
-            <button onClick={() => setFullscreen(true)} className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
-              <Maximize2 className="w-3.5 h-3.5 text-white"/>
-            </button>
-            <a href={src} download={`aray-${Date.now()}.png`} className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30">
-              <Download className="w-3.5 h-3.5 text-white"/>
-            </a>
-          </div>
-        </div>
-        {media.prompt && <p className="text-[10px] mt-1 opacity-50 truncate">{media.prompt}</p>}
-      </div>
-
-      {/* Fullscreen modal */}
-      <AnimatePresence>
-        {fullscreen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
-            onClick={() => setFullscreen(false)}
-          >
-            <motion.img
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              src={src}
-              className="max-w-full max-h-full rounded-2xl shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            />
-            <button onClick={() => setFullscreen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white">
-              <X className="w-5 h-5"/>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
-
-// ─── Generating indicator ────────────────────────────────────────────────────
-function GeneratingIndicator({ type }: { type?: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="aray-generating-indicator"
-    >
-      <div className="aray-generating-shimmer"/>
-      <div className="relative z-10 flex items-center gap-2 px-4 py-3">
-        <Sparkles className="w-4 h-4 text-amber-400 animate-pulse"/>
-        <span className="text-[12px] font-medium">
-          {type === "image" ? "Генерирую изображение..." : "Создаю контент..."}
-        </span>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Пузырь сообщения ────────────────────────────────────────────────────────
-function Bubble({ msg, onSpeak, speaking }: {
-  msg: Msg; onSpeak?: (t: string, id: string) => void; speaking?: string | null;
-}) {
-  const isUser = msg.role === "user";
-  const isSpeaking = speaking === msg.id;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: "spring", damping: 28, stiffness: 340 }}
-      className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
-    >
-      {!isUser && (
-        <div className="shrink-0 mt-1">
-          <ArayOrb size={24} speaking={isSpeaking} pulse={msg.streaming} id={`bo-${msg.id}`}/>
-        </div>
-      )}
-      <div className="flex flex-col gap-1 max-w-[82%]">
-        <div className={`px-4 py-3 text-[13.5px] leading-relaxed ${isUser ? "aray-chat-bubble-user" : "aray-chat-bubble-assistant"}`}>
-          {/* Media attachments */}
-          {msg.media?.map((m, idx) => (
-            <div key={idx} className="mb-2">
-              <MediaPreview media={m}/>
-            </div>
-          ))}
-
-          {/* Generating indicator */}
-          {msg.generating && <GeneratingIndicator type="image"/>}
-
-          {/* Text content */}
-          {msg.text
-            ? <div className="space-y-1">{renderMarkdown(msg.text)}</div>
-            : !isUser && msg.streaming
-            ? <span className="inline-flex gap-1.5 items-center py-0.5">
-                {[0,1,2].map(i => (
-                  <motion.span
-                    key={i}
-                    className="aray-typing-dot"
-                    animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
-                  />
-                ))}
-              </span>
-            : null}
-          {msg.streaming && msg.text && <span className="aray-stream-cursor"/>}
-        </div>
-
-        {/* Action buttons under assistant message */}
-        {!isUser && !msg.streaming && msg.text && (
-          <div className="flex items-center gap-1 pl-1">
-            {onSpeak && (
-              <button onClick={() => onSpeak(msg.text, msg.id)}
-                className={`aray-speak-btn px-2 py-0.5 text-[10px] ${isSpeaking ? "aray-speak-btn-active" : ""}`}>
-                {isSpeaking ? <><VolumeX className="w-3 h-3"/> <VoiceWaveform active/></> : <><Volume2 className="w-3 h-3"/> озвучить</>}
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Capability pills ────────────────────────────────────────────────────────
-function CapabilityPills() {
-  const pills = [
-    { icon: Brain, label: "AI", tip: "Claude Sonnet 4.6" },
-    { icon: ImagePlus, label: "Imagen", tip: "Google AI" },
-    { icon: Volume2, label: "Голос", tip: "ElevenLabs" },
-    { icon: Globe, label: "Веб", tip: "Поиск в интернете" },
-  ];
-  return (
-    <div className="flex gap-1.5 flex-wrap">
-      {pills.map(p => (
-        <div key={p.label} className="aray-capability-pill" title={p.tip}>
-          <p.icon className="w-3 h-3"/>
-          <span>{p.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Главный компонент ───────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 export function AdminAray({ staffName = "Коллега", userRole }: {
-  staffName?: string;
-  userRole?: string;
+  staffName?: string; userRole?: string;
 }) {
-  const classic = useClassicMode();
   const pathname = usePathname();
-  const pageCtx = getPageCtx(pathname);
-  const quickList = pageCtx?.quick ?? DEFAULT_QUICK;
+  const router = useRouter();
+  const chips = getChips(pathname);
 
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [autoVoice, setAutoVoice] = useState(false);
-  const [showGenMenu, setShowGenMenu] = useState(false);
+  const [voiceMode, setVoiceMode] = useState<"text" | "voice">("text");
+  const voiceModeRef = useRef<"text" | "voice">("text");
+  // Встроенный браузер Арая (попап)
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserUrl, setBrowserUrl] = useState("/admin");
+  const [isMobile, setIsMobile] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const sendRef = useRef<(text?: string) => Promise<void>>();
-  const { speaking, speak, stop: stopVoice } = useTTS();
+  const longPressTimer = useRef<number | null>(null);
+  const longPressTriggered = useRef(false);
 
+  const { speaking, speak, stop: stopTTS } = useTTS();
+  const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
+
+  // Load voice mode preference + mobile detect
   useEffect(() => {
-    setAutoVoice(localStorage.getItem("aray-auto-voice") === "1");
+    const saved = localStorage.getItem("aray-voice-mode");
+    if (saved === "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; }
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  const addInput = useCallback((t: string) => { setInput(t); if (!expanded) setExpanded(true); }, [expanded]);
-  const autoSend = useCallback(() => { sendRef.current?.(); }, []);
-  const { listening, supported: micSupported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
-
-  // Auto-voice for new responses
-  const lastMsgRef = useRef<string>("");
+  // Preload voices (нужно для Safari/Chrome — голоса грузятся асинхронно)
   useEffect(() => {
-    if (!autoVoice) return;
-    const last = messages[messages.length - 1];
-    if (last?.role === "assistant" && !last.streaming && last.text && last.id !== lastMsgRef.current) {
-      lastMsgRef.current = last.id;
-      speak(last.text, last.id);
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
-  }, [messages, autoVoice, speak]);
+  }, []);
 
-  const toggleAutoVoice = useCallback(() => {
-    const next = !autoVoice;
-    setAutoVoice(next);
-    localStorage.setItem("aray-auto-voice", next ? "1" : "0");
-    if (!next) stopVoice();
-  }, [autoVoice, stopVoice]);
+  // ── Единая история чата (БД) ─────────────────────────────────────────────
+  const historyLoaded = useRef(false);
 
-  // Welcome message
+  // Загрузить историю из БД при первом рендере
   useEffect(() => {
-    if (expanded && messages.length === 0) {
-      const h = new Date().getHours();
-      const gr = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Привет" : h < 22 ? "Добрый вечер" : "Поздновато";
-      const name = staffName !== "Коллега" ? `, ${staffName}` : "";
-      const pageNote = pageCtx
-        ? ` Мы в **${pageCtx.label}**. Чем помочь?`
-        : " Что нужно — спрашивай.";
-      setMessages([{ id: "w", role: "assistant", text: `${gr}${name}!${pageNote}` }]);
-    }
-  }, [expanded, messages.length, staffName, pageCtx]);
+    if (historyLoaded.current) return;
+    historyLoaded.current = true;
+    fetch("/api/ai/chat/history").then(r => r.json()).then(data => {
+      if (data.messages?.length) {
+        setMessages(data.messages.map((m: any) => ({
+          id: m.id, role: m.role, text: m.content, streaming: false,
+        })));
+      }
+    }).catch(() => {});
+  }, []);
+
+  // Сохранить сообщение в БД
+  const saveMessageToDB = useCallback((role: string, content: string) => {
+    if (!content) return;
+    fetch("/api/ai/chat/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, content, context: getArayContext() }),
+    }).catch(() => {});
+  }, []);
+
+  // Инициализировать трекер
+  useEffect(() => { initArayTracker(); }, []);
 
   // Auto-scroll
   useEffect(() => {
-    if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
-  }, [messages, expanded]);
+    if (open) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+  }, [messages, open]);
 
-  // Open via event
+  // Welcome message (только если нет сохранённых)
   useEffect(() => {
-    const h = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 200); };
-    window.addEventListener("aray:open", h);
-    return () => window.removeEventListener("aray:open", h);
-  }, []);
+    if (open && messages.length === 0) {
+      const h = new Date().getHours();
+      const gr = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Привет" : h < 22 ? "Добрый вечер" : "Поздновато";
+      const name = staffName && staffName !== "Коллега" && staffName !== "Администратор"
+        ? `, ${staffName.split(" ")[0]}` : "";
+      setMessages([{ id: "w", role: "assistant", text: `${gr}${name}! Чем помочь?` }]);
+    }
+  }, [open, messages.length, staffName]);
 
-  // Fill input via event
+  // External events (aray:open from sidebar / bottom nav)
   useEffect(() => {
-    const h = (e: Event) => {
-      const { text } = (e as CustomEvent<{ text: string }>).detail || {};
-      if (text) { addInput(text); setExpanded(true); setTimeout(() => inputRef.current?.focus(), 150); }
+    const h1 = () => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 200); };
+    const h2 = (e: Event) => {
+      const { text } = (e as CustomEvent).detail || {};
+      if (text) sendMessage(text);
     };
-    window.addEventListener("aray:fill", h);
-    return () => window.removeEventListener("aray:fill", h);
-  }, [addInput]);
-
-  // ─── Image generation ──────────────────────────────────────────────────────
-  const generateImage = useCallback(async (prompt: string) => {
-    const aid = Date.now().toString();
-    setMessages(prev => [...prev,
-      { id: (Date.now() - 1).toString(), role: "user", text: prompt },
-      { id: aid, role: "assistant", text: "", generating: true }
-    ]);
-    setShowGenMenu(false);
-
-    try {
-      const res = await fetch("/api/ai/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, type: "image" }),
-      });
-      const data = await res.json();
-
-      if (data.success && data.data) {
-        setMessages(prev => prev.map(m => m.id === aid ? {
-          ...m,
-          text: "Готово! Вот что получилось:",
-          generating: false,
-          media: [{ type: "image" as const, data: data.data, prompt }]
-        } : m));
-      } else {
-        setMessages(prev => prev.map(m => m.id === aid ? {
-          ...m,
-          text: data.error || "Не удалось сгенерировать. Попробуй другой запрос.",
-          generating: false
-        } : m));
-      }
-    } catch {
-      setMessages(prev => prev.map(m => m.id === aid ? {
-        ...m,
-        text: "Нет связи с Google AI. Попробуй позже.",
-        generating: false
-      } : m));
-    }
+    window.addEventListener("aray:open", h1);
+    window.addEventListener("aray:fill", h2);
+    return () => { window.removeEventListener("aray:open", h1); window.removeEventListener("aray:fill", h2); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Main send function ────────────────────────────────────────────────────
-  const send = useCallback(async (text?: string) => {
-    const msg = (text ?? input).trim();
+  // ─── Core: send message ───────────────────────────────────────────────────
+  const sendMessage = useCallback(async (text: string) => {
+    const msg = text.trim();
     if (!msg || loading) return;
+    if (!open) setOpen(true);
     setInput("");
-    if (!expanded) setExpanded(true);
 
-    // Detect image generation intent
-    const imgPatterns = /(?:сгенерируй|создай|нарисуй|сделай)\s+(?:изображение|картинку|фото|баннер|картину|иллюстрацию|лого)/i;
-    if (imgPatterns.test(msg)) {
-      generateImage(msg);
-      return;
-    }
-
-    const userMsg: Msg = { id: Date.now().toString(), role: "user", text: msg };
+    const userMsg: Msg = { id: `u${Date.now()}`, role: "user", text: msg };
+    const aid = `a${Date.now()}`;
     const allMsgs = [...messages, userMsg];
-    setMessages(prev => [...prev, userMsg]);
+    setMessages(prev => [...prev, userMsg, { id: aid, role: "assistant", text: "", streaming: true }]);
+    saveMessageToDB("user", msg);
     setLoading(true);
-    const aid = (Date.now() + 1).toString();
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -705,257 +410,331 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.text })),
-          context: { page: pathname },
+          context: { page: pathname, ...getArayContext() },
         }),
       });
-      if (!res.body) throw new Error("no stream");
 
-      setMessages(prev => [...prev, { id: aid, role: "assistant", text: "", streaming: true }]);
-      setLoading(false);
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let raw = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         raw += dec.decode(value, { stream: true });
-        const disp = raw.replace(/\n__ARAY_META__[\s\S]*$/, "").replace(/__ARAY_ERR__[\s\S]*$/, "");
-        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: disp } : m));
+        const display = cleanResponse(raw);
+        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: display } : m));
       }
-      const isErr = raw.includes("__ARAY_ERR__");
-      const clean = isErr
-        ? (raw.match(/__ARAY_ERR__(.+)$/)?.[1] || "Что-то пошло не так")
-        : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
-      const { text: final } = parseActions(clean);
+
+      const final = cleanResponse(raw);
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
-    } catch {
-      setMessages(prev => {
-        const has = prev.some(m => m.id === aid);
-        return has
-          ? prev.map(m => m.id === aid ? { ...m, text: "Нет связи. Попробуй ещё раз.", streaming: false } : m)
-          : [...prev, { id: aid, role: "assistant", text: "Нет связи. Попробуй ещё раз." }];
+      saveMessageToDB("assistant", final);
+
+      // Auto-voice response
+      if (voiceModeRef.current === "voice" && final) speak(final, () => {
+        // После того как Арай договорил — автоматически слушаем (как Алиса)
+        setTimeout(async () => {
+          try { const t = await micListen(); if (t) sendMessage(t); } catch {}
+        }, 300);
       });
-    } finally { setLoading(false); }
-  }, [input, messages, loading, expanded, pathname, generateImage]);
 
-  useEffect(() => { sendRef.current = send; }, [send]);
+      // Execute ALL actions from the response
+      const actions = parseActions(raw);
+      for (const action of actions) {
+        if (action.type === "navigate") {
+          setTimeout(() => router.push(action.path), 600);
+        }
+        if (action.type === "refresh") {
+          setTimeout(() => router.refresh(), 400);
+        }
+        if (action.type === "popup" || action.type === "show_url") {
+          // Открываем в попап-браузере Арая вместо новой вкладки
+          setBrowserUrl(action.url);
+          setBrowserOpen(true);
+        }
+      }
 
-  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === aid
+        ? { ...m, text: "Не удалось связаться с сервером. Проверь интернет и попробуй ещё раз.", streaming: false }
+        : m
+      ));
+    } finally {
+      setLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading, open, pathname, voiceMode, speak, router]);
+
+  // ─── Voice input (push-to-talk) ───────────────────────────────────────────
+  const handleMic = useCallback(async () => {
+    if (micActive) { micCancel(); return; }
+    if (!open) setOpen(true);
+    const text = await micListen();
+    if (text) sendMessage(text);
+  }, [micActive, micCancel, micListen, open, sendMessage]);
+
+  // ─── Keyboard handlers ────────────────────────────────────────────────────
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   };
 
-  const hasText = input.trim().length > 0;
+  const toggleVoice = () => {
+    const next = voiceMode === "text" ? "voice" : "text";
+    setVoiceMode(next);
+    voiceModeRef.current = next;
+    localStorage.setItem("aray-voice-mode", next);
+    if (next === "text") stopTTS();
+  };
 
+  // ═══ RENDER ═══════════════════════════════════════════════════════════════
   return (
     <>
-      {/* ══ ПАНЕЛЬ ЧАТА — полный экран, жидкое стекло ══════════════════════════ */}
+      {/* ══ Встроенный браузер Арая (попап) ══ */}
       <AnimatePresence>
-        {expanded && (
+        {browserOpen && (
+          <ArayBrowser
+            initialUrl={browserUrl}
+            onClose={() => setBrowserOpen(false)}
+            isMobile={isMobile}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── FLOATING ORB BUTTON (tap = open chat, long-press = voice) ── */}
+      <motion.button
+        onClick={() => { if (!longPressTriggered.current) { setOpen(v => !v); if (!open) setTimeout(() => inputRef.current?.focus(), 200); } }}
+        onTouchStart={() => {
+          longPressTriggered.current = false;
+          longPressTimer.current = window.setTimeout(async () => {
+            longPressTriggered.current = true;
+            if (!open) setOpen(true);
+            // Push-to-talk: начинаем слушать
+            const text = await micListen();
+            if (text) {
+              // Включаем голосовой режим если ещё не включён
+              if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
+              sendMessage(text);
+            }
+          }, 400);
+        }}
+        onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+        onTouchCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+        className="fixed z-[55] right-4 w-14 h-14 rounded-full flex items-center justify-center"
+        style={{
+          ...({
+            bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)))",
+          }),
+          background: micActive
+            ? "rgba(59,130,246,0.15)"
+            : open ? "hsl(var(--muted))" : "transparent",
+          boxShadow: micActive
+            ? "0 4px 24px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2)"
+            : open
+              ? "0 4px 20px rgba(0,0,0,0.15)"
+              : "0 4px 24px rgba(255,130,0,0.35), 0 0 40px rgba(255,130,0,0.12)",
+        }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        title={micActive ? "Слушаю..." : "Арай — AI ассистент (удерживай = голос)"}
+      >
+        {/* Pulse ring when idle */}
+        {!open && !loading && (
+          <motion.span className="absolute inset-[-4px] rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 70%)" }}
+            animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}/>
+        )}
+
+        {/* Loading spinner ring */}
+        {loading && (
+          <motion.span className="absolute inset-[-3px] rounded-full border-2 border-t-transparent border-orange-400/50"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}/>
+        )}
+
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
+              <X className="w-6 h-6" style={{ color: "hsl(var(--foreground))" }}/>
+            </motion.span>
+          ) : (
+            <motion.span key="orb" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
+              <ArayOrb size={48} id="adm-btn"/>
+            </motion.span>
+          )}
+        </AnimatePresence>
+
+        {/* Speaking indicator */}
+        {speaking && (
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white animate-pulse"/>
+        )}
+      </motion.button>
+
+      {/* ── CHAT POPUP ── */}
+      <AnimatePresence>
+        {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 30, stiffness: 320 }}
-            className="fixed z-[25] left-0 lg:left-60 right-0 aray-chat-panel flex flex-col"
-            style={{ bottom: "72px" }}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ type: "spring", damping: 26, stiffness: 300 }}
+            className={`fixed z-[54] flex flex-col overflow-hidden shadow-2xl ${isMobile ? "inset-0 rounded-none" : "right-4 rounded-2xl"}`}
+            style={{
+              ...(!isMobile ? {
+                bottom: "calc(80px + max(12px, env(safe-area-inset-bottom, 12px)) + 64px)",
+                width: "min(400px, calc(100vw - 32px))",
+                height: "min(540px, calc(100vh - 120px))",
+              } : {}),
+              background: "hsl(var(--background))",
+              border: isMobile ? "none" : "1px solid hsl(var(--border))",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px hsl(var(--border)/0.5)",
+            }}
           >
-            {/* ── Header ── */}
-            <div className="aray-chat-header flex items-center gap-3 px-5 py-3 shrink-0">
-              <ArayOrb size={30} pulse={loading} speaking={!!speaking} id="header-orb"/>
+            {/* ─ Header ─ */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "hsl(var(--border))" }}>
+              <div className="shrink-0"><ArayOrb size={32} id="adm-hdr"/></div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="aray-name-glow text-[15px] font-bold tracking-tight">Арай</span>
-                  <span className="aray-online-dot"/>
-                  {pageCtx && (
-                    <span className="aray-section-badge">
-                      <span>{pageCtx.icon}</span>
-                      <span>{pageCtx.label}</span>
-                    </span>
-                  )}
-                </div>
-                <div className="mt-0.5">
-                  <CapabilityPills/>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-foreground">Арай</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"/>
+                  <span className="text-[10px] text-muted-foreground">AI ассистент</span>
                 </div>
               </div>
-              <button onClick={() => setMessages([])} className="aray-chat-ctrl-btn p-2" title="Новый чат">
-                <RotateCcw className="w-3.5 h-3.5"/>
+              <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
+                <RotateCcw className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
-              <button onClick={() => setExpanded(false)} className="aray-chat-ctrl-btn p-2" title="Свернуть">
-                <ChevronDown className="w-4 h-4"/>
+              <button onClick={toggleVoice}
+                className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                  voiceMode === "voice"
+                    ? "bg-primary/15 text-primary border border-primary/30"
+                    : "bg-muted text-muted-foreground hover:text-foreground border border-transparent"
+                }`}
+                title={voiceMode === "voice" ? "Режим: Голос (нажми для текста)" : "Режим: Текст (нажми для голоса)"}>
+                {voiceMode === "voice"
+                  ? <span className="flex items-center gap-1"><Volume2 className="w-3 h-3"/> Голос</span>
+                  : <span className="flex items-center gap-1"><VolumeX className="w-3 h-3"/> Текст</span>}
+              </button>
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
             </div>
 
-            {/* ── Messages ── */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 aray-messages-area">
+            {/* ─ Messages ─ */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
               {messages.map(msg => (
-                <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
+                <motion.div key={msg.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} gap-2`}
+                >
+                  {/* Мини-шар рядом с сообщением Арая */}
+                  {msg.role === "assistant" && (
+                    <div className="shrink-0 mt-1"><ArayOrb size={20} id={`msg-${msg.id}`}/></div>
+                  )}
+                  <div className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-muted text-foreground rounded-bl-md"
+                  }`}>
+                    {msg.text ? <MdText text={msg.text}/> : msg.streaming ? (
+                      <span className="inline-flex gap-1 items-center">
+                        <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}/>
+                        <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}/>
+                        <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}/>
+                      </span>
+                    ) : null}
+                  </div>
+                </motion.div>
               ))}
 
               {/* Quick chips after welcome */}
               {messages.length === 1 && !loading && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, staggerChildren: 0.05 }}
-                  className="flex flex-wrap gap-2 mt-2 pl-9"
-                >
-                  {quickList.map((q, idx) => (
-                    <motion.button
-                      key={q}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + idx * 0.06 }}
-                      onClick={() => send(q)}
-                      className="aray-quick-btn px-3.5 py-2 text-[12px] active:scale-95 transition-transform"
-                    >
-                      {q}
-                    </motion.button>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {chips.map(c => (
+                    <button key={c} onClick={() => sendMessage(c)}
+                      className="px-3 py-1.5 text-[12px] rounded-full bg-muted hover:bg-muted/80 text-foreground border border-border transition-colors active:scale-95"
+                      style={{ WebkitTapHighlightColor: "transparent" }}>
+                      {c}
+                    </button>
                   ))}
-                  {/* Generate image chip */}
-                  <motion.button
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    onClick={() => { setInput("Сгенерируй изображение "); inputRef.current?.focus(); }}
-                    className="aray-quick-btn aray-quick-btn-special px-3.5 py-2 text-[12px] active:scale-95 transition-transform"
-                  >
-                    <ImagePlus className="w-3 h-3 inline mr-1"/> Создать картинку
-                  </motion.button>
-                </motion.div>
+                </div>
               )}
+
+              {/* Voice speak button on last assistant message */}
+              {messages.length > 1 && !loading && messages[messages.length - 1]?.role === "assistant" && (
+                <button onClick={() => {
+                  const last = messages[messages.length - 1];
+                  if (speaking) stopTTS(); else speak(last.text);
+                }}
+                  className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors active:scale-95 border border-border/50"
+                  style={{ WebkitTapHighlightColor: "transparent" }}>
+                  {speaking ? <><VolumeX className="w-3.5 h-3.5"/> остановить</> : <><Volume2 className="w-3.5 h-3.5"/> озвучить</>}
+                </button>
+              )}
+
               <div ref={bottomRef}/>
+            </div>
+
+            {/* ─ Input ─ */}
+            <div className="border-t px-3 pb-3 pt-2" style={{ borderColor: "hsl(var(--border))" }}>
+              {/* Mic status */}
+              {micActive && (
+                <div className="flex items-center gap-2 px-3 py-1.5 mb-2 rounded-xl bg-primary/10 text-primary text-[12px]">
+                  <Mic className="w-3.5 h-3.5 animate-pulse"/>
+                  <span>Слушаю... говори</span>
+                  <button onClick={micCancel} className="ml-auto text-primary/60 hover:text-primary">
+                    <X className="w-3.5 h-3.5"/>
+                  </button>
+                </div>
+              )}
+
+              <div className="flex items-end gap-2">
+                {/* Mic button */}
+                {micOk && (
+                  <button onClick={handleMic}
+                    className={`shrink-0 p-2.5 rounded-xl transition-all active:scale-90 ${
+                      micActive
+                        ? "bg-primary text-white"
+                        : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                    }`}
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                    title={micActive ? "Остановить" : "Голосовой ввод"}>
+                    {micActive ? <MicOff className="w-5 h-5"/> : <Mic className="w-5 h-5"/>}
+                  </button>
+                )}
+
+                {/* Text input */}
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Напиши или скажи..."
+                  rows={1}
+                  className="flex-1 resize-none text-[13.5px] leading-relaxed outline-none px-3 py-2.5 rounded-xl bg-muted text-foreground border border-border focus:border-primary/50 transition-colors"
+                  style={{ maxHeight: 80, fontFamily: "inherit" }}
+                  onInput={e => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 80) + "px"; }}
+                />
+
+                {/* Send */}
+                <button onClick={() => sendMessage(input)}
+                  disabled={!input.trim() || loading}
+                  className={`shrink-0 p-2.5 rounded-xl transition-all active:scale-90 ${
+                    input.trim() && !loading
+                      ? "bg-primary text-white hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                  style={{ WebkitTapHighlightColor: "transparent" }}
+                  title="Отправить (Enter)">
+                  <Send className="w-5 h-5"/>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* ══ INPUT BAR — always visible ════════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 lg:left-60 right-0 z-[26] aray-chat-bar">
-
-        {/* Quick chips collapsed */}
-        {!expanded && (
-          <div className="flex gap-1.5 px-4 pt-2.5 pb-1 overflow-x-auto scrollbar-none">
-            {quickList.map(q => (
-              <button key={q}
-                onClick={() => { send(q); setExpanded(true); }}
-                className="aray-quick-btn shrink-0 px-3 py-1.5 text-[11px] active:scale-95 transition-transform whitespace-nowrap">
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Input row */}
-        <div className="flex items-end gap-2.5 px-4 py-2.5">
-
-          {/* Orb button */}
-          <button
-            onClick={() => { setExpanded(v => !v); if (!expanded) setTimeout(() => inputRef.current?.focus(), 150); }}
-            className="shrink-0 mb-0.5 transition-transform hover:scale-105 active:scale-95"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-            title={expanded ? "Свернуть" : "Открыть Арая"}
-          >
-            <ArayOrb size={34} pulse={loading} speaking={!!speaking} id="bar-orb"/>
-          </button>
-
-          {/* Textarea */}
-          <div className="flex-1 min-w-0 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              onFocus={() => !expanded && setExpanded(true)}
-              placeholder={listening ? "Слушаю..." : pageCtx ? `Спроси про ${pageCtx.label.toLowerCase()}...` : "Спроси Арая..."}
-              rows={1}
-              className="aray-chat-input w-full resize-none text-[13.5px] leading-relaxed outline-none py-1.5 pr-8"
-              style={{ maxHeight: 88, fontFamily: "inherit" }}
-              onInput={e => {
-                const t = e.currentTarget;
-                t.style.height = "auto";
-                t.style.height = Math.min(t.scrollHeight, 88) + "px";
-              }}
-            />
-            {/* Generate button inside input */}
-            <button
-              onClick={() => setShowGenMenu(!showGenMenu)}
-              className="absolute right-1 bottom-1.5 aray-gen-btn p-1"
-              title="Генерация контента"
-            >
-              <Sparkles className="w-3.5 h-3.5"/>
-            </button>
-
-            {/* Generate menu popup */}
-            <AnimatePresence>
-              {showGenMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  className="aray-gen-menu absolute bottom-full right-0 mb-2"
-                >
-                  <button onClick={() => { setInput("Сгенерируй изображение: "); setShowGenMenu(false); inputRef.current?.focus(); }}
-                    className="aray-gen-menu-item">
-                    <ImagePlus className="w-4 h-4"/> Изображение
-                  </button>
-                  <button onClick={() => { setInput("Создай баннер для: "); setShowGenMenu(false); inputRef.current?.focus(); }}
-                    className="aray-gen-menu-item">
-                    <Zap className="w-4 h-4"/> Баннер
-                  </button>
-                  <button onClick={() => { setInput("Напиши текст для: "); setShowGenMenu(false); inputRef.current?.focus(); }}
-                    className="aray-gen-menu-item">
-                    <MessageCircle className="w-4 h-4"/> Текст
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 shrink-0 mb-0.5">
-            {/* Voice toggle */}
-            <button
-              onClick={toggleAutoVoice}
-              className={`aray-chat-action-btn p-2 ${autoVoice ? "aray-chat-action-btn-active" : ""}`}
-              title={autoVoice ? "Голос ВКЛ" : "Включить голос"}
-            >
-              {autoVoice ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
-            </button>
-
-            {/* Mic */}
-            {micSupported && (
-              <button
-                onClick={listening ? stopMic : startMic}
-                className={`aray-chat-action-btn p-2 ${listening ? "aray-chat-action-btn-active" : ""}`}
-                title={listening ? "Стоп" : "Говори"}
-              >
-                {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
-              </button>
-            )}
-
-            {/* Send */}
-            <button
-              onClick={() => send()}
-              disabled={!hasText || loading}
-              className="aray-chat-send-btn p-2"
-              data-ready={hasText && !loading}
-              title="Отправить (Enter)"
-            >
-              <Send className="w-4 h-4"/>
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom label */}
-        <div className="text-center pb-2 -mt-0.5">
-          <span className="aray-chat-label text-[9px] tracking-wide">
-            {pageCtx ? `${pageCtx.icon} ${pageCtx.label} · ` : ""}
-            Арай · AI + Голос + Генерация ·{" "}
-            <span style={{ color: "hsl(var(--primary)/0.5)" }}>ARAY</span>
-          </span>
-        </div>
-      </div>
     </>
   );
 }

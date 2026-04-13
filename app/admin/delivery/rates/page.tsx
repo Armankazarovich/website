@@ -199,7 +199,7 @@ export default function DeliveryRatesPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[560px]">
+            <table className="w-full text-sm min-w-full sm:min-w-[560px]">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold">Автотранспорт</th>

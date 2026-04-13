@@ -54,8 +54,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     }).catch(() => {});
   }
 
+  // Получаем имя пользователя из БД (session.user.name может быть null)
+  let userName: string | null = (session.user as any)?.name || null;
+  if (!userName && userId) {
+    const u = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } }).catch(() => null);
+    if (u?.name) userName = u.name;
+  }
+
   return (
-    <AdminShell role={role} email={session.user?.email}>
+    <AdminShell role={role} email={session.user?.email} userName={userName}>
       {children}
     </AdminShell>
   );

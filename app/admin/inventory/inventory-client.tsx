@@ -346,7 +346,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             <button
               onClick={() => setShowColMenu(p => !p)}
               className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors
-                ${showColMenu ? "border-primary bg-primary/15 text-primary" : "border-border bg-card hover:bg-accent"}`}
+                ${showColMenu ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-accent"}`}
             >
               <Settings2 className="w-4 h-4" /> Колонки
             </button>
@@ -371,8 +371,8 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           </div>
 
           <div className="hidden sm:flex items-center gap-1 p-1 rounded-xl border border-border bg-card">
-            <button onClick={() => setView("table")} className={`p-1.5 rounded-lg transition-colors ${view === "table" ? "bg-primary text-white" : "hover:bg-accent"}`}><LayoutList className="w-4 h-4" /></button>
-            <button onClick={() => setView("cards")} className={`p-1.5 rounded-lg transition-colors ${view === "cards" ? "bg-primary text-white" : "hover:bg-accent"}`}><LayoutGrid className="w-4 h-4" /></button>
+            <button onClick={() => setView("table")} className={`p-1.5 rounded-lg transition-colors ${view === "table" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}><LayoutList className="w-4 h-4" /></button>
+            <button onClick={() => setView("cards")} className={`p-1.5 rounded-lg transition-colors ${view === "cards" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-accent"}`}><LayoutGrid className="w-4 h-4" /></button>
           </div>
         </div>
 

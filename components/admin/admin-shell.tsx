@@ -454,6 +454,10 @@ function ArayControlCenter() {
   const { t } = useAdminLang();
   const ref = useRef<HTMLDivElement>(null);
   const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
+  // Mounted guard for hydration safety (useTheme returns undefined on server)
+  const [ccMounted, setCcMounted] = useState(false);
+  useEffect(() => setCcMounted(true), []);
+  const safeTheme = ccMounted ? theme : "dark";
   const router = useRouter();
   const prevCountRef = useRef<number | null>(null);
 
@@ -666,15 +670,15 @@ function ArayControlCenter() {
                     className="glass-control w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                      {theme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
+                      {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
                     </div>
                     <span className="flex-1 text-left text-[12px] font-medium glass-text-primary">
-                      {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                      {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
                     </span>
                     <div className="relative w-9 h-5 rounded-full shrink-0 glass-pill"
-                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
+                      style={{ background: safeTheme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
                       <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
+                        style={{ background: safeTheme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: safeTheme === "dark" ? "calc(100% - 17px)" : "3px" }} />
                     </div>
                   </button>
                 </div>
@@ -821,6 +825,17 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const { t } = useAdminLang();
   const pageTitle = usePageTitle();
 
+  // ── Mounted guard: prevents hydration mismatch from useTheme() ──
+  // useTheme() returns undefined on server, actual value on client.
+  // Without this, theme-dependent text/icons cause React error #425/#418.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const safeTheme = mounted ? theme : "dark"; // default to dark for SSR
+
+  // Цвет сайдбара напрямую из JS палитры — CSS variable может не работать в Sheet Portal
+  const sidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
+  const sidebarBg = `linear-gradient(180deg, ${sidebarHex}, ${sidebarHex})`;
+
   // Синхронизируем aray-classic-mode на <body> для порталов (Sheet, Dialog)
   useEffect(() => {
     document.body.classList.toggle("aray-classic-mode", classic);
@@ -847,7 +862,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   }, [open]);
 
   return (
-    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
+    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode bg-background" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
       {/* Google Translate скрытый контейнер — переводит страницу целиком */}
       <div id="google_translate_element" style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }} />
@@ -923,7 +938,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)", background: `linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.92))` }}
+          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)", background: sidebarBg }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
@@ -931,11 +946,19 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               <p className="font-display font-bold text-xl text-white">ПилоРус</p>
               <p className="text-[11px] text-white/45 mt-0.5">Панель управления</p>
             </div>
-            <button onClick={() => setOpen(false)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-              style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => { setOpen(false); setMobileSettingsOpen(true); }}
+                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+                title="Оформление">
+                <Settings className="w-5 h-5 text-white/60" />
+              </button>
+              <button onClick={() => setOpen(false)}
+                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
+                style={{ WebkitTapHighlightColor: "transparent" }}>
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           <div className="flex-1 overflow-y-auto overscroll-contain">
             <AdminNav role={role} onNavigate={() => setOpen(false)} />
@@ -953,7 +976,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 ))}
                 <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="w-7 h-7 rounded-full shrink-0 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                  {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
@@ -971,23 +994,23 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
       <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
         <SheetContent side="right" className="lg:hidden w-80 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)", background: `linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.92))` }}
+          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)", background: sidebarBg }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
 
           {/* Header */}
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
+          <div className={`px-5 py-4 flex items-center justify-between shrink-0 ${classic ? "border-b border-border" : "border-b border-white/10"}`}>
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.1))" }}>
                 <Settings className="w-3.5 h-3.5 text-primary" />
               </div>
-              <p className="font-display font-bold text-lg text-white">Настройки</p>
+              <p className={`font-display font-bold text-lg ${classic ? "text-foreground" : "text-white"}`}>Настройки</p>
             </div>
             <button onClick={() => setMobileSettingsOpen(false)}
               className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
               style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className="w-5 h-5" />
+              <X className={`w-5 h-5 ${classic ? "text-foreground" : "text-white"}`} />
             </button>
           </div>
 
@@ -996,7 +1019,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Язык */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Язык / Language
               </p>
               <AdminLangPickerInline />
@@ -1006,7 +1029,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <ALargeSmall className="w-3.5 h-3.5 text-cyan-400" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
+                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                   Размер шрифта
                 </p>
               </div>
@@ -1016,7 +1039,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Режим фона */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">{t("bg_panel")}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>{t("bg_panel")}</p>
               <div className="flex gap-2">
                 {([
                   { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic"), desc: "—" },
@@ -1034,7 +1057,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Палитра */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Цветовая палитра
               </p>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1053,7 +1076,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Тема */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Тема
               </p>
               <button
@@ -1061,29 +1084,32 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                  {theme === "dark"
+                  {safeTheme === "dark"
                     ? <Sun className="w-4 h-4 text-violet-400" />
                     : <Moon className="w-4 h-4 text-violet-400" />}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-white/85">
-                    {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                  <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/85"}`}>
+                    {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
                   </p>
-                  <p className="text-[11px] text-white/35">
+                  <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
                     Нажми чтобы переключить
                   </p>
                 </div>
                 <div className="w-10 h-5.5 rounded-full relative"
-                  style={{
-                    background: theme === "dark"
+                  style={classic ? {
+                    background: safeTheme === "dark" ? "hsl(var(--primary)/0.4)" : "hsl(var(--muted))",
+                    border: "1px solid hsl(var(--border))",
+                  } : {
+                    background: safeTheme === "dark"
                       ? "hsl(var(--primary)/0.4)"
                       : "rgba(255,255,255,0.15)",
                     border: "1px solid rgba(255,255,255,0.1)",
                   }}>
                   <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
                     style={{
-                      background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
-                      left: theme === "dark" ? "calc(100% - 18px)" : "2px",
+                      background: safeTheme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
+                      left: safeTheme === "dark" ? "calc(100% - 18px)" : "2px",
                     }} />
                 </div>
               </button>
@@ -1093,8 +1119,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             <Link href="/"
               className="glass-control flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
               onClick={() => setMobileSettingsOpen(false)}>
-              <LogOut className="w-4 h-4 text-white/45" />
-              <span className="text-sm text-white/60">Перейти на сайт</span>
+              <LogOut className={`w-4 h-4 ${classic ? "text-muted-foreground/40" : "text-white/45"}`} />
+              <span className={`text-sm ${classic ? "text-muted-foreground/70" : "text-white/60"}`}>Перейти на сайт</span>
             </Link>
 
             <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
@@ -1109,6 +1135,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         onMenuOpen={() => setOpen(true)}
         menuOpen={open}
         onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
+        onSettingsOpen={() => setMobileSettingsOpen(true)}
       />
 
       {/* ─── Main content ─────────────────────────────────────── */}
@@ -1131,4 +1158,9 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 }
 
 export function AdminShell(props: AdminShellProps) {
-  r
+  return (
+    <AdminLangProvider>
+      <AdminShellInner {...props} />
+    </AdminLangProvider>
+  );
+}
