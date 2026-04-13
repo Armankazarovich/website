@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, Volume2, VolumeX } from "lucide-react";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
+import { ArayOrb } from "@/components/shared/aray-orb";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
@@ -185,82 +186,23 @@ function getAdminChips(pathname: string): string[] {
 
 // ─── Живой SVG-шар — без фона снаружи, анимация внутри ───────────────────────
 
-function ArayIcon({ size = 40, glow = false, id = "aig" }: { size?: number; glow?: boolean; id?: string }) {
+function ArayIcon({ size = 40, id = "aig" }: { size?: number; id?: string }) {
+  // Лёгкая статичная сфера без анимаций (для чат-иконок)
   return (
-    <svg
-      width={size} height={size} viewBox="0 0 100 100"
-      style={{ display: "block", overflow: "visible" }}
-    >
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
       <defs>
-        {/* Оранжевый ореол */}
-        <filter id={`${id}-glow`} x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-          <feColorMatrix in="blur" type="matrix"
-            values="2 0.8 0 0 0  0.6 0.2 0 0 0  0 0 0 0 0  0 0 0 0.9 0"
-            result="glow" />
-          <feMerge>
-            <feMergeNode in="glow" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        {/* Базовый градиент сферы */}
-        <radialGradient id={`${id}-base`} cx="38%" cy="32%" r="70%">
-          <stop offset="0%" stopColor="#fff8d0" />
-          <stop offset="18%" stopColor="#fbbf24">
-            <animate attributeName="stopColor"
-              values="#fbbf24;#f97316;#fde047;#fbbf24"
-              dur="5s" repeatCount="indefinite" />
-          </stop>
-          <stop offset="50%" stopColor="#e8700a">
-            <animate attributeName="stopColor"
-              values="#e8700a;#c2410c;#f97316;#e8700a"
-              dur="7s" repeatCount="indefinite" />
-          </stop>
-          <stop offset="82%" stopColor="#7c2d12" />
-          <stop offset="100%" stopColor="#1a0500" />
+        <radialGradient id={`${id}-b`} cx="34%" cy="28%" r="70%">
+          <stop offset="0%" stopColor="#fffbe0"/><stop offset="10%" stopColor="#ffca40"/>
+          <stop offset="28%" stopColor="#f07800"/><stop offset="52%" stopColor="#c05000"/>
+          <stop offset="75%" stopColor="#6e1c00"/><stop offset="100%" stopColor="#160300"/>
         </radialGradient>
-
-        {/* Вращающийся внутренний жар */}
-        <radialGradient id={`${id}-hot`} cx="50%" cy="22%" r="48%">
-          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.75">
-            <animate attributeName="stopOpacity"
-              values="0.75;1;0.5;0.75" dur="3s" repeatCount="indefinite" />
-          </stop>
-          <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
+        <radialGradient id={`${id}-h`} cx="30%" cy="25%" r="34%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+          <stop offset="100%" stopColor="white" stopOpacity="0"/>
         </radialGradient>
-
-        {/* Зеркальный блик */}
-        <radialGradient id={`${id}-hl`} cx="30%" cy="24%" r="40%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.88" />
-          <stop offset="100%" stopColor="white" stopOpacity="0" />
-        </radialGradient>
-
-        {/* Клип для анимации внутри шара */}
-        <clipPath id={`${id}-clip`}>
-          <circle cx="50" cy="50" r="46" />
-        </clipPath>
       </defs>
-
-      {/* Базовая сфера */}
-      <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`}
-        filter={glow ? `url(#${id}-glow)` : undefined} />
-
-      {/* Вращающиеся внутренние огни — clipped */}
-      <g clipPath={`url(#${id}-clip)`}>
-        <ellipse cx="50" cy="28" rx="36" ry="22" fill={`url(#${id}-hot)`}>
-          <animateTransform attributeName="transform" type="rotate"
-            from="0 50 50" to="360 50 50" dur="6s" repeatCount="indefinite" />
-        </ellipse>
-        <ellipse cx="50" cy="72" rx="26" ry="15" fill="#fb923c" opacity="0.18">
-          <animateTransform attributeName="transform" type="rotate"
-            from="180 50 50" to="-180 50 50" dur="9s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.18;0.28;0.1;0.18" dur="4.5s" repeatCount="indefinite" />
-        </ellipse>
-      </g>
-
-      {/* Блик (поверх всего) */}
-      <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`} />
+      <circle cx="50" cy="50" r="46" fill={`url(#${id}-b)`}/>
+      <circle cx="50" cy="50" r="46" fill={`url(#${id}-h)`}/>
     </svg>
   );
 }
@@ -325,100 +267,122 @@ function useMic() {
 const ELEVEN_VOICE_ID = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
 const ELEVEN_MODEL_ID = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
 const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-const ELEVEN_SPEED = 1.08; // живой, без артефактов
+const ELEVEN_SPEED = 1.05; // чуть медленнее — стабильнее произношение
 
 function cleanForTTS(text: string): string {
   let t = text;
 
   // ── 1. Markdown и форматирование ──────────────────────────────────────────
-  t = t.replace(/\*\*(.*?)\*\*/g, "$1");     // **bold**
-  t = t.replace(/\*(.*?)\*/g, "$1");          // *italic*
-  t = t.replace(/[#_`~|>]/g, " ");            // заголовки, подчёркивание, код
-  t = t.replace(/---+/g, ". ");               // горизонтальные линии → пауза
-  t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"); // [ссылка](url) → ссылка
+  t = t.replace(/\*\*(.*?)\*\*/g, "$1");
+  t = t.replace(/\*(.*?)\*/g, "$1");
+  t = t.replace(/#{1,6}\s*/g, "");              // заголовки
+  t = t.replace(/[_`~|>]/g, " ");
+  t = t.replace(/---+/g, ". ");
+  t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
 
   // ── 2. Эмодзи ────────────────────────────────────────────────────────────
   t = t.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B06}-\u{2BAE}\u{231A}-\u{23F3}]/gu, "");
 
   // ── 3. URL, email, артикулы ───────────────────────────────────────────────
   t = t.replace(/https?:\/\/\S+/g, "");
-  t = t.replace(/\S+@\S+\.\S+/g, "");         // email
-  t = t.replace(/\b[A-Z]{2,}-\d{3,}\b/g, ""); // артикулы типа ABC-12345
+  t = t.replace(/\S+@\S+\.\S+/g, "");
+  t = t.replace(/\b[A-Z]{2,}-\d{3,}\b/g, "");
 
-  // ── 4. Скобки → содержимое без скобок ─────────────────────────────────────
-  t = t.replace(/[«»""„"'']/g, "");            // кавычки
-  t = t.replace(/\(([^)]*)\)/g, ", $1,");      // (текст) → пауза, текст, пауза
+  // ── 4. Кавычки и скобки ───────────────────────────────────────────────────
+  t = t.replace(/[«»""„"'']/g, "");
+  t = t.replace(/\(([^)]{0,60})\)/g, ", $1, "); // (текст) → пауза
+  t = t.replace(/\([^)]*\)/g, "");              // длинные скобки — убрать
 
   // ── 5. Списки — убираем маркеры ───────────────────────────────────────────
-  t = t.replace(/^[\s]*[-•–—]\s+/gm, "");     // маркированные списки
-  t = t.replace(/^[\s]*\d+[.)]\s+/gm, "");    // нумерованные: "1. " "2) "
+  t = t.replace(/^[\s]*[-•–—]\s+/gm, "");
+  t = t.replace(/^[\s]*\d+[.)]\s+/gm, "");
 
   // ── 6. Размеры: 100×200×50 → "100 на 200 на 50" ──────────────────────────
   t = t.replace(/(\d+)\s*[×хxXХ]\s*(\d+)(?:\s*[×хxXХ]\s*(\d+))?/g,
     (_, a, b, c) => c ? `${a} на ${b} на ${c}` : `${a} на ${b}`);
 
-  // ── 7. Сокращения → полные слова ──────────────────────────────────────────
-  t = t.replace(/т\.?\s*д\./g, "так далее");
-  t = t.replace(/т\.?\s*е\./g, "то есть");
-  t = t.replace(/т\.?\s*п\./g, "тому подобное");
-  t = t.replace(/т\.?\s*к\./g, "так как");
-  t = t.replace(/д\.?\s*р\./g, "до рождения");
+  // ── 7. Пробелы внутри чисел: "15 000" → "15000" (ДО замены единиц!) ──────
+  t = t.replace(/(\d)\s(\d{3})(?=\s|$|[^\d])/g, "$1$2");
+  t = t.replace(/(\d)\s(\d{3})(?=\s|$|[^\d])/g, "$1$2");
+
+  // ── 8. Десятичные: "2,5" → "2 целых 5 десятых", "0,5" → "ноль целых 5" ──
+  t = t.replace(/(\d+),(\d+)/g, (_, whole, frac) => {
+    if (frac.length === 1) return `${whole} целых ${frac} десятых`;
+    if (frac.length === 2) return `${whole} целых ${frac} сотых`;
+    return `${whole} точка ${frac}`;
+  });
+
+  // ── 9. Единицы ₽, м³ и т.д. → полные слова ────────────────────────────────
+  // Сначала составные единицы
+  t = t.replace(/₽\s*\/\s*м[³3]/g, " рублей за кубометр");
+  t = t.replace(/₽\s*\/\s*м[²2]/g, " рублей за квадратный метр");
+  t = t.replace(/₽\s*\/\s*шт\.?/g, " рублей за штуку");
+  t = t.replace(/₽\s*\/\s*п\.?\s*м\.?/g, " рублей за погонный метр");
+  t = t.replace(/₽\s*\/\s*м\.?\b/g, " рублей за метр");
+  t = t.replace(/руб\.?\s*\/\s*м[³3]/g, " рублей за кубометр");
+  t = t.replace(/руб\.?\s*\/\s*м[²2]/g, " рублей за квадратный метр");
+
+  // Потом одиночные единицы
+  t = t.replace(/м[³3]/g, " кубометров ");
+  t = t.replace(/м[²2]/g, " квадратных метров ");
+  t = t.replace(/(\d)\s*мм\b/g, "$1 миллиметров ");
+  t = t.replace(/(\d)\s*см\b/g, "$1 сантиметров ");
+  t = t.replace(/(\d)\s*м\b/g, "$1 метров ");
+  t = t.replace(/(\d)\s*кг\b/g, "$1 килограмм ");
+  t = t.replace(/(\d)\s*г\b/g, "$1 грамм ");
+  t = t.replace(/(\d)\s*л\b/g, "$1 литров ");
+  t = t.replace(/(\d)\s*%/g, "$1 процентов ");
+  t = t.replace(/°[CС]/g, " градусов ");
+  t = t.replace(/шт\.?/g, " штук ");
+  t = t.replace(/₽/g, " рублей ");
+  t = t.replace(/руб\.?/g, " рублей ");
+  t = t.replace(/(\d)\s*р\b\.?/g, "$1 рублей ");
+
+  // ── 10. Сокращения → полные слова ─────────────────────────────────────────
+  t = t.replace(/т\.\s*д\./g, "так далее");
+  t = t.replace(/т\.\s*е\./g, "то есть");
+  t = t.replace(/т\.\s*п\./g, "тому подобное");
+  t = t.replace(/т\.\s*к\./g, "так как");
   t = t.replace(/др\./g, "другие");
   t = t.replace(/пр\./g, "прочее");
-  t = t.replace(/кв\.?\s*м/g, "квадратных метров");
-  t = t.replace(/пог\.?\s*м/g, "погонных метров");
-  t = t.replace(/п\.?\s*м/g, "погонных метров");
+  t = t.replace(/кв\.\s*м\.?/g, "квадратных метров");
+  t = t.replace(/пог\.\s*м\.?/g, "погонных метров");
 
-  // ── 8. Единицы + проценты + градусы ───────────────────────────────────────
-  t = t.replace(/м[³3]/g, " кубометров");
-  t = t.replace(/м[²2]/g, " квадратных метров");
-  t = t.replace(/(\d)\s*мм\b/g, "$1 миллиметров");
-  t = t.replace(/(\d)\s*см\b/g, "$1 сантиметров");
-  t = t.replace(/(\d)\s*м\b/g, "$1 метров");
-  t = t.replace(/(\d)\s*кг\b/g, "$1 килограмм");
-  t = t.replace(/(\d)\s*г\b/g, "$1 грамм");
-  t = t.replace(/(\d)\s*л\b/g, "$1 литров");
-  t = t.replace(/(\d)\s*%/g, "$1 процентов");
-  t = t.replace(/°[CС]/g, " градусов");
-  t = t.replace(/шт\.?/g, " штук");
-  t = t.replace(/₽/g, " рублей");
-  t = t.replace(/руб\.?/g, " рублей");
-  t = t.replace(/(\d)\s*р\b\.?/g, "$1 рублей");
-
-  // ── 9. Слэш в единицах: ₽/м³ → "рублей за кубометр" ─────────────────────
+  // ── 11. Слэш-разделители ─────────────────────────────────────────────────
+  // "рублей за ..." уже обработано выше, остальные слэши
   t = t.replace(/рублей\s*\/\s*кубометров/g, "рублей за кубометр");
-  t = t.replace(/рублей\s*\/\s*квадратных метров/g, "рублей за квадратный метр");
   t = t.replace(/рублей\s*\/\s*штук/g, "рублей за штуку");
-  t = t.replace(/рублей\s*\/\s*метров/g, "рублей за метр");
-  t = t.replace(/рублей\s*\/\s*погонных метров/g, "рублей за погонный метр");
-  t = t.replace(/(\S+)\s*\/\s*(\S+)/g, "$1 или $2"); // остальные слэши
-
-  // ── 10. Пробелы внутри чисел: "15 000" → "15000" ─────────────────────────
-  t = t.replace(/(\d)\s(\d{3})(?=\s|\b|[^\d])/g, "$1$2");
-  t = t.replace(/(\d)\s(\d{3})(?=\s|\b|[^\d])/g, "$1$2"); // повтор для миллионов
-
-  // ── 11. Десятичные дроби ──────────────────────────────────────────────────
-  // "2,5" → "2 и 5" (ElevenLabs прочитает нормально), убираем запятую между цифрами
-  t = t.replace(/(\d+),(\d+)/g, "$1 и $2");
+  t = t.replace(/(\S+)\s*\/\s*(\S+)/g, "$1 или $2");
 
   // ── 12. Множественные знаки препинания ────────────────────────────────────
   t = t.replace(/!{2,}/g, "!");
   t = t.replace(/\?{2,}/g, "?");
-  t = t.replace(/\.{3,}/g, "...");    // многоточие оставляем одно
-  t = t.replace(/\.{2}/g, ".");       // две точки → одна
+  t = t.replace(/\.{2,}/g, ".");
   t = t.replace(/,{2,}/g, ",");
+  t = t.replace(/[;:]{2,}/g, ",");
+  // Убираем точку-запятую — запятая достаточно для паузы
+  t = t.replace(/;/g, ",");
 
-  // ── 13. Длинное тире → запятая (пауза для голоса) ─────────────────────────
+  // ── 13. Длинное тире → запятая ────────────────────────────────────────────
   t = t.replace(/\s*[—–]\s*/g, ", ");
 
-  // ── 14. Телефоны (8+ цифр) → по цифрам ───────────────────────────────────
-  t = t.replace(/\d{8,}/g, (m) => m.split("").join(" "));
+  // ── 14. Телефоны (8+ цифр) → по цифрам с паузами ─────────────────────────
+  t = t.replace(/\+?[\d\s()-]{10,}/g, (m) => {
+    const digits = m.replace(/\D/g, "");
+    if (digits.length >= 8) return digits.split("").join(" ");
+    return m;
+  });
 
   // ── 15. Финальная чистка ──────────────────────────────────────────────────
   t = t.replace(/\s{2,}/g, " ").trim();
+  // Убираем висящие запятые и точки: ", ," ".. " ", ."
+  t = t.replace(/,\s*,/g, ",");
+  t = t.replace(/\.\s*\./g, ".");
+  t = t.replace(/,\s*\./g, ".");
+  t = t.replace(/^\s*[,.\s]+/, "");
 
-  // Ограничение: макс 1000 символов (ElevenLabs лимит ~5000, но короче = качественнее)
-  return t.slice(0, 1000);
+  // Ограничение: макс 1200 символов
+  return t.slice(0, 1200);
 }
 
 function useTTS() {
@@ -462,7 +426,7 @@ function useTTS() {
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL_ID,
-            voice_settings: { stability: 0.75, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
+            voice_settings: { stability: 0.82, similarity_boost: 0.72, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
@@ -1105,47 +1069,12 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   : "0 4px 30px rgba(255,130,0,0.4), 0 0 60px rgba(255,130,0,0.15)",
             }}>
 
-            {/* Пульсирующий ореол — от самого края шара */}
-            <motion.span className="absolute inset-0 rounded-full"
-              style={{
-                background: listening
-                  ? "radial-gradient(circle, rgba(59,130,246,0.4) 40%, transparent 70%)"
-                  : speaking
-                    ? "radial-gradient(circle, rgba(52,211,153,0.35) 40%, transparent 70%)"
-                    : "radial-gradient(circle, rgba(255,140,0,0.35) 40%, transparent 70%)",
-              }}
-              animate={{ scale: [1, 1.8], opacity: [0.8, 0] }}
-              transition={{ duration: speaking ? 1.2 : 2.5, repeat: Infinity, ease: "easeOut" }}
+            <ArayOrb
+              size={56} id="float"
+              pulse={listening ? "listening" : speaking ? "speaking" : "idle"}
+              badge={hasNew}
+              badgeCount={!isAdmin && !hasNew && !speaking && !listening && cartCount > 0 ? cartCount : undefined}
             />
-
-            {/* Второй ореол для глубины */}
-            {!listening && (
-              <motion.span className="absolute inset-0 rounded-full"
-                style={{ background: "radial-gradient(circle, rgba(255,180,50,0.2) 30%, transparent 65%)" }}
-                animate={{ scale: [1.1, 2], opacity: [0.5, 0] }}
-                transition={{ duration: 3.5, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
-              />
-            )}
-
-            <ArayIcon size={48} glow id="aig2" />
-
-            {/* Бейджи */}
-            {hasNew && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full border-2 animate-pulse"
-                style={{ background: "hsl(var(--primary))", borderColor: "hsl(var(--background))" }} />
-            )}
-            {!isAdmin && cartCount > 0 && !hasNew && !speaking && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5"
-                style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)" }}>
-                {cartCount > 9 ? "9+" : cartCount}
-              </span>
-            )}
-            {speaking && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
-            )}
-            {listening && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-400 border-2 border-white animate-pulse" />
-            )}
           </motion.button>
         </div>
       )}
@@ -1214,7 +1143,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       ? <><Volume2 className="w-3 h-3"/> Голос</>
                       : <><VolumeX className="w-3 h-3"/> Текст</>}
                   </button>
-                  <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
+                  <button onClick={() => { setMessages([]); fetch("/api/ai/chat/history", { method: "DELETE" }).catch(() => {}); startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
                     style={{ color: txtMuted }}
                     onMouseEnter={e => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
@@ -1386,7 +1315,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       ? <><Volume2 className="w-3 h-3"/> Голос</>
                       : <><VolumeX className="w-3 h-3"/> Текст</>}
                   </button>
-                  <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
+                  <button onClick={() => { setMessages([]); fetch("/api/ai/chat/history", { method: "DELETE" }).catch(() => {}); startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center"
                     style={{ color: txtMuted }} title="Новый чат">
                     <RotateCcw className="w-3.5 h-3.5" />

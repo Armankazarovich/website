@@ -7,13 +7,14 @@ import {
   LayoutDashboard, ShoppingBag, Package, MoreHorizontal,
   Truck, CheckSquare, Warehouse, Wallet, Target,
 } from "lucide-react";
+import { ArayOrb } from "@/components/shared/aray-orb";
 
 // ── Нижние табы по роли (по 2 слева и по 1-2 справа от шара) ────────────────
 const ROLE_TABS: Record<string, { href: string; label: string; icon: React.ElementType; exact?: boolean }[]> = {
   owner: [
     { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
-    { href: "/admin/products", label: "Товары",  icon: Package },
+    { href: "/admin/delivery", label: "Доставка", icon: Truck },
     { href: "/admin/crm",      label: "CRM",     icon: Target },
   ],
   manager: [
@@ -58,11 +59,12 @@ interface Props {
   onArayOpen?: () => void;
   arayListening?: boolean;
   arayHasNew?: boolean;
+  onSettingsOpen?: () => void;
 }
 
 export function AdminMobileBottomNav({
   role, onMenuOpen, menuOpen, newOrdersCount = 0,
-  onArayOpen, arayListening, arayHasNew,
+  onArayOpen, arayListening, arayHasNew, onSettingsOpen,
 }: Props) {
   const pathname = usePathname();
   const group = getRoleGroup(role);
@@ -113,50 +115,18 @@ export function AdminMobileBottomNav({
             <DockTab key={i} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />
           ))}
 
-          {/* ── Центральный слот — Арай ── */}
-          <div className="relative flex items-center justify-center" style={{ width: 64 }}>
-            {/* Сфера Арая, выступает сверху */}
+          {/* ── Центральный слот — Арай (единый ArayOrb) ── */}
+          <div className="relative flex flex-col items-center justify-center" style={{ width: 72, minWidth: 72 }}>
             <button
               onClick={onArayOpen}
               className="absolute flex items-center justify-center focus:outline-none"
-              style={{
-                width: 52,
-                height: 52,
-                borderRadius: "50%",
-                top: -14,
-                background: "radial-gradient(circle at 35% 35%, hsl(var(--primary)), hsl(var(--primary)/0.7))",
-                boxShadow: `0 4px 20px hsl(var(--primary)/0.4), 0 0 0 3px var(--admin-dock-bg), inset 0 1px 2px rgba(255,255,255,0.25)`,
-                WebkitTapHighlightColor: "transparent",
-              }}
+              style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
             >
-              {/* Пульс */}
-              <span
-                className="absolute inset-0 rounded-full animate-ping"
-                style={{
-                  background: "hsl(var(--primary)/0.25)",
-                  animationDuration: arayListening ? "0.8s" : "3s",
-                }}
-              />
-              {/* Лого/иконка Арая */}
-              <svg viewBox="0 0 24 24" className="w-6 h-6 relative z-10" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="3" fill="white" fillOpacity="0.3" />
-                <path d="M12 2v2m0 16v2M2 12h2m16 0h2" />
-                <path d="m4.93 4.93 1.41 1.41m11.32 11.32 1.41 1.41M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41" opacity="0.5" />
-              </svg>
-              {/* Badge для непрочитанных */}
-              {arayHasNew && (
-                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full"
-                  style={{ background: "#ef4444", boxShadow: "0 0 6px rgba(239,68,68,0.7)", border: "2px solid var(--admin-dock-bg)" }} />
-              )}
+              <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
             </button>
-            {/* Подпись */}
             <span className="absolute text-[9px] font-bold tracking-wider uppercase z-10"
-              style={{
-                bottom: 5,
-                color: "var(--admin-dock-text)",
-                opacity: 0.7,
-              }}>
-              Арай
+              style={{ bottom: 5, color: "rgba(251,163,30,0.75)" }}>
+              АРАЙ
             </span>
           </div>
 

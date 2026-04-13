@@ -1,91 +1,128 @@
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
 
-async function getIdentity() {
-  const session = await auth();
-  const userId = session?.user?.id || null;
-  if (userId) return { userId, sessionId: null };
-
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get("aray_sid")?.value || null;
-  return { userId: null, sessionId };
-}
-
+// GET — загрузить последние сообщения (для восстановления чата при навигации)
 export async function GET() {
   try {
-    const { userId, sessionId } = await getIdentity();
-    if (!userId && !sessionId) return NextResponse.json({ messages: [] });
+    const session = await auth();
+    const userId = session?.user?.id;
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get("aray_sid")?.value;
 
-    // Автоочистка гостей старше 10 дней (фоново)
-    prisma.arayMessage.deleteMany({
-      where: { userId: null, createdAt: { lt: new Date(Date.now() - 10 * 86400000) } },
-    }).catch(() => {});
+    if (!userId && !sessionId) {
+      return NextResponse.json({ messages: [] });
+    }
+
+    const where = userId
+      ? { userId }
+      : { sessionId: sessionId! };
 
     const messages = await prisma.arayMessage.findMany({
-      where: userId ? { userId } : { sessionId },
+      where,
       orderBy: { createdAt: "asc" },
-      take: 50,
-      select: { id: true, role: true, content: true, context: true, createdAt: true },
+      take: 50, // последние 50 сообщений
+      select: {
+        id: true,
+        role: true,
+        content: true,
+        createdAt: true,
+      },
     });
 
     return NextResponse.json({ messages });
-  } catch (e: any) {
-    console.error("[Aray History GET]", e?.message?.slice(0, 200));
+  } catch (e) {
+    console.error("[aray-history] GET error:", e);
     return NextResponse.json({ messages: [] });
   }
 }
 
+// POST — сохранить одно сообщение в историю
 export async function POST(req: NextRequest) {
   try {
-    const { userId, sessionId } = await getIdentity();
-    if (!userId && !sessionId) return NextResponse.json({ id: "no-auth" });
+    const session = await auth();
+    const userId = session?.user?.id;
+    const cookieStore = await cookies();
+    let sessionId = cookieStore.get("aray_sid")?.value;
 
-    const { role, content, context } = await req.json();
-    if (!role || !content || !["user", "assistant"].includes(role)) {
-      return NextResponse.json({ id: "invalid" });
+    // Для гостей — создаём sessionId если нет
+    if (!userId && !sessionId) {
+      sessionId = `aray_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      // Cookie будет установлен на клиенте
     }
 
-    const message = await prisma.arayMessage.create({
-      data: { userId, sessionId, role, content, context: context || {} },
-      select: { id: true },
+    const body = await req.json();
+    const { role, content, context } = body;
+
+    if (!role || !content) {
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    await prisma.arayMessage.create({
+      data: {
+        userId: userId || null,
+        sessionId: userId ? null : sessionId,
+        role,
+        content: content.slice(0, 10000), // лимит на длину
+        context: context || null,
+      },
     });
 
-    // Автоочистка: >100 сообщений → удаляем старые
-    const count = await prisma.arayMessage.count({
-      where: userId ? { userId } : { sessionId },
-    });
+    // Очистка старых сообщений (оставляем 100 на пользователя)
+    const where = userId ? { userId } : { sessionId: sessionId! };
+    const count = await prisma.arayMessage.count({ where });
     if (count > 100) {
-      const old = await prisma.arayMessage.findMany({
-        where: userId ? { userId } : { sessionId },
+      const oldest = await prisma.arayMessage.findMany({
+        where,
         orderBy: { createdAt: "asc" },
         take: count - 100,
         select: { id: true },
       });
-      if (old.length) {
-        await prisma.arayMessage.deleteMany({ where: { id: { in: old.map(m => m.id) } } });
+      if (oldest.length > 0) {
+        await prisma.arayMessage.deleteMany({
+          where: { id: { in: oldest.map(m => m.id) } },
+        });
       }
     }
 
-    return NextResponse.json({ id: message.id }, { status: 201 });
-  } catch (e: any) {
-    console.warn("[Aray History POST]", e?.message?.slice(0, 200));
-    return NextResponse.json({ id: "error" });
+    const res = NextResponse.json({ ok: true });
+    // Установить cookie для гостя
+    if (!userId && sessionId) {
+      res.cookies.set("aray_sid", sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30, // 30 дней
+      });
+    }
+    return res;
+  } catch (e) {
+    console.error("[aray-history] POST error:", e);
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
 
+// DELETE — очистить историю чата
 export async function DELETE() {
   try {
-    const { userId, sessionId } = await getIdentity();
-    if (!userId && !sessionId) return NextResponse.json({ ok: true });
+    const session = await auth();
+    const userId = session?.user?.id;
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get("aray_sid")?.value;
 
-    await prisma.arayMessage.deleteMany({
-      where: userId ? { userId } : { sessionId },
-    });
+    if (!userId && !sessionId) {
+      return NextResponse.json({ ok: true });
+    }
+
+    const where = userId ? { userId } : { sessionId: sessionId! };
+    await prisma.arayMessage.deleteMany({ where });
+
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    console.warn("[Aray History DELETE]", e?.message?.slice(0, 200));
-    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("[aray-history] DELETE error:", e);
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }

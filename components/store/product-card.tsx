@@ -80,10 +80,9 @@ export function ProductCard({
   // Expand all sizes on "+N" click
   const [showAllSizes, setShowAllSizes] = useState(false);
 
-  // Unit type — for BOTH products starts null until user picks
-  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(
-    saleUnit === "BOTH" ? null : saleUnit === "PIECE" ? "PIECE" : "CUBE"
-  );
+  // Unit type — BOTH: null (покажет пикер), CUBE/PIECE: сразу выбран → 1 тап
+  const defaultUnit: UnitType | null = saleUnit === "BOTH" ? null : saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(defaultUnit);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
 
   const effectiveUnit: UnitType = selectedUnit ?? "CUBE";
@@ -93,8 +92,8 @@ export function ProductCard({
     ? Number(effectiveUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
     : null;
 
-  // Live quantity from cart store — only tracked when unit is chosen
-  const cartItemId = selectedVariant && selectedUnit ? `${selectedVariant.id}-${selectedUnit}` : null;
+  // Live quantity from cart store
+  const cartItemId = selectedVariant ? `${selectedVariant.id}-${selectedUnit}` : null;
   const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
 
   // Core add logic — reused by direct add and unit picker
@@ -150,13 +149,11 @@ export function ProductCard({
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!selectedVariant || !hasStock) return;
-
-    // For BOTH products with no unit chosen — show picker
+    // BOTH products: show unit picker so user chooses куб/шт
     if (saleUnit === "BOTH" && selectedUnit === null) {
       setShowUnitPicker(true);
       return;
     }
-
     doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
   };
 
@@ -169,17 +166,14 @@ export function ProductCard({
 
   const handleIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
-
-    // For BOTH products with no unit chosen — show picker first
-    if (saleUnit === "BOTH" && selectedUnit === null) {
-      setShowUnitPicker(true);
-      return;
-    }
-
-    if (!cartItemId) return;
     if (cartQty === 0) {
+      // Same logic as handleAdd for first item
+      if (saleUnit === "BOTH" && selectedUnit === null) {
+        setShowUnitPicker(true);
+        return;
+      }
       doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
-    } else {
+    } else if (cartItemId) {
       updateQuantity(cartItemId, parseFloat((cartQty + 1).toFixed(1)));
     }
   };

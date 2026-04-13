@@ -2858,6 +2858,10 @@ a:focus-visible {
   0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.30); }
   50%       { box-shadow: 0 0 0 7px hsl(var(--primary) / 0.00); }
 }
+@keyframes arayPulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
 @keyframes aray-pulse-glow {
   0%, 100% { opacity: 0.4; transform: scale(1.7); }
   50%       { opacity: 0.7; transform: scale(2.0); }
@@ -2880,6 +2884,19 @@ a:focus-visible {
 @keyframes aray-pulse-dot {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.65; transform: scale(0.8); }
+}
+
+/* ── Mobile keyboard fix — предотвращает "прыжки" при фокусе на input ───── */
+@media (max-width: 1024px) {
+  /* Когда клавиатура открыта — фиксированные элементы не прыгают */
+  input:focus, textarea:focus, select:focus, [contenteditable]:focus {
+    /* Не скроллим к элементу автоматически — iOS Safari иначе прыгает */
+    scroll-margin-bottom: 120px;
+  }
+  /* Формы не сжимаются под клавиатурой */
+  .admin-form-scroll, form {
+    overscroll-behavior: contain;
+  }
 }
 
 /* ── Mobile optimizations ─────────────────────────────────────────────────── */
