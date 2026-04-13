@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // Simple in-memory rate limiting (resets per deployment)
 // For production, consider using Redis or database-backed rate limiting
@@ -73,6 +74,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get session — if logged in, attach userId
+    const session = await auth();
+    const userId = (session?.user as any)?.id || null;
+
     // Create review (PENDING for moderation)
     const review = await prisma.review.create({
       data: {
@@ -82,6 +87,7 @@ export async function POST(req: NextRequest) {
         text: text.trim(),
         source: "internal",
         approved: false, // Requires admin approval
+        ...(userId ? { userId } : {}),
       },
     });
 

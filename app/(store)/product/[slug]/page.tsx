@@ -395,7 +395,13 @@ export default async function ProductPage({ params }: Props) {
       {/* Customer review form */}
       {showReviewsBlock && (
         <section className="mb-16">
-          <ReviewForm productId={product.id} productName={product.name} />
+          <ReviewForm
+            productId={product.id}
+            productName={product.name}
+            userName={session?.user?.name || null}
+            userEmail={session?.user?.email || null}
+            isLoggedIn={!!session?.user}
+          />
         </section>
       )}
 

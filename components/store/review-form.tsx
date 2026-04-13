@@ -1,21 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, Loader2, AlertCircle, CheckCircle } from "lucide-react";
 
 interface ReviewFormProps {
   productId: string;
   productName: string;
+  /** Pre-fill from server: logged-in user's name */
+  userName?: string | null;
+  /** Pre-fill from server: logged-in user's email */
+  userEmail?: string | null;
+  /** Is the user logged in? */
+  isLoggedIn?: boolean;
 }
 
-export function ReviewForm({ productId, productName }: ReviewFormProps) {
-  const [authorName, setAuthorName] = useState("");
-  const [email, setEmail] = useState("");
+export function ReviewForm({
+  productId,
+  productName,
+  userName,
+  userEmail,
+  isLoggedIn = false,
+}: ReviewFormProps) {
+  const [authorName, setAuthorName] = useState(userName || "");
+  const [email, setEmail] = useState(userEmail || "");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  // Sync if props change (e.g. session loads after hydration)
+  useEffect(() => {
+    if (userName && !authorName) setAuthorName(userName);
+    if (userEmail && !email) setEmail(userEmail);
+  }, [userName, userEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,8 +77,6 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
       }
 
       setSubmitted(true);
-      setAuthorName("");
-      setEmail("");
       setRating(5);
       setText("");
 
@@ -94,6 +110,8 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      <h3 className="font-display font-bold text-xl">Оставить отзыв</h3>
+
       {/* Error message */}
       {error && (
         <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 p-3 flex items-start gap-3">
@@ -126,36 +144,51 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
         </div>
       </div>
 
-      {/* Name input */}
-      <div>
-        <label htmlFor="author-name" className="block text-sm font-medium mb-2">
-          Ваше имя <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="author-name"
-          type="text"
-          value={authorName}
-          onChange={(e) => setAuthorName(e.target.value)}
-          placeholder="Иван"
-          className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-          required
-        />
-      </div>
+      {/* Name + Email: hidden for logged-in users, shown for guests */}
+      {isLoggedIn ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-xl px-4 py-3 border border-border">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+            {authorName?.charAt(0)?.toUpperCase() || "?"}
+          </div>
+          <div>
+            <p className="font-medium text-foreground">{authorName}</p>
+            {email && <p className="text-xs text-muted-foreground">{email}</p>}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Name input */}
+          <div>
+            <label htmlFor="author-name" className="block text-sm font-medium mb-2">
+              Ваше имя <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="author-name"
+              type="text"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder="Иван"
+              className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              required
+            />
+          </div>
 
-      {/* Email input (optional) */}
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium mb-2">
-          Email (необязательно)
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="ivan@example.com"
-          className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-        />
-      </div>
+          {/* Email input (optional) */}
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-2">
+              Email (необязательно)
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ivan@example.com"
+              className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            />
+          </div>
+        </>
+      )}
 
       {/* Review text */}
       <div>
