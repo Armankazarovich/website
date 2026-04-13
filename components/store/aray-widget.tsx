@@ -317,7 +317,7 @@ function useTTS() {
     if (!clean) { setSpeaking(null); return; }
 
     // 1️⃣ Напрямую к ElevenLabs из браузера (обходит geo-блок VPS!)
-    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY;
+    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
     if (apiKey) {
       try {
         const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`, {
