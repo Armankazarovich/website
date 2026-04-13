@@ -5,623 +5,243 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send, Mic, MicOff, Volume2, VolumeX, RotateCcw,
-  ImagePlus, Sparkles, X, Download, Maximize2,
-  Globe, Zap, Brain, MessageCircle, ExternalLink,
-  MessageSquare, Keyboard,
+  X, Keyboard, Globe, ExternalLink, Sparkles,
 } from "lucide-react";
 
-// ─── Classic mode detection ──────────────────────────────────────────────────
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
-
-// ─── Page context ───────────────────────────────────────────────────────────
-const PAGE_CONTEXT: Record<string, { label: string; icon: string; quick: string[] }> = {
-  "/admin":            { label: "Дашборд",    icon: "📊", quick: ["Сводка за сегодня", "Новые заказы", "Выручка за неделю"] },
-  "/admin/orders":     { label: "Заказы",     icon: "📦", quick: ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня"] },
-  "/admin/products":   { label: "Каталог",    icon: "🪵", quick: ["Что не в наличии?", "Топ продаж", "Актуальные цены"] },
-  "/admin/clients":    { label: "Клиенты",    icon: "👥", quick: ["Новые клиенты", "Постоянные покупатели", "Лучший клиент"] },
-  "/admin/analytics":  { label: "Аналитика",  icon: "📈", quick: ["Выручка за месяц", "Лучшие товары", "Конверсия"] },
-  "/admin/finance":    { label: "Финансы",    icon: "💰", quick: ["Выручка за месяц", "Средний чек", "Прибыль"] },
-  "/admin/delivery":   { label: "Доставка",   icon: "🚚", quick: ["Активные доставки", "Задержки", "Маршруты сегодня"] },
-  "/admin/staff":      { label: "Команда",    icon: "👤", quick: ["Кто в команде?", "Роли и доступы", "Активность"] },
-  "/admin/settings":   { label: "Настройки",  icon: "⚙️", quick: ["SMTP email", "Telegram бот", "Домен"] },
-  "/admin/appearance": { label: "Оформление", icon: "🎨", quick: ["Сменить тему", "Палитры", "Логотип"] },
+// ─── Page context for smart chips ───────────────────────────────────────────
+const PAGE_CHIPS: Record<string, string[]> = {
+  "/admin": ["Сводка за сегодня", "Новые заказы", "Выручка за неделю"],
+  "/admin/orders": ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня"],
+  "/admin/products": ["Что не в наличии?", "Топ продаж", "Актуальные цены"],
+  "/admin/clients": ["Новые клиенты", "Постоянные покупатели", "Лучший клиент"],
+  "/admin/delivery": ["Активные доставки", "Задержки", "Маршруты сегодня"],
+  "/admin/staff": ["Кто в команде?", "Активность сотрудников"],
 };
+const DEFAULT_CHIPS = ["Сводка за сегодня", "Новые заказы", "Что срочно?"];
 
-function getPageCtx(pathname: string) {
-  if (PAGE_CONTEXT[pathname]) return PAGE_CONTEXT[pathname];
-  const match = Object.keys(PAGE_CONTEXT)
+function getChips(pathname: string): string[] {
+  if (PAGE_CHIPS[pathname]) return PAGE_CHIPS[pathname];
+  const match = Object.keys(PAGE_CHIPS)
     .filter(k => k !== "/admin" && pathname.startsWith(k))
     .sort((a, b) => b.length - a.length)[0];
-  return match ? PAGE_CONTEXT[match] : null;
+  return match ? PAGE_CHIPS[match] : DEFAULT_CHIPS;
 }
 
 // ─── Types ──────────────────────────────────────────────────────────────────
-type MediaAttachment = { type: "image" | "video"; data: string; prompt?: string };
-type IframeData = { url: string; title: string };
-type Msg = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  streaming?: boolean;
-  media?: MediaAttachment[];
-  generating?: boolean;
-};
+type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: boolean };
 
-// ─── Parse helpers ──────────────────────────────────────────────────────────
-function parseActions(raw: string) {
-  const idx = raw.indexOf("ARAY_ACTIONS:");
-  return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
+// ─── Clean ARAY meta/commands from response ─────────────────────────────────
+function cleanResponse(raw: string): string {
+  return raw
+    .replace(/\n?__ARAY_META__[\s\S]*$/, "")
+    .replace(/__ARAY_ERR__/, "")
+    .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+    .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+    .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
+    .trim();
 }
 
-function parseArayCommands(text: string): { cleanText: string; iframe?: IframeData; navigate?: string } {
-  let cleanText = text;
-  let iframe: IframeData | undefined;
-  let navigate: string | undefined;
-  const urlMatch = text.match(/__ARAY_SHOW_URL:(.+?):(.+?)__/);
-  if (urlMatch) { iframe = { url: urlMatch[1], title: urlMatch[2] }; cleanText = cleanText.replace(urlMatch[0], "").trim(); }
-  const navMatch = text.match(/__ARAY_NAVIGATE:(.+?)__/);
-  if (navMatch) { navigate = navMatch[1]; cleanText = cleanText.replace(navMatch[0], "").trim(); }
-  return { cleanText, iframe, navigate };
-}
-
-// ─── Markdown render ────────────────────────────────────────────────────────
-function renderInline(text: string): React.ReactNode[] {
-  const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
-  return parts.map((p, i) => {
-    if (p.startsWith("**") && p.endsWith("**")) return <strong key={i} className="font-semibold">{p.slice(2, -2)}</strong>;
-    if (p.startsWith("*") && p.endsWith("*")) return <em key={i}>{p.slice(1, -1)}</em>;
-    if (p.startsWith("`") && p.endsWith("`")) return <code key={i} className="aray-code-inline">{p.slice(1, -1)}</code>;
-    return p as React.ReactNode;
-  });
-}
-
-function renderMarkdown(text: string): React.ReactNode[] {
+// ─── Simple markdown rendering ──────────────────────────────────────────────
+function MdText({ text }: { text: string }) {
   const lines = text.split("\n");
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.trim() === "") { i++; continue; }
-    if (/^---+$/.test(line.trim())) { nodes.push(<hr key={i} className="my-2 border-none" style={{ borderTop: "1px solid hsl(var(--border)/0.3)" }} />); i++; continue; }
-    const hm = line.match(/^(#{1,3})\s+(.+)$/);
-    if (hm) { nodes.push(<p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>{renderInline(hm[2])}</p>); i++; continue; }
-    if (/^[\-\*]\s/.test(line.trim())) {
-      const items: string[] = [];
-      while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) { items.push(lines[i].replace(/^[\-\*]\s/, "").trim()); i++; }
-      nodes.push(<ul key={`ul-${i}`} className="space-y-0.5 my-1">{items.map((it, ii) => (<li key={ii} className="flex gap-1.5 items-start"><span className="mt-[6px] shrink-0 w-1.5 h-1.5 rounded-full" style={{ background: "hsl(var(--primary)/0.6)" }}/><span>{renderInline(it)}</span></li>))}</ul>);
-      continue;
-    }
-    if (/^\d+\.\s/.test(line.trim())) {
-      const items: string[] = [];
-      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) { items.push(lines[i].replace(/^\d+\.\s/, "").trim()); i++; }
-      nodes.push(<ol key={`ol-${i}`} className="space-y-0.5 my-1 list-none">{items.map((it, ii) => (<li key={ii} className="flex gap-2 items-start"><span className="aray-list-number">{ii + 1}</span><span>{renderInline(it)}</span></li>))}</ol>);
-      continue;
-    }
-    nodes.push(<p key={i}>{renderInline(line)}</p>);
-    i++;
-  }
-  return nodes;
-}
-
-// ─── TTS — ElevenLabs + browser fallback ────────────────────────────────────
-function cleanForSpeech(t: string) {
-  return t.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`|]/g, " ").replace(/[\uD800-\uDFFF]/g, "").replace(/[\u2600-\u27BF]/g, "")
-    .replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
-    .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "").replace(/__ARAY_NAVIGATE:.+?__/g, "")
-    .replace(/^---+$/mg, "").replace(/\s{2,}/g, " ").trim();
-}
-
-const voicesCache: { list: SpeechSynthesisVoice[] } = { list: [] };
-function loadVoices() { if (typeof window !== "undefined" && window.speechSynthesis) { const v = window.speechSynthesis.getVoices(); if (v.length) voicesCache.list = v; } }
-function pickBestRuVoice(): SpeechSynthesisVoice | null {
-  const voices = voicesCache.list.length ? voicesCache.list : (typeof window !== "undefined" ? window.speechSynthesis?.getVoices() ?? [] : []);
-  for (const fn of [
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Natural"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Microsoft"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Google"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru"),
-  ]) { const f = voices.find(fn); if (f) return f; }
-  return null;
-}
-
-function useTTS() {
-  const [speaking, setSpeaking] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
-
-  useEffect(() => { if (typeof window !== "undefined" && window.speechSynthesis) { loadVoices(); window.speechSynthesis.onvoiceschanged = loadVoices; } }, []);
-
-  const stop = useCallback(() => {
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-    if (typeof window !== "undefined") { window.speechSynthesis?.cancel(); utterRef.current = null; }
-    setSpeaking(false);
-  }, []);
-
-  const speak = useCallback(async (text: string): Promise<void> => {
-    stop();
-    const clean = cleanForSpeech(text);
-    if (!clean) return;
-    setSpeaking(true);
-
-    // Try ElevenLabs
-    try {
-      const res = await fetch("/api/ai/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: clean }) });
-      if (res.ok) {
-        const ct = res.headers.get("content-type") || "";
-        if (!ct.includes("application/json")) {
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          return new Promise<void>((resolve) => {
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; resolve(); };
-            audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; resolve(); };
-            audio.play().catch(() => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; resolve(); });
-          });
-        }
-      }
-    } catch {}
-
-    // Fallback: browser TTS
-    if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(false); return; }
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
-    return new Promise<void>((resolve) => {
-      const utter = new SpeechSynthesisUtterance(clean);
-      utter.lang = "ru-RU"; utter.rate = 1.05; utter.pitch = 1.0; utter.volume = 1.0;
-      const voice = pickBestRuVoice();
-      if (voice) utter.voice = voice;
-      utter.onend = () => { setSpeaking(false); utterRef.current = null; resolve(); };
-      utter.onerror = () => { setSpeaking(false); utterRef.current = null; resolve(); };
-      utterRef.current = utter;
-      window.speechSynthesis.speak(utter);
-    });
-  }, [stop]);
-
-  return { speaking, speak, stop };
-}
-
-// ─── ARAY Sun Orb — живое солнце с лучами и коронными вспышками ─────────────
-function ArayOrb({ size = 52, state = "idle", id = "ao" }: {
-  size?: number;
-  state?: "idle" | "listening" | "thinking" | "speaking";
-  id?: string;
-}) {
-  const isActive = state !== "idle";
-  const isListening = state === "listening";
-  const isSpeaking = state === "speaking";
-  const isThinking = state === "thinking";
-
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size * 1.8, height: size * 1.8 }}>
-      {/* Outer glow — always visible, intensity changes */}
-      <div className="absolute inset-0 rounded-full" style={{
-        background: isListening
-          ? "radial-gradient(circle, rgba(255,180,0,0.5) 0%, rgba(255,120,0,0.15) 40%, transparent 70%)"
-          : isSpeaking
-          ? "radial-gradient(circle, rgba(255,200,50,0.6) 0%, rgba(255,140,0,0.2) 40%, transparent 70%)"
-          : "radial-gradient(circle, rgba(255,160,0,0.25) 0%, rgba(255,100,0,0.08) 45%, transparent 70%)",
-        animation: isActive ? "aray-sun-breathe 1.5s ease-in-out infinite" : "aray-sun-breathe 3s ease-in-out infinite",
-      }}/>
+    <div className="space-y-1">
+      {lines.map((line, i) => {
+        if (!line.trim()) return null;
 
-      {/* Corona rays — rotating light streaks */}
-      <div className="absolute inset-0 rounded-full" style={{
-        background: `conic-gradient(from 0deg, transparent, rgba(255,200,60,${isActive ? 0.2 : 0.08}), transparent, rgba(255,180,40,${isActive ? 0.15 : 0.06}), transparent, rgba(255,200,60,${isActive ? 0.2 : 0.08}), transparent, rgba(255,180,40,${isActive ? 0.15 : 0.06}), transparent)`,
-        animation: isSpeaking ? "aray-corona-spin 3s linear infinite" : "aray-corona-spin 12s linear infinite",
-        filter: "blur(2px)",
-      }}/>
+        // Bold
+        const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
+          p.startsWith("**") && p.endsWith("**")
+            ? <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>
+            : p
+        );
 
-      {/* Second corona layer (counter-rotating) */}
-      <div className="absolute inset-[8%] rounded-full" style={{
-        background: `conic-gradient(from 45deg, transparent, rgba(255,220,80,${isActive ? 0.15 : 0.05}), transparent, rgba(255,180,40,${isActive ? 0.12 : 0.04}), transparent)`,
-        animation: isSpeaking ? "aray-corona-counterspin 2.5s linear infinite" : "aray-corona-counterspin 15s linear infinite",
-        filter: "blur(1px)",
-      }}/>
+        // Bullet
+        if (/^[\-\*]\s/.test(line.trim())) {
+          return (
+            <div key={i} className="flex gap-2 items-start pl-1">
+              <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "hsl(var(--primary)/0.5)" }}/>
+              <span>{parts}</span>
+            </div>
+          );
+        }
 
-      {/* Pulse ring for listening */}
-      {isListening && (
-        <>
-          <div className="absolute inset-[5%] rounded-full border-2 border-amber-400/40" style={{
-            animation: "aray-pulse-ring 1.2s ease-out infinite",
-          }}/>
-          <div className="absolute inset-[5%] rounded-full border-2 border-amber-400/30" style={{
-            animation: "aray-pulse-ring 1.2s ease-out infinite 0.4s",
-          }}/>
-        </>
-      )}
-
-      {/* Core sun sphere */}
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", position: "relative", zIndex: 2, filter: `drop-shadow(0 0 ${isActive ? 12 : 6}px rgba(255,160,0,${isActive ? 0.6 : 0.3}))` }}>
-        <defs>
-          <radialGradient id={`${id}-core`} cx="38%" cy="30%" r="65%">
-            <stop offset="0%" stopColor="#fffff0"/>
-            <stop offset="8%" stopColor="#fff8c0"/>
-            <stop offset="18%" stopColor="#ffdd44"/>
-            <stop offset="35%" stopColor="#ffaa00"/>
-            <stop offset="55%" stopColor="#ee7700"/>
-            <stop offset="75%" stopColor="#cc4400"/>
-            <stop offset="90%" stopColor="#881800"/>
-            <stop offset="100%" stopColor="#330800"/>
-          </radialGradient>
-          <radialGradient id={`${id}-shadow`} cx="70%" cy="72%" r="50%">
-            <stop offset="0%" stopColor="#220000" stopOpacity="0.6"/>
-            <stop offset="100%" stopColor="#220000" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id={`${id}-specular`} cx="32%" cy="26%" r="30%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.95"/>
-            <stop offset="100%" stopColor="white" stopOpacity="0"/>
-          </radialGradient>
-          <radialGradient id={`${id}-aura`} cx="50%" cy="50%" r="50%">
-            <stop offset="80%" stopColor="transparent"/>
-            <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.6"/>
-          </radialGradient>
-          <clipPath id={`${id}-clip`}><circle cx="50" cy="50" r="46"/></clipPath>
-          {/* Turbulence for surface texture */}
-          <filter id={`${id}-turb`}>
-            <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="2">
-              <animate attributeName="seed" values="1;5;1" dur="4s" repeatCount="indefinite"/>
-            </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" scale="3"/>
-          </filter>
-        </defs>
-
-        {/* Base sphere */}
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-core)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-shadow)`}/>
-
-        {/* Surface activity — swirling plasma */}
-        <g clipPath={`url(#${id}-clip)`}>
-          <ellipse cx="50" cy="50" rx="30" ry="10" fill="white" opacity="0.12">
-            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="7s" repeatCount="indefinite"/>
-          </ellipse>
-          <ellipse cx="50" cy="50" rx="22" ry="8" fill="rgba(255,220,100,0.1)">
-            <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="11s" repeatCount="indefinite"/>
-          </ellipse>
-          {/* Sunspots */}
-          <circle cx="38" cy="40" r="4" fill="rgba(100,30,0,0.15)">
-            <animate attributeName="r" values="3;5;3" dur="5s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="62" cy="55" r="3" fill="rgba(100,30,0,0.1)">
-            <animate attributeName="r" values="2;4;2" dur="7s" repeatCount="indefinite"/>
-          </circle>
-        </g>
-
-        {/* Specular highlight */}
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-specular)`}/>
-        {/* Aura rim */}
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-aura)`}/>
-        {/* Edge glow */}
-        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,220,60,0.35)" strokeWidth="1.5">
-          <animate attributeName="stroke-opacity" values="0.25;0.5;0.25" dur="2s" repeatCount="indefinite"/>
-        </circle>
-
-        {/* Speaking: pulsating corona */}
-        {isSpeaking && (
-          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,0,0.4)" strokeWidth="2">
-            <animate attributeName="r" values="46;49;46" dur="0.8s" repeatCount="indefinite"/>
-            <animate attributeName="stroke-opacity" values="0.4;0.1;0.4" dur="0.8s" repeatCount="indefinite"/>
-          </circle>
-        )}
-
-        {/* Thinking: spinning ring */}
-        {isThinking && (
-          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,200,0,0.3)" strokeWidth="1.5" strokeDasharray="12 8">
-            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="2s" repeatCount="indefinite"/>
-          </circle>
-        )}
-      </svg>
+        return <p key={i}>{parts}</p>;
+      })}
     </div>
   );
 }
 
-// ─── Wake word detection — always listening for "Арай" ───────────────────────
-function useWakeWord(onWake: () => void) {
-  const activeRef = useRef(false);
-  const recognitionRef = useRef<any>(null);
-  const [wakeReady, setWakeReady] = useState(false);
-
-  const startWakeWord = useCallback(() => {
-    if (activeRef.current) return;
-    const SR = (typeof window !== "undefined") && ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
-    if (!SR) return;
-
-    const r = new SR();
-    r.lang = "ru-RU";
-    r.interimResults = true;
-    r.continuous = true;
-    r.maxAlternatives = 3;
-
-    r.onstart = () => { activeRef.current = true; setWakeReady(true); };
-    r.onend = () => {
-      activeRef.current = false;
-      // Auto-restart wake word listening
-      setTimeout(() => { if (!activeRef.current) startWakeWord(); }, 500);
-    };
-    r.onerror = (e: any) => {
-      activeRef.current = false;
-      // "not-allowed" means no mic permission — don't retry
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        setWakeReady(false);
-        return;
-      }
-      // Restart after error
-      setTimeout(() => { if (!activeRef.current) startWakeWord(); }, 1000);
-    };
-
-    r.onresult = (e: any) => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const transcript = e.results[i][0]?.transcript?.toLowerCase() || "";
-        // Check all alternatives too
-        for (let j = 0; j < e.results[i].length; j++) {
-          const alt = e.results[i][j]?.transcript?.toLowerCase() || "";
-          if (/\bара[йи]\b|\baray\b|\bара[йи]а\b/.test(alt)) {
-            // Wake word detected!
-            onWake();
-            // Stop wake word listening — main recognition takes over
-            try { r.stop(); } catch {}
-            recognitionRef.current = null;
-            activeRef.current = false;
-            return;
-          }
-        }
-      }
-    };
-
-    try {
-      r.start();
-      recognitionRef.current = r;
-    } catch {
-      activeRef.current = false;
-    }
-  }, [onWake]);
-
-  const stopWakeWord = useCallback(() => {
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch {}
-      recognitionRef.current = null;
-    }
-    activeRef.current = false;
-  }, []);
-
-  return { startWakeWord, stopWakeWord, wakeReady };
-}
-
-// ─── Voice input (command listening after wake/tap) ─────────────────────────
-function useVoiceCommand() {
-  const [listening, setListening] = useState(false);
+// ─── Push-to-talk microphone (tap to start, auto-stops on silence) ──────────
+function useMic() {
+  const [active, setActive] = useState(false);
   const [supported, setSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const resolveRef = useRef<((text: string) => void) | null>(null);
+  const recRef = useRef<any>(null);
 
   useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setSupported(!!SR);
+    setSupported(!!(
+      typeof window !== "undefined" &&
+      ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    ));
   }, []);
 
   const listen = useCallback((): Promise<string> => {
     return new Promise((resolve) => {
       const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (!SR) { resolve(""); return; }
-
-      // Stop any existing
-      if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} }
+      if (recRef.current) { try { recRef.current.stop(); } catch {} }
 
       const r = new SR();
       r.lang = "ru-RU";
       r.interimResults = false;
       r.continuous = false;
-      r.maxAlternatives = 1;
+      let resolved = false;
 
-      resolveRef.current = resolve;
-      r.onstart = () => setListening(true);
-      r.onend = () => {
-        setListening(false);
-        recognitionRef.current = null;
-        if (resolveRef.current) { resolveRef.current(""); resolveRef.current = null; }
-      };
-      r.onerror = () => {
-        setListening(false);
-        recognitionRef.current = null;
-        if (resolveRef.current) { resolveRef.current(""); resolveRef.current = null; }
-      };
+      r.onstart = () => setActive(true);
+      r.onend = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
+      r.onerror = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
       r.onresult = (e: any) => {
         const text = e.results[0]?.[0]?.transcript?.trim() || "";
-        // Remove wake word from beginning if present
-        const cleaned = text.replace(/^ара[йи]\s*/i, "").trim();
-        if (resolveRef.current) { resolveRef.current(cleaned || text); resolveRef.current = null; }
+        if (!resolved) { resolved = true; resolve(text); }
       };
 
-      try { r.start(); recognitionRef.current = r; } catch { setListening(false); resolve(""); }
+      try { r.start(); recRef.current = r; }
+      catch { setActive(false); if (!resolved) { resolved = true; resolve(""); } }
     });
   }, []);
 
-  const stop = useCallback(() => {
-    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
-    setListening(false);
-    if (resolveRef.current) { resolveRef.current(""); resolveRef.current = null; }
+  const cancel = useCallback(() => {
+    if (recRef.current) { try { recRef.current.stop(); } catch {} recRef.current = null; }
+    setActive(false);
   }, []);
 
-  return { listening, supported, listen, stop };
+  return { active, supported, listen, cancel };
 }
 
-// ─── Voice waveform ─────────────────────────────────────────────────────────
-function VoiceWaveform({ className = "" }: { className?: string }) {
-  return (
-    <div className={`flex items-center gap-[3px] h-5 ${className}`}>
-      {[0,1,2,3,4,5,6].map(i => (
-        <motion.div key={i} className="w-[3px] rounded-full"
-          style={{ background: "hsl(var(--primary))" }}
-          animate={{ height: [3, 16, 5, 20, 8, 14, 3] }}
-          transition={{ duration: 1, repeat: Infinity, delay: i * 0.08 }}/>
-      ))}
-    </div>
-  );
-}
+// ─── TTS: browser voices (stable everywhere) + ElevenLabs upgrade ───────────
+function useTTS() {
+  const [speaking, setSpeaking] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-// ─── Media preview ──────────────────────────────────────────────────────────
-function MediaPreview({ media }: { media: MediaAttachment }) {
-  const [fullscreen, setFullscreen] = useState(false);
-  const src = media.data.startsWith("data:") ? media.data : `data:image/png;base64,${media.data}`;
-  return (
-    <>
-      <div className="group relative rounded-xl overflow-hidden">
-        <img src={src} alt={media.prompt || "Generated"} className="max-w-full rounded-xl cursor-pointer" onClick={() => setFullscreen(true)} />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="flex gap-2">
-            <button onClick={() => setFullscreen(true)} className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30"><Maximize2 className="w-3.5 h-3.5 text-white"/></button>
-            <a href={src} download={`aray-${Date.now()}.png`} className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm hover:bg-white/30"><Download className="w-3.5 h-3.5 text-white"/></a>
-          </div>
-        </div>
-      </div>
-      <AnimatePresence>
-        {fullscreen && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setFullscreen(false)}>
-            <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
-              src={src} className="max-w-full max-h-full rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}/>
-            <button onClick={() => setFullscreen(false)} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white"><X className="w-5 h-5"/></button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
+  const stop = useCallback(() => {
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    setSpeaking(false);
+  }, []);
 
-// ─── Message bubble ─────────────────────────────────────────────────────────
-function Bubble({ msg, classic }: { msg: Msg; classic: boolean }) {
-  const isUser = msg.role === "user";
-  return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
-      {!isUser && <div className="shrink-0 mt-1"><ArayOrb size={24} state={msg.streaming ? "thinking" : "idle"} id={`bo-${msg.id}`}/></div>}
-      <div className="flex flex-col gap-1 max-w-[82%]">
-        <div className={`px-4 py-3 text-[13.5px] leading-relaxed rounded-2xl ${isUser ? "aray-chat-bubble-user" : "aray-chat-bubble-assistant"}`}>
-          {msg.media?.map((m, idx) => <div key={idx} className="mb-2"><MediaPreview media={m}/></div>)}
-          {msg.generating && (
-            <div className="flex items-center gap-2 px-2 py-2"><Sparkles className="w-4 h-4 text-amber-400 animate-pulse"/><span className="text-[12px]">Генерирую...</span></div>
-          )}
-          {msg.text ? <div className="space-y-1">{renderMarkdown(msg.text)}</div>
-            : !isUser && msg.streaming ? <span className="inline-flex gap-1.5 items-center py-0.5">
-              {[0,1,2].map(i => <motion.span key={i} className="w-2 h-2 rounded-full" style={{ background: "hsl(var(--primary))" }}
-                animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}/>)}
-            </span> : null}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+  const speak = useCallback(async (text: string) => {
+    stop();
+    const clean = text
+      .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+      .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+      .replace(/\s{2,}/g, " ").trim();
+    if (!clean) return;
+    setSpeaking(true);
 
-// ─── Iframe viewer ──────────────────────────────────────────────────────────
-function IframeViewer({ data, onClose }: { data: IframeData; onClose: () => void }) {
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-        className="w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
-        style={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border)/0.3)" }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-3 px-5 py-3 border-b" style={{ borderColor: "hsl(var(--border)/0.2)" }}>
-          <Globe className="w-4 h-4 text-primary"/><span className="text-sm font-medium flex-1 truncate">{data.title}</span>
-          <a href={data.url} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-primary/10"><ExternalLink className="w-4 h-4 text-primary"/></a>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-destructive/10"><X className="w-4 h-4"/></button>
-        </div>
-        <iframe src={data.url} className="flex-1 w-full border-none" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" title={data.title}/>
-      </motion.div>
-    </motion.div>
-  );
+    // Try ElevenLabs first (server-side, no VPN needed)
+    try {
+      const res = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+      if (res.ok && !(res.headers.get("content-type") || "").includes("json")) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; };
+        audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; };
+        await audio.play().catch(() => {});
+        return;
+      }
+    } catch {}
+
+    // Fallback: browser TTS (works everywhere, no API needed)
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const utter = new SpeechSynthesisUtterance(clean);
+      utter.lang = "ru-RU";
+      utter.rate = 1.05;
+      const voices = window.speechSynthesis.getVoices();
+      const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
+        || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
+        || voices.find(v => v.lang.startsWith("ru"));
+      if (ruVoice) utter.voice = ruVoice;
+      utter.onend = () => setSpeaking(false);
+      utter.onerror = () => setSpeaking(false);
+      window.speechSynthesis.speak(utter);
+    } else {
+      setSpeaking(false);
+    }
+  }, [stop]);
+
+  return { speaking, speak, stop };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ─── MAIN: Voice-first AI Assistant ─────────────────────────────────────────
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 export function AdminAray({ staffName = "Коллега", userRole }: {
   staffName?: string; userRole?: string;
 }) {
-  const classic = useClassicMode();
   const pathname = usePathname();
   const router = useRouter();
-  const pageCtx = getPageCtx(pathname);
+  const chips = getChips(pathname);
 
-  // ─── State ─────────────────────────────────────────────────────────────────
-  type OrbState = "idle" | "listening" | "thinking" | "speaking";
-  const [orbState, setOrbState] = useState<OrbState>("idle");
-  const [showChat, setShowChat] = useState(false);
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
-  const [iframeData, setIframeData] = useState<IframeData | null>(null);
-  const [statusText, setStatusText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [autoVoice, setAutoVoice] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const busyRef = useRef(false);
 
   const { speaking, speak, stop: stopTTS } = useTTS();
-  const { listening, supported: micSupported, listen: listenCommand, stop: stopListening } = useVoiceCommand();
+  const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
 
-  // Sync speaking state to orb
+  // Load auto-voice preference
+  useEffect(() => { setAutoVoice(localStorage.getItem("aray-auto-voice") === "1"); }, []);
+
+  // Auto-scroll
   useEffect(() => {
-    if (speaking) setOrbState("speaking");
-    else if (orbState === "speaking") setOrbState("idle");
-  }, [speaking, orbState]);
+    if (open) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+  }, [messages, open]);
 
+  // Welcome message
   useEffect(() => {
-    if (listening) setOrbState("listening");
-    else if (orbState === "listening" && !busyRef.current) setOrbState("idle");
-  }, [listening, orbState]);
-
-  // Auto-scroll chat
-  useEffect(() => {
-    if (showChat) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
-  }, [messages, showChat]);
-
-  // ─── Core: send message and get voice response ────────────────────────────
-  const processMessage = useCallback(async (text: string) => {
-    if (!text.trim() || busyRef.current) return;
-    busyRef.current = true;
-
-    const userMsg: Msg = { id: Date.now().toString(), role: "user", text: text.trim() };
-    const aid = (Date.now() + 1).toString();
-
-    // Detect image generation
-    const imgPatterns = /(?:сгенерируй|создай|нарисуй|сделай)\s+(?:изображение|картинку|фото|баннер|картину|иллюстрацию|лого)/i;
-    if (imgPatterns.test(text)) {
-      setMessages(prev => [...prev, userMsg, { id: aid, role: "assistant", text: "", generating: true }]);
-      setOrbState("thinking");
-      setStatusText("Генерирую...");
-      try {
-        const res = await fetch("/api/ai/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ prompt: text, type: "image" }) });
-        const data = await res.json();
-        if (data.success && data.data) {
-          setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: "Готово!", generating: false, media: [{ type: "image" as const, data: data.data, prompt: text }] } : m));
-          setShowChat(true);
-          await speak("Готово! Вот что получилось.");
-        } else {
-          const errText = data.error || "Не удалось сгенерировать";
-          setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: errText, generating: false } : m));
-          await speak(errText);
-        }
-      } catch {
-        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: "Нет связи", generating: false } : m));
-        await speak("Нет связи с сервером");
-      }
-      busyRef.current = false;
-      setStatusText("");
-      return;
+    if (open && messages.length === 0) {
+      const h = new Date().getHours();
+      const gr = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Привет" : h < 22 ? "Добрый вечер" : "Поздновато";
+      const name = staffName !== "Коллега" ? `, ${staffName}` : "";
+      setMessages([{ id: "w", role: "assistant", text: `${gr}${name}! Чем помочь?` }]);
     }
+  }, [open, messages.length, staffName]);
 
-    // Regular chat
+  // External events
+  useEffect(() => {
+    const h1 = () => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 200); };
+    const h2 = (e: Event) => {
+      const { text } = (e as CustomEvent).detail || {};
+      if (text) sendMessage(text);
+    };
+    window.addEventListener("aray:open", h1);
+    window.addEventListener("aray:fill", h2);
+    return () => { window.removeEventListener("aray:open", h1); window.removeEventListener("aray:fill", h2); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Core: send message ───────────────────────────────────────────────────
+  const sendMessage = useCallback(async (text: string) => {
+    const msg = text.trim();
+    if (!msg || loading) return;
+    if (!open) setOpen(true);
+    setInput("");
+
+    const userMsg: Msg = { id: `u${Date.now()}`, role: "user", text: msg };
+    const aid = `a${Date.now()}`;
     const allMsgs = [...messages, userMsg];
-    setMessages(prev => [...prev, userMsg]);
-    setOrbState("thinking");
-    setStatusText("Думаю...");
+    setMessages(prev => [...prev, userMsg, { id: aid, role: "assistant", text: "", streaming: true }]);
+    setLoading(true);
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -632,292 +252,257 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
           context: { page: pathname },
         }),
       });
-      if (!res.body) throw new Error("no stream");
 
-      setMessages(prev => [...prev, { id: aid, role: "assistant", text: "", streaming: true }]);
+      if (!res.ok || !res.body) {
+        throw new Error(`HTTP ${res.status}`);
+      }
 
       const reader = res.body.getReader();
       const dec = new TextDecoder();
       let raw = "";
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         raw += dec.decode(value, { stream: true });
-        const disp = raw.replace(/\n__ARAY_META__[\s\S]*$/, "").replace(/__ARAY_ERR__[\s\S]*$/, "");
-        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: disp } : m));
+        const display = cleanResponse(raw);
+        setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: display } : m));
       }
 
-      const isErr = raw.includes("__ARAY_ERR__");
-      const clean = isErr ? (raw.match(/__ARAY_ERR__(.+)$/)?.[1] || "Что-то пошло не так") : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
-      const { text: actionClean } = parseActions(clean);
-      const { cleanText: final, iframe, navigate } = parseArayCommands(actionClean);
-
+      const final = cleanResponse(raw);
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
-      setStatusText("");
 
-      // Handle commands
-      if (iframe) { setIframeData(iframe); setShowChat(true); }
-      if (navigate) router.push(navigate);
+      // Auto-voice response
+      if (autoVoice && final) speak(final);
 
-      // Speak the response
-      await speak(final);
-    } catch {
-      const errText = "Ошибка связи. Попробуй ещё раз.";
-      setMessages(prev => {
-        const has = prev.some(m => m.id === aid);
-        return has
-          ? prev.map(m => m.id === aid ? { ...m, text: errText, streaming: false } : m)
-          : [...prev, { id: aid, role: "assistant", text: errText }];
-      });
-      setStatusText("");
-      await speak(errText);
+      // Handle navigation commands
+      const navMatch = raw.match(/__ARAY_NAVIGATE:(.+?)__/);
+      if (navMatch) router.push(navMatch[1]);
+
+    } catch (err) {
+      setMessages(prev => prev.map(m => m.id === aid
+        ? { ...m, text: "Не удалось связаться с сервером. Проверь интернет и попробуй ещё раз.", streaming: false }
+        : m
+      ));
+    } finally {
+      setLoading(false);
     }
-    busyRef.current = false;
-  }, [messages, pathname, speak, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, loading, open, pathname, autoVoice, speak, router]);
 
-  // ─── Voice interaction flow ───────────────────────────────────────────────
-  const startVoiceInteraction = useCallback(async () => {
-    if (busyRef.current) return;
-    stopTTS(); // Stop any current speech
+  // ─── Voice input (push-to-talk) ───────────────────────────────────────────
+  const handleMic = useCallback(async () => {
+    if (micActive) { micCancel(); return; }
+    if (!open) setOpen(true);
+    const text = await micListen();
+    if (text) sendMessage(text);
+  }, [micActive, micCancel, micListen, open, sendMessage]);
 
-    setOrbState("listening");
-    setStatusText("Слушаю...");
-
-    const text = await listenCommand();
-    if (text) {
-      setStatusText("");
-      await processMessage(text);
-    } else {
-      setOrbState("idle");
-      setStatusText("");
-    }
-  }, [listenCommand, processMessage, stopTTS]);
-
-  // ─── Wake word "Арай" ─────────────────────────────────────────────────────
-  const { startWakeWord, stopWakeWord, wakeReady } = useWakeWord(
-    useCallback(() => {
-      // Wake word detected — start listening for command
-      startVoiceInteraction();
-    }, [startVoiceInteraction])
-  );
-
-  // Start wake word on mount (if mic is available)
-  useEffect(() => {
-    // Small delay to let page render
-    const timer = setTimeout(() => {
-      if (micSupported && !busyRef.current) startWakeWord();
-    }, 2000);
-    return () => { clearTimeout(timer); stopWakeWord(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [micSupported]);
-
-  // Restart wake word after interaction ends
-  useEffect(() => {
-    if (orbState === "idle" && !busyRef.current && micSupported) {
-      const timer = setTimeout(startWakeWord, 1000);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orbState, micSupported]);
-
-  // ─── Welcome on first open ────────────────────────────────────────────────
-  useEffect(() => {
-    if (showChat && messages.length === 0) {
-      const h = new Date().getHours();
-      const gr = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Привет" : h < 22 ? "Добрый вечер" : "Поздновато";
-      const name = staffName !== "Коллега" ? `, ${staffName}` : "";
-      setMessages([{ id: "w", role: "assistant", text: `${gr}${name}! Чем помочь?` }]);
-    }
-  }, [showChat, messages.length, staffName]);
-
-  // Open via events
-  useEffect(() => {
-    const h = () => setShowChat(true);
-    window.addEventListener("aray:open", h);
-    return () => window.removeEventListener("aray:open", h);
-  }, []);
-
-  useEffect(() => {
-    const h = (e: Event) => {
-      const { text } = (e as CustomEvent<{ text: string }>).detail || {};
-      if (text) { processMessage(text); }
-    };
-    window.addEventListener("aray:fill", h);
-    return () => window.removeEventListener("aray:fill", h);
-  }, [processMessage]);
-
-  // ─── Text chat send ───────────────────────────────────────────────────────
-  const sendText = useCallback(() => {
-    const text = input.trim();
-    if (!text) return;
-    setInput("");
-    processMessage(text);
-  }, [input, processMessage]);
-
-  const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
+  // ─── Keyboard handlers ────────────────────────────────────────────────────
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); }
   };
 
-  // ─── Orb tap handler ──────────────────────────────────────────────────────
-  const handleOrbTap = useCallback(() => {
-    if (orbState === "speaking") {
-      // Tap while speaking → stop
-      stopTTS();
-      setOrbState("idle");
-      return;
-    }
-    if (orbState === "listening") {
-      // Tap while listening → cancel
-      stopListening();
-      setOrbState("idle");
-      setStatusText("");
-      return;
-    }
-    // Idle → start voice
-    stopWakeWord();
-    startVoiceInteraction();
-  }, [orbState, stopTTS, stopListening, stopWakeWord, startVoiceInteraction]);
+  const toggleVoice = () => {
+    const next = !autoVoice;
+    setAutoVoice(next);
+    localStorage.setItem("aray-auto-voice", next ? "1" : "0");
+    if (!next) stopTTS();
+  };
 
-  const hasText = input.trim().length > 0;
-
+  // ═══ RENDER ═══════════════════════════════════════════════════════════════
   return (
     <>
-      {/* ══ FLOATING ORB ═════════════════════════════════════════════════════════ */}
-      <div className="fixed z-[30] right-5 bottom-5 flex flex-col items-center gap-2">
-        {/* Status text above orb */}
-        <AnimatePresence>
-          {(statusText || orbState !== "idle") && (
-            <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
-              className="flex flex-col items-center gap-1">
-              {orbState === "listening" && <VoiceWaveform />}
-              {statusText && (
-                <span className="text-[11px] font-medium px-3 py-1 rounded-full whitespace-nowrap"
-                  style={{
-                    background: orbState === "listening" ? "hsl(var(--primary)/0.2)" : "rgba(0,0,0,0.6)",
-                    color: orbState === "listening" ? "hsl(var(--primary))" : "white",
-                    backdropFilter: "blur(12px)",
-                  }}>
-                  {statusText}
-                </span>
-              )}
-            </motion.div>
+      {/* ── FLOATING BUTTON ── */}
+      <motion.button
+        onClick={() => { setOpen(v => !v); if (!open) setTimeout(() => inputRef.current?.focus(), 200); }}
+        className="fixed z-[30] right-4 bottom-4 w-14 h-14 rounded-full flex items-center justify-center shadow-xl"
+        style={{
+          background: "linear-gradient(135deg, #ff8800, #ff6600, #ee4400)",
+          boxShadow: open
+            ? "0 4px 20px rgba(255,100,0,0.3)"
+            : "0 4px 24px rgba(255,100,0,0.5), 0 0 60px rgba(255,130,0,0.15)",
+        }}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        title="Арай — AI ассистент"
+      >
+        {/* Pulse ring when idle */}
+        {!open && !loading && (
+          <motion.span className="absolute inset-0 rounded-full"
+            style={{ background: "rgba(255,120,0,0.4)" }}
+            animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}/>
+        )}
+
+        {/* Loading spinner ring */}
+        {loading && (
+          <motion.span className="absolute inset-[-3px] rounded-full border-2 border-t-transparent border-white/50"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}/>
+        )}
+
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
+              <X className="w-6 h-6 text-white"/>
+            </motion.span>
+          ) : (
+            <motion.span key="sun" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
+              <Sparkles className="w-6 h-6 text-white"/>
+            </motion.span>
           )}
         </AnimatePresence>
 
-        {/* Chat toggle button */}
-        <motion.button
-          onClick={() => setShowChat(v => !v)}
-          className="p-2 rounded-full transition-all"
-          style={{
-            background: showChat ? "hsl(var(--primary)/0.2)" : "rgba(0,0,0,0.3)",
-            color: showChat ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
-            backdropFilter: "blur(8px)",
-          }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          title={showChat ? "Скрыть чат" : "Текстовый чат"}
-        >
-          {showChat ? <X className="w-4 h-4" /> : <Keyboard className="w-4 h-4" />}
-        </motion.button>
+        {/* Speaking indicator */}
+        {speaking && (
+          <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white animate-pulse"/>
+        )}
+      </motion.button>
 
-        {/* Main orb */}
-        <motion.button
-          onClick={handleOrbTap}
-          className="relative group"
-          style={{ WebkitTapHighlightColor: "transparent" }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.92 }}
-          title="Нажми чтобы говорить, или скажи 'Арай'"
-        >
-          {/* Hover glow */}
-          <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ background: "radial-gradient(circle, hsl(var(--primary) / 0.2) 0%, transparent 70%)", transform: "scale(2.5)" }}/>
-
-          {/* Listening pulse ring */}
-          {orbState === "listening" && (
-            <motion.div className="absolute -inset-2 rounded-full border-2" style={{ borderColor: "hsl(var(--primary))" }}
-              animate={{ scale: [1, 1.3, 1], opacity: [0.8, 0, 0.8] }} transition={{ duration: 1.5, repeat: Infinity }}/>
-          )}
-
-          <ArayOrb size={56} state={orbState} id="main-orb"/>
-
-          {/* Wake word ready indicator */}
-          {wakeReady && orbState === "idle" && (
-            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-black animate-pulse" title="Слушаю 'Арай...'"/>
-          )}
-        </motion.button>
-      </div>
-
-      {/* ══ TEXT CHAT POPUP ═══════════════════════════════════════════════════════ */}
+      {/* ── CHAT POPUP ── */}
       <AnimatePresence>
-        {showChat && (
+        {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", damping: 28, stiffness: 320 }}
-            className="fixed z-[29] right-5 bottom-[140px] flex flex-col"
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ type: "spring", damping: 26, stiffness: 300 }}
+            className="fixed z-[29] right-4 bottom-[84px] flex flex-col rounded-2xl overflow-hidden shadow-2xl"
             style={{
-              width: "min(400px, calc(100vw - 40px))",
-              height: "min(520px, calc(100vh - 200px))",
-              borderRadius: "24px",
-              overflow: "hidden",
-              boxShadow: "0 24px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)",
-              background: classic ? "hsl(var(--background))" : "linear-gradient(180deg, rgba(10,10,18,0.97), rgba(6,6,14,0.99))",
-              border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)",
+              width: "min(400px, calc(100vw - 32px))",
+              height: "min(540px, calc(100vh - 120px))",
+              background: "hsl(var(--background))",
+              border: "1px solid hsl(var(--border))",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px hsl(var(--border)/0.5)",
             }}
           >
-            {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-              style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)", background: classic ? "hsl(var(--muted)/0.3)" : "rgba(255,255,255,0.02)" }}>
-              <ArayOrb size={28} state={orbState} id="chat-orb"/>
+            {/* ─ Header ─ */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "hsl(var(--border))" }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, #ff8800, #ee5500)" }}>
+                <Sparkles className="w-4 h-4 text-white"/>
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[14px] font-bold" style={{ color: classic ? "hsl(var(--foreground))" : "white" }}>Арай</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"/>
-                  {pageCtx && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full"
-                      style={{ background: classic ? "hsl(var(--primary)/0.1)" : "rgba(255,255,255,0.06)", color: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)" }}>
-                      {pageCtx.icon} {pageCtx.label}
-                    </span>
-                  )}
+                  <span className="text-sm font-bold text-foreground">Арай</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400"/>
+                  <span className="text-[10px] text-muted-foreground">AI ассистент</span>
                 </div>
               </div>
-              <button onClick={() => setMessages([])} className="p-1.5 rounded-xl" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.4)" }} title="Новый чат">
-                <RotateCcw className="w-3.5 h-3.5"/>
+              <button onClick={() => { setMessages([]); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
+                <RotateCcw className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
-              <button onClick={() => setShowChat(false)} className="p-1.5 rounded-xl" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.4)" }}>
-                <X className="w-3.5 h-3.5"/>
+              <button onClick={toggleVoice} className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                title={autoVoice ? "Голос ВКЛ" : "Голос ВЫКЛ"}>
+                {autoVoice
+                  ? <Volume2 className="w-3.5 h-3.5 text-primary"/>
+                  : <VolumeX className="w-3.5 h-3.5 text-muted-foreground"/>}
+              </button>
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                <X className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"
-              style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.88)" }}>
-              {messages.map(msg => <Bubble key={msg.id} msg={msg} classic={classic}/>)}
+            {/* ─ Messages ─ */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
+              {messages.map(msg => (
+                <motion.div key={msg.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-br-md"
+                      : "bg-muted text-foreground rounded-bl-md"
+                  }`}>
+                    {msg.text ? <MdText text={msg.text}/> : msg.streaming ? (
+                      <span className="inline-flex gap-1 items-center">
+                        <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}/>
+                        <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}/>
+                        <span className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}/>
+                      </span>
+                    ) : null}
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Quick chips after welcome */}
+              {messages.length === 1 && !loading && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {chips.map(c => (
+                    <button key={c} onClick={() => sendMessage(c)}
+                      className="px-3 py-1.5 text-[12px] rounded-full bg-muted hover:bg-muted/80 text-foreground border border-border transition-colors">
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Voice speak button on last assistant message */}
+              {messages.length > 1 && !loading && messages[messages.length - 1]?.role === "assistant" && (
+                <button onClick={() => {
+                  const last = messages[messages.length - 1];
+                  if (speaking) stopTTS(); else speak(last.text);
+                }}
+                  className="self-start flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  {speaking ? <><VolumeX className="w-3 h-3"/> остановить</> : <><Volume2 className="w-3 h-3"/> озвучить</>}
+                </button>
+              )}
+
               <div ref={bottomRef}/>
             </div>
 
-            {/* Input */}
-            <div className="shrink-0 px-3 pb-3 pt-2" style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
+            {/* ─ Input ─ */}
+            <div className="border-t px-3 pb-3 pt-2" style={{ borderColor: "hsl(var(--border))" }}>
+              {/* Mic status */}
+              {micActive && (
+                <div className="flex items-center gap-2 px-3 py-1.5 mb-2 rounded-xl bg-primary/10 text-primary text-[12px]">
+                  <Mic className="w-3.5 h-3.5 animate-pulse"/>
+                  <span>Слушаю... говори</span>
+                  <button onClick={micCancel} className="ml-auto text-primary/60 hover:text-primary">
+                    <X className="w-3.5 h-3.5"/>
+                  </button>
+                </div>
+              )}
+
               <div className="flex items-end gap-2">
-                <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKey}
-                  placeholder="Напиши Араю..." rows={1}
-                  className="flex-1 resize-none text-[13px] leading-relaxed outline-none px-3 py-2 rounded-xl"
-                  style={{
-                    maxHeight: 80, fontFamily: "inherit",
-                    background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.06)",
-                    color: classic ? "hsl(var(--foreground))" : "white",
-                    border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)",
-                  }}
+                {/* Mic button */}
+                {micOk && (
+                  <button onClick={handleMic}
+                    className={`shrink-0 p-2.5 rounded-xl transition-all ${
+                      micActive
+                        ? "bg-primary text-white"
+                        : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                    }`}
+                    title={micActive ? "Остановить" : "Голосовой ввод"}>
+                    {micActive ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
+                  </button>
+                )}
+
+                {/* Text input */}
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKey}
+                  placeholder="Напиши сообщение..."
+                  rows={1}
+                  className="flex-1 resize-none text-[13.5px] leading-relaxed outline-none px-3 py-2.5 rounded-xl bg-muted text-foreground border border-border focus:border-primary/50 transition-colors"
+                  style={{ maxHeight: 80, fontFamily: "inherit" }}
                   onInput={e => { const t = e.currentTarget; t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 80) + "px"; }}
                 />
-                <button onClick={sendText} disabled={!hasText || busyRef.current}
-                  className="p-2 rounded-xl transition-all shrink-0"
-                  style={{
-                    background: hasText ? "hsl(var(--primary))" : "transparent",
-                    color: hasText ? "white" : (classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.2)"),
-                  }}>
+
+                {/* Send */}
+                <button onClick={() => sendMessage(input)}
+                  disabled={!input.trim() || loading}
+                  className={`shrink-0 p-2.5 rounded-xl transition-all ${
+                    input.trim() && !loading
+                      ? "bg-primary text-white hover:bg-primary/90"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                  title="Отправить (Enter)">
                   <Send className="w-4 h-4"/>
                 </button>
               </div>
@@ -925,39 +510,6 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* ══ IFRAME VIEWER ════════════════════════════════════════════════════════ */}
-      <AnimatePresence>
-        {iframeData && <IframeViewer data={iframeData} onClose={() => setIframeData(null)}/>}
-      </AnimatePresence>
-
-      {/* ══ CSS Animations ═══════════════════════════════════════════════════════ */}
-      <style jsx global>{`
-        @keyframes aray-sun-breathe {
-          0%, 100% { transform: scale(1); opacity: 0.8; }
-          50% { transform: scale(1.08); opacity: 1; }
-        }
-        @keyframes aray-corona-spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes aray-corona-counterspin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(-360deg); }
-        }
-        @keyframes aray-pulse-ring {
-          0% { transform: scale(1); opacity: 0.6; }
-          100% { transform: scale(1.6); opacity: 0; }
-        }
-        @keyframes aray-listen-pulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.1); opacity: 0.8; }
-        }
-        @keyframes aray-speak-glow {
-          0%, 100% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.06); opacity: 0.6; }
-        }
-      `}</style>
     </>
   );
 }

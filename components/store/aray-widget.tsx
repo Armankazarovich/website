@@ -262,33 +262,61 @@ function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Fallback на браузерный TTS (работает везде — Chrome, Safari, Firefox, Edge)
+  const browserSpeak = useCallback((text: string, msgId: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(null); return; }
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+      .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/\s{2,}/g, " ").trim();
+    if (!clean) { setSpeaking(null); return; }
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "ru-RU";
+    utter.rate = 1.05;
+    const voices = window.speechSynthesis.getVoices();
+    const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
+      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
+      || voices.find(v => v.lang.startsWith("ru"));
+    if (ruVoice) utter.voice = ruVoice;
+    utter.onend = () => setSpeaking(null);
+    utter.onerror = () => setSpeaking(null);
+    window.speechSynthesis.speak(utter);
+  }, []);
+
   const speak = useCallback(async (text: string, msgId: string) => {
     // Стоп если уже играет
     if (speaking === msgId) {
       audioRef.current?.pause();
       audioRef.current = null;
+      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
       setSpeaking(null);
       return;
     }
     audioRef.current?.pause();
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setSpeaking(msgId);
 
+    // Попробовать ElevenLabs (серверный — работает без VPN у клиента)
     try {
       const res = await fetch("/api/ai/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      if (!res.ok) { setSpeaking(null); return; }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => { setSpeaking(null); URL.revokeObjectURL(url); };
-      audio.onerror = () => { setSpeaking(null); };
-      await audio.play();
-    } catch { setSpeaking(null); }
-  }, [speaking]);
+      if (res.ok && !(res.headers.get("content-type") || "").includes("json")) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { setSpeaking(null); URL.revokeObjectURL(url); audioRef.current = null; };
+        audio.onerror = () => { URL.revokeObjectURL(url); browserSpeak(text, msgId); };
+        await audio.play().catch(() => browserSpeak(text, msgId));
+        return;
+      }
+    } catch {}
+
+    // Fallback: браузерный TTS (работает в любом браузере)
+    browserSpeak(text, msgId);
+  }, [speaking, browserSpeak]);
 
   return { speaking, speak };
 }
