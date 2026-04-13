@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -66,6 +67,19 @@ export function AdminMobileBottomNav({
   const pathname = usePathname();
   const group = getRoleGroup(role);
   const tabs = ROLE_TABS[group] ?? ROLE_TABS.owner;
+  const [kbOpen, setKbOpen] = useState(false);
+
+  // Скрываем нав когда клавиатура открыта
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      const diff = window.innerHeight - vv.height;
+      setKbOpen(diff > 100);
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // Разделяем табы: 2 слева от шара, остальные справа
   const leftTabs = tabs.slice(0, 2);
@@ -77,11 +91,11 @@ export function AdminMobileBottomNav({
       <nav
         className="lg:hidden fixed z-50 transition-all duration-300"
         style={{
-          bottom: menuOpen ? "-100px" : "max(8px, env(safe-area-inset-bottom, 8px))",
+          bottom: (menuOpen || kbOpen) ? "-120px" : "max(8px, env(safe-area-inset-bottom, 8px))",
           left: 8,
           right: 8,
-          opacity: menuOpen ? 0 : 1,
-          pointerEvents: menuOpen ? "none" : "auto",
+          opacity: (menuOpen || kbOpen) ? 0 : 1,
+          pointerEvents: (menuOpen || kbOpen) ? "none" : "auto",
         }}
       >
         <div

@@ -27,7 +27,21 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
 
+  const [kbOpen, setKbOpen] = useState(false);
+
   useEffect(() => { setMounted(true); }, []);
+
+  // Скрываем нав когда клавиатура открыта (все формы на мобилке)
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      const diff = window.innerHeight - vv.height;
+      setKbOpen(diff > 100); // >100px = клавиатура точно открыта
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // Bounce корзины при добавлении
   useEffect(() => {
@@ -162,8 +176,11 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom"
+      className="fixed left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom transition-all duration-300"
       style={{
+        bottom: kbOpen ? "-120px" : "0",
+        opacity: kbOpen ? 0 : 1,
+        pointerEvents: kbOpen ? "none" : "auto",
         backdropFilter: "blur(32px) saturate(160%)",
         WebkitBackdropFilter: "blur(32px) saturate(160%)",
         borderTop: "1px solid rgba(255,255,255,0.1)",
