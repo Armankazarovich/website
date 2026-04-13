@@ -4,9 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Send, Mic, MicOff, Volume2, VolumeX, RotateCcw, ChevronDown,
+  Send, Mic, MicOff, Volume2, VolumeX, RotateCcw,
   ImagePlus, Sparkles, X, Download, Maximize2,
-  Globe, Zap, Brain, MessageCircle
+  Globe, Zap, Brain, MessageCircle, ExternalLink,
 } from "lucide-react";
 
 // ─── Classic mode detection ──────────────────────────────────────────────────
@@ -21,23 +21,20 @@ function useClassicMode() {
   return classic;
 }
 
-// ─── Контекст страницы — умные чипсы + capabilities ──────────────────────────
-const PAGE_CONTEXT: Record<string, { label: string; icon: string; quick: string[]; capabilities?: string[] }> = {
-  "/admin":            { label: "Дашборд",    icon: "📊", quick: ["Сводка за сегодня", "Новые заказы", "Выручка за неделю", "Что срочно?"], capabilities: ["analytics", "orders"] },
-  "/admin/orders":     { label: "Заказы",     icon: "📦", quick: ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня", "Проблемные заказы"], capabilities: ["orders", "status"] },
-  "/admin/products":   { label: "Каталог",    icon: "🪵", quick: ["Что не в наличии?", "Топ продаж", "Как добавить товар?", "Актуальные цены"], capabilities: ["products", "search"] },
-  "/admin/clients":    { label: "Клиенты",    icon: "👥", quick: ["Новые клиенты", "Постоянные покупатели", "Кто давно не покупал?", "Лучший клиент"], capabilities: ["clients", "analytics"] },
-  "/admin/analytics":  { label: "Аналитика",  icon: "📈", quick: ["Выручка за месяц", "Лучшие товары", "Динамика продаж", "Конверсия"], capabilities: ["analytics", "charts"] },
-  "/admin/finance":    { label: "Финансы",    icon: "💰", quick: ["Выручка за месяц", "Средний чек", "Сравни с прошлым месяцем", "Прибыль"], capabilities: ["finance", "analytics"] },
-  "/admin/inventory":  { label: "Склад",      icon: "🏭", quick: ["Что заканчивается?", "Остатки по товарам", "Что пополнить?", "Склад по категориям"], capabilities: ["inventory", "products"] },
-  "/admin/crm":        { label: "CRM",        icon: "🎯", quick: ["Новые лиды", "Конверсия лидов", "Горячие клиенты", "Что в работе?"], capabilities: ["crm", "clients"] },
-  "/admin/tasks":      { label: "Задачи",     icon: "✅", quick: ["Мои задачи", "Просроченные", "Создай задачу", "Что сделано сегодня?"], capabilities: ["tasks"] },
-  "/admin/delivery":   { label: "Доставка",   icon: "🚚", quick: ["Активные доставки", "Задержки", "Маршруты сегодня", "Доставлено за неделю"], capabilities: ["delivery", "orders"] },
-  "/admin/staff":      { label: "Команда",    icon: "👤", quick: ["Кто в команде?", "Добавить сотрудника", "Роли и доступы", "Активность"], capabilities: ["staff"] },
-  "/admin/settings":   { label: "Настройки",  icon: "⚙️", quick: ["Как настроить сайт?", "SMTP email", "Telegram бот", "Домен и SSL"], capabilities: ["settings"] },
-  "/admin/appearance": { label: "Оформление", icon: "🎨", quick: ["Сменить тему", "Палитры", "Как выглядит сайт?", "Логотип"], capabilities: ["appearance"] },
+// ─── Page context — smart chips + capabilities ──────────────────────────────
+const PAGE_CONTEXT: Record<string, { label: string; icon: string; quick: string[] }> = {
+  "/admin":            { label: "Дашборд",    icon: "📊", quick: ["Сводка за сегодня", "Новые заказы", "Выручка за неделю", "Что срочно?"] },
+  "/admin/orders":     { label: "Заказы",     icon: "📦", quick: ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня"] },
+  "/admin/products":   { label: "Каталог",    icon: "🪵", quick: ["Что не в наличии?", "Топ продаж", "Актуальные цены"] },
+  "/admin/clients":    { label: "Клиенты",    icon: "👥", quick: ["Новые клиенты", "Постоянные покупатели", "Лучший клиент"] },
+  "/admin/analytics":  { label: "Аналитика",  icon: "📈", quick: ["Выручка за месяц", "Лучшие товары", "Конверсия"] },
+  "/admin/finance":    { label: "Финансы",    icon: "💰", quick: ["Выручка за месяц", "Средний чек", "Прибыль"] },
+  "/admin/delivery":   { label: "Доставка",   icon: "🚚", quick: ["Активные доставки", "Задержки", "Маршруты сегодня"] },
+  "/admin/staff":      { label: "Команда",    icon: "👤", quick: ["Кто в команде?", "Роли и доступы", "Активность"] },
+  "/admin/settings":   { label: "Настройки",  icon: "⚙️", quick: ["SMTP email", "Telegram бот", "Домен и SSL"] },
+  "/admin/appearance": { label: "Оформление", icon: "🎨", quick: ["Сменить тему", "Палитры", "Логотип"] },
 };
-const DEFAULT_QUICK = ["Сводка за сегодня", "Новые заказы", "Список товаров", "Что срочно?"];
+const DEFAULT_QUICK = ["Сводка за сегодня", "Новые заказы", "Список товаров"];
 
 function getPageCtx(pathname: string) {
   if (PAGE_CONTEXT[pathname]) return PAGE_CONTEXT[pathname];
@@ -47,20 +44,16 @@ function getPageCtx(pathname: string) {
   return match ? PAGE_CONTEXT[match] : null;
 }
 
-// ─── Типы ────────────────────────────────────────────────────────────────────
-type MediaAttachment = {
-  type: "image" | "video";
-  data: string; // base64 or URL
-  prompt?: string;
-};
-
+// ─── Types ──────────────────────────────────────────────────────────────────
+type MediaAttachment = { type: "image" | "video"; data: string; prompt?: string };
+type IframeData = { url: string; title: string };
 type Msg = {
   id: string;
   role: "user" | "assistant";
   text: string;
   streaming?: boolean;
   media?: MediaAttachment[];
-  generating?: boolean; // image/video is being generated
+  generating?: boolean;
 };
 
 function parseActions(raw: string) {
@@ -68,7 +61,28 @@ function parseActions(raw: string) {
   return { text: idx === -1 ? raw : raw.slice(0, idx).trim() };
 }
 
-// ─── Markdown рендер (inline) ────────────────────────────────────────────────
+// ─── Parse __ARAY_SHOW_URL__ and __ARAY_NAVIGATE__ from responses ───────────
+function parseArayCommands(text: string): { cleanText: string; iframe?: IframeData; navigate?: string } {
+  let cleanText = text;
+  let iframe: IframeData | undefined;
+  let navigate: string | undefined;
+
+  const urlMatch = text.match(/__ARAY_SHOW_URL:(.+?):(.+?)__/);
+  if (urlMatch) {
+    iframe = { url: urlMatch[1], title: urlMatch[2] };
+    cleanText = cleanText.replace(urlMatch[0], "").trim();
+  }
+
+  const navMatch = text.match(/__ARAY_NAVIGATE:(.+?)__/);
+  if (navMatch) {
+    navigate = navMatch[1];
+    cleanText = cleanText.replace(navMatch[0], "").trim();
+  }
+
+  return { cleanText, iframe, navigate };
+}
+
+// ─── Markdown render (inline) ───────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
   return parts.map((p, i) => {
@@ -77,11 +91,7 @@ function renderInline(text: string): React.ReactNode[] {
     if (p.startsWith("*") && p.endsWith("*"))
       return <em key={i}>{p.slice(1, -1)}</em>;
     if (p.startsWith("`") && p.endsWith("`"))
-      return (
-        <code key={i} className="aray-code-inline">
-          {p.slice(1, -1)}
-        </code>
-      );
+      return <code key={i} className="aray-code-inline">{p.slice(1, -1)}</code>;
     return p as React.ReactNode;
   });
 }
@@ -101,11 +111,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
 
     const hm = line.match(/^(#{1,3})\s+(.+)$/);
     if (hm) {
-      nodes.push(
-        <p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>
-          {renderInline(hm[2])}
-        </p>
-      );
+      nodes.push(<p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>{renderInline(hm[2])}</p>);
       i++; continue;
     }
 
@@ -155,19 +161,13 @@ function renderMarkdown(text: string): React.ReactNode[] {
       nodes.push(
         <div key={`tbl-${i}`} className="my-2 overflow-x-auto aray-table-wrap">
           <table className="w-full text-[12px]">
-            <thead>
-              <tr className="aray-table-header">
-                {headers.map((h, hi) => (
-                  <th key={hi} className="px-3 py-2 text-left font-semibold" style={{ color: "hsl(var(--primary))" }}>{renderInline(h)}</th>
-                ))}
-              </tr>
-            </thead>
+            <thead><tr className="aray-table-header">
+              {headers.map((h, hi) => <th key={hi} className="px-3 py-2 text-left font-semibold" style={{ color: "hsl(var(--primary))" }}>{renderInline(h)}</th>)}
+            </tr></thead>
             <tbody>
               {dataRows.filter(r => r.some(c => c)).map((row, ri) => (
                 <tr key={ri} className="aray-table-row">
-                  {row.map((cell, ci) => (
-                    <td key={ci} className="px-3 py-2">{renderInline(cell)}</td>
-                  ))}
+                  {row.map((cell, ci) => <td key={ci} className="px-3 py-2">{renderInline(cell)}</td>)}
                 </tr>
               ))}
             </tbody>
@@ -183,7 +183,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
   return nodes;
 }
 
-// ─── Голосовой ввод ──────────────────────────────────────────────────────────
+// ─── Voice input (Speech Recognition) ───────────────────────────────────────
 function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -218,7 +218,7 @@ function useVoice(onResult: (t: string) => void, onAutoSend: () => void) {
   return { listening, supported, start, stop };
 }
 
-// ─── TTS — ElevenLabs (primary) + браузер (fallback) ─────────────────────────
+// ─── TTS — ElevenLabs (primary) + browser (fallback) ────────────────────────
 const voicesCache: { list: SpeechSynthesisVoice[] } = { list: [] };
 
 function loadVoices() {
@@ -234,7 +234,6 @@ function pickBestRuVoice(): SpeechSynthesisVoice | null {
   const p = [
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Natural"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Microsoft"),
-    (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Irina"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru") && v.name.includes("Google"),
     (v: SpeechSynthesisVoice) => v.lang.startsWith("ru"),
   ];
@@ -249,6 +248,8 @@ function cleanForSpeech(t: string) {
     .replace(/[\u2600-\u27BF]/g, "")
     .replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
     .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
+    .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+    .replace(/__ARAY_NAVIGATE:.+?__/g, "")
     .replace(/^---+$/mg, "").replace(/\s{2,}/g, " ").trim();
 }
 
@@ -283,7 +284,7 @@ function useTTS() {
     setSpeaking(id);
     speakingRef.current = id;
 
-    // Try ElevenLabs first, with smart fallback
+    // Try ElevenLabs first
     try {
       const res = await fetch("/api/ai/tts", {
         method: "POST",
@@ -292,11 +293,7 @@ function useTTS() {
       });
       if (res.ok) {
         const contentType = res.headers.get("content-type") || "";
-        // ElevenLabs geo-blocked: API returns JSON with fallback instruction
-        if (contentType.includes("application/json")) {
-          // Fall through to browser TTS below
-        } else {
-          // Got real audio from ElevenLabs
+        if (!contentType.includes("application/json")) {
           const blob = await res.blob();
           const url = URL.createObjectURL(blob);
           const audio = new Audio(url);
@@ -317,28 +314,29 @@ function useTTS() {
     utter.lang = "ru-RU"; utter.rate = 1.05; utter.pitch = 1.0; utter.volume = 1.0;
     const voice = pickBestRuVoice();
     if (voice) utter.voice = voice;
-    else setTimeout(() => { loadVoices(); const v2 = pickBestRuVoice(); if (v2) utter.voice = v2; }, 300);
     utter.onend = () => { if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } utterRef.current = null; };
     utter.onerror = (e) => { if ((e as any).error === "interrupted") return; if (speakingRef.current === id) { setSpeaking(null); speakingRef.current = null; } utterRef.current = null; };
     utterRef.current = utter;
     window.speechSynthesis.speak(utter);
   }, [stopAll]);
 
-  return { speaking, speak, stop: stopAll, supported: true };
+  return { speaking, speak, stop: stopAll };
 }
 
-// ─── Шар ARAY (единый брендовый — огненный) ─────────────────────────────────
-function ArayOrb({ size = 28, pulse = false, speaking = false, id = "ao" }: {
-  size?: number; pulse?: boolean; speaking?: boolean; id?: string;
+// ─── ARAY Orb (fire sphere) ─────────────────────────────────────────────────
+function ArayOrb({ size = 28, pulse = false, speaking = false, listening = false, id = "ao" }: {
+  size?: number; pulse?: boolean; speaking?: boolean; listening?: boolean; id?: string;
 }) {
+  const active = pulse || speaking || listening;
   return (
     <div className="relative" style={{ width: size, height: size }}>
-      {/* Glow ring when active */}
-      {(pulse || speaking) && (
-        <div className="absolute inset-0 rounded-full aray-orb-glow" style={{
-          background: `radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, transparent 70%)`,
-          transform: "scale(1.8)",
-          animation: speaking ? "aray-speak-glow 1.5s ease-in-out infinite" : "aray-pulse-glow 2s ease-in-out infinite",
+      {active && (
+        <div className="absolute inset-0 rounded-full" style={{
+          background: `radial-gradient(circle, hsl(var(--primary) / 0.35) 0%, transparent 70%)`,
+          transform: "scale(2)",
+          animation: speaking ? "aray-speak-glow 1.5s ease-in-out infinite"
+            : listening ? "aray-listen-glow 0.8s ease-in-out infinite"
+            : "aray-pulse-glow 2s ease-in-out infinite",
         }}/>
       )}
       <svg width={size} height={size} viewBox="0 0 100 100"
@@ -384,17 +382,15 @@ function ArayOrb({ size = 28, pulse = false, speaking = false, id = "ao" }: {
   );
 }
 
-// ─── Визуализация голоса (волны) ─────────────────────────────────────────────
+// ─── Voice waveform animation ───────────────────────────────────────────────
 function VoiceWaveform({ active }: { active: boolean }) {
   if (!active) return null;
   return (
     <div className="flex items-center gap-[2px] h-4">
       {[0,1,2,3,4].map(i => (
-        <motion.div
-          key={i}
-          className="w-[3px] rounded-full"
+        <motion.div key={i} className="w-[3px] rounded-full"
           style={{ background: "hsl(var(--primary))" }}
-          animate={{ height: active ? [4, 14, 6, 16, 4] : 4 }}
+          animate={{ height: [4, 14, 6, 16, 4] }}
           transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
         />
       ))}
@@ -402,11 +398,10 @@ function VoiceWaveform({ active }: { active: boolean }) {
   );
 }
 
-// ─── Image preview component ─────────────────────────────────────────────────
-function MediaPreview({ media, onClose }: { media: MediaAttachment; onClose?: () => void }) {
+// ─── Image preview ──────────────────────────────────────────────────────────
+function MediaPreview({ media }: { media: MediaAttachment }) {
   const [fullscreen, setFullscreen] = useState(false);
   const src = media.data.startsWith("data:") ? media.data : `data:image/png;base64,${media.data}`;
-
   return (
     <>
       <div className="aray-media-preview group relative">
@@ -423,27 +418,14 @@ function MediaPreview({ media, onClose }: { media: MediaAttachment; onClose?: ()
         </div>
         {media.prompt && <p className="text-[10px] mt-1 opacity-50 truncate">{media.prompt}</p>}
       </div>
-
-      {/* Fullscreen modal */}
       <AnimatePresence>
         {fullscreen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
-            onClick={() => setFullscreen(false)}
-          >
-            <motion.img
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              src={src}
-              className="max-w-full max-h-full rounded-2xl shadow-2xl"
-              onClick={e => e.stopPropagation()}
-            />
-            <button onClick={() => setFullscreen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={() => setFullscreen(false)}>
+            <motion.img initial={{ scale: 0.8 }} animate={{ scale: 1 }} exit={{ scale: 0.8 }}
+              src={src} className="max-w-full max-h-full rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}/>
+            <button onClick={() => setFullscreen(false)} className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white">
               <X className="w-5 h-5"/>
             </button>
           </motion.div>
@@ -453,14 +435,11 @@ function MediaPreview({ media, onClose }: { media: MediaAttachment; onClose?: ()
   );
 }
 
-// ─── Generating indicator ────────────────────────────────────────────────────
+// ─── Generating indicator ───────────────────────────────────────────────────
 function GeneratingIndicator({ type }: { type?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="aray-generating-indicator"
-    >
+    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+      className="aray-generating-indicator">
       <div className="aray-generating-shimmer"/>
       <div className="relative z-10 flex items-center gap-2 px-4 py-3">
         <Sparkles className="w-4 h-4 text-amber-400 animate-pulse"/>
@@ -472,7 +451,7 @@ function GeneratingIndicator({ type }: { type?: string }) {
   );
 }
 
-// ─── Пузырь сообщения ────────────────────────────────────────────────────────
+// ─── Message bubble ─────────────────────────────────────────────────────────
 function Bubble({ msg, onSpeak, speaking }: {
   msg: Msg; onSpeak?: (t: string, id: string) => void; speaking?: string | null;
 }) {
@@ -493,35 +472,22 @@ function Bubble({ msg, onSpeak, speaking }: {
       )}
       <div className="flex flex-col gap-1 max-w-[82%]">
         <div className={`px-4 py-3 text-[13.5px] leading-relaxed ${isUser ? "aray-chat-bubble-user" : "aray-chat-bubble-assistant"}`}>
-          {/* Media attachments */}
-          {msg.media?.map((m, idx) => (
-            <div key={idx} className="mb-2">
-              <MediaPreview media={m}/>
-            </div>
-          ))}
-
-          {/* Generating indicator */}
+          {msg.media?.map((m, idx) => <div key={idx} className="mb-2"><MediaPreview media={m}/></div>)}
           {msg.generating && <GeneratingIndicator type="image"/>}
-
-          {/* Text content */}
           {msg.text
             ? <div className="space-y-1">{renderMarkdown(msg.text)}</div>
             : !isUser && msg.streaming
             ? <span className="inline-flex gap-1.5 items-center py-0.5">
                 {[0,1,2].map(i => (
-                  <motion.span
-                    key={i}
-                    className="aray-typing-dot"
+                  <motion.span key={i} className="aray-typing-dot"
                     animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}
-                  />
+                    transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.15 }}/>
                 ))}
               </span>
             : null}
           {msg.streaming && msg.text && <span className="aray-stream-cursor"/>}
         </div>
 
-        {/* Action buttons under assistant message */}
         {!isUser && !msg.streaming && msg.text && (
           <div className="flex items-center gap-1 pl-1">
             {onSpeak && (
@@ -537,27 +503,51 @@ function Bubble({ msg, onSpeak, speaking }: {
   );
 }
 
-// ─── Capability pills ────────────────────────────────────────────────────────
-function CapabilityPills() {
-  const pills = [
-    { icon: Brain, label: "AI", tip: "Claude Sonnet 4.6" },
-    { icon: ImagePlus, label: "Imagen", tip: "Google AI" },
-    { icon: Volume2, label: "Голос", tip: "ElevenLabs" },
-    { icon: Globe, label: "Веб", tip: "Поиск в интернете" },
-  ];
+// ─── Iframe viewer popup ────────────────────────────────────────────────────
+function IframeViewer({ data, onClose }: { data: IframeData; onClose: () => void }) {
   return (
-    <div className="flex gap-1.5 flex-wrap">
-      {pills.map(p => (
-        <div key={p.label} className="aray-capability-pill" title={p.tip}>
-          <p.icon className="w-3 h-3"/>
-          <span>{p.label}</span>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        className="w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col"
+        style={{ background: "hsl(var(--background))", border: "1px solid hsl(var(--border)/0.3)" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-3 border-b" style={{ borderColor: "hsl(var(--border)/0.2)" }}>
+          <Globe className="w-4 h-4 text-primary"/>
+          <span className="text-sm font-medium flex-1 truncate">{data.title}</span>
+          <a href={data.url} target="_blank" rel="noopener noreferrer"
+            className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors" title="Открыть в новой вкладке">
+            <ExternalLink className="w-4 h-4 text-primary"/>
+          </a>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors">
+            <X className="w-4 h-4"/>
+          </button>
         </div>
-      ))}
-    </div>
+        {/* Iframe */}
+        <iframe
+          src={data.url}
+          className="flex-1 w-full border-none"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          title={data.title}
+        />
+      </motion.div>
+    </motion.div>
   );
 }
 
-// ─── Главный компонент ───────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 export function AdminAray({ staffName = "Коллега", userRole }: {
   staffName?: string;
   userRole?: string;
@@ -567,11 +557,12 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   const pageCtx = getPageCtx(pathname);
   const quickList = pageCtx?.quick ?? DEFAULT_QUICK;
 
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoVoice, setAutoVoice] = useState(false);
+  const [iframeData, setIframeData] = useState<IframeData | null>(null);
   const [showGenMenu, setShowGenMenu] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -582,7 +573,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     setAutoVoice(localStorage.getItem("aray-auto-voice") === "1");
   }, []);
 
-  const addInput = useCallback((t: string) => { setInput(t); if (!expanded) setExpanded(true); }, [expanded]);
+  const addInput = useCallback((t: string) => { setInput(t); if (!open) setOpen(true); }, [open]);
   const autoSend = useCallback(() => { sendRef.current?.(); }, []);
   const { listening, supported: micSupported, start: startMic, stop: stopMic } = useVoice(addInput, autoSend);
 
@@ -604,9 +595,9 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     if (!next) stopVoice();
   }, [autoVoice, stopVoice]);
 
-  // Welcome message
+  // Welcome message on first open
   useEffect(() => {
-    if (expanded && messages.length === 0) {
+    if (open && messages.length === 0) {
       const h = new Date().getHours();
       const gr = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Привет" : h < 22 ? "Добрый вечер" : "Поздновато";
       const name = staffName !== "Коллега" ? `, ${staffName}` : "";
@@ -615,16 +606,16 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         : " Что нужно — спрашивай.";
       setMessages([{ id: "w", role: "assistant", text: `${gr}${name}!${pageNote}` }]);
     }
-  }, [expanded, messages.length, staffName, pageCtx]);
+  }, [open, messages.length, staffName, pageCtx]);
 
   // Auto-scroll
   useEffect(() => {
-    if (expanded) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
-  }, [messages, expanded]);
+    if (open) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
+  }, [messages, open]);
 
   // Open via event
   useEffect(() => {
-    const h = () => { setExpanded(true); setTimeout(() => inputRef.current?.focus(), 200); };
+    const h = () => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 200); };
     window.addEventListener("aray:open", h);
     return () => window.removeEventListener("aray:open", h);
   }, []);
@@ -633,7 +624,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   useEffect(() => {
     const h = (e: Event) => {
       const { text } = (e as CustomEvent<{ text: string }>).detail || {};
-      if (text) { addInput(text); setExpanded(true); setTimeout(() => inputRef.current?.focus(), 150); }
+      if (text) { addInput(text); setOpen(true); setTimeout(() => inputRef.current?.focus(), 150); }
     };
     window.addEventListener("aray:fill", h);
     return () => window.removeEventListener("aray:fill", h);
@@ -655,26 +646,19 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         body: JSON.stringify({ prompt, type: "image" }),
       });
       const data = await res.json();
-
       if (data.success && data.data) {
         setMessages(prev => prev.map(m => m.id === aid ? {
-          ...m,
-          text: "Готово! Вот что получилось:",
-          generating: false,
+          ...m, text: "Готово! Вот что получилось:", generating: false,
           media: [{ type: "image" as const, data: data.data, prompt }]
         } : m));
       } else {
         setMessages(prev => prev.map(m => m.id === aid ? {
-          ...m,
-          text: data.error || "Не удалось сгенерировать. Попробуй другой запрос.",
-          generating: false
+          ...m, text: data.error || "Не удалось сгенерировать. Попробуй другой запрос.", generating: false
         } : m));
       }
     } catch {
       setMessages(prev => prev.map(m => m.id === aid ? {
-        ...m,
-        text: "Нет связи с Google AI. Попробуй позже.",
-        generating: false
+        ...m, text: "Нет связи с Google AI. Попробуй позже.", generating: false
       } : m));
     }
   }, []);
@@ -684,7 +668,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     const msg = (text ?? input).trim();
     if (!msg || loading) return;
     setInput("");
-    if (!expanded) setExpanded(true);
+    if (!open) setOpen(true);
 
     // Detect image generation intent
     const imgPatterns = /(?:сгенерируй|создай|нарисуй|сделай)\s+(?:изображение|картинку|фото|баннер|картину|иллюстрацию|лого)/i;
@@ -727,8 +711,18 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       const clean = isErr
         ? (raw.match(/__ARAY_ERR__(.+)$/)?.[1] || "Что-то пошло не так")
         : raw.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
-      const { text: final } = parseActions(clean);
+      const { text: actionClean } = parseActions(clean);
+
+      // Parse ARAY commands (iframe, navigation)
+      const { cleanText: final, iframe, navigate } = parseArayCommands(actionClean);
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
+
+      // Handle iframe command
+      if (iframe) setIframeData(iframe);
+      // Handle navigation command
+      if (navigate && typeof window !== "undefined") {
+        window.location.href = navigate;
+      }
     } catch {
       setMessages(prev => {
         const has = prev.some(m => m.id === aid);
@@ -737,7 +731,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
           : [...prev, { id: aid, role: "assistant", text: "Нет связи. Попробуй ещё раз." }];
       });
     } finally { setLoading(false); }
-  }, [input, messages, loading, expanded, pathname, generateImage]);
+  }, [input, messages, loading, open, pathname, generateImage]);
 
   useEffect(() => { sendRef.current = send; }, [send]);
 
@@ -749,45 +743,142 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
 
   return (
     <>
-      {/* ══ ПАНЕЛЬ ЧАТА — полный экран, жидкое стекло ══════════════════════════ */}
+      {/* ══ FLOATING ORB — bottom right ══════════════════════════════════════════ */}
+      <motion.button
+        onClick={() => {
+          if (listening) { stopMic(); return; }
+          setOpen(v => !v);
+          if (!open) setTimeout(() => inputRef.current?.focus(), 200);
+        }}
+        onDoubleClick={() => { if (micSupported) startMic(); }}
+        className="fixed z-[30] right-5 bottom-5 group"
+        style={{ WebkitTapHighlightColor: "transparent" }}
+        title={open ? "Свернуть Арая" : "Двойной клик — голосовой ввод"}
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+      >
+        {/* Glow backdrop */}
+        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)`,
+            transform: "scale(2.5)",
+          }}/>
+
+        <div className="relative">
+          <ArayOrb size={52} pulse={loading} speaking={!!speaking} listening={listening} id="float-orb"/>
+
+          {/* Listening indicator ring */}
+          {listening && (
+            <motion.div
+              className="absolute -inset-1.5 rounded-full border-2"
+              style={{ borderColor: "hsl(var(--primary))" }}
+              animate={{ scale: [1, 1.15, 1], opacity: [0.8, 0.3, 0.8] }}
+              transition={{ duration: 1.2, repeat: Infinity }}
+            />
+          )}
+
+          {/* Status label */}
+          <AnimatePresence>
+            {(listening || speaking) && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 5 }}
+                className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap"
+              >
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                  style={{
+                    background: listening ? "hsl(var(--primary)/0.2)" : "rgba(0,0,0,0.5)",
+                    color: listening ? "hsl(var(--primary))" : "white",
+                    backdropFilter: "blur(8px)",
+                  }}>
+                  {listening ? "Слушаю..." : "Говорю..."}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.button>
+
+      {/* ══ CHAT POPUP ═══════════════════════════════════════════════════════════ */}
       <AnimatePresence>
-        {expanded && (
+        {open && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: "spring", damping: 30, stiffness: 320 }}
-            className="fixed z-[25] left-0 lg:left-60 right-0 aray-chat-panel flex flex-col"
-            style={{ bottom: "72px" }}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: "spring", damping: 28, stiffness: 320 }}
+            className="fixed z-[29] right-5 bottom-[88px] flex flex-col"
+            style={{
+              width: "min(420px, calc(100vw - 40px))",
+              height: "min(600px, calc(100vh - 140px))",
+              borderRadius: "24px",
+              overflow: "hidden",
+              boxShadow: "0 24px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06)",
+              background: classic
+                ? "hsl(var(--background))"
+                : "linear-gradient(180deg, rgba(10,10,18,0.97), rgba(6,6,14,0.99))",
+              border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)",
+            }}
           >
             {/* ── Header ── */}
-            <div className="aray-chat-header flex items-center gap-3 px-5 py-3 shrink-0">
-              <ArayOrb size={30} pulse={loading} speaking={!!speaking} id="header-orb"/>
+            <div className="flex items-center gap-3 px-5 py-3.5 shrink-0"
+              style={{
+                borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)",
+                background: classic ? "hsl(var(--muted)/0.3)" : "rgba(255,255,255,0.02)",
+              }}>
+              <ArayOrb size={30} pulse={loading} speaking={!!speaking} id="popup-orb"/>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="aray-name-glow text-[15px] font-bold tracking-tight">Арай</span>
-                  <span className="aray-online-dot"/>
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-bold tracking-tight"
+                    style={{ color: classic ? "hsl(var(--foreground))" : "white" }}>
+                    Арай
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"/>
                   {pageCtx && (
-                    <span className="aray-section-badge">
-                      <span>{pageCtx.icon}</span>
-                      <span>{pageCtx.label}</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full"
+                      style={{
+                        background: classic ? "hsl(var(--primary)/0.1)" : "rgba(255,255,255,0.06)",
+                        color: classic ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
+                      }}>
+                      {pageCtx.icon} {pageCtx.label}
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5">
-                  <CapabilityPills/>
+                <div className="flex gap-1.5 mt-1">
+                  {[
+                    { icon: Brain, label: "AI" },
+                    { icon: Volume2, label: "Голос" },
+                    { icon: ImagePlus, label: "Imagen" },
+                    { icon: Globe, label: "Веб" },
+                  ].map(p => (
+                    <span key={p.label} className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full"
+                      style={{
+                        background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.04)",
+                        color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)",
+                      }}>
+                      <p.icon className="w-2.5 h-2.5"/> {p.label}
+                    </span>
+                  ))}
                 </div>
               </div>
-              <button onClick={() => setMessages([])} className="aray-chat-ctrl-btn p-2" title="Новый чат">
-                <RotateCcw className="w-3.5 h-3.5"/>
-              </button>
-              <button onClick={() => setExpanded(false)} className="aray-chat-ctrl-btn p-2" title="Свернуть">
-                <ChevronDown className="w-4 h-4"/>
-              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setMessages([])} className="p-1.5 rounded-xl transition-colors"
+                  style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.4)" }}
+                  title="Новый чат">
+                  <RotateCcw className="w-3.5 h-3.5"/>
+                </button>
+                <button onClick={() => setOpen(false)} className="p-1.5 rounded-xl transition-colors"
+                  style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.4)" }}
+                  title="Закрыть">
+                  <X className="w-3.5 h-3.5"/>
+                </button>
+              </div>
             </div>
 
             {/* ── Messages ── */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3 aray-messages-area">
+            <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3"
+              style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.88)" }}>
               {messages.map(msg => (
                 <Bubble key={msg.id} msg={msg} onSpeak={speak} speaking={speaking}/>
               ))}
@@ -797,165 +888,151 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                 <motion.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, staggerChildren: 0.05 }}
+                  transition={{ delay: 0.2 }}
                   className="flex flex-wrap gap-2 mt-2 pl-9"
                 >
                   {quickList.map((q, idx) => (
-                    <motion.button
-                      key={q}
+                    <motion.button key={q}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 + idx * 0.06 }}
                       onClick={() => send(q)}
-                      className="aray-quick-btn px-3.5 py-2 text-[12px] active:scale-95 transition-transform"
-                    >
+                      className="px-3.5 py-2 text-[12px] rounded-2xl transition-all active:scale-95"
+                      style={{
+                        background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.06)",
+                        color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.7)",
+                        border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)",
+                      }}>
                       {q}
                     </motion.button>
                   ))}
-                  {/* Generate image chip */}
                   <motion.button
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
                     onClick={() => { setInput("Сгенерируй изображение "); inputRef.current?.focus(); }}
-                    className="aray-quick-btn aray-quick-btn-special px-3.5 py-2 text-[12px] active:scale-95 transition-transform"
-                  >
+                    className="px-3.5 py-2 text-[12px] rounded-2xl transition-all active:scale-95"
+                    style={{
+                      background: "hsl(var(--primary)/0.15)",
+                      color: "hsl(var(--primary))",
+                      border: "1px solid hsl(var(--primary)/0.3)",
+                    }}>
                     <ImagePlus className="w-3 h-3 inline mr-1"/> Создать картинку
                   </motion.button>
                 </motion.div>
               )}
               <div ref={bottomRef}/>
             </div>
+
+            {/* ── Input area ── */}
+            <div className="shrink-0 px-4 pb-4 pt-2"
+              style={{ borderTop: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.06)" }}>
+              <div className="flex items-end gap-2">
+                <div className="flex-1 min-w-0 relative">
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKey}
+                    placeholder={listening ? "Слушаю..." : "Спроси Арая..."}
+                    rows={1}
+                    className="w-full resize-none text-[13.5px] leading-relaxed outline-none px-4 py-2.5 pr-9 rounded-2xl"
+                    style={{
+                      maxHeight: 88,
+                      fontFamily: "inherit",
+                      background: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.06)",
+                      color: classic ? "hsl(var(--foreground))" : "white",
+                      border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)",
+                    }}
+                    onInput={e => {
+                      const t = e.currentTarget;
+                      t.style.height = "auto";
+                      t.style.height = Math.min(t.scrollHeight, 88) + "px";
+                    }}
+                  />
+                  {/* Sparkles button */}
+                  <button onClick={() => setShowGenMenu(!showGenMenu)}
+                    className="absolute right-2 bottom-2.5 p-1 rounded-lg transition-colors"
+                    style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.3)" }}
+                    title="Генерация">
+                    <Sparkles className="w-3.5 h-3.5"/>
+                  </button>
+
+                  {/* Generate menu */}
+                  <AnimatePresence>
+                    {showGenMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                        className="absolute bottom-full right-0 mb-2 rounded-2xl overflow-hidden"
+                        style={{
+                          background: classic ? "hsl(var(--popover))" : "rgba(20,20,30,0.98)",
+                          border: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.1)",
+                          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+                        }}>
+                        {[
+                          { icon: ImagePlus, label: "Изображение", pre: "Сгенерируй изображение: " },
+                          { icon: Zap, label: "Баннер", pre: "Создай баннер для: " },
+                          { icon: MessageCircle, label: "Текст", pre: "Напиши текст для: " },
+                        ].map(item => (
+                          <button key={item.label}
+                            onClick={() => { setInput(item.pre); setShowGenMenu(false); inputRef.current?.focus(); }}
+                            className="flex items-center gap-2.5 w-full px-4 py-2.5 text-[13px] transition-colors text-left"
+                            style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.8)" }}>
+                            <item.icon className="w-4 h-4" style={{ color: "hsl(var(--primary))" }}/> {item.label}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 shrink-0 mb-0.5">
+                  <button onClick={toggleAutoVoice}
+                    className="p-2 rounded-xl transition-colors"
+                    style={{
+                      color: autoVoice ? "hsl(var(--primary))" : (classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.3)"),
+                      background: autoVoice ? "hsl(var(--primary)/0.15)" : "transparent",
+                    }}
+                    title={autoVoice ? "Голос ВКЛ" : "Включить голос"}>
+                    {autoVoice ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
+                  </button>
+
+                  {micSupported && (
+                    <button onClick={listening ? stopMic : startMic}
+                      className="p-2 rounded-xl transition-colors"
+                      style={{
+                        color: listening ? "hsl(var(--primary))" : (classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.3)"),
+                        background: listening ? "hsl(var(--primary)/0.15)" : "transparent",
+                      }}
+                      title={listening ? "Стоп" : "Говори"}>
+                      {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
+                    </button>
+                  )}
+
+                  <button onClick={() => send()}
+                    disabled={!hasText || loading}
+                    className="p-2 rounded-xl transition-all"
+                    style={{
+                      background: hasText && !loading ? "hsl(var(--primary))" : "transparent",
+                      color: hasText && !loading ? "white" : (classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.2)"),
+                    }}
+                    title="Отправить (Enter)">
+                    <Send className="w-4 h-4"/>
+                  </button>
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ══ INPUT BAR — always visible ════════════════════════════════════════════ */}
-      <div className="fixed bottom-0 left-0 lg:left-60 right-0 z-[26] aray-chat-bar">
-
-        {/* Quick chips collapsed */}
-        {!expanded && (
-          <div className="flex gap-1.5 px-4 pt-2.5 pb-1 overflow-x-auto scrollbar-none">
-            {quickList.map(q => (
-              <button key={q}
-                onClick={() => { send(q); setExpanded(true); }}
-                className="aray-quick-btn shrink-0 px-3 py-1.5 text-[11px] active:scale-95 transition-transform whitespace-nowrap">
-                {q}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Input row */}
-        <div className="flex items-end gap-2.5 px-4 py-2.5">
-
-          {/* Orb button */}
-          <button
-            onClick={() => { setExpanded(v => !v); if (!expanded) setTimeout(() => inputRef.current?.focus(), 150); }}
-            className="shrink-0 mb-0.5 transition-transform hover:scale-105 active:scale-95"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-            title={expanded ? "Свернуть" : "Открыть Арая"}
-          >
-            <ArayOrb size={34} pulse={loading} speaking={!!speaking} id="bar-orb"/>
-          </button>
-
-          {/* Textarea */}
-          <div className="flex-1 min-w-0 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              onFocus={() => !expanded && setExpanded(true)}
-              placeholder={listening ? "Слушаю..." : pageCtx ? `Спроси про ${pageCtx.label.toLowerCase()}...` : "Спроси Арая..."}
-              rows={1}
-              className="aray-chat-input w-full resize-none text-[13.5px] leading-relaxed outline-none py-1.5 pr-8"
-              style={{ maxHeight: 88, fontFamily: "inherit" }}
-              onInput={e => {
-                const t = e.currentTarget;
-                t.style.height = "auto";
-                t.style.height = Math.min(t.scrollHeight, 88) + "px";
-              }}
-            />
-            {/* Generate button inside input */}
-            <button
-              onClick={() => setShowGenMenu(!showGenMenu)}
-              className="absolute right-1 bottom-1.5 aray-gen-btn p-1"
-              title="Генерация контента"
-            >
-              <Sparkles className="w-3.5 h-3.5"/>
-            </button>
-
-            {/* Generate menu popup */}
-            <AnimatePresence>
-              {showGenMenu && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  className="aray-gen-menu absolute bottom-full right-0 mb-2"
-                >
-                  <button onClick={() => { setInput("Сгенерируй изображение: "); setShowGenMenu(false); inputRef.current?.focus(); }}
-                    className="aray-gen-menu-item">
-                    <ImagePlus className="w-4 h-4"/> Изображение
-                  </button>
-                  <button onClick={() => { setInput("Создай баннер для: "); setShowGenMenu(false); inputRef.current?.focus(); }}
-                    className="aray-gen-menu-item">
-                    <Zap className="w-4 h-4"/> Баннер
-                  </button>
-                  <button onClick={() => { setInput("Напиши текст для: "); setShowGenMenu(false); inputRef.current?.focus(); }}
-                    className="aray-gen-menu-item">
-                    <MessageCircle className="w-4 h-4"/> Текст
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 shrink-0 mb-0.5">
-            {/* Voice toggle */}
-            <button
-              onClick={toggleAutoVoice}
-              className={`aray-chat-action-btn p-2 ${autoVoice ? "aray-chat-action-btn-active" : ""}`}
-              title={autoVoice ? "Голос ВКЛ" : "Включить голос"}
-            >
-              {autoVoice ? <Volume2 className="w-4 h-4"/> : <VolumeX className="w-4 h-4"/>}
-            </button>
-
-            {/* Mic */}
-            {micSupported && (
-              <button
-                onClick={listening ? stopMic : startMic}
-                className={`aray-chat-action-btn p-2 ${listening ? "aray-chat-action-btn-active" : ""}`}
-                title={listening ? "Стоп" : "Говори"}
-              >
-                {listening ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
-              </button>
-            )}
-
-            {/* Send */}
-            <button
-              onClick={() => send()}
-              disabled={!hasText || loading}
-              className="aray-chat-send-btn p-2"
-              data-ready={hasText && !loading}
-              title="Отправить (Enter)"
-            >
-              <Send className="w-4 h-4"/>
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom label */}
-        <div className="text-center pb-2 -mt-0.5">
-          <span className="aray-chat-label text-[9px] tracking-wide">
-            {pageCtx ? `${pageCtx.icon} ${pageCtx.label} · ` : ""}
-            Арай · AI + Голос + Генерация ·{" "}
-            <span style={{ color: "hsl(var(--primary)/0.5)" }}>ARAY</span>
-          </span>
-        </div>
-      </div>
+      {/* ══ IFRAME VIEWER ════════════════════════════════════════════════════════ */}
+      <AnimatePresence>
+        {iframeData && <IframeViewer data={iframeData} onClose={() => setIframeData(null)}/>}
+      </AnimatePresence>
     </>
   );
 }

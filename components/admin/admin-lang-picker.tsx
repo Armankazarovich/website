@@ -27,11 +27,11 @@ export function AdminLangPickerInline() {
           className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all text-center relative hover:brightness-125"
           style={
             lang === l.code
-              ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
-              : { background: "var(--admin-popup-bg, rgba(255,255,255,0.06))", border: "1.5px solid var(--admin-popup-border, rgba(255,255,255,0.08))" }
+              ? { background: "hsl(var(--primary)/0.15)", border: "1.5px solid hsl(var(--primary)/0.5)" }
+              : { background: "transparent", border: "1.5px solid transparent" }
           }
         >
-          <img src={getFlagUrl(l.flag, 40)} alt={l.label} className="w-6 h-5 rounded-sm object-cover" loading="lazy" />
+          <img src={getFlagUrl(l.flag)} alt={l.label} className="w-7 h-5 rounded-[3px] object-cover shadow-sm" loading="lazy" />
           <span className="text-[10px] font-medium text-white/70 leading-tight">{l.label}</span>
           {lang === l.code && (
             <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center"
@@ -76,7 +76,7 @@ export function AdminLangPicker() {
           ${open ? "bg-primary/20 ring-2 ring-primary/30" : "hover:bg-primary/15"}`}
       >
         {current ? (
-          <img src={getFlagUrl(current.flag, 40)} alt={current.label} className="w-5 h-4 rounded-sm object-cover" loading="lazy" />
+          <img src={getFlagUrl(current.flag)} alt={current.label} className="w-5 h-4 rounded-[2px] object-cover" loading="lazy" />
         ) : (
           <Languages className="w-4 h-4 text-primary" />
         )}
@@ -101,13 +101,11 @@ export function AdminLangPicker() {
                 className="flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl transition-all text-center relative group"
                 style={
                   lang === l.code
-                    ? { background: "hsl(var(--primary)/0.2)", border: "1.5px solid hsl(var(--primary)/0.5)" }
-                    : classic
-                    ? { background: "hsl(var(--muted)/0.5)", border: "1.5px solid hsl(var(--border))" }
-                    : { background: "var(--admin-popup-bg, rgba(255,255,255,0.06))", border: "1.5px solid var(--admin-popup-border, rgba(255,255,255,0.08))" }
+                    ? { background: "hsl(var(--primary)/0.15)", border: "1.5px solid hsl(var(--primary)/0.5)" }
+                    : { background: "transparent", border: "1.5px solid transparent" }
                 }
               >
-                <img src={getFlagUrl(l.flag, 40)} alt={l.label} className="w-6 h-5 rounded-sm object-cover group-hover:scale-110 transition-transform" loading="lazy" />
+                <img src={getFlagUrl(l.flag)} alt={l.label} className="w-7 h-5 rounded-[3px] object-cover shadow-sm group-hover:scale-110 transition-transform" loading="lazy" />
                 <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? (classic ? "text-primary" : "text-white/90") : (classic ? "text-muted-foreground" : "text-white/55")}`}>
                   {l.label}
                 </span>

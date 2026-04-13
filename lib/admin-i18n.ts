@@ -38,9 +38,9 @@ export const ADMIN_LANGUAGES: LangMeta[] = [
   { code: "nl", label: "Nederlands",   flag: "nl" },
 ];
 
-/** SVG URL флага по ISO коду страны (работает на Windows, Mac, Linux) */
-export function getFlagUrl(countryCode: string, size: number = 24): string {
-  return `https://flagcdn.com/${size}x${Math.round(size * 0.75)}/${countryCode.toLowerCase()}.png`;
+/** SVG URL флага по ISO коду страны (прозрачный фон, работает везде) */
+export function getFlagUrl(countryCode: string, _size?: number): string {
+  return `https://flagcdn.com/${countryCode.toLowerCase()}.svg`;
 }
 
 /** SVG URL флага (вертикальные, лучше для кружков) */
