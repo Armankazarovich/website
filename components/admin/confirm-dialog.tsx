@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { AlertTriangle, Trash2, X } from "lucide-react";
 import { useClassicMode } from "@/lib/use-classic-mode";
 
