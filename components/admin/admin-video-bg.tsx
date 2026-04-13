@@ -87,6 +87,8 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
   const loadTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const fadeTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const prevIsDark = useRef<boolean | null>(null);
+  const errorCountRef = useRef(0);
+  const MAX_ERRORS = 3; // После 3 ошибок подряд — fallback на градиент
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -168,6 +170,7 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
   const handleFirstCanPlay = useCallback(() => {
     setFirstReady(true);
     setFallbackToGradient(false);
+    errorCountRef.current = 0; // Сброс ошибок — видео работает
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
   }, []);
 
@@ -243,8 +246,19 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
     }
   }, []);
 
-  // Ошибка загрузки — пропускаем видео
+  // Ошибка загрузки — пропускаем видео, после MAX_ERRORS → fallback
   const handleError = useCallback((slot: "A" | "B") => {
+    errorCountRef.current += 1;
+    if (errorCountRef.current >= MAX_ERRORS) {
+      // Все видео недоступны (Pexels 403 и т.п.) — переходим на градиент
+      setFallbackToGradient(true);
+      const vA = videoARef.current;
+      const vB = videoBRef.current;
+      if (vA) { vA.pause(); vA.removeAttribute("src"); }
+      if (vB) { vB.pause(); vB.removeAttribute("src"); }
+      return;
+    }
+
     const videos = videosRef.current;
     const nextIdx = (currentIdxRef.current + 1) % videos.length;
     currentIdxRef.current = nextIdx;
