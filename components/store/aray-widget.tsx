@@ -708,6 +708,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => window.removeEventListener("aray:open", handler);
   }, [startChat]);
 
+  // Push-to-talk из мобильного навбара (long-press на шар)
+  useEffect(() => {
+    const handler = async () => {
+      setVisible(true); startChat();
+      if (voiceModeRef.current !== "voice") {
+        setVoiceMode("voice"); voiceModeRef.current = "voice";
+        localStorage.setItem("aray-voice-mode", "voice");
+      }
+      try {
+        const text = await micListen();
+        if (text) sendMessage(text);
+      } catch {}
+    };
+    window.addEventListener("aray:voice", handler);
+    return () => window.removeEventListener("aray:voice", handler);
+  }, [micListen, startChat, sendMessage]);
+
   // Проактивный пузырь
   useEffect(() => {
     if (!visible) return;
@@ -978,7 +995,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       </AnimatePresence>
 
       {/* ══ КНОПКА — плавающая сфера (скрыта в админке на мобилке — там шар встроен в док) ══ */}
-      {!open && !(isAdmin && isMobile) && (
+      {!open && !isMobile && (
         <div className="flex fixed z-[101] flex-col items-end gap-2.5"
           style={{ bottom: isMobile ? "calc(68px + env(safe-area-inset-bottom, 0px))" : "1.5rem", right: "1rem" }}>
           {/* Проактивный пузырь */}

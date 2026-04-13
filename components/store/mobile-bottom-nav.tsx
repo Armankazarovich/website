@@ -50,10 +50,29 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
     }
   }, []);
 
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
+
   const openAray = useCallback(() => {
     haptic();
-    window.dispatchEvent(new CustomEvent("aray:open"));
+    if (!longPressTriggered.current) {
+      window.dispatchEvent(new CustomEvent("aray:open"));
+    }
   }, [haptic]);
+
+  const onArayPointerDown = useCallback(() => {
+    longPressTriggered.current = false;
+    longPressRef.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      haptic();
+      // Push-to-talk: слушает без открытия чата
+      window.dispatchEvent(new CustomEvent("aray:voice"));
+    }, 400);
+  }, [haptic]);
+
+  const onArayPointerUp = useCallback(() => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
+  }, []);
 
   // Левые пункты
   const leftItems = [
@@ -167,7 +186,10 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             whileTap={{ scale: 0.88 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             onClick={openAray}
-            aria-label="Открыть Арай"
+            onPointerDown={onArayPointerDown}
+            onPointerUp={onArayPointerUp}
+            onPointerCancel={onArayPointerUp}
+            aria-label="Удерживай для голоса, нажми для чата"
             style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "block" }}
           >
             {/* Ping при добавлении в корзину */}
