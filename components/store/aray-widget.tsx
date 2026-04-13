@@ -256,33 +256,28 @@ function useVoiceInput(onResult: (text: string) => void) {
   return { listening, start, stop };
 }
 
-// ─── Голос Арая — Direct ElevenLabs → Server → Browser ──────────────────────
-const ELEVEN_VOICE_ID = "ErXwobaYiN019PkySvjV"; // Antoni
-const ELEVEN_MODEL_ID = "eleven_multilingual_v2";
+// ─── Голос Арая — Streaming ElevenLabs (Leonid, Flash) → Browser ────────────
+const ELEVEN_VOICE_ID = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
+const ELEVEN_MODEL_ID = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
+const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
 
 function cleanForTTS(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
     .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
-    .replace(/\s{2,}/g, " ").trim().slice(0, 500);
+    .replace(/\s{2,}/g, " ").trim().slice(0, 800);
 }
 
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const playAudioBuffer = useCallback((buf: ArrayBuffer): Promise<boolean> => {
-    return new Promise((resolve) => {
-      try {
-        const blob = new Blob([buf], { type: "audio/mpeg" });
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; resolve(true); };
-        audio.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
-        audio.play().catch(() => resolve(false));
-      } catch { resolve(false); }
-    });
+  const stopAll = useCallback(() => {
+    abortRef.current?.abort(); abortRef.current = null;
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    setSpeaking(null);
   }, []);
 
   const browserSpeak = useCallback((clean: string) => {
@@ -303,53 +298,94 @@ function useTTS() {
 
   const speak = useCallback(async (text: string, msgId: string) => {
     // Toggle — стоп если уже играет это сообщение
-    if (speaking === msgId) {
-      audioRef.current?.pause(); audioRef.current = null;
-      if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-      setSpeaking(null);
-      return;
-    }
-    audioRef.current?.pause();
-    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+    if (speaking === msgId) { stopAll(); return; }
+    stopAll();
     setSpeaking(msgId);
 
     const clean = cleanForTTS(text);
     if (!clean) { setSpeaking(null); return; }
 
-    // 1️⃣ Напрямую к ElevenLabs из браузера (обходит geo-блок VPS!)
-    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-    if (apiKey) {
-      try {
-        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`, {
-          method: "POST",
-          headers: { "xi-api-key": apiKey, "Content-Type": "application/json", "Accept": "audio/mpeg" },
+    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || ELEVEN_KEY;
+    const abort = new AbortController();
+    abortRef.current = abort;
+
+    // 1️⃣ Streaming напрямую к ElevenLabs (мгновенный старт)
+    try {
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}/stream?output_format=mp3_22050_32`,
+        {
+          method: "POST", signal: abort.signal,
+          headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL_ID,
-            voice_settings: { stability: 0.50, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true },
+            voice_settings: { stability: 0.55, similarity_boost: 0.80, style: 0.25, use_speaker_boost: true },
           }),
-        });
-        if (res.ok && (res.headers.get("content-type") || "").includes("audio")) {
-          const buf = await res.arrayBuffer();
-          if (buf.byteLength > 100) { const ok = await playAudioBuffer(buf); if (ok) return; }
         }
-      } catch (e) { console.warn("[TTS] Direct ElevenLabs failed:", e); }
+      );
+      if (res.ok && res.body) {
+        const reader = res.body.getReader();
+        const chunks: Uint8Array[] = [];
+        let done = false;
+        while (!done) {
+          const { value, done: d } = await reader.read();
+          if (d) { done = true; break; }
+          if (value) chunks.push(value);
+          // Начинаем играть как только получили достаточно данных
+          if (chunks.length === 3 && !audioRef.current) {
+            const partial = new Blob(chunks, { type: "audio/mpeg" });
+            const url = URL.createObjectURL(partial);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            audio.play().catch(() => {});
+          }
+        }
+        if (chunks.length > 0) {
+          const blob = new Blob(chunks, { type: "audio/mpeg" });
+          const url = URL.createObjectURL(blob);
+          if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
+          audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
+          await audio.play().catch(() => {});
+          return;
+        }
+      }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
+      console.warn("[TTS] Streaming failed:", e);
     }
 
-    // 2️⃣ Через сервер (Cloudflare proxy если настроен)
+    // 2️⃣ Fallback: полная загрузка
     try {
-      const res = await fetch("/api/ai/tts", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: clean }),
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?output_format=mp3_22050_32`, {
+        method: "POST", signal: abort.signal,
+        headers: { "xi-api-key": apiKey, "Content-Type": "application/json", "Accept": "audio/mpeg" },
+        body: JSON.stringify({
+          text: clean, model_id: ELEVEN_MODEL_ID,
+          voice_settings: { stability: 0.55, similarity_boost: 0.80, style: 0.25, use_speaker_boost: true },
+        }),
       });
-      if (res.ok && (res.headers.get("content-type") || "").includes("audio")) {
+      if (res.ok) {
         const buf = await res.arrayBuffer();
-        if (buf.byteLength > 100) { const ok = await playAudioBuffer(buf); if (ok) return; }
+        if (buf.byteLength > 100) {
+          const blob = new Blob([buf], { type: "audio/mpeg" });
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
+          audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(null); };
+          await audio.play().catch(() => {});
+          return;
+        }
       }
-    } catch {}
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
+    }
 
     // 3️⃣ Браузерный голос
     browserSpeak(clean);
-  }, [speaking, playAudioBuffer, browserSpeak]);
+  }, [speaking, stopAll, browserSpeak]);
 
   return { speaking, speak };
 }
