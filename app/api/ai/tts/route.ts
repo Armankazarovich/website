@@ -116,14 +116,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });
     }
 
-    // Стратегия: Direct → Cloudflare Proxy → Browser fallback
-    // 1. Пробуем напрямую (работает если сервер не в заблокированном регионе)
-    let audio = await directElevenLabs(cleanText, apiKey);
+    // Стратегия: Cloudflare Worker → Direct → Browser fallback
+    // VPS в России → ElevenLabs заблокирован → Cloudflare первый
+    // 1. Через Cloudflare Worker (за границей, без блокировки)
+    let audio = await cloudflareProxy(cleanText, apiKey);
 
-    // 2. Если заблокировано — через Cloudflare Worker
+    // 2. Если CF не настроен/ошибка — пробуем напрямую
     if (!audio) {
-      console.log("[TTS] Trying Cloudflare proxy...");
-      audio = await cloudflareProxy(cleanText, apiKey);
+      console.log("[TTS] CF failed, trying direct...");
+      audio = await directElevenLabs(cleanText, apiKey);
     }
 
     // 3. Если ничего не сработало — браузерный fallback
