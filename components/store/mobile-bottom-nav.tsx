@@ -176,23 +176,49 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
   };
 
   return (
+    <>
+    {/* ─── АРАЙ — ВЫНЕСЕН из nav чтобы SVG анимации крутились на мобилке ─── */}
+    {/* position:fixed + backdrop-filter внутри nav растеризуют ВСЁ как bitmap → SVG animate умирает.
+        Решение: орб как отдельный fixed-элемент со своим compositing layer */}
+    {arayEnabled && (
+      <div
+        className="fixed z-[101] lg:hidden flex flex-col items-center transition-all duration-300"
+        style={{
+          bottom: kbOpen ? "-120px" : "max(10px, env(safe-area-inset-bottom, 10px))",
+          left: "50%",
+          transform: "translateX(-50%)",
+          opacity: kbOpen ? 0 : 1,
+          pointerEvents: kbOpen ? "none" : "auto",
+        }}
+      >
+        <button
+          onClick={openAray}
+          onPointerDown={onArayPointerDown}
+          onPointerUp={onArayPointerUp}
+          onPointerCancel={onArayPointerUp}
+          aria-label="Удерживай для голоса, нажми для чата"
+          className="flex flex-col items-center transition-transform duration-150 active:scale-[0.88] focus:outline-none"
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        >
+          <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
+          <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
+            style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
+        </button>
+      </div>
+    )}
+
     <nav
       className="fixed left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom transition-all duration-300"
       style={{
         bottom: kbOpen ? "-120px" : "0",
         opacity: kbOpen ? 0 : 1,
         pointerEvents: kbOpen ? "none" : "auto",
-        /* ВАЖНО: backdrop-filter УБРАН с nav! Он растеризует SVG → убивает анимации орба на мобилке.
-           Блюр теперь на отдельном ::before через CSS класс */
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-      } as React.CSSProperties}
-    >
-      {/* Фон с блюром — ОТДЕЛЬНЫЙ слой, не влияет на рендер SVG орба */}
-      <div className="absolute inset-0 -z-10 pointer-events-none" style={{
         backdropFilter: "blur(32px) saturate(160%)",
         WebkitBackdropFilter: "blur(32px) saturate(160%)",
+        borderTop: "1px solid rgba(255,255,255,0.1)",
         background: "var(--mobile-nav-bg)",
-      }} />
+      } as React.CSSProperties}
+    >
       {/* Блик сверху */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
@@ -203,23 +229,8 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
           {leftItems.map(renderNavItem)}
         </div>
 
-        {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
-        {/* НЕ motion.button! framer-motion ставит CSS transform → мобилка растеризует SVG → анимации замирают */}
-        {arayEnabled && <div className="flex flex-col items-center" style={{ marginTop: "-18px", minWidth: "72px" }}>
-          <button
-            onClick={openAray}
-            onPointerDown={onArayPointerDown}
-            onPointerUp={onArayPointerUp}
-            onPointerCancel={onArayPointerUp}
-            aria-label="Удерживай для голоса, нажми для чата"
-            className="flex flex-col items-center transition-transform duration-150 active:scale-[0.88] focus:outline-none"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-          >
-            <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
-            <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
-              style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
-          </button>
-        </div>}
+        {/* Пустое место под Арай-орб (орб вынесен из nav) */}
+        {arayEnabled && <div style={{ minWidth: "72px" }} />}
 
         {/* Правые пункты */}
         <div className="flex items-center justify-around flex-1 pt-1">
@@ -227,5 +238,6 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
         </div>
       </div>
     </nav>
+    </>
   );
 }

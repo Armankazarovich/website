@@ -1082,8 +1082,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             )}
           </AnimatePresence>
 
-          {/* Живая сфера — push-to-talk */}
-          <motion.button
+          {/* Живая сфера — push-to-talk. БЕЗ motion.button — CSS transform убивает SVG анимации */}
+          <button
             onClick={() => { if (longPressTriggered.current) return; handleOpen(); }}
             onPointerDown={() => {
               longPressTriggered.current = false;
@@ -1096,10 +1096,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             }}
             onPointerUp={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
             onPointerCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 400, damping: 18 }}
             aria-label={listening ? "Слушаю..." : "Арай — удерживай для голоса"}
-            className="relative focus:outline-none w-14 h-14 rounded-full flex items-center justify-center"
+            className="relative focus:outline-none w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-150 hover:scale-[1.08] active:scale-[0.92]"
             style={{
               WebkitTapHighlightColor: "transparent",
               boxShadow: listening
@@ -1111,7 +1109,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             <ArayOrb size={56} id="float" pulse={orbStatus}
               badge={hasNew}
               badgeCount={!isAdmin && !hasNew && !speaking && !listening && cartCount > 0 ? cartCount : undefined} />
-          </motion.button>
+          </button>
         </div>
       )}
 
