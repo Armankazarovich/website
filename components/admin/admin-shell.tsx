@@ -666,15 +666,15 @@ function ArayControlCenter() {
                     className="glass-control w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                       style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                      {theme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
+                      {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
                     </div>
                     <span className="flex-1 text-left text-[12px] font-medium glass-text-primary">
-                      {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                      {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
                     </span>
                     <div className="relative w-9 h-5 rounded-full shrink-0 glass-pill"
-                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
+                      style={{ background: safeTheme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
                       <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
+                        style={{ background: safeTheme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: safeTheme === "dark" ? "calc(100% - 17px)" : "3px" }} />
                     </div>
                   </button>
                 </div>
@@ -821,6 +821,13 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const { t } = useAdminLang();
   const pageTitle = usePageTitle();
 
+  // ── Mounted guard: prevents hydration mismatch from useTheme() ──
+  // useTheme() returns undefined on server, actual value on client.
+  // Without this, theme-dependent text/icons cause React error #425/#418.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const safeTheme = mounted ? theme : "dark"; // default to dark for SSR
+
   // Цвет сайдбара напрямую из JS палитры — CSS variable может не работать в Sheet Portal
   const sidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
   const sidebarBg = `linear-gradient(180deg, ${sidebarHex}, ${sidebarHex}e0)`;
@@ -965,7 +972,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 ))}
                 <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                   className="w-7 h-7 rounded-full shrink-0 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                  {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                  {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
@@ -1073,13 +1080,13 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center"
                   style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                  {theme === "dark"
+                  {safeTheme === "dark"
                     ? <Sun className="w-4 h-4 text-violet-400" />
                     : <Moon className="w-4 h-4 text-violet-400" />}
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-sm font-semibold text-white/85">
-                    {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                    {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
                   </p>
                   <p className="text-[11px] text-white/35">
                     Нажми чтобы переключить
@@ -1087,15 +1094,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 </div>
                 <div className="w-10 h-5.5 rounded-full relative"
                   style={{
-                    background: theme === "dark"
+                    background: safeTheme === "dark"
                       ? "hsl(var(--primary)/0.4)"
                       : "rgba(255,255,255,0.15)",
                     border: "1px solid rgba(255,255,255,0.1)",
                   }}>
                   <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
                     style={{
-                      background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
-                      left: theme === "dark" ? "calc(100% - 18px)" : "2px",
+                      background: safeTheme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
+                      left: safeTheme === "dark" ? "calc(100% - 18px)" : "2px",
                     }} />
                 </div>
               </button>

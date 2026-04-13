@@ -45,6 +45,7 @@ export function SheetContent({
         )}
         {...props}
       >
+        <DialogPrimitive.Title className="sr-only">Меню</DialogPrimitive.Title>
         {children}
       </DialogPrimitive.Content>
     </SheetPortal>
