@@ -999,18 +999,18 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
 
           {/* Header */}
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
+          <div className={`px-5 py-4 flex items-center justify-between shrink-0 ${classic ? "border-b border-border" : "border-b border-white/10"}`}>
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.1))" }}>
                 <Settings className="w-3.5 h-3.5 text-primary" />
               </div>
-              <p className="font-display font-bold text-lg text-white">Настройки</p>
+              <p className={`font-display font-bold text-lg ${classic ? "text-foreground" : "text-white"}`}>Настройки</p>
             </div>
             <button onClick={() => setMobileSettingsOpen(false)}
               className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
               style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className="w-5 h-5" />
+              <X className={`w-5 h-5 ${classic ? "text-foreground" : "text-white"}`} />
             </button>
           </div>
 
@@ -1019,7 +1019,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Язык */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Язык / Language
               </p>
               <AdminLangPickerInline />
@@ -1029,7 +1029,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <ALargeSmall className="w-3.5 h-3.5 text-cyan-400" />
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">
+                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                   Размер шрифта
                 </p>
               </div>
@@ -1039,7 +1039,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Режим фона */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">{t("bg_panel")}</p>
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>{t("bg_panel")}</p>
               <div className="flex gap-2">
                 {([
                   { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic"), desc: "—" },
@@ -1057,7 +1057,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Палитра */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Цветовая палитра
               </p>
               <div className="flex items-center gap-2 flex-wrap">
@@ -1076,7 +1076,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Тема */}
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Тема
               </p>
               <button
@@ -1089,15 +1089,18 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                     : <Moon className="w-4 h-4 text-violet-400" />}
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-white/85">
+                  <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/85"}`}>
                     {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
                   </p>
-                  <p className="text-[11px] text-white/35">
+                  <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
                     Нажми чтобы переключить
                   </p>
                 </div>
                 <div className="w-10 h-5.5 rounded-full relative"
-                  style={{
+                  style={classic ? {
+                    background: safeTheme === "dark" ? "hsl(var(--primary)/0.4)" : "hsl(var(--muted))",
+                    border: "1px solid hsl(var(--border))",
+                  } : {
                     background: safeTheme === "dark"
                       ? "hsl(var(--primary)/0.4)"
                       : "rgba(255,255,255,0.15)",
@@ -1116,8 +1119,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             <Link href="/"
               className="glass-control flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
               onClick={() => setMobileSettingsOpen(false)}>
-              <LogOut className="w-4 h-4 text-white/45" />
-              <span className="text-sm text-white/60">Перейти на сайт</span>
+              <LogOut className={`w-4 h-4 ${classic ? "text-muted-foreground/40" : "text-white/45"}`} />
+              <span className={`text-sm ${classic ? "text-muted-foreground/70" : "text-white/60"}`}>Перейти на сайт</span>
             </Link>
 
             <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />

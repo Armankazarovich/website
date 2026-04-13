@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ImageIcon, X, Upload, Trash2, Check, Loader2, Sparkles } from "lucide-react";
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 // Ken Burns анимации (те же что в admin-nature-bg)
 const ANIMS = ["kenburns-in", "kenburns-2", "kenburns-3"];
@@ -25,6 +26,7 @@ interface AdminBgPickerProps {
 }
 
 export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
+  const classic = useClassicMode();
   const [open, setOpen] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -104,7 +106,11 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
     if (file && file.type.startsWith("image/")) upload(file);
   };
 
-  const glass = {
+  const glass = classic ? {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+  } : {
     background: "linear-gradient(135deg, hsl(var(--primary) / 0.08) 0%, transparent 55%), rgba(12, 12, 14, 0.92)",
     backdropFilter: "blur(40px) saturate(180%)",
     WebkitBackdropFilter: "blur(40px) saturate(180%)",
@@ -154,14 +160,18 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
             >
               {/* Шапка */}
               <div className="flex items-center gap-3 px-5 py-4 shrink-0"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                style={classic ? {
+                  borderBottom: "1px solid hsl(var(--border))",
+                } : {
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}>
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}>
-                  <ImageIcon className="w-4 h-4 text-white" />
+                  <ImageIcon className={`w-4 h-4 ${classic ? "text-primary" : "text-white"}`} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-white/90">Мой фон</p>
-                  <p className="text-[10px] text-white/40">Персональные фото рабочего пространства</p>
+                  <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/90"}`}>Мой фон</p>
+                  <p className={`text-[10px] ${classic ? "text-muted-foreground/60" : "text-white/40"}`}>Персональные фото рабочего пространства</p>
                 </div>
                 {saved && (
                   <div className="flex items-center gap-1.5 text-emerald-400 text-xs">
@@ -169,8 +179,9 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                   </div>
                 )}
                 <button onClick={() => setOpen(false)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors">
-                  <X className="w-3.5 h-3.5 text-white/40" />
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-colors`}
+                  style={classic ? { color: "hsl(var(--muted-foreground))" } : {}}>
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
@@ -179,7 +190,7 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                 {/* Загруженные фото */}
                 {photos.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35 mb-3">
+                    <p className={`text-[10px] font-semibold uppercase tracking-widest mb-3 ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
                       Мои фото ({photos.length}/5)
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -204,7 +215,7 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                         </div>
                       ))}
                     </div>
-                    <p className="text-[10px] text-white/30 mt-2">
+                    <p className={`text-[10px] mt-2 ${classic ? "text-muted-foreground/50" : "text-white/30"}`}>
                       Фото показываются по порядку со сменой каждые 20 сек
                     </p>
                   </div>
@@ -213,7 +224,7 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                 {/* Зона загрузки */}
                 {photos.length < 5 && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35 mb-3">
+                    <p className={`text-[10px] font-semibold uppercase tracking-widest mb-3 ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
                       Загрузить своё фото
                     </p>
                     <div
@@ -222,7 +233,10 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                       onDragLeave={() => setDragging(false)}
                       onClick={() => fileRef.current?.click()}
                       className="rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all py-6"
-                      style={{
+                      style={classic ? {
+                        border: `2px dashed ${dragging ? "hsl(var(--primary))" : "hsl(var(--border))"}`,
+                        background: dragging ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted))",
+                      } : {
                         border: `2px dashed ${dragging ? "hsl(var(--primary))" : "rgba(255,255,255,0.15)"}`,
                         background: dragging ? "hsl(var(--primary) / 0.08)" : "rgba(255,255,255,0.03)",
                       }}
@@ -230,12 +244,12 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                       {uploading ? (
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: "hsl(var(--primary))" }} />
                       ) : (
-                        <Upload className="w-8 h-8 text-white/25" />
+                        <Upload className={`w-8 h-8 ${classic ? "text-muted-foreground/40" : "text-white/25"}`} />
                       )}
-                      <p className="text-sm text-white/50">
+                      <p className={`text-sm ${classic ? "text-muted-foreground/60" : "text-white/50"}`}>
                         {uploading ? "Загружаю..." : "Перетащи или нажми"}
                       </p>
-                      <p className="text-[10px] text-white/25">JPG, PNG, WEBP · макс 10MB</p>
+                      <p className={`text-[10px] ${classic ? "text-muted-foreground/40" : "text-white/25"}`}>JPG, PNG, WEBP · макс 10MB</p>
                     </div>
                     <input
                       ref={fileRef}
@@ -251,7 +265,7 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/35">
+                    <p className={`text-[10px] font-semibold uppercase tracking-widest ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
                       Бесплатные фото (Unsplash)
                     </p>
                   </div>
@@ -281,8 +295,8 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                             </div>
                           )}
                           <div className="absolute bottom-0 inset-x-0 py-0.5 text-center"
-                            style={{ background: "rgba(0,0,0,0.55)" }}>
-                            <span className="text-[8px] text-white/80">{s.label}</span>
+                            style={{ background: classic ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.55)" }}>
+                            <span className={`text-[8px] ${classic ? "text-foreground" : "text-white/80"}`}>{s.label}</span>
                           </div>
                         </button>
                       );
@@ -296,8 +310,8 @@ export function AdminBgPicker({ onPhotosChange }: AdminBgPickerProps) {
                     onClick={async () => {
                       for (const url of [...photos]) await remove(url);
                     }}
-                    className="w-full py-2 rounded-xl text-xs text-white/40 hover:text-white/70 transition-colors"
-                    style={{ border: "1px solid rgba(255,255,255,0.07)" }}
+                    className={`w-full py-2 rounded-xl text-xs transition-colors ${classic ? "text-muted-foreground/60 hover:text-muted-foreground/90 border border-border" : "text-white/40 hover:text-white/70"}`}
+                    style={classic ? {} : { border: "1px solid rgba(255,255,255,0.07)" }}
                   >
                     Вернуть стандартный фон
                   </button>

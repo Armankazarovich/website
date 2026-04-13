@@ -11,6 +11,7 @@ import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 const EXPENSE_CATEGORIES = [
   "Аренда", "Зарплата", "Транспорт", "Реклама", "Коммунальные",
@@ -54,6 +55,7 @@ function getMonthRange(offset = 0) {
 }
 
 export default function FinancePage() {
+  const classic = useClassicMode();
   const [data, setData] = useState<FinanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -187,12 +189,20 @@ export default function FinancePage() {
             Прибыль
             <button
               onClick={() => setIncludeVat((v) => !v)}
-              className={cn(
-                "ml-auto text-[10px] px-1.5 py-0.5 rounded-md border transition-colors",
+              className="ml-auto text-[10px] px-1.5 py-0.5 rounded-md border transition-colors"
+              style={
                 includeVat
-                  ? "bg-orange-100 border-orange-300 text-orange-700 dark:bg-orange-950 dark:border-orange-700 dark:text-orange-300"
-                  : "border-border text-muted-foreground hover:border-primary"
-              )}
+                  ? {
+                      backgroundColor: classic ? "#fed7aa" : "#b45309",
+                      borderColor: classic ? "#fdba74" : "#b45309",
+                      color: classic ? "#92400e" : "#fcd34d",
+                    }
+                  : {
+                      borderColor: classic ? "hsl(var(--border))" : "rgba(255,255,255,0.12)",
+                      color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.60)",
+                      background: "transparent",
+                    }
+              }
             >
               {includeVat ? "с НДС" : "без НДС"}
             </button>
@@ -226,7 +236,7 @@ export default function FinancePage() {
       {data && Object.keys(data.revenueByDay).length > 0 && (
         <div className="rounded-2xl border bg-card p-4">
           <AdminSectionTitle icon={BarChart3} title="Выручка по дням" className="mb-4" />
-          <RevenueChart data={data.revenueByDay} />
+          <RevenueChart data={data.revenueByDay} classic={classic} />
         </div>
       )}
 
@@ -238,20 +248,31 @@ export default function FinancePage() {
             <div className="space-y-2">
               {Object.entries(data.expensesByCategory)
                 .sort(([, a], [, b]) => b - a)
-                .map(([cat, amt]) => (
-                  <div key={cat} className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground w-28 shrink-0">{cat}</span>
-                    <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                .map(([cat, amt]) => {
+                  const percentage = (amt / (data.totalExpenses || 1)) * 100;
+                  return (
+                    <div key={cat} className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground w-28 shrink-0">{cat}</span>
                       <div
-                        className="h-full bg-primary rounded-full"
-                        style={{ width: `${(amt / (data.totalExpenses || 1)) * 100}%` }}
-                      />
+                        className="flex-1 h-2 rounded-full overflow-hidden"
+                        style={{
+                          backgroundColor: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.1)",
+                        }}
+                      >
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${percentage}%`,
+                            backgroundColor: classic ? "hsl(var(--primary))" : "rgba(168, 85, 247, 0.8)",
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium w-24 text-right shrink-0">
+                        {formatPrice(amt)}
+                      </span>
                     </div>
-                    <span className="text-sm font-medium w-24 text-right shrink-0">
-                      {formatPrice(amt)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           ) : (
             <p className="text-muted-foreground text-sm text-center py-6">
@@ -296,7 +317,12 @@ export default function FinancePage() {
 
         {/* Add form */}
         {showAddExpense && (
-          <div className="p-4 border-b bg-muted/30">
+          <div
+            className="p-4 border-b"
+            style={{
+              backgroundColor: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.05)",
+            }}
+          >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Сумма ₽</label>
@@ -352,20 +378,49 @@ export default function FinancePage() {
         )}
 
         {/* Expenses table */}
-        <div className="divide-y">
+        <div
+          className="divide-y"
+          style={{
+            borderColor: classic ? "hsl(var(--border))" : "rgba(255,255,255,0.08)",
+          }}
+        >
           {data?.expenses && data.expenses.length > 0 ? (
             data.expenses.map((e) => (
-              <div key={e.id} className="flex items-center gap-3 px-4 py-3">
+              <div
+                key={e.id}
+                className="flex items-center gap-3 px-4 py-3"
+                style={{
+                  borderBottomColor: classic ? "hsl(var(--border))" : "rgba(255,255,255,0.08)",
+                }}
+              >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted font-medium">
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        backgroundColor: classic ? "hsl(var(--muted))" : "rgba(255,255,255,0.08)",
+                        color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.60)",
+                      }}
+                    >
                       {e.category}
                     </span>
                     {e.description && (
-                      <span className="text-sm text-muted-foreground truncate">{e.description}</span>
+                      <span
+                        className="text-sm truncate"
+                        style={{
+                          color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.50)",
+                        }}
+                      >
+                        {e.description}
+                      </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p
+                    className="text-xs mt-0.5"
+                    style={{
+                      color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.50)",
+                    }}
+                  >
                     {new Date(e.date).toLocaleDateString("ru-RU")}
                   </p>
                 </div>
@@ -373,14 +428,30 @@ export default function FinancePage() {
                 <button
                   onClick={() => setConfirmDeleteId(e.id)}
                   disabled={deleting === e.id}
-                  className="text-muted-foreground hover:text-red-500 transition-colors ml-2 p-1"
+                  className="transition-colors ml-2 p-1"
+                  style={{
+                    color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.50)",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = "#ef4444";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = classic
+                      ? "hsl(var(--muted-foreground))"
+                      : "rgba(255,255,255,0.50)";
+                  }}
                 >
                   {deleting === e.id ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 </button>
               </div>
             ))
           ) : (
-            <div className="py-12 text-center text-muted-foreground text-sm">
+            <div
+              className="py-12 text-center text-sm"
+              style={{
+                color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.50)",
+              }}
+            >
               Расходов за период нет
             </div>
           )}
@@ -422,20 +493,30 @@ function Row({
   );
 }
 
-function RevenueChart({ data }: { data: Record<string, number> }) {
+function RevenueChart({ data, classic }: { data: Record<string, number>; classic: boolean }) {
   const entries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
   const max = Math.max(...entries.map(([, v]) => v), 1);
+
+  // Use proper colors: HSL CSS variables for classic mode, rgba for dark mode
+  const barColor = classic ? "hsl(var(--primary))" : "rgba(168, 85, 247, 0.8)"; // Adjust RGBA to match primary
+  const barColorHover = classic ? "hsl(var(--primary))" : "rgba(168, 85, 247, 1)";
 
   return (
     <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">
       {entries.map(([day, val]) => (
         <div key={day} className="flex flex-col items-center gap-1 flex-1 min-w-[18px] group">
           <div
-            className="w-full rounded-t bg-primary/80 group-hover:bg-primary transition-colors relative"
-            style={{ height: `${(val / max) * 80}px` }}
+            className="w-full rounded-t transition-colors relative"
+            style={{
+              height: `${(val / max) * 80}px`,
+              backgroundColor: barColor,
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = barColorHover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = barColor; }}
             title={`${day}: ${formatPrice(val)}`}
           />
-          <span className="text-[8px] text-muted-foreground hidden sm:block">
+          <span className={cn("text-[8px] hidden sm:block", classic ? "text-muted-foreground" : "text-white/50")}>
             {new Date(day).getDate()}
           </span>
         </div>

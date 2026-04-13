@@ -136,7 +136,11 @@ function LeadCard({
           )}
         </div>
         {lead.value && (
-          <span className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-lg whitespace-nowrap">
+          <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg whitespace-nowrap"
+            style={{
+              color: "hsl(var(--emerald-600, 142 71% 45%))",
+              backgroundColor: "hsl(var(--emerald-100, 142 76% 92%))"
+            }}>
             {formatMoney(Number(lead.value))}
           </span>
         )}
@@ -162,7 +166,11 @@ function LeadCard({
       {lead.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
           {lead.tags.slice(0, 3).map(tag => (
-            <span key={tag} className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-medium">
+            <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-md font-medium"
+              style={{
+                backgroundColor: "hsl(var(--primary-100, 198 93% 90%))",
+                color: "hsl(var(--primary, 198 93% 60%))"
+              }}>
               {tag}
             </span>
           ))}
@@ -187,11 +195,11 @@ function LeadCard({
         </div>
         <div className="flex items-center gap-1.5">
           {urgency && (
-            <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-md ${
-              urgency === "red"
-                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                : "bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
-            }`}>
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md"
+              style={urgency === "red"
+                ? { backgroundColor: "hsl(var(--red-100, 0 84% 97%))", color: "hsl(var(--red-600, 0 84% 47%))" }
+                : { backgroundColor: "hsl(var(--amber-100, 39 96% 84%))", color: "hsl(var(--amber-600, 38 92% 50%))" }
+              }>
               {daysSince}д
             </span>
           )}
@@ -362,7 +370,7 @@ function LeadForm({
         style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10"
           style={headerStyle}>
-          <h2 className="font-bold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{initial?.id ? "Редактировать лид" : "Новый лид"}</h2>
+          <h2 className="font-bold text-foreground">{initial?.id ? "Редактировать лид" : "Новый лид"}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.08] flex items-center justify-center transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -459,7 +467,11 @@ function LeadForm({
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-2">
                 {tags.map(tag => (
-                  <span key={tag} className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg">
+                  <span key={tag} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
+                    style={{
+                      backgroundColor: "hsl(var(--primary-100, 198 93% 90%))",
+                      color: "hsl(var(--primary, 198 93% 60%))"
+                    }}>
                     {tag}
                     <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>
                       <X className="w-3 h-3" />
@@ -592,21 +604,21 @@ function LeadDetailPanel({
         {/* Заголовок */}
         <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10" style={drawerHeaderStyle}>
           <div className="min-w-0">
-            <h2 className="font-bold truncate" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{fullLead.name}</h2>
+            <h2 className="font-bold truncate text-foreground">{fullLead.name}</h2>
             {fullLead.company && (
-              <p className="text-xs flex items-center gap-1" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>
+              <p className="text-xs flex items-center gap-1 text-muted-foreground">
                 <Building2 className="w-3 h-3" />{fullLead.company}
               </p>
             )}
           </div>
           <div className="flex items-center gap-2 ml-3">
-            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
               <Pencil className="w-4 h-4" />
             </button>
             <button onClick={() => setConfirmDelete(true)} className="w-8 h-8 rounded-xl hover:bg-destructive/10 flex items-center justify-center transition-colors">
               <Trash2 className="w-4 h-4 text-destructive" />
             </button>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -656,7 +668,8 @@ function LeadDetailPanel({
             {fullLead.value && (
               <div className="flex items-center gap-2">
                 <Banknote className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="text-sm font-semibold"
+                  style={{ color: "hsl(var(--emerald-600, 142 71% 45%))" }}>
                   {formatMoney(Number(fullLead.value))}
                 </span>
               </div>
@@ -680,7 +693,13 @@ function LeadDetailPanel({
             {fullLead.tags?.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
                 {fullLead.tags.map(tag => (
-                  <span key={tag} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-lg font-medium">{tag}</span>
+                  <span key={tag} className="text-xs px-2 py-0.5 rounded-lg font-medium"
+                    style={{
+                      backgroundColor: "hsl(var(--primary-100, 198 93% 90%))",
+                      color: "hsl(var(--primary, 198 93% 60%))"
+                    }}>
+                    {tag}
+                  </span>
                 ))}
               </div>
             )}
@@ -689,7 +708,7 @@ function LeadDetailPanel({
           {/* Добавить активность */}
           <div className="px-5 py-4 border-b border-border">
             <p className="text-xs font-semibold text-muted-foreground mb-3">ДОБАВИТЬ АКТИВНОСТЬ</p>
-            <div className="flex gap-2 mb-2">
+            <div className="flex gap-2 mb-2 flex-wrap">
               {["NOTE", "CALL", "EMAIL", "MEETING"].map(t => {
                 const Icon = ACTIVITY_ICONS[t];
                 return (
@@ -735,11 +754,15 @@ function LeadDetailPanel({
                   return (
                     <div key={act.id} className="flex gap-3">
                       <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center ${
-                        act.type === "WON" ? "bg-emerald-100 dark:bg-emerald-900/30" :
-                        act.type === "STAGE_CHANGE" ? "bg-violet-100 dark:bg-violet-900/30" :
                         act.type === "CALL" ? "bg-orange-500/15" :
                         "bg-muted"
-                      }`}>
+                      }`}
+                        style={act.type === "WON"
+                          ? { backgroundColor: "hsl(var(--emerald-100, 142 76% 92%))" }
+                          : act.type === "STAGE_CHANGE"
+                          ? { backgroundColor: "hsl(var(--violet-100, 258 90% 92%))" }
+                          : undefined
+                        }>
                         <Icon className="w-3.5 h-3.5 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -811,10 +834,10 @@ function CrmStats({ leads }: { leads: Lead[] }) {
         { label: "Сумма воронки", value: formatMoney(totalValue) || "—", icon: Banknote, color: "text-amber-500" },
       ].map(stat => (
         <div key={stat.label} className="flex items-center gap-3 bg-card border border-border rounded-xl px-3 py-2.5">
-          <stat.icon className={`w-4 h-4 ${stat.color} shrink-0`} />
-          <div>
+          <stat.icon className={`w-4 h-4 shrink-0 ${stat.color}`} />
+          <div className="min-w-0">
             <p className="text-xs text-muted-foreground leading-none mb-0.5">{stat.label}</p>
-            <p className="font-bold text-sm text-foreground">{stat.value}</p>
+            <p className="font-bold text-sm text-foreground truncate">{stat.value}</p>
           </div>
         </div>
       ))}
@@ -874,10 +897,10 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
       <div className="relative rounded-2xl w-full max-w-md" style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
-            <h2 className="font-bold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Пресеты по отраслям</h2>
-            <p className="text-xs mt-0.5" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>Загрузить демо-лиды для вашей сферы</p>
+            <h2 className="font-bold text-foreground">Пресеты по отраслям</h2>
+            <p className="text-xs mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -968,7 +991,11 @@ function OrderKanbanCard({
             </p>
           )}
         </div>
-        <span className="shrink-0 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-lg whitespace-nowrap">
+        <span className="shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-lg whitespace-nowrap"
+          style={{
+            color: "hsl(var(--emerald-600, 142 71% 45%))",
+            backgroundColor: "hsl(var(--emerald-100, 142 76% 92%))"
+          }}>
           {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
         </span>
       </div>
@@ -1069,10 +1096,10 @@ function OrdersKanban({ search }: { search: string }) {
           { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, color: "text-violet-500" },
         ].map(stat => (
           <div key={stat.label} className="flex items-center gap-3 bg-card border border-border rounded-xl px-3 py-2.5">
-            <stat.icon className={`w-4 h-4 ${stat.color} shrink-0`} />
-            <div>
+            <stat.icon className={`w-4 h-4 shrink-0 ${stat.color}`} />
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground leading-none mb-0.5">{stat.label}</p>
-              <p className="font-bold text-sm text-foreground">{stat.value}</p>
+              <p className="font-bold text-sm text-foreground truncate">{stat.value}</p>
             </div>
           </div>
         ))}

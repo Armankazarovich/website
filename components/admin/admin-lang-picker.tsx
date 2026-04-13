@@ -8,6 +8,7 @@ import { useClassicMode } from "@/lib/use-classic-mode";
 // ─── Inline language picker (for mobile settings panel) ─────────────────────
 export function AdminLangPickerInline() {
   const { lang, setLang } = useAdminLang();
+  const classic = useClassicMode();
   return (
     <div className="grid grid-cols-3 gap-2">
       {ADMIN_LANGUAGES.map(l => (
@@ -22,11 +23,13 @@ export function AdminLangPickerInline() {
           }
         >
           <img src={getFlagUrl(l.flag)} alt={l.label} className="w-7 h-5 rounded-[3px] object-cover shadow-sm" loading="lazy" />
-          <span className="text-[10px] font-medium text-white/70 leading-tight">{l.label}</span>
+          <span className={`text-[10px] font-medium leading-tight ${
+            classic ? "text-muted-foreground" : "text-white/70"
+          }`}>{l.label}</span>
           {lang === l.code && (
             <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center"
               style={{ background: "hsl(var(--primary))" }}>
-              <Check className="w-2 h-2 text-white" />
+              <Check className={`w-2 h-2 ${classic ? "text-white" : "text-white"}`} />
             </span>
           )}
         </button>
