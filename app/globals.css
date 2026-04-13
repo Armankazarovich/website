@@ -2052,7 +2052,15 @@ a:focus-visible {
   color: hsl(var(--muted-foreground)) !important;
 }
 
-/* ═══ САЙДБАР — ВСЕГДА белый текст, даже в светлой классике ═══ */
+/* ═══ САЙДБАР — ВСЕГДА тёмный фон + белый текст, даже в светлой теме ═══ */
+.aray-sidebar {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--brand-sidebar)) 0%,
+    hsl(var(--brand-sidebar) / 0.92) 50%,
+    hsl(var(--brand-sidebar) / 0.85) 100%
+  ) !important;
+}
 .aray-classic-mode .aray-sidebar,
 .aray-classic-mode .aray-sidebar * {
   color: rgba(255, 255, 255, 0.92) !important;
