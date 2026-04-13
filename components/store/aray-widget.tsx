@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, Volume2, VolumeX } from "lucide-react";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
@@ -154,7 +155,33 @@ function ActionIcon({ icon }: { icon?: string }) {
     default:        return <ExternalLink className={cls} />;
   }
 }
-interface ArayWidgetProps { page?: string; productName?: string; cartTotal?: number; enabled?: boolean; }
+interface ArayWidgetProps {
+  page?: string; productName?: string; cartTotal?: number; enabled?: boolean;
+  staffName?: string; userRole?: string; // admin mode props
+}
+
+// ─── Admin-specific chips по разделу ────────────────────────────────────────
+const ADMIN_CHIPS: Record<string, string[]> = {
+  "/admin": ["Сводка за сегодня", "Новые заказы", "Что срочно?"],
+  "/admin/orders": ["Новые заказы", "Подтверди все новые", "Заказы за сегодня"],
+  "/admin/products": ["Что не в наличии?", "Покажи все цены", "Актуальные цены"],
+  "/admin/clients": ["Новые клиенты", "Постоянные покупатели", "Топ клиентов"],
+  "/admin/delivery": ["Активные доставки", "Что доставляется?", "Задержки"],
+  "/admin/staff": ["Кто в команде?", "Онлайн-статус", "Добавь задачу"],
+  "/admin/tasks": ["Все задачи", "Срочные задачи", "Создай задачу"],
+  "/admin/crm": ["Новые лиды", "Горячие клиенты", "Добавь лид"],
+  "/admin/analytics": ["Выручка за месяц", "Топ товаров", "Динамика продаж"],
+  "/admin/finance": ["Выручка сегодня", "Сравни с прошлой неделей", "Средний чек"],
+  "/admin/settings": ["Проверь настройки", "Тест Telegram", "SMTP работает?"],
+  "/admin/notifications": ["Отправь push всем", "Сколько подписчиков?", "Тест уведомления"],
+};
+function getAdminChips(pathname: string): string[] {
+  if (ADMIN_CHIPS[pathname]) return ADMIN_CHIPS[pathname];
+  const match = Object.keys(ADMIN_CHIPS)
+    .filter(k => k !== "/admin" && pathname.startsWith(k))
+    .sort((a, b) => b.length - a.length)[0];
+  return match ? ADMIN_CHIPS[match] : ["Сводка за сегодня", "Новые заказы", "Создай задачу"];
+}
 
 // ─── Живой SVG-шар — без фона снаружи, анимация внутри ───────────────────────
 
@@ -513,7 +540,11 @@ function MessageBubble({
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
-export function ArayWidget({ page, productName, cartTotal, enabled = true }: ArayWidgetProps) {
+export function ArayWidget({ page, productName, cartTotal, enabled = true, staffName, userRole }: ArayWidgetProps) {
+  const nextPathname = usePathname();
+  const pathname = nextPathname || page || "/";
+  const isAdmin = pathname.startsWith("/admin");
+  const zone = isAdmin ? "admin" : pathname.startsWith("/cabinet") ? "cabinet" : "store";
   const { speaking, speak, stop: stopTTS } = useTTS();
   const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
   const [open, setOpen] = useState(false);
@@ -539,7 +570,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const dragControls = useDragControls();
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
-  const chips = buildArayChips({ page, productName, cartTotal });
+  const chips = isAdmin ? getAdminChips(pathname) : buildArayChips({ page, productName, cartTotal });
 
   // ── Единая история чата (БД) ─────────────────────────────────────────────
   const historyLoaded = useRef(false);
@@ -610,17 +641,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   // Клавиатура убрана — используем CSS dvh + safe-area
 
   const startChat = useCallback(() => {
-    if (messages.length > 0) return; // уже есть сообщения (или восстановлены из localStorage)
-    const isReturning = typeof document !== "undefined" && document.cookie.includes("aray_visited=1");
-    let greeting = buildArayGreeting({ page, productName, cartTotal, isReturning });
-    if (userName) {
-      const h = new Date().getHours();
-      const t = h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : h < 22 ? "Добрый вечер" : "Поздно уже";
-      greeting = `${t}, ${userName}! 👋 ${productName ? `Смотришь «${productName}»?` : "Чем могу помочь?"} Спрашивай.`;
+    if (messages.length > 0) return; // уже есть (или восстановлены из БД)
+    const h = new Date().getHours();
+    const t = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : h < 22 ? "Добрый вечер" : "Поздно уже";
+    const name = staffName || userName;
+    let greeting: string;
+    if (isAdmin && name) {
+      greeting = `${t}, ${name.split(" ")[0]}! Чем помочь?`;
+    } else if (name) {
+      greeting = `${t}, ${name}! 👋 ${productName ? `Смотришь «${productName}»?` : "Чем могу помочь?"} Спрашивай.`;
+    } else {
+      const isReturning = typeof document !== "undefined" && document.cookie.includes("aray_visited=1");
+      greeting = buildArayGreeting({ page, productName, cartTotal, isReturning });
     }
     setMessages([{ id: "welcome", role: "assistant", content: greeting, timestamp: new Date() }]);
     if (typeof document !== "undefined") document.cookie = "aray_visited=1; max-age=2592000; path=/";
-  }, [messages.length, userName, page, productName, cartTotal]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, staffName, userName, page, productName, cartTotal, isAdmin]);
 
   // Открытие из мобильного навбара
   useEffect(() => {
@@ -1033,10 +1070,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   <p className="text-sm font-semibold" style={{ color: txt }}>Арай</p>
                   <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: txtSub }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                    {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
+                    {isAdmin ? `AI ассистент` : userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
                   </p>
                 </div>
-                {cartCount > 0 && (
+                {!isAdmin && cartCount > 0 && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
                     style={{ background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.2)" }}>
                     <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
@@ -1204,10 +1241,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   <p className="text-sm font-semibold" style={{ color: txt }}>Арай</p>
                   <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: txtSub }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                    {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
+                    {isAdmin ? `AI ассистент` : userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
                   </p>
                 </div>
-                {cartCount > 0 && (
+                {!isAdmin && cartCount > 0 && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
                     style={{ background: "hsl(var(--primary) / 0.1)", border: "1px solid hsl(var(--primary) / 0.2)" }}>
                     <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
