@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 // ── WMO коды погоды → emoji + описание ───────────────────────────────────────
 function getWeatherInfo(code: number): { label: string; emoji: string } {
@@ -93,6 +94,7 @@ export function AdminSidebarWeather() {
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(false);
   const weather = useWeather();
+  const isClassic = useClassicMode();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -103,22 +105,35 @@ export function AdminSidebarWeather() {
   const dateStr = now.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" });
   const tempStr = `${weather.temp > 0 ? "+" : ""}${weather.temp}°`;
 
+  // Стили зависят от режима (classic = light theme)
+  const bgColor = isClassic
+    ? hovered ? "hsl(var(--border))" : "hsl(var(--card))"
+    : hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
+  const borderColor = isClassic
+    ? hovered ? "hsl(var(--border))" : "hsl(var(--border) / 0.5)"
+    : hovered ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)";
+  const boxShadowColor = isClassic ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.2)";
+  const dividerColor = isClassic ? "hsl(var(--border))" : "rgba(255,255,255,0.07)";
+  const labelColor = isClassic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.65)";
+  const dateColor = isClassic ? "hsl(var(--muted-foreground) / 0.7)" : "rgba(255,255,255,0.35)";
+  const cityColor = isClassic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.45)";
+
   return (
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       className="mx-3 mb-1.5 px-3 py-2.5 rounded-2xl cursor-default select-none transition-all duration-300"
       style={{
-        background: hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
-        border: `1px solid ${hovered ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)"}`,
-        boxShadow: hovered ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
+        background: bgColor,
+        border: `1px solid ${borderColor}`,
+        boxShadow: hovered ? `0 4px 16px ${boxShadowColor}` : "none",
       }}
     >
       {/* Всегда видная строчка */}
       <div className="flex items-center gap-2">
         <span className="text-xl leading-none">{emoji}</span>
         <span className="text-sm font-bold leading-none" style={{ color: "hsl(var(--primary))" }}>{tempStr}</span>
-        <span className="text-[11px] text-white/45 ml-auto leading-none">{weather.city}</span>
+        <span className="text-[11px] ml-auto leading-none" style={{ color: cityColor }}>{weather.city}</span>
       </div>
 
       {/* Раскрывается при наведении */}
@@ -126,9 +141,9 @@ export function AdminSidebarWeather() {
         className="overflow-hidden transition-all duration-300"
         style={{ maxHeight: hovered ? "56px" : "0px", opacity: hovered ? 1 : 0, marginTop: hovered ? "8px" : "0px" }}
       >
-        <div className="pt-2" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-          <p className="text-[11px] font-medium text-white/65">{label}</p>
-          <p className="text-[10px] text-white/35 mt-0.5 capitalize">{dateStr}</p>
+        <div className="pt-2" style={{ borderTop: `1px solid ${dividerColor}` }}>
+          <p className="text-[11px] font-medium" style={{ color: labelColor }}>{label}</p>
+          <p className="text-[10px] mt-0.5 capitalize" style={{ color: dateColor }}>{dateStr}</p>
         </div>
       </div>
     </div>
