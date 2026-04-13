@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Send, Mic, MicOff, Volume2, VolumeX, RotateCcw,
-  X, Keyboard, Globe, ExternalLink, Sparkles,
+  X, Sparkles,
 } from "lucide-react";
 
 // ─── Page context for smart chips ───────────────────────────────────────────
@@ -41,6 +41,55 @@ function cleanResponse(raw: string): string {
     .trim();
 }
 
+// ─── Живой SVG-шар (тот же что на сайте) ────────────────────────────────────
+function ArayOrb({ size = 40, glow = false, id = "adm" }: { size?: number; glow?: boolean; id?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", overflow: "visible" }}>
+      <defs>
+        <filter id={`${id}-glow`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+          <feColorMatrix in="blur" type="matrix"
+            values="2 0.8 0 0 0  0.6 0.2 0 0 0  0 0 0 0 0  0 0 0 0.9 0" result="glow" />
+          <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <radialGradient id={`${id}-base`} cx="38%" cy="32%" r="70%">
+          <stop offset="0%" stopColor="#fff8d0" />
+          <stop offset="18%" stopColor="#fbbf24">
+            <animate attributeName="stopColor" values="#fbbf24;#f97316;#fde047;#fbbf24" dur="5s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="50%" stopColor="#e8700a">
+            <animate attributeName="stopColor" values="#e8700a;#c2410c;#f97316;#e8700a" dur="7s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="82%" stopColor="#7c2d12" />
+          <stop offset="100%" stopColor="#1a0500" />
+        </radialGradient>
+        <radialGradient id={`${id}-hot`} cx="50%" cy="22%" r="48%">
+          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.75">
+            <animate attributeName="stopOpacity" values="0.75;1;0.5;0.75" dur="3s" repeatCount="indefinite" />
+          </stop>
+          <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`${id}-hl`} cx="30%" cy="24%" r="40%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.88" />
+          <stop offset="100%" stopColor="white" stopOpacity="0" />
+        </radialGradient>
+        <clipPath id={`${id}-clip`}><circle cx="50" cy="50" r="46" /></clipPath>
+      </defs>
+      <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`} filter={glow ? `url(#${id}-glow)` : undefined} />
+      <g clipPath={`url(#${id}-clip)`}>
+        <ellipse cx="50" cy="28" rx="36" ry="22" fill={`url(#${id}-hot)`}>
+          <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="6s" repeatCount="indefinite" />
+        </ellipse>
+        <ellipse cx="50" cy="72" rx="26" ry="15" fill="#fb923c" opacity="0.18">
+          <animateTransform attributeName="transform" type="rotate" from="180 50 50" to="-180 50 50" dur="9s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.18;0.28;0.1;0.18" dur="4.5s" repeatCount="indefinite" />
+        </ellipse>
+      </g>
+      <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`} />
+    </svg>
+  );
+}
+
 // ─── Simple markdown rendering ──────────────────────────────────────────────
 function MdText({ text }: { text: string }) {
   const lines = text.split("\n");
@@ -48,16 +97,12 @@ function MdText({ text }: { text: string }) {
     <div className="space-y-1">
       {lines.map((line, i) => {
         if (!line.trim()) return null;
-
-        // Bold
         const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
           p.startsWith("**") && p.endsWith("**")
             ? <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>
             : p
         );
-
-        // Bullet
-        if (/^[\-\*]\s/.test(line.trim())) {
+        if (/^[\-\*—]\s/.test(line.trim())) {
           return (
             <div key={i} className="flex gap-2 items-start pl-1">
               <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "hsl(var(--primary)/0.5)" }}/>
@@ -65,14 +110,13 @@ function MdText({ text }: { text: string }) {
             </div>
           );
         }
-
         return <p key={i}>{parts}</p>;
       })}
     </div>
   );
 }
 
-// ─── Push-to-talk microphone (tap to start, auto-stops on silence) ──────────
+// ─── Push-to-talk microphone ────────────────────────────────────────────────
 function useMic() {
   const [active, setActive] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -118,10 +162,31 @@ function useMic() {
   return { active, supported, listen, cancel };
 }
 
-// ─── TTS: browser voices (stable everywhere) + ElevenLabs upgrade ───────────
+// ─── TTS: ElevenLabs (server) → browser fallback ───────────────────────────
 function useTTS() {
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const browserSpeak = useCallback((text: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(false); return; }
+    window.speechSynthesis.cancel();
+    const clean = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+      .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/\s{2,}/g, " ").trim();
+    if (!clean) { setSpeaking(false); return; }
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "ru-RU";
+    utter.rate = 1.05;
+    // Пробуем найти лучший русский голос
+    const voices = window.speechSynthesis.getVoices();
+    const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
+      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
+      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Google"))
+      || voices.find(v => v.lang.startsWith("ru"));
+    if (ruVoice) utter.voice = ruVoice;
+    utter.onend = () => setSpeaking(false);
+    utter.onerror = () => setSpeaking(false);
+    window.speechSynthesis.speak(utter);
+  }, []);
 
   const stop = useCallback(() => {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
@@ -138,7 +203,7 @@ function useTTS() {
     if (!clean) return;
     setSpeaking(true);
 
-    // Try ElevenLabs first (server-side, no VPN needed)
+    // Попробовать ElevenLabs (серверный, без VPN)
     try {
       const res = await fetch("/api/ai/tts", {
         method: "POST",
@@ -147,33 +212,21 @@ function useTTS() {
       });
       if (res.ok && !(res.headers.get("content-type") || "").includes("json")) {
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; };
-        audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; };
-        await audio.play().catch(() => {});
-        return;
+        if (blob.size > 100) {
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; };
+          audio.onerror = () => { URL.revokeObjectURL(url); browserSpeak(text); };
+          await audio.play().catch(() => browserSpeak(text));
+          return;
+        }
       }
     } catch {}
 
-    // Fallback: browser TTS (works everywhere, no API needed)
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      const utter = new SpeechSynthesisUtterance(clean);
-      utter.lang = "ru-RU";
-      utter.rate = 1.05;
-      const voices = window.speechSynthesis.getVoices();
-      const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
-        || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
-        || voices.find(v => v.lang.startsWith("ru"));
-      if (ruVoice) utter.voice = ruVoice;
-      utter.onend = () => setSpeaking(false);
-      utter.onerror = () => setSpeaking(false);
-      window.speechSynthesis.speak(utter);
-    } else {
-      setSpeaking(false);
-    }
-  }, [stop]);
+    // Fallback: браузерный голос (работает ВЕЗДЕ)
+    browserSpeak(text);
+  }, [stop, browserSpeak]);
 
   return { speaking, speak, stop };
 }
@@ -202,6 +255,14 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   // Load auto-voice preference
   useEffect(() => { setAutoVoice(localStorage.getItem("aray-auto-voice") === "1"); }, []);
 
+  // Preload voices (нужно для Safari/Chrome — голоса грузятся асинхронно)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+  }, []);
+
   // Auto-scroll
   useEffect(() => {
     if (open) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
@@ -212,12 +273,13 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     if (open && messages.length === 0) {
       const h = new Date().getHours();
       const gr = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Привет" : h < 22 ? "Добрый вечер" : "Поздновато";
-      const name = staffName !== "Коллега" ? `, ${staffName}` : "";
+      const name = staffName && staffName !== "Коллега" && staffName !== "Администратор"
+        ? `, ${staffName.split(" ")[0]}` : "";
       setMessages([{ id: "w", role: "assistant", text: `${gr}${name}! Чем помочь?` }]);
     }
   }, [open, messages.length, staffName]);
 
-  // External events
+  // External events (aray:open from sidebar / bottom nav)
   useEffect(() => {
     const h1 = () => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 200); };
     const h2 = (e: Event) => {
@@ -253,9 +315,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         }),
       });
 
-      if (!res.ok || !res.body) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
       const reader = res.body.getReader();
       const dec = new TextDecoder();
@@ -313,15 +373,15 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   // ═══ RENDER ═══════════════════════════════════════════════════════════════
   return (
     <>
-      {/* ── FLOATING BUTTON ── */}
+      {/* ── FLOATING ORB BUTTON ── */}
       <motion.button
         onClick={() => { setOpen(v => !v); if (!open) setTimeout(() => inputRef.current?.focus(), 200); }}
-        className="fixed z-[30] right-4 bottom-4 w-14 h-14 rounded-full flex items-center justify-center shadow-xl"
+        className="fixed z-[30] right-4 bottom-4 w-14 h-14 rounded-full flex items-center justify-center"
         style={{
-          background: "linear-gradient(135deg, #ff8800, #ff6600, #ee4400)",
+          background: open ? "hsl(var(--muted))" : "transparent",
           boxShadow: open
-            ? "0 4px 20px rgba(255,100,0,0.3)"
-            : "0 4px 24px rgba(255,100,0,0.5), 0 0 60px rgba(255,130,0,0.15)",
+            ? "0 4px 20px rgba(0,0,0,0.15)"
+            : "0 4px 24px rgba(255,130,0,0.35), 0 0 40px rgba(255,130,0,0.12)",
         }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
@@ -329,15 +389,15 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       >
         {/* Pulse ring when idle */}
         {!open && !loading && (
-          <motion.span className="absolute inset-0 rounded-full"
-            style={{ background: "rgba(255,120,0,0.4)" }}
-            animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}/>
+          <motion.span className="absolute inset-[-4px] rounded-full"
+            style={{ background: "radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 70%)" }}
+            animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeOut" }}/>
         )}
 
         {/* Loading spinner ring */}
         {loading && (
-          <motion.span className="absolute inset-[-3px] rounded-full border-2 border-t-transparent border-white/50"
+          <motion.span className="absolute inset-[-3px] rounded-full border-2 border-t-transparent border-orange-400/50"
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}/>
         )}
@@ -345,11 +405,11 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         <AnimatePresence mode="wait">
           {open ? (
             <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
-              <X className="w-6 h-6 text-white"/>
+              <X className="w-6 h-6" style={{ color: "hsl(var(--foreground))" }}/>
             </motion.span>
           ) : (
-            <motion.span key="sun" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
-              <Sparkles className="w-6 h-6 text-white"/>
+            <motion.span key="orb" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
+              <ArayOrb size={48} glow id="adm-btn"/>
             </motion.span>
           )}
         </AnimatePresence>
@@ -379,10 +439,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
           >
             {/* ─ Header ─ */}
             <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: "hsl(var(--border))" }}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg, #ff8800, #ee5500)" }}>
-                <Sparkles className="w-4 h-4 text-white"/>
-              </div>
+              <div className="shrink-0"><ArayOrb size={32} id="adm-hdr"/></div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-foreground">Арай</span>
@@ -394,7 +451,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                 <RotateCcw className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
               <button onClick={toggleVoice} className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                title={autoVoice ? "Голос ВКЛ" : "Голос ВЫКЛ"}>
+                title={autoVoice ? "Авто-озвучка ВКЛ" : "Авто-озвучка ВЫКЛ"}>
                 {autoVoice
                   ? <Volume2 className="w-3.5 h-3.5 text-primary"/>
                   : <VolumeX className="w-3.5 h-3.5 text-muted-foreground"/>}
@@ -410,9 +467,13 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                 <motion.div key={msg.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} gap-2`}
                 >
-                  <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed ${
+                  {/* Мини-шар рядом с сообщением Арая */}
+                  {msg.role === "assistant" && (
+                    <div className="shrink-0 mt-1"><ArayOrb size={20} id={`msg-${msg.id}`}/></div>
+                  )}
+                  <div className={`max-w-[82%] px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed ${
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground rounded-br-md"
                       : "bg-muted text-foreground rounded-bl-md"
@@ -433,7 +494,8 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                 <div className="flex flex-wrap gap-2 mt-1">
                   {chips.map(c => (
                     <button key={c} onClick={() => sendMessage(c)}
-                      className="px-3 py-1.5 text-[12px] rounded-full bg-muted hover:bg-muted/80 text-foreground border border-border transition-colors">
+                      className="px-3 py-1.5 text-[12px] rounded-full bg-muted hover:bg-muted/80 text-foreground border border-border transition-colors active:scale-95"
+                      style={{ WebkitTapHighlightColor: "transparent" }}>
                       {c}
                     </button>
                   ))}
@@ -446,8 +508,9 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                   const last = messages[messages.length - 1];
                   if (speaking) stopTTS(); else speak(last.text);
                 }}
-                  className="self-start flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                  {speaking ? <><VolumeX className="w-3 h-3"/> остановить</> : <><Volume2 className="w-3 h-3"/> озвучить</>}
+                  className="self-start flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors active:scale-95 border border-border/50"
+                  style={{ WebkitTapHighlightColor: "transparent" }}>
+                  {speaking ? <><VolumeX className="w-3.5 h-3.5"/> остановить</> : <><Volume2 className="w-3.5 h-3.5"/> озвучить</>}
                 </button>
               )}
 
@@ -471,13 +534,14 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                 {/* Mic button */}
                 {micOk && (
                   <button onClick={handleMic}
-                    className={`shrink-0 p-2.5 rounded-xl transition-all ${
+                    className={`shrink-0 p-2.5 rounded-xl transition-all active:scale-90 ${
                       micActive
                         ? "bg-primary text-white"
                         : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                     }`}
+                    style={{ WebkitTapHighlightColor: "transparent" }}
                     title={micActive ? "Остановить" : "Голосовой ввод"}>
-                    {micActive ? <MicOff className="w-4 h-4"/> : <Mic className="w-4 h-4"/>}
+                    {micActive ? <MicOff className="w-5 h-5"/> : <Mic className="w-5 h-5"/>}
                   </button>
                 )}
 
@@ -487,7 +551,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKey}
-                  placeholder="Напиши сообщение..."
+                  placeholder="Напиши или скажи..."
                   rows={1}
                   className="flex-1 resize-none text-[13.5px] leading-relaxed outline-none px-3 py-2.5 rounded-xl bg-muted text-foreground border border-border focus:border-primary/50 transition-colors"
                   style={{ maxHeight: 80, fontFamily: "inherit" }}
@@ -497,13 +561,14 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                 {/* Send */}
                 <button onClick={() => sendMessage(input)}
                   disabled={!input.trim() || loading}
-                  className={`shrink-0 p-2.5 rounded-xl transition-all ${
+                  className={`shrink-0 p-2.5 rounded-xl transition-all active:scale-90 ${
                     input.trim() && !loading
                       ? "bg-primary text-white hover:bg-primary/90"
                       : "bg-muted text-muted-foreground"
                   }`}
+                  style={{ WebkitTapHighlightColor: "transparent" }}
                   title="Отправить (Enter)">
-                  <Send className="w-4 h-4"/>
+                  <Send className="w-5 h-5"/>
                 </button>
               </div>
             </div>

@@ -1147,7 +1147,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
       {/* ── Арай — фиксированная панель снизу на всех страницах ── */}
       {/* AdminPageHelp и AdminTour убраны — ARAY обучает и помогает вместо них */}
-      <LazyAdminAray staffName={userName || email?.split("@")[0] || "Коллега"} userRole={role} />
+      <LazyAdminAray staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"} userRole={role} />
     </div>
   );
 }
