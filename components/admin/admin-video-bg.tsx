@@ -14,29 +14,29 @@ interface VideoItem {
   label: string;
 }
 
-// День: природа, горы, вода, облака — 720p
+// День: лес, дерево, природа — тематика ПилоРус 🌲
 const DAY_VIDEOS: VideoItem[] = [
-  { mp4: "https://assets.mixkit.co/videos/1166/1166-720.mp4",  label: "Утренний лес" },
-  { mp4: "https://assets.mixkit.co/videos/4141/4141-720.mp4",  label: "Закат на море" },
-  { mp4: "https://assets.mixkit.co/videos/28294/28294-720.mp4", label: "Горная река" },
-  { mp4: "https://assets.mixkit.co/videos/3784/3784-720.mp4",  label: "Водопад" },
-  { mp4: "https://assets.mixkit.co/videos/9668/9668-720.mp4",  label: "Зелёные холмы" },
-  { mp4: "https://assets.mixkit.co/videos/4817/4817-720.mp4",  label: "Облака в горах" },
-  { mp4: "https://assets.mixkit.co/videos/1226/1226-720.mp4",  label: "Туман в лесу" },
-  { mp4: "https://assets.mixkit.co/videos/34563/34563-720.mp4", label: "Цветущий луг" },
+  { mp4: "https://assets.mixkit.co/videos/3571/3571-720.mp4",  label: "Хвойный лес сверху" },
+  { mp4: "https://assets.mixkit.co/videos/12888/12888-720.mp4", label: "Полёт над лесом" },
+  { mp4: "https://assets.mixkit.co/videos/4816/4816-720.mp4",  label: "Туман в хвоях" },
+  { mp4: "https://assets.mixkit.co/videos/41648/41648-720.mp4", label: "Берёзовая роща" },
+  { mp4: "https://assets.mixkit.co/videos/4065/4065-720.mp4",  label: "Закат в лесу" },
+  { mp4: "https://assets.mixkit.co/videos/49954/49954-720.mp4", label: "Брёвна" },
+  { mp4: "https://assets.mixkit.co/videos/3394/3394-720.mp4",  label: "Лесная тропа" },
+  { mp4: "https://assets.mixkit.co/videos/1226/1226-720.mp4",  label: "Утренний туман" },
 ];
 
-// Ночь: звёзды, сияние, космос — 720p
+// Ночь: звёзды, лес, сияние 🌙
 const NIGHT_VIDEOS: VideoItem[] = [
+  { mp4: "https://assets.mixkit.co/videos/9471/9471-720.mp4",  label: "Ночной лес" },
   { mp4: "https://assets.mixkit.co/videos/4883/4883-720.mp4",  label: "Звёздное небо" },
   { mp4: "https://assets.mixkit.co/videos/3181/3181-720.mp4",  label: "Млечный путь" },
   { mp4: "https://assets.mixkit.co/videos/4690/4690-720.mp4",  label: "Северное сияние" },
-  { mp4: "https://assets.mixkit.co/videos/9471/9471-720.mp4",  label: "Ночной лес" },
-  { mp4: "https://assets.mixkit.co/videos/1409/1409-720.mp4",  label: "Луна" },
+  { mp4: "https://assets.mixkit.co/videos/4614/4614-720.mp4",  label: "Ночные облака" },
 ];
 
-const FADE_MS = 2500;
-const LOAD_TIMEOUT_MS = 12000;
+const FADE_MS = 4000;         // Плавный кроссфейд 4 секунды
+const LOAD_TIMEOUT_MS = 15000; // Даём больше времени на загрузку
 
 function guessIsDark(): boolean {
   if (typeof window === "undefined") return true;
@@ -176,77 +176,110 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
     if (loadTimerRef.current) clearTimeout(loadTimerRef.current);
   }, []);
 
-  // Видео закончилось — запускаем кроссфейд к следующему
+  // Предзагрузка следующего видео + плавный кроссфейд
+  const prepareNextRef = useRef(false);
+
+  const startCrossfade = useCallback((nextIdx: number) => {
+    const currentSlot = activeSlotRef.current;
+    const nextSlot = currentSlot === "A" ? "B" : "A";
+    const nextVideoEl = nextSlot === "A" ? videoARef.current : videoBRef.current;
+    if (!nextVideoEl) return;
+
+    nextVideoEl.play().catch(() => {});
+
+    // Плавный кроссфейд
+    if (nextSlot === "A") {
+      setOpacityA(1);
+      setOpacityB(0);
+    } else {
+      setOpacityA(0);
+      setOpacityB(1);
+    }
+
+    activeSlotRef.current = nextSlot;
+    setActiveSlot(nextSlot);
+    currentIdxRef.current = nextIdx;
+    setCurrentIdx(nextIdx);
+    prepareNextRef.current = false;
+
+    // После кроссфейда — освобождаем старый слот
+    fadeTimerRef.current = setTimeout(() => {
+      const oldVideoEl = currentSlot === "A" ? videoARef.current : videoBRef.current;
+      if (oldVideoEl) {
+        oldVideoEl.pause();
+        oldVideoEl.removeAttribute("src");
+        oldVideoEl.load();
+      }
+    }, FADE_MS + 500);
+  }, []);
+
+  // Предзагрузка: за 5 секунд до конца начинаем грузить следующее
+  const handleTimeUpdate = useCallback((slot: "A" | "B") => {
+    if (slot !== activeSlotRef.current || prepareNextRef.current) return;
+    const videoEl = slot === "A" ? videoARef.current : videoBRef.current;
+    if (!videoEl || !videoEl.duration) return;
+
+    const remaining = videoEl.duration - videoEl.currentTime;
+    if (remaining > 5) return; // Ещё не пора
+
+    prepareNextRef.current = true;
+    const videos = videosRef.current;
+    const nextIdx = (currentIdxRef.current + 1) % videos.length;
+    const nextSlot = slot === "A" ? "B" : "A";
+    const nextVideoEl = nextSlot === "A" ? videoARef.current : videoBRef.current;
+    if (!nextVideoEl) return;
+
+    // Загружаем в фоне
+    nextVideoEl.src = videos[nextIdx].mp4;
+    nextVideoEl.load();
+
+    const onReady = () => {
+      nextVideoEl.removeEventListener("canplay", onReady);
+      // Видео готово — кроссфейд начнётся по onEnded
+    };
+
+    if (nextVideoEl.readyState >= 3) {
+      // Уже в кеше
+    } else {
+      nextVideoEl.addEventListener("canplay", onReady);
+    }
+  }, []);
+
+  // Видео закончилось — плавный переход к предзагруженному
   const handleVideoEnded = useCallback(() => {
     const videos = videosRef.current;
     const nextIdx = (currentIdxRef.current + 1) % videos.length;
-    currentIdxRef.current = nextIdx;
-    setCurrentIdx(nextIdx);
-
     const currentSlot = activeSlotRef.current;
     const nextSlot = currentSlot === "A" ? "B" : "A";
     const nextVideoEl = nextSlot === "A" ? videoARef.current : videoBRef.current;
 
     if (!nextVideoEl) return;
 
-    // Загружаем следующее видео в неактивный слот
+    // Если предзагрузка сработала — сразу кроссфейд
+    if (nextVideoEl.readyState >= 3) {
+      startCrossfade(nextIdx);
+      return;
+    }
+
+    // Если не загрузилось — грузим и ждём
     nextVideoEl.src = videos[nextIdx].mp4;
     nextVideoEl.load();
+    nextVideoEl.addEventListener("canplay", () => {
+      startCrossfade(nextIdx);
+    }, { once: true });
 
-    const startCrossfade = () => {
-      nextVideoEl.play().catch(() => {});
-
-      // Кроссфейд: плавно показываем новый, скрываем старый
-      if (nextSlot === "A") {
-        setOpacityA(1);
-        setOpacityB(0);
-      } else {
-        setOpacityA(0);
-        setOpacityB(1);
-      }
-
-      activeSlotRef.current = nextSlot;
-      setActiveSlot(nextSlot);
-
-      // После завершения анимации — останавливаем старое видео
-      fadeTimerRef.current = setTimeout(() => {
-        const oldVideoEl = currentSlot === "A" ? videoARef.current : videoBRef.current;
-        if (oldVideoEl) {
-          oldVideoEl.pause();
-          oldVideoEl.removeAttribute("src");
-          oldVideoEl.load(); // Освобождаем память
-        }
-      }, FADE_MS + 200);
-    };
-
-    // Когда следующее видео готово — начинаем кроссфейд
-    const onReady = () => {
-      nextVideoEl.removeEventListener("canplay", onReady);
-      startCrossfade();
-    };
-
-    // Если уже готово (закешировано)
-    if (nextVideoEl.readyState >= 3) {
-      startCrossfade();
-    } else {
-      nextVideoEl.addEventListener("canplay", onReady);
-      // Таймаут — если не загрузилось, пропускаем
-      setTimeout(() => {
-        nextVideoEl.removeEventListener("canplay", onReady);
-        // Попробуем следующее видео
+    // Таймаут — пропускаем если совсем не грузится
+    setTimeout(() => {
+      if (activeSlotRef.current === currentSlot) {
         const skipIdx = (nextIdx + 1) % videos.length;
-        currentIdxRef.current = skipIdx;
-        setCurrentIdx(skipIdx);
-        // Пробуем следующее
         nextVideoEl.src = videos[skipIdx].mp4;
         nextVideoEl.load();
         nextVideoEl.addEventListener("canplay", () => {
-          nextVideoEl.removeEventListener("canplay", onReady);
-          startCrossfade();
+          startCrossfade(skipIdx);
         }, { once: true });
-      }, LOAD_TIMEOUT_MS);
-    }
-  }, []);
+      }
+    }, LOAD_TIMEOUT_MS);
+  }, [startCrossfade]);
 
   // Ошибка загрузки — пропускаем видео, после MAX_ERRORS → fallback
   const handleError = useCallback((slot: "A" | "B") => {
@@ -323,12 +356,13 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
           className="absolute inset-0 w-full h-full object-cover"
           style={{
             opacity: firstReady ? opacityA : 0,
-            transition: `opacity ${FADE_MS}ms cubic-bezier(0.4,0,0.2,1)`,
+            transition: `opacity ${FADE_MS}ms cubic-bezier(0.25,0.1,0.25,1)`,
           }}
           muted
           playsInline
           preload="auto"
           onCanPlay={activeSlot === "A" && !firstReady ? handleFirstCanPlay : undefined}
+          onTimeUpdate={() => handleTimeUpdate("A")}
           onEnded={activeSlot === "A" ? handleVideoEnded : undefined}
           onError={() => handleError("A")}
         />
@@ -341,11 +375,12 @@ export function AdminVideoBg({ enabled }: { enabled: boolean }) {
           className="absolute inset-0 w-full h-full object-cover"
           style={{
             opacity: firstReady ? opacityB : 0,
-            transition: `opacity ${FADE_MS}ms cubic-bezier(0.4,0,0.2,1)`,
+            transition: `opacity ${FADE_MS}ms cubic-bezier(0.25,0.1,0.25,1)`,
           }}
           muted
           playsInline
           preload="auto"
+          onTimeUpdate={() => handleTimeUpdate("B")}
           onEnded={activeSlot === "B" ? handleVideoEnded : undefined}
           onError={() => handleError("B")}
         />
