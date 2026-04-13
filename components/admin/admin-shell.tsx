@@ -935,6 +935,24 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
       {/* ─── Mobile header убран — заменён compact sticky search bar внутри main ── */}
 
+      {/* ─── Direct overlay — guaranteed to cover content when sidebar is open ── */}
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm"
+          style={{ zIndex: 65 }}
+          onClick={() => setOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      {mobileSettingsOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm"
+          style={{ zIndex: 65 }}
+          onClick={() => setMobileSettingsOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
