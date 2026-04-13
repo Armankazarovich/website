@@ -24,17 +24,7 @@ import {
   Library,
   Link2,
 } from "lucide-react";
-
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 const MediaPickerModal = dynamic(
   () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),

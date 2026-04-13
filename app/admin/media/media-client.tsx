@@ -9,17 +9,7 @@ import {
   CheckSquare, Square, Smartphone,
 } from "lucide-react";
 import { InfoCard } from "@/components/admin/info-popup";
-
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 type MediaFile = {
   url: string; folder: string; filename: string;

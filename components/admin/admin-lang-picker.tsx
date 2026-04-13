@@ -4,17 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Languages, Check } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { ADMIN_LANGUAGES, type LangCode, getFlagUrl } from "@/lib/admin-i18n";
-
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
+import { useClassicMode } from "@/lib/use-classic-mode";
 // ─── Inline language picker (for mobile settings panel) ─────────────────────
 export function AdminLangPickerInline() {
   const { lang, setLang } = useAdminLang();

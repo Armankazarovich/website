@@ -1,19 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-
-// ── Classic mode hook (читает localStorage, реагирует на событие) ────────────
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useClassicMode } from "@/lib/use-classic-mode";
 import {
   Search, X, ShoppingBag, Package, Users, LayoutDashboard,
   Tag, Star, Settings, Truck, Warehouse, Mail, BarChart2,

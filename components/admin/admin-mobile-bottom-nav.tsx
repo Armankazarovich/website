@@ -101,13 +101,16 @@ export function AdminMobileBottomNav({
         <div
           className="flex items-stretch rounded-[28px] overflow-visible relative"
           style={{
-            background: "var(--admin-dock-bg)",
-            backdropFilter: "var(--admin-popup-blur)",
-            WebkitBackdropFilter: "var(--admin-popup-blur)",
             border: `1px solid var(--admin-dock-border)`,
             boxShadow: "var(--admin-popup-shadow)",
           }}
         >
+          {/* Фоновый слой с блюром — ОТДЕЛЬНО от SVG орба, чтобы не убивать анимации */}
+          <div className="absolute inset-0 -z-10 rounded-[28px] pointer-events-none" style={{
+            background: "var(--admin-dock-bg)",
+            backdropFilter: "var(--admin-popup-blur)",
+            WebkitBackdropFilter: "var(--admin-popup-blur)",
+          }} />
           {/* ── Левые табы ── */}
           {leftTabs.map((tab, i) => (
             <DockTab key={i} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />

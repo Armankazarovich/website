@@ -182,12 +182,17 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
         bottom: kbOpen ? "-120px" : "0",
         opacity: kbOpen ? 0 : 1,
         pointerEvents: kbOpen ? "none" : "auto",
-        backdropFilter: "blur(32px) saturate(160%)",
-        WebkitBackdropFilter: "blur(32px) saturate(160%)",
+        /* ВАЖНО: backdrop-filter УБРАН с nav! Он растеризует SVG → убивает анимации орба на мобилке.
+           Блюр теперь на отдельном ::before через CSS класс */
         borderTop: "1px solid rgba(255,255,255,0.1)",
-        background: "var(--mobile-nav-bg)",
       } as React.CSSProperties}
     >
+      {/* Фон с блюром — ОТДЕЛЬНЫЙ слой, не влияет на рендер SVG орба */}
+      <div className="absolute inset-0 -z-10 pointer-events-none" style={{
+        backdropFilter: "blur(32px) saturate(160%)",
+        WebkitBackdropFilter: "blur(32px) saturate(160%)",
+        background: "var(--mobile-nav-bg)",
+      }} />
       {/* Блик сверху */}
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 

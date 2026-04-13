@@ -1,18 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { AlertTriangle, Trash2, X } from "lucide-react";
-
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 interface ConfirmDialogProps {
   open: boolean;

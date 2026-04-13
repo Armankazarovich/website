@@ -12,17 +12,7 @@ import {
   ChevronLeft, ChevronRight, Clock,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-
-function useClassicMode() {
-  const [classic, setClassic] = useState(false);
-  useEffect(() => {
-    setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    const h = () => setClassic(localStorage.getItem("aray-classic-mode") === "1");
-    window.addEventListener("aray-classic-change", h);
-    return () => window.removeEventListener("aray-classic-change", h);
-  }, []);
-  return classic;
-}
+import { useClassicMode } from "@/lib/use-classic-mode";
 
 type Order = {
   id: string;
