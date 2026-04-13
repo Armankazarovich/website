@@ -6,7 +6,7 @@ import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
-import { buildAraySystemPrompt, ArayRole, ARAY_TOOLS, calculateProjectMaterials } from "@/lib/aray-agent";
+import { buildAraySystemPrompt, ArayRole, ARAY_TOOLS, getToolsForRole, calculateProjectMaterials } from "@/lib/aray-agent";
 import {
   getOrCreateMemory,
   formatMemoryForPrompt,
@@ -116,12 +116,15 @@ export async function POST(req: NextRequest) {
       let fullText = "";
       try {
         // ── Первый вызов (может вернуть tool_use) ────────────────────────────
+        // Инструменты отфильтрованы по роли пользователя
+        const roleTools = getToolsForRole(arayRole, sessionRole || undefined);
+
         const firstStream = anthropic.messages.stream({
           model: modelConfig.model,
           max_tokens: modelConfig.maxTokens,
           system: systemPrompt,
           messages: formattedMessages,
-          tools: ARAY_TOOLS as any,
+          tools: roleTools as any,
         });
 
         for await (const event of firstStream) {
@@ -140,7 +143,7 @@ export async function POST(req: NextRequest) {
             toolBlocks.map(async (block: any) => ({
               type: "tool_result" as const,
               tool_use_id: block.id,
-              content: JSON.stringify(await handleTool(block.name, block.input)),
+              content: JSON.stringify(await handleTool(block.name, block.input, userId || undefined)),
             }))
           );
 
@@ -219,7 +222,7 @@ export async function POST(req: NextRequest) {
 
 // ─── Инструменты ─────────────────────────────────────────────────────────────
 
-async function handleTool(name: string, input: Record<string, unknown>): Promise<unknown> {
+async function handleTool(name: string, input: Record<string, unknown>, userId?: string): Promise<unknown> {
   try {
     if (name === "search_products") {
       const query = String(input.query || "");
@@ -419,10 +422,12 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
         orderBy: { createdAt: "desc" },
       });
       return products.map(p => ({
+        id: p.id,
         название: p.name,
         категория: p.category.name,
         slug: p.slug,
         варианты: p.variants.map(v => ({
+          variantId: v.id,
           размер: v.size,
           цена_куб: v.pricePerCube ? Number(v.pricePerCube) : null,
           цена_шт: v.pricePerPiece ? Number(v.pricePerPiece) : null,
@@ -483,8 +488,8 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
 
     if (name === "get_staff_list") {
       const staff = await prisma.user.findMany({
-        where: { role: { not: "CUSTOMER" as any } },
-        select: { name: true, email: true, role: true, createdAt: true },
+        where: { role: { not: "USER" as any } },
+        select: { id: true, name: true, email: true, role: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       });
       const ROLE_LABELS: Record<string, string> = {
@@ -493,12 +498,322 @@ async function handleTool(name: string, input: Record<string, unknown>): Promise
       };
       return {
         staff: staff.map(s => ({
+          id: s.id,
           name: s.name || "—",
           role: ROLE_LABELS[s.role] || s.role,
           email: s.email,
           since: s.createdAt.toLocaleDateString("ru-RU"),
         })),
         total: staff.length,
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ─── ЗАДАЧИ ─────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+
+    if (name === "create_task") {
+      const title = String(input.title || "").trim();
+      if (!title) return { error: "Название задачи обязательно" };
+
+      const task = await prisma.task.create({
+        data: {
+          title,
+          description: input.description ? String(input.description) : null,
+          priority: (input.priority as any) || "MEDIUM",
+          status: "TODO",
+          assigneeId: input.assigneeId ? String(input.assigneeId) : null,
+          createdById: userId || null,
+          dueDate: input.dueDate ? new Date(String(input.dueDate)) : null,
+          tags: Array.isArray(input.tags) ? input.tags.map(String) : [],
+        },
+        include: {
+          assignee: { select: { name: true } },
+        },
+      });
+
+      return {
+        success: true,
+        taskId: task.id,
+        title: task.title,
+        assignee: task.assignee?.name || "Без исполнителя",
+        priority: task.priority,
+        status: task.status,
+        dueDate: task.dueDate?.toLocaleDateString("ru-RU") || null,
+        message: `Задача "${task.title}" создана${task.assignee ? ` → ${task.assignee.name}` : ""}`,
+        action: "__ARAY_NAVIGATE:/admin/tasks__",
+      };
+    }
+
+    if (name === "get_tasks_list") {
+      const limit = Number(input.limit) || 15;
+      const where: any = {};
+      if (input.status) where.status = String(input.status);
+      if (input.assigneeId) where.assigneeId = String(input.assigneeId);
+
+      const tasks = await prisma.task.findMany({
+        where,
+        orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+        take: limit,
+        include: {
+          assignee: { select: { name: true } },
+          createdBy: { select: { name: true } },
+        },
+      });
+
+      const PRIORITY_LABELS: Record<string, string> = { LOW: "Низкий", MEDIUM: "Средний", HIGH: "Высокий", URGENT: "🔥 Срочный" };
+      const STATUS_LABELS: Record<string, string> = { BACKLOG: "Бэклог", TODO: "К выполнению", IN_PROGRESS: "В работе", REVIEW: "На проверке", DONE: "Готово" };
+
+      return {
+        tasks: tasks.map(t => ({
+          id: t.id,
+          название: t.title,
+          описание: t.description,
+          статус: STATUS_LABELS[t.status] || t.status,
+          приоритет: PRIORITY_LABELS[t.priority] || t.priority,
+          исполнитель: t.assignee?.name || "—",
+          создал: t.createdBy?.name || "—",
+          срок: t.dueDate?.toLocaleDateString("ru-RU") || null,
+          создана: t.createdAt.toLocaleDateString("ru-RU"),
+          теги: t.tags,
+        })),
+        total: tasks.length,
+      };
+    }
+
+    if (name === "update_task") {
+      const taskId = String(input.taskId);
+      const task = await prisma.task.findUnique({ where: { id: taskId } });
+      if (!task) return { error: "Задача не найдена" };
+
+      const data: any = {};
+      if (input.status) data.status = String(input.status);
+      if (input.priority) data.priority = String(input.priority);
+      if (input.assigneeId) data.assigneeId = String(input.assigneeId);
+      if (input.title) data.title = String(input.title);
+      if (input.dueDate) data.dueDate = new Date(String(input.dueDate));
+      if (input.status === "DONE") data.completedAt = new Date();
+
+      const updated = await prisma.task.update({
+        where: { id: taskId },
+        data,
+        include: { assignee: { select: { name: true } } },
+      });
+
+      return {
+        success: true,
+        taskId: updated.id,
+        title: updated.title,
+        status: updated.status,
+        assignee: updated.assignee?.name || "—",
+        message: `Задача "${updated.title}" обновлена`,
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ─── ТОВАРЫ: ЦЕНА И АКТИВНОСТЬ ─────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+
+    if (name === "update_product_price") {
+      const variantId = String(input.variantId);
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+        include: { product: { select: { name: true } } },
+      });
+      if (!variant) return { error: "Вариант товара не найден" };
+
+      const data: any = {};
+      if (input.pricePerCube !== undefined) data.pricePerCube = Number(input.pricePerCube);
+      if (input.pricePerPiece !== undefined) data.pricePerPiece = Number(input.pricePerPiece);
+      if (input.inStock !== undefined) data.inStock = Boolean(input.inStock);
+
+      await prisma.productVariant.update({ where: { id: variantId }, data });
+
+      return {
+        success: true,
+        product: variant.product.name,
+        size: variant.size,
+        newPricePerCube: data.pricePerCube ?? (variant.pricePerCube ? Number(variant.pricePerCube) : null),
+        newPricePerPiece: data.pricePerPiece ?? (variant.pricePerPiece ? Number(variant.pricePerPiece) : null),
+        inStock: data.inStock ?? variant.inStock,
+        message: `Цена "${variant.product.name}" (${variant.size}) обновлена ✅`,
+      };
+    }
+
+    if (name === "toggle_product_active") {
+      const productId = String(input.productId);
+      const active = Boolean(input.active);
+      const product = await prisma.product.findUnique({ where: { id: productId } });
+      if (!product) return { error: "Товар не найден" };
+
+      await prisma.product.update({ where: { id: productId }, data: { active } });
+
+      return {
+        success: true,
+        product: product.name,
+        active,
+        message: active ? `"${product.name}" теперь виден на сайте ✅` : `"${product.name}" скрыт с сайта`,
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ─── PUSH-УВЕДОМЛЕНИЯ ──────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+
+    if (name === "send_push_notification") {
+      const title = String(input.title || "").trim();
+      const body = String(input.body || "").trim();
+      if (!title || !body) return { error: "Заголовок и текст обязательны" };
+
+      const segment = String(input.segment || "all");
+      const url = input.url ? String(input.url) : "/";
+
+      // Получаем подписки по сегменту
+      let where: any = {};
+      if (segment === "registered") where.userId = { not: null };
+      else if (segment === "guests") where.userId = null;
+
+      const subs = await prisma.pushSubscription.findMany({ where });
+
+      let sent = 0;
+      let errors = 0;
+
+      // Динамический импорт web-push
+      const webpush = await import("web-push");
+      webpush.setVapidDetails(
+        "mailto:info@pilo-rus.ru",
+        process.env.VAPID_PUBLIC_KEY || "",
+        process.env.VAPID_PRIVATE_KEY || ""
+      );
+
+      const payload = JSON.stringify({ title, body, url, icon: "/icons/icon-192.png" });
+
+      await Promise.allSettled(
+        subs.map(async (sub) => {
+          try {
+            await webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+              payload
+            );
+            sent++;
+          } catch (err: any) {
+            errors++;
+            // Удаляем мёртвые подписки
+            if (err?.statusCode === 410 || err?.statusCode === 404) {
+              await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+            }
+          }
+        })
+      );
+
+      return {
+        success: true,
+        sent,
+        errors,
+        segment,
+        message: `Push отправлен: ${sent} получателей${errors > 0 ? `, ${errors} ошибок` : ""} ✅`,
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ─── CRM: ЛИДЫ ────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+
+    if (name === "create_lead") {
+      const leadName = String(input.name || "").trim();
+      if (!leadName) return { error: "Имя клиента обязательно" };
+
+      const lead = await prisma.lead.create({
+        data: {
+          name: leadName,
+          phone: input.phone ? String(input.phone) : null,
+          email: input.email ? String(input.email) : null,
+          company: input.company ? String(input.company) : null,
+          comment: input.comment ? String(input.comment) : null,
+          source: (input.source as any) || "PHONE",
+          value: input.value ? Number(input.value) : null,
+          stage: "NEW",
+          assigneeId: userId || null,
+        },
+      });
+
+      return {
+        success: true,
+        leadId: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        message: `Лид "${lead.name}" создан в CRM ✅`,
+        action: "__ARAY_NAVIGATE:/admin/crm__",
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ─── НАВИГАЦИЯ ─────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+
+    if (name === "admin_navigate") {
+      const path = String(input.path || "/admin");
+      return {
+        success: true,
+        path,
+        action: `__ARAY_NAVIGATE:${path}__`,
+        message: `Открываю ${path}`,
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ─── КЛИЕНТСКИЕ ДЕЙСТВИЯ (add_to_cart, navigate_page) ──────────────
+    // ═══════════════════════════════════════════════════════════════════════
+
+    if (name === "add_to_cart") {
+      const variantId = String(input.variantId);
+      const quantity = Number(input.quantity) || 1;
+      const unit = String(input.unit || "piece");
+
+      // Проверяем что вариант существует
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+        include: { product: { select: { name: true, slug: true } } },
+      });
+      if (!variant) return { error: "Товар не найден" };
+      if (!variant.inStock) return { error: `"${variant.product.name}" (${variant.size}) нет в наличии` };
+
+      const price = unit === "cube" && variant.pricePerCube
+        ? Number(variant.pricePerCube) * quantity
+        : variant.pricePerPiece
+        ? Number(variant.pricePerPiece) * quantity
+        : 0;
+
+      return {
+        success: true,
+        action: `__ARAY_ADD_CART:${JSON.stringify({ variantId, quantity, unit })}__`,
+        product: variant.product.name,
+        size: variant.size,
+        quantity,
+        unit: unit === "cube" ? "м³" : "шт",
+        totalPrice: price,
+        message: `${variant.product.name} (${variant.size}) × ${quantity} ${unit === "cube" ? "м³" : "шт"} добавлен в корзину 🛒`,
+      };
+    }
+
+    if (name === "navigate_page") {
+      const url = String(input.url || "/");
+      const title = input.title ? String(input.title) : undefined;
+
+      // Внешний URL → показать в iframe/новом окне
+      if (url.startsWith("http")) {
+        return {
+          success: true,
+          action: `__ARAY_SHOW_URL:${url}:${title || url}__`,
+          message: `Открываю: ${title || url}`,
+        };
+      }
+
+      // Внутренняя навигация
+      return {
+        success: true,
+        action: `__ARAY_NAVIGATE:${url}__`,
+        message: `Открываю ${title || url}`,
       };
     }
 

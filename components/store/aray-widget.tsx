@@ -558,7 +558,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         // Show text without internal markers
         const displayText = rawText
           .replace(/\n__ARAY_META__[\s\S]*$/, "")
-          .replace(/__ARAY_ERR__[\s\S]*$/, "");
+          .replace(/__ARAY_ERR__[\s\S]*$/, "")
+          .replace(/__ARAY_ADD_CART:.+?__/g, "")
+          .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+          .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+          .replace(/__ARAY_REFRESH__/g, "");
 
         setMessages(prev => prev.map(m =>
           m.id === assistantId ? { ...m, content: displayText } : m
@@ -579,8 +583,67 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         setBrowserOpen(true);
       }
 
+      // ── Выполнение ARAY команд из ответа API ──────────────────────────
+      // Добавление в корзину: __ARAY_ADD_CART:{"variantId":"...","quantity":1,"unit":"piece"}__
+      const cartMatches = rawText.matchAll(/__ARAY_ADD_CART:(.+?)__/g);
+      for (const cm of cartMatches) {
+        try {
+          const { variantId, quantity, unit } = JSON.parse(cm[1]);
+          if (variantId) {
+            // Загружаем данные варианта и добавляем в корзину
+            fetch(`/api/variants/${variantId}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(variant => {
+                if (variant) {
+                  const cartStore = useCartStore.getState();
+                  const unitType = unit === "cube" ? "CUBE" : "PIECE";
+                  const price = unitType === "CUBE" && variant.pricePerCube
+                    ? variant.pricePerCube
+                    : variant.pricePerPiece || 0;
+                  cartStore.addItem({
+                    variantId: variant.id,
+                    productId: variant.productId,
+                    productName: variant.productName,
+                    productSlug: variant.productSlug,
+                    variantSize: variant.size,
+                    productImage: variant.image || undefined,
+                    unitType,
+                    quantity: quantity || 1,
+                    price,
+                  });
+                }
+              })
+              .catch(() => {});
+          }
+        } catch {}
+      }
+
+      // Навигация: __ARAY_NAVIGATE:/catalog/brus__
+      const navMatch = rawText.match(/__ARAY_NAVIGATE:(.+?)__/);
+      if (navMatch) {
+        const navPath = navMatch[1];
+        if (navPath.startsWith("/")) {
+          setTimeout(() => { window.location.href = navPath; }, 800);
+        }
+      }
+
+      // Показать внешний URL: __ARAY_SHOW_URL:https://...:Title__
+      const showUrlMatch = rawText.match(/__ARAY_SHOW_URL:(.+?):(.+?)__/);
+      if (showUrlMatch) {
+        setBrowserUrl(showUrlMatch[1]);
+        setBrowserOpen(true);
+      }
+
+      // Очищаем служебные команды из отображаемого текста
+      const finalParsed = parsedText
+        .replace(/__ARAY_ADD_CART:.+?__/g, "")
+        .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+        .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+        .replace(/__ARAY_REFRESH__/g, "")
+        .trim();
+
       setMessages(prev => prev.map(m =>
-        m.id === assistantId ? { ...m, content: parsedText, actions, streaming: false } : m
+        m.id === assistantId ? { ...m, content: finalParsed, actions, streaming: false } : m
       ));
 
       if (!open) setHasNew(true);

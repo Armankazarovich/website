@@ -10,14 +10,20 @@ import {
 
 // ─── Page context for smart chips ───────────────────────────────────────────
 const PAGE_CHIPS: Record<string, string[]> = {
-  "/admin": ["Сводка за сегодня", "Новые заказы", "Выручка за неделю"],
-  "/admin/orders": ["Новые заказы", "Ждут подтверждения", "Заказы за сегодня"],
-  "/admin/products": ["Что не в наличии?", "Топ продаж", "Актуальные цены"],
-  "/admin/clients": ["Новые клиенты", "Постоянные покупатели", "Лучший клиент"],
-  "/admin/delivery": ["Активные доставки", "Задержки", "Маршруты сегодня"],
-  "/admin/staff": ["Кто в команде?", "Активность сотрудников"],
+  "/admin": ["Сводка за сегодня", "Новые заказы", "Что срочно?"],
+  "/admin/orders": ["Новые заказы", "Подтверди все новые", "Заказы за сегодня"],
+  "/admin/products": ["Что не в наличии?", "Покажи все цены", "Актуальные цены"],
+  "/admin/clients": ["Новые клиенты", "Постоянные покупатели", "Топ клиентов"],
+  "/admin/delivery": ["Активные доставки", "Что доставляется?", "Задержки"],
+  "/admin/staff": ["Кто в команде?", "Онлайн-статус", "Добавь задачу"],
+  "/admin/tasks": ["Все задачи", "Срочные задачи", "Создай задачу"],
+  "/admin/crm": ["Новые лиды", "Горячие клиенты", "Добавь лид"],
+  "/admin/analytics": ["Выручка за месяц", "Топ товаров", "Динамика продаж"],
+  "/admin/finance": ["Выручка сегодня", "Сравни с прошлой неделей", "Средний чек"],
+  "/admin/settings": ["Проверь настройки", "Тест Telegram", "SMTP работает?"],
+  "/admin/notifications": ["Отправь push всем", "Сколько подписчиков?", "Тест уведомления"],
 };
-const DEFAULT_CHIPS = ["Сводка за сегодня", "Новые заказы", "Что срочно?"];
+const DEFAULT_CHIPS = ["Сводка за сегодня", "Новые заказы", "Создай задачу"];
 
 function getChips(pathname: string): string[] {
   if (PAGE_CHIPS[pathname]) return PAGE_CHIPS[pathname];
@@ -30,13 +36,35 @@ function getChips(pathname: string): string[] {
 // ─── Types ──────────────────────────────────────────────────────────────────
 type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: boolean };
 
-// ─── Clean ARAY meta/commands from response ─────────────────────────────────
+// ─── Parse and clean ARAY commands from response ─────────────────────────────
+type ArayAction =
+  | { type: "navigate"; path: string }
+  | { type: "refresh" }
+  | { type: "show_url"; url: string; title: string };
+
+function parseActions(raw: string): ArayAction[] {
+  const actions: ArayAction[] = [];
+  // __ARAY_NAVIGATE:/admin/tasks__
+  for (const m of raw.matchAll(/__ARAY_NAVIGATE:(.+?)__/g)) {
+    actions.push({ type: "navigate", path: m[1] });
+  }
+  // __ARAY_SHOW_URL:https://....:Title__
+  for (const m of raw.matchAll(/__ARAY_SHOW_URL:(.+?):(.+?)__/g)) {
+    actions.push({ type: "show_url", url: m[1], title: m[2] });
+  }
+  // __ARAY_REFRESH__
+  if (raw.includes("__ARAY_REFRESH__")) actions.push({ type: "refresh" });
+  return actions;
+}
+
 function cleanResponse(raw: string): string {
   return raw
     .replace(/\n?__ARAY_META__[\s\S]*$/, "")
     .replace(/__ARAY_ERR__/, "")
     .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
     .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+    .replace(/__ARAY_REFRESH__/g, "")
+    .replace(/__ARAY_ADD_CART:.+?__/g, "")
     .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
     .trim();
 }
@@ -370,9 +398,20 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       // Auto-voice response
       if (autoVoice && final) speak(final);
 
-      // Handle navigation commands
-      const navMatch = raw.match(/__ARAY_NAVIGATE:(.+?)__/);
-      if (navMatch) router.push(navMatch[1]);
+      // Execute ALL actions from the response
+      const actions = parseActions(raw);
+      for (const action of actions) {
+        if (action.type === "navigate") {
+          // Небольшая задержка чтобы сообщение успело отрисоваться
+          setTimeout(() => router.push(action.path), 600);
+        }
+        if (action.type === "refresh") {
+          setTimeout(() => router.refresh(), 400);
+        }
+        if (action.type === "show_url") {
+          window.open(action.url, "_blank", "noopener,noreferrer");
+        }
+      }
 
     } catch (err) {
       setMessages(prev => prev.map(m => m.id === aid
