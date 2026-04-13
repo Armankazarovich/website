@@ -578,7 +578,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
           id: m.id, role: m.role, content: m.content,
           timestamp: new Date(m.createdAt), streaming: false,
         })));
-        setShowMessages(true); // есть история — показываем
+        // Voice-first: орб всегда первый, история доступна по кнопке
       }
     }).catch(() => {});
   }, []);
