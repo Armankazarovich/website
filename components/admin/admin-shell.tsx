@@ -851,7 +851,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   }, [open]);
 
   return (
-    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode" : "aray-admin-bg aray-nature-mode"}`}
+    <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode bg-background" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
       {/* Google Translate скрытый контейнер — переводит страницу целиком */}
       <div id="google_translate_element" style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }} />
