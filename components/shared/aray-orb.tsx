@@ -46,7 +46,7 @@ export function ArayOrb({
 
   return (
     <div
-      className="relative inline-flex items-center justify-center"
+      className="relative inline-flex items-center justify-center aray-orb-alive"
       role="img"
       aria-label={isListening ? "Арай слушает" : isSpeaking ? "Арай говорит" : "Арай — AI-ассистент"}
       style={{ width: size, height: size }}

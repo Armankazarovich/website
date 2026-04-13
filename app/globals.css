@@ -1691,6 +1691,17 @@ a:focus-visible {
   display: none;
 }
 
+/* ── Живой шарик Арай — видимая пульсация на всех устройствах ── */
+/* НЕ использовать CSS filter/drop-shadow — убивает GPU на iOS */
+@keyframes aray-orb-breathe {
+  0%, 100% { transform: scale(1);    opacity: 1; }
+  50%      { transform: scale(1.08); opacity: 0.92; }
+}
+.aray-orb-alive {
+  animation: aray-orb-breathe 3s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Вырез (нотч) в навбаре под центральную кнопку */
 .aray-nav-notch {
   position: absolute;
@@ -2380,7 +2391,34 @@ aside.aray-sidebar {
 .aray-classic-mode .aray-dialog-overlay {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  background: rgba(0, 0, 0, 0.5) !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+/* classic-mode glass-dialog: все дочерние элементы наследуют нормальные цвета */
+.aray-classic-mode .aray-glass-dialog input,
+.aray-classic-mode .aray-glass-dialog select,
+.aray-classic-mode .aray-glass-dialog textarea {
+  color: hsl(var(--foreground)) !important;
+  border-color: hsl(var(--border)) !important;
+  background: hsl(var(--background)) !important;
+}
+.aray-classic-mode .aray-glass-dialog button[class*="absolute"] svg {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.aray-classic-mode .aray-glass-dialog button[class*="absolute"]:hover svg {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* ── Info popup classic mode: text-white/XX → proper colors ── */
+.aray-classic-mode .info-popup-classic .text-white\/80,
+.aray-classic-mode .info-popup-classic .text-white\/60,
+.aray-classic-mode .info-popup-classic .text-white\/90 {
+  color: hsl(var(--foreground)) !important;
+}
+.aray-classic-mode .info-popup-classic .text-white\/35 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.aray-classic-mode .info-popup-classic .border-white\/10 {
+  border-color: hsl(var(--border)) !important;
 }
 
 /* ══════════════════════════════════════════════════════════════
