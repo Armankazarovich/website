@@ -114,22 +114,26 @@ function renderMarkdownContent(text: string): React.ReactNode[] {
     if (line.trim().startsWith("|")) {
       const tableLines: string[] = [];
       while (i < lines.length && lines[i].trim().startsWith("|")) { tableLines.push(lines[i]); i++; }
-      const parseRow = (row: string) => row.split("|").slice(1, -1).map(c => c.trim());
+      const parseRow = (row: string) => {
+        // Robust pipe parsing: handle escaped pipes and edge cases
+        const inner = row.replace(/^\|/, "").replace(/\|$/, "");
+        return inner.split("|").map(c => c.trim());
+      };
       const headers = parseRow(tableLines[0]);
       const sepIdx = tableLines.findIndex(l => /^\|[\s\-:|]+\|$/.test(l.trim()));
       const dataRows = tableLines.slice(sepIdx >= 0 ? sepIdx + 1 : 1).map(parseRow);
       nodes.push(
-        <div key={`tbl-${i}`} className="my-2 overflow-x-auto rounded-xl" style={{ border: "1px solid rgba(255,255,255,0.12)" }}>
+        <div key={`tbl-${i}`} className="my-2 overflow-x-auto rounded-xl" style={{ border: "1px solid hsl(var(--border))" }}>
           <table className="w-full text-[11.5px]">
             <thead>
-              <tr style={{ background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
+              <tr style={{ background: "hsl(var(--muted)/0.5)", borderBottom: "1px solid hsl(var(--border))" }}>
                 {headers.map((h, hi) => <th key={hi} className="px-3 py-2 text-left font-semibold" style={{ color: "hsl(var(--primary))" }}>{renderInline(h)}</th>)}
               </tr>
             </thead>
             <tbody>
               {dataRows.filter(r => r.some(c => c)).map((row, ri) => (
-                <tr key={ri} style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                  {row.map((cell, ci) => <td key={ci} className="px-3 py-2" style={{ color: "rgba(255,255,255,0.85)" }}>{renderInline(cell)}</td>)}
+                <tr key={ri} style={{ borderTop: "1px solid hsl(var(--border)/0.5)" }}>
+                  {row.map((cell, ci) => <td key={ci} className="px-3 py-2" style={{ color: "hsl(var(--foreground)/0.85)" }}>{renderInline(cell)}</td>)}
                 </tr>
               ))}
             </tbody>
@@ -1177,7 +1181,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <button onClick={() => setOpen(false)}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
                     style={{ color: txtMuted }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                    onMouseEnter={e => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <X className="w-4 h-4" /></button>
                 </div>
