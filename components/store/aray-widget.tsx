@@ -239,29 +239,65 @@ function ArayIcon({ size = 40, glow = false, id = "aig" }: { size?: number; glow
 
 // ─── Голосовой ввод ───────────────────────────────────────────────────────────
 
-function useVoiceInput(onResult: (text: string) => void) {
-  const [listening, setListening] = useState(false);
-  const recogRef = useRef<any>(null);
-  const start = useCallback(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
-    const r = new SR();
-    r.lang = "ru-RU"; r.interimResults = false;
-    r.onstart = () => setListening(true);
-    r.onend = () => setListening(false);
-    r.onerror = () => setListening(false);
-    r.onresult = (e: any) => { const t = e.results[0]?.[0]?.transcript || ""; if (t) onResult(t); };
-    r.start(); recogRef.current = r;
-  }, [onResult]);
-  const stop = useCallback(() => { recogRef.current?.stop(); setListening(false); }, []);
-  return { listening, start, stop };
+function useMic() {
+  const [active, setActive] = useState(false);
+  const [supported, setSupported] = useState(false);
+  const recRef = useRef<any>(null);
+
+  useEffect(() => {
+    setSupported(!!(
+      typeof window !== "undefined" &&
+      ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)
+    ));
+  }, []);
+
+  const listen = useCallback((): Promise<string> => {
+    return new Promise(async (resolve) => {
+      const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SR) { resolve(""); return; }
+
+      // Запрос разрешения на микрофон
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        resolve(""); return;
+      }
+
+      if (recRef.current) { try { recRef.current.stop(); } catch {} }
+
+      const r = new SR();
+      r.lang = "ru-RU";
+      r.interimResults = false;
+      r.continuous = false;
+      r.maxAlternatives = 1;
+      let resolved = false;
+
+      r.onstart = () => setActive(true);
+      r.onend = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
+      r.onerror = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
+      r.onresult = (e: any) => {
+        const text = e.results[0]?.[0]?.transcript?.trim() || "";
+        if (!resolved) { resolved = true; resolve(text); }
+      };
+
+      try { r.start(); recRef.current = r; }
+      catch { setActive(false); if (!resolved) { resolved = true; resolve(""); } }
+    });
+  }, []);
+
+  const cancel = useCallback(() => {
+    if (recRef.current) { try { recRef.current.stop(); } catch {} recRef.current = null; }
+    setActive(false);
+  }, []);
+
+  return { active, supported, listen, cancel };
 }
 
 // ─── Голос Арая — Streaming ElevenLabs (Leonid, Flash) → Browser ────────────
 const ELEVEN_VOICE_ID = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
 const ELEVEN_MODEL_ID = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
 const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-const ELEVEN_SPEED = 1.15; // живой темп для ассистента
+const ELEVEN_SPEED = 1.08; // живой, без артефактов
 
 function cleanForTTS(text: string): string {
   return text
@@ -276,13 +312,13 @@ function cleanForTTS(text: string): string {
 }
 
 function useTTS() {
-  const [speaking, setSpeaking] = useState<string | null>(null);
+  const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const onDoneRef = useRef<(() => void) | null>(null);
-  const lockRef = useRef(false); // мьютекс — не даём двойного вызова
+  const lockRef = useRef(false);
 
-  const stopAll = useCallback(() => {
+  const stop = useCallback(() => {
     lockRef.current = false;
     abortRef.current?.abort(); abortRef.current = null;
     if (audioRef.current) {
@@ -291,28 +327,23 @@ function useTTS() {
       audioRef.current = null;
     }
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
-    setSpeaking(null);
+    setSpeaking(false);
   }, []);
 
-  const speak = useCallback(async (text: string, msgId: string, onFinished?: () => void) => {
-    // Toggle — стоп если уже играет это сообщение
-    if (speaking === msgId) { stopAll(); return; }
-    // Мьютекс — не запускаем пока предыдущий не остановлен
-    if (lockRef.current) { stopAll(); await new Promise(r => setTimeout(r, 50)); }
-
-    stopAll();
+  const speak = useCallback(async (text: string, onFinished?: () => void) => {
+    if (lockRef.current) { stop(); await new Promise(r => setTimeout(r, 50)); }
+    stop();
     lockRef.current = true;
-    setSpeaking(msgId);
-    onDoneRef.current = onFinished || null;
 
     const clean = cleanForTTS(text);
-    if (!clean) { lockRef.current = false; setSpeaking(null); onDoneRef.current?.(); return; }
+    if (!clean) { lockRef.current = false; return; }
+    setSpeaking(true);
+    onDoneRef.current = onFinished || null;
 
     const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || ELEVEN_KEY;
     const abort = new AbortController();
     abortRef.current = abort;
 
-    // Один запрос на весь текст — без разбивки на предложения
     try {
       const res = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}/stream?output_format=mp3_22050_32`,
@@ -321,7 +352,7 @@ function useTTS() {
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL_ID,
-            voice_settings: { stability: 0.72, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
+            voice_settings: { stability: 0.75, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
@@ -337,9 +368,7 @@ function useTTS() {
             audio.play().catch(() => resolve());
           });
           if (!abort.signal.aborted) {
-            lockRef.current = false;
-            setSpeaking(null);
-            audioRef.current = null;
+            lockRef.current = false; setSpeaking(false); audioRef.current = null;
             onDoneRef.current?.();
           }
           return;
@@ -359,19 +388,18 @@ function useTTS() {
           if (ruVoice) {
             const utter = new SpeechSynthesisUtterance(clean);
             utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.0;
-            utter.onend = () => { lockRef.current = false; setSpeaking(null); onDoneRef.current?.(); };
-            utter.onerror = () => { lockRef.current = false; setSpeaking(null); };
+            utter.onend = () => { lockRef.current = false; setSpeaking(false); onDoneRef.current?.(); };
+            utter.onerror = () => { lockRef.current = false; setSpeaking(false); };
             window.speechSynthesis.speak(utter);
             return;
           }
         }
       } catch {}
-      lockRef.current = false;
-      setSpeaking(null);
+      lockRef.current = false; setSpeaking(false);
     }
-  }, [speaking, stopAll]);
+  }, [stop]);
 
-  return { speaking, speak, stopAll };
+  return { speaking, speak, stop };
 }
 
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
@@ -381,12 +409,12 @@ function MessageBubble({
 }: {
   msg: Message;
   onAction?: (a: ArayAction) => void;
-  onSpeak?: (text: string, id: string) => void;
-  speaking?: string | null;
+  onSpeak?: (text: string) => void;
+  speaking?: boolean;
   isDark?: boolean;
 }) {
   const isUser = msg.role === "user";
-  const isSpeaking = speaking === msg.id;
+  const isSpeaking = speaking;
 
   return (
     <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3.5`}>
@@ -466,7 +494,7 @@ function MessageBubble({
           {/* Кнопка голоса — только для сообщений Арая */}
           {!isUser && onSpeak && (
             <button
-              onClick={() => onSpeak(msg.content, msg.id)}
+              onClick={() => { if (isSpeaking) { /* stop handled by parent */ } onSpeak(msg.content); }}
               className="flex items-center justify-center w-5 h-5 rounded-full transition-all active:scale-90"
               style={{ color: isSpeaking ? "hsl(var(--primary))" : isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.30)" }}
               title={isSpeaking ? "Остановить" : "Озвучить"}
@@ -485,7 +513,8 @@ function MessageBubble({
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function ArayWidget({ page, productName, cartTotal, enabled = true }: ArayWidgetProps) {
-  const { speaking, speak, stopAll: stopTTS } = useTTS();
+  const { speaking, speak, stop: stopTTS } = useTTS();
+  const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -552,6 +581,14 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   useEffect(() => {
     const saved = localStorage.getItem("aray-voice-mode");
     if (saved === "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; }
+  }, []);
+
+  // Preload voices (нужно для Safari/Chrome — голоса грузятся асинхронно)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
   }, []);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -748,9 +785,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
       // Автоозвучка в голосовом режиме → после ответа автослушание (как Алиса)
       if (voiceModeRef.current === "voice" && finalParsed) {
-        speak(finalParsed, assistantId, () => {
-          // После того как Арай договорил — автоматически слушаем
-          setTimeout(() => startVoice(), 300);
+        speak(finalParsed, () => {
+          setTimeout(async () => {
+            try { const t = await micListen(); if (t) sendMessage(t); } catch {}
+          }, 300);
         });
       }
 
@@ -775,15 +813,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     }
   };
 
-  const { listening, start: startVoice, stop: stopVoice } = useVoiceInput(text => {
-    if (voiceModeRef.current === "voice") {
-      // В голосовом режиме — сразу отправляем
-      sendMessage(text);
-    } else {
-      setInput(input ? input + " " + text : text);
-      inputRef.current?.focus();
-    }
-  });
+  // Голосовой ввод (Promise-based, как в админке)
+  const startVoice = useCallback(async () => {
+    try {
+      const text = await micListen();
+      if (text) {
+        if (voiceModeRef.current === "voice") {
+          sendMessage(text);
+        } else {
+          setInput(prev => prev ? prev + " " + text : text);
+          inputRef.current?.focus();
+        }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [micListen]);
+  const listening = micActive;
+  const stopVoice = micCancel;
 
   // ── Обработчик кнопок-действий от Арая — ДОЛЖЕН быть до return! ──────────
   const handleAction = useCallback((action: ArayAction) => {
@@ -872,7 +918,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             )}
           </AnimatePresence>
 
-          {/* Чистая сфера — tap = open, long-press = voice */}
+          {/* Живая сфера — пульс, свечение, индикаторы (как в админке) */}
           <motion.button
             onClick={() => { if (!longPressTriggered.current) handleOpen(); }}
             onTouchStart={() => {
@@ -880,7 +926,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               longPressTimer.current = window.setTimeout(() => {
                 longPressTriggered.current = true;
                 if (!open) { setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); }
-                // Push-to-talk: включаем голос и слушаем
                 if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
                 startVoice();
               }, 400);
@@ -890,18 +935,58 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 400, damping: 18 }}
             aria-label={listening ? "Слушаю..." : "Арай — удерживай для голоса"}
-            className="relative focus:outline-none"
-            style={{ width: 56, height: 56, WebkitTapHighlightColor: "transparent" }}>
-            <ArayIcon size={56} glow id="aig2" />
+            className="relative focus:outline-none w-14 h-14 rounded-full flex items-center justify-center"
+            style={{
+              WebkitTapHighlightColor: "transparent",
+              boxShadow: listening
+                ? "0 4px 24px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2)"
+                : speaking
+                  ? "0 4px 24px rgba(52,211,153,0.4), 0 0 40px rgba(52,211,153,0.15)"
+                  : "0 4px 24px rgba(255,130,0,0.35), 0 0 40px rgba(255,130,0,0.12)",
+            }}>
+
+            {/* Пульсирующий ореол — всегда видно */}
+            <motion.span className="absolute inset-[-5px] rounded-full"
+              style={{
+                background: listening
+                  ? "radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)"
+                  : speaking
+                    ? "radial-gradient(circle, rgba(52,211,153,0.3) 0%, transparent 70%)"
+                    : "radial-gradient(circle, rgba(255,140,0,0.3) 0%, transparent 70%)",
+              }}
+              animate={{ scale: [1, 1.35], opacity: [0.7, 0] }}
+              transition={{ duration: speaking ? 1.5 : 2.5, repeat: Infinity, ease: "easeOut" }}
+            />
+
+            {/* Второй ореол для глубины */}
+            {!listening && (
+              <motion.span className="absolute inset-[-3px] rounded-full"
+                style={{ background: "radial-gradient(circle, rgba(255,180,50,0.15) 0%, transparent 60%)" }}
+                animate={{ scale: [1.1, 1.5], opacity: [0.4, 0] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
+              />
+            )}
+
+            <ArayIcon size={48} glow id="aig2" />
+
+            {/* Бейдж — новое сообщение */}
             {hasNew && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 animate-pulse"
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full border-2 animate-pulse"
                 style={{ background: "hsl(var(--primary))", borderColor: "hsl(var(--background))" }} />
             )}
-            {cartCount > 0 && !hasNew && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5"
+            {/* Бейдж — корзина */}
+            {cartCount > 0 && !hasNew && !speaking && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5"
                 style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)" }}>
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
+            )}
+            {/* Индикатор говорит / слушает */}
+            {speaking && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
+            )}
+            {listening && (
+              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-blue-400 border-2 border-white animate-pulse" />
             )}
           </motion.button>
         </div>
@@ -926,9 +1011,12 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               className="fixed z-[110] flex flex-col overflow-hidden"
               style={{
                 bottom: "6rem", right: "1.5rem",
-                width: "380px", height: "560px",
+                width: "min(400px, calc(100vw - 32px))",
+                height: "min(580px, calc(100vh - 140px))",
                 borderRadius: "20px",
-                boxShadow: "0 24px 64px rgba(0,0,0,0.18), 0 0 0 1px hsl(var(--border))",
+                boxShadow: isDark
+                  ? "0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08)"
+                  : "0 24px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.08)",
                 ...panelBg,
               }}>
               {/* Шапка */}

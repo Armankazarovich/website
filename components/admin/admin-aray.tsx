@@ -228,7 +228,7 @@ function useMic() {
 const ELEVEN_VOICE = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
 const ELEVEN_MODEL = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
 const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-const ELEVEN_SPEED = 1.15; // чуть быстрее нормы — живой темп для ассистента
+const ELEVEN_SPEED = 1.08; // чуть быстрее нормы — живой, без артефактов
 
 function cleanTTSText(text: string): string {
   return text
@@ -284,7 +284,7 @@ function useTTS() {
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL,
-            voice_settings: { stability: 0.72, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
+            voice_settings: { stability: 0.75, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
@@ -349,6 +349,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [voiceMode, setVoiceMode] = useState<"text" | "voice">("text");
+  const voiceModeRef = useRef<"text" | "voice">("text");
   // Встроенный браузер Арая (попап)
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserUrl, setBrowserUrl] = useState("/admin");
@@ -364,7 +365,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   // Load voice mode preference + mobile detect
   useEffect(() => {
     const saved = localStorage.getItem("aray-voice-mode");
-    if (saved === "voice") setVoiceMode("voice");
+    if (saved === "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; }
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
     window.addEventListener("resize", check);
@@ -473,7 +474,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
 
       // Auto-voice response
-      if (voiceMode === "voice" && final) speak(final, () => {
+      if (voiceModeRef.current === "voice" && final) speak(final, () => {
         // После того как Арай договорил — автоматически слушаем (как Алиса)
         setTimeout(async () => {
           try { const t = await micListen(); if (t) sendMessage(t); } catch {}
@@ -523,6 +524,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   const toggleVoice = () => {
     const next = voiceMode === "text" ? "voice" : "text";
     setVoiceMode(next);
+    voiceModeRef.current = next;
     localStorage.setItem("aray-voice-mode", next);
     if (next === "text") stopTTS();
   };
@@ -553,7 +555,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
             const text = await micListen();
             if (text) {
               // Включаем голосовой режим если ещё не включён
-              if (voiceMode !== "voice") { setVoiceMode("voice"); localStorage.setItem("aray-voice-mode", "voice"); }
+              if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
               sendMessage(text);
             }
           }, 400);
