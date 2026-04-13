@@ -302,18 +302,18 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
     <div className="space-y-5">
 
       {/* Статистика */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground">Заказов сегодня</p>
-          <p className="text-2xl font-bold mt-1">{stats.todayCount}</p>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-card border border-border rounded-2xl px-3 py-3">
+          <p className="text-[10px] text-muted-foreground leading-tight">Сегодня</p>
+          <p className="text-xl font-bold mt-0.5">{stats.todayCount}</p>
         </div>
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground">Выручка сегодня</p>
-          <p className="text-2xl font-bold mt-1">{formatPrice(stats.todayRevenue)}</p>
+        <div className="bg-card border border-border rounded-2xl px-3 py-3">
+          <p className="text-[10px] text-muted-foreground leading-tight">Выручка</p>
+          <p className="text-xl font-bold mt-0.5">{formatPrice(stats.todayRevenue)}</p>
         </div>
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground">Новых заказов</p>
-          <p className="text-2xl font-bold mt-1 text-primary">{stats.newCount}</p>
+        <div className="bg-card border border-border rounded-2xl px-3 py-3">
+          <p className="text-[10px] text-muted-foreground leading-tight">Новых</p>
+          <p className="text-xl font-bold mt-0.5 text-primary">{stats.newCount}</p>
         </div>
       </div>
 
@@ -338,32 +338,30 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
       </div>
 
       {/* Мобильные карточки (< md) */}
-      <div className="md:hidden space-y-2">
+      <div className="md:hidden space-y-1.5">
         {filtered.map((order) => (
           <div
             key={order.id}
             onClick={() => setQuickViewId(order.id)}
-            className={`bg-card rounded-2xl border p-4 cursor-pointer active:scale-[0.99] transition-all ${
-              quickViewId === order.id ? "border-primary/60" : "border-border"
+            className={`bg-card rounded-2xl border px-3.5 py-3 cursor-pointer active:scale-[0.98] transition-all ${
+              quickViewId === order.id ? "border-primary/60 bg-primary/5" : "border-border"
             }`}
+            style={{ WebkitTapHighlightColor: "transparent" }}
           >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <div className="flex items-center gap-2 min-w-0">
                 <span className="font-bold text-primary text-sm">#{order.orderNumber}</span>
-                <span className="text-muted-foreground text-xs">{formatDate(order.createdAt)}</span>
+                <span className="font-semibold text-sm truncate">{order.guestName || "—"}</span>
+              </div>
+              <p className="font-bold text-base shrink-0">{formatPrice(Number(order.totalAmount))}</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 min-w-0 text-muted-foreground text-xs">
+                <span>{order.guestPhone || "—"}</span>
+                <span>{formatDate(order.createdAt)}</span>
               </div>
               <div onClick={e => e.stopPropagation()}>
                 <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="min-w-0">
-                <p className="font-semibold text-sm truncate">{order.guestName || "—"}</p>
-                <p className="text-muted-foreground text-xs mt-0.5">{order.guestPhone || "—"}</p>
-              </div>
-              <div className="text-right shrink-0 ml-3">
-                <p className="font-bold text-base">{formatPrice(Number(order.totalAmount))}</p>
-                <p className="text-muted-foreground text-xs">{order.items.length} поз.</p>
               </div>
             </div>
           </div>

@@ -1111,10 +1111,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         {/* ── Mobile: только hamburger + bell (без поиска — поиск через Арая) ── */}
         <div className="lg:hidden sticky top-0 z-20 glass-mobile-header"
           style={{
-            paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
-            paddingBottom: "8px",
-            paddingLeft: "12px",
-            paddingRight: "12px",
+            paddingTop: "calc(env(safe-area-inset-top, 0px) + 6px)",
+            paddingBottom: "6px",
+            paddingLeft: "10px",
+            paddingRight: "10px",
           }}>
           <div className="flex items-center gap-2">
             <button
@@ -1141,7 +1141,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         {/* Desktop: хедер убран полностью — поиск через Арая снизу */}
 
         <div className="pt-0" style={{ paddingBottom: "calc(72px + max(16px, env(safe-area-inset-bottom, 16px)))" }}>
-          <div className="p-4 lg:p-6">{children}</div>
+          <div className="px-2.5 py-2 lg:p-6">{children}</div>
         </div>
       </main>
 
