@@ -194,18 +194,27 @@ function ArayIcon({ size = 40, id = "aig" }: { size?: number; id?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
       <defs>
-        <radialGradient id={`${id}-b`} cx="34%" cy="28%" r="70%">
-          <stop offset="0%" stopColor="#fffbe0"/><stop offset="10%" stopColor="#ffca40"/>
-          <stop offset="28%" stopColor="#f07800"/><stop offset="52%" stopColor="#c05000"/>
-          <stop offset="75%" stopColor="#6e1c00"/><stop offset="100%" stopColor="#160300"/>
+        <radialGradient id={`${id}-b`} cx="36%" cy="30%" r="65%">
+          <stop offset="0%" stopColor="#ffca40"/><stop offset="25%" stopColor="#f07800"/>
+          <stop offset="55%" stopColor="#c05000"/><stop offset="100%" stopColor="#0a0200"/>
         </radialGradient>
-        <radialGradient id={`${id}-h`} cx="30%" cy="25%" r="34%">
+        <radialGradient id={`${id}-h`} cx="32%" cy="26%" r="32%">
           <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
           <stop offset="100%" stopColor="white" stopOpacity="0"/>
         </radialGradient>
+        <clipPath id={`${id}-cl`}><circle cx="50" cy="50" r="46"/></clipPath>
       </defs>
       <circle cx="50" cy="50" r="46" fill={`url(#${id}-b)`}/>
+      {/* Мини-сетка глобуса */}
+      <g clipPath={`url(#${id}-cl)`} opacity="0.35">
+        <ellipse cx="50" cy="50" rx="12" ry="46" fill="none" stroke="rgba(255,170,50,0.5)" strokeWidth="0.7"/>
+        <ellipse cx="50" cy="50" rx="28" ry="46" fill="none" stroke="rgba(255,170,50,0.35)" strokeWidth="0.5"/>
+        <line x1="8" y1="50" x2="92" y2="50" stroke="rgba(255,170,50,0.4)" strokeWidth="0.5"/>
+        <line x1="14" y1="32" x2="86" y2="32" stroke="rgba(255,170,50,0.25)" strokeWidth="0.4"/>
+        <line x1="14" y1="68" x2="86" y2="68" stroke="rgba(255,170,50,0.25)" strokeWidth="0.4"/>
+      </g>
       <circle cx="50" cy="50" r="46" fill={`url(#${id}-h)`}/>
+      <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,150,30,0.3)" strokeWidth="0.8"/>
     </svg>
   );
 }
@@ -718,6 +727,15 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => { document.removeEventListener("focusin", onFocus); document.removeEventListener("focusout", onBlur); };
   }, []);
 
+  // Body scroll lock при открытом чате (мобилка)
+  useEffect(() => {
+    if (open && isMobile) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [open, isMobile]);
+
   // Tracker
   useEffect(() => { initArayTracker(); }, []);
 
@@ -942,19 +960,14 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }
   };
 
-  // Голосовой ввод
+  // Голосовой ввод — ВСЕГДА автоотправка
   const startVoice = useCallback(async () => {
     haptic("medium");
     try {
       const text = await micListen();
       if (text) {
         haptic("light");
-        if (voiceModeRef.current === "voice") {
-          sendMessage(text);
-        } else {
-          setInput(prev => prev ? prev + " " + text : text);
-          inputRef.current?.focus();
-        }
+        sendMessage(text); // Всегда отправляем сразу — голос = действие
       }
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1354,7 +1367,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
+                  <button onClick={() => setOpen(false)} aria-label="Закрыть чат" className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
                     <X className="w-4 h-4" />
                   </button>
                 </div>
