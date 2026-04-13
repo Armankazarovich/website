@@ -821,6 +821,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const { t } = useAdminLang();
   const pageTitle = usePageTitle();
 
+  // Цвет сайдбара напрямую из JS палитры — CSS variable может не работать в Sheet Portal
+  const sidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
+  const sidebarBg = `linear-gradient(180deg, ${sidebarHex}, ${sidebarHex}e0)`;
+
   // Синхронизируем aray-classic-mode на <body> для порталов (Sheet, Dialog)
   useEffect(() => {
     document.body.classList.toggle("aray-classic-mode", classic);
@@ -923,7 +927,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)", background: `linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.92))` }}
+          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)", background: sidebarBg }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
@@ -979,7 +983,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
       <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
         <SheetContent side="right" className="lg:hidden w-80 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)", background: `linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.92))` }}
+          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)", background: sidebarBg }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
 

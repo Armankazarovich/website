@@ -87,30 +87,6 @@ export function AdminMobileBottomNav({
 
   return (
     <>
-      {/* ─── АРАЙ — ВЫНЕСЕН из nav чтобы SVG анимации крутились на мобилке ─── */}
-      {/* position:fixed + backdrop-filter внутри nav растеризуют ВСЁ как bitmap → SVG animate умирает.
-          Решение: орб как отдельный fixed-элемент со своим compositing layer */}
-      <div
-        className="lg:hidden fixed z-[51] flex flex-col items-center transition-all duration-300"
-        style={{
-          bottom: (menuOpen || kbOpen) ? "-120px" : "calc(max(8px, env(safe-area-inset-bottom, 8px)) + 28px)",
-          left: "50%",
-          transform: "translateX(-50%)",
-          opacity: (menuOpen || kbOpen) ? 0 : 1,
-          pointerEvents: (menuOpen || kbOpen) ? "none" : "auto",
-        }}
-      >
-        <button
-          onClick={onArayOpen}
-          className="flex flex-col items-center justify-center focus:outline-none transition-transform duration-150 active:scale-[0.88]"
-          style={{ WebkitTapHighlightColor: "transparent" }}
-        >
-          <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
-          <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
-            style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
-        </button>
-      </div>
-
       {/* Bottom dock — hides when Sheet drawer is open */}
       <nav
         className="lg:hidden fixed z-50 transition-all duration-300"
@@ -137,8 +113,18 @@ export function AdminMobileBottomNav({
             <DockTab key={i} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />
           ))}
 
-          {/* ── Пустое место под Арай-орб (орб вынесен из nav) ── */}
-          <div style={{ width: 72, minWidth: 72 }} />
+          {/* ── Центральный слот — Арай ── */}
+          <div className="relative flex flex-col items-center justify-center" style={{ width: 72, minWidth: 72 }}>
+            <button
+              onClick={onArayOpen}
+              className="absolute flex flex-col items-center justify-center focus:outline-none transition-transform duration-150 active:scale-[0.88]"
+              style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
+            >
+              <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
+              <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
+                style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
+            </button>
+          </div>
 
           {/* ── Правые табы ── */}
           {rightTabs.map((tab, i) => (
