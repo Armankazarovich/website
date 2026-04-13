@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence, useDragControls } from "framer-motion";
-import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, Volume2, VolumeX } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, Volume2, VolumeX, MessageSquare, ChevronDown } from "lucide-react";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { useCartStore } from "@/store/cart";
@@ -48,7 +48,7 @@ function parseMessageActions(raw: string): { text: string; actions: ArayAction[]
   }
 }
 
-// ─── Markdown рендер (клиентский виджет) ─────────────────────────────────────
+// ─── Markdown рендер ─────────────────────────────────────────────────────────
 function renderInline(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
   return parts.map((p, i) => {
@@ -72,24 +72,18 @@ function renderMarkdownContent(text: string): React.ReactNode[] {
     if (line.trim() === "") { i++; continue; }
 
     if (/^---+$/.test(line.trim())) {
-      nodes.push(<hr key={i} className="my-1.5" style={{ borderColor: "hsl(var(--border))" }} />);
+      nodes.push(<hr key={`hr-${i}`} className="my-2" style={{ borderColor: "hsl(var(--border))" }} />);
       i++; continue;
     }
 
-    const hm = line.match(/^(#{1,3})\s+(.+)$/);
-    if (hm) {
-      nodes.push(<p key={i} className="font-bold mt-2 mb-0.5 text-[13px]" style={{ color: "hsl(var(--primary))" }}>{renderInline(hm[2])}</p>);
-      i++; continue;
-    }
-
-    if (/^[\-\*]\s/.test(line.trim())) {
+    if (/^[\-\*•]\s/.test(line.trim())) {
       const items: string[] = [];
-      while (i < lines.length && /^[\-\*]\s/.test(lines[i].trim())) {
-        items.push(lines[i].replace(/^[\-\*]\s/, "").trim()); i++;
+      while (i < lines.length && /^[\-\*•]\s/.test(lines[i].trim())) {
+        items.push(lines[i].replace(/^[\s]*[\-\*•]\s+/, "").trim()); i++;
       }
       nodes.push(<ul key={`ul-${i}`} className="space-y-0.5 my-1">{items.map((it, ii) => (
-        <li key={ii} className="flex gap-1.5 items-start">
-          <span className="mt-[6px] shrink-0 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary)/0.8)" }} />
+        <li key={ii} className="flex gap-2 items-start">
+          <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ background: "hsl(var(--primary)/0.5)" }}/>
           <span>{renderInline(it)}</span>
         </li>
       ))}</ul>);
@@ -115,7 +109,6 @@ function renderMarkdownContent(text: string): React.ReactNode[] {
       const tableLines: string[] = [];
       while (i < lines.length && lines[i].trim().startsWith("|")) { tableLines.push(lines[i]); i++; }
       const parseRow = (row: string) => {
-        // Robust pipe parsing: handle escaped pipes and edge cases
         const inner = row.replace(/^\|/, "").replace(/\|$/, "");
         return inner.split("|").map(c => c.trim());
       };
@@ -160,9 +153,10 @@ function ActionIcon({ icon }: { icon?: string }) {
     default:        return <ExternalLink className={cls} />;
   }
 }
+
 interface ArayWidgetProps {
   page?: string; productName?: string; cartTotal?: number; enabled?: boolean;
-  staffName?: string; userRole?: string; // admin mode props
+  staffName?: string; userRole?: string;
 }
 
 // ─── Admin-specific chips по разделу ────────────────────────────────────────
@@ -188,10 +182,8 @@ function getAdminChips(pathname: string): string[] {
   return match ? ADMIN_CHIPS[match] : ["Сводка за сегодня", "Новые заказы", "Создай задачу"];
 }
 
-// ─── Живой SVG-шар — без фона снаружи, анимация внутри ───────────────────────
-
+// ─── Маленькая иконка-сфера для аватарки в чат-сообщениях ───────────────────
 function ArayIcon({ size = 40, id = "aig" }: { size?: number; id?: string }) {
-  // Лёгкая статичная сфера без анимаций (для чат-иконок)
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
       <defs>
@@ -211,8 +203,7 @@ function ArayIcon({ size = 40, id = "aig" }: { size?: number; id?: string }) {
   );
 }
 
-// ─── Голосовой ввод ───────────────────────────────────────────────────────────
-
+// ─── Голосовой ввод (микрофон) ───────────────────────────────────────────────
 function useMic() {
   const [active, setActive] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -229,14 +220,7 @@ function useMic() {
     return new Promise(async (resolve) => {
       const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (!SR) { resolve(""); return; }
-
-      // Запрос разрешения на микрофон
-      try {
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-      } catch {
-        resolve(""); return;
-      }
-
+      try { await navigator.mediaDevices.getUserMedia({ audio: true }); } catch { resolve(""); return; }
       if (recRef.current) { try { recRef.current.stop(); } catch {} }
 
       const r = new SR();
@@ -267,57 +251,42 @@ function useMic() {
   return { active, supported, listen, cancel };
 }
 
-// ─── Голос Арая — Streaming ElevenLabs (Leonid, Flash) → Browser ────────────
-const ELEVEN_VOICE_ID = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
-const ELEVEN_MODEL_ID = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
-const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-const ELEVEN_SPEED = 1.05; // чуть медленнее — стабильнее произношение
-
+// ─── TTS — очистка текста для голоса ─────────────────────────────────────────
 function cleanForTTS(text: string): string {
   let t = text;
-
-  // ── 1. Markdown и форматирование ──────────────────────────────────────────
+  // Markdown
   t = t.replace(/\*\*(.*?)\*\*/g, "$1");
   t = t.replace(/\*(.*?)\*/g, "$1");
-  t = t.replace(/#{1,6}\s*/g, "");              // заголовки
+  t = t.replace(/#{1,6}\s*/g, "");
   t = t.replace(/[_`~|>]/g, " ");
   t = t.replace(/---+/g, ". ");
   t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-
-  // ── 2. Эмодзи ────────────────────────────────────────────────────────────
+  // Эмодзи
   t = t.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{2B50}\u{2B06}-\u{2BAE}\u{231A}-\u{23F3}]/gu, "");
-
-  // ── 3. URL, email, артикулы ───────────────────────────────────────────────
+  // URL, email
   t = t.replace(/https?:\/\/\S+/g, "");
   t = t.replace(/\S+@\S+\.\S+/g, "");
   t = t.replace(/\b[A-Z]{2,}-\d{3,}\b/g, "");
-
-  // ── 4. Кавычки и скобки ───────────────────────────────────────────────────
+  // Кавычки и скобки
   t = t.replace(/[«»""„"'']/g, "");
-  t = t.replace(/\(([^)]{0,60})\)/g, ", $1, "); // (текст) → пауза
-  t = t.replace(/\([^)]*\)/g, "");              // длинные скобки — убрать
-
-  // ── 5. Списки — убираем маркеры ───────────────────────────────────────────
+  t = t.replace(/\(([^)]{0,60})\)/g, ", $1, ");
+  t = t.replace(/\([^)]*\)/g, "");
+  // Списки
   t = t.replace(/^[\s]*[-•–—]\s+/gm, "");
   t = t.replace(/^[\s]*\d+[.)]\s+/gm, "");
-
-  // ── 6. Размеры: 100×200×50 → "100 на 200 на 50" ──────────────────────────
+  // Размеры: 100×200×50 → "100 на 200 на 50"
   t = t.replace(/(\d+)\s*[×хxXХ]\s*(\d+)(?:\s*[×хxXХ]\s*(\d+))?/g,
     (_, a, b, c) => c ? `${a} на ${b} на ${c}` : `${a} на ${b}`);
-
-  // ── 7. Пробелы внутри чисел: "15 000" → "15000" (ДО замены единиц!) ──────
+  // Пробелы внутри чисел
   t = t.replace(/(\d)\s(\d{3})(?=\s|$|[^\d])/g, "$1$2");
   t = t.replace(/(\d)\s(\d{3})(?=\s|$|[^\d])/g, "$1$2");
-
-  // ── 8. Десятичные: "2,5" → "2 целых 5 десятых", "0,5" → "ноль целых 5" ──
+  // Десятичные
   t = t.replace(/(\d+),(\d+)/g, (_, whole, frac) => {
     if (frac.length === 1) return `${whole} целых ${frac} десятых`;
     if (frac.length === 2) return `${whole} целых ${frac} сотых`;
     return `${whole} точка ${frac}`;
   });
-
-  // ── 9. Единицы ₽, м³ и т.д. → полные слова ────────────────────────────────
-  // Сначала составные единицы
+  // Составные единицы с ₽
   t = t.replace(/₽\s*\/\s*м[³3]/g, " рублей за кубометр");
   t = t.replace(/₽\s*\/\s*м[²2]/g, " рублей за квадратный метр");
   t = t.replace(/₽\s*\/\s*шт\.?/g, " рублей за штуку");
@@ -325,8 +294,7 @@ function cleanForTTS(text: string): string {
   t = t.replace(/₽\s*\/\s*м\.?\b/g, " рублей за метр");
   t = t.replace(/руб\.?\s*\/\s*м[³3]/g, " рублей за кубометр");
   t = t.replace(/руб\.?\s*\/\s*м[²2]/g, " рублей за квадратный метр");
-
-  // Потом одиночные единицы
+  // Одиночные единицы
   t = t.replace(/м[³3]/g, " кубометров ");
   t = t.replace(/м[²2]/g, " квадратных метров ");
   t = t.replace(/(\d)\s*мм\b/g, "$1 миллиметров ");
@@ -341,8 +309,7 @@ function cleanForTTS(text: string): string {
   t = t.replace(/₽/g, " рублей ");
   t = t.replace(/руб\.?/g, " рублей ");
   t = t.replace(/(\d)\s*р\b\.?/g, "$1 рублей ");
-
-  // ── 10. Сокращения → полные слова ─────────────────────────────────────────
+  // Сокращения
   t = t.replace(/т\.\s*д\./g, "так далее");
   t = t.replace(/т\.\s*е\./g, "то есть");
   t = t.replace(/т\.\s*п\./g, "тому подобное");
@@ -351,44 +318,35 @@ function cleanForTTS(text: string): string {
   t = t.replace(/пр\./g, "прочее");
   t = t.replace(/кв\.\s*м\.?/g, "квадратных метров");
   t = t.replace(/пог\.\s*м\.?/g, "погонных метров");
-
-  // ── 11. Слэш-разделители ─────────────────────────────────────────────────
-  // "рублей за ..." уже обработано выше, остальные слэши
+  // Слэш-разделители
   t = t.replace(/рублей\s*\/\s*кубометров/g, "рублей за кубометр");
   t = t.replace(/рублей\s*\/\s*штук/g, "рублей за штуку");
   t = t.replace(/(\S+)\s*\/\s*(\S+)/g, "$1 или $2");
-
-  // ── 12. Множественные знаки препинания ────────────────────────────────────
+  // Множественные знаки препинания
   t = t.replace(/!{2,}/g, "!");
   t = t.replace(/\?{2,}/g, "?");
   t = t.replace(/\.{2,}/g, ".");
   t = t.replace(/,{2,}/g, ",");
   t = t.replace(/[;:]{2,}/g, ",");
-  // Убираем точку-запятую — запятая достаточно для паузы
   t = t.replace(/;/g, ",");
-
-  // ── 13. Длинное тире → запятая ────────────────────────────────────────────
+  // Длинное тире
   t = t.replace(/\s*[—–]\s*/g, ", ");
-
-  // ── 14. Телефоны (8+ цифр) → по цифрам с паузами ─────────────────────────
+  // Телефоны
   t = t.replace(/\+?[\d\s()-]{10,}/g, (m) => {
     const digits = m.replace(/\D/g, "");
     if (digits.length >= 8) return digits.split("").join(" ");
     return m;
   });
-
-  // ── 15. Финальная чистка ──────────────────────────────────────────────────
+  // Финальная чистка
   t = t.replace(/\s{2,}/g, " ").trim();
-  // Убираем висящие запятые и точки: ", ," ".. " ", ."
   t = t.replace(/,\s*,/g, ",");
   t = t.replace(/\.\s*\./g, ".");
   t = t.replace(/,\s*\./g, ".");
   t = t.replace(/^\s*[,.\s]+/, "");
-
-  // Ограничение: макс 1200 символов
   return t.slice(0, 1200);
 }
 
+// ─── TTS хук ─────────────────────────────────────────────────────────────────
 function useTTS() {
   const [speaking, setSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -412,27 +370,22 @@ function useTTS() {
     if (lockRef.current) { stop(); await new Promise(r => setTimeout(r, 50)); }
     stop();
     lockRef.current = true;
-
     const clean = cleanForTTS(text);
     if (!clean) { lockRef.current = false; return; }
     setSpeaking(true);
     onDoneRef.current = onFinished || null;
-
     const abort = new AbortController();
     abortRef.current = abort;
 
     try {
-      // Через серверный прокси — обходит блокировку ElevenLabs в РФ
       const res = await fetch("/api/ai/tts", {
         method: "POST", signal: abort.signal,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: clean }),
       });
-
       if (res.ok) {
         const ct = res.headers.get("content-type") || "";
         if (ct.includes("audio")) {
-          // Получили аудио — проигрываем
           const blob = await res.blob();
           if (blob.size > 100 && !abort.signal.aborted) {
             const url = URL.createObjectURL(blob);
@@ -450,7 +403,6 @@ function useTTS() {
             return;
           }
         }
-        // Сервер вернул JSON fallback — используем браузерный голос ниже
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.name === "AbortError") return;
@@ -480,8 +432,7 @@ function useTTS() {
   return { speaking, speak, stop };
 }
 
-// ─── Пузырь сообщения ─────────────────────────────────────────────────────────
-
+// ─── Пузырь сообщения (компактный, voice-first) ─────────────────────────────
 function MessageBubble({
   msg, onAction, onSpeak, speaking, isDark = true,
 }: {
@@ -492,21 +443,20 @@ function MessageBubble({
   isDark?: boolean;
 }) {
   const isUser = msg.role === "user";
-  const isSpeaking = speaking;
 
   return (
-    <div className={`flex gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3.5`}>
+    <div className={`flex gap-2 ${isUser ? "flex-row-reverse" : "flex-row"} mb-3`}>
       {!isUser && (
-        <div className="shrink-0 mt-0.5"><ArayIcon size={24} id="aig1" /></div>
+        <div className="shrink-0 mt-0.5"><ArayIcon size={22} id={`ai-${msg.id}`} /></div>
       )}
-      <div className={`flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
-        <div className="px-3.5 py-2.5 text-sm leading-relaxed" style={
+      <div className={`flex flex-col gap-1 ${isUser ? "items-end" : "items-start"} max-w-[85%]`}>
+        <div className="px-3 py-2 text-[13px] leading-relaxed" style={
           isUser
-            ? { background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))", color: "#fff", borderRadius: "16px 16px 4px 16px" }
+            ? { background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))", color: "#fff", borderRadius: "14px 14px 4px 14px" }
             : {
-                background: isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.04)",
+                background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)",
                 color: isDark ? "rgba(255,255,255,0.90)" : "rgba(15,15,15,0.90)",
-                borderRadius: "16px 16px 16px 4px",
+                borderRadius: "14px 14px 14px 4px",
                 border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}`,
               }
         }>
@@ -518,9 +468,9 @@ function MessageBubble({
               : <div className="space-y-0.5">{renderMarkdownContent(msg.content)}</div>
             : !isUser && msg.streaming
             ? <span className="inline-flex gap-1 items-center py-0.5">
-                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "hsl(var(--primary)/0.8)", animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "hsl(var(--primary)/0.8)", animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ background: "hsl(var(--primary)/0.8)", animationDelay: "300ms" }} />
+                {[0,1,2].map(i => (
+                  <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(var(--primary)/0.8)", animation: `arayDot 1.4s ease-in-out ${i*150}ms infinite` }} />
+                ))}
               </span>
             : null
           }
@@ -529,57 +479,47 @@ function MessageBubble({
           )}
         </div>
 
-        {/* ── Action cards — кнопки от Арая ── */}
+        {/* Action cards */}
         {!isUser && msg.actions && msg.actions.length > 0 && (
           <div className="flex flex-col gap-1.5 w-full">
             {msg.actions.map((action, i) => (
               <motion.button
                 key={i}
                 onClick={() => onAction?.(action)}
-                initial={{ opacity: 0, y: 6 }}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.08 }}
-                className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-left transition-all active:scale-[0.97]"
+                transition={{ delay: i * 0.06 }}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-medium text-left transition-all active:scale-[0.97]"
                 style={{
                   background: isDark ? "rgba(232,112,10,0.10)" : "rgba(232,112,10,0.08)",
                   border: `1px solid ${isDark ? "rgba(232,112,10,0.25)" : "rgba(232,112,10,0.30)"}`,
                   color: isDark ? "rgba(255,255,255,0.90)" : "rgba(15,15,15,0.90)",
                 }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = "rgba(232,112,10,0.18)";
-                  e.currentTarget.style.borderColor = "rgba(232,112,10,0.45)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = "rgba(232,112,10,0.10)";
-                  e.currentTarget.style.borderColor = "rgba(232,112,10,0.25)";
-                }}
               >
-                <span className="flex items-center justify-center w-7 h-7 rounded-xl shrink-0"
+                <span className="flex items-center justify-center w-6 h-6 rounded-lg shrink-0"
                   style={{ background: "rgba(232,112,10,0.20)" }}>
                   <ActionIcon icon={action.icon} />
                 </span>
                 <span className="flex-1 leading-tight">{action.label}</span>
-                <span className="text-xs opacity-50">→</span>
+                <span className="text-[10px] opacity-40">→</span>
               </motion.button>
             ))}
           </div>
         )}
 
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-[10px]" style={{ color: isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.35)" }}>
+        {/* Время + озвучить */}
+        <div className="flex items-center gap-1.5 px-0.5">
+          <span className="text-[10px]" style={{ color: isDark ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.30)" }}>
             {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
           </span>
-          {/* Кнопка голоса — только для сообщений Арая */}
           {!isUser && onSpeak && (
             <button
-              onClick={() => { if (isSpeaking) { /* stop handled by parent */ } onSpeak(msg.content); }}
+              onClick={() => onSpeak(msg.content)}
               className="flex items-center justify-center w-5 h-5 rounded-full transition-all active:scale-90"
-              style={{ color: isSpeaking ? "hsl(var(--primary))" : isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.30)" }}
-              title={isSpeaking ? "Остановить" : "Озвучить"}
+              style={{ color: speaking ? "hsl(var(--primary))" : isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)" }}
+              title={speaking ? "Остановить" : "Озвучить"}
             >
-              {isSpeaking
-                ? <VolumeX className="w-3 h-3" />
-                : <Volume2 className="w-3 h-3" />}
+              {speaking ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
             </button>
           )}
         </div>
@@ -588,7 +528,9 @@ function MessageBubble({
   );
 }
 
-// ─── Главный компонент ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── ГЛАВНЫЙ КОМПОНЕНТ — VOICE-FIRST ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export function ArayWidget({ page, productName, cartTotal, enabled = true, staffName, userRole }: ArayWidgetProps) {
   const nextPathname = usePathname();
@@ -597,19 +539,22 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const zone = isAdmin ? "admin" : pathname.startsWith("/cabinet") ? "cabinet" : "store";
   const { speaking, speak, stop: stopTTS } = useTTS();
   const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
+
+  // ── State ──────────────────────────────────────────────────────────────────
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [voiceMode, setVoiceMode] = useState<"text" | "voice">("text");
-  const voiceModeRef = useRef<"text" | "voice">("text");
+  const [voiceMode, setVoiceMode] = useState<"text" | "voice">("voice"); // voice-first по умолчанию!
+  const voiceModeRef = useRef<"text" | "voice">("voice");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasNew, setHasNew] = useState(false);
   const [proactiveBubble, setProactiveBubble] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [kbHeight, setKbHeight] = useState(0); // высота клавиатуры для мобильного чата
+  const [kbHeight, setKbHeight] = useState(0);
   const [userName, setUserName] = useState<string | null>(null);
-  // Встроенный браузер Арая
+  const [showMessages, setShowMessages] = useState(false); // voice-first: сообщения скрыты по умолчанию
+  // Встроенный браузер
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserUrl, setBrowserUrl] = useState("/");
   const [browserAction, setBrowserAction] = useState<ArayBrowserAction | null>(null);
@@ -618,32 +563,26 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressTriggered = useRef(false);
-  const dragControls = useDragControls();
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
   const chips = isAdmin ? getAdminChips(pathname) : buildArayChips({ page, productName, cartTotal });
 
-  // ── Единая история чата (БД) ─────────────────────────────────────────────
+  // ── История чата (БД) ────────────────────────────────────────────────────
   const historyLoaded = useRef(false);
-
-  // Загрузить историю из БД при первом рендере
   useEffect(() => {
     if (historyLoaded.current) return;
     historyLoaded.current = true;
     fetch("/api/ai/chat/history").then(r => r.json()).then(data => {
       if (data.messages?.length) {
         setMessages(data.messages.map((m: any) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          timestamp: new Date(m.createdAt),
-          streaming: false,
+          id: m.id, role: m.role, content: m.content,
+          timestamp: new Date(m.createdAt), streaming: false,
         })));
+        setShowMessages(true); // есть история — показываем
       }
     }).catch(() => {});
   }, []);
 
-  // Сохранить сообщение в БД (вызывается после каждого нового)
   const saveMessageToDB = useCallback((role: string, content: string) => {
     if (!content) return;
     fetch("/api/ai/chat/history", {
@@ -660,19 +599,22 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }).catch(() => {});
   }, []);
 
-  // Voice mode + мобильный?
+  // Voice mode persistence
   useEffect(() => {
     const saved = localStorage.getItem("aray-voice-mode");
-    if (saved === "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; }
+    if (saved === "text") { setVoiceMode("text"); voiceModeRef.current = "text"; }
+    else { setVoiceMode("voice"); voiceModeRef.current = "voice"; } // voice-first default
   }, []);
 
-  // Preload voices (нужно для Safari/Chrome — голоса грузятся асинхронно)
+  // Preload voices
   useEffect(() => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.getVoices();
       window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
   }, []);
+
+  // Mobile detect
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -680,29 +622,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Keyboard-aware: отслеживаем высоту клавиатуры через visualViewport + fallback
+  // Keyboard-aware (iOS)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
-
     if (vv) {
       const onResize = () => {
         const diff = window.innerHeight - vv.height;
         setKbHeight(diff > 50 ? diff : 0);
-        // Scroll input into view на iOS
-        if (diff > 50) {
-          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-        }
+        if (diff > 50) setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       };
       vv.addEventListener("resize", onResize);
       vv.addEventListener("scroll", onResize);
       return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
     }
-
-    // Fallback для старых iOS без visualViewport
+    // Fallback для старых iOS
     const onFocus = (e: FocusEvent) => {
       if ((e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.tagName === "INPUT") {
-        // Примерная высота клавиатуры iOS
         setTimeout(() => {
           const diff = window.innerHeight - (window.visualViewport?.height || window.innerHeight * 0.55);
           setKbHeight(diff > 50 ? diff : Math.round(window.innerHeight * 0.4));
@@ -711,13 +647,12 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       }
     };
     const onBlur = () => setTimeout(() => setKbHeight(0), 100);
-
     document.addEventListener("focusin", onFocus);
     document.addEventListener("focusout", onBlur);
     return () => { document.removeEventListener("focusin", onFocus); document.removeEventListener("focusout", onBlur); };
   }, []);
 
-  // Инициализировать трекер
+  // Tracker
   useEffect(() => { initArayTracker(); }, []);
 
   // Показать через 1.5 сек
@@ -726,10 +661,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => clearTimeout(t);
   }, []);
 
-  // Клавиатура убрана — используем CSS dvh + safe-area
-
+  // ── Приветствие ────────────────────────────────────────────────────────────
   const startChat = useCallback(() => {
-    if (messages.length > 0) return; // уже есть (или восстановлены из БД)
+    if (messages.length > 0) return;
     const h = new Date().getHours();
     const t = h < 6 ? "Не спишь?" : h < 12 ? "Доброе утро" : h < 17 ? "Добрый день" : h < 22 ? "Добрый вечер" : "Поздно уже";
     const name = staffName || userName;
@@ -754,12 +688,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => window.removeEventListener("aray:open", handler);
   }, [startChat]);
 
-  // Push-to-talk из мобильного навбара (long-press на шар)
+  // Push-to-talk из мобильного навбара
   useEffect(() => {
     const handler = () => {
-      // Открываем чат и включаем голосовой режим, сам чат обработает ввод
-      setVisible(true); setOpen(true); setHasNew(false);
-      startChat();
+      setVisible(true); setOpen(true); setHasNew(false); startChat();
       if (voiceModeRef.current !== "voice") {
         setVoiceMode("voice"); voiceModeRef.current = "voice";
         localStorage.setItem("aray-voice-mode", "voice");
@@ -774,8 +706,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     if (!visible) return;
     const t = setTimeout(() => {
       if (!open) {
-        const msg = userName ? `${userName}, помочь с чем-нибудь? 👋`
-          : productName ? `Смотришь «${productName}»? Помогу 👋` : "Если есть вопросы — я рядом 😊";
+        const msg = userName ? `${userName}, помочь? 👋`
+          : productName ? `Смотришь «${productName}»? 👋` : "Если есть вопросы — я рядом 😊";
         setProactiveBubble(msg);
         setTimeout(() => setProactiveBubble(null), 5000);
       }
@@ -787,14 +719,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
 
   const handleOpen = () => { setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); };
 
+  // ── Отправка сообщения ────────────────────────────────────────────────────
   const sendMessage = async (text?: string) => {
     const msg = (text || input).trim();
     if (!msg || loading) return;
     setInput("");
+    setShowMessages(true); // показываем сообщения при отправке
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: msg, timestamp: new Date() };
     const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
-    saveMessageToDB("user", msg); // сохраняем в БД
+    saveMessageToDB("user", msg);
     setLoading(true);
 
     const assistantId = (Date.now() + 1).toString();
@@ -810,8 +744,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       });
 
       if (!res.body) throw new Error("No stream");
-
-      // Add empty streaming placeholder
       setMessages(prev => [...prev, {
         id: assistantId, role: "assistant", content: "", timestamp: new Date(), streaming: true,
       }]);
@@ -825,8 +757,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         const { done, value } = await reader.read();
         if (done) break;
         rawText += decoder.decode(value, { stream: true });
-
-        // Show text without internal markers
         const displayText = rawText
           .replace(/\n__ARAY_META__[\s\S]*$/, "")
           .replace(/__ARAY_ERR__[\s\S]*$/, "")
@@ -835,19 +765,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
           .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
           .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
           .replace(/__ARAY_REFRESH__/g, "");
-
         setMessages(prev => prev.map(m =>
           m.id === assistantId ? { ...m, content: displayText } : m
         ));
       }
 
-      // Parse final content
       const isError = rawText.includes("__ARAY_ERR__");
       const errMatch = rawText.match(/__ARAY_ERR__(.+)$/);
       const cleanText = isError
         ? (errMatch?.[1] || "Не получилось. Попробуй снова 🙏")
         : rawText.replace(/\n__ARAY_META__[\s\S]*$/, "").trim();
-
       const { text: parsedText, actions } = parseMessageActions(cleanText);
 
       if (actions.length > 0 && actions[0].type === "navigate" && actions[0].url) {
@@ -855,14 +782,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         setBrowserOpen(true);
       }
 
-      // ── Выполнение ARAY команд из ответа API ──────────────────────────
-      // Добавление в корзину: __ARAY_ADD_CART:{"variantId":"...","quantity":1,"unit":"piece"}__
+      // ── Команды из ответа API ─────────────────────────────────────────────
+      // Корзина
       const cartMatches = rawText.matchAll(/__ARAY_ADD_CART:(.+?)__/g);
       for (const cm of cartMatches) {
         try {
           const { variantId, quantity, unit } = JSON.parse(cm[1]);
           if (variantId) {
-            // Загружаем данные варианта и добавляем в корзину
             fetch(`/api/variants/${variantId}`)
               .then(r => r.ok ? r.json() : null)
               .then(variant => {
@@ -873,49 +799,39 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     ? variant.pricePerCube
                     : variant.pricePerPiece || 0;
                   cartStore.addItem({
-                    variantId: variant.id,
-                    productId: variant.productId,
-                    productName: variant.productName,
-                    productSlug: variant.productSlug,
-                    variantSize: variant.size,
-                    productImage: variant.image || undefined,
-                    unitType,
-                    quantity: quantity || 1,
-                    price,
+                    variantId: variant.id, productId: variant.productId,
+                    productName: variant.productName, productSlug: variant.productSlug,
+                    variantSize: variant.size, productImage: variant.image || undefined,
+                    unitType, quantity: quantity || 1, price,
                   });
                 }
-              })
-              .catch(() => {});
+              }).catch(() => {});
           }
         } catch {}
       }
 
-      // Навигация: __ARAY_NAVIGATE:/catalog/brus__
+      // Навигация
       const navMatch = rawText.match(/__ARAY_NAVIGATE:(.+?)__/);
-      if (navMatch) {
-        const navPath = navMatch[1];
-        if (navPath.startsWith("/")) {
-          setTimeout(() => { window.location.href = navPath; }, 800);
-        }
+      if (navMatch && navMatch[1].startsWith("/")) {
+        setTimeout(() => { window.location.href = navMatch[1]; }, 800);
       }
 
-      // Попап-браузер: __ARAY_POPUP:{"url":"/catalog/doski","title":"Доски"}__
+      // Попап-браузер
       const popupMatches = rawText.matchAll(/__ARAY_POPUP:(\{.+?\})__/g);
       for (const pm of popupMatches) {
         try {
-          const { url, title } = JSON.parse(pm[1]);
+          const { url } = JSON.parse(pm[1]);
           if (url) { setBrowserUrl(url); setBrowserOpen(true); }
         } catch {}
       }
 
-      // Показать внешний URL (legacy): __ARAY_SHOW_URL:https://...:Title__
+      // Внешний URL (legacy)
       const showUrlMatch = rawText.match(/__ARAY_SHOW_URL:(.+?):(.+?)__/);
       if (showUrlMatch && !rawText.includes("__ARAY_POPUP:")) {
-        setBrowserUrl(showUrlMatch[1]);
-        setBrowserOpen(true);
+        setBrowserUrl(showUrlMatch[1]); setBrowserOpen(true);
       }
 
-      // Очищаем служебные команды из отображаемого текста
+      // Очищаем команды из текста
       const finalParsed = parsedText
         .replace(/__ARAY_ADD_CART:.+?__/g, "")
         .replace(/__ARAY_NAVIGATE:.+?__/g, "")
@@ -927,9 +843,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       setMessages(prev => prev.map(m =>
         m.id === assistantId ? { ...m, content: finalParsed, actions, streaming: false } : m
       ));
-      saveMessageToDB("assistant", finalParsed); // сохраняем ответ в БД
+      saveMessageToDB("assistant", finalParsed);
 
-      // Автоозвучка в голосовом режиме → после ответа автослушание (как Алиса)
+      // Автоозвучка → после ответа автослушание (как Алиса)
       if (voiceModeRef.current === "voice" && finalParsed) {
         speak(finalParsed, () => {
           setTimeout(async () => {
@@ -937,7 +853,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
           }, 300);
         });
       }
-
       if (!open) setHasNew(true);
 
     } catch {
@@ -945,21 +860,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         const hasPlaceholder = prev.some(m => m.id === assistantId);
         if (hasPlaceholder) {
           return prev.map(m => m.id === assistantId
-            ? { ...m, content: "Нет связи. Попробуй снова 🙏", streaming: false }
-            : m
-          );
+            ? { ...m, content: "Нет связи. Попробуй снова 🙏", streaming: false } : m);
         }
-        return [...prev, {
-          id: assistantId, role: "assistant",
-          content: "Нет связи. Попробуй снова 🙏", timestamp: new Date(),
-        }];
+        return [...prev, { id: assistantId, role: "assistant", content: "Нет связи. Попробуй снова 🙏", timestamp: new Date() }];
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // Голосовой ввод (Promise-based, как в админке)
+  // Голосовой ввод
   const startVoice = useCallback(async () => {
     try {
       const text = await micListen();
@@ -977,20 +887,15 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const listening = micActive;
   const stopVoice = micCancel;
 
-  // ── Обработчик кнопок-действий от Арая — ДОЛЖЕН быть до return! ──────────
+  // Обработчик action-кнопок
   const handleAction = useCallback((action: ArayAction) => {
-    if (action.type === "navigate" && action.url) {
-      setBrowserUrl(action.url);
-      setBrowserOpen(true);
-    }
+    if (action.type === "navigate" && action.url) { setBrowserUrl(action.url); setBrowserOpen(true); }
     if ((action.type === "spotlight" || action.type === "highlight") && action.spotX !== undefined) {
       setBrowserAction({ type: action.type, spotX: action.spotX, spotY: action.spotY, hint: action.hint });
       if (!browserOpen) setBrowserOpen(true);
       setTimeout(() => setBrowserAction(null), 5500);
     }
-    if (action.type === "call" && action.url) {
-      window.location.href = action.url;
-    }
+    if (action.type === "call" && action.url) window.location.href = action.url;
   }, [browserOpen]);
 
   if (!enabled || !visible) return null;
@@ -999,49 +904,40 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
-  // ── Общие стили панели — адаптивные под тему ──────────────────────────────
-  const panelBg = isDark ? {
-    background: "rgba(12, 12, 14, 0.80)",
-    backdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
-    WebkitBackdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
-    border: "1px solid rgba(255, 255, 255, 0.12)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset",
-  } as React.CSSProperties : {
-    background: "rgba(255, 255, 255, 0.92)",
-    backdropFilter: "blur(28px) saturate(180%)",
-    WebkitBackdropFilter: "blur(28px) saturate(180%)",
-    border: "1px solid rgba(0, 0, 0, 0.10)",
-    boxShadow: "0 24px 64px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.5) inset",
-  } as React.CSSProperties;
-
-  // Цвета текста для темы
-  const txt = isDark ? "rgba(255,255,255,0.90)" : "rgba(15,15,15,0.90)";
-  const txtSub = isDark ? "rgba(255,255,255,0.45)" : "rgba(15,15,15,0.50)";
-  const txtMuted = isDark ? "rgba(255,255,255,0.38)" : "rgba(15,15,15,0.40)";
+  // Цвета
+  const txt = isDark ? "rgba(255,255,255,0.92)" : "rgba(15,15,15,0.92)";
+  const txtSub = isDark ? "rgba(255,255,255,0.50)" : "rgba(15,15,15,0.50)";
+  const txtMuted = isDark ? "rgba(255,255,255,0.35)" : "rgba(15,15,15,0.35)";
   const inputBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)";
   const inputBorder = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)";
   const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
-  const bubbleBg = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.04)";
-  const bubbleBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)";
+  const panelBg = isDark ? {
+    background: "rgba(12, 12, 14, 0.88)",
+    backdropFilter: "blur(32px) saturate(180%)",
+    WebkitBackdropFilter: "blur(32px) saturate(180%)",
+  } as React.CSSProperties : {
+    background: "rgba(255, 255, 255, 0.94)",
+    backdropFilter: "blur(32px) saturate(180%)",
+    WebkitBackdropFilter: "blur(32px) saturate(180%)",
+  } as React.CSSProperties;
+
+  // ── Орб статус для анимации ────────────────────────────────────────────────
+  const orbStatus = listening ? "listening" : speaking ? "speaking" : loading ? "listening" : "idle";
 
   return (
     <>
       {/* ══ Встроенный браузер Арая ══ */}
       <AnimatePresence>
         {browserOpen && (
-          <ArayBrowser
-            initialUrl={browserUrl}
-            onClose={() => setBrowserOpen(false)}
-            pendingAction={browserAction}
-            isMobile={isMobile}
-          />
+          <ArayBrowser initialUrl={browserUrl} onClose={() => setBrowserOpen(false)}
+            pendingAction={browserAction} isMobile={isMobile} />
         )}
       </AnimatePresence>
 
-      {/* ══ КНОПКА — плавающая сфера (скрыта в админке на мобилке — там шар встроен в док) ══ */}
+      {/* ══ КНОПКА-ОРБ (когда чат закрыт, скрыта на мобилке — там орб в доке) ══ */}
       {!open && !isMobile && (
         <div className="flex fixed z-[101] flex-col items-end gap-2.5"
-          style={{ bottom: isMobile ? "calc(68px + env(safe-area-inset-bottom, 0px))" : "1.5rem", right: "1rem" }}>
+          style={{ bottom: "1.5rem", right: "1rem" }}>
           {/* Проактивный пузырь */}
           <AnimatePresence>
             {proactiveBubble && (
@@ -1064,23 +960,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             )}
           </AnimatePresence>
 
-          {/* Живая сфера — пульс, свечение, push-to-talk */}
+          {/* Живая сфера — push-to-talk */}
           <motion.button
-            onClick={() => {
-              if (longPressTriggered.current) return;
-              handleOpen();
-            }}
+            onClick={() => { if (longPressTriggered.current) return; handleOpen(); }}
             onPointerDown={() => {
               longPressTriggered.current = false;
               longPressTimer.current = window.setTimeout(async () => {
                 longPressTriggered.current = true;
-                // Push-to-talk: слушаем БЕЗ открытия чата (как Алиса)
-                startChat(); // на всякий случай инициализируем
+                startChat();
                 if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
-                try {
-                  const text = await micListen();
-                  if (text) sendMessage(text);
-                } catch {}
+                try { const text = await micListen(); if (text) sendMessage(text); } catch {}
               }, 400);
             }}
             onPointerUp={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
@@ -1097,18 +986,14 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   ? "0 4px 30px rgba(52,211,153,0.45), 0 0 60px rgba(52,211,153,0.15)"
                   : "0 4px 30px rgba(255,130,0,0.4), 0 0 60px rgba(255,130,0,0.15)",
             }}>
-
-            <ArayOrb
-              size={56} id="float"
-              pulse={listening ? "listening" : speaking ? "speaking" : "idle"}
+            <ArayOrb size={56} id="float" pulse={orbStatus}
               badge={hasNew}
-              badgeCount={!isAdmin && !hasNew && !speaking && !listening && cartCount > 0 ? cartCount : undefined}
-            />
+              badgeCount={!isAdmin && !hasNew && !speaking && !listening && cartCount > 0 ? cartCount : undefined} />
           </motion.button>
         </div>
       )}
 
-      {/* ══ ДЕСКТОП ПОПАП ══ */}
+      {/* ══ ДЕСКТОП — VOICE-FIRST ПАНЕЛЬ ══ */}
       <AnimatePresence>
         {open && !isMobile && (
           <>
@@ -1117,7 +1002,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               transition={{ duration: 0.15 }}
               className="fixed inset-0 z-[105]"
               onClick={() => setOpen(false)}
-              style={{ background: "rgba(0,0,0,0.12)", backdropFilter: "blur(2px)" }}
+              style={{ background: isDark ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.12)", backdropFilter: "blur(3px)" }}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.93, y: 16 }}
@@ -1128,113 +1013,181 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               style={{
                 bottom: "6rem", right: "1.5rem",
                 width: "min(400px, calc(100vw - 32px))",
-                height: "min(580px, calc(100vh - 140px))",
-                borderRadius: "20px",
+                height: "min(600px, calc(100vh - 140px))",
+                borderRadius: "24px",
+                border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}`,
                 boxShadow: isDark
-                  ? "0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08)"
-                  : "0 24px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.08)",
+                  ? "0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)"
+                  : "0 24px 80px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06)",
                 ...panelBg,
               }}>
-              {/* Шапка */}
-              <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-                style={{ borderBottom: `1px solid ${dividerColor}` }}>
-                <ArayIcon size={32} id="aig3" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: txt }}>Арай</p>
-                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: txtSub }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                    {isAdmin ? `AI ассистент` : userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
-                  </p>
-                </div>
-                {!isAdmin && cartCount > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
-                    style={{ background: "hsl(var(--primary)/0.1)", border: "1px solid hsl(var(--primary)/0.2)" }}>
-                    <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
-                    <span className="text-[11px] font-semibold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
-                      {formatPrice(cartPrice)}
-                    </span>
+
+              {/* ── Шапка: минимальная ── */}
+              <div className="flex items-center justify-between px-4 pt-3 pb-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  <ArayIcon size={24} id="hdr" />
+                  <div>
+                    <p className="text-[13px] font-semibold" style={{ color: txt }}>Арай</p>
+                    <p className="text-[10px]" style={{ color: txtSub }}>
+                      {speaking ? "Говорю..." : listening ? "Слушаю..." : loading ? "Думаю..." : "Онлайн"}
+                    </p>
                   </div>
-                )}
-                <div className="flex gap-0.5 items-center">
-                  <button onClick={() => {
-                    const next = voiceMode === "text" ? "voice" : "text";
-                    setVoiceMode(next); voiceModeRef.current = next;
-                    localStorage.setItem("aray-voice-mode", next);
-                  }}
-                    className="h-7 px-2 rounded-lg flex items-center gap-1 text-[10px] font-medium transition-all"
-                    style={{
-                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-                      color: voiceMode === "voice" ? "#60a5fa" : txtSub,
-                      border: voiceMode === "voice" ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
-                    }}
-                    title={voiceMode === "voice" ? "Голосовой режим" : "Текстовый режим"}>
-                    {voiceMode === "voice"
-                      ? <><Volume2 className="w-3 h-3"/> Голос</>
-                      : <><VolumeX className="w-3 h-3"/> Текст</>}
+                </div>
+                <div className="flex gap-1 items-center">
+                  {!isAdmin && cartCount > 0 && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg mr-1"
+                      style={{ background: "hsl(var(--primary)/0.1)" }}>
+                      <ShoppingCart className="w-3 h-3" style={{ color: "hsl(var(--primary))" }} />
+                      <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--primary))" }}>
+                        {formatPrice(cartPrice)}
+                      </span>
+                    </div>
+                  )}
+                  <button onClick={() => { setMessages([]); fetch("/api/ai/chat/history", { method: "DELETE" }).catch(() => {}); setShowMessages(false); startChat(); }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{ color: txtMuted }} title="Новый чат">
+                    <RotateCcw className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => { setMessages([]); fetch("/api/ai/chat/history", { method: "DELETE" }).catch(() => {}); startChat(); }}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-                    style={{ color: txtMuted }}
-                    onMouseEnter={e => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                    title="Новый чат"><RotateCcw className="w-3.5 h-3.5" /></button>
                   <button onClick={() => setOpen(false)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-                    style={{ color: txtMuted }}
-                    onMouseEnter={e => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <X className="w-4 h-4" /></button>
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    style={{ color: txtMuted }}>
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-              {/* Сообщения */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
-                {messages.map(m => (
-                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} isDark={isDark} />
-                ))}
-                {loading && (
-                  <div className="flex gap-2.5 mb-3">
-                    <ArayIcon size={24} id="aig4" />
-                    <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
-                      style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)", border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}` }}>
-                      <div className="flex gap-1.5 items-center h-4">
-                        {[0,1,2].map(i => (
-                          <span key={i} className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i*0.2}s infinite` }} />
+
+              {/* ── Основная зона: орб по центру или сообщения ── */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Орб-зона — voice-first центральный элемент */}
+                {!showMessages && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center gap-4 py-6 px-4">
+                    {/* Орб */}
+                    <motion.div
+                      className="relative cursor-pointer"
+                      onClick={listening ? stopVoice : startVoice}
+                      whileTap={{ scale: 0.92 }}
+                      animate={listening ? { scale: [1, 1.05, 1] } : speaking ? { scale: [1, 1.03, 1] } : {}}
+                      transition={listening || speaking ? { duration: 1.5, repeat: Infinity } : {}}
+                    >
+                      {/* Ambient glow */}
+                      <div className="absolute inset-[-20px] rounded-full pointer-events-none transition-all duration-700" style={{
+                        background: listening
+                          ? "radial-gradient(circle, rgba(59,130,246,0.25) 0%, transparent 70%)"
+                          : speaking
+                            ? "radial-gradient(circle, rgba(52,211,153,0.20) 0%, transparent 70%)"
+                            : "radial-gradient(circle, rgba(255,140,0,0.15) 0%, transparent 70%)",
+                      }} />
+                      <ArayOrb size={100} id="center" pulse={orbStatus} />
+                    </motion.div>
+
+                    {/* Статус */}
+                    <p className="text-[13px] font-medium" style={{
+                      color: listening ? "#60a5fa" : speaking ? "#34d399" : txt,
+                    }}>
+                      {listening ? "Слушаю..." : speaking ? "Арай говорит..." : "Нажми на орб — говори"}
+                    </p>
+
+                    {/* Waveform при говорении */}
+                    {(speaking || listening) && (
+                      <div className="flex gap-1 items-center h-6">
+                        {[0,1,2,3,4,5,6].map(i => (
+                          <motion.span key={i} className="w-1 rounded-full"
+                            style={{ background: listening ? "#60a5fa" : "#34d399" }}
+                            animate={{ height: [4, 12 + Math.random() * 8, 4] }}
+                            transition={{ duration: 0.6 + Math.random() * 0.4, repeat: Infinity, delay: i * 0.08 }}
+                          />
                         ))}
                       </div>
+                    )}
+
+                    {speaking && (
+                      <button onClick={stopTTS} className="text-[11px] px-3 py-1 rounded-full transition-all"
+                        style={{ color: txtSub, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }}>
+                        Остановить
+                      </button>
+                    )}
+
+                    {/* Последний ответ — компактно */}
+                    {messages.length > 0 && !speaking && !listening && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-full px-4 py-3 rounded-2xl text-[13px] leading-relaxed text-center"
+                        style={{
+                          background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
+                          color: isDark ? "rgba(255,255,255,0.80)" : "rgba(15,15,15,0.80)",
+                          maxHeight: "120px", overflow: "hidden",
+                        }}>
+                        <div className="line-clamp-4">
+                          {messages[messages.length - 1]?.role === "assistant"
+                            ? renderMarkdownContent(messages[messages.length - 1].content).slice(0, 3)
+                            : null}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Кнопка "Показать историю" */}
+                    {messages.length > 1 && (
+                      <button onClick={() => setShowMessages(true)}
+                        className="flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full transition-all"
+                        style={{ color: "hsl(var(--primary))", background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.15)" }}>
+                        <MessageSquare className="w-3 h-3" />
+                        Показать переписку ({messages.length - 1})
+                      </button>
+                    )}
+
+                    {/* Быстрые чипы */}
+                    {chips.length > 0 && messages.length <= 1 && (
+                      <div className="flex gap-2 flex-wrap justify-center mt-1">
+                        {chips.map(q => (
+                          <button key={q} onClick={() => sendMessage(q)}
+                            className="text-[11px] px-3 py-1.5 rounded-full transition-all active:scale-95"
+                            style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.18)", color: "hsl(var(--primary))" }}>
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {/* Сообщения (текстовый режим или по кнопке) */}
+                {showMessages && (
+                  <div className="flex-1 overflow-y-auto px-4 py-3 overscroll-contain">
+                    {/* Кнопка "Свернуть к орбу" */}
+                    <div className="flex justify-center mb-3">
+                      <button onClick={() => setShowMessages(false)}
+                        className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full transition-all"
+                        style={{ color: txtSub, background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }}>
+                        <ChevronDown className="w-3 h-3 rotate-180" /> Свернуть к орбу
+                      </button>
                     </div>
+                    {messages.map(m => (
+                      <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} isDark={isDark} />
+                    ))}
+                    {loading && (
+                      <div className="flex gap-2 mb-3">
+                        <ArayIcon size={22} id="aig-load" />
+                        <div className="px-3 py-2.5 rounded-2xl rounded-tl-[4px]"
+                          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}` }}>
+                          <div className="flex gap-1.5 items-center h-4">
+                            {[0,1,2].map(i => (
+                              <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i*0.2}s infinite` }} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
-                <div ref={messagesEndRef} />
               </div>
-              {/* Чипсы */}
-              {messages.length <= 1 && !loading && chips.length > 0 && (
-                <div className="px-4 pb-2 flex gap-2 flex-wrap">
-                  {chips.map(q => (
-                    <button key={q} onClick={() => sendMessage(q)}
-                      className="text-xs px-3 py-1.5 rounded-full transition-all active:scale-95"
-                      style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.2)", color: "hsl(var(--primary))" }}>
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* Инпут — десктоп */}
+
+              {/* ── Инпут — нижняя панель ── */}
               <div className="px-4 py-3 shrink-0" style={{ borderTop: `1px solid ${dividerColor}` }}>
-                {speaking && (
-                  <div className="flex items-center justify-center gap-2 pb-2">
-                    <span className="flex gap-1 items-center">
-                      {[0,1,2,3,4].map(i => (
-                        <span key={i} className="w-1 rounded-full bg-blue-400" style={{
-                          animation: `arayWave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
-                          height: `${8 + Math.random() * 10}px`,
-                        }} />
-                      ))}
-                    </span>
-                    <span className="text-[11px] text-blue-400 font-medium">Арай говорит...</span>
-                    <button onClick={stopTTS} className="text-[10px] underline" style={{ color: txtMuted }}>Стоп</button>
-                  </div>
-                )}
                 <div className="flex gap-2 items-end">
                   <button onClick={listening ? stopVoice : startVoice}
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
@@ -1251,20 +1204,15 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     ref={inputRef} value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    onFocus={() => { if (!showMessages) setShowMessages(true); }}
                     rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
-                    className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
-                    style={{
-                      background: inputBg,
-                      border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`,
-                      color: txt,
-                      maxHeight: "100px",
-                    }}
+                    className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2 focus:outline-none transition-all"
+                    style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "80px" }}
                   />
                   <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
                     style={{
                       background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
-                      border: "1px solid hsl(var(--border))",
                       boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
                     }}>
                     {loading
@@ -1278,7 +1226,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         )}
       </AnimatePresence>
 
-      {/* ══ МОБИЛЬНЫЙ FULLSCREEN ══ */}
+      {/* ══ МОБИЛЬНЫЙ FULLSCREEN — VOICE-FIRST ══ */}
       <AnimatePresence>
         {open && isMobile && (
           <>
@@ -1286,7 +1234,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: 0.18 }}
               className="fixed inset-0 z-[105]"
-              style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)" }}
+              style={{ background: isDark ? "rgba(0,0,0,0.55)" : "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)" }}
               onClick={() => setOpen(false)}
             />
             <motion.div
@@ -1295,123 +1243,190 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               className="fixed left-0 right-0 z-[110] flex flex-col overflow-hidden transition-[height,bottom] duration-150"
               style={{
                 bottom: 0,
-                height: kbHeight > 0 ? `calc(100dvh - ${kbHeight}px)` : "92dvh",
-                borderRadius: kbHeight > 0 ? "0" : "20px 20px 0 0",
-                boxShadow: "0 -8px 48px rgba(0,0,0,0.25)",
+                height: kbHeight > 0 ? `calc(100dvh - ${kbHeight}px)` : "94dvh",
+                borderRadius: kbHeight > 0 ? "0" : "24px 24px 0 0",
+                border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+                borderBottom: "none",
+                boxShadow: "0 -8px 48px rgba(0,0,0,0.3)",
                 ...panelBg,
               }}>
-              {/* Ручка — свайп вниз для закрытия */}
-              <div
-                className="flex justify-center pt-2.5 pb-1 shrink-0"
-                onClick={() => setOpen(false)}
-              >
-                <div className="w-10 h-[3px] rounded-full" style={{ background: isDark ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.15)" }} />
+
+              {/* Ручка */}
+              <div className="flex justify-center pt-2 pb-1 shrink-0" onClick={() => setOpen(false)}>
+                <div className="w-10 h-[3px] rounded-full" style={{ background: isDark ? "rgba(255,255,255,0.18)" : "rgba(0,0,0,0.12)" }} />
               </div>
+
               {/* Шапка */}
-              <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-                style={{ borderBottom: `1px solid ${dividerColor}` }}>
-                <ArayIcon size={32} id="aig5" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: txt }}>Арай</p>
-                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: txtSub }}>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-                    {isAdmin ? `AI ассистент` : userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
-                  </p>
-                </div>
-                {!isAdmin && cartCount > 0 && (
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
-                    style={{ background: "hsl(var(--primary) / 0.1)", border: "1px solid hsl(var(--primary) / 0.2)" }}>
-                    <ShoppingCart className="w-3.5 h-3.5" style={{ color: "hsl(var(--primary))" }} />
-                    <span className="text-[11px] font-semibold tabular-nums" style={{ color: "hsl(var(--primary))" }}>
-                      {formatPrice(cartPrice)}
-                    </span>
+              <div className="flex items-center justify-between px-4 py-2 shrink-0">
+                <div className="flex items-center gap-2">
+                  <ArayIcon size={24} id="mhdr" />
+                  <div>
+                    <p className="text-[13px] font-semibold" style={{ color: txt }}>Арай</p>
+                    <p className="text-[10px]" style={{ color: txtSub }}>
+                      {speaking ? "Говорю..." : listening ? "Слушаю..." : loading ? "Думаю..." : "Онлайн"}
+                    </p>
                   </div>
-                )}
-                <div className="flex gap-0.5 items-center">
-                  <button onClick={() => {
-                    const next = voiceMode === "text" ? "voice" : "text";
-                    setVoiceMode(next); voiceModeRef.current = next;
-                    localStorage.setItem("aray-voice-mode", next);
-                  }}
-                    className="h-7 px-2 rounded-lg flex items-center gap-1 text-[10px] font-medium transition-all"
-                    style={{
-                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-                      color: voiceMode === "voice" ? "#60a5fa" : txtSub,
-                      border: voiceMode === "voice" ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
-                    }}
-                    title={voiceMode === "voice" ? "Голосовой режим" : "Текстовый режим"}>
-                    {voiceMode === "voice"
-                      ? <><Volume2 className="w-3 h-3"/> Голос</>
-                      : <><VolumeX className="w-3 h-3"/> Текст</>}
-                  </button>
-                  <button onClick={() => { setMessages([]); fetch("/api/ai/chat/history", { method: "DELETE" }).catch(() => {}); startChat(); }}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ color: txtMuted }} title="Новый чат">
+                </div>
+                <div className="flex gap-1 items-center">
+                  {!isAdmin && cartCount > 0 && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg mr-1"
+                      style={{ background: "hsl(var(--primary)/0.1)" }}>
+                      <ShoppingCart className="w-3 h-3" style={{ color: "hsl(var(--primary))" }} />
+                      <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--primary))" }}>{formatPrice(cartPrice)}</span>
+                    </div>
+                  )}
+                  <button onClick={() => { setMessages([]); fetch("/api/ai/chat/history", { method: "DELETE" }).catch(() => {}); setShowMessages(false); startChat(); }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={() => setOpen(false)}
-                    className="w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ color: txtMuted }}>
+                  <button onClick={() => setOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               </div>
-              {/* Сообщения */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
-                {messages.map(m => (
-                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} isDark={isDark} />
-                ))}
-                {loading && (
-                  <div className="flex gap-2.5 mb-3">
-                    <ArayIcon size={24} id="aig6" />
-                    <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
-                      style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)", border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}` }}>
-                      <div className="flex gap-1.5 items-center h-4">
-                        {[0,1,2].map(i => (
-                          <span key={i} className="w-1.5 h-1.5 rounded-full"
-                            style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i*0.2}s infinite` }} />
+
+              {/* ── Основная зона ── */}
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Орб-зона — voice-first */}
+                {!showMessages && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center justify-center gap-5 py-8 px-4 flex-1">
+
+                    {/* Большой орб — главный элемент */}
+                    <motion.div
+                      className="relative cursor-pointer"
+                      onClick={listening ? stopVoice : startVoice}
+                      whileTap={{ scale: 0.90 }}
+                      animate={listening ? { scale: [1, 1.06, 1] } : speaking ? { scale: [1, 1.04, 1] } : {}}
+                      transition={listening || speaking ? { duration: 1.5, repeat: Infinity } : {}}
+                    >
+                      <div className="absolute inset-[-28px] rounded-full pointer-events-none transition-all duration-700" style={{
+                        background: listening
+                          ? "radial-gradient(circle, rgba(59,130,246,0.30) 0%, transparent 70%)"
+                          : speaking
+                            ? "radial-gradient(circle, rgba(52,211,153,0.25) 0%, transparent 70%)"
+                            : "radial-gradient(circle, rgba(255,140,0,0.18) 0%, transparent 70%)",
+                      }} />
+                      <ArayOrb size={120} id="mcenter" pulse={orbStatus} />
+                    </motion.div>
+
+                    {/* Статус */}
+                    <p className="text-[15px] font-medium" style={{
+                      color: listening ? "#60a5fa" : speaking ? "#34d399" : txt,
+                    }}>
+                      {listening ? "Слушаю..." : speaking ? "Арай говорит..." : "Нажми — говори"}
+                    </p>
+
+                    {/* Waveform */}
+                    {(speaking || listening) && (
+                      <div className="flex gap-1 items-center h-8">
+                        {[0,1,2,3,4,5,6,7,8].map(i => (
+                          <motion.span key={i} className="w-1 rounded-full"
+                            style={{ background: listening ? "#60a5fa" : "#34d399" }}
+                            animate={{ height: [4, 14 + Math.random() * 10, 4] }}
+                            transition={{ duration: 0.5 + Math.random() * 0.4, repeat: Infinity, delay: i * 0.06 }}
+                          />
                         ))}
                       </div>
+                    )}
+
+                    {speaking && (
+                      <button onClick={stopTTS} className="text-[12px] px-4 py-1.5 rounded-full"
+                        style={{ color: txtSub, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }}>
+                        Остановить
+                      </button>
+                    )}
+
+                    {/* Последний ответ — компактно */}
+                    {messages.length > 0 && !speaking && !listening && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-full px-4 py-3 rounded-2xl text-[13px] leading-relaxed text-center"
+                        style={{
+                          background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)",
+                          color: isDark ? "rgba(255,255,255,0.80)" : "rgba(15,15,15,0.80)",
+                          maxHeight: "140px", overflow: "hidden",
+                        }}>
+                        <div className="line-clamp-5">
+                          {messages[messages.length - 1]?.role === "assistant"
+                            ? renderMarkdownContent(messages[messages.length - 1].content).slice(0, 4)
+                            : null}
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Кнопка переписки */}
+                    {messages.length > 1 && (
+                      <button onClick={() => setShowMessages(true)}
+                        className="flex items-center gap-1 text-[11px] px-3 py-1.5 rounded-full"
+                        style={{ color: "hsl(var(--primary))", background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.15)" }}>
+                        <MessageSquare className="w-3 h-3" />
+                        Переписка ({messages.length - 1})
+                      </button>
+                    )}
+
+                    {/* Чипы */}
+                    {chips.length > 0 && messages.length <= 1 && (
+                      <div className="flex gap-2 flex-wrap justify-center mt-2">
+                        {chips.map(q => (
+                          <button key={q} onClick={() => sendMessage(q)}
+                            className="text-[12px] px-3.5 py-2 rounded-full transition-all active:scale-95"
+                            style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.18)", color: "hsl(var(--primary))" }}>
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {/* Сообщения */}
+                {showMessages && (
+                  <div className="flex-1 overflow-y-auto px-4 py-3 overscroll-contain">
+                    <div className="flex justify-center mb-3">
+                      <button onClick={() => setShowMessages(false)}
+                        className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
+                        style={{ color: txtSub, background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.03)" }}>
+                        <ChevronDown className="w-3 h-3 rotate-180" /> Свернуть к орбу
+                      </button>
                     </div>
+                    {messages.map(m => (
+                      <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} isDark={isDark} />
+                    ))}
+                    {loading && (
+                      <div className="flex gap-2 mb-3">
+                        <ArayIcon size={22} id="ml" />
+                        <div className="px-3 py-2.5 rounded-2xl rounded-tl-[4px]"
+                          style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)", border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}` }}>
+                          <div className="flex gap-1.5 items-center h-4">
+                            {[0,1,2].map(i => (
+                              <span key={i} className="w-1.5 h-1.5 rounded-full" style={{ background: "hsl(var(--primary))", animation: `arayDot 1.4s ease-in-out ${i*0.2}s infinite` }} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
-                <div ref={messagesEndRef} />
               </div>
-              {/* Чипсы */}
-              {messages.length <= 1 && !loading && chips.length > 0 && (
-                <div className="px-4 pb-2 flex gap-2 flex-wrap shrink-0">
-                  {chips.map(q => (
-                    <button key={q} onClick={() => sendMessage(q)}
-                      className="text-xs px-3 py-1.5 rounded-full transition-all active:scale-95"
-                      style={{ background: "hsl(var(--primary)/0.08)", border: "1px solid hsl(var(--primary)/0.2)", color: "hsl(var(--primary))" }}>
-                      {q}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* Инпут — мобильный */}
+
+              {/* ── Мобильный инпут ── */}
               <div className="px-4 py-3 shrink-0" style={{
                 borderTop: `1px solid ${dividerColor}`,
                 paddingBottom: kbHeight > 0 ? "8px" : "max(16px, env(safe-area-inset-bottom, 16px))",
               }}>
-                {/* Индикатор: Арай говорит */}
-                {speaking && (
-                  <div className="flex items-center justify-center gap-2 pb-2">
-                    <span className="flex gap-1 items-center">
-                      {[0,1,2,3,4].map(i => (
-                        <span key={i} className="w-1 rounded-full bg-blue-400" style={{
-                          animation: `arayWave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
-                          height: `${8 + Math.random() * 10}px`,
-                        }} />
-                      ))}
-                    </span>
-                    <span className="text-[11px] text-blue-400 font-medium">Арай говорит...</span>
-                    <button onClick={stopTTS} className="text-[10px] underline" style={{ color: txtMuted }}>Стоп</button>
-                  </div>
-                )}
-                {/* Голосовой режим — большая кнопка микрофона по центру */}
-                {voiceMode === "voice" && !input.trim() ? (
-                  <div className="flex flex-col items-center gap-2">
+                {/* Голосовой режим — большая кнопка */}
+                {voiceMode === "voice" && !input.trim() && !showMessages ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <button onClick={() => { setVoiceMode("text"); voiceModeRef.current = "text"; localStorage.setItem("aray-voice-mode", "text"); setShowMessages(true); }}
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{ background: inputBg, border: `1px solid ${inputBorder}` }}>
+                      <MessageSquare className="w-4 h-4" style={{ color: txtSub }} />
+                    </button>
                     <button
                       onClick={listening ? stopVoice : startVoice}
                       className="w-16 h-16 rounded-full flex items-center justify-center relative transition-all active:scale-90"
@@ -1429,27 +1444,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                         ? <MicOff className="w-6 h-6 text-white relative z-10" />
                         : <Mic className="w-6 h-6 text-white relative z-10" />}
                     </button>
-                    <p className="text-[11px] font-medium" style={{ color: listening ? "#ef4444" : txtSub }}>
-                      {listening ? "Слушаю... нажми чтобы остановить" : "Нажми чтобы говорить"}
-                    </p>
-                    {/* Мелкий инпут под кнопкой */}
-                    <div className="flex gap-2 w-full items-center">
-                      <textarea
-                        ref={inputRef} value={input}
-                        onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                        rows={1} placeholder="...или напиши"
-                        onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300)}
-                        className="flex-1 resize-none text-sm rounded-2xl px-4 py-2 focus:outline-none"
-                        style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: txt, maxHeight: "80px" }}
-                      />
-                      {input.trim() && (
-                        <button onClick={() => sendMessage()} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" }}>
-                          <Send className="w-4 h-4 text-white" />
-                        </button>
-                      )}
-                    </div>
+                    <div className="w-10" /> {/* spacer для центрирования */}
                   </div>
                 ) : (
                   <div className="flex gap-2 items-end">
@@ -1462,24 +1457,21 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       }}>
                       {listening && <span className="absolute inset-0 rounded-full animate-ping"
                         style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
-                      {listening
-                        ? <MicOff className="w-4.5 h-4.5 text-white relative z-10" />
-                        : <Mic className="w-4.5 h-4.5 relative z-10" style={{ color: txtSub }} />}
+                      {listening ? <MicOff className="w-4 h-4 text-white relative z-10" /> : <Mic className="w-4 h-4 relative z-10" style={{ color: txtSub }} />}
                     </button>
                     <textarea
                       ref={inputRef} value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                      onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300)}
+                      onFocus={() => { if (!showMessages) setShowMessages(true); setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300); }}
                       rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
-                      className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none"
+                      className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2.5 focus:outline-none"
                       style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "100px" }}
                     />
                     <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"
                       style={{
                         background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
-                        border: "1px solid hsl(var(--border))",
                         boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
                       }}>
                       {loading
