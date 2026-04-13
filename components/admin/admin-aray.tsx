@@ -228,11 +228,17 @@ function useMic() {
 const ELEVEN_VOICE = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
 const ELEVEN_MODEL = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
 const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
+const ELEVEN_SPEED = 1.15; // чуть быстрее нормы — живой темп для ассистента
 
 function cleanTTSText(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[#_`~|>]/g, " ")
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, "") // все эмодзи
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")  // [ссылки](url) → текст
+    .replace(/https?:\/\/\S+/g, "")           // голые URL
+    .replace(/\d{4,}/g, (m) => m.split("").join(" ")) // длинные числа по цифрам
+    .replace(/₽/g, " рублей").replace(/м³/g, " кубов")
     .replace(/\s{2,}/g, " ").trim().slice(0, 800);
 }
 
@@ -283,34 +289,22 @@ function useTTS() {
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL,
-            voice_settings: { stability: 0.55, similarity_boost: 0.80, style: 0.25, use_speaker_boost: true },
+            voice_settings: { stability: 0.60, similarity_boost: 0.75, style: 0.20, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
       if (res.ok && res.body) {
-        // Собираем чанки и воспроизводим по мере получения через MediaSource
+        // Собираем все чанки (Flash < 1 сек) и воспроизводим целиком
         const reader = res.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let done = false;
-        while (!done) {
+        const parts: BlobPart[] = [];
+        for (;;) {
           const { value, done: d } = await reader.read();
-          if (d) { done = true; break; }
-          if (value) chunks.push(value);
-          // Начинаем воспроизведение как только получили достаточно данных (~8KB)
-          if (chunks.length === 3 && !audioRef.current) {
-            const partial = new Blob(chunks, { type: "audio/mpeg" });
-            const url = URL.createObjectURL(partial);
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            audio.play().catch(() => {});
-          }
+          if (d) break;
+          if (value) parts.push(value);
         }
-        // Финальное воспроизведение полного аудио
-        if (chunks.length > 0) {
-          const blob = new Blob(chunks, { type: "audio/mpeg" });
+        if (parts.length > 0) {
+          const blob = new Blob(parts, { type: "audio/mpeg" });
           const url = URL.createObjectURL(blob);
-          // Если уже играем частичный — переключимся на полный
-          if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
           const audio = new Audio(url);
           audioRef.current = audio;
           audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(false); audioRef.current = null; };
@@ -372,20 +366,23 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [autoVoice, setAutoVoice] = useState(false);
+  const [voiceMode, setVoiceMode] = useState<"text" | "voice">("text");
   // Встроенный браузер Арая (попап)
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserUrl, setBrowserUrl] = useState("/admin");
   const [isMobile, setIsMobile] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressTriggered = useRef(false);
 
   const { speaking, speak, stop: stopTTS } = useTTS();
   const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
 
-  // Load auto-voice preference + mobile detect
+  // Load voice mode preference + mobile detect
   useEffect(() => {
-    setAutoVoice(localStorage.getItem("aray-auto-voice") === "1");
+    const saved = localStorage.getItem("aray-voice-mode");
+    if (saved === "voice") setVoiceMode("voice");
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
     window.addEventListener("resize", check);
@@ -494,7 +491,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
 
       // Auto-voice response
-      if (autoVoice && final) speak(final);
+      if (voiceMode === "voice" && final) speak(final);
 
       // Execute ALL actions from the response
       const actions = parseActions(raw);
@@ -521,7 +518,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, loading, open, pathname, autoVoice, speak, router]);
+  }, [messages, loading, open, pathname, voiceMode, speak, router]);
 
   // ─── Voice input (push-to-talk) ───────────────────────────────────────────
   const handleMic = useCallback(async () => {
@@ -537,10 +534,10 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   };
 
   const toggleVoice = () => {
-    const next = !autoVoice;
-    setAutoVoice(next);
-    localStorage.setItem("aray-auto-voice", next ? "1" : "0");
-    if (!next) stopTTS();
+    const next = voiceMode === "text" ? "voice" : "text";
+    setVoiceMode(next);
+    localStorage.setItem("aray-voice-mode", next);
+    if (next === "text") stopTTS();
   };
 
   // ═══ RENDER ═══════════════════════════════════════════════════════════════
@@ -557,19 +554,37 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         )}
       </AnimatePresence>
 
-      {/* ── FLOATING ORB BUTTON ── */}
+      {/* ── FLOATING ORB BUTTON (tap = open chat, long-press = voice) ── */}
       <motion.button
-        onClick={() => { setOpen(v => !v); if (!open) setTimeout(() => inputRef.current?.focus(), 200); }}
+        onClick={() => { if (!longPressTriggered.current) { setOpen(v => !v); if (!open) setTimeout(() => inputRef.current?.focus(), 200); } }}
+        onTouchStart={() => {
+          longPressTriggered.current = false;
+          longPressTimer.current = window.setTimeout(async () => {
+            longPressTriggered.current = true;
+            if (!open) setOpen(true);
+            // Push-to-talk: начинаем слушать
+            const text = await micListen();
+            if (text) {
+              // Включаем голосовой режим если ещё не включён
+              if (voiceMode !== "voice") { setVoiceMode("voice"); localStorage.setItem("aray-voice-mode", "voice"); }
+              sendMessage(text);
+            }
+          }, 400);
+        }}
+        onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+        onTouchCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
         className="fixed z-[30] right-4 bottom-4 w-14 h-14 rounded-full flex items-center justify-center"
         style={{
           background: open ? "hsl(var(--muted))" : "transparent",
-          boxShadow: open
-            ? "0 4px 20px rgba(0,0,0,0.15)"
-            : "0 4px 24px rgba(255,130,0,0.35), 0 0 40px rgba(255,130,0,0.12)",
+          boxShadow: micActive
+            ? "0 4px 24px rgba(59,130,246,0.5), 0 0 40px rgba(59,130,246,0.2)"
+            : open
+              ? "0 4px 20px rgba(0,0,0,0.15)"
+              : "0 4px 24px rgba(255,130,0,0.35), 0 0 40px rgba(255,130,0,0.12)",
         }}
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.92 }}
-        title="Арай — AI ассистент"
+        title={micActive ? "Слушаю..." : "Арай — AI ассистент (удерживай = голос)"}
       >
         {/* Pulse ring when idle */}
         {!open && !loading && (
@@ -634,11 +649,16 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
               <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
                 <RotateCcw className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
-              <button onClick={toggleVoice} className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                title={autoVoice ? "Авто-озвучка ВКЛ" : "Авто-озвучка ВЫКЛ"}>
-                {autoVoice
-                  ? <Volume2 className="w-3.5 h-3.5 text-primary"/>
-                  : <VolumeX className="w-3.5 h-3.5 text-muted-foreground"/>}
+              <button onClick={toggleVoice}
+                className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                  voiceMode === "voice"
+                    ? "bg-primary/15 text-primary border border-primary/30"
+                    : "bg-muted text-muted-foreground hover:text-foreground border border-transparent"
+                }`}
+                title={voiceMode === "voice" ? "Режим: Голос (нажми для текста)" : "Режим: Текст (нажми для голоса)"}>
+                {voiceMode === "voice"
+                  ? <span className="flex items-center gap-1"><Volume2 className="w-3 h-3"/> Голос</span>
+                  : <span className="flex items-center gap-1"><VolumeX className="w-3 h-3"/> Текст</span>}
               </button>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
                 <X className="w-3.5 h-3.5 text-muted-foreground"/>

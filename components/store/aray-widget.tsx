@@ -260,11 +260,17 @@ function useVoiceInput(onResult: (text: string) => void) {
 const ELEVEN_VOICE_ID = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
 const ELEVEN_MODEL_ID = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
 const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
+const ELEVEN_SPEED = 1.15; // живой темп для ассистента
 
 function cleanForTTS(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/[#_`~|>]/g, " ")
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\d{4,}/g, (m) => m.split("").join(" "))
+    .replace(/₽/g, " рублей").replace(/м³/g, " кубов")
     .replace(/\s{2,}/g, " ").trim().slice(0, 800);
 }
 
@@ -318,31 +324,21 @@ function useTTS() {
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL_ID,
-            voice_settings: { stability: 0.55, similarity_boost: 0.80, style: 0.25, use_speaker_boost: true },
+            voice_settings: { stability: 0.60, similarity_boost: 0.75, style: 0.20, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
       if (res.ok && res.body) {
         const reader = res.body.getReader();
-        const chunks: Uint8Array[] = [];
-        let done = false;
-        while (!done) {
+        const parts: BlobPart[] = [];
+        for (;;) {
           const { value, done: d } = await reader.read();
-          if (d) { done = true; break; }
-          if (value) chunks.push(value);
-          // Начинаем играть как только получили достаточно данных
-          if (chunks.length === 3 && !audioRef.current) {
-            const partial = new Blob(chunks, { type: "audio/mpeg" });
-            const url = URL.createObjectURL(partial);
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            audio.play().catch(() => {});
-          }
+          if (d) break;
+          if (value) parts.push(value);
         }
-        if (chunks.length > 0) {
-          const blob = new Blob(chunks, { type: "audio/mpeg" });
+        if (parts.length > 0) {
+          const blob = new Blob(parts, { type: "audio/mpeg" });
           const url = URL.createObjectURL(blob);
-          if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
           const audio = new Audio(url);
           audioRef.current = audio;
           audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
@@ -499,6 +495,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [voiceMode, setVoiceMode] = useState<"text" | "voice">("text");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasNew, setHasNew] = useState(false);
@@ -512,6 +509,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const longPressTimer = useRef<number | null>(null);
+  const longPressTriggered = useRef(false);
   const dragControls = useDragControls();
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
@@ -554,7 +553,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     }).catch(() => {});
   }, []);
 
-  // Мобильный?
+  // Voice mode + мобильный?
+  useEffect(() => {
+    const saved = localStorage.getItem("aray-voice-mode");
+    if (saved === "voice") setVoiceMode("voice");
+  }, []);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
     check();
@@ -748,6 +751,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         m.id === assistantId ? { ...m, content: finalParsed, actions, streaming: false } : m
       ));
 
+      // Автоозвучка в голосовом режиме
+      if (voiceMode === "voice" && finalParsed) {
+        speak(finalParsed, assistantId);
+      }
+
       if (!open) setHasNew(true);
 
     } catch {
@@ -770,8 +778,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   };
 
   const { listening, start: startVoice, stop: stopVoice } = useVoiceInput(text => {
-    setInput(input ? input + " " + text : text);
-    inputRef.current?.focus();
+    if (voiceMode === "voice") {
+      // В голосовом режиме — сразу отправляем
+      sendMessage(text);
+    } else {
+      setInput(input ? input + " " + text : text);
+      inputRef.current?.focus();
+    }
   });
 
   // ── Обработчик кнопок-действий от Арая — ДОЛЖЕН быть до return! ──────────
@@ -841,12 +854,24 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
             )}
           </AnimatePresence>
 
-          {/* Чистая сфера — без квадратного фона */}
+          {/* Чистая сфера — tap = open, long-press = voice */}
           <motion.button
-            onClick={handleOpen}
+            onClick={() => { if (!longPressTriggered.current) handleOpen(); }}
+            onTouchStart={() => {
+              longPressTriggered.current = false;
+              longPressTimer.current = window.setTimeout(() => {
+                longPressTriggered.current = true;
+                if (!open) { setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); }
+                // Push-to-talk: включаем голос и слушаем
+                if (voiceMode !== "voice") { setVoiceMode("voice"); localStorage.setItem("aray-voice-mode", "voice"); }
+                startVoice();
+              }, 400);
+            }}
+            onTouchEnd={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
+            onTouchCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
             whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 400, damping: 18 }}
-            aria-label="Открыть Арай"
+            aria-label={listening ? "Слушаю..." : "Арай — удерживай для голоса"}
             className="relative focus:outline-none"
             style={{ width: 56, height: 56, WebkitTapHighlightColor: "transparent" }}>
             <ArayIcon size={56} glow id="aig2" />
@@ -908,7 +933,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                     </span>
                   </div>
                 )}
-                <div className="flex gap-0.5">
+                <div className="flex gap-0.5 items-center">
+                  <button onClick={() => {
+                    const next = voiceMode === "text" ? "voice" : "text";
+                    setVoiceMode(next);
+                    localStorage.setItem("aray-voice-mode", next);
+                  }}
+                    className="h-7 px-2 rounded-lg flex items-center gap-1 text-[10px] font-medium transition-all"
+                    style={{
+                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.06)",
+                      color: voiceMode === "voice" ? "#60a5fa" : "rgba(255,255,255,0.45)",
+                      border: voiceMode === "voice" ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
+                    }}
+                    title={voiceMode === "voice" ? "Голосовой режим" : "Текстовый режим"}>
+                    {voiceMode === "voice"
+                      ? <><Volume2 className="w-3 h-3"/> Голос</>
+                      : <><VolumeX className="w-3 h-3"/> Текст</>}
+                  </button>
                   <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
                     style={{ color: "rgba(255,255,255,0.40)" }}
@@ -1048,7 +1089,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                     </span>
                   </div>
                 )}
-                <div className="flex gap-0.5">
+                <div className="flex gap-0.5 items-center">
+                  <button onClick={() => {
+                    const next = voiceMode === "text" ? "voice" : "text";
+                    setVoiceMode(next);
+                    localStorage.setItem("aray-voice-mode", next);
+                  }}
+                    className="h-7 px-2 rounded-lg flex items-center gap-1 text-[10px] font-medium transition-all"
+                    style={{
+                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.06)",
+                      color: voiceMode === "voice" ? "#60a5fa" : "rgba(255,255,255,0.45)",
+                      border: voiceMode === "voice" ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
+                    }}
+                    title={voiceMode === "voice" ? "Голосовой режим" : "Текстовый режим"}>
+                    {voiceMode === "voice"
+                      ? <><Volume2 className="w-3 h-3"/> Голос</>
+                      : <><VolumeX className="w-3 h-3"/> Текст</>}
+                  </button>
                   <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center"
                     style={{ color: "rgba(255,255,255,0.40)" }} title="Новый чат">
