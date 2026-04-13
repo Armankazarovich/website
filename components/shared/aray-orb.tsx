@@ -22,16 +22,17 @@
  */
 
 interface ArayOrbProps {
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | number;
   animate?: boolean;
   className?: string;
   intensity?: "subtle" | "normal" | "vivid";
   badge?: boolean;
   badgeCount?: number;
   pulse?: "idle" | "listening" | "speaking" | "none";
+  id?: string;
 }
 
-const sizeMap = {
+const sizeMap: Record<string, number> = {
   sm: 40,
   md: 52,
   lg: 72,
@@ -46,8 +47,9 @@ export function ArayOrb({
   badge = false,
   badgeCount,
   pulse = "idle",
+  id: _id,
 }: ArayOrbProps) {
-  const pixelSize = sizeMap[size];
+  const pixelSize = typeof size === "number" ? size : (sizeMap[size] || 52);
   const id = `aray-${Math.random().toString(36).slice(2, 9)}`;
 
   const isListening = pulse === "listening";
