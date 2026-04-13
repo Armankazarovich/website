@@ -23,13 +23,30 @@ const ALLOWED_ORIGINS = [
 
 // Домены которые разрешено проксировать
 const ALLOWED_DOMAINS = [
+  // Видео/фото стоки
   "videos.pexels.com",
   "images.pexels.com",
   "player.vimeo.com",
-  "api.elevenlabs.io",
-  "storage.googleapis.com",
   "cdn.pixabay.com",
   "media.istockphoto.com",
+  // Голос
+  "api.elevenlabs.io",
+  // Google AI (Gemini, Veo3, Imagen, etc)
+  "generativelanguage.googleapis.com",  // Gemini API
+  "aiplatform.googleapis.com",          // Vertex AI (Veo3, Imagen)
+  "storage.googleapis.com",             // Google Cloud Storage
+  "us-central1-aiplatform.googleapis.com", // Vertex regional
+  "europe-west1-aiplatform.googleapis.com",
+  // Anthropic
+  "api.anthropic.com",
+  // Banana.dev / fal.ai / Replicate — AI inference
+  "api.banana.dev",
+  "api.fal.ai",
+  "api.replicate.com",
+  // OpenAI (на будущее)
+  "api.openai.com",
+  // Stability AI (генерация картинок)
+  "api.stability.ai",
 ];
 
 function corsHeaders(origin) {
@@ -69,8 +86,10 @@ export default {
     }
 
     // Proxy endpoint
+    // GET  /proxy?url=...                     — для видео/медиа
+    // POST /proxy { url, method?, headers?, body? } — для AI API
     if (url.pathname === "/proxy") {
-      let targetUrl;
+      let targetUrl, proxyMethod = "GET", proxyHeaders = {}, proxyBody = null;
 
       if (request.method === "GET") {
         targetUrl = url.searchParams.get("url");
@@ -78,6 +97,9 @@ export default {
         try {
           const body = await request.json();
           targetUrl = body.url;
+          proxyMethod = body.method || "POST";
+          proxyHeaders = body.headers || {};
+          proxyBody = body.body ? JSON.stringify(body.body) : null;
         } catch {
           return new Response(JSON.stringify({ error: "Invalid JSON" }), {
             status: 400,
@@ -102,17 +124,31 @@ export default {
       }
 
       try {
-        // Проксируем запрос
-        const proxyRes = await fetch(targetUrl, {
-          headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Accept": "*/*",
-            "Referer": new URL(targetUrl).origin + "/",
-          },
-        });
+        // Собираем заголовки: дефолтные + кастомные от клиента
+        const fetchHeaders = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept": "*/*",
+          "Referer": new URL(targetUrl).origin + "/",
+          ...proxyHeaders, // API ключи, Content-Type и т.д.
+        };
 
-        if (!proxyRes.ok) {
-          return new Response(JSON.stringify({ error: "Upstream error", status: proxyRes.status }), {
+        // Range запросы для видео
+        const rangeHeader = request.headers.get("Range");
+        if (rangeHeader && proxyMethod === "GET") {
+          fetchHeaders["Range"] = rangeHeader;
+        }
+
+        // Проксируем запрос
+        const fetchOpts = { method: proxyMethod, headers: fetchHeaders };
+        if (proxyBody && proxyMethod !== "GET") {
+          fetchOpts.body = proxyBody;
+        }
+
+        const proxyRes = await fetch(targetUrl, fetchOpts);
+
+        if (!proxyRes.ok && proxyRes.status !== 206) {
+          const errBody = await proxyRes.text().catch(() => "");
+          return new Response(JSON.stringify({ error: "Upstream error", status: proxyRes.status, detail: errBody.slice(0, 500) }), {
             status: 502,
             headers: { "Content-Type": "application/json", ...corsHeaders(origin) },
           });
@@ -121,45 +157,22 @@ export default {
         // Стримим ответ обратно
         const contentType = proxyRes.headers.get("Content-Type") || "application/octet-stream";
         const contentLength = proxyRes.headers.get("Content-Length");
+        const isMedia = contentType.startsWith("video/") || contentType.startsWith("image/") || contentType.startsWith("audio/");
 
         const respHeaders = {
           "Content-Type": contentType,
-          "Cache-Control": "public, max-age=86400", // 24h кеш
+          "Cache-Control": isMedia ? "public, max-age=86400" : "no-store", // кеш только для медиа
           ...corsHeaders(origin),
         };
 
-        if (contentLength) {
-          respHeaders["Content-Length"] = contentLength;
-        }
-
-        // Поддержка Range запросов (для видео seeking)
-        const rangeHeader = request.headers.get("Range");
-        if (rangeHeader) {
-          const rangeRes = await fetch(targetUrl, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-              "Range": rangeHeader,
-              "Referer": new URL(targetUrl).origin + "/",
-            },
-          });
-
-          const rangeHeaders = {
-            "Content-Type": rangeRes.headers.get("Content-Type") || contentType,
-            "Content-Range": rangeRes.headers.get("Content-Range") || "",
-            "Content-Length": rangeRes.headers.get("Content-Length") || "",
-            "Accept-Ranges": "bytes",
-            "Cache-Control": "public, max-age=86400",
-            ...corsHeaders(origin),
-          };
-
-          return new Response(rangeRes.body, {
-            status: 206,
-            headers: rangeHeaders,
-          });
+        if (contentLength) respHeaders["Content-Length"] = contentLength;
+        if (proxyRes.headers.get("Content-Range")) {
+          respHeaders["Content-Range"] = proxyRes.headers.get("Content-Range");
+          respHeaders["Accept-Ranges"] = "bytes";
         }
 
         return new Response(proxyRes.body, {
-          status: 200,
+          status: proxyRes.status,
           headers: respHeaders,
         });
 
