@@ -732,6 +732,7 @@ function ArayControlCenter() {
 interface AdminShellProps {
   role: string;
   email: string | null | undefined;
+  userName?: string | null;
   children: React.ReactNode;
 }
 
@@ -811,7 +812,7 @@ function MobileFontControl() {
   );
 }
 
-function AdminShellInner({ role, email, children }: AdminShellProps) {
+function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -1146,7 +1147,7 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
 
       {/* ── Арай — фиксированная панель снизу на всех страницах ── */}
       {/* AdminPageHelp и AdminTour убраны — ARAY обучает и помогает вместо них */}
-      <LazyAdminAray staffName={email?.split("@")[0] || "Коллега"} userRole={role} />
+      <LazyAdminAray staffName={userName || email?.split("@")[0] || "Коллега"} userRole={role} />
     </div>
   );
 }
