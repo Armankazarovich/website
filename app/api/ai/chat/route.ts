@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
           max_tokens: modelConfig.maxTokens,
           system: systemPrompt,
           messages: formattedMessages,
-          ...(tier !== "haiku" ? { tools: ARAY_TOOLS as any } : {}),
+          tools: ARAY_TOOLS as any,
         });
 
         for await (const event of firstStream) {

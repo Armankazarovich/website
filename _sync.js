@@ -5,13 +5,17 @@ const SRC = 'D:\\ПилоРус\\website';
 const DST = 'D:\\pilorus\\website';
 
 const files = [
-  'app/admin/page.tsx',
-  'app/api/ai/tts/route.ts',
-  'components/admin/admin-aray.tsx',
-  'components/admin/animated-counter.tsx',
-  'components/admin/dashboard-greeting.tsx',
-  'components/admin/dashboard-metrics.tsx',
-  'components/admin/dashboard-chart.tsx',
+  'app/api/ai/chat/route.ts',
+  'app/globals.css',
+  'app/layout.tsx',
+  'components/admin/admin-lang-picker.tsx',
+  'components/admin/admin-shell.tsx',
+  'components/palette-provider.tsx',
+  'lib/admin-i18n.ts',
+  'lib/admin-i18n-pages.ts',
+  'lib/aray-agent.ts',
+  'lib/aray-router.ts',
+  'lib/google-ai-examples.ts',
 ];
 
 for (const f of files) {

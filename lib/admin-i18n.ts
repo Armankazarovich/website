@@ -11,32 +11,42 @@ export type LangCode =
 export interface LangMeta {
   code: LangCode;
   label: string;
-  flag: string;
+  flag: string;       // ISO 3166-1 alpha-2 код страны (для flagcdn.com SVG)
   dir?: "rtl" | "ltr";
 }
 
 export const ADMIN_LANGUAGES: LangMeta[] = [
-  { code: "ru", label: "Русский",      flag: "🇷🇺" },
-  { code: "en", label: "English",      flag: "🇬🇧" },
-  { code: "kk", label: "Қазақша",      flag: "🇰🇿" },
-  { code: "uk", label: "Українська",   flag: "🇺🇦" },
-  { code: "uz", label: "O'zbek",       flag: "🇺🇿" },
-  { code: "az", label: "Azərbaycan",   flag: "🇦🇿" },
-  { code: "hy", label: "Հայerեն",      flag: "🇦🇲" },
-  { code: "tr", label: "Türkçe",       flag: "🇹🇷" },
-  { code: "de", label: "Deutsch",      flag: "🇩🇪" },
-  { code: "fr", label: "Français",     flag: "🇫🇷" },
-  { code: "es", label: "Español",      flag: "🇪🇸" },
-  { code: "ar", label: "العربية",      flag: "🇸🇦", dir: "rtl" },
-  { code: "zh", label: "中文",          flag: "🇨🇳" },
-  { code: "hi", label: "हिन्दी",        flag: "🇮🇳" },
-  { code: "pt", label: "Português",    flag: "🇧🇷" },
-  { code: "ja", label: "日本語",        flag: "🇯🇵" },
-  { code: "ko", label: "한국어",        flag: "🇰🇷" },
-  { code: "pl", label: "Polski",       flag: "🇵🇱" },
-  { code: "it", label: "Italiano",     flag: "🇮🇹" },
-  { code: "nl", label: "Nederlands",   flag: "🇳🇱" },
+  { code: "ru", label: "Русский",      flag: "ru" },
+  { code: "en", label: "English",      flag: "gb" },
+  { code: "kk", label: "Қазақша",      flag: "kz" },
+  { code: "uk", label: "Українська",   flag: "ua" },
+  { code: "uz", label: "O'zbek",       flag: "uz" },
+  { code: "az", label: "Azərbaycan",   flag: "az" },
+  { code: "hy", label: "Հայերեն",      flag: "am" },
+  { code: "tr", label: "Türkçe",       flag: "tr" },
+  { code: "de", label: "Deutsch",      flag: "de" },
+  { code: "fr", label: "Français",     flag: "fr" },
+  { code: "es", label: "Español",      flag: "es" },
+  { code: "ar", label: "العربية",      flag: "sa", dir: "rtl" },
+  { code: "zh", label: "中文",          flag: "cn" },
+  { code: "hi", label: "हिन्दी",        flag: "in" },
+  { code: "pt", label: "Português",    flag: "br" },
+  { code: "ja", label: "日本語",        flag: "jp" },
+  { code: "ko", label: "한국어",        flag: "kr" },
+  { code: "pl", label: "Polski",       flag: "pl" },
+  { code: "it", label: "Italiano",     flag: "it" },
+  { code: "nl", label: "Nederlands",   flag: "nl" },
 ];
+
+/** SVG URL флага по ISO коду страны (работает на Windows, Mac, Linux) */
+export function getFlagUrl(countryCode: string, size: number = 24): string {
+  return `https://flagcdn.com/${size}x${Math.round(size * 0.75)}/${countryCode.toLowerCase()}.png`;
+}
+
+/** SVG URL флага (вертикальные, лучше для кружков) */
+export function getFlagSvg(countryCode: string): string {
+  return `https://flagcdn.com/${countryCode.toLowerCase()}.svg`;
+}
 
 export type TranslationKey =
   | "dashboard" | "orders" | "crm" | "tasks" | "workflows" | "delivery"

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Languages, Check } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
-import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
+import { ADMIN_LANGUAGES, type LangCode, getFlagUrl } from "@/lib/admin-i18n";
 
 function useClassicMode() {
   const [classic, setClassic] = useState(false);
@@ -31,7 +31,7 @@ export function AdminLangPickerInline() {
               : { background: "var(--admin-popup-bg, rgba(255,255,255,0.06))", border: "1.5px solid var(--admin-popup-border, rgba(255,255,255,0.08))" }
           }
         >
-          <span className="text-2xl leading-none">{l.flag}</span>
+          <img src={getFlagUrl(l.flag, 40)} alt={l.label} className="w-6 h-5 rounded-sm object-cover" loading="lazy" />
           <span className="text-[10px] font-medium text-white/70 leading-tight">{l.label}</span>
           {lang === l.code && (
             <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center"
@@ -76,7 +76,7 @@ export function AdminLangPicker() {
           ${open ? "bg-primary/20 ring-2 ring-primary/30" : "hover:bg-primary/15"}`}
       >
         {current ? (
-          <span className="text-base leading-none">{current.flag}</span>
+          <img src={getFlagUrl(current.flag, 40)} alt={current.label} className="w-5 h-4 rounded-sm object-cover" loading="lazy" />
         ) : (
           <Languages className="w-4 h-4 text-primary" />
         )}
@@ -107,7 +107,7 @@ export function AdminLangPicker() {
                     : { background: "var(--admin-popup-bg, rgba(255,255,255,0.06))", border: "1.5px solid var(--admin-popup-border, rgba(255,255,255,0.08))" }
                 }
               >
-                <span className="text-2xl leading-none group-hover:scale-110 transition-transform">{l.flag}</span>
+                <img src={getFlagUrl(l.flag, 40)} alt={l.label} className="w-6 h-5 rounded-sm object-cover group-hover:scale-110 transition-transform" loading="lazy" />
                 <span className={`text-[10px] font-medium leading-tight ${lang === l.code ? (classic ? "text-primary" : "text-white/90") : (classic ? "text-muted-foreground" : "text-white/55")}`}>
                   {l.label}
                 </span>
