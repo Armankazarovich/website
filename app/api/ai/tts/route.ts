@@ -2,16 +2,17 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 
-// Antoni — warm, friendly male voice for Russian (multilingual v2)
-const VOICE_ID = "ErXwobaYiN019PkySvjV";
-const MODEL_ID = "eleven_multilingual_v2";
+// Leonid — тёплый, естественный русский голос (Flash)
+const VOICE_ID = "UIaC9QMb6UP5hfzy6uOD";
+const MODEL_ID = "eleven_flash_v2_5";
+const HARDCODED_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
 
 const VOICE_SETTINGS = {
-  stability: 0.50,
-  similarity_boost: 0.85,
-  style: 0.35,
+  stability: 0.82,
+  similarity_boost: 0.72,
+  style: 0.0,
   use_speaker_boost: true,
-  speed: 0.95,
+  speed: 1.05,
 };
 
 // ── Прямой запрос к ElevenLabs ──────────────────────────────────────────────
@@ -93,10 +94,7 @@ function browserFallback(cleanText: string) {
 // ═════════════════════════════════════════════════════════════════════════════
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "ElevenLabs не настроен" }, { status: 503 });
-    }
+    const apiKey = process.env.ELEVENLABS_API_KEY || HARDCODED_KEY;
 
     const { text } = await req.json();
     if (!text || typeof text !== "string") {
@@ -112,7 +110,7 @@ export async function POST(req: NextRequest) {
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
       .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
       .trim()
-      .slice(0, 500);
+      .slice(0, 1200);
 
     if (!cleanText) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });

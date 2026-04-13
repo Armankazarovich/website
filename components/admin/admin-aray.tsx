@@ -272,39 +272,36 @@ function useTTS() {
     setSpeaking(true);
     onDoneRef.current = onFinished || null;
 
-    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || ELEVEN_KEY;
     const abort = new AbortController();
     abortRef.current = abort;
 
-    // Один запрос — без разбивки на предложения
+    // Через серверный прокси — обходит блокировку ElevenLabs в РФ
     try {
-      const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream?output_format=mp3_22050_32`,
-        {
-          method: "POST", signal: abort.signal,
-          headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: clean, model_id: ELEVEN_MODEL,
-            voice_settings: { stability: 0.75, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
-          }),
-        }
-      );
+      const res = await fetch("/api/ai/tts", {
+        method: "POST", signal: abort.signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
+      });
+
       if (res.ok) {
-        const blob = await res.blob();
-        if (blob.size > 100 && !abort.signal.aborted) {
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          await new Promise<void>(resolve => {
-            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-            audio.play().catch(() => resolve());
-          });
-          if (!abort.signal.aborted) {
-            lockRef.current = false; setSpeaking(false); audioRef.current = null;
-            onDoneRef.current?.();
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("audio")) {
+          const blob = await res.blob();
+          if (blob.size > 100 && !abort.signal.aborted) {
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            await new Promise<void>(resolve => {
+              audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+              audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+              audio.play().catch(() => resolve());
+            });
+            if (!abort.signal.aborted) {
+              lockRef.current = false; setSpeaking(false); audioRef.current = null;
+              onDoneRef.current?.();
+            }
+            return;
           }
-          return;
         }
       }
     } catch (e: unknown) {
