@@ -1104,7 +1104,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       </Sheet>
 
       {/* ─── Mobile bottom nav ───────────────────────────────── */}
-      <AdminMobileBottomNav role={role} onMenuOpen={() => setOpen(true)} menuOpen={open} />
+      <AdminMobileBottomNav
+        role={role}
+        onMenuOpen={() => setOpen(true)}
+        menuOpen={open}
+        onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
+      />
 
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">

@@ -328,15 +328,44 @@ const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
 const ELEVEN_SPEED = 1.08; // живой, без артефактов
 
 function cleanForTTS(text: string): string {
-  return text
+  let t = text
+    // Убираем markdown
     .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
     .replace(/[#_`~|>]/g, " ")
     .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/\d{4,}/g, (m) => m.split("").join(" "))
-    .replace(/₽/g, " рублей").replace(/м³/g, " кубов")
-    .replace(/\s{2,}/g, " ").trim().slice(0, 800);
+    .replace(/https?:\/\/\S+/g, "");
+
+  // Размеры: 100×200×50 → "100 на 200 на 50"
+  t = t.replace(/(\d+)\s*[×хxXХ]\s*(\d+)(?:\s*[×хxXХ]\s*(\d+))?/g,
+    (_, a, b, c) => c ? `${a} на ${b} на ${c}` : `${a} на ${b}`);
+
+  // Единицы измерения — ПЕРЕД обработкой чисел
+  t = t.replace(/м[³3]/g, " кубометров");
+  t = t.replace(/м[²2]/g, " квадратных метров");
+  t = t.replace(/(\d)\s*мм\b/g, "$1 миллиметров");
+  t = t.replace(/(\d)\s*см\b/g, "$1 сантиметров");
+  t = t.replace(/(\d)\s*м\b/g, "$1 метров");
+  t = t.replace(/(\d)\s*кг\b/g, "$1 килограмм");
+  t = t.replace(/(\d)\s*г\b/g, "$1 грамм");
+  t = t.replace(/(\d)\s*л\b/g, "$1 литров");
+  t = t.replace(/шт\.?/g, " штук");
+  t = t.replace(/₽/g, " рублей");
+  t = t.replace(/руб\.?/g, " рублей");
+  t = t.replace(/(\d)\s*р\./g, "$1 рублей");
+
+  // Пробелы внутри чисел: "15 000" → "15000"
+  t = t.replace(/(\d)\s(\d{3})\b/g, "$1$2");
+  t = t.replace(/(\d)\s(\d{3})\b/g, "$1$2"); // повтор для "1 500 000"
+
+  // Дробные: "2.5" или "2,5" → оставляем как есть (ElevenLabs понимает)
+  // Но точки в конце предложений — нормально
+
+  // НЕ разбиваем числа по цифрам — ElevenLabs лучше читает "1500" целиком чем "1 5 0 0"
+  // Только номера телефонов разбиваем (8+ цифр подряд)
+  t = t.replace(/\d{8,}/g, (m) => m.split("").join(" "));
+
+  return t.replace(/\s{2,}/g, " ").trim().slice(0, 800);
 }
 
 function useTTS() {
@@ -557,6 +586,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const [hasNew, setHasNew] = useState(false);
   const [proactiveBubble, setProactiveBubble] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [kbHeight, setKbHeight] = useState(0); // высота клавиатуры для мобильного чата
   const [userName, setUserName] = useState<string | null>(null);
   // Встроенный браузер Арая
   const [browserOpen, setBrowserOpen] = useState(false);
@@ -627,6 +657,18 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Keyboard-aware: отслеживаем высоту клавиатуры через visualViewport
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      const diff = window.innerHeight - vv.height;
+      setKbHeight(diff > 50 ? diff : 0); // >50px = клавиатура открыта
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
   }, []);
 
   // Инициализировать трекер
@@ -935,8 +977,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         )}
       </AnimatePresence>
 
-      {/* ══ КНОПКА — сфера на ВСЕХ устройствах ══ */}
-      {!open && (
+      {/* ══ КНОПКА — плавающая сфера (скрыта в админке на мобилке — там шар встроен в док) ══ */}
+      {!open && !(isAdmin && isMobile) && (
         <div className="flex fixed z-[101] flex-col items-end gap-2.5"
           style={{ bottom: isMobile ? "calc(68px + env(safe-area-inset-bottom, 0px))" : "1.5rem", right: "1rem" }}>
           {/* Проактивный пузырь */}
@@ -1224,10 +1266,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 32, stiffness: 340, mass: 0.9 }}
-              className="fixed left-0 right-0 bottom-0 z-[110] flex flex-col overflow-hidden"
+              className="fixed left-0 right-0 z-[110] flex flex-col overflow-hidden transition-[height,bottom] duration-150"
               style={{
-                height: "92dvh",
-                borderRadius: "20px 20px 0 0",
+                bottom: 0,
+                height: kbHeight > 0 ? `calc(100dvh - ${kbHeight}px)` : "92dvh",
+                borderRadius: kbHeight > 0 ? "0" : "20px 20px 0 0",
                 boxShadow: "0 -8px 48px rgba(0,0,0,0.25)",
                 ...panelBg,
               }}>
@@ -1323,7 +1366,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               {/* Инпут — мобильный */}
               <div className="px-4 py-3 shrink-0" style={{
                 borderTop: `1px solid ${dividerColor}`,
-                paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
+                paddingBottom: kbHeight > 0 ? "8px" : "max(16px, env(safe-area-inset-bottom, 16px))",
               }}>
                 {/* Индикатор: Арай говорит */}
                 {speaking && (
@@ -1370,6 +1413,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                         rows={1} placeholder="...или напиши"
+                        onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300)}
                         className="flex-1 resize-none text-sm rounded-2xl px-4 py-2 focus:outline-none"
                         style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: txt, maxHeight: "80px" }}
                       />
@@ -1400,6 +1444,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       ref={inputRef} value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                      onFocus={() => setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300)}
                       rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
                       className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none"
                       style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "100px" }}
