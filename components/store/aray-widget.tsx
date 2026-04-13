@@ -763,20 +763,18 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
 
   // Push-to-talk из мобильного навбара (long-press на шар)
   useEffect(() => {
-    const handler = async () => {
-      setVisible(true); startChat();
+    const handler = () => {
+      // Открываем чат и включаем голосовой режим, сам чат обработает ввод
+      setVisible(true); setOpen(true); setHasNew(false);
+      startChat();
       if (voiceModeRef.current !== "voice") {
         setVoiceMode("voice"); voiceModeRef.current = "voice";
         localStorage.setItem("aray-voice-mode", "voice");
       }
-      try {
-        const text = await micListen();
-        if (text) sendMessage(text);
-      } catch {}
     };
     window.addEventListener("aray:voice", handler);
     return () => window.removeEventListener("aray:voice", handler);
-  }, [micListen, startChat, sendMessage]);
+  }, [startChat]);
 
   // Проактивный пузырь
   useEffect(() => {
