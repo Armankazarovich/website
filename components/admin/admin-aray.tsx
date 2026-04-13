@@ -8,6 +8,7 @@ import {
   X, Sparkles,
 } from "lucide-react";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
+import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
 // ─── Page context for smart chips ───────────────────────────────────────────
 const PAGE_CHIPS: Record<string, string[]> = {
@@ -380,29 +381,34 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     }
   }, []);
 
-  // ── Память чата: сохраняем/восстанавливаем из localStorage ──────────────
-  const CHAT_KEY = "aray-admin-chat";
-  const MAX_STORED = 30; // максимум 30 сообщений
+  // ── Единая история чата (БД) ─────────────────────────────────────────────
+  const historyLoaded = useRef(false);
 
-  // Восстановить при первом рендере
+  // Загрузить историю из БД при первом рендере
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(CHAT_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Msg[];
-        if (parsed.length > 0) setMessages(parsed.map(m => ({ ...m, streaming: false })));
+    if (historyLoaded.current) return;
+    historyLoaded.current = true;
+    fetch("/api/ai/chat/history").then(r => r.json()).then(data => {
+      if (data.messages?.length) {
+        setMessages(data.messages.map((m: any) => ({
+          id: m.id, role: m.role, text: m.content, streaming: false,
+        })));
       }
-    } catch {}
+    }).catch(() => {});
   }, []);
 
-  // Сохранять при каждом изменении (без streaming сообщений)
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const toSave = messages
-      .filter(m => m.text && !m.streaming)
-      .slice(-MAX_STORED);
-    try { localStorage.setItem(CHAT_KEY, JSON.stringify(toSave)); } catch {}
-  }, [messages]);
+  // Сохранить сообщение в БД
+  const saveMessageToDB = useCallback((role: string, content: string) => {
+    if (!content) return;
+    fetch("/api/ai/chat/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, content, context: getArayContext() }),
+    }).catch(() => {});
+  }, []);
+
+  // Инициализировать трекер
+  useEffect(() => { initArayTracker(); }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -444,6 +450,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     const aid = `a${Date.now()}`;
     const allMsgs = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg, { id: aid, role: "assistant", text: "", streaming: true }]);
+    saveMessageToDB("user", msg);
     setLoading(true);
 
     try {
@@ -452,7 +459,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.text })),
-          context: { page: pathname },
+          context: { page: pathname, ...getArayContext() },
         }),
       });
 
@@ -472,6 +479,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
 
       const final = cleanResponse(raw);
       setMessages(prev => prev.map(m => m.id === aid ? { ...m, text: final, streaming: false } : m));
+      saveMessageToDB("assistant", final);
 
       // Auto-voice response
       if (voiceModeRef.current === "voice" && final) speak(final, () => {

@@ -8,6 +8,7 @@ import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 import { useTheme } from "next-themes";
+import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -540,35 +541,35 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const cartPrice = useCartStore(s => s.totalPrice());
   const chips = buildArayChips({ page, productName, cartTotal });
 
-  // ── Память чата ──────────────────────────────────────────────────────────
-  const CHAT_KEY = "aray-store-chat";
-  const MAX_STORED = 20;
+  // ── Единая история чата (БД) ─────────────────────────────────────────────
+  const historyLoaded = useRef(false);
 
-  // Восстановить при первом рендере
+  // Загрузить историю из БД при первом рендере
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(CHAT_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved) as Message[];
-        if (parsed.length > 0) {
-          setMessages(parsed.map(m => ({
-            ...m,
-            timestamp: new Date(m.timestamp),
-            streaming: false,
-          })));
-        }
+    if (historyLoaded.current) return;
+    historyLoaded.current = true;
+    fetch("/api/ai/chat/history").then(r => r.json()).then(data => {
+      if (data.messages?.length) {
+        setMessages(data.messages.map((m: any) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          timestamp: new Date(m.createdAt),
+          streaming: false,
+        })));
       }
-    } catch {}
+    }).catch(() => {});
   }, []);
 
-  // Сохранять при изменении
-  useEffect(() => {
-    if (messages.length === 0) return;
-    const toSave = messages
-      .filter(m => m.content && !m.streaming)
-      .slice(-MAX_STORED);
-    try { localStorage.setItem(CHAT_KEY, JSON.stringify(toSave)); } catch {}
-  }, [messages]);
+  // Сохранить сообщение в БД (вызывается после каждого нового)
+  const saveMessageToDB = useCallback((role: string, content: string) => {
+    if (!content) return;
+    fetch("/api/ai/chat/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, content, context: getArayContext() }),
+    }).catch(() => {});
+  }, []);
 
   // Имя пользователя
   useEffect(() => {
@@ -596,6 +597,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Инициализировать трекер
+  useEffect(() => { initArayTracker(); }, []);
 
   // Показать через 1.5 сек
   useEffect(() => {
@@ -650,6 +654,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: msg, timestamp: new Date() };
     const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
+    saveMessageToDB("user", msg); // сохраняем в БД
     setLoading(true);
 
     const assistantId = (Date.now() + 1).toString();
@@ -660,7 +665,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          context: { page, productName, cartTotal },
+          context: { page, productName, cartTotal, ...getArayContext() },
         }),
       });
 
@@ -782,6 +787,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       setMessages(prev => prev.map(m =>
         m.id === assistantId ? { ...m, content: finalParsed, actions, streaming: false } : m
       ));
+      saveMessageToDB("assistant", finalParsed); // сохраняем ответ в БД
 
       // Автоозвучка в голосовом режиме → после ответа автослушание (как Алиса)
       if (voiceModeRef.current === "voice" && finalParsed) {

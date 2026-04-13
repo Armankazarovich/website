@@ -60,11 +60,28 @@ export async function POST(req: NextRequest) {
     if (["SUPER_ADMIN", "ADMIN"].includes(sessionRole || "")) arayRole = "admin";
     else if (["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"].includes(sessionRole || "")) arayRole = "staff";
 
-    const [memory, siteSettings] = await Promise.all([
+    // Загружаем параллельно: память, настройки, профиль клиента
+    const [memory, siteSettings, userProfile] = await Promise.all([
       getOrCreateMemory(userId, userId ? null : sessionId).catch((e) => {
         console.error("[Aray] Memory error:", e); return null;
       }),
       getSiteSettings().catch(() => [] as unknown as Awaited<ReturnType<typeof getSiteSettings>>),
+      userId ? prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          name: true, phone: true, email: true, role: true, address: true,
+          orders: {
+            where: { deletedAt: null },
+            orderBy: { createdAt: "desc" },
+            take: 10,
+            select: {
+              orderNumber: true, status: true, totalAmount: true,
+              deliveryCost: true, createdAt: true,
+              items: { select: { name: true, quantity: true, price: true } },
+            },
+          },
+        },
+      }).catch(() => null) : Promise.resolve(null),
     ]);
     const memoryContext = formatMemoryForPrompt(memory);
 
@@ -99,7 +116,40 @@ export async function POST(req: NextRequest) {
     const hasTools = arayRole !== "customer" || !!context?.productName;
     const tier = classifyQuery(lastUserMessage, { role: arayRole, hasTools, messageCount: formattedMessages.length });
     const modelConfig = getModelConfig(tier);
-    const systemPrompt = basePrompt + memoryContext + getBrevityInstruction(tier);
+
+    // Контекст навигации и действий (от трекера)
+    let trackerContext = "";
+    if (context?.zone) {
+      trackerContext += `\n\n[Контекст сессии]\nТекущая зона: ${context.zone}`;
+      if (context.navHistory?.length) trackerContext += `\nИстория переходов: ${context.navHistory.slice(-5).join(" → ")}`;
+      if (context.actions?.length) {
+        const recentActions = context.actions.slice(-5).map((a: any) =>
+          `${a.type}${a.data?.productName ? ': ' + a.data.productName : ''}${a.data?.query ? ': ' + a.data.query : ''}`
+        ).join(", ");
+        trackerContext += `\nПоследние действия: ${recentActions}`;
+      }
+    }
+
+    // Профиль клиента (имя, телефон, заказы)
+    let profileContext = "";
+    if (userProfile) {
+      profileContext += `\n\n[Профиль пользователя]`;
+      if (userProfile.name) profileContext += `\nИмя: ${userProfile.name}`;
+      if (userProfile.phone) profileContext += `\nТелефон: ${userProfile.phone}`;
+      if (userProfile.address) profileContext += `\nАдрес: ${userProfile.address}`;
+      if (userProfile.orders?.length) {
+        const totalSpent = userProfile.orders.reduce((s, o) => s + Number(o.totalAmount) + Number(o.deliveryCost), 0);
+        profileContext += `\nВсего заказов: ${userProfile.orders.length}, потрачено: ${totalSpent.toLocaleString("ru")} ₽`;
+        profileContext += `\nПоследние заказы:`;
+        userProfile.orders.slice(0, 5).forEach(o => {
+          const items = o.items.map(i => `${i.name} x${i.quantity}`).join(", ");
+          profileContext += `\n  #${o.orderNumber} — ${o.status} — ${Number(o.totalAmount).toLocaleString("ru")} ₽ — ${items}`;
+        });
+        profileContext += `\nОбращайся к пользователю по имени. Учитывай его историю покупок при рекомендациях.`;
+      }
+    }
+
+    const systemPrompt = basePrompt + memoryContext + trackerContext + profileContext + getBrevityInstruction(tier);
 
     // ── Streaming response ───────────────────────────────────────────────────
     const responseHeaders = new Headers({ "Content-Type": "text/plain; charset=utf-8" });
