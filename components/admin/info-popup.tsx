@@ -159,7 +159,7 @@ export function InfoPopup({
               {typeof content === "string" ? (
                 <p className={`text-sm leading-relaxed ${classic ? "text-foreground" : "text-white/80"}`}>{content}</p>
               ) : (
-                <div className={classic ? "info-popup-classic" : ""}>{content}</div>
+                <div className={classic ? "info-popup-classic text-foreground" : "text-white/80"}>{content}</div>
               )}
             </div>
           </div>

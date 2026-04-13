@@ -215,7 +215,7 @@ export default async function AdminDashboard() {
       {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
       <div>
         <AdminSectionTitle icon={Zap} title="Быстрый доступ" />
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {quickActions.map((action) => (
             <Link
               key={action.href}

@@ -1692,13 +1692,10 @@ a:focus-visible {
 }
 
 /* ── Живой шарик Арай — видимая пульсация на всех устройствах ── */
-/* НЕ использовать CSS filter/drop-shadow — убивает GPU на iOS */
-@keyframes aray-orb-breathe {
-  0%, 100% { transform: scale(1);    opacity: 1; }
-  50%      { transform: scale(1.08); opacity: 0.92; }
-}
+/* SVG SMIL анимации (animate/animateTransform) делают всю работу внутри шара.
+   CSS transform/opacity НЕ нужны — они конфликтуют с SVG-анимациями и
+   создают эффект "мёртвого" шарика. GPU-hint оставлен для плавности. */
 .aray-orb-alive {
-  animation: aray-orb-breathe 3s ease-in-out infinite;
   will-change: transform;
 }
 
