@@ -14,7 +14,6 @@ const ROLE_TABS: Record<string, { href: string; label: string; icon: React.Eleme
   owner: [
     { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
-    { href: "/admin/delivery", label: "Доставка", icon: Truck },
     { href: "/admin/crm",      label: "CRM",     icon: Target },
   ],
   manager: [
