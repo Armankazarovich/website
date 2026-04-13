@@ -732,6 +732,7 @@ function ArayControlCenter() {
 interface AdminShellProps {
   role: string;
   email: string | null | undefined;
+  userName?: string | null;
   children: React.ReactNode;
 }
 
@@ -811,7 +812,7 @@ function MobileFontControl() {
   );
 }
 
-function AdminShellInner({ role, email, children }: AdminShellProps) {
+function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -1012,43 +1013,6 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               <MobileFontControl />
             </div>
 
-            {/* Тема */}
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
-                Тема
-              </p>
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                  {theme === "dark"
-                    ? <Sun className="w-4 h-4 text-violet-400" />
-                    : <Moon className="w-4 h-4 text-violet-400" />}
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-white/85">
-                    {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
-                  </p>
-                  <p className="text-[11px] text-white/35">
-                    Нажми чтобы переключить
-                  </p>
-                </div>
-                <div className="w-10 h-5.5 rounded-full relative"
-                  style={{
-                    background: theme === "dark"
-                      ? "hsl(var(--primary)/0.4)"
-                      : "rgba(255,255,255,0.15)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                  }}>
-                  <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
-                    style={{
-                      background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
-                      left: theme === "dark" ? "calc(100% - 18px)" : "2px",
-                    }} />
-                </div>
-              </button>
-            </div>
 
             {/* Режим фона */}
             <div>
@@ -1087,6 +1051,44 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
               </div>
             </div>
 
+            {/* Тема */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+                Тема
+              </p>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
+                  {theme === "dark"
+                    ? <Sun className="w-4 h-4 text-violet-400" />
+                    : <Moon className="w-4 h-4 text-violet-400" />}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold text-white/85">
+                    {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                  </p>
+                  <p className="text-[11px] text-white/35">
+                    Нажми чтобы переключить
+                  </p>
+                </div>
+                <div className="w-10 h-5.5 rounded-full relative"
+                  style={{
+                    background: theme === "dark"
+                      ? "hsl(var(--primary)/0.4)"
+                      : "rgba(255,255,255,0.15)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}>
+                  <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
+                    style={{
+                      background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
+                      left: theme === "dark" ? "calc(100% - 18px)" : "2px",
+                    }} />
+                </div>
+              </button>
+            </div>
+
             {/* На сайт */}
             <Link href="/"
               className="glass-control flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
@@ -1102,59 +1104,31 @@ function AdminShellInner({ role, email, children }: AdminShellProps) {
       </Sheet>
 
       {/* ─── Mobile bottom nav ───────────────────────────────── */}
-      <AdminMobileBottomNav role={role} onMenuOpen={() => setOpen(true)} menuOpen={open} />
+      <AdminMobileBottomNav
+        role={role}
+        onMenuOpen={() => setOpen(true)}
+        menuOpen={open}
+        onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
+      />
 
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
 
-        {/* ── Mobile: только hamburger + bell (без поиска — поиск через Арая) ── */}
-        <div className="lg:hidden sticky top-0 z-20 glass-mobile-header"
-          style={{
-            paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)",
-            paddingBottom: "8px",
-            paddingLeft: "12px",
-            paddingRight: "12px",
-          }}>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setOpen(true)}
-              className="glass-pill p-2 rounded-xl shrink-0 active:scale-90 transition-colors"
-              style={{ WebkitTapHighlightColor: "transparent" }}
-              aria-label="Меню">
-              <Menu className="w-5 h-5 text-white/70" />
-            </button>
-            {/* Подсказка — поиск через Арая */}
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent("aray:open"))}
-              className="glass-control flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-white/35 text-[13px] transition-all active:scale-98"
-              style={{ WebkitTapHighlightColor: "transparent" }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              Спроси Арая...
-            </button>
-            <AdminNotificationBell mobile />
-          </div>
-        </div>
+        {/* Mobile header убран — навигация через нижний dock + Арай */}
 
         {/* Desktop: хедер убран полностью — поиск через Арая снизу */}
 
-        <div className="pt-0" style={{ paddingBottom: "calc(72px + max(16px, env(safe-area-inset-bottom, 16px)))" }}>
-          <div className="p-4 lg:p-6">{children}</div>
+        <div className="pt-0" style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}>
+          <div className="px-2.5 py-2 lg:p-6">{children}</div>
         </div>
       </main>
 
       {/* ── Арай — фиксированная панель снизу на всех страницах ── */}
       {/* AdminPageHelp и AdminTour убраны — ARAY обучает и помогает вместо них */}
-      <LazyAdminAray staffName={email?.split("@")[0] || "Коллега"} userRole={role} />
+      <LazyAdminAray staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"} userRole={role} />
     </div>
   );
 }
 
 export function AdminShell(props: AdminShellProps) {
-  return (
-    <AdminLangProvider>
-      <AdminShellInner {...props} />
-    </AdminLangProvider>
-  );
-}
+  r

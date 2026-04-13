@@ -21,6 +21,7 @@ model User {
   staffStatus    StaffStatus?
   lastActiveAt   DateTime?
   arayMemory     ArayMemory?
+  arayMessages   ArayMessage[]
   assignedLeads  Lead[]             @relation("LeadAssignee")
   leadActivities LeadActivity[]     @relation("LeadActivityUser")
   orders         Order[]
@@ -500,4 +501,19 @@ model ArayTokenLog {
   @@index([userId, createdAt])
   @@index([createdAt])
   @@index([tier, createdAt])
+}
+
+// ─── Единая история чата Арая ───────────────────────────────────────────────
+model ArayMessage {
+  id        String   @id @default(cuid())
+  userId    String?              // null = гость (sessionId)
+  sessionId String?              // для гостей — cookie aray_sid
+  role      String               // "user" | "assistant"
+  content   String   @db.Text    // текст сообщения
+  context   Json?                // { page, zone, actions[] }
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([sessionId, createdAt])
 }

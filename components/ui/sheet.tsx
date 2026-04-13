@@ -12,7 +12,7 @@ export function SheetOverlay({ className, ...props }: React.ComponentPropsWithou
   return (
     <DialogPrimitive.Overlay
       className={cn(
-        "fixed inset-0 z-[49] bg-black/55",
+        "fixed inset-0 z-[70] bg-black/55",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "duration-300",
@@ -36,7 +36,7 @@ export function SheetContent({
       <SheetOverlay />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-0 h-full z-50 outline-none",
+          "fixed top-0 h-full z-[70] outline-none",
           "data-[state=open]:animate-in data-[state=closed]:animate-out duration-300",
           side === "left"
             ? "left-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"

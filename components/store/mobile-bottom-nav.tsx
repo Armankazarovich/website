@@ -27,7 +27,21 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
 
+  const [kbOpen, setKbOpen] = useState(false);
+
   useEffect(() => { setMounted(true); }, []);
+
+  // Скрываем нав когда клавиатура открыта (все формы на мобилке)
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.visualViewport) return;
+    const vv = window.visualViewport;
+    const onResize = () => {
+      const diff = window.innerHeight - vv.height;
+      setKbOpen(diff > 100); // >100px = клавиатура точно открыта
+    };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
 
   // Bounce корзины при добавлении
   useEffect(() => {
@@ -50,10 +64,29 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
     }
   }, []);
 
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
+
   const openAray = useCallback(() => {
     haptic();
-    window.dispatchEvent(new CustomEvent("aray:open"));
+    if (!longPressTriggered.current) {
+      window.dispatchEvent(new CustomEvent("aray:open"));
+    }
   }, [haptic]);
+
+  const onArayPointerDown = useCallback(() => {
+    longPressTriggered.current = false;
+    longPressRef.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      haptic();
+      // Push-to-talk: слушает без открытия чата
+      window.dispatchEvent(new CustomEvent("aray:voice"));
+    }, 400);
+  }, [haptic]);
+
+  const onArayPointerUp = useCallback(() => {
+    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
+  }, []);
 
   // Левые пункты
   const leftItems = [
@@ -143,8 +176,11 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom"
+      className="fixed left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom transition-all duration-300"
       style={{
+        bottom: kbOpen ? "-120px" : "0",
+        opacity: kbOpen ? 0 : 1,
+        pointerEvents: kbOpen ? "none" : "auto",
         backdropFilter: "blur(32px) saturate(160%)",
         WebkitBackdropFilter: "blur(32px) saturate(160%)",
         borderTop: "1px solid rgba(255,255,255,0.1)",
@@ -167,7 +203,10 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             whileTap={{ scale: 0.88 }}
             transition={{ type: "spring", stiffness: 400, damping: 20 }}
             onClick={openAray}
-            aria-label="Открыть Арай"
+            onPointerDown={onArayPointerDown}
+            onPointerUp={onArayPointerUp}
+            onPointerCancel={onArayPointerUp}
+            aria-label="Удерживай для голоса, нажми для чата"
             style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "block" }}
           >
             {/* Ping при добавлении в корзину */}
@@ -249,44 +288,4 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
                 </ellipse>
 
                 {/* Маленькая яркая искра — летит чуть быстрее */}
-                <ellipse cx="72" cy="38" rx="5" ry="3" fill="white" opacity="0.28" transform="rotate(-20 72 38)">
-                  <animateTransform
-                    attributeName="transform"
-                    type="rotate"
-                    from="0 50 50"
-                    to="360 50 50"
-                    dur="9s"
-                    repeatCount="indefinite"
-                    additive="sum"
-                  />
-                </ellipse>
-              </g>
-
-              {/* Неподвижный главный блик (верхний левый — фиксирован как источник света) */}
-              <circle cx="50" cy="50" r="46" fill="url(#mob-hl)"/>
-
-              {/* Контур */}
-              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,210,80,0.20)" strokeWidth="1"/>
-
-              {/* Пульсирующий ореол ободка */}
-              <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,160,30,0.30)" strokeWidth="2.5">
-                <animate attributeName="stroke-opacity" values="0.30;0.60;0.30" dur="3s" repeatCount="indefinite"/>
-              </circle>
-            </svg>
-          </motion.button>
-
-          {/* Подпись */}
-          <span className="text-[9px] font-semibold tracking-wider mt-0.5"
-            style={{ color: "rgba(251,163,30,0.75)" }}>
-            АРАЙ
-          </span>
-        </div>}
-
-        {/* Правые пункты */}
-        <div className="flex items-center justify-around flex-1 pt-1">
-          {rightItems.map(renderNavItem)}
-        </div>
-      </div>
-    </nav>
-  );
-}
+                <ellipse cx="72" cy="38" rx="5" ry="
