@@ -208,6 +208,7 @@ function useMic() {
   const [active, setActive] = useState(false);
   const [supported, setSupported] = useState(false);
   const recRef = useRef<any>(null);
+  const silenceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSupported(!!(
@@ -225,26 +226,88 @@ function useMic() {
 
       const r = new SR();
       r.lang = "ru-RU";
-      r.interimResults = false;
-      r.continuous = false;
       r.maxAlternatives = 1;
-      let resolved = false;
 
-      r.onstart = () => setActive(true);
-      r.onend = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
-      r.onerror = () => { setActive(false); recRef.current = null; if (!resolved) { resolved = true; resolve(""); } };
-      r.onresult = (e: any) => {
-        const text = e.results[0]?.[0]?.transcript?.trim() || "";
-        if (!resolved) { resolved = true; resolve(text); }
+      // iOS Safari не поддерживает continuous — используем single-shot с авторестартом
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      r.interimResults = !isIOS; // interim на Android/Chrome, не на iOS
+      r.continuous = !isIOS; // continuous на Android/Chrome
+
+      let resolved = false;
+      let fullText = "";
+      let lastResultTime = Date.now();
+
+      const finishWithText = () => {
+        if (!resolved) {
+          resolved = true;
+          setActive(false);
+          recRef.current = null;
+          if (silenceTimer.current) clearTimeout(silenceTimer.current);
+          resolve(fullText.trim());
+        }
       };
 
-      try { r.start(); recRef.current = r; }
-      catch { setActive(false); if (!resolved) { resolved = true; resolve(""); } }
+      // Автозавершение через 2.5с тишины после речи
+      const resetSilenceTimer = () => {
+        if (silenceTimer.current) clearTimeout(silenceTimer.current);
+        if (fullText) {
+          silenceTimer.current = setTimeout(finishWithText, 2500);
+        }
+      };
+
+      r.onstart = () => { setActive(true); lastResultTime = Date.now(); };
+      r.onend = () => {
+        // iOS: single-shot завершается после каждой фразы
+        // Если прошло мало времени и нет текста — рестарт
+        if (!resolved && isIOS && !fullText && Date.now() - lastResultTime < 1000) {
+          try { r.start(); return; } catch { /* fallthrough */ }
+        }
+        finishWithText();
+      };
+      r.onerror = (e: any) => {
+        // "no-speech" — не ошибка, просто тишина
+        if (e.error === "no-speech" && !resolved) {
+          if (isIOS) { try { r.start(); return; } catch { /* fallthrough */ } }
+        }
+        if (!resolved) { resolved = true; setActive(false); recRef.current = null; resolve(fullText.trim() || ""); }
+      };
+      r.onresult = (e: any) => {
+        lastResultTime = Date.now();
+        // Собираем все финальные результаты
+        let interim = "";
+        for (let i = 0; i < e.results.length; i++) {
+          const result = e.results[i];
+          if (result.isFinal) {
+            const t = result[0]?.transcript?.trim() || "";
+            if (t && !fullText.includes(t)) fullText = fullText ? fullText + " " + t : t;
+          } else {
+            interim = result[0]?.transcript?.trim() || "";
+          }
+        }
+        // iOS single-shot: сразу один финальный результат
+        if (isIOS && fullText && !r.continuous) {
+          finishWithText();
+          return;
+        }
+        resetSilenceTimer();
+      };
+
+      // Таймаут: максимум 15 сек записи
+      const maxTimer = setTimeout(() => { if (!resolved) finishWithText(); }, 15000);
+
+      try {
+        r.start(); recRef.current = r;
+      } catch {
+        setActive(false);
+        clearTimeout(maxTimer);
+        if (!resolved) { resolved = true; resolve(""); }
+      }
     });
   }, []);
 
   const cancel = useCallback(() => {
     if (recRef.current) { try { recRef.current.stop(); } catch {} recRef.current = null; }
+    if (silenceTimer.current) clearTimeout(silenceTimer.current);
     setActive(false);
   }, []);
 
@@ -551,7 +614,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const [hasNew, setHasNew] = useState(false);
   const [proactiveBubble, setProactiveBubble] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [kbHeight, setKbHeight] = useState(0);
+  const [kbOpen, setKbOpen] = useState(false);
   const [userName, setUserName] = useState<string | null>(null);
   const [showMessages, setShowMessages] = useState(false); // voice-first: сообщения скрыты по умолчанию
   // Встроенный браузер
@@ -622,31 +685,27 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Keyboard-aware (iOS)
+  // Keyboard-aware (iOS) — lightweight CSS-first approach
   useEffect(() => {
     if (typeof window === "undefined") return;
     const vv = window.visualViewport;
     if (vv) {
       const onResize = () => {
         const diff = window.innerHeight - vv.height;
-        setKbHeight(diff > 50 ? diff : 0);
-        if (diff > 50) setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        const isOpen = diff > 80;
+        setKbOpen(isOpen);
+        if (isOpen) setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 150);
       };
       vv.addEventListener("resize", onResize);
-      vv.addEventListener("scroll", onResize);
-      return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+      return () => vv.removeEventListener("resize", onResize);
     }
-    // Fallback для старых iOS
+    // Fallback
     const onFocus = (e: FocusEvent) => {
       if ((e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.tagName === "INPUT") {
-        setTimeout(() => {
-          const diff = window.innerHeight - (window.visualViewport?.height || window.innerHeight * 0.55);
-          setKbHeight(diff > 50 ? diff : Math.round(window.innerHeight * 0.4));
-          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }, 300);
+        setTimeout(() => { setKbOpen(true); messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, 300);
       }
     };
-    const onBlur = () => setTimeout(() => setKbHeight(0), 100);
+    const onBlur = () => setTimeout(() => setKbOpen(false), 100);
     document.addEventListener("focusin", onFocus);
     document.addEventListener("focusout", onBlur);
     return () => { document.removeEventListener("focusin", onFocus); document.removeEventListener("focusout", onBlur); };
@@ -724,7 +783,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     const msg = (text || input).trim();
     if (!msg || loading) return;
     setInput("");
-    setShowMessages(true); // показываем сообщения при отправке
+    // В голосовом режиме — оставляем орб, ответ виден под ним
+    // В текстовом режиме — показываем сообщения
+    if (voiceModeRef.current === "text") setShowMessages(true);
     const userMsg: Message = { id: Date.now().toString(), role: "user", content: msg, timestamp: new Date() };
     const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
@@ -1243,8 +1304,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               className="fixed left-0 right-0 z-[110] flex flex-col overflow-hidden transition-[height,bottom] duration-150"
               style={{
                 bottom: 0,
-                height: kbHeight > 0 ? `calc(100dvh - ${kbHeight}px)` : "94dvh",
-                borderRadius: kbHeight > 0 ? "0" : "24px 24px 0 0",
+                height: kbOpen ? "100dvh" : "94dvh",
+                borderRadius: kbOpen ? "0" : "24px 24px 0 0",
                 border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
                 borderBottom: "none",
                 boxShadow: "0 -8px 48px rgba(0,0,0,0.3)",
@@ -1417,7 +1478,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
               {/* ── Мобильный инпут ── */}
               <div className="px-4 py-3 shrink-0" style={{
                 borderTop: `1px solid ${dividerColor}`,
-                paddingBottom: kbHeight > 0 ? "8px" : "max(16px, env(safe-area-inset-bottom, 16px))",
+                paddingBottom: kbOpen ? "8px" : "max(16px, env(safe-area-inset-bottom, 16px))",
               }}>
                 {/* Голосовой режим — большая кнопка */}
                 {voiceMode === "voice" && !input.trim() && !showMessages ? (
@@ -1463,7 +1524,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       ref={inputRef} value={input}
                       onChange={e => setInput(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                      onFocus={() => { if (!showMessages) setShowMessages(true); setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300); }}
+                      onFocus={() => { setShowMessages(true); setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300); }}
                       rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
                       className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2.5 focus:outline-none"
                       style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "100px" }}
