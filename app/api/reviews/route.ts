@@ -1,0 +1,127 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+// Simple in-memory rate limiting (resets per deployment)
+// For production, consider using Redis or database-backed rate limiting
+const reviewRateLimit = new Map<string, { count: number; resetTime: number }>();
+
+function checkRateLimit(key: string, maxAttempts: number = 1, windowMs: number = 86400000): boolean {
+  const now = Date.now();
+  const existing = reviewRateLimit.get(key);
+
+  if (!existing || now > existing.resetTime) {
+    reviewRateLimit.set(key, { count: 1, resetTime: now + windowMs });
+    return true;
+  }
+
+  if (existing.count >= maxAttempts) {
+    return false;
+  }
+
+  existing.count++;
+  return true;
+}
+
+// POST — create customer review (goes to moderation)
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { productId, authorName, email, rating, text } = body;
+
+    // Validation
+    if (!productId || !authorName?.trim()) {
+      return NextResponse.json(
+        { error: "productId и authorName обязательны" },
+        { status: 400 }
+      );
+    }
+
+    if (!rating || rating < 1 || rating > 5) {
+      return NextResponse.json(
+        { error: "Рейтинг должен быть от 1 до 5" },
+        { status: 400 }
+      );
+    }
+
+    if (!text || text.trim().length < 10) {
+      return NextResponse.json(
+        { error: "Текст отзыва должен быть минимум 10 символов" },
+        { status: 400 }
+      );
+    }
+
+    // Check if product exists
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "Товар не найден" },
+        { status: 404 }
+      );
+    }
+
+    // Rate limiting: use email or IP address
+    const identifier = email?.trim() || req.headers.get("x-forwarded-for") || "unknown";
+    const key = `review:${productId}:${identifier}`;
+
+    if (!checkRateLimit(key, 1, 86400000)) {
+      return NextResponse.json(
+        { error: "Вы уже оставили отзыв на этот товар сегодня. Попробуйте завтра." },
+        { status: 429 }
+      );
+    }
+
+    // Create review (PENDING for moderation)
+    const review = await prisma.review.create({
+      data: {
+        productId,
+        name: authorName.trim(),
+        rating: Number(rating),
+        text: text.trim(),
+        source: "internal",
+        approved: false, // Requires admin approval
+      },
+    });
+
+    // Send Telegram notification to admin
+    try {
+      const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+      const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+
+      if (telegramBotToken && telegramChatId) {
+        const starsEmoji = "⭐".repeat(Number(rating));
+        const message = `🆕 *Новый отзыв на модерации*\n\n*Товар:* ${product.name}\n*Автор:* ${authorName.trim()}\n*Рейтинг:* ${starsEmoji} (${rating}/5)\n\n*Текст:*\n${text.trim()}\n\n📋 [Посмотреть в админке](https://pilo-rus.ru/admin/reviews)`;
+
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: telegramChatId,
+            text: message,
+            parse_mode: "Markdown",
+          }),
+        });
+      }
+    } catch (error) {
+      console.error("Failed to send Telegram notification:", error);
+      // Don't fail the review creation if Telegram fails
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        message: "Спасибо! Ваш отзыв отправлен на модерацию",
+        reviewId: review.id,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Review submission error:", error);
+    return NextResponse.json(
+      { error: "Ошибка при сохранении отзыва. Попробуйте позже." },
+      { status: 500 }
+    );
+  }
+}
