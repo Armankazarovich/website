@@ -2210,6 +2210,76 @@ a:focus-visible {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   CLASSIC MODE — ПОЛНЫЙ ФИКС СВЕТЛОЙ ТЕМЫ КОНТЕНТА
+   Всё что вне сайдбара (.aray-sidebar) и вне тёмных панелей
+   (.aray-dark-panel) получает правильные светлые стили.
+   Используем :where() для минимальной специфичности.
+   ══════════════════════════════════════════════════════════════ */
+
+/* --- bg-white/XX классы → нормальные карточные цвета --- */
+.aray-classic-mode .bg-white\/\[0\.04\],
+.aray-classic-mode .bg-white\/\[0\.05\],
+.aray-classic-mode .bg-white\/\[0\.06\],
+.aray-classic-mode .bg-white\/\[0\.08\],
+.aray-classic-mode .bg-white\/5,
+.aray-classic-mode .bg-white\/10 {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+/* Восстановить в сайдбаре и тёмных панелях */
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.04\],
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.05\],
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.06\],
+.aray-classic-mode .aray-sidebar .bg-white\/\[0\.08\],
+.aray-classic-mode .aray-sidebar .bg-white\/5,
+.aray-classic-mode .aray-sidebar .bg-white\/10,
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.04\],
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.05\],
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.06\],
+.aray-classic-mode .aray-dark-panel .bg-white\/\[0\.08\],
+.aray-classic-mode .aray-dark-panel .bg-white\/5,
+.aray-classic-mode .aray-dark-panel .bg-white\/10 {
+  background: rgba(255,255,255,0.05) !important;
+}
+
+/* --- border-white/XX → border-border --- */
+.aray-classic-mode .border-white\/5,
+.aray-classic-mode .border-white\/7,
+.aray-classic-mode .border-white\/8,
+.aray-classic-mode .border-white\/10,
+.aray-classic-mode .border-white\/12,
+.aray-classic-mode .border-white\/14,
+.aray-classic-mode .border-white\/15,
+.aray-classic-mode .border-white\/20 {
+  border-color: hsl(var(--border)) !important;
+}
+/* Восстановить для сайдбара — уже есть правило выше (line ~2144) */
+
+/* --- bg-black/XX overlays → lighter in classic mode (только в контенте) --- */
+.aray-classic-mode main .bg-black\/40,
+.aray-classic-mode main .bg-black\/50,
+.aray-classic-mode main .bg-black\/60,
+.aray-classic-mode main .bg-black\/70,
+.aray-classic-mode main .bg-black\/80 {
+  background: hsl(var(--background) / 0.85) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* --- text-white (standalone) в main контенте → foreground --- */
+.aray-classic-mode main .text-white:not([class*="bg-destructive"]):not([class*="bg-primary"]):not([class*="bg-red"]):not([class*="bg-black"]):not([class*="bg-green"]):not([class*="bg-emerald"]) {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* --- Кнопки/бейджи с цветным фоном — text-white остаётся белым --- */
+.aray-classic-mode [class*="bg-destructive"].text-white,
+.aray-classic-mode [class*="bg-primary"].text-white,
+.aray-classic-mode [class*="bg-red-"].text-white,
+.aray-classic-mode [class*="bg-green-"].text-white,
+.aray-classic-mode [class*="bg-emerald-"].text-white,
+.aray-classic-mode [class*="bg-black/"].text-white {
+  color: white !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
    TOGGLE SWITCHES — красивые переключатели с glow по палитре
    ══════════════════════════════════════════════════════════════ */
 

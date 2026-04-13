@@ -482,7 +482,7 @@ export default function NewPhoneOrderPage() {
                         className="w-8 h-8 rounded-lg border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors"><Plus className="w-3.5 h-3.5" /></button>
                     </div>
                     {selectedVariant && itemPrice > 0 && (
-                      <div className="mt-2 p-2 bg-white/[0.04] rounded-xl border border-white/10">
+                      <div className="mt-2 p-2 bg-muted/30 rounded-xl border border-border">
                         <p className="text-[10px] text-muted-foreground">Сумма</p>
                         <p className="text-sm font-bold text-primary">{fmt(itemPrice * quantity)}</p>
                         <p className="text-[10px] text-muted-foreground">{fmt(itemPrice)} / {unitType === "CUBE" ? "м³" : "шт"}</p>
@@ -682,7 +682,7 @@ export default function NewPhoneOrderPage() {
                     key={r.id}
                     type="button"
                     onClick={() => { setDeliveryCostInput(String(r.basePrice)); setDeliveryCost(r.basePrice); setCalcOpen(false); }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs border transition-colors hover:border-primary/40 ${i === 0 ? "bg-white/[0.04] border-white/10" : "bg-background border-border"}`}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs border transition-colors hover:border-primary/40 ${i === 0 ? "bg-muted/30 border-border" : "bg-background border-border"}`}
                   >
                     <span className="flex items-center gap-1">{i === 0 && <Star className="w-3 h-3 text-amber-400 shrink-0" />}{r.vehicleName} · {r.payload}</span>
                     <span className="font-bold">{r.basePrice.toLocaleString()} ₽</span>
