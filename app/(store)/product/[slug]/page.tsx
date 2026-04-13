@@ -174,7 +174,7 @@ export default async function ProductPage({ params }: Props) {
       )}
 
       {/* Main product section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-16">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 mb-16">
         {/* Gallery */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <ProductGallery
@@ -427,7 +427,7 @@ export default async function ProductPage({ params }: Props) {
       {related.length > 0 && (
         <section>
           <h2 className="font-display font-bold text-2xl mb-6">Похожие товары</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {related.map((product) => (
               <ProductCard
                 key={product.id}

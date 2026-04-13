@@ -266,14 +266,14 @@ export function ProductCard({
           <div className="relative">
             {cartQty > 0 ? (
               <div className="flex items-center gap-2">
-                <button onClick={handleDecrement} className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/30 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90">
+                <button onClick={handleDecrement} className="flex items-center justify-center w-9 h-9 sm:w-8 sm:h-8 rounded-xl border border-white/30 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90">
                   <Minus className="w-3 h-3" />
                 </button>
                 <div className="flex-1 text-center">
                   <span className="font-display font-bold text-base text-white tabular-nums">{cartQty}</span>
                   <span className="text-[10px] text-white/60 ml-0.5">{unit}</span>
                 </div>
-                <button onClick={handleIncrement} className="flex items-center justify-center w-8 h-8 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 shadow-sm">
+                <button onClick={handleIncrement} className="flex items-center justify-center w-9 h-9 sm:w-8 sm:h-8 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 shadow-sm">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
@@ -440,7 +440,7 @@ export function ProductCard({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDecrement}
-                className="flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
+                className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -452,7 +452,7 @@ export function ProductCard({
 
               <button
                 onClick={handleIncrement}
-                className="flex items-center justify-center w-9 h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
+                className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>

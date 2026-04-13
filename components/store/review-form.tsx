@@ -111,7 +111,7 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
               key={star}
               type="button"
               onClick={() => setRating(star)}
-              className="transition-transform hover:scale-110"
+              className="transition-transform hover:scale-110 active:scale-95"
               title={`${star} звёзд`}
             >
               <Star
@@ -137,7 +137,7 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
           value={authorName}
           onChange={(e) => setAuthorName(e.target.value)}
           placeholder="Иван"
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
           required
         />
       </div>
@@ -153,7 +153,7 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="ivan@example.com"
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+          className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
         />
       </div>
 
@@ -168,7 +168,7 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Поделитесь вашим опытом использования этого товара..."
           rows={4}
-          className="w-full px-4 py-2.5 rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+          className="w-full px-4 py-3 sm:py-2.5 text-base sm:text-sm rounded-xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
           required
         />
         <p className="text-xs text-muted-foreground mt-1">
@@ -180,7 +180,7 @@ export function ReviewForm({ productId, productName }: ReviewFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        className="w-full py-3 sm:py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
