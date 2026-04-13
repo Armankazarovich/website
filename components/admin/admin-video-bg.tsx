@@ -3,40 +3,36 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTheme } from "next-themes";
 
-// ── Видео-фоны: через Cloudflare прокси ───────────────────────────────────
-// ✅ Cloudflare Workers обходит гео-блокировку Pexels/любых CDN
-// ✅ HD 1080p — хорошее качество, малый размер (~5-15 МБ)
+// ── Видео-фоны: Mixkit CDN (CC0, работает из России) ──────────────────────
+// ✅ Mixkit — бесплатные CC0 видео, CDN доступен без VPN
+// ✅ 720p — отличное качество, лёгкие файлы (2-7 МБ)
 // ✅ Если видео не грузится за LOAD_TIMEOUT_MS — fallback на CSS-градиент
 // ✅ На мобильном (< 1024px) — только CSS-градиент
-
-const MEDIA_PROXY = "https://pilorus-media.armankazarovich.workers.dev/proxy";
-
-function proxyUrl(original: string): string {
-  return `${MEDIA_PROXY}?url=${encodeURIComponent(original)}`;
-}
 
 interface VideoItem {
   mp4: string;
   label: string;
 }
 
-// День: природа, горы, вода, облака — HD 1080p
+// День: природа, горы, вода, облака — 720p
 const DAY_VIDEOS: VideoItem[] = [
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/2491284/2491284-hd_1920_1080_24fps.mp4"), label: "Лесная река" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/1409899/1409899-hd_1920_1080_25fps.mp4"), label: "Океан на закате" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/3129671/3129671-hd_1920_1080_30fps.mp4"), label: "Утренний туман" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/2098989/2098989-hd_1920_1080_30fps.mp4"), label: "Цветущее поле" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/1918465/1918465-hd_1920_1080_24fps.mp4"), label: "Водопад" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/3571264/3571264-hd_1280_720_30fps.mp4"), label: "Облака над горами" },
+  { mp4: "https://assets.mixkit.co/videos/1166/1166-720.mp4",  label: "Утренний лес" },
+  { mp4: "https://assets.mixkit.co/videos/4141/4141-720.mp4",  label: "Закат на море" },
+  { mp4: "https://assets.mixkit.co/videos/28294/28294-720.mp4", label: "Горная река" },
+  { mp4: "https://assets.mixkit.co/videos/3784/3784-720.mp4",  label: "Водопад" },
+  { mp4: "https://assets.mixkit.co/videos/9668/9668-720.mp4",  label: "Зелёные холмы" },
+  { mp4: "https://assets.mixkit.co/videos/4817/4817-720.mp4",  label: "Облака в горах" },
+  { mp4: "https://assets.mixkit.co/videos/1226/1226-720.mp4",  label: "Туман в лесу" },
+  { mp4: "https://assets.mixkit.co/videos/34563/34563-720.mp4", label: "Цветущий луг" },
 ];
 
-// Ночь: звёзды, сияние — HD 1080p
+// Ночь: звёзды, сияние, космос — 720p
 const NIGHT_VIDEOS: VideoItem[] = [
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/857251/857251-hd_1920_1080_25fps.mp4"), label: "Ночное небо" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/1466209/1466209-hd_1920_1080_24fps.mp4"), label: "Северное сияние" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/1851190/1851190-hd_1920_1080_24fps.mp4"), label: "Млечный путь" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/3194277/3194277-hd_1920_1080_30fps.mp4"), label: "Звёздная ночь" },
-  { mp4: proxyUrl("https://videos.pexels.com/video-files/856236/856236-hd_1920_1080_25fps.mp4"), label: "Горный рассвет" },
+  { mp4: "https://assets.mixkit.co/videos/4883/4883-720.mp4",  label: "Звёздное небо" },
+  { mp4: "https://assets.mixkit.co/videos/3181/3181-720.mp4",  label: "Млечный путь" },
+  { mp4: "https://assets.mixkit.co/videos/4690/4690-720.mp4",  label: "Северное сияние" },
+  { mp4: "https://assets.mixkit.co/videos/9471/9471-720.mp4",  label: "Ночной лес" },
+  { mp4: "https://assets.mixkit.co/videos/1409/1409-720.mp4",  label: "Луна" },
 ];
 
 const FADE_MS = 2500;
