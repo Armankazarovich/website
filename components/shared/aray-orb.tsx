@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * ArayOrb — живой 3D шар Арая ☀️
- * Используется ВЕЗДЕ: store dock, admin dock, floating button, chat header.
- * Один компонент — один вид — везде.
- *
- * Анимации через CSS (transform, opacity) — GPU-ускоренные, не грузят CPU.
+ * ArayOrb — золотой глобус Арая ✨
+ * Вращающиеся меридианы + пульсирующее свечение.
+ * Единый компонент для всех мест: store dock, admin dock, floating button, chat.
  */
 
 interface ArayOrbProps {
@@ -24,127 +22,114 @@ export function ArayOrb({
   badgeCount,
 }: ArayOrbProps) {
   const isActive = pulse === "listening" || pulse === "speaking";
+  const r = 42; // Радиус глобуса
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
 
-      {/* ── Живое свечение (всегда, даже idle) ── */}
+      {/* Живое свечение */}
       <span
         className="absolute rounded-full"
         style={{
-          inset: -4,
+          inset: -6,
           background: isActive
             ? `radial-gradient(circle, ${pulse === "listening" ? "rgba(59,130,246,0.5)" : "rgba(52,211,153,0.45)"} 30%, transparent 70%)`
-            : "radial-gradient(circle, rgba(232,120,10,0.55) 20%, rgba(200,80,0,0.25) 45%, transparent 70%)",
+            : "radial-gradient(circle, rgba(255,170,40,0.5) 15%, rgba(220,120,10,0.2) 45%, transparent 70%)",
           animation: isActive
             ? `arayGlow ${pulse === "listening" ? "0.8s" : "1.2s"} ease-out infinite`
-            : "arayBreath 3s ease-in-out infinite",
+            : "arayBreath 3.5s ease-in-out infinite",
         }}
       />
 
-      {/* ── SVG 3D Сфера с анимациями ── */}
       <svg
         width={size} height={size} viewBox="0 0 100 100"
         className="relative"
         style={{
           display: "block",
-          filter: `drop-shadow(0 2px 8px rgba(200,80,0,0.5)) drop-shadow(0 0 14px rgba(232,112,10,0.4))`,
+          filter: "drop-shadow(0 2px 10px rgba(220,130,20,0.6)) drop-shadow(0 0 20px rgba(255,170,40,0.35))",
         }}
       >
         <defs>
-          {/* Основной градиент — переливающийся */}
-          <radialGradient id={`${id}-base`} cx="34%" cy="28%" r="70%">
-            <stop offset="0%"   stopColor="#fffbe0">
-              <animate attributeName="stopColor" values="#fffbe0;#fff5c0;#fffbe0" dur="4s" repeatCount="indefinite"/>
-            </stop>
-            <stop offset="10%"  stopColor="#ffca40">
-              <animate attributeName="stopColor" values="#ffca40;#ffd860;#ffca40" dur="3.5s" repeatCount="indefinite"/>
-            </stop>
-            <stop offset="28%"  stopColor="#f07800">
-              <animate attributeName="stopColor" values="#f07800;#ff8c20;#f07800" dur="5s" repeatCount="indefinite"/>
-            </stop>
-            <stop offset="52%"  stopColor="#c05000"/>
-            <stop offset="75%"  stopColor="#6e1c00"/>
-            <stop offset="100%" stopColor="#160300"/>
+          {/* Фоновый градиент сферы */}
+          <radialGradient id={`${id}-bg`} cx="38%" cy="32%" r="65%">
+            <stop offset="0%"   stopColor="#fff8e0"/>
+            <stop offset="15%"  stopColor="#ffd54f"/>
+            <stop offset="35%"  stopColor="#f0a020"/>
+            <stop offset="60%"  stopColor="#c06800"/>
+            <stop offset="82%"  stopColor="#6a2400"/>
+            <stop offset="100%" stopColor="#1a0500"/>
           </radialGradient>
 
-          {/* Тень */}
-          <radialGradient id={`${id}-dark`} cx="72%" cy="74%" r="52%">
-            <stop offset="0%"   stopColor="#050000" stopOpacity="0.82"/>
-            <stop offset="60%"  stopColor="#100200" stopOpacity="0.32"/>
-            <stop offset="100%" stopColor="#050000" stopOpacity="0"/>
+          {/* Затемнение снизу-справа */}
+          <radialGradient id={`${id}-sh`} cx="68%" cy="70%" r="50%">
+            <stop offset="0%"  stopColor="#000" stopOpacity="0.7"/>
+            <stop offset="50%" stopColor="#000" stopOpacity="0.2"/>
+            <stop offset="100%" stopColor="#000" stopOpacity="0"/>
           </radialGradient>
 
-          {/* Краевое свечение — мерцающее */}
+          {/* Блик сверху */}
+          <radialGradient id={`${id}-hl`} cx="35%" cy="28%" r="32%">
+            <stop offset="0%"   stopColor="#fff" stopOpacity="0.9"/>
+            <stop offset="45%"  stopColor="#fff" stopOpacity="0.2"/>
+            <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
+          </radialGradient>
+
+          {/* Свечение ободка */}
           <radialGradient id={`${id}-rim`} cx="50%" cy="50%" r="50%">
-            <stop offset="76%"  stopColor="transparent" stopOpacity="0"/>
-            <stop offset="90%"  stopColor="#ff9500" stopOpacity="0.45">
-              <animate attributeName="stopOpacity" values="0.45;0.65;0.45" dur="2.5s" repeatCount="indefinite"/>
+            <stop offset="80%"  stopColor="transparent"/>
+            <stop offset="92%"  stopColor="#ffaa30" stopOpacity="0.5">
+              <animate attributeName="stop-opacity" values="0.4;0.7;0.4" dur="2.5s" repeatCount="indefinite"/>
             </stop>
-            <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.70">
-              <animate attributeName="stopOpacity" values="0.70;0.90;0.70" dur="2.5s" repeatCount="indefinite"/>
+            <stop offset="100%" stopColor="#ffd060" stopOpacity="0.8">
+              <animate attributeName="stop-opacity" values="0.6;0.95;0.6" dur="2.5s" repeatCount="indefinite"/>
             </stop>
-          </radialGradient>
-
-          {/* Главный блик */}
-          <radialGradient id={`${id}-hl`} cx="30%" cy="25%" r="34%">
-            <stop offset="0%"   stopColor="white" stopOpacity="0.85"/>
-            <stop offset="50%"  stopColor="white" stopOpacity="0.25"/>
-            <stop offset="100%" stopColor="white" stopOpacity="0"/>
-          </radialGradient>
-
-          {/* Блик для вращения */}
-          <radialGradient id={`${id}-orbit`} cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor="white" stopOpacity="0.6"/>
-            <stop offset="60%"  stopColor="white" stopOpacity="0.12"/>
-            <stop offset="100%" stopColor="white" stopOpacity="0"/>
-          </radialGradient>
-
-          {/* Второй орбитальный блик */}
-          <radialGradient id={`${id}-orbit2`} cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor="#ffd080" stopOpacity="0.45"/>
-            <stop offset="70%"  stopColor="#ffa040" stopOpacity="0.08"/>
-            <stop offset="100%" stopColor="#ffa040" stopOpacity="0"/>
           </radialGradient>
 
           <clipPath id={`${id}-clip`}>
-            <circle cx="50" cy="50" r="46"/>
+            <circle cx="50" cy="50" r={r}/>
           </clipPath>
         </defs>
 
-        {/* Базовый шар */}
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-dark)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-rim)`}/>
+        {/* Сфера */}
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-bg)`}/>
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-sh)`}/>
 
-        {/* Вращающиеся орбитальные блики — ЖИВОЙ ШАР! */}
-        <g clipPath={`url(#${id}-clip)`}>
-          {/* Орбита 1 — медленное вращение */}
-          <ellipse cx="50" cy="50" rx="30" ry="10" fill={`url(#${id}-orbit)`} opacity="0.45">
+        {/* ── Вращающиеся меридианы (глобус!) ── */}
+        <g clipPath={`url(#${id}-clip)`} opacity="0.45">
+          {/* Группа меридианов — вращается */}
+          <g>
             <animateTransform attributeName="transform" type="rotate"
-              values="0 50 50;360 50 50" dur="8s" repeatCount="indefinite"/>
-          </ellipse>
+              values="0 50 50;360 50 50" dur="20s" repeatCount="indefinite"/>
 
-          {/* Орбита 2 — наклонная, обратное вращение */}
-          <ellipse cx="50" cy="50" rx="22" ry="8" fill={`url(#${id}-orbit2)`} opacity="0.35">
-            <animateTransform attributeName="transform" type="rotate"
-              values="60 50 50;-300 50 50" dur="12s" repeatCount="indefinite"/>
-          </ellipse>
+            {/* Меридианы — эллипсы с разным наклоном */}
+            <ellipse cx="50" cy="50" rx="42" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.6" opacity="0.5"/>
+            <ellipse cx="50" cy="50" rx="10" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.7"/>
+            <ellipse cx="50" cy="50" rx="24" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.6"/>
+            <ellipse cx="50" cy="50" rx="36" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.5" opacity="0.7"/>
+          </g>
 
-          {/* Бегущий блик по поверхности */}
-          <circle r="4" fill="white" opacity="0.25">
-            <animateMotion dur="6s" repeatCount="indefinite"
-              path="M20,50 A30,12 0 1,1 80,50 A30,12 0 1,1 20,50"/>
-            <animate attributeName="opacity" values="0.1;0.3;0.1" dur="6s" repeatCount="indefinite"/>
+          {/* Параллели — неподвижные */}
+          <ellipse cx="50" cy="30" rx="36" ry="6"  fill="none" stroke="#ffd060" strokeWidth="0.5" opacity="0.4"/>
+          <ellipse cx="50" cy="50" rx="42" ry="8"  fill="none" stroke="#ffd060" strokeWidth="0.7" opacity="0.6"/>
+          <ellipse cx="50" cy="70" rx="36" ry="6"  fill="none" stroke="#ffd060" strokeWidth="0.5" opacity="0.4"/>
+
+          {/* Бегущая точка света */}
+          <circle r="3" fill="#fff8d0" opacity="0.5">
+            <animateMotion dur="5s" repeatCount="indefinite"
+              path="M8,50 A42,14 0 1,1 92,50 A42,14 0 1,1 8,50"/>
+            <animate attributeName="opacity" values="0.2;0.6;0.2" dur="5s" repeatCount="indefinite"/>
           </circle>
         </g>
 
-        {/* Неподвижный главный блик */}
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`}/>
+        {/* Свечение ободка */}
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-rim)`}/>
 
-        {/* Ободок — мерцающий */}
-        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,160,30,0.35)" strokeWidth="1.5">
-          <animate attributeName="stroke-opacity" values="0.35;0.55;0.35" dur="3s" repeatCount="indefinite"/>
+        {/* Блик */}
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-hl)`}/>
+
+        {/* Тонкий контур */}
+        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,200,60,0.3)" strokeWidth="1">
+          <animate attributeName="stroke-opacity" values="0.3;0.55;0.3" dur="3s" repeatCount="indefinite"/>
         </circle>
       </svg>
 
