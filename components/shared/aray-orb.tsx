@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * ArayOrb — золотой глобус Арая ✨
- * Вращающиеся меридианы + пульсирующее свечение.
- * Единый компонент для всех мест: store dock, admin dock, floating button, chat.
+ * ArayOrb — чистый золотой глобус Арая ✨
+ * Все анимации ВНУТРИ. Без теней и свечения снаружи.
  */
 
 interface ArayOrbProps {
@@ -21,68 +20,42 @@ export function ArayOrb({
   badge = false,
   badgeCount,
 }: ArayOrbProps) {
-  const isActive = pulse === "listening" || pulse === "speaking";
-  const r = 42; // Радиус глобуса
+  const r = 43;
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
 
-      {/* Живое свечение */}
-      <span
-        className="absolute rounded-full"
-        style={{
-          inset: -6,
-          background: isActive
-            ? `radial-gradient(circle, ${pulse === "listening" ? "rgba(59,130,246,0.5)" : "rgba(52,211,153,0.45)"} 30%, transparent 70%)`
-            : "radial-gradient(circle, rgba(255,170,40,0.5) 15%, rgba(220,120,10,0.2) 45%, transparent 70%)",
-          animation: isActive
-            ? `arayGlow ${pulse === "listening" ? "0.8s" : "1.2s"} ease-out infinite`
-            : "arayBreath 3.5s ease-in-out infinite",
-        }}
-      />
-
-      <svg
-        width={size} height={size} viewBox="0 0 100 100"
-        className="relative"
-        style={{
-          display: "block",
-          filter: "drop-shadow(0 2px 10px rgba(220,130,20,0.6)) drop-shadow(0 0 20px rgba(255,170,40,0.35))",
-        }}
-      >
+      <svg width={size} height={size} viewBox="0 0 100 100" className="relative" style={{ display: "block" }}>
         <defs>
-          {/* Фоновый градиент сферы */}
-          <radialGradient id={`${id}-bg`} cx="38%" cy="32%" r="65%">
-            <stop offset="0%"   stopColor="#fff8e0"/>
-            <stop offset="15%"  stopColor="#ffd54f"/>
-            <stop offset="35%"  stopColor="#f0a020"/>
-            <stop offset="60%"  stopColor="#c06800"/>
-            <stop offset="82%"  stopColor="#6a2400"/>
-            <stop offset="100%" stopColor="#1a0500"/>
+          {/* Чистый золотой градиент — светлый, без грязи */}
+          <radialGradient id={`${id}-bg`} cx="38%" cy="30%" r="62%">
+            <stop offset="0%"   stopColor="#fffdf0"/>
+            <stop offset="12%"  stopColor="#ffe680"/>
+            <stop offset="30%"  stopColor="#ffcc33"/>
+            <stop offset="50%"  stopColor="#e8a010"/>
+            <stop offset="72%"  stopColor="#b87008"/>
+            <stop offset="90%"  stopColor="#7a4005"/>
+            <stop offset="100%" stopColor="#4a2003"/>
           </radialGradient>
 
-          {/* Затемнение снизу-справа */}
-          <radialGradient id={`${id}-sh`} cx="68%" cy="70%" r="50%">
-            <stop offset="0%"  stopColor="#000" stopOpacity="0.7"/>
-            <stop offset="50%" stopColor="#000" stopOpacity="0.2"/>
+          {/* Мягкая тень снизу — внутренняя */}
+          <radialGradient id={`${id}-sh`} cx="65%" cy="68%" r="45%">
+            <stop offset="0%"  stopColor="#3a1800" stopOpacity="0.5"/>
+            <stop offset="60%" stopColor="#1a0800" stopOpacity="0.15"/>
             <stop offset="100%" stopColor="#000" stopOpacity="0"/>
           </radialGradient>
 
-          {/* Блик сверху */}
-          <radialGradient id={`${id}-hl`} cx="35%" cy="28%" r="32%">
-            <stop offset="0%"   stopColor="#fff" stopOpacity="0.9"/>
-            <stop offset="45%"  stopColor="#fff" stopOpacity="0.2"/>
+          {/* Блик сверху — чистый белый */}
+          <radialGradient id={`${id}-hl`} cx="36%" cy="28%" r="30%">
+            <stop offset="0%"   stopColor="#fff" stopOpacity="0.95"/>
+            <stop offset="40%"  stopColor="#fff" stopOpacity="0.3"/>
             <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
           </radialGradient>
 
-          {/* Свечение ободка */}
-          <radialGradient id={`${id}-rim`} cx="50%" cy="50%" r="50%">
-            <stop offset="80%"  stopColor="transparent"/>
-            <stop offset="92%"  stopColor="#ffaa30" stopOpacity="0.5">
-              <animate attributeName="stop-opacity" values="0.4;0.7;0.4" dur="2.5s" repeatCount="indefinite"/>
-            </stop>
-            <stop offset="100%" stopColor="#ffd060" stopOpacity="0.8">
-              <animate attributeName="stop-opacity" values="0.6;0.95;0.6" dur="2.5s" repeatCount="indefinite"/>
-            </stop>
+          {/* Маленький вторичный блик */}
+          <radialGradient id={`${id}-hl2`} cx="62%" cy="72%" r="18%">
+            <stop offset="0%"   stopColor="#ffe080" stopOpacity="0.3"/>
+            <stop offset="100%" stopColor="#ffe080" stopOpacity="0"/>
           </radialGradient>
 
           <clipPath id={`${id}-clip`}>
@@ -90,47 +63,49 @@ export function ArayOrb({
           </clipPath>
         </defs>
 
-        {/* Сфера */}
+        {/* Сфера — чистый золотой */}
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-bg)`}/>
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-sh)`}/>
 
-        {/* ── Вращающиеся меридианы (глобус!) ── */}
-        <g clipPath={`url(#${id}-clip)`} opacity="0.45">
-          {/* Группа меридианов — вращается */}
-          <g>
+        {/* ── Вращающиеся меридианы внутри ── */}
+        <g clipPath={`url(#${id}-clip)`}>
+          {/* Меридианы — вращаются */}
+          <g opacity="0.4" stroke="#ffd860" fill="none">
             <animateTransform attributeName="transform" type="rotate"
               values="0 50 50;360 50 50" dur="20s" repeatCount="indefinite"/>
-
-            {/* Меридианы — эллипсы с разным наклоном */}
-            <ellipse cx="50" cy="50" rx="42" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.6" opacity="0.5"/>
-            <ellipse cx="50" cy="50" rx="10" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.7"/>
-            <ellipse cx="50" cy="50" rx="24" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.6"/>
-            <ellipse cx="50" cy="50" rx="36" ry="42" fill="none" stroke="#ffd060" strokeWidth="0.5" opacity="0.7"/>
+            <ellipse cx="50" cy="50" rx="10" ry={r} strokeWidth="0.7"/>
+            <ellipse cx="50" cy="50" rx="24" ry={r} strokeWidth="0.6"/>
+            <ellipse cx="50" cy="50" rx="36" ry={r} strokeWidth="0.5"/>
           </g>
 
           {/* Параллели — неподвижные */}
-          <ellipse cx="50" cy="30" rx="36" ry="6"  fill="none" stroke="#ffd060" strokeWidth="0.5" opacity="0.4"/>
-          <ellipse cx="50" cy="50" rx="42" ry="8"  fill="none" stroke="#ffd060" strokeWidth="0.7" opacity="0.6"/>
-          <ellipse cx="50" cy="70" rx="36" ry="6"  fill="none" stroke="#ffd060" strokeWidth="0.5" opacity="0.4"/>
+          <g opacity="0.3" stroke="#ffd860" fill="none">
+            <ellipse cx="50" cy="28" rx="33" ry="5.5" strokeWidth="0.5"/>
+            <ellipse cx="50" cy="50" rx={r} ry="7.5" strokeWidth="0.6"/>
+            <ellipse cx="50" cy="72" rx="33" ry="5.5" strokeWidth="0.5"/>
+          </g>
 
-          {/* Бегущая точка света */}
-          <circle r="3" fill="#fff8d0" opacity="0.5">
+          {/* Бегущая точка света по экватору */}
+          <circle r="2.5" fill="#fff" opacity="0.4">
             <animateMotion dur="5s" repeatCount="indefinite"
-              path="M8,50 A42,14 0 1,1 92,50 A42,14 0 1,1 8,50"/>
-            <animate attributeName="opacity" values="0.2;0.6;0.2" dur="5s" repeatCount="indefinite"/>
+              path="M7,50 A43,12 0 1,1 93,50 A43,12 0 1,1 7,50"/>
+            <animate attributeName="opacity" values="0.15;0.5;0.15" dur="5s" repeatCount="indefinite"/>
+          </circle>
+
+          {/* Второй бегущий блик — медленнее, по наклонной орбите */}
+          <circle r="2" fill="#ffe880" opacity="0.3">
+            <animateMotion dur="8s" repeatCount="indefinite"
+              path="M20,30 A35,20 30 1,1 80,70 A35,20 30 1,1 20,30"/>
+            <animate attributeName="opacity" values="0.1;0.35;0.1" dur="8s" repeatCount="indefinite"/>
           </circle>
         </g>
 
-        {/* Свечение ободка */}
-        <circle cx="50" cy="50" r={r} fill={`url(#${id}-rim)`}/>
-
-        {/* Блик */}
+        {/* Блики — поверх всего */}
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-hl)`}/>
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-hl2)`}/>
 
-        {/* Тонкий контур */}
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(255,200,60,0.3)" strokeWidth="1">
-          <animate attributeName="stroke-opacity" values="0.3;0.55;0.3" dur="3s" repeatCount="indefinite"/>
-        </circle>
+        {/* Тонкий чистый контур */}
+        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(200,150,50,0.25)" strokeWidth="0.8"/>
       </svg>
 
       {/* Badge — непрочитанные */}

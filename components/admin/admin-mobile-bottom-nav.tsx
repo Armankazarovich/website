@@ -139,19 +139,22 @@ export function AdminMobileBottomNav({
             className="flex-1 focus:outline-none"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
-            <div className="flex flex-col items-center justify-center py-3 px-1.5 min-w-0 relative transition-all duration-200 active:scale-90 select-none">
-              {menuOpen && (
-                <div className="absolute inset-x-1 inset-y-1 rounded-[18px]"
-                  style={{ background: "hsl(var(--primary) / 0.20)", boxShadow: "0 0 16px hsl(var(--primary) / 0.30)" }} />
-              )}
+            <div className="flex flex-col items-center justify-center py-3 px-1.5 min-w-0 relative transition-all duration-300 active:scale-90 select-none">
               <MoreHorizontal
-                className="w-[20px] h-[20px] z-10 transition-all duration-200"
-                style={{ color: menuOpen ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}
+                className="transition-all duration-300"
+                style={{
+                  width: menuOpen ? 22 : 20,
+                  height: menuOpen ? 22 : 20,
+                  color: menuOpen ? "hsl(var(--primary))" : "var(--admin-dock-text)",
+                }}
               />
-              <span className="text-[9px] font-semibold leading-none mt-1.5 z-10"
-                style={{ color: menuOpen ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)" }}>
+              <span className="text-[9px] font-semibold leading-none mt-1.5 transition-all duration-300"
+                style={{ color: menuOpen ? "hsl(var(--primary))" : "var(--admin-dock-text)" }}>
                 Ещё
               </span>
+              {menuOpen && (
+                <span className="absolute -bottom-0.5 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary))" }} />
+              )}
             </div>
           </button>
         </div>
@@ -173,16 +176,13 @@ function DockTab({ tab, pathname, badge = 0 }: {
         className="flex flex-col items-center justify-center py-3 px-1.5 min-w-0 relative transition-all duration-200 active:scale-90 select-none"
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        {isActive && (
-          <div className="absolute inset-x-1 inset-y-1 rounded-[18px]"
-            style={{ background: "hsl(var(--primary) / 0.20)", boxShadow: "0 0 16px hsl(var(--primary) / 0.30)" }} />
-        )}
-        <div className="relative z-10">
+        <div className="relative">
           <tab.icon
-            className="w-[20px] h-[20px] transition-all duration-200"
+            className="transition-all duration-300"
             style={{
-              color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)",
-              filter: isActive ? "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))" : "none",
+              width: isActive ? 22 : 20,
+              height: isActive ? 22 : 20,
+              color: isActive ? "hsl(var(--primary))" : "var(--admin-dock-text)",
             }}
           />
           {badge > 0 && (
@@ -192,10 +192,17 @@ function DockTab({ tab, pathname, badge = 0 }: {
             </span>
           )}
         </div>
-        <span className="text-[9px] font-semibold leading-none mt-1.5 z-10 transition-all duration-200"
-          style={{ color: isActive ? "var(--admin-dock-text-active)" : "var(--admin-dock-text)", letterSpacing: "0.01em" }}>
+        <span className="text-[9px] font-semibold leading-none mt-1.5 transition-all duration-300"
+          style={{
+            color: isActive ? "hsl(var(--primary))" : "var(--admin-dock-text)",
+            letterSpacing: "0.01em",
+          }}>
           {tab.label}
         </span>
+        {/* Точка-индикатор под активным табом */}
+        {isActive && (
+          <span className="absolute -bottom-0.5 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary))" }} />
+        )}
       </div>
     </Link>
   );
