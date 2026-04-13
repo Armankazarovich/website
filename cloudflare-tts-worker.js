@@ -18,8 +18,8 @@ const ALLOWED_ORIGINS = [
   "https://www.pilo-rus.ru",
 ];
 
-const DEFAULT_VOICE = "UIaC9QMb6UP5hfzy6uOD"; // Leonid
-const DEFAULT_MODEL = "eleven_flash_v2_5";
+const DEFAULT_VOICE = "13JzN9jg1ViUP8Pf3uet"; // Anton Ru
+const DEFAULT_MODEL = "eleven_multilingual_v2";
 
 export default {
   async fetch(request) {

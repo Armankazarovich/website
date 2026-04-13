@@ -53,12 +53,12 @@ function renderInline(text: string): React.ReactNode[] {
   const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*|`[^`\n]+`)/g);
   return parts.map((p, i) => {
     if (p.startsWith("**") && p.endsWith("**"))
-      return <strong key={i} className="font-semibold text-white">{p.slice(2, -2)}</strong>;
+      return <strong key={i} className="font-semibold" style={{ color: "inherit" }}>{p.slice(2, -2)}</strong>;
     if (p.startsWith("*") && p.endsWith("*"))
       return <em key={i}>{p.slice(1, -1)}</em>;
     if (p.startsWith("`") && p.endsWith("`"))
       return <code key={i} className="px-1 py-0.5 rounded text-[11px] font-mono"
-        style={{ background: "rgba(255,255,255,0.12)", color: "hsl(var(--primary))" }}>{p.slice(1, -1)}</code>;
+        style={{ background: "hsl(var(--muted))", color: "hsl(var(--primary))" }}>{p.slice(1, -1)}</code>;
     return p as React.ReactNode;
   });
 }
@@ -72,7 +72,7 @@ function renderMarkdownContent(text: string): React.ReactNode[] {
     if (line.trim() === "") { i++; continue; }
 
     if (/^---+$/.test(line.trim())) {
-      nodes.push(<hr key={i} className="my-1.5" style={{ borderColor: "rgba(255,255,255,0.12)" }} />);
+      nodes.push(<hr key={i} className="my-1.5" style={{ borderColor: "hsl(var(--border))" }} />);
       i++; continue;
     }
 
@@ -537,9 +537,9 @@ function MessageBubble({
                 transition={{ delay: i * 0.08 }}
                 className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl text-sm font-medium text-left transition-all active:scale-[0.97]"
                 style={{
-                  background: "rgba(232,112,10,0.10)",
-                  border: "1px solid rgba(232,112,10,0.25)",
-                  color: "rgba(255,255,255,0.90)",
+                  background: isDark ? "rgba(232,112,10,0.10)" : "rgba(232,112,10,0.08)",
+                  border: `1px solid ${isDark ? "rgba(232,112,10,0.25)" : "rgba(232,112,10,0.30)"}`,
+                  color: isDark ? "rgba(255,255,255,0.90)" : "rgba(15,15,15,0.90)",
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.background = "rgba(232,112,10,0.18)";
@@ -676,16 +676,41 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Keyboard-aware: отслеживаем высоту клавиатуры через visualViewport
+  // Keyboard-aware: отслеживаем высоту клавиатуры через visualViewport + fallback
   useEffect(() => {
-    if (typeof window === "undefined" || !window.visualViewport) return;
+    if (typeof window === "undefined") return;
     const vv = window.visualViewport;
-    const onResize = () => {
-      const diff = window.innerHeight - vv.height;
-      setKbHeight(diff > 50 ? diff : 0); // >50px = клавиатура открыта
+
+    if (vv) {
+      const onResize = () => {
+        const diff = window.innerHeight - vv.height;
+        setKbHeight(diff > 50 ? diff : 0);
+        // Scroll input into view на iOS
+        if (diff > 50) {
+          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        }
+      };
+      vv.addEventListener("resize", onResize);
+      vv.addEventListener("scroll", onResize);
+      return () => { vv.removeEventListener("resize", onResize); vv.removeEventListener("scroll", onResize); };
+    }
+
+    // Fallback для старых iOS без visualViewport
+    const onFocus = (e: FocusEvent) => {
+      if ((e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.tagName === "INPUT") {
+        // Примерная высота клавиатуры iOS
+        setTimeout(() => {
+          const diff = window.innerHeight - (window.visualViewport?.height || window.innerHeight * 0.55);
+          setKbHeight(diff > 50 ? diff : Math.round(window.innerHeight * 0.4));
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 300);
+      }
     };
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    const onBlur = () => setTimeout(() => setKbHeight(0), 100);
+
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("focusout", onBlur);
+    return () => { document.removeEventListener("focusin", onFocus); document.removeEventListener("focusout", onBlur); };
   }, []);
 
   // Инициализировать трекер
@@ -1166,7 +1191,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <div className="flex gap-2.5 mb-3">
                     <ArayIcon size={24} id="aig4" />
                     <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
-                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                      style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)", border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}` }}>
                       <div className="flex gap-1.5 items-center h-4">
                         {[0,1,2].map(i => (
                           <span key={i} className="w-1.5 h-1.5 rounded-full"
@@ -1336,7 +1361,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <div className="flex gap-2.5 mb-3">
                     <ArayIcon size={24} id="aig6" />
                     <div className="px-3.5 py-3 rounded-2xl rounded-tl-[4px]"
-                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.10)" }}>
+                      style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)", border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}` }}>
                       <div className="flex gap-1.5 items-center h-4">
                         {[0,1,2].map(i => (
                           <span key={i} className="w-1.5 h-1.5 rounded-full"

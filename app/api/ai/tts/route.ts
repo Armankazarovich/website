@@ -2,9 +2,9 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 
-// Leonid — тёплый, естественный русский голос (Flash)
-const VOICE_ID = "UIaC9QMb6UP5hfzy6uOD";
-const MODEL_ID = "eleven_flash_v2_5";
+// Anton Ru — спокойный, разговорный, без акцента (Multilingual v2)
+const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
+const MODEL_ID = "eleven_multilingual_v2";
 const HARDCODED_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
 
 const VOICE_SETTINGS = {
@@ -103,12 +103,24 @@ export async function POST(req: NextRequest) {
 
     // Очищаем markdown и эмодзи для чистого произношения
     const cleanText = text
+      // Markdown
       .replace(/\*\*(.*?)\*\*/g, "$1")
       .replace(/\*(.*?)\*/g, "$1")
       .replace(/`(.*?)`/g, "$1")
       .replace(/#{1,6}\s/g, "")
       .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+      // Эмодзи
       .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
+      .replace(/[\u{2600}-\u{27BF}]/gu, "")
+      // Валюта → слова (до обработки цифр)
+      .replace(/₽/g, " рублей")
+      .replace(/\$/g, " долларов")
+      .replace(/€/g, " евро")
+      // "1 500 ₽" или "1500₽" → "1500 рублей" (уже заменено выше, убираем пробелы в числах)
+      .replace(/(\d)\s+(\d)/g, "$1$2")
+      // Спецсимволы которые TTS читает буквально
+      .replace(/[•·—–]/g, ", ")
+      .replace(/\s{2,}/g, " ")
       .trim()
       .slice(0, 1200);
 
