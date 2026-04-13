@@ -213,11 +213,6 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
           </motion.button>
 
-          {/* Подпись */}
-          <span className="text-[9px] font-semibold tracking-wider mt-0.5"
-            style={{ color: "rgba(251,163,30,0.75)" }}>
-            АРАЙ
-          </span>
         </div>}
 
         {/* Правые пункты */}

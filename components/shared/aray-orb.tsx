@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * ArayOrb — чистый золотой глобус Арая ✨
- * Все анимации ВНУТРИ. Без теней и свечения снаружи.
+ * ArayOrb — премиальная кристальная сфера Арая ✨
+ * Стеклянная оболочка с золотой энергией внутри.
+ * Уникальный, узнаваемый, роскошный.
  */
 
 interface ArayOrbProps {
@@ -20,92 +21,129 @@ export function ArayOrb({
   badge = false,
   badgeCount,
 }: ArayOrbProps) {
-  const r = 43;
+  const r = 44;
 
   return (
     <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }}>
-
-      <svg width={size} height={size} viewBox="0 0 100 100" className="relative" style={{ display: "block" }}>
+      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", overflow: "visible" }}>
         <defs>
-          {/* Чистый золотой градиент — светлый, без грязи */}
-          <radialGradient id={`${id}-bg`} cx="38%" cy="30%" r="62%">
-            <stop offset="0%"   stopColor="#fffdf0"/>
-            <stop offset="12%"  stopColor="#ffe680"/>
-            <stop offset="30%"  stopColor="#ffcc33"/>
-            <stop offset="50%"  stopColor="#e8a010"/>
-            <stop offset="72%"  stopColor="#b87008"/>
-            <stop offset="90%"  stopColor="#7a4005"/>
-            <stop offset="100%" stopColor="#4a2003"/>
+          {/* ── Внутреннее золотое ядро — глубокая энергия ── */}
+          <radialGradient id={`${id}-core`} cx="45%" cy="42%" r="55%">
+            <stop offset="0%"  stopColor="#fff7e0"/>
+            <stop offset="18%" stopColor="#ffd54f"/>
+            <stop offset="40%" stopColor="#e89520"/>
+            <stop offset="65%" stopColor="#a86010"/>
+            <stop offset="85%" stopColor="#5a2a05"/>
+            <stop offset="100%" stopColor="#1c0a00"/>
           </radialGradient>
 
-          {/* Мягкая тень снизу — внутренняя */}
-          <radialGradient id={`${id}-sh`} cx="65%" cy="68%" r="45%">
-            <stop offset="0%"  stopColor="#3a1800" stopOpacity="0.5"/>
-            <stop offset="60%" stopColor="#1a0800" stopOpacity="0.15"/>
-            <stop offset="100%" stopColor="#000" stopOpacity="0"/>
+          {/* ── Стеклянный слой — прозрачный с рефракцией ── */}
+          <radialGradient id={`${id}-glass`} cx="32%" cy="26%" r="68%">
+            <stop offset="0%"   stopColor="#ffffff" stopOpacity="0.45"/>
+            <stop offset="25%"  stopColor="#ffffff" stopOpacity="0.08"/>
+            <stop offset="60%"  stopColor="#ffffff" stopOpacity="0"/>
+            <stop offset="85%"  stopColor="#ffffff" stopOpacity="0.03"/>
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.12"/>
           </radialGradient>
 
-          {/* Блик сверху — чистый белый */}
-          <radialGradient id={`${id}-hl`} cx="36%" cy="28%" r="30%">
-            <stop offset="0%"   stopColor="#fff" stopOpacity="0.95"/>
-            <stop offset="40%"  stopColor="#fff" stopOpacity="0.3"/>
+          {/* ── Золотой обод — тонкое премиальное кольцо ── */}
+          <linearGradient id={`${id}-ring`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%"   stopColor="#ffd700"/>
+            <stop offset="30%"  stopColor="#b8860b"/>
+            <stop offset="50%"  stopColor="#ffd700"/>
+            <stop offset="70%"  stopColor="#b8860b"/>
+            <stop offset="100%" stopColor="#ffd700"/>
+          </linearGradient>
+
+          {/* ── Внутренний свет (пульсирующий центр) ── */}
+          <radialGradient id={`${id}-inner`} cx="50%" cy="50%" r="35%">
+            <stop offset="0%"  stopColor="#fff8d0" stopOpacity="0.7">
+              <animate attributeName="stop-opacity" values="0.5;0.8;0.5" dur="3s" repeatCount="indefinite"/>
+            </stop>
+            <stop offset="50%" stopColor="#ffcc44" stopOpacity="0.2">
+              <animate attributeName="stop-opacity" values="0.15;0.35;0.15" dur="3s" repeatCount="indefinite"/>
+            </stop>
+            <stop offset="100%" stopColor="#ff9900" stopOpacity="0"/>
+          </radialGradient>
+
+          {/* ── Блик — верхний левый (стеклянное отражение) ── */}
+          <radialGradient id={`${id}-hl`} cx="33%" cy="25%" r="25%">
+            <stop offset="0%"   stopColor="#fff" stopOpacity="0.92"/>
+            <stop offset="60%"  stopColor="#fff" stopOpacity="0.15"/>
             <stop offset="100%" stopColor="#fff" stopOpacity="0"/>
           </radialGradient>
 
-          {/* Маленький вторичный блик */}
-          <radialGradient id={`${id}-hl2`} cx="62%" cy="72%" r="18%">
-            <stop offset="0%"   stopColor="#ffe080" stopOpacity="0.3"/>
-            <stop offset="100%" stopColor="#ffe080" stopOpacity="0"/>
+          {/* ── Нижний блик — отражение от поверхности ── */}
+          <radialGradient id={`${id}-hl2`} cx="60%" cy="78%" r="20%">
+            <stop offset="0%"   stopColor="#ffe880" stopOpacity="0.2"/>
+            <stop offset="100%" stopColor="#ffe880" stopOpacity="0"/>
+          </radialGradient>
+
+          {/* ── Каустика (свет преломлённый сквозь стекло) ── */}
+          <radialGradient id={`${id}-caust`} cx="50%" cy="50%" r="40%">
+            <stop offset="0%"  stopColor="#ffeedd" stopOpacity="0.35"/>
+            <stop offset="100%" stopColor="#ffcc88" stopOpacity="0"/>
           </radialGradient>
 
           <clipPath id={`${id}-clip`}>
-            <circle cx="50" cy="50" r={r}/>
+            <circle cx="50" cy="50" r={r - 1}/>
           </clipPath>
         </defs>
 
-        {/* Сфера — чистый золотой */}
-        <circle cx="50" cy="50" r={r} fill={`url(#${id}-bg)`}/>
-        <circle cx="50" cy="50" r={r} fill={`url(#${id}-sh)`}/>
+        {/* ── Слой 1: Золотое ядро ── */}
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-core)`}/>
 
-        {/* ── Вращающиеся меридианы внутри ── */}
-        <g clipPath={`url(#${id}-clip)`}>
-          {/* Меридианы — вращаются */}
-          <g opacity="0.4" stroke="#ffd860" fill="none">
-            <animateTransform attributeName="transform" type="rotate"
-              values="0 50 50;360 50 50" dur="20s" repeatCount="indefinite"/>
-            <ellipse cx="50" cy="50" rx="10" ry={r} strokeWidth="0.7"/>
-            <ellipse cx="50" cy="50" rx="24" ry={r} strokeWidth="0.6"/>
-            <ellipse cx="50" cy="50" rx="36" ry={r} strokeWidth="0.5"/>
-          </g>
+        {/* ── Слой 2: Пульсирующий внутренний свет ── */}
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-inner)`}/>
 
-          {/* Параллели — неподвижные */}
-          <g opacity="0.3" stroke="#ffd860" fill="none">
-            <ellipse cx="50" cy="28" rx="33" ry="5.5" strokeWidth="0.5"/>
-            <ellipse cx="50" cy="50" rx={r} ry="7.5" strokeWidth="0.6"/>
-            <ellipse cx="50" cy="72" rx="33" ry="5.5" strokeWidth="0.5"/>
-          </g>
+        {/* ── Слой 3: Живые энергетические потоки внутри ── */}
+        <g clipPath={`url(#${id}-clip)`} opacity="0.55">
+          {/* Поток 1 — медленная волна */}
+          <ellipse rx="30" ry="4" fill={`url(#${id}-caust)`}>
+            <animateMotion dur="7s" repeatCount="indefinite"
+              path="M25,45 Q50,30 75,50 Q50,70 25,45"/>
+            <animate attributeName="opacity" values="0.2;0.55;0.2" dur="7s" repeatCount="indefinite"/>
+          </ellipse>
 
-          {/* Бегущая точка света по экватору */}
-          <circle r="2.5" fill="#fff" opacity="0.4">
-            <animateMotion dur="5s" repeatCount="indefinite"
-              path="M7,50 A43,12 0 1,1 93,50 A43,12 0 1,1 7,50"/>
-            <animate attributeName="opacity" values="0.15;0.5;0.15" dur="5s" repeatCount="indefinite"/>
+          {/* Поток 2 — перекрёстный */}
+          <ellipse rx="22" ry="3" fill={`url(#${id}-caust)`}>
+            <animateMotion dur="9s" repeatCount="indefinite"
+              path="M30,60 Q55,35 70,55 Q45,75 30,60"/>
+            <animate attributeName="opacity" values="0.15;0.45;0.15" dur="9s" repeatCount="indefinite"/>
+          </ellipse>
+
+          {/* Искра 1 — яркая точка */}
+          <circle r="1.5" fill="#fff">
+            <animateMotion dur="4s" repeatCount="indefinite"
+              path="M30,40 Q50,25 70,45 Q55,65 30,55 Q25,45 30,40"/>
+            <animate attributeName="opacity" values="0;0.7;0" dur="4s" repeatCount="indefinite"/>
           </circle>
 
-          {/* Второй бегущий блик — медленнее, по наклонной орбите */}
-          <circle r="2" fill="#ffe880" opacity="0.3">
-            <animateMotion dur="8s" repeatCount="indefinite"
-              path="M20,30 A35,20 30 1,1 80,70 A35,20 30 1,1 20,30"/>
-            <animate attributeName="opacity" values="0.1;0.35;0.1" dur="8s" repeatCount="indefinite"/>
+          {/* Искра 2 */}
+          <circle r="1" fill="#ffd700">
+            <animateMotion dur="5.5s" repeatCount="indefinite"
+              path="M60,35 Q35,50 55,70 Q75,55 60,35"/>
+            <animate attributeName="opacity" values="0;0.5;0" dur="5.5s" repeatCount="indefinite"/>
+          </circle>
+
+          {/* Искра 3 */}
+          <circle r="1.2" fill="#fff8e0">
+            <animateMotion dur="6.5s" repeatCount="indefinite"
+              path="M45,30 Q65,45 50,65 Q30,50 45,30"/>
+            <animate attributeName="opacity" values="0;0.6;0" dur="6.5s" repeatCount="indefinite"/>
           </circle>
         </g>
 
-        {/* Блики — поверх всего */}
+        {/* ── Слой 4: Стеклянная оболочка ── */}
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-glass)`}/>
+
+        {/* ── Слой 5: Блики (поверх стекла) ── */}
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-hl)`}/>
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-hl2)`}/>
 
-        {/* Тонкий чистый контур */}
-        <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(200,150,50,0.25)" strokeWidth="0.8"/>
+        {/* ── Слой 6: Премиальное золотое кольцо ── */}
+        <circle cx="50" cy="50" r={r} fill="none"
+          stroke={`url(#${id}-ring)`} strokeWidth="1.2" opacity="0.6"/>
       </svg>
 
       {/* Badge — непрочитанные */}

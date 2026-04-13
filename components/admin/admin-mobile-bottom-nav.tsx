@@ -122,10 +122,6 @@ export function AdminMobileBottomNav({
             >
               <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
             </button>
-            <span className="absolute text-[9px] font-bold tracking-wider uppercase z-10"
-              style={{ bottom: 5, color: "rgba(251,163,30,0.75)" }}>
-              АРАЙ
-            </span>
           </div>
 
           {/* ── Правые табы ── */}
