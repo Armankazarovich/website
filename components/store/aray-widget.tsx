@@ -256,45 +256,55 @@ function useVoiceInput(onResult: (text: string) => void) {
   return { listening, start, stop };
 }
 
-// ─── Голос Арая — TTS через ElevenLabs ───────────────────────────────────────
+// ─── Голос Арая — Direct ElevenLabs → Server → Browser ──────────────────────
+const ELEVEN_VOICE_ID = "ErXwobaYiN019PkySvjV"; // Antoni
+const ELEVEN_MODEL_ID = "eleven_multilingual_v2";
+
+function cleanForTTS(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
+    .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "")
+    .replace(/\s{2,}/g, " ").trim().slice(0, 500);
+}
 
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Fallback на браузерный TTS — ТОЛЬКО русский голос (не английский робот!)
-  const browserSpeak = useCallback((text: string, msgId: string) => {
+  const playAudioBuffer = useCallback((buf: ArrayBuffer): Promise<boolean> => {
+    return new Promise((resolve) => {
+      try {
+        const blob = new Blob([buf], { type: "audio/mpeg" });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; resolve(true); };
+        audio.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+        audio.play().catch(() => resolve(false));
+      } catch { resolve(false); }
+    });
+  }, []);
+
+  const browserSpeak = useCallback((clean: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(null); return; }
     window.speechSynthesis.cancel();
-    const clean = text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-      .replace(/[#_`|]/g, " ").replace(/[\u{1F000}-\u{1FFFF}]/gu, "").replace(/\s{2,}/g, " ").trim();
-    if (!clean) { setSpeaking(null); return; }
-
     const voices = window.speechSynthesis.getVoices();
     const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
       || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
       || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Google"))
-      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Yandex"))
       || voices.find(v => v.lang.startsWith("ru"));
-
-    // Нет русского голоса → НЕ говорим (лучше молчание чем английский робот)
-    if (!ruVoice) { setSpeaking(null); return; }
-
+    if (!ruVoice) { console.warn("[TTS] No Russian voice"); setSpeaking(null); return; }
     const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU";
-    utter.voice = ruVoice;
-    utter.rate = 1.0;
-    utter.pitch = 0.95;
+    utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.0; utter.pitch = 0.95;
     utter.onend = () => setSpeaking(null);
     utter.onerror = () => setSpeaking(null);
     window.speechSynthesis.speak(utter);
   }, []);
 
   const speak = useCallback(async (text: string, msgId: string) => {
-    // Стоп если уже играет
+    // Toggle — стоп если уже играет это сообщение
     if (speaking === msgId) {
-      audioRef.current?.pause();
-      audioRef.current = null;
+      audioRef.current?.pause(); audioRef.current = null;
       if (typeof window !== "undefined") window.speechSynthesis?.cancel();
       setSpeaking(null);
       return;
@@ -303,28 +313,43 @@ function useTTS() {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setSpeaking(msgId);
 
-    // Попробовать ElevenLabs (серверный — работает без VPN у клиента)
+    const clean = cleanForTTS(text);
+    if (!clean) { setSpeaking(null); return; }
+
+    // 1️⃣ Напрямую к ElevenLabs из браузера (обходит geo-блок VPS!)
+    const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY;
+    if (apiKey) {
+      try {
+        const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}`, {
+          method: "POST",
+          headers: { "xi-api-key": apiKey, "Content-Type": "application/json", "Accept": "audio/mpeg" },
+          body: JSON.stringify({
+            text: clean, model_id: ELEVEN_MODEL_ID,
+            voice_settings: { stability: 0.50, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true },
+          }),
+        });
+        if (res.ok && (res.headers.get("content-type") || "").includes("audio")) {
+          const buf = await res.arrayBuffer();
+          if (buf.byteLength > 100) { const ok = await playAudioBuffer(buf); if (ok) return; }
+        }
+      } catch (e) { console.warn("[TTS] Direct ElevenLabs failed:", e); }
+    }
+
+    // 2️⃣ Через сервер (Cloudflare proxy если настроен)
     try {
       const res = await fetch("/api/ai/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean }),
       });
-      if (res.ok && !(res.headers.get("content-type") || "").includes("json")) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => { setSpeaking(null); URL.revokeObjectURL(url); audioRef.current = null; };
-        audio.onerror = () => { URL.revokeObjectURL(url); browserSpeak(text, msgId); };
-        await audio.play().catch(() => browserSpeak(text, msgId));
-        return;
+      if (res.ok && (res.headers.get("content-type") || "").includes("audio")) {
+        const buf = await res.arrayBuffer();
+        if (buf.byteLength > 100) { const ok = await playAudioBuffer(buf); if (ok) return; }
       }
     } catch {}
 
-    // Fallback: браузерный TTS (работает в любом браузере)
-    browserSpeak(text, msgId);
-  }, [speaking, browserSpeak]);
+    // 3️⃣ Браузерный голос
+    browserSpeak(clean);
+  }, [speaking, playAudioBuffer, browserSpeak]);
 
   return { speaking, speak };
 }
