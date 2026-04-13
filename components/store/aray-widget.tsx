@@ -456,6 +456,36 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const cartPrice = useCartStore(s => s.totalPrice());
   const chips = buildArayChips({ page, productName, cartTotal });
 
+  // ── Память чата ──────────────────────────────────────────────────────────
+  const CHAT_KEY = "aray-store-chat";
+  const MAX_STORED = 20;
+
+  // Восстановить при первом рендере
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Message[];
+        if (parsed.length > 0) {
+          setMessages(parsed.map(m => ({
+            ...m,
+            timestamp: new Date(m.timestamp),
+            streaming: false,
+          })));
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Сохранять при изменении
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const toSave = messages
+      .filter(m => m.content && !m.streaming)
+      .slice(-MAX_STORED);
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(toSave)); } catch {}
+  }, [messages]);
+
   // Имя пользователя
   useEffect(() => {
     fetch("/api/ai/me").then(r => r.json()).then(d => {
@@ -480,7 +510,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   // Клавиатура убрана — используем CSS dvh + safe-area
 
   const startChat = useCallback(() => {
-    if (messages.length > 0) return;
+    if (messages.length > 0) return; // уже есть сообщения (или восстановлены из localStorage)
     const isReturning = typeof document !== "undefined" && document.cookie.includes("aray_visited=1");
     let greeting = buildArayGreeting({ page, productName, cartTotal, isReturning });
     if (userName) {
@@ -561,6 +591,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
           .replace(/__ARAY_ERR__[\s\S]*$/, "")
           .replace(/__ARAY_ADD_CART:.+?__/g, "")
           .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+          .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
           .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
           .replace(/__ARAY_REFRESH__/g, "");
 
@@ -627,9 +658,18 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         }
       }
 
-      // Показать внешний URL: __ARAY_SHOW_URL:https://...:Title__
+      // Попап-браузер: __ARAY_POPUP:{"url":"/catalog/doski","title":"Доски"}__
+      const popupMatches = rawText.matchAll(/__ARAY_POPUP:(\{.+?\})__/g);
+      for (const pm of popupMatches) {
+        try {
+          const { url, title } = JSON.parse(pm[1]);
+          if (url) { setBrowserUrl(url); setBrowserOpen(true); }
+        } catch {}
+      }
+
+      // Показать внешний URL (legacy): __ARAY_SHOW_URL:https://...:Title__
       const showUrlMatch = rawText.match(/__ARAY_SHOW_URL:(.+?):(.+?)__/);
-      if (showUrlMatch) {
+      if (showUrlMatch && !rawText.includes("__ARAY_POPUP:")) {
         setBrowserUrl(showUrlMatch[1]);
         setBrowserOpen(true);
       }
@@ -638,6 +678,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       const finalParsed = parsedText
         .replace(/__ARAY_ADD_CART:.+?__/g, "")
         .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+        .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
         .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
         .replace(/__ARAY_REFRESH__/g, "")
         .trim();
@@ -807,7 +848,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   </div>
                 )}
                 <div className="flex gap-0.5">
-                  <button onClick={() => { setMessages([]); startChat(); }}
+                  <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
                     style={{ color: "rgba(255,255,255,0.40)" }}
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
@@ -947,7 +988,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   </div>
                 )}
                 <div className="flex gap-0.5">
-                  <button onClick={() => { setMessages([]); startChat(); }}
+                  <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center"
                     style={{ color: "rgba(255,255,255,0.40)" }} title="Новый чат">
                     <RotateCcw className="w-3.5 h-3.5" />

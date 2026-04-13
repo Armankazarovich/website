@@ -411,14 +411,28 @@ const ALL_ARAY_TOOLS: ToolDef[] = [
     },
   },
   {
+    name: "show_page",
+    description: "Показать страницу прямо в чате в красивом попапе-браузере. ВСЕГДА используй когда клиент просит ПОКАЗАТЬ товары, раздел каталога, страницу. Попап открывается поверх чата — клиент видит реальную страницу и может взаимодействовать. Примеры: /catalog/doski — покажет раздел досок, /catalog/brus — брус, /about — о компании. Для внешних ссылок тоже работает.",
+    roles: "all",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        url: { type: "string", description: "Путь страницы (/, /catalog/doski, /admin/orders) или полный URL (https://...)" },
+        title: { type: "string", description: "Название для попапа (напр. 'Доски', 'Заказы', 'Брус')" },
+      },
+      required: ["url"],
+    },
+  },
+  {
     name: "navigate_page",
-    description: "Открыть страницу в браузере клиента. Используй для навигации по каталогу, оформления заказа, открытия товара. Примеры: /catalog, /catalog/brus, /cart, /checkout",
+    description: "Перейти на страницу (полный переход, покидая текущую). Используй ТОЛЬКО если клиент явно хочет ПЕРЕЙТИ (напр. 'перейди в корзину', 'открой оформление'). Для ПОКАЗА контента используй show_page.",
     roles: "customer",
     input_schema: {
       type: "object" as const,
       properties: {
-        url: { type: "string", description: "Путь страницы (начинается с /) или полный URL для внешних сайтов" },
-        title: { type: "string", description: "Описание страницы для клиента" },
+        url: { type: "string", description: "Путь страницы или полный URL" },
+        title: { type: "string", description: "Описание страницы" },
+        mode: { type: "string", enum: ["popup", "redirect"], description: "popup — показать в попапе (по умолчанию), redirect — полный переход" },
       },
       required: ["url"],
     },
@@ -644,6 +658,138 @@ const ALL_ARAY_TOOLS: ToolDef[] = [
         path: { type: "string", description: "Путь: /admin/orders, /admin/tasks, /admin/products, /admin/delivery, /admin/clients, /admin/staff, /admin/analytics, /admin/crm, /admin/finance, /admin/settings" },
       },
       required: ["path"],
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ─── СКЛАД + ТОВАРЫ: ПОЛНОЕ УПРАВЛЕНИЕ ────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    name: "create_product",
+    description: "Создать новый товар в каталоге. Используй когда говорят: 'добавь товар', 'новая доска 50x150', 'создай брус 150x150 по 9500'. Умеет создать товар с вариантами и ценами за один вызов.",
+    roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"],
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Название товара (например 'Доска обрезная')" },
+        categoryName: { type: "string", description: "Название категории (например 'Доска', 'Брус', 'Вагонка'). Если не существует — создастся автоматически." },
+        description: { type: "string", description: "Описание товара (опционально)" },
+        saleUnit: { type: "string", enum: ["CUBE", "PIECE", "BOTH"], description: "Единица продажи: CUBE (м³), PIECE (шт), BOTH (оба)" },
+        variants: {
+          type: "array",
+          description: "Варианты товара — размеры и цены. Каждый элемент: {size, pricePerCube, pricePerPiece, stockQty}",
+          items: {
+            type: "object",
+            properties: {
+              size: { type: "string", description: "Размер (например '50x150x6000', '20x96x3000')" },
+              pricePerCube: { type: "number", description: "Цена за м³" },
+              pricePerPiece: { type: "number", description: "Цена за штуку" },
+              stockQty: { type: "number", description: "Количество на складе" },
+              piecesPerCube: { type: "number", description: "Штук в кубе (для автоконвертации)" },
+            },
+            required: ["size"],
+          },
+        },
+        featured: { type: "boolean", description: "Показать в 'Хиты продаж' на главной" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "create_category",
+    description: "Создать новую категорию товаров. Используй когда говорят: 'добавь категорию Утеплитель', 'создай раздел Крепёж'.",
+    roles: ["SUPER_ADMIN", "ADMIN"],
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Название категории" },
+        parentName: { type: "string", description: "Родительская категория (если подкатегория)" },
+        showInMenu: { type: "boolean", description: "Показать в меню сайта (по умолчанию true)" },
+        showInFooter: { type: "boolean", description: "Показать в подвале сайта (по умолчанию true)" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "update_stock",
+    description: "Приход или расход товара на складе. Используй когда говорят: 'приход 100 штук доска 50x150', 'списать 20 кубов бруса', 'пришёл камаз досок'. Обновляет stockQty на варианте.",
+    roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"],
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        variantId: { type: "string", description: "ID варианта (из get_products_list). Если не знаешь — сначала найди через get_products_list." },
+        productQuery: { type: "string", description: "Поиск товара по названию/размеру (если variantId не указан). Например: 'доска 50x150'" },
+        operation: { type: "string", enum: ["add", "subtract", "set"], description: "add = приход, subtract = расход/списание, set = установить точное количество" },
+        quantity: { type: "number", description: "Количество" },
+        unit: { type: "string", enum: ["pieces", "cubes"], description: "Единица: pieces (штуки) или cubes (кубы)" },
+        reason: { type: "string", description: "Причина: приход, продажа, списание, инвентаризация, брак" },
+      },
+      required: ["operation", "quantity"],
+    },
+  },
+  {
+    name: "get_stock_summary",
+    description: "Показать остатки на складе. Используй когда спрашивают: 'что на складе?', 'сколько бруса?', 'остатки по доскам', 'что заканчивается?'.",
+    roles: "staff",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Поиск по названию товара (опционально)" },
+        lowStockOnly: { type: "boolean", description: "Только товары с низким остатком (< 10 шт или < 5 м³)" },
+        categoryName: { type: "string", description: "Фильтр по категории" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "import_price_list",
+    description: "Импорт товаров из текста прайс-листа. Используй когда дают список товаров текстом, скопированным из PDF/таблицы/фото. Парсит строки вида 'Доска 50x150x6000 - 9500 руб/м³' и создаёт товары.",
+    roles: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        text: { type: "string", description: "Текст прайс-листа. Каждая строка = один товар. Формат свободный — Арай разберёт." },
+        categoryName: { type: "string", description: "Категория для всех импортируемых товаров" },
+        dryRun: { type: "boolean", description: "true = только показать что будет создано, false = создать реально" },
+      },
+      required: ["text"],
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ─── ОТЧЁТЫ: ГЕНЕРАЦИЯ + ОТПРАВКА ────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    name: "generate_report",
+    description: "Сгенерировать отчёт: по продажам, остаткам, клиентам, задачам. Используй когда просят 'отчёт за неделю', 'пришли сводку на почту', 'PDF с продажами'.",
+    roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT"],
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        type: { type: "string", enum: ["sales", "stock", "clients", "orders", "tasks"], description: "Тип отчёта" },
+        period: { type: "string", enum: ["today", "week", "month", "quarter", "year"], description: "Период" },
+        format: { type: "string", enum: ["text", "email"], description: "text = показать в чате, email = отправить на почту" },
+        email: { type: "string", description: "Email для отправки (если не указан — email текущего пользователя)" },
+      },
+      required: ["type"],
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // ─── НАСТРОЙКИ САЙТА ─────────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════════════
+  {
+    name: "manage_settings",
+    description: "Управление настройками сайта: телефоны, адрес, режим работы, SMTP, Telegram, SEO. Используй когда просят 'поменяй телефон', 'обнови адрес', 'включи Telegram бота'.",
+    roles: ["SUPER_ADMIN", "ADMIN"],
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        action: { type: "string", enum: ["get", "set"], description: "get = показать настройки, set = изменить" },
+        key: { type: "string", description: "Ключ настройки: phone, phone2, phone3, address, working_hours, site_name, business_type, telegram_bot_token, telegram_chat_id, smtp_host и др." },
+        value: { type: "string", description: "Новое значение (для action=set)" },
+      },
+      required: ["action"],
     },
   },
 ];

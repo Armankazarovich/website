@@ -7,6 +7,7 @@ import {
   Send, Mic, MicOff, Volume2, VolumeX, RotateCcw,
   X, Sparkles,
 } from "lucide-react";
+import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 
 // ─── Page context for smart chips ───────────────────────────────────────────
 const PAGE_CHIPS: Record<string, string[]> = {
@@ -40,17 +41,25 @@ type Msg = { id: string; role: "user" | "assistant"; text: string; streaming?: b
 type ArayAction =
   | { type: "navigate"; path: string }
   | { type: "refresh" }
+  | { type: "popup"; url: string; title: string }
   | { type: "show_url"; url: string; title: string };
 
 function parseActions(raw: string): ArayAction[] {
   const actions: ArayAction[] = [];
+  // __ARAY_POPUP:{"url":"/admin/orders","title":"Заказы"}__
+  for (const m of raw.matchAll(/__ARAY_POPUP:(\{.+?\})__/g)) {
+    try {
+      const { url, title } = JSON.parse(m[1]);
+      if (url) actions.push({ type: "popup", url, title: title || url });
+    } catch {}
+  }
   // __ARAY_NAVIGATE:/admin/tasks__
   for (const m of raw.matchAll(/__ARAY_NAVIGATE:(.+?)__/g)) {
     actions.push({ type: "navigate", path: m[1] });
   }
   // __ARAY_SHOW_URL:https://....:Title__
   for (const m of raw.matchAll(/__ARAY_SHOW_URL:(.+?):(.+?)__/g)) {
-    actions.push({ type: "show_url", url: m[1], title: m[2] });
+    actions.push({ type: "popup", url: m[1], title: m[2] });
   }
   // __ARAY_REFRESH__
   if (raw.includes("__ARAY_REFRESH__")) actions.push({ type: "refresh" });
@@ -61,6 +70,7 @@ function cleanResponse(raw: string): string {
   return raw
     .replace(/\n?__ARAY_META__[\s\S]*$/, "")
     .replace(/__ARAY_ERR__/, "")
+    .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
     .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
     .replace(/__ARAY_NAVIGATE:.+?__/g, "")
     .replace(/__ARAY_REFRESH__/g, "")
@@ -309,14 +319,24 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoVoice, setAutoVoice] = useState(false);
+  // Встроенный браузер Арая (попап)
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const [browserUrl, setBrowserUrl] = useState("/admin");
+  const [isMobile, setIsMobile] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const { speaking, speak, stop: stopTTS } = useTTS();
   const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
 
-  // Load auto-voice preference
-  useEffect(() => { setAutoVoice(localStorage.getItem("aray-auto-voice") === "1"); }, []);
+  // Load auto-voice preference + mobile detect
+  useEffect(() => {
+    setAutoVoice(localStorage.getItem("aray-auto-voice") === "1");
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   // Preload voices (нужно для Safari/Chrome — голоса грузятся асинхронно)
   useEffect(() => {
@@ -326,12 +346,36 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
     }
   }, []);
 
+  // ── Память чата: сохраняем/восстанавливаем из localStorage ──────────────
+  const CHAT_KEY = "aray-admin-chat";
+  const MAX_STORED = 30; // максимум 30 сообщений
+
+  // Восстановить при первом рендере
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(CHAT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as Msg[];
+        if (parsed.length > 0) setMessages(parsed.map(m => ({ ...m, streaming: false })));
+      }
+    } catch {}
+  }, []);
+
+  // Сохранять при каждом изменении (без streaming сообщений)
+  useEffect(() => {
+    if (messages.length === 0) return;
+    const toSave = messages
+      .filter(m => m.text && !m.streaming)
+      .slice(-MAX_STORED);
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(toSave)); } catch {}
+  }, [messages]);
+
   // Auto-scroll
   useEffect(() => {
     if (open) setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 60);
   }, [messages, open]);
 
-  // Welcome message
+  // Welcome message (только если нет сохранённых)
   useEffect(() => {
     if (open && messages.length === 0) {
       const h = new Date().getHours();
@@ -402,14 +446,15 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       const actions = parseActions(raw);
       for (const action of actions) {
         if (action.type === "navigate") {
-          // Небольшая задержка чтобы сообщение успело отрисоваться
           setTimeout(() => router.push(action.path), 600);
         }
         if (action.type === "refresh") {
           setTimeout(() => router.refresh(), 400);
         }
-        if (action.type === "show_url") {
-          window.open(action.url, "_blank", "noopener,noreferrer");
+        if (action.type === "popup" || action.type === "show_url") {
+          // Открываем в попап-браузере Арая вместо новой вкладки
+          setBrowserUrl(action.url);
+          setBrowserOpen(true);
         }
       }
 
@@ -447,6 +492,17 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
   // ═══ RENDER ═══════════════════════════════════════════════════════════════
   return (
     <>
+      {/* ══ Встроенный браузер Арая (попап) ══ */}
+      <AnimatePresence>
+        {browserOpen && (
+          <ArayBrowser
+            initialUrl={browserUrl}
+            onClose={() => setBrowserOpen(false)}
+            isMobile={isMobile}
+          />
+        )}
+      </AnimatePresence>
+
       {/* ── FLOATING ORB BUTTON ── */}
       <motion.button
         onClick={() => { setOpen(v => !v); if (!open) setTimeout(() => inputRef.current?.focus(), 200); }}
@@ -521,7 +577,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                   <span className="text-[10px] text-muted-foreground">AI ассистент</span>
                 </div>
               </div>
-              <button onClick={() => { setMessages([]); }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
+              <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
                 <RotateCcw className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
               <button onClick={toggleVoice} className="p-1.5 rounded-lg hover:bg-muted transition-colors"
