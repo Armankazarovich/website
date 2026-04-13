@@ -278,13 +278,13 @@ function useTTS() {
     // Один запрос — без разбивки на предложения
     try {
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream?output_format=mp3_22050_32&optimize_streaming_latency=4`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream?output_format=mp3_22050_32`,
         {
           method: "POST", signal: abort.signal,
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL,
-            voice_settings: { stability: 0.65, similarity_boost: 0.75, style: 0.15, use_speaker_boost: true, speed: ELEVEN_SPEED },
+            voice_settings: { stability: 0.72, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );

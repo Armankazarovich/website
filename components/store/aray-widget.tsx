@@ -7,6 +7,7 @@ import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
+import { useTheme } from "next-themes";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -314,13 +315,13 @@ function useTTS() {
     // Один запрос на весь текст — без разбивки на предложения
     try {
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}/stream?output_format=mp3_22050_32&optimize_streaming_latency=4`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}/stream?output_format=mp3_22050_32`,
         {
           method: "POST", signal: abort.signal,
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
             text: clean, model_id: ELEVEN_MODEL_ID,
-            voice_settings: { stability: 0.65, similarity_boost: 0.75, style: 0.15, use_speaker_boost: true, speed: ELEVEN_SPEED },
+            voice_settings: { stability: 0.72, similarity_boost: 0.78, style: 0.0, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
@@ -376,12 +377,13 @@ function useTTS() {
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
 
 function MessageBubble({
-  msg, onAction, onSpeak, speaking,
+  msg, onAction, onSpeak, speaking, isDark = true,
 }: {
   msg: Message;
   onAction?: (a: ArayAction) => void;
   onSpeak?: (text: string, id: string) => void;
   speaking?: string | null;
+  isDark?: boolean;
 }) {
   const isUser = msg.role === "user";
   const isSpeaking = speaking === msg.id;
@@ -395,7 +397,12 @@ function MessageBubble({
         <div className="px-3.5 py-2.5 text-sm leading-relaxed" style={
           isUser
             ? { background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.75))", color: "#fff", borderRadius: "16px 16px 4px 16px" }
-            : { background: "rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.90)", borderRadius: "16px 16px 16px 4px", border: "1px solid rgba(255,255,255,0.10)" }
+            : {
+                background: isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.04)",
+                color: isDark ? "rgba(255,255,255,0.90)" : "rgba(15,15,15,0.90)",
+                borderRadius: "16px 16px 16px 4px",
+                border: `1px solid ${isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)"}`,
+              }
         }>
           {msg.content
             ? isUser
@@ -453,7 +460,7 @@ function MessageBubble({
         )}
 
         <div className="flex items-center gap-2 px-1">
-          <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.38)" }}>
+          <span className="text-[10px]" style={{ color: isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.35)" }}>
             {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
           </span>
           {/* Кнопка голоса — только для сообщений Арая */}
@@ -461,7 +468,7 @@ function MessageBubble({
             <button
               onClick={() => onSpeak(msg.content, msg.id)}
               className="flex items-center justify-center w-5 h-5 rounded-full transition-all active:scale-90"
-              style={{ color: isSpeaking ? "hsl(var(--primary))" : "rgba(255,255,255,0.28)" }}
+              style={{ color: isSpeaking ? "hsl(var(--primary))" : isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.30)" }}
               title={isSpeaking ? "Остановить" : "Озвучить"}
             >
               {isSpeaking
@@ -483,6 +490,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [voiceMode, setVoiceMode] = useState<"text" | "voice">("text");
+  const voiceModeRef = useRef<"text" | "voice">("text");
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasNew, setHasNew] = useState(false);
@@ -543,7 +551,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   // Voice mode + мобильный?
   useEffect(() => {
     const saved = localStorage.getItem("aray-voice-mode");
-    if (saved === "voice") setVoiceMode("voice");
+    if (saved === "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; }
   }, []);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 1024);
@@ -739,7 +747,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
       ));
 
       // Автоозвучка в голосовом режиме → после ответа автослушание (как Алиса)
-      if (voiceMode === "voice" && finalParsed) {
+      if (voiceModeRef.current === "voice" && finalParsed) {
         speak(finalParsed, assistantId, () => {
           // После того как Арай договорил — автоматически слушаем
           setTimeout(() => startVoice(), 300);
@@ -768,7 +776,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
   };
 
   const { listening, start: startVoice, stop: stopVoice } = useVoiceInput(text => {
-    if (voiceMode === "voice") {
+    if (voiceModeRef.current === "voice") {
       // В голосовом режиме — сразу отправляем
       sendMessage(text);
     } else {
@@ -795,14 +803,34 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
 
   if (!enabled || !visible) return null;
 
-  // ── Общие стили панели ────────────────────────────────────────────────────
-  const panelBg = {
+  // ── Тема ──────────────────────────────────────────────────────────────────
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
+
+  // ── Общие стили панели — адаптивные под тему ──────────────────────────────
+  const panelBg = isDark ? {
     background: "rgba(12, 12, 14, 0.80)",
     backdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
     WebkitBackdropFilter: "blur(28px) saturate(180%) brightness(0.88)",
     border: "1px solid rgba(255, 255, 255, 0.12)",
     boxShadow: "0 24px 64px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.08) inset",
+  } as React.CSSProperties : {
+    background: "rgba(255, 255, 255, 0.92)",
+    backdropFilter: "blur(28px) saturate(180%)",
+    WebkitBackdropFilter: "blur(28px) saturate(180%)",
+    border: "1px solid rgba(0, 0, 0, 0.10)",
+    boxShadow: "0 24px 64px rgba(0,0,0,0.12), 0 1px 0 rgba(255,255,255,0.5) inset",
   } as React.CSSProperties;
+
+  // Цвета текста для темы
+  const txt = isDark ? "rgba(255,255,255,0.90)" : "rgba(15,15,15,0.90)";
+  const txtSub = isDark ? "rgba(255,255,255,0.45)" : "rgba(15,15,15,0.50)";
+  const txtMuted = isDark ? "rgba(255,255,255,0.38)" : "rgba(15,15,15,0.40)";
+  const inputBg = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.04)";
+  const inputBorder = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.10)";
+  const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+  const bubbleBg = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.04)";
+  const bubbleBorder = isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)";
 
   return (
     <>
@@ -853,7 +881,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 longPressTriggered.current = true;
                 if (!open) { setOpen(true); setHasNew(false); setProactiveBubble(null); startChat(); }
                 // Push-to-talk: включаем голос и слушаем
-                if (voiceMode !== "voice") { setVoiceMode("voice"); localStorage.setItem("aray-voice-mode", "voice"); }
+                if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
                 startVoice();
               }, 400);
             }}
@@ -905,11 +933,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               }}>
               {/* Шапка */}
               <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                style={{ borderBottom: `1px solid ${dividerColor}` }}>
                 <ArayIcon size={32} id="aig3" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
-                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <p className="text-sm font-semibold" style={{ color: txt }}>Арай</p>
+                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: txtSub }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
                     {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
                   </p>
@@ -926,13 +954,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 <div className="flex gap-0.5 items-center">
                   <button onClick={() => {
                     const next = voiceMode === "text" ? "voice" : "text";
-                    setVoiceMode(next);
+                    setVoiceMode(next); voiceModeRef.current = next;
                     localStorage.setItem("aray-voice-mode", next);
                   }}
                     className="h-7 px-2 rounded-lg flex items-center gap-1 text-[10px] font-medium transition-all"
                     style={{
-                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.06)",
-                      color: voiceMode === "voice" ? "#60a5fa" : "rgba(255,255,255,0.45)",
+                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                      color: voiceMode === "voice" ? "#60a5fa" : txtSub,
                       border: voiceMode === "voice" ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
                     }}
                     title={voiceMode === "voice" ? "Голосовой режим" : "Текстовый режим"}>
@@ -942,13 +970,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   </button>
                   <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-                    style={{ color: "rgba(255,255,255,0.40)" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                    style={{ color: txtMuted }}
+                    onMouseEnter={e => (e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                     title="Новый чат"><RotateCcw className="w-3.5 h-3.5" /></button>
                   <button onClick={() => setOpen(false)}
                     className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
-                    style={{ color: "rgba(255,255,255,0.40)" }}
+                    style={{ color: txtMuted }}
                     onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
                     onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                     <X className="w-4 h-4" /></button>
@@ -957,7 +985,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               {/* Сообщения */}
               <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
                 {messages.map(m => (
-                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} />
+                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} isDark={isDark} />
                 ))}
                 {loading && (
                   <div className="flex gap-2.5 mb-3">
@@ -988,7 +1016,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 </div>
               )}
               {/* Инпут — десктоп */}
-              <div className="px-4 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="px-4 py-3 shrink-0" style={{ borderTop: `1px solid ${dividerColor}` }}>
                 {speaking && (
                   <div className="flex items-center justify-center gap-2 pb-2">
                     <span className="flex gap-1 items-center">
@@ -1000,20 +1028,20 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                       ))}
                     </span>
                     <span className="text-[11px] text-blue-400 font-medium">Арай говорит...</span>
-                    <button onClick={stopTTS} className="text-[10px] text-white/40 underline">Стоп</button>
+                    <button onClick={stopTTS} className="text-[10px] underline" style={{ color: txtMuted }}>Стоп</button>
                   </div>
                 )}
                 <div className="flex gap-2 items-end">
                   <button onClick={listening ? stopVoice : startVoice}
                     className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
                     style={{
-                      background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
-                      border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
+                      background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : inputBg,
+                      border: `1px solid ${listening ? "transparent" : inputBorder}`,
                       boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
                     }}>
                     {listening && <span className="absolute inset-0 rounded-full animate-ping"
                       style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
-                    {listening ? <MicOff className="w-4 h-4 text-white relative z-10" /> : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
+                    {listening ? <MicOff className="w-4 h-4 text-white relative z-10" /> : <Mic className="w-4 h-4 relative z-10" style={{ color: txtSub }} />}
                   </button>
                   <textarea
                     ref={inputRef} value={input}
@@ -1022,9 +1050,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                     rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
                     className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
                     style={{
-                      background: "rgba(255,255,255,0.07)",
-                      border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
-                      color: "rgba(255,255,255,0.90)",
+                      background: inputBg,
+                      border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`,
+                      color: txt,
                       maxHeight: "100px",
                     }}
                   />
@@ -1072,15 +1100,15 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 className="flex justify-center pt-2.5 pb-1 shrink-0"
                 onClick={() => setOpen(false)}
               >
-                <div className="w-10 h-[3px] rounded-full" style={{ background: "rgba(255,255,255,0.20)" }} />
+                <div className="w-10 h-[3px] rounded-full" style={{ background: isDark ? "rgba(255,255,255,0.20)" : "rgba(0,0,0,0.15)" }} />
               </div>
               {/* Шапка */}
               <div className="flex items-center gap-3 px-4 py-3 shrink-0"
-                style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                style={{ borderBottom: `1px solid ${dividerColor}` }}>
                 <ArayIcon size={32} id="aig5" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Арай</p>
-                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+                  <p className="text-sm font-semibold" style={{ color: txt }}>Арай</p>
+                  <p className="text-[10px] flex items-center gap-1.5 mt-0.5" style={{ color: txtSub }}>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
                     {userName ? `Привет, ${userName}!` : "ARAY · онлайн"}
                   </p>
@@ -1097,13 +1125,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                 <div className="flex gap-0.5 items-center">
                   <button onClick={() => {
                     const next = voiceMode === "text" ? "voice" : "text";
-                    setVoiceMode(next);
+                    setVoiceMode(next); voiceModeRef.current = next;
                     localStorage.setItem("aray-voice-mode", next);
                   }}
                     className="h-7 px-2 rounded-lg flex items-center gap-1 text-[10px] font-medium transition-all"
                     style={{
-                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : "rgba(255,255,255,0.06)",
-                      color: voiceMode === "voice" ? "#60a5fa" : "rgba(255,255,255,0.45)",
+                      background: voiceMode === "voice" ? "rgba(59,130,246,0.2)" : isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                      color: voiceMode === "voice" ? "#60a5fa" : txtSub,
                       border: voiceMode === "voice" ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent",
                     }}
                     title={voiceMode === "voice" ? "Голосовой режим" : "Текстовый режим"}>
@@ -1113,12 +1141,12 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   </button>
                   <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} startChat(); }}
                     className="w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ color: "rgba(255,255,255,0.40)" }} title="Новый чат">
+                    style={{ color: txtMuted }} title="Новый чат">
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => setOpen(false)}
                     className="w-8 h-8 rounded-xl flex items-center justify-center"
-                    style={{ color: "rgba(255,255,255,0.40)" }}>
+                    style={{ color: txtMuted }}>
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -1126,7 +1154,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               {/* Сообщения */}
               <div className="flex-1 overflow-y-auto px-4 py-4 overscroll-contain">
                 {messages.map(m => (
-                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} />
+                  <MessageBubble key={m.id} msg={m} onAction={handleAction} onSpeak={speak} speaking={speaking} isDark={isDark} />
                 ))}
                 {loading && (
                   <div className="flex gap-2.5 mb-3">
@@ -1158,8 +1186,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
               )}
               {/* Инпут — мобильный */}
               <div className="px-4 py-3 shrink-0" style={{
-                borderTop: "1px solid rgba(255,255,255,0.08)",
-                paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+                borderTop: `1px solid ${dividerColor}`,
+                paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
               }}>
                 {/* Индикатор: Арай говорит */}
                 {speaking && (
@@ -1173,7 +1201,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                       ))}
                     </span>
                     <span className="text-[11px] text-blue-400 font-medium">Арай говорит...</span>
-                    <button onClick={stopTTS} className="text-[10px] text-white/40 underline">Стоп</button>
+                    <button onClick={stopTTS} className="text-[10px] underline" style={{ color: txtMuted }}>Стоп</button>
                   </div>
                 )}
                 {/* Голосовой режим — большая кнопка микрофона по центру */}
@@ -1196,10 +1224,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                         ? <MicOff className="w-6 h-6 text-white relative z-10" />
                         : <Mic className="w-6 h-6 text-white relative z-10" />}
                     </button>
-                    <p className="text-[11px] font-medium" style={{ color: listening ? "#ef4444" : "rgba(255,255,255,0.45)" }}>
+                    <p className="text-[11px] font-medium" style={{ color: listening ? "#ef4444" : txtSub }}>
                       {listening ? "Слушаю... нажми чтобы остановить" : "Нажми чтобы говорить"}
                     </p>
-                    {/* Мелкий инпут под кнопкой для переключения */}
+                    {/* Мелкий инпут под кнопкой */}
                     <div className="flex gap-2 w-full items-center">
                       <textarea
                         ref={inputRef} value={input}
@@ -1207,12 +1235,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                         onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                         rows={1} placeholder="...или напиши"
                         className="flex-1 resize-none text-sm rounded-2xl px-4 py-2 focus:outline-none"
-                        style={{
-                          background: "rgba(255,255,255,0.05)",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          color: "rgba(255,255,255,0.90)",
-                          maxHeight: "80px",
-                        }}
+                        style={{ background: inputBg, border: `1px solid ${inputBorder}`, color: txt, maxHeight: "80px" }}
                       />
                       {input.trim() && (
                         <button onClick={() => sendMessage()} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
@@ -1227,15 +1250,15 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                     <button onClick={listening ? stopVoice : startVoice}
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 relative"
                       style={{
-                        background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
-                        border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
+                        background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : inputBg,
+                        border: `1px solid ${listening ? "transparent" : inputBorder}`,
                         boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
                       }}>
                       {listening && <span className="absolute inset-0 rounded-full animate-ping"
                         style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
                       {listening
                         ? <MicOff className="w-4.5 h-4.5 text-white relative z-10" />
-                        : <Mic className="w-4.5 h-4.5 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
+                        : <Mic className="w-4.5 h-4.5 relative z-10" style={{ color: txtSub }} />}
                     </button>
                     <textarea
                       ref={inputRef} value={input}
@@ -1243,12 +1266,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                       rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
                       className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none"
-                      style={{
-                        background: "rgba(255,255,255,0.07)",
-                        border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
-                        color: "rgba(255,255,255,0.90)",
-                        maxHeight: "100px",
-                      }}
+                      style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "100px" }}
                     />
                     <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"

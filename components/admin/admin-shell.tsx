@@ -7,7 +7,7 @@ import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdmi
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Menu, X, LogOut, Bell, Settings, ShoppingBag,
+  Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
   ArrowRight, ALargeSmall, Monitor, Zap, Palette, Film,
 } from "lucide-react";
 
@@ -448,8 +448,7 @@ function ArayControlCenter() {
   const [count, setCount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
-  const { setTheme } = useTheme();
-  useEffect(() => { setTheme("dark"); }, [setTheme]);
+  const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
   const { t } = useAdminLang();
@@ -660,6 +659,26 @@ function ArayControlCenter() {
                   </div>
                 </div>
 
+                {/* Тема */}
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Тема</p>
+                  <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    className="glass-control w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
+                      {theme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
+                    </div>
+                    <span className="flex-1 text-left text-[12px] font-medium glass-text-primary">
+                      {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                    </span>
+                    <div className="relative w-9 h-5 rounded-full shrink-0 glass-pill"
+                      style={{ background: theme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
+                      <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
+                        style={{ background: theme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: theme === "dark" ? "calc(100% - 17px)" : "3px" }} />
+                    </div>
+                  </button>
+                </div>
+
                 {/* Фон */}
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("bg_panel")}</p>
@@ -796,8 +815,7 @@ function MobileFontControl() {
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
-  const { setTheme } = useTheme();
-  useEffect(() => { setTheme("dark"); }, [setTheme]);
+  const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
   const { t } = useAdminLang();
@@ -933,6 +951,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                     className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
                     style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
                 ))}
+                <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="w-7 h-7 rounded-full shrink-0 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                  {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                </button>
               </div>
             </div>
             <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
@@ -1027,6 +1049,44 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                     }} />
                 ))}
               </div>
+            </div>
+
+            {/* Тема */}
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40 mb-3">
+                Тема
+              </p>
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
+                  {theme === "dark"
+                    ? <Sun className="w-4 h-4 text-violet-400" />
+                    : <Moon className="w-4 h-4 text-violet-400" />}
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold text-white/85">
+                    {theme === "dark" ? "Тёмная тема" : "Светлая тема"}
+                  </p>
+                  <p className="text-[11px] text-white/35">
+                    Нажми чтобы переключить
+                  </p>
+                </div>
+                <div className="w-10 h-5.5 rounded-full relative"
+                  style={{
+                    background: theme === "dark"
+                      ? "hsl(var(--primary)/0.4)"
+                      : "rgba(255,255,255,0.15)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}>
+                  <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
+                    style={{
+                      background: theme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
+                      left: theme === "dark" ? "calc(100% - 18px)" : "2px",
+                    }} />
+                </div>
+              </button>
             </div>
 
             {/* На сайт */}
