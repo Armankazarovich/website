@@ -244,105 +244,92 @@ function cleanTTSText(text: string): string {
 
 function useTTS() {
   const [speaking, setSpeaking] = useState(false);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const onDoneRef = useRef<(() => void) | null>(null);
+  const lockRef = useRef(false);
 
   const stop = useCallback(() => {
+    lockRef.current = false;
     abortRef.current?.abort(); abortRef.current = null;
-    if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current.src = ""; currentAudioRef.current = null; }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      try { URL.revokeObjectURL(audioRef.current.src); } catch {}
+      audioRef.current = null;
+    }
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setSpeaking(false);
   }, []);
 
-  // Разбиваем текст на предложения для быстрого старта
-  const splitSentences = useCallback((text: string): string[] => {
-    const raw = text.match(/[^.!?]+[.!?]+/g) || [text];
-    const chunks: string[] = [];
-    let cur = "";
-    for (const s of raw) {
-      if (cur.length + s.length > 140 && cur) { chunks.push(cur.trim()); cur = s; }
-      else cur += s;
-    }
-    if (cur.trim()) chunks.push(cur.trim());
-    return chunks.filter(c => c.length > 2);
-  }, []);
+  const speak = useCallback(async (text: string, onFinished?: () => void) => {
+    if (lockRef.current) { stop(); await new Promise(r => setTimeout(r, 50)); }
+    stop();
+    lockRef.current = true;
 
-  // Загрузка одного аудио-фрагмента
-  const fetchOne = useCallback(async (text: string, signal: AbortSignal): Promise<HTMLAudioElement | null> => {
+    const clean = cleanTTSText(text);
+    if (!clean) { lockRef.current = false; return; }
+    setSpeaking(true);
+    onDoneRef.current = onFinished || null;
+
     const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || ELEVEN_KEY;
+    const abort = new AbortController();
+    abortRef.current = abort;
+
+    // Один запрос — без разбивки на предложения
     try {
       const res = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}/stream?output_format=mp3_22050_32&optimize_streaming_latency=4`,
         {
-          method: "POST", signal,
+          method: "POST", signal: abort.signal,
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
-            text, model_id: ELEVEN_MODEL,
-            voice_settings: { stability: 0.60, similarity_boost: 0.75, style: 0.20, use_speaker_boost: true, speed: ELEVEN_SPEED },
+            text: clean, model_id: ELEVEN_MODEL,
+            voice_settings: { stability: 0.65, similarity_boost: 0.75, style: 0.15, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
-      if (!res.ok) return null;
-      const blob = await res.blob();
-      if (blob.size < 100) return null;
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
-      audio.onerror = () => URL.revokeObjectURL(url);
-      return audio;
-    } catch { return null; }
-  }, []);
-
-  const speak = useCallback(async (text: string, onFinished?: () => void) => {
-    stop();
-    const clean = cleanTTSText(text);
-    if (!clean) return;
-    setSpeaking(true);
-    onDoneRef.current = onFinished || null;
-
-    const abort = new AbortController();
-    abortRef.current = abort;
-
-    const sentences = splitSentences(clean);
-
-    // Параллельно: первое предложение + все остальные
-    const firstPromise = fetchOne(sentences[0], abort.signal);
-    const restPromise = sentences.length > 1
-      ? Promise.all(sentences.slice(1).map(s => fetchOne(s, abort.signal)))
-      : Promise.resolve([] as (HTMLAudioElement | null)[]);
-
-    // Играем первое предложение (быстрый старт ~500ms)
-    const firstAudio = await firstPromise;
-    if (!firstAudio || abort.signal.aborted) {
-      setSpeaking(false); onDoneRef.current?.(); return;
-    }
-    currentAudioRef.current = firstAudio;
-    await new Promise<void>(resolve => {
-      firstAudio.onended = () => { URL.revokeObjectURL(firstAudio.src); resolve(); };
-      firstAudio.onerror = () => resolve();
-      firstAudio.play().catch(() => resolve());
-    });
-
-    // Играем остальные фрагменты последовательно
-    if (!abort.signal.aborted) {
-      const rest = await restPromise;
-      for (const audio of rest) {
-        if (!audio || abort.signal.aborted) break;
-        currentAudioRef.current = audio;
-        await new Promise<void>(resolve => {
-          audio.onended = () => { URL.revokeObjectURL(audio.src); resolve(); };
-          audio.onerror = () => resolve();
-          audio.play().catch(() => resolve());
-        });
+      if (res.ok) {
+        const blob = await res.blob();
+        if (blob.size > 100 && !abort.signal.aborted) {
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          await new Promise<void>(resolve => {
+            audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+            audio.play().catch(() => resolve());
+          });
+          if (!abort.signal.aborted) {
+            lockRef.current = false; setSpeaking(false); audioRef.current = null;
+            onDoneRef.current?.();
+          }
+          return;
+        }
       }
+    } catch (e: unknown) {
+      if (e instanceof Error && e.name === "AbortError") return;
     }
 
+    // Фоллбэк — браузерный голос
     if (!abort.signal.aborted) {
-      setSpeaking(false);
-      onDoneRef.current?.();
+      try {
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const voices = window.speechSynthesis.getVoices();
+          const ruVoice = voices.find(v => v.lang.startsWith("ru"));
+          if (ruVoice) {
+            const utter = new SpeechSynthesisUtterance(clean);
+            utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.0;
+            utter.onend = () => { lockRef.current = false; setSpeaking(false); onDoneRef.current?.(); };
+            utter.onerror = () => { lockRef.current = false; setSpeaking(false); };
+            window.speechSynthesis.speak(utter);
+            return;
+          }
+        }
+      } catch {}
+      lockRef.current = false; setSpeaking(false);
     }
-  }, [stop, splitSentences, fetchOne]);
+  }, [stop]);
 
   return { speaking, speak, stop };
 }
