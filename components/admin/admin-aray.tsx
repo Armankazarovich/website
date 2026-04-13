@@ -191,59 +191,134 @@ function useTTS() {
   return { speaking, speak, stop };
 }
 
-// ─── ARAY Orb (fire sphere — same as site) ──────────────────────────────────
+// ─── ARAY Sun Orb — живое солнце с лучами и коронными вспышками ─────────────
 function ArayOrb({ size = 52, state = "idle", id = "ao" }: {
   size?: number;
   state?: "idle" | "listening" | "thinking" | "speaking";
   id?: string;
 }) {
-  const active = state !== "idle";
+  const isActive = state !== "idle";
+  const isListening = state === "listening";
+  const isSpeaking = state === "speaking";
+  const isThinking = state === "thinking";
+
   return (
-    <div className="relative" style={{ width: size, height: size }}>
-      {/* Glow ring */}
-      {active && (
-        <div className="absolute inset-0 rounded-full" style={{
-          background: state === "listening"
-            ? `radial-gradient(circle, hsl(var(--primary) / 0.5) 0%, transparent 70%)`
-            : state === "speaking"
-            ? `radial-gradient(circle, rgba(255,160,0,0.4) 0%, transparent 70%)`
-            : `radial-gradient(circle, hsl(var(--primary) / 0.25) 0%, transparent 70%)`,
-          transform: "scale(2.2)",
-          animation: state === "listening" ? "aray-listen-pulse 1s ease-in-out infinite"
-            : state === "speaking" ? "aray-speak-glow 1.5s ease-in-out infinite"
-            : "aray-pulse-glow 2s ease-in-out infinite",
-        }}/>
+    <div className="relative flex items-center justify-center" style={{ width: size * 1.8, height: size * 1.8 }}>
+      {/* Outer glow — always visible, intensity changes */}
+      <div className="absolute inset-0 rounded-full" style={{
+        background: isListening
+          ? "radial-gradient(circle, rgba(255,180,0,0.5) 0%, rgba(255,120,0,0.15) 40%, transparent 70%)"
+          : isSpeaking
+          ? "radial-gradient(circle, rgba(255,200,50,0.6) 0%, rgba(255,140,0,0.2) 40%, transparent 70%)"
+          : "radial-gradient(circle, rgba(255,160,0,0.25) 0%, rgba(255,100,0,0.08) 45%, transparent 70%)",
+        animation: isActive ? "aray-sun-breathe 1.5s ease-in-out infinite" : "aray-sun-breathe 3s ease-in-out infinite",
+      }}/>
+
+      {/* Corona rays — rotating light streaks */}
+      <div className="absolute inset-0 rounded-full" style={{
+        background: `conic-gradient(from 0deg, transparent, rgba(255,200,60,${isActive ? 0.2 : 0.08}), transparent, rgba(255,180,40,${isActive ? 0.15 : 0.06}), transparent, rgba(255,200,60,${isActive ? 0.2 : 0.08}), transparent, rgba(255,180,40,${isActive ? 0.15 : 0.06}), transparent)`,
+        animation: isSpeaking ? "aray-corona-spin 3s linear infinite" : "aray-corona-spin 12s linear infinite",
+        filter: "blur(2px)",
+      }}/>
+
+      {/* Second corona layer (counter-rotating) */}
+      <div className="absolute inset-[8%] rounded-full" style={{
+        background: `conic-gradient(from 45deg, transparent, rgba(255,220,80,${isActive ? 0.15 : 0.05}), transparent, rgba(255,180,40,${isActive ? 0.12 : 0.04}), transparent)`,
+        animation: isSpeaking ? "aray-corona-counterspin 2.5s linear infinite" : "aray-corona-counterspin 15s linear infinite",
+        filter: "blur(1px)",
+      }}/>
+
+      {/* Pulse ring for listening */}
+      {isListening && (
+        <>
+          <div className="absolute inset-[5%] rounded-full border-2 border-amber-400/40" style={{
+            animation: "aray-pulse-ring 1.2s ease-out infinite",
+          }}/>
+          <div className="absolute inset-[5%] rounded-full border-2 border-amber-400/30" style={{
+            animation: "aray-pulse-ring 1.2s ease-out infinite 0.4s",
+          }}/>
+        </>
       )}
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", position: "relative", zIndex: 1 }}>
+
+      {/* Core sun sphere */}
+      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", position: "relative", zIndex: 2, filter: `drop-shadow(0 0 ${isActive ? 12 : 6}px rgba(255,160,0,${isActive ? 0.6 : 0.3}))` }}>
         <defs>
-          <radialGradient id={`${id}-base`} cx="34%" cy="28%" r="70%">
-            <stop offset="0%" stopColor="#fffbe0"/><stop offset="10%" stopColor="#ffca40"/>
-            <stop offset="28%" stopColor="#f07800"/><stop offset="52%" stopColor="#c05000"/>
-            <stop offset="75%" stopColor="#6e1c00"/><stop offset="100%" stopColor="#160300"/>
+          <radialGradient id={`${id}-core`} cx="38%" cy="30%" r="65%">
+            <stop offset="0%" stopColor="#fffff0"/>
+            <stop offset="8%" stopColor="#fff8c0"/>
+            <stop offset="18%" stopColor="#ffdd44"/>
+            <stop offset="35%" stopColor="#ffaa00"/>
+            <stop offset="55%" stopColor="#ee7700"/>
+            <stop offset="75%" stopColor="#cc4400"/>
+            <stop offset="90%" stopColor="#881800"/>
+            <stop offset="100%" stopColor="#330800"/>
           </radialGradient>
-          <radialGradient id={`${id}-dark`} cx="72%" cy="74%" r="52%">
-            <stop offset="0%" stopColor="#050000" stopOpacity="0.75"/><stop offset="100%" stopColor="#050000" stopOpacity="0"/>
+          <radialGradient id={`${id}-shadow`} cx="70%" cy="72%" r="50%">
+            <stop offset="0%" stopColor="#220000" stopOpacity="0.6"/>
+            <stop offset="100%" stopColor="#220000" stopOpacity="0"/>
           </radialGradient>
-          <radialGradient id={`${id}-hl`} cx="30%" cy="25%" r="34%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.85"/><stop offset="100%" stopColor="white" stopOpacity="0"/>
+          <radialGradient id={`${id}-specular`} cx="32%" cy="26%" r="30%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.95"/>
+            <stop offset="100%" stopColor="white" stopOpacity="0"/>
           </radialGradient>
-          <radialGradient id={`${id}-rim`} cx="50%" cy="50%" r="50%">
-            <stop offset="76%" stopColor="transparent" stopOpacity="0"/><stop offset="100%" stopColor="#ffcc00" stopOpacity="0.55"/>
+          <radialGradient id={`${id}-aura`} cx="50%" cy="50%" r="50%">
+            <stop offset="80%" stopColor="transparent"/>
+            <stop offset="100%" stopColor="#ffcc00" stopOpacity="0.6"/>
           </radialGradient>
           <clipPath id={`${id}-clip`}><circle cx="50" cy="50" r="46"/></clipPath>
+          {/* Turbulence for surface texture */}
+          <filter id={`${id}-turb`}>
+            <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="3" seed="2">
+              <animate attributeName="seed" values="1;5;1" dur="4s" repeatCount="indefinite"/>
+            </feTurbulence>
+            <feDisplacementMap in="SourceGraphic" scale="3"/>
+          </filter>
         </defs>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-dark)`}/>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-rim)`}/>
+
+        {/* Base sphere */}
+        <circle cx="50" cy="50" r="46" fill={`url(#${id}-core)`}/>
+        <circle cx="50" cy="50" r="46" fill={`url(#${id}-shadow)`}/>
+
+        {/* Surface activity — swirling plasma */}
         <g clipPath={`url(#${id}-clip)`}>
-          <ellipse cx="50" cy="50" rx="28" ry="10" fill="white" opacity="0.14">
-            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="9s" repeatCount="indefinite"/>
+          <ellipse cx="50" cy="50" rx="30" ry="10" fill="white" opacity="0.12">
+            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="7s" repeatCount="indefinite"/>
           </ellipse>
+          <ellipse cx="50" cy="50" rx="22" ry="8" fill="rgba(255,220,100,0.1)">
+            <animateTransform attributeName="transform" type="rotate" from="360 50 50" to="0 50 50" dur="11s" repeatCount="indefinite"/>
+          </ellipse>
+          {/* Sunspots */}
+          <circle cx="38" cy="40" r="4" fill="rgba(100,30,0,0.15)">
+            <animate attributeName="r" values="3;5;3" dur="5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="62" cy="55" r="3" fill="rgba(100,30,0,0.1)">
+            <animate attributeName="r" values="2;4;2" dur="7s" repeatCount="indefinite"/>
+          </circle>
         </g>
-        <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`}/>
-        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,60,0.22)" strokeWidth="1">
-          <animate attributeName="stroke-opacity" values="0.22;0.55;0.22" dur="3s" repeatCount="indefinite"/>
+
+        {/* Specular highlight */}
+        <circle cx="50" cy="50" r="46" fill={`url(#${id}-specular)`}/>
+        {/* Aura rim */}
+        <circle cx="50" cy="50" r="46" fill={`url(#${id}-aura)`}/>
+        {/* Edge glow */}
+        <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,220,60,0.35)" strokeWidth="1.5">
+          <animate attributeName="stroke-opacity" values="0.25;0.5;0.25" dur="2s" repeatCount="indefinite"/>
         </circle>
+
+        {/* Speaking: pulsating corona */}
+        {isSpeaking && (
+          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,200,0,0.4)" strokeWidth="2">
+            <animate attributeName="r" values="46;49;46" dur="0.8s" repeatCount="indefinite"/>
+            <animate attributeName="stroke-opacity" values="0.4;0.1;0.4" dur="0.8s" repeatCount="indefinite"/>
+          </circle>
+        )}
+
+        {/* Thinking: spinning ring */}
+        {isThinking && (
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,200,0,0.3)" strokeWidth="1.5" strokeDasharray="12 8">
+            <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="2s" repeatCount="indefinite"/>
+          </circle>
+        )}
       </svg>
     </div>
   );
@@ -858,17 +933,29 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
 
       {/* ══ CSS Animations ═══════════════════════════════════════════════════════ */}
       <style jsx global>{`
+        @keyframes aray-sun-breathe {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.08); opacity: 1; }
+        }
+        @keyframes aray-corona-spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes aray-corona-counterspin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(-360deg); }
+        }
+        @keyframes aray-pulse-ring {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(1.6); opacity: 0; }
+        }
         @keyframes aray-listen-pulse {
-          0%, 100% { transform: scale(2.2); opacity: 0.5; }
-          50% { transform: scale(2.6); opacity: 0.8; }
+          0%, 100% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(1.1); opacity: 0.8; }
         }
         @keyframes aray-speak-glow {
-          0%, 100% { transform: scale(2.0); opacity: 0.3; }
-          50% { transform: scale(2.4); opacity: 0.6; }
-        }
-        @keyframes aray-pulse-glow {
-          0%, 100% { transform: scale(2.0); opacity: 0.2; }
-          50% { transform: scale(2.3); opacity: 0.4; }
+          0%, 100% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.06); opacity: 0.6; }
         }
       `}</style>
     </>
