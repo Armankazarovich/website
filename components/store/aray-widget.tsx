@@ -276,114 +276,109 @@ function cleanForTTS(text: string): string {
 
 function useTTS() {
   const [speaking, setSpeaking] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const onDoneRef = useRef<(() => void) | null>(null);
 
   const stopAll = useCallback(() => {
     abortRef.current?.abort(); abortRef.current = null;
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
+    if (currentAudioRef.current) { currentAudioRef.current.pause(); currentAudioRef.current.src = ""; currentAudioRef.current = null; }
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setSpeaking(null);
   }, []);
 
-  const browserSpeak = useCallback((clean: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) { setSpeaking(null); return; }
-    window.speechSynthesis.cancel();
-    const voices = window.speechSynthesis.getVoices();
-    const ruVoice = voices.find(v => v.lang.startsWith("ru") && v.name.includes("Natural"))
-      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Microsoft"))
-      || voices.find(v => v.lang.startsWith("ru") && v.name.includes("Google"))
-      || voices.find(v => v.lang.startsWith("ru"));
-    if (!ruVoice) { console.warn("[TTS] No Russian voice"); setSpeaking(null); return; }
-    const utter = new SpeechSynthesisUtterance(clean);
-    utter.lang = "ru-RU"; utter.voice = ruVoice; utter.rate = 1.0; utter.pitch = 0.95;
-    utter.onend = () => setSpeaking(null);
-    utter.onerror = () => setSpeaking(null);
-    window.speechSynthesis.speak(utter);
+  // Разбиваем текст на предложения для быстрого старта
+  const splitSentences = useCallback((text: string): string[] => {
+    const raw = text.match(/[^.!?]+[.!?]+/g) || [text];
+    const chunks: string[] = [];
+    let cur = "";
+    for (const s of raw) {
+      if (cur.length + s.length > 140 && cur) { chunks.push(cur.trim()); cur = s; }
+      else cur += s;
+    }
+    if (cur.trim()) chunks.push(cur.trim());
+    return chunks.filter(c => c.length > 2);
   }, []);
 
-  const speak = useCallback(async (text: string, msgId: string) => {
-    // Toggle — стоп если уже играет это сообщение
-    if (speaking === msgId) { stopAll(); return; }
-    stopAll();
-    setSpeaking(msgId);
-
-    const clean = cleanForTTS(text);
-    if (!clean) { setSpeaking(null); return; }
-
+  // Загрузка одного аудио-фрагмента
+  const fetchOne = useCallback(async (text: string, signal: AbortSignal): Promise<HTMLAudioElement | null> => {
     const apiKey = process.env.NEXT_PUBLIC_ELEVENLABS_KEY || ELEVEN_KEY;
-    const abort = new AbortController();
-    abortRef.current = abort;
-
-    // 1️⃣ Streaming напрямую к ElevenLabs (мгновенный старт)
     try {
       const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}/stream?output_format=mp3_22050_32`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}/stream?output_format=mp3_22050_32&optimize_streaming_latency=4`,
         {
-          method: "POST", signal: abort.signal,
+          method: "POST", signal,
           headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: clean, model_id: ELEVEN_MODEL_ID,
+            text, model_id: ELEVEN_MODEL_ID,
             voice_settings: { stability: 0.60, similarity_boost: 0.75, style: 0.20, use_speaker_boost: true, speed: ELEVEN_SPEED },
           }),
         }
       );
-      if (res.ok && res.body) {
-        const reader = res.body.getReader();
-        const parts: BlobPart[] = [];
-        for (;;) {
-          const { value, done: d } = await reader.read();
-          if (d) break;
-          if (value) parts.push(value);
-        }
-        if (parts.length > 0) {
-          const blob = new Blob(parts, { type: "audio/mpeg" });
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
-          audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
-          await audio.play().catch(() => {});
-          return;
-        }
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      if (blob.size < 100) return null;
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      audio.onerror = () => URL.revokeObjectURL(url);
+      return audio;
+    } catch { return null; }
+  }, []);
+
+  const speak = useCallback(async (text: string, msgId: string, onFinished?: () => void) => {
+    if (speaking === msgId) { stopAll(); return; }
+    stopAll();
+    setSpeaking(msgId);
+    onDoneRef.current = onFinished || null;
+
+    const clean = cleanForTTS(text);
+    if (!clean) { setSpeaking(null); onDoneRef.current?.(); return; }
+
+    const abort = new AbortController();
+    abortRef.current = abort;
+
+    const sentences = splitSentences(clean);
+
+    // Параллельно: первое предложение + все остальные
+    const firstPromise = fetchOne(sentences[0], abort.signal);
+    const restPromise = sentences.length > 1
+      ? Promise.all(sentences.slice(1).map(s => fetchOne(s, abort.signal)))
+      : Promise.resolve([] as (HTMLAudioElement | null)[]);
+
+    // Играем первое предложение (быстрый старт ~500ms)
+    const firstAudio = await firstPromise;
+    if (!firstAudio || abort.signal.aborted) {
+      setSpeaking(null); onDoneRef.current?.(); return;
+    }
+    currentAudioRef.current = firstAudio;
+    await new Promise<void>(resolve => {
+      firstAudio.onended = () => { URL.revokeObjectURL(firstAudio.src); resolve(); };
+      firstAudio.onerror = () => resolve();
+      firstAudio.play().catch(() => resolve());
+    });
+
+    // Играем остальные фрагменты последовательно
+    if (!abort.signal.aborted) {
+      const rest = await restPromise;
+      for (const audio of rest) {
+        if (!audio || abort.signal.aborted) break;
+        currentAudioRef.current = audio;
+        await new Promise<void>(resolve => {
+          audio.onended = () => { URL.revokeObjectURL(audio.src); resolve(); };
+          audio.onerror = () => resolve();
+          audio.play().catch(() => resolve());
+        });
       }
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === "AbortError") return;
-      console.warn("[TTS] Streaming failed:", e);
     }
 
-    // 2️⃣ Fallback: полная загрузка
-    try {
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE_ID}?output_format=mp3_22050_32`, {
-        method: "POST", signal: abort.signal,
-        headers: { "xi-api-key": apiKey, "Content-Type": "application/json", "Accept": "audio/mpeg" },
-        body: JSON.stringify({
-          text: clean, model_id: ELEVEN_MODEL_ID,
-          voice_settings: { stability: 0.55, similarity_boost: 0.80, style: 0.25, use_speaker_boost: true },
-        }),
-      });
-      if (res.ok) {
-        const buf = await res.arrayBuffer();
-        if (buf.byteLength > 100) {
-          const blob = new Blob([buf], { type: "audio/mpeg" });
-          const url = URL.createObjectURL(blob);
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = () => { URL.revokeObjectURL(url); setSpeaking(null); audioRef.current = null; };
-          audio.onerror = () => { URL.revokeObjectURL(url); setSpeaking(null); };
-          await audio.play().catch(() => {});
-          return;
-        }
-      }
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name === "AbortError") return;
+    if (!abort.signal.aborted) {
+      setSpeaking(null);
+      onDoneRef.current?.();
     }
+  }, [speaking, stopAll, splitSentences, fetchOne]);
 
-    // 3️⃣ Браузерный голос
-    browserSpeak(clean);
-  }, [speaking, stopAll, browserSpeak]);
-
-  return { speaking, speak };
+  return { speaking, speak, stopAll };
 }
 
 // ─── Пузырь сообщения ─────────────────────────────────────────────────────────
@@ -491,7 +486,7 @@ function MessageBubble({
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function ArayWidget({ page, productName, cartTotal, enabled = true }: ArayWidgetProps) {
-  const { speaking, speak } = useTTS();
+  const { speaking, speak, stopAll: stopTTS } = useTTS();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -751,9 +746,12 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         m.id === assistantId ? { ...m, content: finalParsed, actions, streaming: false } : m
       ));
 
-      // Автоозвучка в голосовом режиме
+      // Автоозвучка в голосовом режиме → после ответа автослушание (как Алиса)
       if (voiceMode === "voice" && finalParsed) {
-        speak(finalParsed, assistantId);
+        speak(finalParsed, assistantId, () => {
+          // После того как Арай договорил — автоматически слушаем
+          setTimeout(() => startVoice(), 300);
+        });
       }
 
       if (!open) setHasNew(true);
@@ -997,44 +995,59 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   ))}
                 </div>
               )}
-              {/* Инпут */}
-              <div className="px-4 py-3 flex gap-2 items-end shrink-0"
-                style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                <button onClick={listening ? stopVoice : startVoice}
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
-                  style={{
-                    background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
-                    border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
-                    boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
-                  }}>
-                  {listening && <span className="absolute inset-0 rounded-full animate-ping"
-                    style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
-                  {listening ? <MicOff className="w-4 h-4 text-white relative z-10" /> : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
-                </button>
-                <textarea
-                  ref={inputRef} value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                  rows={1} placeholder={listening ? "🎤 Слушаю..." : "Написать Арaю..."}
-                  className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
-                  style={{
-                    background: "rgba(255,255,255,0.07)",
-                    border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
-                    color: "rgba(255,255,255,0.90)",
-                    maxHeight: "100px",
-                  }}
-                />
-                <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
-                  style={{
-                    background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
-                    border: "1px solid hsl(var(--border))",
-                    boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
-                  }}>
-                  {loading
-                    ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
-                    : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
-                </button>
+              {/* Инпут — десктоп */}
+              <div className="px-4 py-3 shrink-0" style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                {speaking && (
+                  <div className="flex items-center justify-center gap-2 pb-2">
+                    <span className="flex gap-1 items-center">
+                      {[0,1,2,3,4].map(i => (
+                        <span key={i} className="w-1 rounded-full bg-blue-400" style={{
+                          animation: `arayWave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                          height: `${8 + Math.random() * 10}px`,
+                        }} />
+                      ))}
+                    </span>
+                    <span className="text-[11px] text-blue-400 font-medium">Арай говорит...</span>
+                    <button onClick={stopTTS} className="text-[10px] text-white/40 underline">Стоп</button>
+                  </div>
+                )}
+                <div className="flex gap-2 items-end">
+                  <button onClick={listening ? stopVoice : startVoice}
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative transition-all"
+                    style={{
+                      background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
+                      border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
+                      boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
+                    }}>
+                    {listening && <span className="absolute inset-0 rounded-full animate-ping"
+                      style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
+                    {listening ? <MicOff className="w-4 h-4 text-white relative z-10" /> : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
+                  </button>
+                  <textarea
+                    ref={inputRef} value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                    rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
+                    className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none transition-all"
+                    style={{
+                      background: "rgba(255,255,255,0.07)",
+                      border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
+                      color: "rgba(255,255,255,0.90)",
+                      maxHeight: "100px",
+                    }}
+                  />
+                  <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
+                    className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-40"
+                    style={{
+                      background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
+                      border: "1px solid hsl(var(--border))",
+                      boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
+                    }}>
+                    {loading
+                      ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
+                      : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </>
@@ -1151,48 +1164,113 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
                   ))}
                 </div>
               )}
-              {/* Инпут */}
-              <div className="px-4 py-3 flex gap-2 items-end shrink-0"
-                style={{
-                  borderTop: "1px solid rgba(255,255,255,0.08)",
-                  paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
-                }}>
-                <button onClick={listening ? stopVoice : startVoice}
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 relative"
-                  style={{
-                    background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
-                    border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
-                  }}>
-                  {listening && <span className="absolute inset-0 rounded-full animate-ping"
-                    style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
-                  {listening
-                    ? <MicOff className="w-4 h-4 text-white relative z-10" />
-                    : <Mic className="w-4 h-4 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
-                </button>
-                <textarea
-                  ref={inputRef} value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                  rows={1} placeholder={listening ? "🎤 Слушаю..." : "Написать Арaю..."}
-                  className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none"
-                  style={{
-                    background: "rgba(255,255,255,0.07)",
-                    border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
-                    color: "rgba(255,255,255,0.90)",
-                    maxHeight: "100px",
-                  }}
-                />
-                <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
-                  className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"
-                  style={{
-                    background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
-                    border: "1px solid hsl(var(--border))",
-                    boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
-                  }}>
-                  {loading
-                    ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
-                    : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
-                </button>
+              {/* Инпут — мобильный */}
+              <div className="px-4 py-3 shrink-0" style={{
+                borderTop: "1px solid rgba(255,255,255,0.08)",
+                paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
+              }}>
+                {/* Индикатор: Арай говорит */}
+                {speaking && (
+                  <div className="flex items-center justify-center gap-2 pb-2">
+                    <span className="flex gap-1 items-center">
+                      {[0,1,2,3,4].map(i => (
+                        <span key={i} className="w-1 rounded-full bg-blue-400" style={{
+                          animation: `arayWave 0.8s ease-in-out ${i * 0.1}s infinite alternate`,
+                          height: `${8 + Math.random() * 10}px`,
+                        }} />
+                      ))}
+                    </span>
+                    <span className="text-[11px] text-blue-400 font-medium">Арай говорит...</span>
+                    <button onClick={stopTTS} className="text-[10px] text-white/40 underline">Стоп</button>
+                  </div>
+                )}
+                {/* Голосовой режим — большая кнопка микрофона по центру */}
+                {voiceMode === "voice" && !input.trim() ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      onClick={listening ? stopVoice : startVoice}
+                      className="w-16 h-16 rounded-full flex items-center justify-center relative transition-all active:scale-90"
+                      style={{
+                        background: listening
+                          ? "linear-gradient(135deg,#ef4444,#b91c1c)"
+                          : "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)",
+                        boxShadow: listening
+                          ? "0 0 24px rgba(239,68,68,0.5)"
+                          : "0 4px 20px hsl(var(--primary)/0.3)",
+                      }}>
+                      {listening && <span className="absolute inset-0 rounded-full animate-ping"
+                        style={{ background: "rgba(239,68,68,0.25)", animationDuration: "1.2s" }} />}
+                      {listening
+                        ? <MicOff className="w-6 h-6 text-white relative z-10" />
+                        : <Mic className="w-6 h-6 text-white relative z-10" />}
+                    </button>
+                    <p className="text-[11px] font-medium" style={{ color: listening ? "#ef4444" : "rgba(255,255,255,0.45)" }}>
+                      {listening ? "Слушаю... нажми чтобы остановить" : "Нажми чтобы говорить"}
+                    </p>
+                    {/* Мелкий инпут под кнопкой для переключения */}
+                    <div className="flex gap-2 w-full items-center">
+                      <textarea
+                        ref={inputRef} value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                        rows={1} placeholder="...или напиши"
+                        className="flex-1 resize-none text-sm rounded-2xl px-4 py-2 focus:outline-none"
+                        style={{
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          color: "rgba(255,255,255,0.90)",
+                          maxHeight: "80px",
+                        }}
+                      />
+                      {input.trim() && (
+                        <button onClick={() => sendMessage()} className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" }}>
+                          <Send className="w-4 h-4 text-white" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2 items-end">
+                    <button onClick={listening ? stopVoice : startVoice}
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 relative"
+                      style={{
+                        background: listening ? "linear-gradient(135deg,#ef4444,#b91c1c)" : "rgba(255,255,255,0.09)",
+                        border: `1px solid ${listening ? "transparent" : "rgba(255,255,255,0.14)"}`,
+                        boxShadow: listening ? "0 0 12px rgba(239,68,68,0.4)" : "none",
+                      }}>
+                      {listening && <span className="absolute inset-0 rounded-full animate-ping"
+                        style={{ background: "rgba(239,68,68,0.3)", animationDuration: "1s" }} />}
+                      {listening
+                        ? <MicOff className="w-4.5 h-4.5 text-white relative z-10" />
+                        : <Mic className="w-4.5 h-4.5 relative z-10" style={{ color: "rgba(255,255,255,0.55)" }} />}
+                    </button>
+                    <textarea
+                      ref={inputRef} value={input}
+                      onChange={e => setInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+                      rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
+                      className="flex-1 resize-none text-sm rounded-2xl px-4 py-2.5 focus:outline-none"
+                      style={{
+                        background: "rgba(255,255,255,0.07)",
+                        border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : "rgba(255,255,255,0.12)"}`,
+                        color: "rgba(255,255,255,0.90)",
+                        maxHeight: "100px",
+                      }}
+                    />
+                    <button onClick={() => sendMessage()} disabled={loading || !input.trim()}
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 disabled:opacity-40"
+                      style={{
+                        background: input.trim() ? "linear-gradient(135deg, hsl(var(--primary)), #f59e0b)" : "hsl(var(--muted))",
+                        border: "1px solid hsl(var(--border))",
+                        boxShadow: input.trim() ? "0 4px 12px hsl(var(--primary)/0.3)" : "none",
+                      }}>
+                      {loading
+                        ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "hsl(var(--muted-foreground))" }} />
+                        : <Send className="w-4 h-4" style={{ color: input.trim() ? "#fff" : "hsl(var(--muted-foreground))" }} />}
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
@@ -1203,6 +1281,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true }: Ara
         @keyframes arayDot {
           0%, 60%, 100% { transform: scale(0.5); opacity: 0.3; }
           30% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes arayWave {
+          0% { height: 4px; }
+          100% { height: 16px; }
         }
       `}</style>
     </>
