@@ -1304,7 +1304,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                     onFocus={() => { if (!showMessages) setShowMessages(true); }}
                     rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
-                    className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2 focus:outline-none transition-all"
+                    className="flex-1 resize-none text-[16px] lg:text-[13px] rounded-2xl px-3.5 py-2 focus:outline-none transition-all"
                     style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "80px" }}
                   />
                   <button onClick={() => { haptic("light"); sendMessage(); }} disabled={loading || !input.trim()}
@@ -1563,7 +1563,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                       onFocus={() => { setShowMessages(true); setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 300); }}
                       rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
-                      className="flex-1 resize-none text-[13px] rounded-2xl px-3.5 py-2.5 focus:outline-none"
+                      className="flex-1 resize-none text-[16px] rounded-2xl px-3.5 py-2.5 focus:outline-none"
                       style={{ background: inputBg, border: `1px solid ${listening ? "rgba(239,68,68,0.4)" : inputBorder}`, color: txt, maxHeight: "100px" }}
                     />
                     <button onClick={() => { haptic("light"); sendMessage(); }} disabled={loading || !input.trim()}
