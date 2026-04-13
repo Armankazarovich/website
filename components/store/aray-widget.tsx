@@ -635,7 +635,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const longPressTriggered = useRef(false);
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
-  const chips = isAdmin ? getAdminChips(pathname) : buildArayChips({ page, productName, cartTotal });
+  const chips = isAdmin ? getAdminChips(pathname) : buildArayChips({ page: pathname, productName, cartTotal });
 
   // ── История чата (БД) ────────────────────────────────────────────────────
   const historyLoaded = useRef(false);
@@ -740,7 +740,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       greeting = `${t}, ${name}! 👋 ${productName ? `Смотришь «${productName}»?` : "Чем могу помочь?"} Спрашивай.`;
     } else {
       const isReturning = typeof document !== "undefined" && document.cookie.includes("aray_visited=1");
-      greeting = buildArayGreeting({ page, productName, cartTotal, isReturning });
+      greeting = buildArayGreeting({ page: pathname, productName, cartTotal, isReturning });
     }
     setMessages([{ id: "welcome", role: "assistant", content: greeting, timestamp: new Date() }]);
     if (typeof document !== "undefined") document.cookie = "aray_visited=1; max-age=2592000; path=/";
@@ -812,7 +812,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          context: { page, productName, cartTotal, ...getArayContext() },
+          context: { page: pathname, productName, cartTotal, ...getArayContext() },
         }),
       });
 
