@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * ArayOrb — футуристический голограммный глобус Арая
- * Сетка меридианов, вращающееся энергетическое кольцо, частицы, пульсация.
- * Все анимации через SVG animate — GPU-ускоренные, 0 JS анимаций.
+ * ArayOrb v3 — Голографический глобус из будущего
+ * Единый компонент — одинаковый на ВСЕХ устройствах и размерах.
+ * SVG animate = GPU, 0 JS анимаций, плавно при любом fps.
  */
 
 interface ArayOrbProps {
@@ -21,62 +21,89 @@ export function ArayOrb({
   badge = false,
   badgeCount,
 }: ArayOrbProps) {
-  const r = 44;
+  const r = 42;
 
-  // Цвета по состоянию
   const isListening = pulse === "listening";
   const isSpeaking = pulse === "speaking";
+  const isActive = isListening || isSpeaking;
 
-  const coreColor1 = isListening ? "#60a5fa" : isSpeaking ? "#34d399" : "#ff9500";
-  const coreColor2 = isListening ? "#3b82f6" : isSpeaking ? "#10b981" : "#e8700a";
-  const coreColor3 = isListening ? "#1d4ed8" : isSpeaking ? "#059669" : "#c05000";
-  const glowColor = isListening ? "#60a5fa" : isSpeaking ? "#34d399" : "#ffaa30";
-  const gridColor = isListening ? "rgba(96,165,250," : isSpeaking ? "rgba(52,211,153," : "rgba(255,170,50,";
-  const particleColor = isListening ? "#93c5fd" : isSpeaking ? "#6ee7b7" : "#ffd080";
-  const ringColor = isListening ? "#3b82f6" : isSpeaking ? "#10b981" : "#ff8c00";
+  // Палитра по состоянию
+  const c1 = isListening ? "#60a5fa" : isSpeaking ? "#34d399" : "#ffb347";
+  const c2 = isListening ? "#3b82f6" : isSpeaking ? "#10b981" : "#ff8c00";
+  const c3 = isListening ? "#1e40af" : isSpeaking ? "#047857" : "#b45309";
+  const c4 = isListening ? "#1e3a5f" : isSpeaking ? "#064e3b" : "#78350f";
+  const glow = isListening ? "#60a5fa" : isSpeaking ? "#34d399" : "#ff9500";
+  const grid = isListening ? "rgba(147,197,253," : isSpeaking ? "rgba(110,231,183," : "rgba(255,200,100,";
+  const ring = isListening ? "#93c5fd" : isSpeaking ? "#6ee7b7" : "#fbbf24";
+  const particle = isListening ? "#bfdbfe" : isSpeaking ? "#a7f3d0" : "#fde68a";
 
-  const breathDur = isListening ? "1.2s" : isSpeaking ? "1.5s" : "4s";
+  const breathe = isActive ? "1.5s" : "4s";
+  const glowShadow = isListening
+    ? "0 0 20px rgba(96,165,250,0.5), 0 0 40px rgba(59,130,246,0.25)"
+    : isSpeaking
+      ? "0 0 20px rgba(52,211,153,0.5), 0 0 40px rgba(16,185,129,0.25)"
+      : "0 0 14px rgba(255,149,0,0.35), 0 0 30px rgba(255,140,0,0.15)";
+  const activeGlowShadow = isListening
+    ? "0 0 28px rgba(96,165,250,0.7), 0 0 56px rgba(59,130,246,0.35)"
+    : isSpeaking
+      ? "0 0 28px rgba(52,211,153,0.7), 0 0 56px rgba(16,185,129,0.35)"
+      : glowShadow;
 
   return (
-    <div className="relative inline-flex items-center justify-center" role="img" aria-label="Арай — AI-ассистент" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", overflow: "visible" }}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      role="img"
+      aria-label={isListening ? "Арай слушает" : isSpeaking ? "Арай говорит" : "Арай — AI-ассистент"}
+      style={{ width: size, height: size }}
+    >
+      {/* CSS Glow — мягкое свечение вокруг, без уродливой обводки */}
+      <div
+        className="absolute inset-0 rounded-full"
+        style={{
+          boxShadow: isActive ? activeGlowShadow : glowShadow,
+          transition: "box-shadow 0.6s ease",
+          animation: isActive ? `arayBreathe ${breathe} ease-in-out infinite` : undefined,
+        }}
+      />
+
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        className="relative"
+        style={{ display: "block", filter: `drop-shadow(0 0 3px ${glow}40)` }}
+      >
         <defs>
-          {/* Основной градиент — ядро глобуса */}
-          <radialGradient id={`${id}-core`} cx="38%" cy="32%" r="65%">
-            <stop offset="0%" stopColor={coreColor1} stopOpacity="0.95">
-              <animate attributeName="stopColor" values={`${coreColor1};${coreColor2};${coreColor1}`} dur="3s" repeatCount="indefinite"/>
+          {/* Ядро — глубокий градиент с анимацией */}
+          <radialGradient id={`${id}-core`} cx="36%" cy="30%" r="68%">
+            <stop offset="0%" stopColor={c1}>
+              <animate attributeName="stopColor" values={`${c1};${c2};${c1}`} dur="3s" repeatCount="indefinite"/>
             </stop>
-            <stop offset="35%" stopColor={coreColor2} stopOpacity="0.85"/>
-            <stop offset="70%" stopColor={coreColor3} stopOpacity="0.7"/>
-            <stop offset="100%" stopColor="#0a0200" stopOpacity="0.95"/>
+            <stop offset="30%" stopColor={c2}/>
+            <stop offset="60%" stopColor={c3}/>
+            <stop offset="85%" stopColor={c4}/>
+            <stop offset="100%" stopColor="#050200"/>
           </radialGradient>
 
-          {/* Внешнее свечение (glow) */}
-          <radialGradient id={`${id}-glow`} cx="50%" cy="50%" r="50%">
-            <stop offset="70%" stopColor={glowColor} stopOpacity="0">
-              <animate attributeName="stop-opacity" values="0;0.06;0" dur={breathDur} repeatCount="indefinite"/>
+          {/* Внутреннее свечение ядра */}
+          <radialGradient id={`${id}-inner`} cx="45%" cy="42%" r="40%">
+            <stop offset="0%" stopColor={c1} stopOpacity="0.6">
+              <animate attributeName="stop-opacity" values="0.4;0.75;0.4" dur={breathe} repeatCount="indefinite"/>
             </stop>
-            <stop offset="88%" stopColor={glowColor} stopOpacity="0.20">
-              <animate attributeName="stop-opacity" values="0.20;0.40;0.20" dur={breathDur} repeatCount="indefinite"/>
-            </stop>
-            <stop offset="100%" stopColor={glowColor} stopOpacity="0.35">
-              <animate attributeName="stop-opacity" values="0.35;0.55;0.35" dur={breathDur} repeatCount="indefinite"/>
-            </stop>
+            <stop offset="100%" stopColor={c2} stopOpacity="0"/>
           </radialGradient>
 
-          {/* Блик — стеклянный */}
-          <radialGradient id={`${id}-hl`} cx="32%" cy="26%" r="32%">
-            <stop offset="0%" stopColor="white" stopOpacity="0.90"/>
-            <stop offset="40%" stopColor="white" stopOpacity="0.30"/>
+          {/* Стеклянный блик — верхний левый */}
+          <radialGradient id={`${id}-hl`} cx="30%" cy="24%" r="30%">
+            <stop offset="0%" stopColor="white" stopOpacity="0.92"/>
+            <stop offset="50%" stopColor="white" stopOpacity="0.20"/>
             <stop offset="100%" stopColor="white" stopOpacity="0"/>
           </radialGradient>
 
-          {/* Внутреннее ядро свечения */}
-          <radialGradient id={`${id}-inner`} cx="50%" cy="50%" r="35%">
-            <stop offset="0%" stopColor={coreColor1} stopOpacity="0.5">
-              <animate attributeName="stop-opacity" values="0.5;0.8;0.5" dur={breathDur} repeatCount="indefinite"/>
-            </stop>
-            <stop offset="100%" stopColor={coreColor2} stopOpacity="0"/>
+          {/* Нижний отсвет — мягкий */}
+          <radialGradient id={`${id}-bl`} cx="65%" cy="78%" r="28%">
+            <stop offset="0%" stopColor={c1} stopOpacity="0.20"/>
+            <stop offset="100%" stopColor={c1} stopOpacity="0"/>
           </radialGradient>
 
           <clipPath id={`${id}-clip`}>
@@ -84,116 +111,127 @@ export function ArayOrb({
           </clipPath>
         </defs>
 
-        {/* ── Внешнее свечение (за пределами шара) ── */}
-        <circle cx="50" cy="50" r={r + 6} fill={`url(#${id}-glow)`}/>
-
-        {/* ── Базовый шар — ядро ── */}
+        {/* ═══ СЛОЙ 1: Ядро глобуса ═══ */}
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-core)`}/>
-
-        {/* ── Внутреннее ядро ── */}
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-inner)`}/>
 
-        {/* ── Голограммная сетка (меридианы + параллели) ── */}
-        <g clipPath={`url(#${id}-clip)`} opacity="0.55">
-          {/* Вращающаяся сетка меридианов */}
+        {/* ═══ СЛОЙ 2: Голограммная сетка — вращается ═══ */}
+        <g clipPath={`url(#${id}-clip)`} opacity="0.45">
+          {/* Меридианы — вращение */}
           <g>
             <animateTransform attributeName="transform" type="rotate"
-              values="0 50 50;360 50 50" dur="20s" repeatCount="indefinite"/>
-            {/* Меридианы — эллипсы разного наклона */}
-            <ellipse cx="50" cy="50" rx="10" ry={r} fill="none" stroke={`${gridColor}0.5)`} strokeWidth="0.6"/>
-            <ellipse cx="50" cy="50" rx="24" ry={r} fill="none" stroke={`${gridColor}0.4)`} strokeWidth="0.5"/>
-            <ellipse cx="50" cy="50" rx="36" ry={r} fill="none" stroke={`${gridColor}0.3)`} strokeWidth="0.4"/>
-            <ellipse cx="50" cy="50" rx={r} ry={r} fill="none" stroke={`${gridColor}0.25)`} strokeWidth="0.4"/>
+              values="0 50 50;360 50 50" dur="24s" repeatCount="indefinite"/>
+            <ellipse cx="50" cy="50" rx="8" ry={r} fill="none" stroke={`${grid}0.6)`} strokeWidth="0.5"/>
+            <ellipse cx="50" cy="50" rx="20" ry={r} fill="none" stroke={`${grid}0.45)`} strokeWidth="0.45"/>
+            <ellipse cx="50" cy="50" rx="32" ry={r} fill="none" stroke={`${grid}0.35)`} strokeWidth="0.4"/>
+            <ellipse cx="50" cy="50" rx={r} ry={r} fill="none" stroke={`${grid}0.2)`} strokeWidth="0.3"/>
           </g>
 
-          {/* Параллели — горизонтальные линии */}
-          <line x1="14" y1="28" x2="86" y2="28" stroke={`${gridColor}0.25)`} strokeWidth="0.4"/>
-          <line x1="8"  y1="40" x2="92" y2="40" stroke={`${gridColor}0.30)`} strokeWidth="0.4"/>
-          <line x1="6"  y1="50" x2="94" y2="50" stroke={`${gridColor}0.35)`} strokeWidth="0.5">
-            <animate attributeName="stroke-opacity" values="0.35;0.55;0.35" dur="3s" repeatCount="indefinite"/>
-          </line>
-          <line x1="8"  y1="60" x2="92" y2="60" stroke={`${gridColor}0.30)`} strokeWidth="0.4"/>
-          <line x1="14" y1="72" x2="86" y2="72" stroke={`${gridColor}0.25)`} strokeWidth="0.4"/>
+          {/* Параллели — дуги (не прямые линии — реалистичный глобус) */}
+          <ellipse cx="50" cy="30" rx="34" ry="4" fill="none" stroke={`${grid}0.3)`} strokeWidth="0.35"/>
+          <ellipse cx="50" cy="40" rx="39" ry="3" fill="none" stroke={`${grid}0.35)`} strokeWidth="0.4"/>
+          <ellipse cx="50" cy="50" rx={r} ry="2" fill="none" stroke={`${grid}0.45)`} strokeWidth="0.5">
+            <animate attributeName="stroke-opacity" values="0.35;0.6;0.35" dur="3s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="50" cy="60" rx="39" ry="3" fill="none" stroke={`${grid}0.35)`} strokeWidth="0.4"/>
+          <ellipse cx="50" cy="70" rx="34" ry="4" fill="none" stroke={`${grid}0.3)`} strokeWidth="0.35"/>
         </g>
 
-        {/* ── Вращающееся энергетическое кольцо ── */}
+        {/* ═══ СЛОЙ 3: Энергетические кольца ═══ */}
         <g clipPath={`url(#${id}-clip)`}>
-          <ellipse cx="50" cy="50" rx={r - 2} ry="12" fill="none"
-            stroke={ringColor} strokeWidth="1.2" strokeDasharray="6 4" opacity="0.6">
+          {/* Главное кольцо — наклонённое, вращается */}
+          <ellipse cx="50" cy="50" rx={r - 3} ry="14" fill="none"
+            stroke={ring} strokeWidth="1" strokeDasharray="5 3" opacity="0.55">
             <animateTransform attributeName="transform" type="rotate"
-              values="25 50 50;385 50 50" dur="10s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0.4;0.7;0.4" dur="3s" repeatCount="indefinite"/>
+              values="20 50 50;380 50 50" dur="8s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.35;0.65;0.35" dur="2.5s" repeatCount="indefinite"/>
           </ellipse>
 
-          {/* Второе кольцо — обратное вращение */}
-          <ellipse cx="50" cy="50" rx={r - 6} ry="8" fill="none"
-            stroke={particleColor} strokeWidth="0.7" strokeDasharray="3 5" opacity="0.35">
+          {/* Второе кольцо — обратное */}
+          <ellipse cx="50" cy="50" rx={r - 8} ry="9" fill="none"
+            stroke={particle} strokeWidth="0.6" strokeDasharray="2 4" opacity="0.3">
             <animateTransform attributeName="transform" type="rotate"
-              values="70 50 50;-290 50 50" dur="14s" repeatCount="indefinite"/>
+              values="65 50 50;-295 50 50" dur="12s" repeatCount="indefinite"/>
+          </ellipse>
+
+          {/* Третье кольцо — вертикальное, медленное */}
+          <ellipse cx="50" cy="50" rx="6" ry={r - 4} fill="none"
+            stroke={`${grid}0.25)`} strokeWidth="0.5" strokeDasharray="4 6" opacity="0.25">
+            <animateTransform attributeName="transform" type="rotate"
+              values="-10 50 50;350 50 50" dur="18s" repeatCount="indefinite"/>
           </ellipse>
         </g>
 
-        {/* ── Частицы — бегущие точки по орбитам ── */}
+        {/* ═══ СЛОЙ 4: Частицы — энергетические точки ═══ */}
         <g clipPath={`url(#${id}-clip)`}>
-          {/* Частица 1 — быстрая */}
-          <circle r="2" fill={particleColor} opacity="0.7">
-            <animateMotion dur="4s" repeatCount="indefinite"
-              path="M10,50 A40,14 0 1,1 90,50 A40,14 0 1,1 10,50"/>
-            <animate attributeName="opacity" values="0.3;0.9;0.3" dur="4s" repeatCount="indefinite"/>
-            <animate attributeName="r" values="1.5;2.5;1.5" dur="4s" repeatCount="indefinite"/>
+          {/* Быстрая яркая частица */}
+          <circle r="2.2" fill={particle}>
+            <animateMotion dur="3.5s" repeatCount="indefinite"
+              path="M12,50 A38,13 0 1,1 88,50 A38,13 0 1,1 12,50"/>
+            <animate attributeName="opacity" values="0.2;1;0.2" dur="3.5s" repeatCount="indefinite"/>
           </circle>
 
-          {/* Частица 2 — медленная, другой угол */}
-          <circle r="1.5" fill="white" opacity="0.5">
-            <animateMotion dur="7s" repeatCount="indefinite"
-              path="M30,15 A25,38 0 1,1 70,85 A25,38 0 1,1 30,15"/>
-            <animate attributeName="opacity" values="0.2;0.6;0.2" dur="7s" repeatCount="indefinite"/>
+          {/* Вертикальная частица */}
+          <circle r="1.6" fill="white">
+            <animateMotion dur="6s" repeatCount="indefinite"
+              path="M50,10 A10,40 0 1,1 50,90 A10,40 0 1,1 50,10"/>
+            <animate attributeName="opacity" values="0.1;0.6;0.1" dur="6s" repeatCount="indefinite"/>
           </circle>
 
-          {/* Частица 3 — мерцающая */}
-          <circle r="1.8" fill={glowColor} opacity="0.6">
-            <animateMotion dur="5.5s" repeatCount="indefinite"
-              path="M50,8 A42,42 0 1,0 50,92 A42,42 0 1,0 50,8"/>
-            <animate attributeName="opacity" values="0;0.8;0" dur="5.5s" repeatCount="indefinite"/>
+          {/* Диагональная частица */}
+          <circle r="1.8" fill={glow}>
+            <animateMotion dur="5s" repeatCount="indefinite"
+              path="M22,22 A30,30 0 1,1 78,78 A30,30 0 1,1 22,22"/>
+            <animate attributeName="opacity" values="0;0.85;0" dur="5s" repeatCount="indefinite"/>
           </circle>
 
-          {/* Частица 4 — маленькая быстрая */}
-          <circle r="1" fill="white" opacity="0.4">
-            <animateMotion dur="3.2s" repeatCount="indefinite"
-              path="M20,35 A30,18 0 1,1 80,65 A30,18 0 1,1 20,35"/>
-            <animate attributeName="opacity" values="0.1;0.5;0.1" dur="3.2s" repeatCount="indefinite"/>
+          {/* Мелкая быстрая */}
+          <circle r="1" fill="white">
+            <animateMotion dur="2.8s" repeatCount="indefinite"
+              path="M18,40 A32,16 0 1,1 82,60 A32,16 0 1,1 18,40"/>
+            <animate attributeName="opacity" values="0;0.5;0" dur="2.8s" repeatCount="indefinite"/>
+          </circle>
+
+          {/* Пятая частица — медленная большая */}
+          <circle r="2.5" fill={ring}>
+            <animateMotion dur="9s" repeatCount="indefinite"
+              path="M35,12 A20,40 0 1,0 65,88 A20,40 0 1,0 35,12"/>
+            <animate attributeName="opacity" values="0.05;0.45;0.05" dur="9s" repeatCount="indefinite"/>
           </circle>
         </g>
 
-        {/* ── Стеклянный блик ── */}
+        {/* ═══ СЛОЙ 5: Блики и финиш ═══ */}
         <circle cx="50" cy="50" r={r} fill={`url(#${id}-hl)`}/>
+        <circle cx="50" cy="50" r={r} fill={`url(#${id}-bl)`}/>
 
-        {/* ── Ободок — голограммный край ── */}
+        {/* Тончайший ободок — не обводка, а свечение края */}
         <circle cx="50" cy="50" r={r} fill="none"
-          stroke={glowColor} strokeWidth="1" opacity="0.45">
-          <animate attributeName="stroke-opacity" values="0.3;0.6;0.3" dur={breathDur} repeatCount="indefinite"/>
-        </circle>
-
-        {/* Тонкий второй ободок */}
-        <circle cx="50" cy="50" r={r + 2} fill="none"
-          stroke={glowColor} strokeWidth="0.4" opacity="0.2">
-          <animate attributeName="stroke-opacity" values="0.1;0.3;0.1" dur="5s" repeatCount="indefinite"/>
+          stroke={glow} strokeWidth="0.6" opacity="0.35">
+          <animate attributeName="stroke-opacity" values="0.2;0.45;0.2" dur={breathe} repeatCount="indefinite"/>
         </circle>
       </svg>
 
       {/* Badge — непрочитанные */}
       {badge && (
         <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full animate-pulse"
-          style={{ background: "#ef4444", boxShadow: "0 0 6px rgba(239,68,68,0.7)", border: "2px solid rgba(0,0,0,0.3)" }} />
+          style={{ background: "#ef4444", boxShadow: "0 0 8px rgba(239,68,68,0.8)", border: "2px solid rgba(0,0,0,0.3)" }} />
       )}
 
       {/* Badge — число */}
       {!badge && badgeCount != null && badgeCount > 0 && (
         <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5"
-          style={{ background: "linear-gradient(135deg,#e8700a,#f59e0b)" }}>
+          style={{ background: `linear-gradient(135deg,${c2},${c1})`, boxShadow: `0 0 6px ${glow}50` }}>
           {badgeCount > 99 ? "99+" : badgeCount}
         </span>
       )}
+
+      {/* CSS keyframes для дыхания */}
+      <style>{`
+        @keyframes arayBreathe {
+          0%, 100% { box-shadow: ${glowShadow}; }
+          50% { box-shadow: ${activeGlowShadow}; }
+        }
+      `}</style>
     </div>
   );
 }

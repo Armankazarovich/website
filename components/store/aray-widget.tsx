@@ -191,30 +191,40 @@ function getAdminChips(pathname: string): string[] {
 
 // ─── Маленькая иконка-сфера для аватарки в чат-сообщениях ───────────────────
 function ArayIcon({ size = 40, id = "aig" }: { size?: number; id?: string }) {
+  const R = 44;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block" }}>
       <defs>
         <radialGradient id={`${id}-b`} cx="36%" cy="30%" r="65%">
-          <stop offset="0%" stopColor="#ffca40"/><stop offset="25%" stopColor="#f07800"/>
-          <stop offset="55%" stopColor="#c05000"/><stop offset="100%" stopColor="#0a0200"/>
+          <stop offset="0%" stopColor="#ffb347"/><stop offset="30%" stopColor="#ff8c00"/>
+          <stop offset="65%" stopColor="#b45309"/><stop offset="100%" stopColor="#050200"/>
         </radialGradient>
-        <radialGradient id={`${id}-h`} cx="32%" cy="26%" r="32%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.85"/>
+        <radialGradient id={`${id}-h`} cx="30%" cy="24%" r="30%">
+          <stop offset="0%" stopColor="white" stopOpacity="0.90"/>
           <stop offset="100%" stopColor="white" stopOpacity="0"/>
         </radialGradient>
-        <clipPath id={`${id}-cl`}><circle cx="50" cy="50" r="46"/></clipPath>
+        <clipPath id={`${id}-cl`}><circle cx="50" cy="50" r={R}/></clipPath>
       </defs>
-      <circle cx="50" cy="50" r="46" fill={`url(#${id}-b)`}/>
-      {/* Мини-сетка глобуса */}
-      <g clipPath={`url(#${id}-cl)`} opacity="0.35">
-        <ellipse cx="50" cy="50" rx="12" ry="46" fill="none" stroke="rgba(255,170,50,0.5)" strokeWidth="0.7"/>
-        <ellipse cx="50" cy="50" rx="28" ry="46" fill="none" stroke="rgba(255,170,50,0.35)" strokeWidth="0.5"/>
-        <line x1="8" y1="50" x2="92" y2="50" stroke="rgba(255,170,50,0.4)" strokeWidth="0.5"/>
-        <line x1="14" y1="32" x2="86" y2="32" stroke="rgba(255,170,50,0.25)" strokeWidth="0.4"/>
-        <line x1="14" y1="68" x2="86" y2="68" stroke="rgba(255,170,50,0.25)" strokeWidth="0.4"/>
+      <circle cx="50" cy="50" r={R} fill={`url(#${id}-b)`}/>
+      <g clipPath={`url(#${id}-cl)`} opacity="0.4">
+        <ellipse cx="50" cy="50" rx="9" ry={R} fill="none" stroke="rgba(255,200,100,0.5)" strokeWidth="0.5">
+          <animateTransform attributeName="transform" type="rotate" values="0 50 50;360 50 50" dur="20s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="50" cy="50" rx="22" ry={R} fill="none" stroke="rgba(255,200,100,0.35)" strokeWidth="0.45">
+          <animateTransform attributeName="transform" type="rotate" values="0 50 50;360 50 50" dur="20s" repeatCount="indefinite"/>
+        </ellipse>
+        <ellipse cx="50" cy="50" rx={R} ry="2" fill="none" stroke="rgba(255,200,100,0.4)" strokeWidth="0.45"/>
+        <ellipse cx="50" cy="34" rx="32" ry="3" fill="none" stroke="rgba(255,200,100,0.25)" strokeWidth="0.35"/>
+        <ellipse cx="50" cy="66" rx="32" ry="3" fill="none" stroke="rgba(255,200,100,0.25)" strokeWidth="0.35"/>
+        <ellipse cx="50" cy="50" rx={R - 4} ry="10" fill="none" stroke="rgba(251,191,36,0.4)" strokeWidth="0.6" strokeDasharray="4 3">
+          <animateTransform attributeName="transform" type="rotate" values="20 50 50;380 50 50" dur="8s" repeatCount="indefinite"/>
+        </ellipse>
+        <circle r="1.5" fill="#fde68a">
+          <animateMotion dur="3s" repeatCount="indefinite" path="M14,50 A36,12 0 1,1 86,50 A36,12 0 1,1 14,50"/>
+          <animate attributeName="opacity" values="0.2;0.9;0.2" dur="3s" repeatCount="indefinite"/>
+        </circle>
       </g>
-      <circle cx="50" cy="50" r="46" fill={`url(#${id}-h)`}/>
-      <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(255,150,30,0.3)" strokeWidth="0.8"/>
+      <circle cx="50" cy="50" r={R} fill={`url(#${id}-h)`}/>
     </svg>
   );
 }

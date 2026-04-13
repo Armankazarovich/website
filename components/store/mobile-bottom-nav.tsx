@@ -208,11 +208,13 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             onPointerUp={onArayPointerUp}
             onPointerCancel={onArayPointerUp}
             aria-label="Удерживай для голоса, нажми для чата"
-            style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "block" }}
+            className="flex flex-col items-center"
+            style={{ WebkitTapHighlightColor: "transparent", position: "relative", display: "flex" }}
           >
             <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
+            <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
+              style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
           </motion.button>
-
         </div>}
 
         {/* Правые пункты */}

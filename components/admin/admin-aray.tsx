@@ -8,6 +8,7 @@ import {
   X, Sparkles,
 } from "lucide-react";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
+import { ArayOrb } from "@/components/shared/aray-orb";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
 // ─── Page context for smart chips ───────────────────────────────────────────
@@ -80,54 +81,7 @@ function cleanResponse(raw: string): string {
     .trim();
 }
 
-// ─── Живой SVG-шар (тот же что на сайте) ────────────────────────────────────
-function ArayOrb({ size = 40, glow = false, id = "adm" }: { size?: number; glow?: boolean; id?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 100 100" style={{ display: "block", overflow: "visible" }}>
-      <defs>
-        <filter id={`${id}-glow`} x="-40%" y="-40%" width="180%" height="180%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-          <feColorMatrix in="blur" type="matrix"
-            values="2 0.8 0 0 0  0.6 0.2 0 0 0  0 0 0 0 0  0 0 0 0.9 0" result="glow" />
-          <feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge>
-        </filter>
-        <radialGradient id={`${id}-base`} cx="38%" cy="32%" r="70%">
-          <stop offset="0%" stopColor="#fff8d0" />
-          <stop offset="18%" stopColor="#fbbf24">
-            <animate attributeName="stopColor" values="#fbbf24;#f97316;#fde047;#fbbf24" dur="5s" repeatCount="indefinite" />
-          </stop>
-          <stop offset="50%" stopColor="#e8700a">
-            <animate attributeName="stopColor" values="#e8700a;#c2410c;#f97316;#e8700a" dur="7s" repeatCount="indefinite" />
-          </stop>
-          <stop offset="82%" stopColor="#7c2d12" />
-          <stop offset="100%" stopColor="#1a0500" />
-        </radialGradient>
-        <radialGradient id={`${id}-hot`} cx="50%" cy="22%" r="48%">
-          <stop offset="0%" stopColor="#fde68a" stopOpacity="0.75">
-            <animate attributeName="stopOpacity" values="0.75;1;0.5;0.75" dur="3s" repeatCount="indefinite" />
-          </stop>
-          <stop offset="100%" stopColor="#fde68a" stopOpacity="0" />
-        </radialGradient>
-        <radialGradient id={`${id}-hl`} cx="30%" cy="24%" r="40%">
-          <stop offset="0%" stopColor="white" stopOpacity="0.88" />
-          <stop offset="100%" stopColor="white" stopOpacity="0" />
-        </radialGradient>
-        <clipPath id={`${id}-clip`}><circle cx="50" cy="50" r="46" /></clipPath>
-      </defs>
-      <circle cx="50" cy="50" r="46" fill={`url(#${id}-base)`} filter={glow ? `url(#${id}-glow)` : undefined} />
-      <g clipPath={`url(#${id}-clip)`}>
-        <ellipse cx="50" cy="28" rx="36" ry="22" fill={`url(#${id}-hot)`}>
-          <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="6s" repeatCount="indefinite" />
-        </ellipse>
-        <ellipse cx="50" cy="72" rx="26" ry="15" fill="#fb923c" opacity="0.18">
-          <animateTransform attributeName="transform" type="rotate" from="180 50 50" to="-180 50 50" dur="9s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.18;0.28;0.1;0.18" dur="4.5s" repeatCount="indefinite" />
-        </ellipse>
-      </g>
-      <circle cx="50" cy="50" r="46" fill={`url(#${id}-hl)`} />
-    </svg>
-  );
-}
+// ArayOrb импортирован из @/components/shared/aray-orb — единый глобус везде
 
 // ─── Simple markdown rendering ──────────────────────────────────────────────
 function MdText({ text }: { text: string }) {
@@ -607,7 +561,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
             </motion.span>
           ) : (
             <motion.span key="orb" initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.5, opacity: 0 }}>
-              <ArayOrb size={48} glow id="adm-btn"/>
+              <ArayOrb size={48} id="adm-btn"/>
             </motion.span>
           )}
         </AnimatePresence>
