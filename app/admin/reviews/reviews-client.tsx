@@ -507,14 +507,18 @@ export function ReviewsClient({
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
 
-                  {/* Photos */}
+                  {/* Photos — large preview for admin to check before publishing */}
                   {review.images && review.images.length > 0 && (
-                    <div className="flex gap-2 mt-3 overflow-x-auto">
-                      {review.images.map((img, i) => (
-                        <a key={i} href={img} target="_blank" rel="noopener noreferrer">
-                          <img src={img} alt="" className="w-16 h-16 rounded-xl object-cover border border-border hover:opacity-80 transition-opacity" />
-                        </a>
-                      ))}
+                    <div className="mt-3">
+                      <p className="text-[11px] text-muted-foreground mb-2 font-medium">📷 {review.images.length} фото от клиента:</p>
+                      <div className="flex gap-2 overflow-x-auto">
+                        {review.images.map((img, i) => (
+                          <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="shrink-0 group relative">
+                            <img src={img} alt="" className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-border group-hover:border-primary transition-colors" />
+                            <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md">открыть</span>
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   )}
 

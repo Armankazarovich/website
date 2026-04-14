@@ -60,6 +60,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Anti-spam (invisible to normal users) ──
+    // 1. Honeypot: if hidden field "website" is filled, it's a bot
+    if (body.website) {
+      // Silently accept but don't save — bot thinks it worked
+      return NextResponse.json({ ok: true, message: "Спасибо! Ваш отзыв отправлен на модерацию", reviewId: "fake" }, { status: 201 });
+    }
+
+    // 2. Time check: form must take >3 seconds to fill (bots are instant)
+    if (body._t) {
+      const elapsed = Date.now() - Number(body._t);
+      if (elapsed < 3000) {
+        return NextResponse.json({ ok: true, message: "Спасибо! Ваш отзыв отправлен на модерацию", reviewId: "fake" }, { status: 201 });
+      }
+    }
+
+    // 3. Text quality: reject gibberish (same char repeated, all caps, URLs)
+    const cleanText = text?.trim() || "";
+    const hasRepeat = /(.)\1{5,}/.test(cleanText); // aaaaaa
+    const hasUrls = /(https?:\/\/|www\.|\.com|\.ru|\.net)/i.test(cleanText);
+    const allCaps = cleanText.length > 20 && cleanText === cleanText.toUpperCase();
+    if (hasRepeat || hasUrls || allCaps) {
+      return NextResponse.json(
+        { error: "Текст отзыва содержит недопустимый контент" },
+        { status: 400 }
+      );
+    }
+
     // Check if product exists
     const product = await prisma.product.findUnique({
       where: { id: productId },

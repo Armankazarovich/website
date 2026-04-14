@@ -26,6 +26,8 @@ export function ReviewForm({
   const [email, setEmail] = useState(userEmail || "");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
+  const [honeypot, setHoneypot] = useState(""); // hidden field — bots fill it
+  const [formStartTime] = useState(Date.now()); // track how fast form is submitted
   const [images, setImages] = useState<string[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +115,8 @@ export function ReviewForm({
           rating,
           text: text.trim(),
           images: uploadedUrls,
+          website: honeypot, // honeypot — bots fill this
+          _t: formStartTime, // timing check
         }),
       });
 
