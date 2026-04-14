@@ -17,12 +17,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create deployment archive (no node_modules, no .git, no uploaded photos)
+      - name: Create deployment archive (no node_modules, no .git, no user uploads)
         run: |
           tar \
             --exclude='./node_modules' \
             --exclude='./.git' \
             --exclude='./public/images' \
+            --exclude='./public/uploads' \
             -czf "$RUNNER_TEMP/deploy.tar.gz" .
           cp "$RUNNER_TEMP/deploy.tar.gz" ./deploy.tar.gz
           echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
@@ -55,8 +56,31 @@ jobs:
 
             echo "📂 Extracting code..."
             mkdir -p "$APP_DIR"
+
+            # Preserve user uploads (avatars, review photos, product images)
+            if [ -d "$APP_DIR/public/uploads" ]; then
+              echo "💾 Saving uploads..."
+              cp -r "$APP_DIR/public/uploads" /tmp/pilorus-uploads-backup
+            fi
+            if [ -d "$APP_DIR/public/images" ]; then
+              echo "💾 Saving product images..."
+              cp -r "$APP_DIR/public/images" /tmp/pilorus-images-backup
+            fi
+
             tar -xzf "$ARCHIVE" -C "$APP_DIR"
             rm -f "$ARCHIVE"
+
+            # Restore preserved uploads
+            if [ -d /tmp/pilorus-uploads-backup ]; then
+              echo "♻️ Restoring uploads..."
+              cp -r /tmp/pilorus-uploads-backup "$APP_DIR/public/uploads"
+              rm -rf /tmp/pilorus-uploads-backup
+            fi
+            if [ -d /tmp/pilorus-images-backup ]; then
+              echo "♻️ Restoring product images..."
+              cp -r /tmp/pilorus-images-backup "$APP_DIR/public/images"
+              rm -rf /tmp/pilorus-images-backup
+            fi
 
             cd "$APP_DIR"
 
