@@ -24,11 +24,8 @@ export default async function CabinetLayout({ children }: { children: React.Reac
 
   const role = user?.role || (session.user as any)?.role || "USER";
 
-  // Staff members go to /admin — their cabinet is there
-  if (role !== "USER") {
-    redirect("/admin");
-  }
-
+  // Для сотрудников: cabinet разделы (профиль, отзывы, медиа) работают как часть admin layout
+  // Не редиректим — личные разделы доступны всем
   return (
     <AdminShell role={role} email={session.user?.email} userName={user?.name}>
       {children}

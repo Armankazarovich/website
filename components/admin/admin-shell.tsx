@@ -823,10 +823,15 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/staff": "Команда",
   "/admin/notifications": "Уведомления",
   "/admin/help": "Помощь",
-  // Кабинет клиента
-  "/cabinet": "Мои заказы",
+  // Кабинет (общий для всех)
+  "/cabinet": "Главная",
   "/cabinet/profile": "Профиль",
   "/cabinet/notifications": "Уведомления",
+  "/cabinet/reviews": "Мои отзывы",
+  "/cabinet/media": "Медиабиблиотека",
+  "/cabinet/subscriptions": "Подписки",
+  "/cabinet/history": "История",
+  "/cabinet/appearance": "Оформление",
 };
 
 function usePageTitle() {

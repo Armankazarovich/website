@@ -35,6 +35,9 @@ import {
   Target,
   BookOpen,
   Wrench,
+  Heart,
+  History,
+  UserPlus,
 } from "lucide-react";
 
 type NavItem = {
@@ -49,26 +52,46 @@ type NavItem = {
 };
 
 const SA = "SUPER_ADMIN";
+const ALL_STAFF = [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const ALL_ROLES = [...ALL_STAFF, "USER"];
 
 const allNavItems: NavItem[] = [
+  // ═══════════════════════════════════════════════════════════════
+  // ОБЩИЕ РАЗДЕЛЫ — видны ВСЕМ пользователям (от USER до SUPER_ADMIN)
+  // ═══════════════════════════════════════════════════════════════
+
   // ── Главная ──
-  { href: "/admin", label: "Дашборд", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "main" },
+  { href: "/admin", label: "Дашборд", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: ALL_STAFF, group: "main" },
+  { href: "/cabinet", label: "Главная", icon: LayoutDashboard, exact: true, roles: ["USER"], group: "main" },
+
+  // ── Мой кабинет (для всех — личные разделы) ──
+  { href: "/cabinet/profile",  label: "Профиль",         icon: UserCircle,  roles: ALL_ROLES, group: "personal", groupKey: undefined },
+  { href: "/cabinet/reviews",  label: "Мои отзывы",      icon: Star,        roles: ALL_ROLES, group: "personal" },
+  { href: "/cabinet/media",    label: "Медиабиблиотека", icon: Images,      roles: ALL_ROLES, group: "personal" },
+  { href: "/cabinet/subscriptions", label: "Подписки",   icon: Heart,       roles: ALL_ROLES, group: "personal" },
+  { href: "/cabinet/history",  label: "История",         icon: History,     roles: ALL_ROLES, group: "personal" },
+
+  // ═══════════════════════════════════════════════════════════════
+  // РАБОЧИЕ РАЗДЕЛЫ — по ролям сотрудников
+  // ═══════════════════════════════════════════════════════════════
 
   // ── Продажи ──
-  { href: "/admin/orders",    label: "Заказы",        labelKey: "orders",        icon: ShoppingBag, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales", groupKey: "sales" },
-  { href: "/admin/crm",      label: "CRM — Лиды",    labelKey: "crm",           icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
-  { href: "/admin/analytics",label: "Аналитика",     labelKey: "analytics",     icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
-  { href: "/admin/finance",  label: "Финансы",       labelKey: "finance",       icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
-  { href: "/admin/clients",  label: "Клиенты",       labelKey: "clients",       icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
-  { href: "/admin/tasks",    label: "Задачи",         labelKey: "tasks",         icon: CheckSquare, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "sales" },
-  { href: "/admin/delivery", label: "Доставка",       labelKey: "delivery",      icon: Truck,       roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
+  { href: "/admin/orders",    label: "Заказы",        labelKey: "orders",    icon: ShoppingBag, roles: ALL_STAFF, group: "sales", groupKey: "sales" },
+  { href: "/cabinet",         label: "Мои заказы",    icon: ShoppingBag,     exact: true, roles: ["USER"], group: "sales", groupKey: "sales" },
+  { href: "/admin/crm",      label: "CRM — Лиды",    labelKey: "crm",       icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/analytics", label: "Аналитика",     labelKey: "analytics", icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
+  { href: "/admin/finance",   label: "Финансы",       labelKey: "finance",   icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
+  { href: "/admin/clients",   label: "Клиенты",       labelKey: "clients",   icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
+  { href: "/admin/tasks",     label: "Задачи",        labelKey: "tasks",     icon: CheckSquare, roles: ALL_STAFF, group: "sales" },
+  { href: "/admin/delivery",  label: "Доставка",      labelKey: "delivery",  icon: Truck,       roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
 
   // ── Товары ──
   { href: "/admin/products",   label: "Каталог товаров",  labelKey: "catalog",       icon: Package,   roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"], group: "products", groupKey: "products" },
-  { href: "/admin/categories", label: "Категории",         labelKey: "categories",    icon: Tag,       roles: [SA, "ADMIN"], group: "products" },
-  { href: "/admin/inventory",  label: "Склад / Остатки",   labelKey: "inventory",     icon: Warehouse, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
-  { href: "/admin/import",     label: "Импорт / Экспорт",  labelKey: "import_export", icon: FileDown,  roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
-  { href: "/admin/media",      label: "Медиабиблиотека",   labelKey: "media",         icon: Images,    roles: [SA, "ADMIN", "MANAGER"], group: "products" },
+  { href: "/catalog",          label: "Каталог",          icon: Package,             roles: ["USER"], group: "products", groupKey: "products" },
+  { href: "/admin/categories", label: "Категории",        labelKey: "categories",    icon: Tag,       roles: [SA, "ADMIN"], group: "products" },
+  { href: "/admin/inventory",  label: "Склад / Остатки",  labelKey: "inventory",     icon: Warehouse, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/import",     label: "Импорт / Экспорт", labelKey: "import_export", icon: FileDown,  roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/media",      label: "Медиабиблиотека",  labelKey: "media",         icon: Images,    roles: [SA, "ADMIN", "MANAGER"], group: "products" },
 
   // ── Контент ──
   { href: "/admin/posts",    label: "Статьи / Новости", icon: BookOpen, roles: [SA, "ADMIN", "MANAGER"], group: "content", groupKey: undefined },
@@ -76,11 +99,11 @@ const allNavItems: NavItem[] = [
 
   // ── Маркетинг ──
   { href: "/admin/promotions", label: "Акции",          labelKey: "promotions", icon: Megaphone,  roles: [SA, "ADMIN", "MANAGER"], group: "marketing", groupKey: "marketing" },
-  { href: "/admin/reviews",    label: "Отзывы",          labelKey: "reviews",    icon: Star,       roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
-  { href: "/admin/email",      label: "Email рассылка",  labelKey: "email",      icon: Mail,       roles: [SA, "ADMIN"], group: "marketing" },
-  { href: "/admin/promotion",  label: "Продвижение",     labelKey: "promotion",  icon: TrendingUp, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/reviews",    label: "Отзывы",         labelKey: "reviews",    icon: Star,       roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/email",      label: "Email рассылка", labelKey: "email",      icon: Mail,       roles: [SA, "ADMIN"], group: "marketing" },
+  { href: "/admin/promotion",  label: "Продвижение",    labelKey: "promotion",  icon: TrendingUp, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
 
-  // ── Настройки ──
+  // ── Настройки (система) ──
   { href: "/admin/site",           label: "Сайт",              labelKey: "site_settings", icon: Globe,      roles: [SA, "ADMIN"], group: "settings", groupKey: "settings" },
   { href: "/admin/settings",       label: "Настройки",         labelKey: "settings",      icon: Settings,   roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/appearance",     label: "Оформление",        labelKey: "appearance",    icon: Palette,    roles: [SA, "ADMIN"], group: "settings" },
@@ -89,18 +112,24 @@ const allNavItems: NavItem[] = [
   { href: "/admin/notifications",  label: "Уведомления",       labelKey: "notifications", icon: Bell,       roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/health",         label: "Здоровье системы",  labelKey: "health",        icon: HeartPulse, roles: [SA, "ADMIN"], group: "settings" },
 
-  // ── Помощь ──
-  { href: "/admin/help", label: "Помощь", labelKey: "help", icon: HelpCircle, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "help" },
+  // ── Настройки (персональные — для всех) ──
+  { href: "/cabinet/notifications", label: "Уведомления",  icon: Bell,     roles: ["USER"], group: "settings", groupKey: "settings" },
+  { href: "/cabinet/appearance",    label: "Оформление",   icon: Palette,  roles: ["USER"], group: "settings" },
 
-  // ── Кабинет клиента (USER видит только это) ──
-  { href: "/cabinet",               label: "Мои заказы",   icon: ShoppingBag, exact: true, roles: ["USER"], group: "cabinet", groupKey: undefined },
-  { href: "/cabinet/profile",       label: "Профиль",      icon: UserCircle,  roles: ["USER"], group: "cabinet" },
-  { href: "/cabinet/notifications", label: "Уведомления",  icon: Bell,        roles: ["USER"], group: "cabinet" },
-  { href: "/catalog",               label: "Каталог",      icon: Package,     roles: ["USER"], group: "cabinet" },
+  // ── Помощь ──
+  { href: "/admin/help", label: "Помощь", labelKey: "help", icon: HelpCircle, roles: ALL_ROLES, group: "help" },
 ];
 
 // Группы которые будут collapsible (аккордеон)
-const COLLAPSIBLE_GROUPS = new Set(["settings", "marketing"]);
+const COLLAPSIBLE_GROUPS = new Set(["settings", "marketing", "personal"]);
+
+// Названия групп для USER (без labelKey)
+const GROUP_LABELS: Record<string, string> = {
+  personal: "Мой кабинет",
+  sales: "Покупки",
+  products: "Магазин",
+  settings: "Настройки",
+};
 
 export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () => void }) {
   const pathname = usePathname();
@@ -153,25 +182,23 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
       {groups.map((g, gi) => {
         const isCollapsible = COLLAPSIBLE_GROUPS.has(g.group);
         const isCollapsed = isCollapsible && collapsed.has(g.group);
-        const groupLabel = g.groupKey ? t(g.groupKey) : "";
+        const groupLabel = g.groupKey ? t(g.groupKey) : (GROUP_LABELS[g.group] || "");
         const hasActiveItem = g.items.some(i => i.exact ? pathname === i.href : pathname.startsWith(i.href));
 
         return (
           <div key={g.group}>
             {/* Group header — separator + label */}
-            {g.group !== "main" && (
+            {g.group !== "main" && groupLabel && (
               <div
                 className={`px-3 pt-4 pb-1.5 ${isCollapsible ? "cursor-pointer select-none group/gh" : ""}`}
                 onClick={isCollapsible ? () => toggleGroup(g.group) : undefined}
               >
                 <div className="flex items-center gap-2">
-                  {groupLabel && (
-                    <span className={`text-[9px] font-bold uppercase tracking-[0.18em] whitespace-nowrap transition-colors ${
-                      hasActiveItem ? "text-primary/70" : "text-white/35 group-hover/gh:text-white/55"
-                    }`}>
-                      {groupLabel}
-                    </span>
-                  )}
+                  <span className={`text-[9px] font-bold uppercase tracking-[0.18em] whitespace-nowrap transition-colors ${
+                    hasActiveItem ? "text-primary/70" : "text-white/35 group-hover/gh:text-white/55"
+                  }`}>
+                    {groupLabel}
+                  </span>
                   <div className="flex-1 aray-nav-divider" />
                   {isCollapsible && (
                     <ChevronDown className={`w-3 h-3 text-white/25 group-hover/gh:text-white/50 transition-all duration-200 ${isCollapsed ? "" : "rotate-180"}`} />

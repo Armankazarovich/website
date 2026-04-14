@@ -9,42 +9,43 @@ import {
 } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 
-// ── Нижние табы по роли (по 2 слева и по 1-2 справа от шара) ────────────────
+// ── Нижние табы по роли: 2 слева от Арая + 1 справа + Ещё ──────────────────
+// Стандарт: 4 таба + центральный элемент (как Instagram/Telegram 2026)
 const ROLE_TABS: Record<string, { href: string; label: string; icon: React.ElementType; exact?: boolean }[]> = {
   owner: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
     { href: "/admin/crm",      label: "CRM",     icon: Target },
   ],
   manager: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
     { href: "/admin/crm",      label: "CRM",     icon: Target },
   ],
   courier: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
     { href: "/admin/delivery", label: "Маршрут", icon: Truck },
   ],
   warehouse: [
-    { href: "/admin",           label: "Дашборд", icon: LayoutDashboard, exact: true },
+    { href: "/admin",           label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/products",  label: "Товары",  icon: Package },
     { href: "/admin/inventory", label: "Склад",   icon: Warehouse },
   ],
   accountant: [
-    { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, exact: true },
+    { href: "/admin",          label: "Главная",  icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",   icon: ShoppingBag },
     { href: "/admin/finance",  label: "Финансы",  icon: Wallet },
   ],
   seller: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
     { href: "/admin/products", label: "Товары",  icon: Package },
   ],
   user: [
-    { href: "/cabinet",         label: "Заказы",   icon: ShoppingBag, exact: true },
-    { href: "/catalog",         label: "Каталог",  icon: Package },
-    { href: "/cabinet/profile", label: "Профиль",  icon: UserCircle },
+    { href: "/cabinet",  label: "Главная",  icon: LayoutDashboard, exact: true },
+    { href: "/catalog",  label: "Каталог",  icon: Package },
+    { href: "/cabinet/profile", label: "Профиль", icon: UserCircle },
   ],
 };
 
