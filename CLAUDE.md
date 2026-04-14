@@ -827,12 +827,34 @@ const { theme, setTheme } = useTheme();
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
 
 ### Известные баги (исправить в начале следующей сессии)
-- [ ] **Формы профиля: синяя подсветка focus** — при клике на input подсвечивается синим (дефолтный browser focus) вместо `--primary` цвета темы. Нужно унифицировать все формы: `focus:ring-primary focus:border-primary`. Затронуты: `cabinet/profile/page.tsx` (input'ы), и проверить ВСЕ формы на сайте (checkout, login, register, review-form). Эталон: форма отзывов на клиентском сайте — без внутреннего фона, рамка подсвечивается цветом темы.
-- [ ] **Аудит всех форм** — пройтись по всем `<Input>`, `<textarea>`, `<select>` на сайте и привести к единому стилю: `border-border focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-xl`
+- [x] **Формы профиля: синяя подсветка focus** — ✅ ИСПРАВЛЕНО (сессия 14.04.2026). Все Input/Select/Textarea/Button переведены на `focus:ring-primary/30 focus:border-primary`. Убраны все `ring-ring`, `border-input` → `border-border`, `rounded-md` → `rounded-xl`. Затронуто 15+ файлов.
+- [x] **Аудит всех форм** — ✅ ИСПРАВЛЕНО. Единый стиль на всех формах: login, register, checkout, profile, reviews, staff, email, join, contact-form, partnership-modal. Создан `components/ui/textarea.tsx`.
+
+### Сессия 14.04.2026 — Экосистема кабинета
+- [x] Аватар профиля — загрузка, кроп (circular canvas crop modal), сохранение
+  - `User.avatarUrl` поле в Prisma
+  - `POST/DELETE /api/cabinet/avatar` — загрузка/удаление
+  - Кроп-модал: drag + zoom slider → export 256x256 JPEG
+- [x] Медиабиблиотека — агрегация фото из отзывов + PDF счетов
+  - `GET /api/cabinet/media` — собирает review photos, avatar, order PDFs
+  - UI с табами (Все/Фото/Документы), lightbox, скачивание PDF
+- [x] Подписки — модель Subscription + CRUD API + UI
+  - `Subscription` модель: userId + targetType (supplier/category/brand) + targetId + targetName
+  - `GET/POST/DELETE /api/cabinet/subscriptions`
+  - UI с категориями, статистикой, отписка в один клик
+- [x] История — ActivityLog модель + API + UI
+  - `ActivityLog` модель: userId + action + targetId + meta (JSON)
+  - `GET/POST /api/cabinet/history` — с фильтрами по типу действия
+  - UI: карточки статистики (кликабельные фильтры) + лента активности
+- [x] Permissions система — `lib/permissions.ts`
+  - `canAccess(role, section)` — проверка прав по роли
+  - `pathToSection(path)` — маппинг URL → section
+  - `AccessGuard` компонент в admin-shell — блокирует доступ с красивой заглушкой
+  - SUPER_ADMIN/ADMIN имеют доступ ко всему
+  - Каждая роль видит только свои разделы
 
 ### Средний приоритет
 - Аналитика с DatePicker + экспорт Excel/PDF
-- Права сотрудников (permissions String[])
 - Фото в отзывах — CDN/S3 вместо локального `/uploads/`
 - PhoneInput с маской +7
 
