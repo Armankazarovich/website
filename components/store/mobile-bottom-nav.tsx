@@ -177,7 +177,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
 
   return (
     <nav
-      className="fixed left-0 right-0 z-[100] lg:hidden safe-area-inset-bottom transition-all duration-300"
+      className="fixed left-0 right-0 z-50 lg:hidden safe-area-inset-bottom transition-all duration-300"
       style={{
         bottom: kbOpen ? "-120px" : "0",
         opacity: kbOpen ? 0 : 1,

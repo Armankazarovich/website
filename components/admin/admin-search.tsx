@@ -114,9 +114,9 @@ function useSearchLogic(active: boolean) {
 // ─── Type badge colors ──────────────────────────────────────────────────────
 const TYPE_META: Record<string, { label: string; bg: string; color: string }> = {
   order:   { label: "Заказ",   bg: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))" },
-  product: { label: "Товар",   bg: "rgba(251,146,60,0.18)",    color: "rgb(251,146,60)" },
-  client:  { label: "Клиент",  bg: "rgba(52,211,153,0.18)",    color: "rgb(52,211,153)" },
-  page:    { label: "Страница",bg: "rgba(255,255,255,0.08)",    color: "rgba(255,255,255,0.40)" },
+  product: { label: "Товар",   bg: "hsl(25 95% 53% / 0.18)",   color: "hsl(25 95% 53%)" },
+  client:  { label: "Клиент",  bg: "hsl(160 60% 45% / 0.18)",  color: "hsl(160 60% 45%)" },
+  page:    { label: "Страница",bg: "hsl(var(--muted))",         color: "hsl(var(--muted-foreground))" },
 };
 
 // ─── Result item renderer ───────────────────────────────────────────────────
