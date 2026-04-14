@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
   ArrowRight, ALargeSmall, Monitor, Zap, Palette, Film,
+  Star, UserPlus,
 } from "lucide-react";
 
 // ── Ключи localStorage ────────────────────────────────────────────────────────
@@ -443,12 +444,15 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
 // ══════════════════════════════════════════════════════════════════════════════
 // ✦ ARAY Control Center — единая панель уведомлений + оформления
 // ══════════════════════════════════════════════════════════════════════════════
-function ArayControlCenter() {
+function ArayControlCenter({ userRole }: { userRole?: string }) {
+  const isClient = userRole === "USER";
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"notif" | "style">("notif");
+  const [tab, setTab] = useState<"notif" | "style">(userRole === "USER" ? "style" : "notif");
   const [count, setCount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [pendingStaff, setPendingStaff] = useState<any[]>([]);
+  const [loadingNotif, setLoadingNotif] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
@@ -471,8 +475,9 @@ function ArayControlCenter() {
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  // Polling счётчика новых заказов
+  // Polling счётчика новых заказов (staff only)
   useEffect(() => {
+    if (isClient) return;
     const fetchCount = async () => {
       try {
         const res = await fetch("/api/admin/notifications/count");
@@ -488,7 +493,7 @@ function ArayControlCenter() {
     fetchCount();
     const t = setInterval(fetchCount, 30000);
     return () => clearInterval(t);
-  }, []);
+  }, [isClient]);
 
   const calcPos = () => {
     if (ref.current) {
@@ -499,13 +504,17 @@ function ArayControlCenter() {
 
   const openNotif = async () => {
     calcPos(); setTab("notif"); setOpen(true);
-    if (!orders.length) {
-      setLoadingOrders(true);
-      try {
-        const res = await fetch("/api/admin/orders?status=NEW&limit=5");
-        if (res.ok) { const d = await res.json(); setOrders(d.orders ?? []); }
-      } catch {} finally { setLoadingOrders(false); }
-    }
+    setLoadingNotif(true);
+    try {
+      const [ordersRes, reviewsRes, staffRes] = await Promise.all([
+        fetch("/api/admin/orders?status=NEW&limit=5").then(r => r.ok ? r.json() : { orders: [] }).catch(() => ({ orders: [] })),
+        fetch("/api/admin/reviews?pending=true&limit=5").then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch("/api/admin/staff?status=PENDING&limit=5").then(r => r.ok ? r.json() : []).catch(() => []),
+      ]);
+      setOrders(ordersRes.orders ?? []);
+      setReviews(Array.isArray(reviewsRes) ? reviewsRes : reviewsRes.reviews ?? []);
+      setPendingStaff(Array.isArray(staffRes) ? staffRes : staffRes.staff ?? []);
+    } catch {} finally { setLoadingNotif(false); }
   };
 
   // Единые размеры шрифтов — те же значения что в AdminFontPicker
@@ -538,19 +547,21 @@ function ArayControlCenter() {
   return (
     <div ref={ref} className="relative flex-1 flex items-center">
 
-      {/* ── Trigger: Bell + ARAY ─────────────────────────────── */}
-      <button onClick={openNotif} title="Уведомления"
-        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 transition-all hover:bg-white/[0.06]">
-        <div className="relative">
-          <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
-          {count > 0 && (
-            <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white leading-none"
-              style={{ background: "hsl(var(--primary))" }}>
-              {count > 9 ? "9+" : count}
-            </span>
-          )}
-        </div>
-      </button>
+      {/* ── Trigger: Bell (staff only) + ARAY ─────────────────── */}
+      {!isClient && (
+        <button onClick={openNotif} title="Уведомления"
+          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 transition-all hover:bg-white/[0.06]">
+          <div className="relative">
+            <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
+            {count > 0 && (
+              <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white leading-none"
+                style={{ background: "hsl(var(--primary))" }}>
+                {count > 9 ? "9+" : count}
+              </span>
+            )}
+          </div>
+        </button>
+      )}
 
       <button onClick={() => { calcPos(); setTab("style"); setOpen(o => !o); }} title="Оформление — палитра, тема, шрифт"
         className="flex-1 flex items-center justify-center gap-1 py-2.5 transition-all hover:bg-white/[0.06]"
@@ -579,23 +590,29 @@ function ArayControlCenter() {
             </button>
           </div>
 
-          {/* Tab switcher */}
-          <div className="flex gap-1 p-2 border-b glass-popup-divider">
-            <button onClick={() => setTab("notif")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "notif" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
-              <Bell className="w-3 h-3" />
-              Уведомления
-              {count > 0 && (
-                <span className="px-1 py-0.5 rounded-full text-[8px] font-bold leading-none"
-                  style={{ background: "hsl(var(--primary))", color: "#fff" }}>{count}</span>
-              )}
-            </button>
-            <button onClick={() => setTab("style")}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "style" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
-              <Palette className="w-3 h-3" />
-              Оформление
-            </button>
-          </div>
+          {/* Tab switcher (staff sees both, clients see only style) */}
+          {!isClient ? (
+            <div className="flex gap-1 p-2 border-b glass-popup-divider">
+              <button onClick={() => setTab("notif")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "notif" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
+                <Bell className="w-3 h-3" />
+                Уведомления
+                {count > 0 && (
+                  <span className="px-1 py-0.5 rounded-full text-[8px] font-bold leading-none"
+                    style={{ background: "hsl(var(--primary))", color: "#fff" }}>{count}</span>
+                )}
+              </button>
+              <button onClick={() => setTab("style")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "style" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
+                <Palette className="w-3 h-3" />
+                Оформление
+              </button>
+            </div>
+          ) : (
+            <div className="px-4 py-2 border-b glass-popup-divider">
+              <p className="text-[10px] font-semibold glass-text-muted text-center">Настройки оформления</p>
+            </div>
+          )}
 
           {/* Tab content */}
           <div className="overflow-y-auto" style={{ maxHeight: "68vh" }}>
@@ -603,19 +620,20 @@ function ArayControlCenter() {
             {/* ── NOTIFICATIONS ── */}
             {tab === "notif" && (
               <div>
-                {loadingOrders ? (
+                {loadingNotif ? (
                   <div className="flex justify-center py-8">
                     <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
                   </div>
-                ) : orders.length === 0 ? (
+                ) : (orders.length === 0 && reviews.length === 0 && pendingStaff.length === 0) ? (
                   <div className="text-center py-8">
                     <Bell className="w-7 h-7 text-muted-foreground/20 mx-auto mb-2" />
-                    <p className="text-muted-foreground text-xs">Нет новых заказов</p>
+                    <p className="text-muted-foreground text-xs">Нет новых уведомлений</p>
                   </div>
                 ) : (
                   <div className="py-1">
+                    {/* Новые заказы */}
                     {orders.map((o: any) => (
-                      <button key={o.id}
+                      <button key={`order-${o.id}`}
                         onClick={() => { router.push(`/admin/orders`); setOpen(false); }}
                         className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
@@ -627,6 +645,42 @@ function ArayControlCenter() {
                             #{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}
                           </p>
                           <p className="text-[10px] text-muted-foreground">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
+                        </div>
+                        <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+                      </button>
+                    ))}
+                    {/* Новые отзывы */}
+                    {reviews.map((r: any) => (
+                      <button key={`review-${r.id}`}
+                        onClick={() => { router.push(`/admin/reviews`); setOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: "hsl(45 93% 47% / 0.14)", border: "1px solid hsl(45 93% 47% / 0.22)" }}>
+                          <Star className="w-3 h-3" style={{ color: "hsl(45 93% 47%)" }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold text-foreground truncate">
+                            {r.name || "Отзыв"} · {"★".repeat(r.rating || 5)}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground truncate">{r.text?.slice(0, 60) || "Новый отзыв"}</p>
+                        </div>
+                        <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+                      </button>
+                    ))}
+                    {/* Заявки сотрудников */}
+                    {pendingStaff.map((s: any) => (
+                      <button key={`staff-${s.id}`}
+                        onClick={() => { router.push(`/admin/staff`); setOpen(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
+                        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: "hsl(200 80% 50% / 0.14)", border: "1px solid hsl(200 80% 50% / 0.22)" }}>
+                          <UserPlus className="w-3 h-3" style={{ color: "hsl(200 80% 50%)" }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold text-foreground truncate">
+                            {s.name || s.email || "Заявка"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">Ожидает одобрения</p>
                         </div>
                         <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
                       </button>
@@ -768,6 +822,10 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin/staff": "Команда",
   "/admin/notifications": "Уведомления",
   "/admin/help": "Помощь",
+  // Кабинет клиента
+  "/cabinet": "Мои заказы",
+  "/cabinet/profile": "Профиль",
+  "/cabinet/notifications": "Уведомления",
 };
 
 function usePageTitle() {
@@ -881,7 +939,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             </div>
             <div>
               <p className="font-display font-bold text-base text-white leading-none">ПилоРус</p>
-              <p className="text-[10px] text-white/45 mt-0.5 leading-none">Панель управления</p>
+              <p className="text-[10px] text-white/45 mt-0.5 leading-none">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
             </div>
           </Link>
         </div>
@@ -915,14 +973,14 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               {role && (
                 <span className="shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
                   style={{ background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }}>
-                  {role === "SUPER_ADMIN" ? "Владелец" : role === "ADMIN" ? "Адм" : role === "MANAGER" ? "Менеджер" : role === "COURIER" ? "Курьер" : role === "ACCOUNTANT" ? "Бухгалтер" : role === "WAREHOUSE" ? "Склад" : role === "SELLER" ? "Продавец" : role}
+                  {role === "SUPER_ADMIN" ? "Владелец" : role === "ADMIN" ? "Адм" : role === "MANAGER" ? "Менеджер" : role === "COURIER" ? "Курьер" : role === "ACCOUNTANT" ? "Бухгалтер" : role === "WAREHOUSE" ? "Склад" : role === "SELLER" ? "Продавец" : role === "USER" ? "Клиент" : role}
                 </span>
               )}
             </div>
 
             {/* Нижние кнопки — ARAY Control Center + На сайт */}
             <div className="flex items-center" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-              <ArayControlCenter />
+              <ArayControlCenter userRole={role} />
               <Link href="/"
                 className="flex items-center justify-center gap-1 px-3 py-2.5 text-[10px] text-white/35 hover:text-white/75 hover:bg-white/[0.06] transition-colors shrink-0"
                 style={{ borderLeft: "1px solid rgba(255,255,255,0.06)" }}

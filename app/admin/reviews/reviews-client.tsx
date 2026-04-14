@@ -508,13 +508,14 @@ export function ReviewsClient({
                   <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
 
                   {/* Photos — large preview for admin to check before publishing */}
-                  {review.images && review.images.length > 0 && (
+                  {review.images && review.images.filter((u: string) => u && !u.startsWith("data:")).length > 0 && (
                     <div className="mt-3">
-                      <p className="text-[11px] text-muted-foreground mb-2 font-medium">📷 {review.images.length} фото от клиента:</p>
+                      <p className="text-[11px] text-muted-foreground mb-2 font-medium">📷 {review.images.filter((u: string) => u && !u.startsWith("data:")).length} фото от клиента:</p>
                       <div className="flex gap-2 overflow-x-auto">
-                        {review.images.map((img, i) => (
+                        {review.images.filter((u: string) => u && !u.startsWith("data:")).map((img: string, i: number) => (
                           <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="shrink-0 group relative">
-                            <img src={img} alt="" className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-border group-hover:border-primary transition-colors" />
+                            <img src={img} alt="" className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-border group-hover:border-primary transition-colors"
+                              onError={(e) => { (e.target as HTMLImageElement).closest("a")!.style.display = "none"; }} />
                             <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md">открыть</span>
                           </a>
                         ))}

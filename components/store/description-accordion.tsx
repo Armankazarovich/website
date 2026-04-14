@@ -262,11 +262,12 @@ export function DescriptionAccordion({
                           {review.text}
                         </p>
 
-                        {/* Photos */}
-                        {review.images && review.images.length > 0 && (
+                        {/* Photos — filter out broken base64 from old reviews */}
+                        {review.images && review.images.filter(u => u && !u.startsWith("data:")).length > 0 && (
                           <div className="flex gap-1.5 mt-3 overflow-x-auto">
-                            {review.images.map((img, i) => (
-                              <img key={i} src={img} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border shrink-0" />
+                            {review.images.filter(u => u && !u.startsWith("data:")).map((img, i) => (
+                              <img key={i} src={img} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border shrink-0"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
                             ))}
                           </div>
                         )}

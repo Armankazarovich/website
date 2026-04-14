@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, MoreHorizontal,
-  Truck, CheckSquare, Warehouse, Wallet, Target,
+  Truck, CheckSquare, Warehouse, Wallet, Target, UserCircle,
 } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 
@@ -41,10 +41,16 @@ const ROLE_TABS: Record<string, { href: string; label: string; icon: React.Eleme
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
     { href: "/admin/products", label: "Товары",  icon: Package },
   ],
+  user: [
+    { href: "/cabinet",         label: "Заказы",   icon: ShoppingBag, exact: true },
+    { href: "/catalog",         label: "Каталог",  icon: Package },
+    { href: "/cabinet/profile", label: "Профиль",  icon: UserCircle },
+  ],
 };
 
 function getRoleGroup(role: string): string {
   if (["SUPER_ADMIN", "ADMIN"].includes(role)) return "owner";
+  if (role === "USER") return "user";
   return role.toLowerCase();
 }
 

@@ -91,6 +91,12 @@ const allNavItems: NavItem[] = [
 
   // ── Помощь ──
   { href: "/admin/help", label: "Помощь", labelKey: "help", icon: HelpCircle, roles: [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"], group: "help" },
+
+  // ── Кабинет клиента (USER видит только это) ──
+  { href: "/cabinet",               label: "Мои заказы",   icon: ShoppingBag, exact: true, roles: ["USER"], group: "cabinet", groupKey: undefined },
+  { href: "/cabinet/profile",       label: "Профиль",      icon: UserCircle,  roles: ["USER"], group: "cabinet" },
+  { href: "/cabinet/notifications", label: "Уведомления",  icon: Bell,        roles: ["USER"], group: "cabinet" },
+  { href: "/catalog",               label: "Каталог",      icon: Package,     roles: ["USER"], group: "cabinet" },
 ];
 
 // Группы которые будут collapsible (аккордеон)

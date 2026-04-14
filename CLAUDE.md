@@ -591,6 +591,26 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 14.04.2026 (вечер) — Баги + Единая админка для клиентов
+
+**Баги исправлены:**
+- ✅ ARAY CONTROL: показывает заказы + отзывы + заявки сотрудников, авто-обновление при каждом открытии
+- ✅ Broken images в отзывах: base64 фильтруется, onError скрывает битые
+- ✅ Health API 503: critical vs optional checks (aray_api/google_ai → optional)
+
+**Единая админка — клиенты видят AdminShell:**
+- ✅ `cabinet/layout.tsx` → использует AdminShell вместо Header/Footer/CabinetSidebar
+- ✅ `admin-nav.tsx` → добавлены USER items: Мои заказы, Профиль, Уведомления, Каталог
+- ✅ `admin-mobile-bottom-nav.tsx` → добавлена группа `user` с клиентскими табами
+- ✅ `admin-shell.tsx` → роль "Клиент" в бейдже, "Личный кабинет" в заголовке
+- ✅ ARAY Control для USER: только вкладка "Оформление" (без уведомлений), без polling
+- ✅ Единый дизайн: glassmorphism, палитры, темы — всё доступно клиентам
+- ✅ Staff redirect: если сотрудник заходит на /cabinet → редирект на /admin
+
+**API обновлены:**
+- ✅ `GET /api/admin/reviews?pending=true&limit=5` — новый endpoint для ARAY Control
+- ✅ `GET /api/admin/staff?status=PENDING&limit=5` — поддержка фильтрации по статусу
+
 ### Сессия 14.04.2026 — Отзывы полноценные + баги + auto-refresh + антиспам (10 коммитов)
 
 **Система отзывов (полная как Авито/Ozon):**
@@ -787,10 +807,10 @@ const { theme, setTheme } = useTheme();
 - Контекст товара — Арай знает что смотрит пользователь
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
 
-### Известные баги (исправить в начале следующей сессии)
-- ARAY CONTROL панель (desktop bottom): показывает только заказы, не отзывы. Нет авто-обновления (загружает один раз при открытии). Файл: `admin-shell.tsx` строки 500-508
-- Фото отзывов: broken image если фото было отправлено ДО фикса upload (base64 отфильтровалось). Новые фото работают через `/api/upload` → `/uploads/reviews/`
-- Health API: 503 degraded — проверить что именно деградировало
+### Известные баги — ВСЕ ИСПРАВЛЕНЫ (сессия 14.04.2026 вечер)
+- ✅ ARAY CONTROL панель: теперь показывает заказы + отзывы на модерации + заявки сотрудников. Авто-обновление при каждом открытии. Добавлен GET `/api/admin/reviews?pending=true&limit=5`, обновлён GET `/api/admin/staff?status=PENDING&limit=5`
+- ✅ Фото отзывов: base64 data URLs фильтруются (не рендерятся), `onError` скрывает broken images. Файлы: `description-accordion.tsx`, `reviews-client.tsx`
+- ✅ Health API: разделены critical (DB, orders, telegram, email, push) и optional (aray_api, google_ai, disk) проверки. Теперь 200 OK если critical ок, даже если API ключи не настроены
 
 ### Средний приоритет
 - Аналитика с DatePicker + экспорт Excel/PDF

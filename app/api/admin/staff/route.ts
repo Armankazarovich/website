@@ -20,13 +20,22 @@ async function checkSuperAdmin() {
   return session && session.user?.role === "SUPER_ADMIN";
 }
 
-// GET — list all non-USER staff
-export async function GET() {
+// GET — list all non-USER staff (supports ?status=PENDING&limit=5)
+export async function GET(req: NextRequest) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const url = new URL(req.url);
+  const statusFilter = url.searchParams.get("status");
+  const limitParam = url.searchParams.get("limit");
+
+  const where: any = { role: { not: "USER" } };
+  if (statusFilter && VALID_STATUSES.includes(statusFilter)) {
+    where.staffStatus = statusFilter;
+  }
+
   const staff = await prisma.user.findMany({
-    where: { role: { not: "USER" } },
+    where,
     select: {
       id: true,
       name: true,
@@ -39,6 +48,7 @@ export async function GET() {
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
+    ...(limitParam ? { take: Math.min(parseInt(limitParam) || 50, 100) } : {}),
   });
 
   return NextResponse.json(staff);

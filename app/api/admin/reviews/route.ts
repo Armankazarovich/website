@@ -10,6 +10,35 @@ async function checkAdmin() {
   return role === "ADMIN" || role === "SUPER_ADMIN" || role === "MANAGER";
 }
 
+// GET — list reviews (supports ?pending=true&limit=5)
+export async function GET(req: NextRequest) {
+  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  const url = new URL(req.url);
+  const pending = url.searchParams.get("pending") === "true";
+  const limitParam = url.searchParams.get("limit");
+
+  const where: any = {};
+  if (pending) where.approved = false;
+
+  const reviews = await prisma.review.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    ...(limitParam ? { take: Math.min(parseInt(limitParam) || 50, 100) } : {}),
+    select: {
+      id: true,
+      name: true,
+      rating: true,
+      text: true,
+      source: true,
+      approved: true,
+      createdAt: true,
+    },
+  });
+
+  return NextResponse.json({ reviews });
+}
+
 // POST — создать/импортировать отзыв (из Google, Yandex, VK, 2GIS или вручную)
 export async function POST(req: NextRequest) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
