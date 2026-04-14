@@ -105,18 +105,14 @@ export function AdminSidebarWeather() {
   const dateStr = now.toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" });
   const tempStr = `${weather.temp > 0 ? "+" : ""}${weather.temp}°`;
 
-  // Стили зависят от режима (classic = light theme)
-  const bgColor = isClassic
-    ? hovered ? "hsl(var(--border))" : "hsl(var(--card))"
-    : hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
-  const borderColor = isClassic
-    ? hovered ? "hsl(var(--border))" : "hsl(var(--border) / 0.5)"
-    : hovered ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)";
-  const boxShadowColor = isClassic ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.2)";
-  const dividerColor = isClassic ? "hsl(var(--border))" : "rgba(255,255,255,0.07)";
-  const labelColor = isClassic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.65)";
-  const dateColor = isClassic ? "hsl(var(--muted-foreground) / 0.7)" : "rgba(255,255,255,0.35)";
-  const cityColor = isClassic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.45)";
+  // Сайдбар ВСЕГДА тёмный — используем rgba(white) стили
+  const bgColor = hovered ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)";
+  const borderColor = hovered ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)";
+  const boxShadowColor = "rgba(0,0,0,0.2)";
+  const dividerColor = "rgba(255,255,255,0.07)";
+  const labelColor = "rgba(255,255,255,0.65)";
+  const dateColor = "rgba(255,255,255,0.35)";
+  const cityColor = "rgba(255,255,255,0.45)";
 
   return (
     <div
