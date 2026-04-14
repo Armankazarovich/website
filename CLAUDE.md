@@ -591,40 +591,36 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
-### Сессия 14.04.2026 (ночь, 3-я) — WOW оформление + glass светлая тема + cleanup
+### Сессия 14.04.2026 (ночь, 3-я) — 78 TS ошибок + единый стиль + cleanup
 
-**Glassmorphism в светлой теме (globals.css):**
-- ✅ `.glass-card` → `bg-white/70 backdrop-blur-xl border-white/30` вместо плоского `hsl(muted)`
-- ✅ `.glass-control` → `bg-white/60 backdrop-blur border-white/25`
-- ✅ `.glass-pill` → `bg-white/55 backdrop-blur border-white/25`
-- ✅ `.glass-mobile-header` → `bg-white/75 backdrop-blur saturate(120%)`
-- ✅ Все dark-theme fallbacks через `.dark .aray-classic-mode` selector
+**TypeScript: 78 → 0 ошибок:**
+- ✅ `npx prisma generate` — устранил 43 ошибки (stale Prisma client)
+- ✅ `role as string` в `.includes()` — 15 API route файлов
+- ✅ `app/api/ai/chat/route.ts` — 9 ошибок: OrderItem.productName, типы параметров reduce/forEach
+- ✅ `lib/workflow-engine.ts` — 5 ошибок: `opValue as number/any[]` для сравнений
+- ✅ `components/admin/admin-aray.tsx` — reorder spread (`...getArayContext(), page: pathname`), добавлен `CHAT_KEY`
+- ✅ `components/store/aray-widget.tsx` — аналогичный spread reorder
+- ✅ `lib/admin-i18n-pages.ts` — `Partial<Record<LangCode, Translations>>`
 
-**WOW конфигуратор оформления (`/cabinet/profile#appearance`):**
-- ✅ Live preview header: анимированный градиент из текущей палитры + мини-превью карточка
-- ✅ Мини-превью реагирует в реальном времени на смену темы/палитры (transition 500ms)
-- ✅ Touch-friendly: все кнопки min-h 56px, active:scale-95, grid layout
-- ✅ Checkmark badges на выбранных опциях (spring-анимация)
-- ✅ Палитры в сетке 4x с названиями, увеличение при выборе (scale-110 + ring)
-- ✅ Секции с иконками: Режим, Цвет, Фон, Шрифт, Язык
-- ✅ Описания подопций ("Чистый фон", "Живая природа")
+**Профиль оформления (`/cabinet/profile#appearance`):**
+- ✅ Стиль как `/admin/appearance` — `bg-card rounded-2xl border border-border p-6`
+- ✅ Компактные контролы: `border-2 border-primary bg-primary/15` для active
+- ✅ Убран WOW-превью (большой градиентный хедер) — не вписывался в единый стиль
+- ✅ Палитры: кружки 9x9 с названиями, flex-wrap
 
 **ARAY Control Center (admin-shell.tsx):**
-- ✅ Убрана вкладка "Оформление" со всеми дублями (палитра, тема, фон, шрифт, язык)
+- ✅ Убрана вкладка "Оформление" со всеми дублями
 - ✅ Добавлена кнопка "Настроить оформление →" → `/cabinet/profile#appearance`
-- ✅ Для USER: сразу показывает кнопку перехода в профиль
-- ✅ Для staff: уведомления + кнопка настроек
 
 **Mobile drawer (admin-shell.tsx):**
-- ✅ Убраны ВСЕ дубли настроек (палитра, тема, фон, шрифт)
-- ✅ Добавлена карточка-ссылка "Оформление → профиль" с описанием
-- ✅ Оставлен быстрый переключатель языка (полезен на мобиле)
-- ✅ Ссылка "Перейти на сайт"
+- ✅ Убраны дубли настроек, оставлены: ссылка на профиль + язык
 
-**Файлы изменены:**
-- `app/globals.css` — glass light theme
-- `app/cabinet/profile/page.tsx` — WOW configurator
-- `components/admin/admin-shell.tsx` — cleanup ArayControlCenter + mobile drawer
+**Glassmorphism в светлой теме (globals.css):**
+- ✅ `.glass-card/.glass-control/.glass-pill/.glass-mobile-header` → `bg-white/70 backdrop-blur-xl`
+- ✅ Dark fallbacks через `.dark .aray-classic-mode`
+
+**Hover эффекты стандартизированы:**
+- ✅ Все `hover:bg-primary/[0.08]` и `[0.06]` → `hover:bg-primary/[0.05]` (analytics, dashboard)
 
 ### Сессия 14.04.2026 (вечер) — Единая экосистема + навигация + баги светлой темы
 
@@ -822,14 +818,32 @@ const { theme, setTheme } = useTheme();
 
 ## На следующую сессию (план)
 
-> Последнее обновление: 14.04.2026 (ночь — 3-я сессия)
+> Последнее обновление: 15.04.2026 (ночь — 3-я сессия)
 
-### 🔥 ПРИОРИТЕТ 0 — Оформление как WOW-фича ✅ ГОТОВО (14.04.2026 ночь)
+### 🚨 СТИЛЕВЫЕ ПРАВИЛА — НЕ НАРУШАТЬ
+```
+Карточки:        bg-card rounded-2xl border border-border p-6
+Hover кнопок:    hover:bg-primary/[0.05]
+Hover строк:     hover:bg-primary/[0.05]  
+Active controls: border-2 border-primary bg-primary/15
+Inactive:        border-2 border-border
+Focus:           focus:ring-2 focus:ring-primary/30 focus:border-primary
+Radius:          rounded-xl (контролы), rounded-2xl (карточки)
+Текст:           text-foreground, text-muted-foreground, text-primary — НЕ hardcoded
+Glass светлая:   bg-white/70 backdrop-blur-xl border-white/30
+Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
+НЕ ИСПОЛЬЗОВАТЬ: rounded-md, border-input, ring-ring, hardcoded rgba/hex
+НЕ ПРИДУМЫВАТЬ:  новые стили. Собирать из существующих glass-*/bg-card/border-border
+```
+
+### 🔥 ПРИОРИТЕТ 0 — Полировка стилей ✅ ГОТОВО (15.04.2026)
 **Что сделано:**
-- ✅ WOW визуальный конфигуратор с live preview в `/cabinet/profile#appearance`
-- ✅ Glassmorphism в светлой теме (glass-card, glass-control, glass-pill, glass-mobile-header)
-- ✅ ARAY Control popup: только уведомления + кнопка "Настроить →"
-- ✅ Mobile drawer: убраны дубли, ссылка на профиль + быстрый язык
+- ✅ 78 → 0 TypeScript ошибок (Prisma generate + role casts + types)
+- ✅ Профиль оформления в едином стиле (как `/admin/appearance`)
+- ✅ ARAY Control: только уведомления + кнопка "Настроить →"
+- ✅ Mobile drawer: убраны дубли, ссылка на профиль + язык
+- ✅ Glassmorphism в светлой теме
+- ✅ Hover эффекты стандартизированы → `primary/[0.05]`
 
 ### 🔥 ПРИОРИТЕТ 1 — Единая админка для всех ролей ✅ ПОЛНОСТЬЮ ГОТОВ (14.04.2026)
 **Что сделано:**
