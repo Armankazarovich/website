@@ -826,10 +826,9 @@ const { theme, setTheme } = useTheme();
 - Контекст товара — Арай знает что смотрит пользователь
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
 
-### Известные баги — ВСЕ ИСПРАВЛЕНЫ (сессия 14.04.2026 вечер)
-- ✅ ARAY CONTROL панель: теперь показывает заказы + отзывы на модерации + заявки сотрудников. Авто-обновление при каждом открытии. Добавлен GET `/api/admin/reviews?pending=true&limit=5`, обновлён GET `/api/admin/staff?status=PENDING&limit=5`
-- ✅ Фото отзывов: base64 data URLs фильтруются (не рендерятся), `onError` скрывает broken images. Файлы: `description-accordion.tsx`, `reviews-client.tsx`
-- ✅ Health API: разделены critical (DB, orders, telegram, email, push) и optional (aray_api, google_ai, disk) проверки. Теперь 200 OK если critical ок, даже если API ключи не настроены
+### Известные баги (исправить в начале следующей сессии)
+- [ ] **Формы профиля: синяя подсветка focus** — при клике на input подсвечивается синим (дефолтный browser focus) вместо `--primary` цвета темы. Нужно унифицировать все формы: `focus:ring-primary focus:border-primary`. Затронуты: `cabinet/profile/page.tsx` (input'ы), и проверить ВСЕ формы на сайте (checkout, login, register, review-form). Эталон: форма отзывов на клиентском сайте — без внутреннего фона, рамка подсвечивается цветом темы.
+- [ ] **Аудит всех форм** — пройтись по всем `<Input>`, `<textarea>`, `<select>` на сайте и привести к единому стилю: `border-border focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-xl`
 
 ### Средний приоритет
 - Аналитика с DatePicker + экспорт Excel/PDF
