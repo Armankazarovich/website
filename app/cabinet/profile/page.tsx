@@ -10,7 +10,7 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon, Camera, Trash2, Monitor, Film, ALargeSmall, Globe } from "lucide-react";
+import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon, Camera, Trash2, Monitor, Film, ALargeSmall, Globe, Sparkles, Check } from "lucide-react";
 // BackButton removed — AdminShell sidebar handles navigation
 import { useTheme } from "next-themes";
 import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
@@ -425,127 +425,265 @@ export default function ProfilePage() {
         </Button>
       </form>
 
-      {/* Appearance — unified settings */}
-      <div id="appearance" className="bg-card rounded-2xl border border-border p-6 space-y-6">
-        <h2 className="font-display font-semibold text-lg flex items-center gap-2">
-          <Palette className="w-5 h-5 text-primary" />
-          Оформление
-        </h2>
+      {/* Appearance — WOW visual configurator */}
+      <div id="appearance" className="rounded-2xl border border-border overflow-hidden">
+        {/* Live Preview Header */}
+        <div className="relative overflow-hidden">
+          {/* Animated gradient background */}
+          <div className="absolute inset-0 transition-all duration-700 ease-out"
+            style={{
+              background: (() => {
+                const currentPalette = PALETTE_GROUPS.flatMap(g => g.palettes).find(p => p.id === palette);
+                const sidebarColor = currentPalette?.sidebar ?? "#5C3317";
+                const accentColor = currentPalette?.accent ?? "#E88A3A";
+                return `linear-gradient(135deg, ${sidebarColor}dd 0%, ${accentColor}cc 50%, ${sidebarColor}99 100%)`;
+              })(),
+            }}
+          />
+          {/* Glass overlay */}
+          <div className="absolute inset-0 backdrop-blur-sm bg-black/10" />
 
-        {/* Theme mode */}
-        <div>
-          <p className="text-sm font-medium mb-2">Режим</p>
-          <div className="flex gap-2">
-            {[
-              { value: "light", label: "Светлая", icon: <Sun className="w-4 h-4" /> },
-              { value: "dark",  label: "Тёмная",  icon: <Moon className="w-4 h-4" /> },
-              { value: "system", label: "Авто",   icon: <span className="text-xs font-bold">A</span> },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setTheme(opt.value)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${
-                  theme === opt.value
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                }`}
-              >
-                {opt.icon}
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Color palette */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Цветовая тема</p>
-          {PALETTE_GROUPS.map((group) => {
-            const visiblePalettes = group.palettes.filter((p) => enabledIds.includes(p.id));
-            if (visiblePalettes.length === 0) return null;
-            return (
-            <div key={group.label}>
-              <p className="text-xs text-muted-foreground mb-2">{group.label}</p>
-              <div className="flex gap-2 flex-wrap">
-                {visiblePalettes.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPalette(p.id)}
-                    title={p.name}
-                    className="flex flex-col items-center gap-1 group"
-                  >
-                    <span
-                      className={`w-8 h-8 rounded-full border-2 transition-all block ${
-                        palette === p.id
-                          ? "border-foreground scale-110 shadow-md"
-                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
-                      }`}
-                      style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
-                    />
-                    <span className={`text-xs transition-colors ${palette === p.id ? "text-foreground font-medium" : "text-muted-foreground"}`}>
-                      {p.name}
-                    </span>
-                  </button>
-                ))}
+          {/* Preview content */}
+          <div className="relative px-6 py-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-lg text-white">Оформление</h2>
+                <p className="text-white/60 text-xs">Настрой внешний вид под себя</p>
               </div>
             </div>
-            );
-          })}
-        </div>
 
-        {/* Background mode */}
-        <div>
-          <p className="text-sm font-medium mb-2">Фон панели</p>
-          <div className="flex gap-2">
-            {[
-              { id: "classic" as const, label: "Классика", icon: Monitor },
-              { id: "video" as const, label: "Видео", icon: Film },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setBgMode(opt.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${
-                  bgMode === opt.id
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                }`}
-              >
-                <opt.icon className="w-4 h-4" />
-                {opt.label}
-              </button>
-            ))}
+            {/* Mini live preview card */}
+            <div className="rounded-xl overflow-hidden border border-white/20 shadow-2xl transition-all duration-500"
+              style={{ maxWidth: 280 }}>
+              {/* Mini header */}
+              <div className="h-8 flex items-center gap-2 px-3"
+                style={{
+                  background: (() => {
+                    const cp = PALETTE_GROUPS.flatMap(g => g.palettes).find(p => p.id === palette);
+                    return cp?.sidebar ?? "#5C3317";
+                  })(),
+                }}>
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 rounded-full bg-white/30" />
+                  <span className="w-2 h-2 rounded-full bg-white/30" />
+                  <span className="w-2 h-2 rounded-full bg-white/30" />
+                </div>
+                <span className="text-[9px] text-white/70 font-medium">ПилоРус</span>
+              </div>
+              {/* Mini content */}
+              <div className="p-3 transition-all duration-500"
+                style={{
+                  background: theme === "dark" ? "#1a1612" : "#faf8f5",
+                  color: theme === "dark" ? "#f5ede5" : "#2c1f14",
+                }}>
+                <div className="flex gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg transition-all duration-500"
+                    style={{
+                      background: (() => {
+                        const cp = PALETTE_GROUPS.flatMap(g => g.palettes).find(p => p.id === palette);
+                        return `linear-gradient(135deg, ${cp?.sidebar ?? "#5C3317"}, ${cp?.accent ?? "#E88A3A"})`;
+                      })(),
+                    }} />
+                  <div className="flex-1 space-y-1">
+                    <div className="h-2 rounded-full w-3/4" style={{ background: theme === "dark" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.08)" }} />
+                    <div className="h-2 rounded-full w-1/2" style={{ background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)" }} />
+                  </div>
+                </div>
+                <div className="flex gap-1">
+                  <div className="h-5 flex-1 rounded-md transition-all duration-500"
+                    style={{
+                      background: (() => {
+                        const cp = PALETTE_GROUPS.flatMap(g => g.palettes).find(p => p.id === palette);
+                        return cp?.accent ?? "#E88A3A";
+                      })(),
+                    }} />
+                  <div className="h-5 flex-1 rounded-md" style={{ background: theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }} />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Font size */}
-        <div>
-          <p className="text-sm font-medium mb-2">Размер шрифта</p>
-          <div className="flex gap-2">
-            {[
-              { id: "compact", label: "Компакт", size: "text-xs" },
-              { id: "normal", label: "Норм", size: "text-sm" },
-              { id: "large", label: "Крупн", size: "text-base" },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setFontSize(opt.id)}
-                className={`flex flex-col items-center gap-1 flex-1 py-3 rounded-xl text-sm border transition-all ${
-                  fontSize === opt.id
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                }`}
-              >
-                <span className={`font-bold ${opt.size}`}>A</span>
-                <span className="text-[10px]">{opt.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Settings body */}
+        <div className="bg-card p-6 space-y-8">
 
-        {/* Language */}
-        <div>
-          <p className="text-sm font-medium mb-2">Язык</p>
-          <AdminLangPickerInline />
+          {/* Theme mode — large touch-friendly cards */}
+          <div>
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+              {theme === "dark" ? <Moon className="w-4 h-4 text-primary" /> : <Sun className="w-4 h-4 text-primary" />}
+              Режим
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: "light", label: "Светлая", icon: Sun, gradient: "from-amber-100 to-orange-50" },
+                { value: "dark",  label: "Тёмная",  icon: Moon, gradient: "from-slate-800 to-slate-900" },
+                { value: "system", label: "Авто",   icon: Monitor, gradient: "from-blue-50 to-indigo-50" },
+              ].map((opt) => {
+                const active = theme === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTheme(opt.value)}
+                    className={`relative flex flex-col items-center gap-2 min-h-[56px] py-3 px-2 rounded-xl border-2 transition-all duration-300 active:scale-95 ${
+                      active
+                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                        : "border-border hover:border-primary/30 hover:bg-primary/5"
+                    }`}
+                  >
+                    {active && (
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </span>
+                    )}
+                    <opt.icon className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-muted-foreground"}`} />
+                    <span className={`text-xs font-medium transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}>
+                      {opt.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Color palette — visual grid with names */}
+          <div>
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Palette className="w-4 h-4 text-primary" />
+              Цветовая тема
+            </p>
+            {PALETTE_GROUPS.map((group) => {
+              const visiblePalettes = group.palettes.filter((p) => enabledIds.includes(p.id));
+              if (visiblePalettes.length === 0) return null;
+              return (
+                <div key={group.label} className="mb-4 last:mb-0">
+                  <p className="text-xs text-muted-foreground mb-2.5">{group.label}</p>
+                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                    {visiblePalettes.map((p) => {
+                      const active = palette === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          onClick={() => setPalette(p.id)}
+                          title={p.name}
+                          className={`relative flex flex-col items-center gap-1.5 py-2 rounded-xl border-2 transition-all duration-300 active:scale-90 ${
+                            active
+                              ? "border-primary bg-primary/8 shadow-md shadow-primary/10"
+                              : "border-transparent hover:border-primary/20 hover:bg-primary/5"
+                          }`}
+                        >
+                          <span
+                            className={`w-10 h-10 rounded-full block transition-all duration-300 shadow-sm ${
+                              active ? "scale-110 shadow-lg ring-2 ring-primary/30" : "hover:scale-105"
+                            }`}
+                            style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                          />
+                          {active && (
+                            <span className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center shadow">
+                              <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                            </span>
+                          )}
+                          <span className={`text-[10px] leading-tight text-center transition-colors ${active ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                            {p.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Background mode */}
+          <div>
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Film className="w-4 h-4 text-primary" />
+              Фон панели
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: "classic" as const, label: "Классика", desc: "Чистый фон", icon: Monitor },
+                { id: "video" as const, label: "Видео", desc: "Живая природа", icon: Film },
+              ].map((opt) => {
+                const active = bgMode === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setBgMode(opt.id)}
+                    className={`relative flex flex-col items-center gap-2 min-h-[64px] py-4 px-3 rounded-xl border-2 transition-all duration-300 active:scale-95 ${
+                      active
+                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                        : "border-border hover:border-primary/30 hover:bg-primary/5"
+                    }`}
+                  >
+                    {active && (
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </span>
+                    )}
+                    <opt.icon className={`w-5 h-5 transition-colors ${active ? "text-primary" : "text-muted-foreground"}`} />
+                    <div className="text-center">
+                      <p className={`text-xs font-medium transition-colors ${active ? "text-primary" : "text-foreground"}`}>{opt.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{opt.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Font size — visual scale */}
+          <div>
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <ALargeSmall className="w-4 h-4 text-primary" />
+              Размер шрифта
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: "compact", label: "Компакт", preview: "Аа", previewSize: "text-sm" },
+                { id: "normal", label: "Стандарт", preview: "Аа", previewSize: "text-base" },
+                { id: "large", label: "Крупный", preview: "Аа", previewSize: "text-xl" },
+              ].map((opt) => {
+                const active = fontSize === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setFontSize(opt.id)}
+                    className={`relative flex flex-col items-center gap-1.5 min-h-[64px] py-3 rounded-xl border-2 transition-all duration-300 active:scale-95 ${
+                      active
+                        ? "border-primary bg-primary/10 shadow-lg shadow-primary/10"
+                        : "border-border hover:border-primary/30 hover:bg-primary/5"
+                    }`}
+                  >
+                    {active && (
+                      <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+                        <Check className="w-3 h-3 text-primary-foreground" />
+                      </span>
+                    )}
+                    <span className={`font-bold transition-all duration-300 ${opt.previewSize} ${active ? "text-primary" : "text-muted-foreground"}`}>
+                      {opt.preview}
+                    </span>
+                    <span className={`text-[10px] transition-colors ${active ? "text-primary font-medium" : "text-muted-foreground"}`}>
+                      {opt.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Language */}
+          <div>
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Globe className="w-4 h-4 text-primary" />
+              Язык
+            </p>
+            <AdminLangPickerInline />
+          </div>
+
         </div>
       </div>
     </div>

@@ -448,7 +448,7 @@ function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void 
 function ArayControlCenter({ userRole }: { userRole?: string }) {
   const isClient = userRole === "USER";
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"notif" | "style">(userRole === "USER" ? "style" : "notif");
+  const [tab, setTab] = useState<"notif" | "style">("notif");
   const [count, setCount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -592,27 +592,21 @@ function ArayControlCenter({ userRole }: { userRole?: string }) {
             </button>
           </div>
 
-          {/* Tab switcher (staff sees both, clients see only style) */}
+          {/* Header bar */}
           {!isClient ? (
             <div className="flex gap-1 p-2 border-b glass-popup-divider">
-              <button onClick={() => setTab("notif")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "notif" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
+              <div className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold glass-text-muted">
                 <Bell className="w-3 h-3" />
                 Уведомления
                 {count > 0 && (
                   <span className="px-1 py-0.5 rounded-full text-[8px] font-bold leading-none"
                     style={{ background: "hsl(var(--primary))", color: "#fff" }}>{count}</span>
                 )}
-              </button>
-              <button onClick={() => setTab("style")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "style" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
-                <Palette className="w-3 h-3" />
-                Оформление
-              </button>
+              </div>
             </div>
           ) : (
             <div className="px-4 py-2 border-b glass-popup-divider">
-              <p className="text-[10px] font-semibold glass-text-muted text-center">Настройки оформления</p>
+              <p className="text-[10px] font-semibold glass-text-muted text-center">ARAY Control</p>
             </div>
           )}
 
@@ -699,87 +693,21 @@ function ArayControlCenter({ userRole }: { userRole?: string }) {
               </div>
             )}
 
-            {/* ── STYLE ── */}
-            {tab === "style" && (
-              <div className="p-4 space-y-4">
-
-                {/* Палитра */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Цвет интерфейса</p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {PALETTES.map((p) => (
-                      <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                        className="w-7 h-7 rounded-full shrink-0 transition-all active:scale-90"
-                        style={{
-                          background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                          ...(palette === p.id
-                            ? { outline: classic ? "2px solid hsl(var(--primary))" : "2px solid rgba(255,255,255,0.85)", outlineOffset: "2px" }
-                            : { opacity: 0.55 })
-                        }} />
-                    ))}
+            {/* ── SETTINGS SHORTCUT ── */}
+            {(isClient || tab === "style") && (
+              <div className="p-4">
+                <button onClick={() => { router.push("/cabinet/profile#appearance"); setOpen(false); }}
+                  className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-primary/[0.06]">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.25), hsl(var(--primary)/0.08))" }}>
+                    <Palette className="w-4 h-4 text-primary" />
                   </div>
-                </div>
-
-                {/* Тема */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Тема</p>
-                  <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="glass-control w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                      {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
-                    </div>
-                    <span className="flex-1 text-left text-[12px] font-medium glass-text-primary">
-                      {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
-                    </span>
-                    <div className="relative w-9 h-5 rounded-full shrink-0 glass-pill"
-                      style={{ background: safeTheme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
-                      <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: safeTheme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: safeTheme === "dark" ? "calc(100% - 17px)" : "3px" }} />
-                    </div>
-                  </button>
-                </div>
-
-                {/* Фон */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("bg_panel")}</p>
-                  <div className="flex gap-1">
-                    {([
-                      { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic") },
-                      { id: "video" as BgMode, icon: Film, label: t("bg_video") },
-                    ]).map(opt => (
-                      <button key={opt.id} onClick={() => setBg(opt.id)}
-                        className={`flex flex-col items-center gap-1 flex-1 py-2.5 rounded-xl transition-all border ${bgMode === opt.id ? "glass-control-active" : "glass-control"}`}>
-                        <opt.icon className={`w-4 h-4 ${bgMode === opt.id ? "text-primary" : "glass-text-muted"}`} />
-                        <span className={`text-[9px] leading-none ${bgMode === opt.id ? "text-primary font-semibold" : "glass-text-muted"}`}>{opt.label}</span>
-                      </button>
-                    ))}
+                  <div className="flex-1 text-left">
+                    <p className="text-[12px] font-semibold" style={{ color: "var(--admin-popup-text)" }}>Настроить оформление</p>
+                    <p className="text-[10px]" style={{ color: "var(--admin-popup-text-muted)" }}>Тема, цвет, фон, шрифт</p>
                   </div>
-                </div>
-
-                {/* Шрифт */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("font_size")}</p>
-                  <div className="flex items-end gap-1">
-                    {FONT_SIZES_CC.map(s => (
-                      <button key={s.id} onClick={() => pickFont(s.id)}
-                        className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl transition-all border ${fontActive === s.id ? "glass-control-active" : "glass-control"}`}>
-                        <span className={fontActive === s.id ? "text-primary" : "glass-text-muted"} style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}>A</span>
-                        <span className="text-[8px] leading-none glass-text-muted">{s.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Язык */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Язык</p>
-                  <AdminLangPickerInline />
-                </div>
-
-                {/* ARAY грамматика — проверка качества перевода */}
-                <ArayTranslationCheck />
-
+                  <ArrowRight className="w-3.5 h-3.5 text-primary" />
+                </button>
               </div>
             )}
 
@@ -1102,105 +1030,30 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             </button>
           </div>
 
-          {/* Settings content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
+          {/* Settings content — links only, no duplicate controls */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
 
-            {/* Язык */}
-            <div>
+            {/* Оформление — ссылка на профиль */}
+            <Link href="/cabinet/profile#appearance"
+              className="glass-control w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all"
+              onClick={() => setMobileSettingsOpen(false)}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.08))" }}>
+                <Palette className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/90"}`}>Оформление</p>
+                <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Тема, палитра, фон, шрифт</p>
+              </div>
+              <ArrowRight className={`w-4 h-4 ${classic ? "text-muted-foreground/30" : "text-white/30"}`} />
+            </Link>
+
+            {/* Язык — быстрый переключатель оставляем */}
+            <div className="glass-card rounded-2xl p-4">
               <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Язык / Language
               </p>
               <AdminLangPickerInline />
-            </div>
-
-            {/* Размер шрифта */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <ALargeSmall className="w-3.5 h-3.5 text-cyan-400" />
-                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
-                  Размер шрифта
-                </p>
-              </div>
-              <MobileFontControl />
-            </div>
-
-
-            {/* Режим фона */}
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>{t("bg_panel")}</p>
-              <div className="flex gap-2">
-                {([
-                  { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic"), desc: "—" },
-                  { id: "video" as BgMode, icon: Film, label: t("bg_video"), desc: "—" },
-                ]).map(opt => (
-                  <button key={opt.id} onClick={() => setBg(opt.id)}
-                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all border ${bgMode === opt.id ? "glass-control-active" : "glass-control"}`}>
-                    <opt.icon className={`w-5 h-5 ${bgMode === opt.id ? "text-primary" : "glass-text-muted"}`} />
-                    <span className={`text-[11px] font-semibold ${bgMode === opt.id ? "text-primary" : "text-white/60"}`}>{opt.label}</span>
-                    <span className="text-[9px] glass-text-muted">{opt.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Палитра */}
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
-                Цветовая палитра
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                {PALETTES.map((p) => (
-                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className="w-9 h-9 rounded-full shrink-0 transition-all active:scale-90"
-                    style={{
-                      background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                      ...(palette === p.id
-                        ? { outline: "2.5px solid rgba(255,255,255,0.9)", outlineOffset: "3px" }
-                        : { opacity: 0.5 })
-                    }} />
-                ))}
-              </div>
-            </div>
-
-            {/* Тема */}
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
-                Тема
-              </p>
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                  {safeTheme === "dark"
-                    ? <Sun className="w-4 h-4 text-violet-400" />
-                    : <Moon className="w-4 h-4 text-violet-400" />}
-                </div>
-                <div className="flex-1 text-left">
-                  <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/85"}`}>
-                    {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
-                  </p>
-                  <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
-                    Нажми чтобы переключить
-                  </p>
-                </div>
-                <div className="w-10 h-5.5 rounded-full relative"
-                  style={classic ? {
-                    background: safeTheme === "dark" ? "hsl(var(--primary)/0.4)" : "hsl(var(--muted))",
-                    border: "1px solid hsl(var(--border))",
-                  } : {
-                    background: safeTheme === "dark"
-                      ? "hsl(var(--primary)/0.4)"
-                      : "rgba(255,255,255,0.15)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                  }}>
-                  <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
-                    style={{
-                      background: safeTheme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
-                      left: safeTheme === "dark" ? "calc(100% - 18px)" : "2px",
-                    }} />
-                </div>
-              </button>
             </div>
 
             {/* На сайт */}
