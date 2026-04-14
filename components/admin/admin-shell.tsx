@@ -931,7 +931,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       <LazyCursorGlow />
 
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
-      <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30">
+      <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30"
+        style={{ background: sidebarBg }}>
         <div className="px-5 py-5 border-b border-white/10 shrink-0">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
