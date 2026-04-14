@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { ReviewsClient } from "./reviews-client";
+import { AutoRefresh } from "@/components/admin/auto-refresh";
 
 export default async function AdminReviewsPage({
   searchParams,
@@ -33,6 +34,7 @@ export default async function AdminReviewsPage({
         )}
       </div>
       <ReviewsClient reviews={reviews as any} initialFilter={initialFilter} />
+      <AutoRefresh intervalMs={15000} />
     </div>
   );
 }

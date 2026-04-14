@@ -1038,6 +1038,12 @@ function OrdersKanban({ search }: { search: string }) {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  // Auto-refresh every 30s
+  useEffect(() => {
+    const timer = setInterval(() => { fetchOrders(); }, 30000);
+    return () => clearInterval(timer);
+  }, [fetchOrders]);
+
   const handleSyncToLeads = async () => {
     setSyncing(true);
     const res = await fetch("/api/admin/crm/sync-orders", { method: "POST" });
