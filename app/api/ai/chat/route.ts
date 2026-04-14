@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
             select: {
               orderNumber: true, status: true, totalAmount: true,
               deliveryCost: true, createdAt: true,
-              items: { select: { name: true, quantity: true, price: true } },
+              items: { select: { productName: true, quantity: true, price: true } },
             },
           },
         },
@@ -138,11 +138,11 @@ export async function POST(req: NextRequest) {
       if (userProfile.phone) profileContext += `\nТелефон: ${userProfile.phone}`;
       if (userProfile.address) profileContext += `\nАдрес: ${userProfile.address}`;
       if (userProfile.orders?.length) {
-        const totalSpent = userProfile.orders.reduce((s, o) => s + Number(o.totalAmount) + Number(o.deliveryCost), 0);
+        const totalSpent = userProfile.orders.reduce((s: number, o: typeof userProfile.orders[number]) => s + Number(o.totalAmount) + Number(o.deliveryCost), 0);
         profileContext += `\nВсего заказов: ${userProfile.orders.length}, потрачено: ${totalSpent.toLocaleString("ru")} ₽`;
         profileContext += `\nПоследние заказы:`;
-        userProfile.orders.slice(0, 5).forEach(o => {
-          const items = o.items.map(i => `${i.name} x${i.quantity}`).join(", ");
+        userProfile.orders.slice(0, 5).forEach((o: typeof userProfile.orders[number]) => {
+          const items = o.items.map((i: typeof o.items[number]) => `${i.productName} x${i.quantity}`).join(", ");
           profileContext += `\n  #${o.orderNumber} — ${o.status} — ${Number(o.totalAmount).toLocaleString("ru")} ₽ — ${items}`;
         });
         profileContext += `\nОбращайся к пользователю по имени. Учитывай его историю покупок при рекомендациях.`;

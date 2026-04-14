@@ -11,6 +11,9 @@ import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-bro
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
+// ─── Constants ──────────────────────────────────────────────────────────────
+const CHAT_KEY = "aray-chat-history";
+
 // ─── Page context for smart chips ───────────────────────────────────────────
 const PAGE_CHIPS: Record<string, string[]> = {
   "/admin": ["Сводка за сегодня", "Новые заказы", "Что срочно?"],
@@ -410,7 +413,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMsgs.map(m => ({ role: m.role, content: m.text })),
-          context: { page: pathname, ...getArayContext() },
+          context: { ...getArayContext(), page: pathname },
         }),
       });
 
@@ -602,7 +605,7 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
                   <span className="text-[10px] text-muted-foreground">AI ассистент</span>
                 </div>
               </div>
-              <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch {} }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
+              <button onClick={() => { setMessages([]); try { localStorage.removeItem(CHAT_KEY); } catch (e) {} }} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Новый чат">
                 <RotateCcw className="w-3.5 h-3.5 text-muted-foreground"/>
               </button>
               <button onClick={toggleVoice}

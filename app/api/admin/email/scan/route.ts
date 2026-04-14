@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 async function checkAdmin() {
   const session = await auth();
   const role = session?.user?.role;
-  return session && ["ADMIN", "SUPER_ADMIN"].includes(role);
+  return session && ["ADMIN", "SUPER_ADMIN"].includes(role as string);
 }
 
 const EMAIL_RE = /[\w.+'-]+@[\w.-]+\.[a-zA-Z]{2,}/g;

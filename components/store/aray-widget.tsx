@@ -857,7 +857,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: allMessages.map(m => ({ role: m.role, content: m.content })),
-          context: { page: pathname, productName, cartTotal, ...getArayContext() },
+          context: { ...getArayContext(), page: pathname, productName, cartTotal },
         }),
       });
 

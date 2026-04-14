@@ -591,6 +591,41 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 14.04.2026 (ночь, 3-я) — WOW оформление + glass светлая тема + cleanup
+
+**Glassmorphism в светлой теме (globals.css):**
+- ✅ `.glass-card` → `bg-white/70 backdrop-blur-xl border-white/30` вместо плоского `hsl(muted)`
+- ✅ `.glass-control` → `bg-white/60 backdrop-blur border-white/25`
+- ✅ `.glass-pill` → `bg-white/55 backdrop-blur border-white/25`
+- ✅ `.glass-mobile-header` → `bg-white/75 backdrop-blur saturate(120%)`
+- ✅ Все dark-theme fallbacks через `.dark .aray-classic-mode` selector
+
+**WOW конфигуратор оформления (`/cabinet/profile#appearance`):**
+- ✅ Live preview header: анимированный градиент из текущей палитры + мини-превью карточка
+- ✅ Мини-превью реагирует в реальном времени на смену темы/палитры (transition 500ms)
+- ✅ Touch-friendly: все кнопки min-h 56px, active:scale-95, grid layout
+- ✅ Checkmark badges на выбранных опциях (spring-анимация)
+- ✅ Палитры в сетке 4x с названиями, увеличение при выборе (scale-110 + ring)
+- ✅ Секции с иконками: Режим, Цвет, Фон, Шрифт, Язык
+- ✅ Описания подопций ("Чистый фон", "Живая природа")
+
+**ARAY Control Center (admin-shell.tsx):**
+- ✅ Убрана вкладка "Оформление" со всеми дублями (палитра, тема, фон, шрифт, язык)
+- ✅ Добавлена кнопка "Настроить оформление →" → `/cabinet/profile#appearance`
+- ✅ Для USER: сразу показывает кнопку перехода в профиль
+- ✅ Для staff: уведомления + кнопка настроек
+
+**Mobile drawer (admin-shell.tsx):**
+- ✅ Убраны ВСЕ дубли настроек (палитра, тема, фон, шрифт)
+- ✅ Добавлена карточка-ссылка "Оформление → профиль" с описанием
+- ✅ Оставлен быстрый переключатель языка (полезен на мобиле)
+- ✅ Ссылка "Перейти на сайт"
+
+**Файлы изменены:**
+- `app/globals.css` — glass light theme
+- `app/cabinet/profile/page.tsx` — WOW configurator
+- `components/admin/admin-shell.tsx` — cleanup ArayControlCenter + mobile drawer
+
 ### Сессия 14.04.2026 (вечер) — Единая экосистема + навигация + баги светлой темы
 
 **Баги исправлены (6 штук):**
@@ -787,16 +822,14 @@ const { theme, setTheme } = useTheme();
 
 ## На следующую сессию (план)
 
-> Последнее обновление: 14.04.2026 (вечер — 2-я сессия)
+> Последнее обновление: 14.04.2026 (ночь — 3-я сессия)
 
-### 🔥 ПРИОРИТЕТ 0 — Оформление как WOW-фича (СЛЕДУЮЩАЯ СЕССИЯ)
-**Что нужно:**
-- Раздел "Оформление" в профиле → превратить в визуальный конфигуратор с WOW-эффектом
-- Live preview при смене темы/цвета (мини-превью панели прямо на странице)
-- Плавные анимации переключений (spring transitions)
-- Удобно и на мобильном (touch-friendly, крупные тач-таргеты)
-- ARAY Control popup → оставить только уведомления + кнопку "Настроить →" в профиль
-- Mobile drawer → убрать дубль настроек, ссылка на профиль
+### 🔥 ПРИОРИТЕТ 0 — Оформление как WOW-фича ✅ ГОТОВО (14.04.2026 ночь)
+**Что сделано:**
+- ✅ WOW визуальный конфигуратор с live preview в `/cabinet/profile#appearance`
+- ✅ Glassmorphism в светлой теме (glass-card, glass-control, glass-pill, glass-mobile-header)
+- ✅ ARAY Control popup: только уведомления + кнопка "Настроить →"
+- ✅ Mobile drawer: убраны дубли, ссылка на профиль + быстрый язык
 
 ### 🔥 ПРИОРИТЕТ 1 — Единая админка для всех ролей ✅ ПОЛНОСТЬЮ ГОТОВ (14.04.2026)
 **Что сделано:**

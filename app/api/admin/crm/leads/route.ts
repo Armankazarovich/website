@@ -10,7 +10,7 @@ async function getSession() {
   const session = await auth();
   const role = session?.user?.role;
   const id = session?.user?.id;
-  if (!session || !STAFF_ROLES.includes(role)) return null;
+  if (!session || !STAFF_ROLES.includes(role as string)) return null;
   return { role, id };
 }
 

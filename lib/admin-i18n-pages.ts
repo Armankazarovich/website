@@ -49,7 +49,7 @@ export type PageTranslationKey =
 
 type Translations = Record<PageTranslationKey, string>;
 
-export const PAGE_TRANSLATIONS: Record<LangCode, Translations> = {
+export const PAGE_TRANSLATIONS: Partial<Record<LangCode, Translations>> = {
   ru: {
     page_orders: "Заказы", page_products: "Товары", page_clients: "Клиенты", page_delivery: "Доставка",
     page_staff: "Команда", page_settings: "Настройки", page_notifications: "Уведомления", page_dashboard: "Дашборд",
