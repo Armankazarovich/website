@@ -353,6 +353,10 @@ export default async function ProductPage({ params }: Props) {
             name: r.name,
             rating: r.rating,
             text: r.text || "",
+            images: (r as any).images || [],
+            likes: (r as any).likes || 0,
+            dislikes: (r as any).dislikes || 0,
+            adminReply: (r as any).adminReply || null,
             createdAt: r.createdAt.toISOString(),
           }))}
           showReviews={showReviewsBlock}

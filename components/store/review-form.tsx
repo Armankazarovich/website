@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Star, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Star, Loader2, AlertCircle, CheckCircle, Camera, X } from "lucide-react";
+import Image from "next/image";
 
 interface ReviewFormProps {
   productId: string;
@@ -25,9 +26,37 @@ export function ReviewForm({
   const [email, setEmail] = useState(userEmail || "");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || images.length >= 5) return;
+
+    setUploadingPhoto(true);
+    const newImages: string[] = [];
+
+    for (let i = 0; i < Math.min(files.length, 5 - images.length); i++) {
+      const file = files[i];
+      if (!file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) continue;
+
+      // Convert to base64 data URL for preview, upload to server on submit
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      newImages.push(dataUrl);
+    }
+
+    setImages((prev) => [...prev, ...newImages].slice(0, 5));
+    setUploadingPhoto(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   // Sync if props change (e.g. session loads after hydration)
   useEffect(() => {
@@ -61,6 +90,7 @@ export function ReviewForm({
           email: email.trim() || null,
           rating,
           text: text.trim(),
+          images,
         }),
       });
 
@@ -207,6 +237,50 @@ export function ReviewForm({
         <p className="text-xs text-muted-foreground mt-1">
           Минимум 10 символов · Максимум 1000 символов
         </p>
+      </div>
+
+      {/* Photo upload */}
+      <div>
+        <label className="block text-sm font-medium mb-2">
+          Фото (до 5 шт.)
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {images.map((img, i) => (
+            <div key={i} className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-border group">
+              <img src={img} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+          {images.length < 5 && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+            >
+              {uploadingPhoto ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <Camera className="w-5 h-5" />
+              )}
+              <span className="text-[9px]">Фото</span>
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handlePhotoUpload}
+          className="hidden"
+        />
       </div>
 
       {/* Submit button */}

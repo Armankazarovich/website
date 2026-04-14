@@ -129,19 +129,24 @@ model OrderItem {
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  userId     String?
-  productId  String?
-  name       String
-  rating     Int
-  text       String
-  approved   Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  externalId String?
-  source     String   @default("internal")
-  sourceUrl  String?
-  user       User?    @relation(fields: [userId], references: [id])
-  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  id           String    @id @default(cuid())
+  userId       String?
+  productId    String?
+  name         String
+  rating       Int
+  text         String
+  images       String[]  @default([])
+  approved     Boolean   @default(false)
+  likes        Int       @default(0)
+  dislikes     Int       @default(0)
+  adminReply   String?
+  adminReplyAt DateTime?
+  createdAt    DateTime  @default(now())
+  externalId   String?
+  source       String    @default("internal")
+  sourceUrl    String?
+  user         User?     @relation(fields: [userId], references: [id])
+  product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
 }
 
 model Promotion {

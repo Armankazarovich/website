@@ -950,7 +950,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "4px 0 32px rgba(0,0,0,0.4)", background: sidebarBg }}
+          style={{
+            boxShadow: "4px 0 32px rgba(0,0,0,0.4)",
+            background: `linear-gradient(180deg, hsl(var(--brand-sidebar)) 0%, hsl(var(--brand-sidebar) / 0.92) 50%, hsl(var(--brand-sidebar) / 0.85) 100%)`,
+            backdropFilter: "blur(24px) saturate(180%)",
+            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+          }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
@@ -1006,7 +1011,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
       <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
         <SheetContent side="right" className="lg:hidden w-80 aray-sidebar text-white flex flex-col"
-          style={{ boxShadow: "-4px 0 32px rgba(0,0,0,0.4)", background: sidebarBg }}
+          style={{
+            boxShadow: "-4px 0 32px rgba(0,0,0,0.4)",
+            background: `linear-gradient(180deg, hsl(var(--brand-sidebar)) 0%, hsl(var(--brand-sidebar) / 0.92) 50%, hsl(var(--brand-sidebar) / 0.85) 100%)`,
+            backdropFilter: "blur(24px) saturate(180%)",
+            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+          }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
 

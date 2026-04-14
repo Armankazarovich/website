@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Star, MessageSquare } from "lucide-react";
+import { ChevronDown, Star, MessageSquare, ThumbsUp, ThumbsDown, Store } from "lucide-react";
 import { ReviewForm } from "./review-form";
 
 /* ─── auto-generate description if product has none ─── */
@@ -42,6 +42,10 @@ interface ReviewData {
   name: string;
   rating: number;
   text: string;
+  images?: string[];
+  likes?: number;
+  dislikes?: number;
+  adminReply?: string | null;
   createdAt: string;
 }
 
@@ -74,6 +78,40 @@ function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
           style={{ width: size, height: size }}
         />
       ))}
+    </div>
+  );
+}
+
+/* ─── Like/Dislike buttons ─── */
+function ReviewLikes({ reviewId, likes, dislikes }: { reviewId: string; likes: number; dislikes: number }) {
+  const [l, setL] = useState(likes);
+  const [d, setD] = useState(dislikes);
+  const [voted, setVoted] = useState<string | null>(null);
+
+  const vote = async (action: "like" | "dislike") => {
+    if (voted) return;
+    setVoted(action);
+    if (action === "like") setL((v) => v + 1);
+    else setD((v) => v + 1);
+    try {
+      await fetch(`/api/reviews/${reviewId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+    } catch {}
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={() => vote("like")} disabled={!!voted}
+        className={`flex items-center gap-1 text-[11px] transition-colors ${voted === "like" ? "text-green-600" : "text-muted-foreground/50 hover:text-green-600"}`}>
+        <ThumbsUp className="w-3 h-3" />{l > 0 && l}
+      </button>
+      <button onClick={() => vote("dislike")} disabled={!!voted}
+        className={`flex items-center gap-1 text-[11px] transition-colors ${voted === "dislike" ? "text-red-500" : "text-muted-foreground/50 hover:text-red-500"}`}>
+        <ThumbsDown className="w-3 h-3" />{d > 0 && d}
+      </button>
     </div>
   );
 }
@@ -223,13 +261,38 @@ export function DescriptionAccordion({
                         <p className="text-sm text-muted-foreground leading-relaxed">
                           {review.text}
                         </p>
-                        <p className="text-[11px] text-muted-foreground/50 mt-2">
-                          {new Date(review.createdAt).toLocaleDateString("ru-RU", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </p>
+
+                        {/* Photos */}
+                        {review.images && review.images.length > 0 && (
+                          <div className="flex gap-1.5 mt-3 overflow-x-auto">
+                            {review.images.map((img, i) => (
+                              <img key={i} src={img} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border shrink-0" />
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Admin reply */}
+                        {review.adminReply && (
+                          <div className="mt-3 pl-3 border-l-2 border-primary/30 bg-primary/5 rounded-r-lg py-2 pr-3">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <Store className="w-3 h-3 text-primary" />
+                              <span className="text-[11px] font-semibold text-primary">Ответ магазина</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{review.adminReply}</p>
+                          </div>
+                        )}
+
+                        {/* Date + Likes */}
+                        <div className="flex items-center justify-between mt-3">
+                          <p className="text-[11px] text-muted-foreground/50">
+                            {new Date(review.createdAt).toLocaleDateString("ru-RU", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </p>
+                          <ReviewLikes reviewId={review.id} likes={review.likes || 0} dislikes={review.dislikes || 0} />
+                        </div>
                       </div>
                     ))}
                   </div>

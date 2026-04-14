@@ -27,7 +27,7 @@ function checkRateLimit(key: string, maxAttempts: number = 1, windowMs: number =
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { productId, authorName, email, rating, text } = body;
+    const { productId, authorName, email, rating, text, images } = body;
 
     // Validation
     if (!productId || !authorName?.trim()) {
@@ -96,6 +96,7 @@ export async function POST(req: NextRequest) {
         name: authorName.trim(),
         rating: numRating,
         text: text.trim(),
+        images: Array.isArray(images) ? images.filter((u: string) => typeof u === "string" && u.startsWith("http")).slice(0, 5) : [],
         source: "internal",
         approved: false, // Requires admin approval
         ...(userId ? { userId } : {}),
