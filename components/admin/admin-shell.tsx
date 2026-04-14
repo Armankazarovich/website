@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
+import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdminPageHelp, LazyAdminTour } from "@/components/admin/lazy-components";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -1233,7 +1234,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         {/* Desktop: хедер убран полностью — поиск через Арая снизу */}
 
         <div className="pt-0" style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}>
-          <div className="px-2.5 py-2 lg:p-6">{children}</div>
+          <div className="px-2.5 py-2 lg:p-6"><AccessGuard role={role}>{children}</AccessGuard></div>
         </div>
       </main>
 

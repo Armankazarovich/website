@@ -193,7 +193,7 @@ export function PartnershipModal({ onClose }: Props) {
                     id="p-message"
                     placeholder="Расскажите о вашем бизнесе, примерных объёмах закупки..."
                     rows={3}
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                     value={form.message}
                     onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                   />

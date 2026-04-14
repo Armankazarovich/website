@@ -791,7 +791,7 @@ export default function EmailPage() {
           <div>
             <Label className="mb-1 block">Текст письма (HTML) *</Label>
             <textarea
-              className="w-full min-h-[200px] rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-y font-mono"
+              className="w-full min-h-[200px] rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-colors resize-y font-mono"
               placeholder="<p>Добрый день!</p><p>Хотим сообщить вам о нашей новой акции...</p>"
               value={html}
               onChange={(e) => setHtml(e.target.value)}
@@ -859,7 +859,7 @@ export default function EmailPage() {
                 placeholder="Тест на email..."
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
-                className="flex-1 min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-1 focus:ring-ring"
+                className="flex-1 min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
               <button
                 onClick={handleTestSend}
@@ -1236,7 +1236,7 @@ export default function EmailPage() {
             </div>
 
             <textarea
-              className="w-full h-36 rounded-xl border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none font-mono"
+              className="w-full h-36 rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-colors resize-none font-mono"
               placeholder={"ivan@mail.ru, Иван Петров\ndima@yandex.ru\nstroy@gmail.com, Стройком МО"}
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
