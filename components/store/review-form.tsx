@@ -133,13 +133,15 @@ export function ReviewForm({
       }
 
       setSubmitted(true);
+      setLoading(false);
       setRating(5);
       setText("");
+      setImages([]);
 
-      // Reset form after 5 seconds
+      // Reset form after 8 seconds
       setTimeout(() => {
         setSubmitted(false);
-      }, 5000);
+      }, 8000);
     } catch (err) {
       setError("Ошибка при отправке отзыва. Попробуйте позже.");
       setLoading(false);
