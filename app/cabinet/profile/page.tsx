@@ -10,10 +10,11 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon, Camera, Trash2 } from "lucide-react";
+import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon, Camera, Trash2, Monitor, Film, ALargeSmall, Globe } from "lucide-react";
 // BackButton removed — AdminShell sidebar handles navigation
 import { useTheme } from "next-themes";
 import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
+import { AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -66,6 +67,32 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  // Appearance settings (localStorage-based)
+  const [bgMode, setBgModeState] = useState<"classic" | "video">("classic");
+  const [fontSize, setFontSizeState] = useState("normal");
+
+  useEffect(() => {
+    // Read from localStorage
+    const bg = localStorage.getItem("aray-bg-mode") as "classic" | "video" | null;
+    if (bg) setBgModeState(bg);
+    const fs = localStorage.getItem("aray-font-size");
+    if (fs) setFontSizeState(fs);
+  }, []);
+
+  const setBgMode = (mode: "classic" | "video") => {
+    setBgModeState(mode);
+    localStorage.setItem("aray-bg-mode", mode);
+    localStorage.setItem("aray-classic-mode", mode === "classic" ? "1" : "0");
+    window.dispatchEvent(new Event("aray-classic-change"));
+  };
+
+  const setFontSize = (id: string) => {
+    setFontSizeState(id);
+    const sizes: Record<string, string> = { compact: "0.88", normal: "1", large: "1.14" };
+    document.documentElement.style.setProperty("--aray-font-scale", sizes[id] || "1");
+    localStorage.setItem("aray-font-size", id);
+  };
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -398,26 +425,26 @@ export default function ProfilePage() {
         </Button>
       </form>
 
-      {/* Appearance */}
-      <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
+      {/* Appearance — unified settings */}
+      <div id="appearance" className="bg-card rounded-2xl border border-border p-6 space-y-6">
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Palette className="w-5 h-5 text-primary" />
           Оформление
         </h2>
 
-        {/* Light / Dark */}
+        {/* Theme mode */}
         <div>
           <p className="text-sm font-medium mb-2">Режим</p>
           <div className="flex gap-2">
             {[
               { value: "light", label: "Светлая", icon: <Sun className="w-4 h-4" /> },
               { value: "dark",  label: "Тёмная",  icon: <Moon className="w-4 h-4" /> },
-              { value: "system", label: "Авто",   icon: <span className="text-xs">A</span> },
+              { value: "system", label: "Авто",   icon: <span className="text-xs font-bold">A</span> },
             ].map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setTheme(opt.value)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${
                   theme === opt.value
                     ? "border-primary bg-primary/10 text-primary font-medium"
                     : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
@@ -430,7 +457,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Palette */}
+        {/* Color palette */}
         <div className="space-y-3">
           <p className="text-sm font-medium">Цветовая тема</p>
           {PALETTE_GROUPS.map((group) => {
@@ -445,7 +472,7 @@ export default function ProfilePage() {
                     key={p.id}
                     onClick={() => setPalette(p.id)}
                     title={p.name}
-                    className={`flex flex-col items-center gap-1 group`}
+                    className="flex flex-col items-center gap-1 group"
                   >
                     <span
                       className={`w-8 h-8 rounded-full border-2 transition-all block ${
@@ -453,13 +480,9 @@ export default function ProfilePage() {
                           ? "border-foreground scale-110 shadow-md"
                           : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
                       }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                      }}
+                      style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
                     />
-                    <span className={`text-xs transition-colors ${
-                      palette === p.id ? "text-foreground font-medium" : "text-muted-foreground"
-                    }`}>
+                    <span className={`text-xs transition-colors ${palette === p.id ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                       {p.name}
                     </span>
                   </button>
@@ -468,6 +491,61 @@ export default function ProfilePage() {
             </div>
             );
           })}
+        </div>
+
+        {/* Background mode */}
+        <div>
+          <p className="text-sm font-medium mb-2">Фон панели</p>
+          <div className="flex gap-2">
+            {[
+              { id: "classic" as const, label: "Классика", icon: Monitor },
+              { id: "video" as const, label: "Видео", icon: Film },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setBgMode(opt.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border transition-all ${
+                  bgMode === opt.id
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                }`}
+              >
+                <opt.icon className="w-4 h-4" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font size */}
+        <div>
+          <p className="text-sm font-medium mb-2">Размер шрифта</p>
+          <div className="flex gap-2">
+            {[
+              { id: "compact", label: "Компакт", size: "text-xs" },
+              { id: "normal", label: "Норм", size: "text-sm" },
+              { id: "large", label: "Крупн", size: "text-base" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setFontSize(opt.id)}
+                className={`flex flex-col items-center gap-1 flex-1 py-3 rounded-xl text-sm border transition-all ${
+                  fontSize === opt.id
+                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                }`}
+              >
+                <span className={`font-bold ${opt.size}`}>A</span>
+                <span className="text-[10px]">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Language */}
+        <div>
+          <p className="text-sm font-medium mb-2">Язык</p>
+          <AdminLangPickerInline />
         </div>
       </div>
     </div>
