@@ -457,6 +457,7 @@ function ArayControlCenter({ userRole }: { userRole?: string }) {
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
   const { t } = useAdminLang();
+  const ccSidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
   const ref = useRef<HTMLDivElement>(null);
   const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
   // Mounted guard for hydration safety (useTheme returns undefined on server)
@@ -573,7 +574,7 @@ function ArayControlCenter({ userRole }: { userRole?: string }) {
       {/* ══ ARAY Control Center Panel ════════════════════════════ */}
       {open && panelPos && (
         <div className="aray-dark-panel fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
-          style={{ bottom: panelPos.bottom, left: panelPos.left, background: "linear-gradient(180deg, hsl(var(--brand-sidebar)), hsl(var(--brand-sidebar) / 0.95))", border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(24px)" }}>
+          style={{ bottom: panelPos.bottom, left: panelPos.left, background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}ee)`, border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(24px)" }}>
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b glass-popup-divider">
@@ -1010,7 +1011,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
           style={{
             boxShadow: "4px 0 32px rgba(0,0,0,0.4)",
-            background: `linear-gradient(180deg, hsl(var(--brand-sidebar)) 0%, hsl(var(--brand-sidebar) / 0.92) 50%, hsl(var(--brand-sidebar) / 0.85) 100%)`,
+            background: sidebarBg,
             backdropFilter: "blur(24px) saturate(180%)",
             WebkitBackdropFilter: "blur(24px) saturate(180%)",
           }}
@@ -1019,7 +1020,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
             <div>
               <p className="font-display font-bold text-xl text-white">ПилоРус</p>
-              <p className="text-[11px] text-white/45 mt-0.5">Панель управления</p>
+              <p className="text-[11px] text-white/45 mt-0.5">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => { setOpen(false); setMobileSettingsOpen(true); }}
@@ -1071,7 +1072,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         <SheetContent side="right" className="lg:hidden w-80 aray-sidebar text-white flex flex-col"
           style={{
             boxShadow: "-4px 0 32px rgba(0,0,0,0.4)",
-            background: `linear-gradient(180deg, hsl(var(--brand-sidebar)) 0%, hsl(var(--brand-sidebar) / 0.92) 50%, hsl(var(--brand-sidebar) / 0.85) 100%)`,
+            background: sidebarBg,
             backdropFilter: "blur(24px) saturate(180%)",
             WebkitBackdropFilter: "blur(24px) saturate(180%)",
           }}
