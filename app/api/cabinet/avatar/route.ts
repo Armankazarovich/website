@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     await writeFile(path.join(uploadDir, filename), buffer);
 
-    const avatarUrl = `/uploads/avatars/${filename}`;
+    const avatarUrl = `/api/uploads/avatars/${filename}`;
 
     // Update user
     await prisma.user.update({
