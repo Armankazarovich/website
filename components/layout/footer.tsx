@@ -22,7 +22,7 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
   return (
     <footer className="bg-zinc-950 text-white mt-auto border-t-[3px] border-brand-orange">
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {/* Logo & About */}
           <div>
             <Link href="/" className="flex items-center gap-3 mb-4">

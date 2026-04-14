@@ -21,9 +21,9 @@ type DayTask = {
 
 const STORAGE_KEY = "aray_day_plan_v1";
 const PRIORITY_META: Record<Priority, { label: string; color: string; dot: string }> = {
-  low:    { label: "Низкий",  color: "text-slate-400",  dot: "bg-slate-400"  },
-  medium: { label: "Средний", color: "text-amber-400",  dot: "bg-amber-400"  },
-  high:   { label: "Высокий", color: "text-red-400",    dot: "bg-red-400"    },
+  low:    { label: "Низкий",  color: "text-slate-600 dark:text-slate-400",  dot: "bg-slate-500 dark:bg-slate-400"  },
+  medium: { label: "Средний", color: "text-amber-600 dark:text-amber-400",  dot: "bg-amber-500 dark:bg-amber-400"  },
+  high:   { label: "Высокий", color: "text-red-600 dark:text-red-400",    dot: "bg-red-500 dark:bg-red-400"    },
 };
 
 const SECTIONS = [

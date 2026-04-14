@@ -193,9 +193,9 @@ export default function FinancePage() {
               style={
                 includeVat
                   ? {
-                      backgroundColor: classic ? "#fed7aa" : "#b45309",
-                      borderColor: classic ? "#fdba74" : "#b45309",
-                      color: classic ? "#92400e" : "#fcd34d",
+                      backgroundColor: classic ? "hsl(var(--primary)/0.15)" : "hsl(var(--primary)/0.3)",
+                      borderColor: classic ? "hsl(var(--primary)/0.3)" : "hsl(var(--primary)/0.5)",
+                      color: classic ? "hsl(var(--primary))" : "hsl(var(--primary))",
                     }
                   : {
                       borderColor: classic ? "hsl(var(--border))" : "rgba(255,255,255,0.12)",
@@ -263,7 +263,7 @@ export default function FinancePage() {
                           className="h-full rounded-full"
                           style={{
                             width: `${percentage}%`,
-                            backgroundColor: classic ? "hsl(var(--primary))" : "rgba(168, 85, 247, 0.8)",
+                            backgroundColor: classic ? "hsl(var(--primary))" : "hsl(var(--primary)/0.8)",
                           }}
                         />
                       </div>
@@ -498,8 +498,8 @@ function RevenueChart({ data, classic }: { data: Record<string, number>; classic
   const max = Math.max(...entries.map(([, v]) => v), 1);
 
   // Use proper colors: HSL CSS variables for classic mode, rgba for dark mode
-  const barColor = classic ? "hsl(var(--primary))" : "rgba(168, 85, 247, 0.8)"; // Adjust RGBA to match primary
-  const barColorHover = classic ? "hsl(var(--primary))" : "rgba(168, 85, 247, 1)";
+  const barColor = classic ? "hsl(var(--primary))" : "hsl(var(--primary)/0.8)";
+  const barColorHover = classic ? "hsl(var(--primary))" : "hsl(var(--primary))";
 
   return (
     <div className="flex items-end gap-1 h-24 overflow-x-auto pb-1">

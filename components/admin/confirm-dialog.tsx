@@ -28,12 +28,13 @@ export function ConfirmDialog({
   loading = false,
 }: ConfirmDialogProps) {
   const classic = useClassicMode();
+  const cancelRef = useRef<HTMLButtonElement>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (open) {
-      // Фокус на кнопку отмены по умолчанию (безопаснее)
-      setTimeout(() => confirmRef.current?.focus(), 50);
+      // Фокус на кнопку отмены — безопаснее для destructive диалогов
+      setTimeout(() => cancelRef.current?.focus(), 50);
     }
   }, [open]);
 
@@ -119,6 +120,7 @@ export function ConfirmDialog({
           {/* Buttons */}
           <div className="flex gap-2.5 mt-6">
             <button
+              ref={cancelRef}
               onClick={onClose}
               disabled={loading}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors"
