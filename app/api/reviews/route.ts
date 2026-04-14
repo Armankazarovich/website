@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { sendPushToStaff } from "@/lib/push";
 
 // Simple in-memory rate limiting (resets per deployment)
 // For production, consider using Redis or database-backed rate limiting
@@ -123,7 +124,7 @@ export async function POST(req: NextRequest) {
         name: authorName.trim(),
         rating: numRating,
         text: text.trim(),
-        images: Array.isArray(images) ? images.filter((u: string) => typeof u === "string" && (u.startsWith("http") || u.startsWith("/uploads/"))).slice(0, 5) : [],
+        images: Array.isArray(images) ? images.filter((u: string) => typeof u === "string" && (u.startsWith("http") || u.startsWith("/images/") || u.startsWith("/uploads/"))).slice(0, 5) : [],
         source: "internal",
         approved: false, // Requires admin approval
         ...(userId ? { userId } : {}),
@@ -151,8 +152,16 @@ export async function POST(req: NextRequest) {
       }
     } catch (error) {
       console.error("Failed to send Telegram notification:", error);
-      // Don't fail the review creation if Telegram fails
     }
+
+    // Push notification to staff
+    try {
+      await sendPushToStaff({
+        title: `Новый отзыв ${numRating}⭐`,
+        body: `${authorName.trim()}: ${text.trim().substring(0, 60)}...`,
+        url: "/admin/reviews?status=pending",
+      });
+    } catch {}
 
     return NextResponse.json(
       {

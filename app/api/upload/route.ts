@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const filename = `review-${randomUUID().slice(0, 8)}.${ext}`;
 
-    // Ensure upload directory exists
+    // Save to public/uploads/reviews/ (persists on VPS across deploys)
     const uploadDir = path.join(process.cwd(), "public", "uploads", "reviews");
     await mkdir(uploadDir, { recursive: true });
 

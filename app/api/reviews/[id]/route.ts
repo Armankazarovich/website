@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 
-// PATCH — like/dislike or admin reply
+// PATCH — like/dislike, admin reply, approve/reject
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json();
     const { action, adminReply } = body;
 
-    const review = await prisma.review.findUnique({ where: { id: params.id } });
+    const review = await prisma.review.findUnique({
+      where: { id: params.id },
+      include: { product: { select: { name: true, slug: true } } },
+    });
     if (!review) {
       return NextResponse.json({ error: "Отзыв не найден" }, { status: 404 });
     }
@@ -44,11 +48,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
       const updated = await prisma.review.update({
         where: { id: params.id },
-        data: {
-          adminReply: adminReply.trim(),
-          adminReplyAt: new Date(),
-        },
+        data: { adminReply: adminReply.trim(), adminReplyAt: new Date() },
       });
+
+      // Notify customer about admin reply via Push
+      if (review.userId) {
+        try {
+          await sendPushToUser(review.userId, {
+            title: "Ответ на ваш отзыв",
+            body: adminReply.trim().substring(0, 80),
+            url: review.product ? `/product/${review.product.slug}` : "/",
+          });
+        } catch {}
+      }
+
       return NextResponse.json({ ok: true, adminReply: updated.adminReply });
     }
 
@@ -60,10 +73,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
       }
 
+      const wasApproved = review.approved;
       const updated = await prisma.review.update({
         where: { id: params.id },
         data: { approved: action === "approve" },
       });
+
+      // Notify customer when review is approved (only if newly approved)
+      if (action === "approve" && !wasApproved && review.userId) {
+        try {
+          await sendPushToUser(review.userId, {
+            title: "Ваш отзыв опубликован!",
+            body: review.product ? `Спасибо за отзыв о "${review.product.name}"` : "Спасибо за ваш отзыв!",
+            url: review.product ? `/product/${review.product.slug}` : "/",
+          });
+        } catch {}
+      }
+
       return NextResponse.json({ ok: true, approved: updated.approved });
     }
 
