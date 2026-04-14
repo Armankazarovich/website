@@ -20,7 +20,7 @@
 - [x] 3-way переключатель фона: Классика / Фото / Видео (desktop + mobile settings)
 - [x] Переводы settings: bg_panel, bg_classic, bg_photo, bg_video, font_size (20 языков)
 - [ ] Аудит и консолидация оставшихся CSS-секций (~15 inline rgba — декоративные)
-- [ ] Разбить admin-shell.tsx (1100+ строк) на подкомпоненты
+- [x] Разбить admin-shell.tsx (1108→611 строк): aray-control-center.tsx + admin-mobile-settings.tsx
 
 ### Архитектура и код
 - [x] TypeScript: создан `types/next-auth.d.ts` — session.user типизирован (role, staffStatus)

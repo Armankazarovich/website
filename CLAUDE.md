@@ -522,6 +522,13 @@ export function AutoRefresh({ intervalMs = 30000 }) {
 - Всегда: `bg-popover border-border text-foreground`
 - Никогда: хардкодные цвета
 
+### Аватарки пользователей — ВСЕГДА показывать
+- При отображении ЛЮБОГО пользователя — ВСЕГДА подгружать `avatarUrl`
+- Если `avatarUrl` есть → `<img src={avatarUrl} className="rounded-full object-cover" onError={fallback} />`
+- Если нет → инициалы в цветном круге (как было)
+- При создании ЛЮБОЙ новой фичи с пользователями — добавлять `avatarUrl: true` в select/include
+- Места где уже реализовано: staff-list, clients-list, reviews (description-accordion + review-form)
+
 ### Телефоны
 - Хранить в формате `+7XXXXXXXXXX`
 - Всегда применять `normalizePhone()` при сохранении
@@ -590,6 +597,36 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 15.04.2026 — Визуальный аудит + декомпозиция admin-shell + auth-helpers
+
+**Production проверка:**
+- ✅ curl все страницы: /, /catalog, /login, /cabinet, /admin — все HTTP 200
+- ✅ Chrome console: 0 ошибок на /admin
+- ✅ `npx tsc --noEmit` — 0 ошибок
+
+**Визуальный аудит всех тем:**
+- ✅ 13 палитр проверены в light mode (timber, forest, ocean, midnight, slate, crimson, wildberries, ozon, yandex, aliexpress, amazon, avito, sber) — все читаемы
+- ✅ Dark mode проверен: timber, ocean, sber, avito, wildberries — отличный контраст
+- ✅ Nature mode: работает, карточки с glass-эффектом
+- ⚠️ Nature mode: жёлтый баннер "отзывов ждут модерации" — текст плохо читаем (для следующей сессии)
+- ✅ Мобильная навигация: bottom dock с 5 табами отображается корректно
+- ✅ `/admin/appearance` — НЕ тронута
+
+**Декомпозиция admin-shell.tsx (1108 → 611 строк):**
+- ✅ `components/admin/aray-control-center.tsx` (282 строки) — ArayControlCenter вынесен
+- ✅ `components/admin/admin-mobile-settings.tsx` (233 строки) — MobileFontControl, AdminMobileActionPill, ArayTranslationCheck вынесены
+- ✅ admin-shell.tsx экспортирует: useClassicMode, playOrderChime, LS_FONT (для подкомпонентов)
+- ✅ TSC: 0 ошибок после декомпозиции
+
+**Централизованные auth-helpers:**
+- ✅ Создан `lib/auth-helpers.ts` — requireAdmin(), requireManager(), requireStaff(), requireRole(), getSessionRole()
+- ✅ Константы ролей: ALL_STAFF_ROLES, MANAGEMENT_ROLES, ADMIN_ROLES
+- ⚠️ Ещё НЕ применён к 30+ route файлам (безопасная инкрементальная миграция в следующих сессиях)
+
+**Legacy sheets.ts:**
+- ⚠️ НЕ удалён — используется в 2 файлах (instrumentation.ts, api/sync/sheets/route.ts)
+- ⚠️ Миграция на google-sheets.ts требует тестирования — отложена
 
 ### Сессия 14.04.2026 (ночь, 3-я) — 78 TS ошибок + единый стиль + cleanup
 

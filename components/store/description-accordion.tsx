@@ -47,6 +47,7 @@ interface ReviewData {
   dislikes?: number;
   adminReply?: string | null;
   createdAt: string;
+  user?: { avatarUrl: string | null } | null;
 }
 
 interface Props {
@@ -60,6 +61,7 @@ interface Props {
   productName?: string;
   userName?: string | null;
   userEmail?: string | null;
+  userAvatar?: string | null;
   isLoggedIn?: boolean;
 }
 
@@ -249,7 +251,26 @@ export function DescriptionAccordion({
                       >
                         <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                            {review.user?.avatarUrl ? (
+                              <img
+                                src={review.user.avatarUrl}
+                                alt={review.name}
+                                className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = "none";
+                                  const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                                  if (fallback) (fallback as HTMLElement).style.display = "flex";
+                                }}
+                              />
+                            ) : null}
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0 ${
+                                review.user?.avatarUrl ? "bg-primary/10 hidden" : "bg-primary/10"
+                              }`}
+                              style={{
+                                display: review.user?.avatarUrl ? "none" : "flex",
+                              }}
+                            >
                               {review.name.charAt(0).toUpperCase()}
                             </div>
                             <span className="font-semibold text-sm">
@@ -316,6 +337,7 @@ export function DescriptionAccordion({
                       productName={productName || name}
                       userName={userName}
                       userEmail={userEmail}
+                      userAvatar={userAvatar}
                       isLoggedIn={isLoggedIn}
                     />
                   </div>
