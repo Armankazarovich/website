@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import ReactDOM from "react-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdminPageHelp, LazyAdminTour } from "@/components/admin/lazy-components";
@@ -935,22 +936,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
       {/* ─── Mobile header убран — заменён compact sticky search bar внутри main ── */}
 
-      {/* ─── Direct overlay — guaranteed to cover content when sidebar is open ── */}
-      {open && (
+      {/* ─── Direct overlays via Portal — renders to document.body to avoid stacking context issues ── */}
+      {(open || mobileSettingsOpen) && typeof document !== "undefined" && ReactDOM.createPortal(
         <div
           className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm"
-          style={{ zIndex: 65 }}
-          onClick={() => setOpen(false)}
+          style={{ zIndex: 69 }}
+          onClick={() => { setOpen(false); setMobileSettingsOpen(false); }}
           aria-hidden="true"
-        />
-      )}
-      {mobileSettingsOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm"
-          style={{ zIndex: 65 }}
-          onClick={() => setMobileSettingsOpen(false)}
-          aria-hidden="true"
-        />
+        />,
+        document.body
       )}
 
       {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}

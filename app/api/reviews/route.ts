@@ -37,16 +37,25 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!rating || rating < 1 || rating > 5) {
+    const numRating = Number(rating);
+    if (!numRating || numRating < 1 || numRating > 5 || !Number.isInteger(numRating)) {
       return NextResponse.json(
         { error: "Рейтинг должен быть от 1 до 5" },
         { status: 400 }
       );
     }
 
-    if (!text || text.trim().length < 10) {
+    if (!text || text.trim().length < 10 || text.trim().length > 2000) {
       return NextResponse.json(
-        { error: "Текст отзыва должен быть минимум 10 символов" },
+        { error: "Текст отзыва: от 10 до 2000 символов" },
+        { status: 400 }
+      );
+    }
+
+    // Email validation (basic)
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return NextResponse.json(
+        { error: "Некорректный email" },
         { status: 400 }
       );
     }
@@ -64,7 +73,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Rate limiting: use email or IP address
-    const identifier = email?.trim() || req.headers.get("x-forwarded-for") || "unknown";
+    const forwardedFor = req.headers.get("x-forwarded-for");
+    const clientIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
+    const identifier = email?.trim() || clientIp;
     const key = `review:${productId}:${identifier}`;
 
     if (!checkRateLimit(key, 1, 86400000)) {
@@ -76,14 +87,14 @@ export async function POST(req: NextRequest) {
 
     // Get session — if logged in, attach userId
     const session = await auth();
-    const userId = (session?.user as any)?.id || null;
+    const userId = session?.user?.id || null;
 
     // Create review (PENDING for moderation)
     const review = await prisma.review.create({
       data: {
         productId,
         name: authorName.trim(),
-        rating: Number(rating),
+        rating: numRating,
         text: text.trim(),
         source: "internal",
         approved: false, // Requires admin approval

@@ -30,16 +30,17 @@ export function OrderStatusSelect({ orderId, currentStatus }: Props) {
     }
   };
 
+  // WCAG AA contrast: dark text (≥900) in light theme, bright text in dark
   const colors: Record<string, string> = {
-    NEW: "bg-blue-500/15 text-blue-500 dark:text-blue-400",
-    CONFIRMED: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
-    PROCESSING: "bg-amber-400/20 text-amber-700 dark:text-amber-400",
-    SHIPPED: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
-    IN_DELIVERY: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-    READY_PICKUP: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-    DELIVERED: "bg-green-500/15 text-green-600 dark:text-green-400",
-    COMPLETED: "bg-teal-500/15 text-teal-600 dark:text-teal-400",
-    CANCELLED: "bg-red-500/15 text-red-600 dark:text-red-400",
+    NEW: "bg-blue-500/15 text-blue-900 dark:text-blue-400",
+    CONFIRMED: "bg-purple-500/15 text-purple-900 dark:text-purple-400",
+    PROCESSING: "bg-amber-400/20 text-amber-900 dark:text-amber-400",
+    SHIPPED: "bg-orange-500/15 text-orange-900 dark:text-orange-400",
+    IN_DELIVERY: "bg-sky-500/15 text-sky-900 dark:text-sky-400",
+    READY_PICKUP: "bg-violet-500/15 text-violet-900 dark:text-violet-400",
+    DELIVERED: "bg-green-500/15 text-green-900 dark:text-green-400",
+    COMPLETED: "bg-teal-500/15 text-teal-900 dark:text-teal-400",
+    CANCELLED: "bg-red-500/15 text-red-900 dark:text-red-400",
   };
 
   return (
@@ -47,7 +48,7 @@ export function OrderStatusSelect({ orderId, currentStatus }: Props) {
       value={status}
       onChange={(e) => handleChange(e.target.value)}
       disabled={loading}
-      className={`text-xs font-semibold rounded-full px-3 py-1 border-0 cursor-pointer ${colors[status] || ""}`}
+      className={`text-xs font-semibold rounded-full px-3 py-1.5 border-0 cursor-pointer transition-transform active:scale-95 ${colors[status] || ""}`}
     >
       {statuses.map((s) => (
         <option key={s} value={s}>{ORDER_STATUS_LABELS[s]}</option>

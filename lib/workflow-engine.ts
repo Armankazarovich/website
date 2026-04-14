@@ -102,34 +102,36 @@ async function executeAction(action: { type: string; [k: string]: any }, payload
         assigneeId = user?.id || null;
       }
 
-      // ⚡ DEDUPLICATION: Check if task with same orderId and title already exists (created within last 60 seconds)
+      // ⚡ DEDUPLICATION: Atomic check-and-create inside transaction to prevent race conditions
       const sixtySecondsAgo = new Date(Date.now() - 60000);
-      const existingTask = await prisma.task.findFirst({
-        where: {
-          orderId: payload.orderId || null,
-          title,
-          createdAt: { gte: sixtySecondsAgo },
-        },
-      });
+      await prisma.$transaction(async (tx) => {
+        const existingTask = await tx.task.findFirst({
+          where: {
+            orderId: payload.orderId || null,
+            title,
+            createdAt: { gte: sixtySecondsAgo },
+          },
+        });
 
-      if (existingTask) {
-        console.log(`[Workflow] Skipping duplicate task "${title}" for orderId ${payload.orderId} (already exists)`);
-        return; // Skip creation
-      }
+        if (existingTask) {
+          console.log(`[Workflow] Skipping duplicate task "${title}" for orderId ${payload.orderId}`);
+          return;
+        }
 
-      await prisma.task.create({
-        data: {
-          title,
-          description,
-          status: action.status || "TODO",
-          priority: action.priority || "HIGH",
-          assigneeId,
-          orderId: payload.orderId || null,
-          dueDate: action.dueDateHours
-            ? new Date(Date.now() + action.dueDateHours * 3600000)
-            : null,
-          tags: action.tags || [],
-        },
+        await tx.task.create({
+          data: {
+            title,
+            description,
+            status: action.status || "TODO",
+            priority: action.priority || "HIGH",
+            assigneeId,
+            orderId: payload.orderId || null,
+            dueDate: action.dueDateHours
+              ? new Date(Date.now() + action.dueDateHours * 3600000)
+              : null,
+            tags: action.tags || [],
+          },
+        });
       });
       break;
     }

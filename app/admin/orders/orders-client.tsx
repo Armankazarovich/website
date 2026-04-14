@@ -293,22 +293,22 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
 
       {/* Статистика */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        <div className="bg-card border border-border rounded-2xl px-3 py-3">
+        <div className="bg-card border border-border rounded-2xl px-3 py-3 min-w-0 overflow-hidden">
           <p className="text-[10px] text-muted-foreground leading-tight">Сегодня</p>
-          <p className="text-xl font-bold mt-0.5">{stats.todayCount}</p>
+          <p className="text-lg sm:text-xl font-bold mt-0.5 truncate">{stats.todayCount}</p>
         </div>
-        <div className="bg-card border border-border rounded-2xl px-3 py-3">
+        <div className="bg-card border border-border rounded-2xl px-3 py-3 min-w-0 overflow-hidden">
           <p className="text-[10px] text-muted-foreground leading-tight">Выручка</p>
-          <p className="text-xl font-bold mt-0.5">{formatPrice(stats.todayRevenue)}</p>
+          <p className="text-lg sm:text-xl font-bold mt-0.5 truncate">{formatPrice(stats.todayRevenue)}</p>
         </div>
-        <div className="bg-card border border-border rounded-2xl px-3 py-3">
+        <div className="bg-card border border-border rounded-2xl px-3 py-3 min-w-0 overflow-hidden">
           <p className="text-[10px] text-muted-foreground leading-tight">Новых</p>
-          <p className="text-xl font-bold mt-0.5 text-primary">{stats.newCount}</p>
+          <p className="text-lg sm:text-xl font-bold mt-0.5 text-primary truncate">{stats.newCount}</p>
         </div>
       </div>
 
       {/* Инструменты — CSV + массовые действия */}
-      <div className="flex items-center gap-2 justify-end">
+      <div className="flex items-center gap-2 justify-end flex-wrap">
         {statusFilter !== "ALL" && (
           <span className="text-xs text-muted-foreground px-2 py-1 rounded-lg bg-muted/50">
             {filtered.length} из {orders.length}
