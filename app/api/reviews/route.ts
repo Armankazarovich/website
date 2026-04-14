@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         name: authorName.trim(),
         rating: numRating,
         text: text.trim(),
-        images: Array.isArray(images) ? images.filter((u: string) => typeof u === "string" && u.startsWith("http")).slice(0, 5) : [],
+        images: Array.isArray(images) ? images.filter((u: string) => typeof u === "string" && (u.startsWith("http") || u.startsWith("/uploads/"))).slice(0, 5) : [],
         source: "internal",
         approved: false, // Requires admin approval
         ...(userId ? { userId } : {}),

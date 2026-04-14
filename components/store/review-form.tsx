@@ -81,6 +81,28 @@ export function ReviewForm({
     setLoading(true);
 
     try {
+      // Upload images first (convert base64 to files, upload, get URLs)
+      const uploadedUrls: string[] = [];
+      for (const img of images) {
+        if (img.startsWith("http")) {
+          uploadedUrls.push(img);
+          continue;
+        }
+        // Convert data URL to File and upload
+        try {
+          const blob = await fetch(img).then((r) => r.blob());
+          const formData = new FormData();
+          formData.append("file", blob, `photo-${Date.now()}.jpg`);
+          const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json();
+            uploadedUrls.push(url);
+          }
+        } catch {
+          // Skip failed uploads silently
+        }
+      }
+
       const res = await fetch("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -90,7 +112,7 @@ export function ReviewForm({
           email: email.trim() || null,
           rating,
           text: text.trim(),
-          images,
+          images: uploadedUrls,
         }),
       });
 

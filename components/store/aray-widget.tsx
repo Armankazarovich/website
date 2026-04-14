@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, Volume2, VolumeX, MessageSquare, ChevronDown } from "lucide-react";
 import { buildArayGreeting, buildArayChips } from "@/lib/aray-agent";
 import { ArayOrb } from "@/components/shared/aray-orb";
+import { ArayChatPanel } from "@/components/store/aray-chat-panel";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
@@ -639,6 +640,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
 
   // ── State ──────────────────────────────────────────────────────────────────
+  const [chatPanelOpen, setChatPanelOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);

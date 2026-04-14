@@ -9,6 +9,9 @@ export default async function AdminReviewsPage({
 }) {
   const reviews = await prisma.review.findMany({
     orderBy: { createdAt: "desc" },
+    include: {
+      product: { select: { name: true, slug: true } },
+    },
   });
 
   const pendingCount = reviews.filter((r) => !r.approved).length;

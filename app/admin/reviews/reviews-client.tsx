@@ -3,18 +3,92 @@
 import { useState, useMemo, useEffect } from "react";
 
 const PER_PAGE = 12;
-import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor, Lightbulb } from "lucide-react";
+import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor, Lightbulb, Send, ThumbsUp } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
+
+// ─── Quick reply templates ───────────────────────────────────────────────────
+const QUICK_REPLIES = [
+  "Спасибо за ваш отзыв! Рады, что вам понравилось качество наших материалов.",
+  "Благодарим за обратную связь! Ждём вас снова.",
+  "Спасибо! Мы ценим ваше мнение и стараемся становиться лучше.",
+  "Спасибо за отзыв! Приятно работать с такими клиентами.",
+  "Благодарим за тёплые слова! Качество — наш приоритет.",
+];
+
+function AdminReplyBlock({ reviewId, onReply }: { reviewId: string; onReply: (reply: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const send = async (replyText: string) => {
+    if (!replyText.trim()) return;
+    setSending(true);
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reply", adminReply: replyText.trim() }),
+      });
+      if (res.ok) {
+        onReply(replyText.trim());
+        setOpen(false);
+      }
+    } catch {}
+    setSending(false);
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)}
+        className="mt-2 flex items-center gap-1.5 text-xs text-primary hover:underline">
+        <MessageSquare className="w-3 h-3" /> Ответить
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">Быстрый ответ:</p>
+      <div className="flex flex-wrap gap-1.5">
+        {QUICK_REPLIES.map((q, i) => (
+          <button key={i} onClick={() => send(q)} disabled={sending}
+            className="text-[11px] px-2.5 py-1.5 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary border border-border transition-colors text-left max-w-[200px] truncate">
+            {q}
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Свой ответ..."
+          className="flex-1 px-3 py-2 text-sm rounded-xl border border-border bg-card"
+          onKeyDown={(e) => e.key === "Enter" && send(text)}
+        />
+        <button onClick={() => send(text)} disabled={!text.trim() || sending}
+          className="px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm disabled:opacity-50">
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type Review = {
   id: string;
   name: string;
   rating: number;
   text: string;
+  images?: string[];
   approved: boolean;
+  likes?: number;
+  dislikes?: number;
+  adminReply?: string | null;
+  adminReplyAt?: string | null;
   createdAt: Date;
   source?: string;
+  product?: { name: string; slug: string } | null;
 };
 
 const PLATFORMS: {
@@ -432,6 +506,45 @@ export function ReviewsClient({
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
+
+                  {/* Photos */}
+                  {review.images && review.images.length > 0 && (
+                    <div className="flex gap-2 mt-3 overflow-x-auto">
+                      {review.images.map((img, i) => (
+                        <a key={i} href={img} target="_blank" rel="noopener noreferrer">
+                          <img src={img} alt="" className="w-16 h-16 rounded-xl object-cover border border-border hover:opacity-80 transition-opacity" />
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Product link */}
+                  {review.product && (
+                    <p className="text-xs text-primary mt-2">
+                      Товар: <a href={`/product/${review.product.slug}`} target="_blank" className="underline">{review.product.name}</a>
+                    </p>
+                  )}
+
+                  {/* Stats: likes, dislikes */}
+                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                    <span>👍 {review.likes || 0}</span>
+                    <span>👎 {review.dislikes || 0}</span>
+                  </div>
+
+                  {/* Admin reply */}
+                  {review.adminReply && (
+                    <div className="mt-3 pl-3 border-l-2 border-primary/30 bg-primary/5 rounded-r-lg py-2 pr-3">
+                      <p className="text-[11px] font-semibold text-primary mb-1">Ответ магазина</p>
+                      <p className="text-xs text-muted-foreground">{review.adminReply}</p>
+                    </div>
+                  )}
+
+                  {/* Reply button + quick templates */}
+                  {!review.adminReply && (
+                    <AdminReplyBlock reviewId={review.id} onReply={(reply) => {
+                      setReviews(prev => prev.map(r => r.id === review.id ? { ...r, adminReply: reply } : r));
+                    }} />
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
