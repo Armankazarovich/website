@@ -77,7 +77,6 @@ const allNavItems: NavItem[] = [
 
   // ── Продажи ──
   { href: "/admin/orders",    label: "Заказы",        labelKey: "orders",    icon: ShoppingBag, roles: ALL_STAFF, group: "sales", groupKey: "sales" },
-  { href: "/cabinet",         label: "Мои заказы",    icon: ShoppingBag,     exact: true, roles: ["USER"], group: "sales", groupKey: "sales" },
   { href: "/admin/crm",      label: "CRM — Лиды",    labelKey: "crm",       icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
   { href: "/admin/analytics", label: "Аналитика",     labelKey: "analytics", icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/finance",   label: "Финансы",       labelKey: "finance",   icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },

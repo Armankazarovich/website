@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon } from "lucide-react";
-import { BackButton } from "@/components/ui/back-button";
+// BackButton removed — AdminShell sidebar handles navigation
 import { useTheme } from "next-themes";
 import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
 
@@ -136,12 +136,9 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <BackButton href="/cabinet" label="Мои заказы" className="mt-0.5 mb-0 shrink-0" />
-        <div>
-          <h1 className="font-display font-bold text-2xl">Профиль</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Ваши данные и настройки аккаунта</p>
-        </div>
+      <div>
+        <h1 className="font-display font-bold text-xl">Профиль</h1>
+        <p className="text-muted-foreground text-xs mt-1">Ваши данные и настройки аккаунта</p>
       </div>
 
       {/* Profile form */}
