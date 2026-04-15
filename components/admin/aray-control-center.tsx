@@ -8,7 +8,7 @@ import { usePalette, PALETTES } from "@/components/palette-provider";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { useClassicMode, playOrderChime, LS_FONT } from "@/components/admin/admin-shell";
 
-export function ArayControlCenter({ userRole }: { userRole?: string }) {
+export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
   const isClient = userRole === "USER";
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"notif" | "style">("notif");
@@ -109,6 +109,139 @@ export function ArayControlCenter({ userRole }: { userRole?: string }) {
     document.documentElement.style.setProperty("--aray-font-scale", s.scale);
   };
 
+  // ═══ RIGHT SIDE sticky layout ═══════════════════════════════════════════
+  if (position === "right") {
+    return (
+      <div ref={ref} className="flex flex-col items-center gap-1">
+        {/* Collapsed: vertical pill with icons */}
+        {!open ? (
+          <div className="flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl"
+            style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}dd)`, backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.1)", borderRight: "none" }}>
+            {!isClient && (
+              <button onClick={() => { setTab("notif"); setOpen(true); }} title="Уведомления"
+                className="p-2 rounded-xl hover:bg-white/10 transition-colors relative">
+                <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)" }} />
+                {count > 0 && (
+                  <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                    style={{ background: "hsl(var(--primary))" }}>{count > 9 ? "9+" : count}</span>
+                )}
+              </button>
+            )}
+            <button onClick={() => { setTab("style"); setOpen(true); }} title="Оформление"
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+              <Palette className="w-4 h-4 text-white/50" />
+            </button>
+          </div>
+        ) : (
+          /* Expanded: full panel */
+          <div className="w-[280px] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200"
+            style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}ee)`, border: "1px solid rgba(255,255,255,0.08)", borderRight: "none", backdropFilter: "blur(24px)", maxHeight: "80vh" }}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-white">ARAY Control</span>
+              </div>
+              <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+                <X className="w-4 h-4 text-white/50" />
+              </button>
+            </div>
+            {/* Tabs */}
+            <div className="flex" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              {!isClient && (
+                <button onClick={() => setTab("notif")}
+                  className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "notif" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
+                  style={tab === "notif" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
+                  Уведомления {count > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] text-white" style={{ background: "hsl(var(--primary))" }}>{count}</span>}
+                </button>
+              )}
+              <button onClick={() => setTab("style")}
+                className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "style" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
+                style={tab === "style" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
+                Оформление
+              </button>
+            </div>
+            {/* Content — same as bottom panel */}
+            <div className="overflow-y-auto" style={{ maxHeight: "65vh" }}>
+              {tab === "notif" && !isClient && (
+                <div>
+                  {loadingNotif ? (
+                    <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
+                  ) : orders.length === 0 && reviews.length === 0 && pendingStaff.length === 0 ? (
+                    <div className="text-center py-8"><Bell className="w-6 h-6 text-white/20 mx-auto mb-2" /><p className="text-white/40 text-xs">Нет новых уведомлений</p></div>
+                  ) : (
+                    <div className="py-1">
+                      {orders.map((o: any) => (
+                        <button key={o.id} onClick={() => { router.push("/admin/orders"); setOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
+                          <ShoppingBag className="w-4 h-4 text-primary shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold text-white/90 truncate">#{o.orderNumber} · {o.customerName || "Клиент"}</p>
+                            <p className="text-[10px] text-white/40">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
+                          </div>
+                        </button>
+                      ))}
+                      {reviews.map((r: any) => (
+                        <button key={r.id} onClick={() => { router.push("/admin/reviews"); setOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
+                          <Star className="w-4 h-4 text-yellow-400 shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold text-white/90 truncate">{r.name} · {"⭐".repeat(r.rating)}</p>
+                            <p className="text-[10px] text-white/40 truncate">{r.text?.substring(0, 40)}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              {tab === "style" && (
+                <div className="p-4 space-y-4">
+                  {/* Палитры */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Палитра</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PALETTES.map((p) => (
+                        <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                          className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-60 hover:opacity-100 hover:scale-105"}`}
+                          style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
+                      ))}
+                    </div>
+                  </div>
+                  {/* Тема */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Тема</p>
+                    <div className="flex gap-2">
+                      {["light", "dark"].map((t) => (
+                        <button key={t} onClick={() => setTheme(t)}
+                          className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                          {t === "light" ? "Светлая" : "Тёмная"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Шрифт */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Размер шрифта</p>
+                    <div className="flex gap-1.5">
+                      {FONT_SIZES_CC.map((f) => (
+                        <button key={f.id} onClick={() => applyFont(f.id)}
+                          className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${currentFont === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ═══ BOTTOM layout (original, for mobile sidebar) ═════════════════════
   return (
     <div ref={ref} className="relative flex-1 flex items-center">
 
