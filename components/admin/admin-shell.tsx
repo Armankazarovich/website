@@ -460,21 +460,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           <AdminPushPrompt />
           <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
             <AdminPwaInstall />
-            <div className="px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55 mb-2">Тема</p>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {PALETTES.map((p) => (
-                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
-                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                ))}
-                <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="w-7 h-7 rounded-full shrink-0 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                  {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-            <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
             <Link href="/"
               className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors"
               onClick={() => setOpen(false)}>
