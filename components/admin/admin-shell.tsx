@@ -373,14 +373,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         style={{ background: sidebarBg }}>
         <div className="px-4 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/20" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
-                {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
-              </div>
-            )}
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
+              {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="font-display font-bold text-sm text-white leading-none truncate">
                 {userName || (email ? email.split("@")[0] : "Пользователь")}
