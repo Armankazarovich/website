@@ -264,6 +264,7 @@ interface AdminShellProps {
   role: string;
   email: string | null | undefined;
   userName?: string | null;
+  avatarUrl?: string | null;
   children: React.ReactNode;
 }
 
@@ -314,7 +315,7 @@ function usePageTitle() {
   return "Панель управления";
 }
 
-function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
+function AdminShellInner({ role, email, userName, avatarUrl, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -372,16 +373,27 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30"
         style={{ background: sidebarBg }}>
         <div className="px-5 py-5 border-b border-white/10 shrink-0">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))", boxShadow: "0 0 12px hsl(var(--primary)/0.5)" }}>
-              <span className="text-white font-bold text-xs">П</span>
+          <div className="flex items-center gap-3 w-full">
+            {/* Avatar or initials */}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/20" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
+                {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-sm text-white leading-none truncate">
+                {userName || (email ? email.split("@")[0] : "Пользователь")}
+              </p>
+              <p className="text-[10px] text-white/45 mt-0.5 leading-none truncate">{email}</p>
             </div>
-            <div>
-              <p className="font-display font-bold text-base text-white leading-none">ПилоРус</p>
-              <p className="text-[10px] text-white/45 mt-0.5 leading-none">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
-            </div>
-          </Link>
+            {/* Settings gear → profile page */}
+            <Link href="/cabinet/profile" className="p-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0" title="Настройки профиля">
+              <Settings className="w-4 h-4 text-white/50" />
+            </Link>
+          </div>
         </div>
 
         {/* Nav + weather scrollable, footer always pinned at bottom */}
@@ -456,24 +468,32 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
-            <div>
-              <p className="font-display font-bold text-xl text-white">ПилоРус</p>
-              <p className="text-[11px] text-white/45 mt-0.5">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
+          <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3 shrink-0">
+            {/* Avatar */}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-white/20" />
+            ) : (
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-base"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))" }}>
+                {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-base text-white leading-tight truncate">
+                {userName || (email ? email.split("@")[0] : "Пользователь")}
+              </p>
+              <p className="text-[10px] text-white/40 mt-0.5 truncate">{email}</p>
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setOpen(false); setMobileSettingsOpen(true); }}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                title="Оформление">
-                <Settings className="w-5 h-5 text-white/60" />
-              </button>
-              <button onClick={() => setOpen(false)}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-                style={{ WebkitTapHighlightColor: "transparent" }}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+            <Link href="/cabinet/profile" onClick={() => setOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
+              title="Настройки профиля">
+              <Settings className="w-4.5 h-4.5 text-white/50" />
+            </Link>
+            <button onClick={() => setOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
+              style={{ WebkitTapHighlightColor: "transparent" }}>
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto overscroll-contain">
             <AdminNav role={role} onNavigate={() => setOpen(false)} />
