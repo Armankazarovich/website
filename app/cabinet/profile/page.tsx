@@ -257,7 +257,7 @@ export default function ProfilePage() {
         <div>
           <Label className="text-sm font-medium mb-1.5 block text-muted-foreground">Email</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Mail className="w-4 h-4" />
             </div>
             <Input
@@ -273,7 +273,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="name" className="text-sm font-medium mb-1.5 block">Ваше имя</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <User className="w-4 h-4" />
             </div>
             <Input
@@ -291,7 +291,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="phone" className="text-sm font-medium mb-1.5 block">Телефон</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Phone className="w-4 h-4" />
             </div>
             <Input
@@ -311,7 +311,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="address" className="text-sm font-medium mb-1.5 block">Адрес доставки</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <MapPin className="w-4 h-4" />
             </div>
             <Input
@@ -351,7 +351,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="currentPassword" className="text-sm font-medium mb-1.5 block">Текущий пароль</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
             </div>
             <Input
@@ -373,7 +373,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="newPassword" className="text-sm font-medium mb-1.5 block">Новый пароль</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
             </div>
             <Input
@@ -396,7 +396,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="confirmPassword" className="text-sm font-medium mb-1.5 block">Повторите новый пароль</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
             </div>
             <Input

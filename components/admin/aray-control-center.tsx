@@ -12,7 +12,7 @@ import { useClassicMode, playOrderChime, LS_FONT } from "@/components/admin/admi
 export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
   const isClient = userRole === "USER";
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"notif" | "style">("notif");
+  const [tab, setTab] = useState<"notif" | "style" | "lang">("notif");
   const [count, setCount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -132,6 +132,10 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
               className="p-2 rounded-xl hover:bg-white/10 transition-colors">
               <Palette className="w-4 h-4 text-white/50" />
             </button>
+            <button onClick={() => { setTab("lang"); setOpen(true); }} title="Язык"
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+              <span className="text-[11px] font-bold text-white/50">{lang.toUpperCase()}</span>
+            </button>
           </div>
         ) : (
           /* Expanded: full panel */
@@ -160,6 +164,11 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "style" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
                 style={tab === "style" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
                 Оформление
+              </button>
+              <button onClick={() => setTab("lang")}
+                className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "lang" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
+                style={tab === "lang" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
+                Язык
               </button>
             </div>
             {/* Content — same as bottom panel */}
@@ -233,19 +242,20 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                       ))}
                     </div>
                   </div>
-                  {/* Языки */}
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Язык</p>
-                    <div className="grid grid-cols-4 gap-1.5 max-h-[120px] overflow-y-auto">
-                      {ADMIN_LANGUAGES.map((l) => (
-                        <button key={l.code} onClick={() => setLang(l.code)}
-                          className={`flex flex-col items-center gap-1 py-2 rounded-xl text-[10px] transition-all ${lang === l.code ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}
-                          title={l.label}>
-                          <img src={getFlagUrl(l.flag)} alt="" className="w-5 h-3.5 rounded-sm object-cover" />
-                          <span className="truncate w-full text-center px-0.5">{l.code.toUpperCase()}</span>
-                        </button>
-                      ))}
-                    </div>
+                </div>
+              )}
+              {/* ── Language tab ── */}
+              {tab === "lang" && (
+                <div className="p-4">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">Выберите язык</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ADMIN_LANGUAGES.map((l) => (
+                      <button key={l.code} onClick={() => { setLang(l.code); }}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] transition-all text-left ${lang === l.code ? "bg-primary text-white font-semibold" : "bg-white/10 text-white/70 hover:bg-white/15"}`}>
+                        <img src={getFlagUrl(l.flag)} alt="" className="w-6 h-4 rounded-sm object-cover shrink-0" />
+                        {l.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}

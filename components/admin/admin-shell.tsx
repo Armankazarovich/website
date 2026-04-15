@@ -513,20 +513,27 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           {/* Settings content — links only, no duplicate controls */}
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
 
-            {/* Оформление — ссылка на профиль */}
-            <Link href="/cabinet/profile#appearance"
-              className="glass-control w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all"
-              onClick={() => setMobileSettingsOpen(false)}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.08))" }}>
-                <Palette className="w-4 h-4 text-primary" />
+            {/* Оформление — встроенные контролы */}
+            <div className="glass-card rounded-2xl p-4 space-y-4">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Оформление</p>
+              {/* Палитры */}
+              <div className="flex flex-wrap gap-1.5">
+                {PALETTES.map((p) => (
+                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                    className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
+                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
+                ))}
               </div>
-              <div className="flex-1 text-left">
-                <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/90"}`}>Оформление</p>
-                <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Тема, палитра, фон, шрифт</p>
+              {/* Тема */}
+              <div className="flex gap-2">
+                {["light", "dark"].map((t) => (
+                  <button key={t} onClick={() => setTheme(t)}
+                    className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                    {t === "light" ? "Светлая" : "Тёмная"}
+                  </button>
+                ))}
               </div>
-              <ArrowRight className={`w-4 h-4 ${classic ? "text-muted-foreground/30" : "text-white/30"}`} />
-            </Link>
+            </div>
 
             {/* Язык — быстрый переключатель оставляем */}
             <div className="glass-card rounded-2xl p-4">
