@@ -6,6 +6,7 @@ import { Zap, X, Bell, ShoppingBag, Star, ArrowRight, UserPlus, Palette } from "
 import { useTheme } from "next-themes";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { useAdminLang } from "@/lib/admin-lang-context";
+import { ADMIN_LANGUAGES, getFlagUrl } from "@/lib/admin-i18n";
 import { useClassicMode, playOrderChime, LS_FONT } from "@/components/admin/admin-shell";
 
 export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
@@ -20,7 +21,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
-  const { t } = useAdminLang();
+  const { t, lang, setLang } = useAdminLang();
   const ccSidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
   const ref = useRef<HTMLDivElement>(null);
   const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
@@ -228,6 +229,20 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                         <button key={f.id} onClick={() => pickFont(f.id)}
                           className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${fontActive === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
                           {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Языки */}
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Язык</p>
+                    <div className="grid grid-cols-4 gap-1.5 max-h-[120px] overflow-y-auto">
+                      {ADMIN_LANGUAGES.map((l) => (
+                        <button key={l.code} onClick={() => setLang(l.code)}
+                          className={`flex flex-col items-center gap-1 py-2 rounded-xl text-[10px] transition-all ${lang === l.code ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}
+                          title={l.label}>
+                          <img src={getFlagUrl(l.flag)} alt="" className="w-5 h-3.5 rounded-sm object-cover" />
+                          <span className="truncate w-full text-center px-0.5">{l.code.toUpperCase()}</span>
                         </button>
                       ))}
                     </div>
