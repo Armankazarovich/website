@@ -81,6 +81,7 @@ export default async function ProductPage({ params }: Props) {
   // Reviews for aggregateRating + display block
   const reviews = await prisma.review.findMany({
     where: { approved: true },
+    include: { user: { select: { avatarUrl: true } } },
     orderBy: { createdAt: "desc" },
     take: 10,
   });
@@ -358,6 +359,7 @@ export default async function ProductPage({ params }: Props) {
             dislikes: (r as any).dislikes || 0,
             adminReply: (r as any).adminReply || null,
             createdAt: r.createdAt.toISOString(),
+            user: r.user || null,
           }))}
           showReviews={showReviewsBlock}
           productId={product.id}
