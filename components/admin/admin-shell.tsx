@@ -432,24 +432,27 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
-            <div>
-              <p className="font-display font-bold text-xl text-white">ПилоРус</p>
-              <p className="text-[11px] text-white/45 mt-0.5">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
+          <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3 shrink-0">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-base"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))" }}>
+              {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setOpen(false); setMobileSettingsOpen(true); }}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                title="Оформление">
-                <Settings className="w-5 h-5 text-white/60" />
-              </button>
-              <button onClick={() => setOpen(false)}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-                style={{ WebkitTapHighlightColor: "transparent" }}>
-                <X className="w-5 h-5" />
-              </button>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-base text-white leading-tight truncate">
+                {userName || (email ? email.split("@")[0] : "Пользователь")}
+              </p>
+              <p className="text-[10px] text-white/40 mt-0.5 truncate">{email}</p>
             </div>
+            <Link href="/cabinet/profile" onClick={() => setOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
+              title="Настройки профиля">
+              <Settings className="w-4.5 h-4.5 text-white/50" />
+            </Link>
+            <button onClick={() => setOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
+              style={{ WebkitTapHighlightColor: "transparent" }}>
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto overscroll-contain">
             <AdminNav role={role} onNavigate={() => setOpen(false)} />
@@ -530,6 +533,30 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                   <button key={t} onClick={() => setTheme(t)}
                     className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
                     {t === "light" ? "Светлая" : "Тёмная"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Размер шрифта */}
+            <div className="glass-card rounded-2xl p-4">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Шрифт</p>
+              <div className="flex gap-1.5">
+                {[
+                  { id: "sm", label: "Компакт" },
+                  { id: "md", label: "Норм" },
+                  { id: "lg", label: "Крупн" },
+                ].map((f) => (
+                  <button key={f.id}
+                    onClick={() => {
+                      const sizes: Record<string, { px: string; scale: string }> = { sm: { px: "13px", scale: "0.929" }, md: { px: "14px", scale: "1" }, lg: { px: "15.5px", scale: "1.107" } };
+                      const s = sizes[f.id];
+                      document.documentElement.style.setProperty("font-size", s.px);
+                      document.documentElement.style.setProperty("--aray-font-scale", s.scale);
+                      try { localStorage.setItem("aray_font", f.id); } catch {}
+                    }}
+                    className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-white/10 text-white/50 hover:bg-white/15 transition-all">
+                    {f.label}
                   </button>
                 ))}
               </div>
