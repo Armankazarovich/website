@@ -920,8 +920,13 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
 
 ### Известные баги (исправить в начале следующей сессии)
-- [x] **Формы профиля: синяя подсветка focus** — ✅ ИСПРАВЛЕНО (сессия 14.04.2026). Все Input/Select/Textarea/Button переведены на `focus:ring-primary/30 focus:border-primary`. Убраны все `ring-ring`, `border-input` → `border-border`, `rounded-md` → `rounded-xl`. Затронуто 15+ файлов.
-- [x] **Аудит всех форм** — ✅ ИСПРАВЛЕНО. Единый стиль на всех формах: login, register, checkout, profile, reviews, staff, email, join, contact-form, partnership-modal. Создан `components/ui/textarea.tsx`.
+- [ ] **Страница профиля `/cabinet/profile`**: секция «Оформление» внизу — ДУБЛЬ, убрать (оформление уже в ARAY Control справа)
+- [ ] **Иконки профиля в тёмной теме**: замочек пароля еле виден — нужен `text-muted-foreground` вместо серого
+- [ ] **ARAY Control**: языки занимают много места в «Оформление» — перенести в отдельную 3ю вкладку «Язык» с иконкой глобуса
+- [ ] **ARAY Control мобильный**: на мобильном правая панель не показывается (hidden lg:block) — нужно добавить доступ через мобильный drawer или bottom nav
+- [ ] **avatarUrl**: поле есть в Prisma schema локально но может не быть на production БД. НЕ использовать `include: { user: { select: { avatarUrl: true } } }` пока не подтверждено что schema синхронизирована. Используем инициалы.
+- [x] **Формы профиля: синяя подсветка focus** — ✅ ИСПРАВЛЕНО (сессия 14.04.2026)
+- [x] **Аудит всех форм** — ✅ ИСПРАВЛЕНО
 
 ### Сессия 14.04.2026 — Экосистема кабинета
 - [x] Аватар профиля — загрузка, кроп (circular canvas crop modal), сохранение
