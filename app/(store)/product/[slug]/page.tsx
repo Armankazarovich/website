@@ -364,6 +364,7 @@ export default async function ProductPage({ params }: Props) {
           productName={product.name}
           userName={session?.user?.name || null}
           userEmail={session?.user?.email || null}
+          userAvatar={(session?.user as any)?.avatarUrl || null}
           isLoggedIn={!!session?.user}
         />
       </section>

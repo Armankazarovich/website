@@ -15,6 +15,7 @@ model User {
   passwordHash   String
   role           Role               @default(USER)
   address        String?
+  avatarUrl      String?
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   customRole     String?
@@ -397,6 +398,29 @@ model Service {
   sortOrder   Int      @default(100)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // VIEW_PRODUCT, PLACE_ORDER, WRITE_REVIEW, LOGIN, PAGE_VISIT
+  targetId  String?  // productId, orderId, etc.
+  meta      Json?    // extra data (product name, page url, etc.)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Subscription {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String   // "supplier" | "category" | "brand"
+  targetId   String
+  targetName String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+  @@index([userId])
 }
 
 enum Role {

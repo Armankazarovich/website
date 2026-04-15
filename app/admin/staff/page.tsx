@@ -390,7 +390,7 @@ export default function StaffPage() {
           <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
             <button
               onClick={() => openPanel(member.id, "role", member)}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-xl border transition-colors ${
                 isActive && panel?.type === "role"
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
@@ -401,7 +401,7 @@ export default function StaffPage() {
             </button>
             <button
               onClick={() => openPanel(member.id, "password")}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-xl border transition-colors ${
                 isActive && panel?.type === "password"
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
@@ -413,7 +413,7 @@ export default function StaffPage() {
             <button
               onClick={() => handleToggleStatus(member)}
               title={member.staffStatus === "ACTIVE" ? "Заблокировать" : "Разблокировать"}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
+              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-xl border transition-colors ${
                 member.staffStatus === "SUSPENDED"
                   ? "border-primary/40 text-primary hover:bg-primary/10 dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
                   : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
@@ -428,7 +428,7 @@ export default function StaffPage() {
             {member.role !== "ADMIN" && (
               <button
                 onClick={() => openPanel(member.id, "delete")}
-                className={`inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${
+                className={`inline-flex items-center justify-center w-8 h-8 rounded-xl border transition-colors ${
                   isActive && panel?.type === "delete"
                     ? "border-destructive bg-destructive/10 text-destructive"
                     : "border-border hover:border-destructive hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
@@ -471,7 +471,7 @@ export default function StaffPage() {
               <select
                 value={panelRole}
                 onChange={(e) => setPanelRole(e.target.value)}
-                className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 h-9 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               >
                 {ALL_ROLES.map((r) => (
                   <option key={r} value={r}>{ROLE_DEFINITIONS[r]?.label || r}</option>
@@ -482,7 +482,7 @@ export default function StaffPage() {
                 placeholder="Своя должность (необяз.)"
                 value={panelCustomRole}
                 onChange={(e) => setPanelCustomRole(e.target.value)}
-                className="flex-1 h-9 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="flex-1 h-9 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
               <button
                 onClick={() => handleSaveRole(member.id)}
@@ -492,7 +492,7 @@ export default function StaffPage() {
                 {panelLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Сохранить
               </button>
-              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
+              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
                 Отмена
               </button>
             </div>
@@ -516,7 +516,7 @@ export default function StaffPage() {
                   placeholder="Новый пароль"
                   value={panelPassword}
                   onChange={(e) => setPanelPassword(e.target.value)}
-                  className="w-full h-9 px-3 pr-9 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full h-9 px-3 pr-9 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 />
                 <button
                   type="button"
@@ -529,7 +529,7 @@ export default function StaffPage() {
               <button
                 type="button"
                 onClick={() => { setPanelPassword(generatePassword()); setShowPanelPwd(true); }}
-                className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-primary/[0.08] flex items-center gap-1.5"
+                className="h-9 px-3 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08] flex items-center gap-1.5"
                 title="Сгенерировать пароль"
               >
                 <Shuffle className="w-3.5 h-3.5" />
@@ -543,7 +543,7 @@ export default function StaffPage() {
                 {panelLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Сохранить пароль
               </button>
-              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
+              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
                 Отмена
               </button>
             </div>
@@ -565,7 +565,7 @@ export default function StaffPage() {
                 {panelLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                 Удалить
               </button>
-              <button onClick={() => setPanel(null)} className="h-8 px-3 rounded-lg border border-border text-xs text-muted-foreground hover:bg-primary/[0.08]">
+              <button onClick={() => setPanel(null)} className="h-8 px-3 rounded-xl border border-border text-xs text-muted-foreground hover:bg-primary/[0.08]">
                 Отмена
               </button>
             </div>
@@ -627,7 +627,7 @@ export default function StaffPage() {
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 disabled={formLoading}
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Email */}
@@ -639,7 +639,7 @@ export default function StaffPage() {
                 value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                 disabled={formLoading}
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Phone */}
@@ -651,7 +651,7 @@ export default function StaffPage() {
                 value={form.phone}
                 onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                 disabled={formLoading}
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Role */}
@@ -668,7 +668,7 @@ export default function StaffPage() {
                   }));
                 }}
                 disabled={formLoading}
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               >
                 <option value="">Выберите роль...</option>
                 {ALL_ROLES.map((r) => (
@@ -688,7 +688,7 @@ export default function StaffPage() {
                 value={form.customRole}
                 onChange={(e) => setForm((f) => ({ ...f, customRole: e.target.value }))}
                 disabled={formLoading}
-                className="w-full h-10 px-3 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Password */}
@@ -701,7 +701,7 @@ export default function StaffPage() {
                   value={form.password}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                   disabled={formLoading}
-                  className="w-full h-10 px-3 pr-10 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full h-10 px-3 pr-10 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 />
                 <button
                   type="button"

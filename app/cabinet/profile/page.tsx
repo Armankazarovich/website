@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -10,10 +10,11 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon } from "lucide-react";
+import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon, Camera, Trash2, Monitor, Film, ALargeSmall, Globe } from "lucide-react";
 // BackButton removed — AdminShell sidebar handles navigation
 import { useTheme } from "next-themes";
 import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
+import { AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -62,6 +63,36 @@ export default function ProfilePage() {
   const [phoneValue, setPhoneValue] = useState("");
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  // Appearance settings (localStorage-based)
+  const [bgMode, setBgModeState] = useState<"classic" | "video">("classic");
+  const [fontSize, setFontSizeState] = useState("normal");
+
+  useEffect(() => {
+    // Read from localStorage
+    const bg = localStorage.getItem("aray-bg-mode") as "classic" | "video" | null;
+    if (bg) setBgModeState(bg);
+    const fs = localStorage.getItem("aray-font-size");
+    if (fs) setFontSizeState(fs);
+  }, []);
+
+  const setBgMode = (mode: "classic" | "video") => {
+    setBgModeState(mode);
+    localStorage.setItem("aray-bg-mode", mode);
+    localStorage.setItem("aray-classic-mode", mode === "classic" ? "1" : "0");
+    window.dispatchEvent(new Event("aray-classic-change"));
+  };
+
+  const setFontSize = (id: string) => {
+    setFontSizeState(id);
+    const sizes: Record<string, string> = { compact: "0.88", normal: "1", large: "1.14" };
+    document.documentElement.style.setProperty("--aray-font-scale", sizes[id] || "1");
+    localStorage.setItem("aray-font-size", id);
+  };
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -83,6 +114,7 @@ export default function ProfilePage() {
           setPhoneValue(data.phone);
           setValue("phone", data.phone);
         }
+        if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
       });
   }, [session, setValue]);
 
@@ -129,6 +161,40 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 2 * 1024 * 1024) { setError("Максимум 2MB"); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropSrc(reader.result as string);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const uploadCroppedAvatar = async (blob: Blob) => {
+    setUploadingAvatar(true);
+    setShowCropModal(false);
+    const fd = new FormData();
+    fd.append("file", blob, "avatar.jpg");
+    const res = await fetch("/api/cabinet/avatar", { method: "POST", body: fd });
+    if (res.ok) {
+      const data = await res.json();
+      setAvatarUrl(data.avatarUrl);
+    }
+    setUploadingAvatar(false);
+  };
+
+  const removeAvatar = async () => {
+    setUploadingAvatar(true);
+    const res = await fetch("/api/cabinet/avatar", { method: "DELETE" });
+    if (res.ok) setAvatarUrl(null);
+    setUploadingAvatar(false);
+  };
+
   if (!session) {
     router.push("/login");
     return null;
@@ -136,10 +202,49 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display font-bold text-xl">Профиль</h1>
-        <p className="text-muted-foreground text-xs mt-1">Ваши данные и настройки аккаунта</p>
+      {/* Avatar + Header */}
+      <div className="bg-card rounded-2xl border border-border p-6 flex flex-col sm:flex-row items-center gap-5">
+        <div className="relative group">
+          <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Аватар" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-10 h-10 text-muted-foreground" />
+            )}
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              </div>
+            )}
+          </div>
+          <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-lg">
+            <Camera className="w-4 h-4" />
+            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
+          </label>
+        </div>
+        <div className="text-center sm:text-left flex-1">
+          <h1 className="font-display font-bold text-xl">{session.user?.name || "Профиль"}</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">{session.user?.email}</p>
+          {avatarUrl && (
+            <button
+              onClick={removeAvatar}
+              disabled={uploadingAvatar}
+              className="mt-2 text-xs text-destructive hover:underline flex items-center gap-1 mx-auto sm:mx-0"
+            >
+              <Trash2 className="w-3 h-3" /> Удалить фото
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Crop Modal */}
+      {showCropModal && cropSrc && (
+        <AvatarCropModal
+          src={cropSrc}
+          onSave={uploadCroppedAvatar}
+          onClose={() => setShowCropModal(false)}
+        />
+      )}
 
       {/* Profile form */}
       <form onSubmit={handleSubmit(onSaveProfile)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
@@ -320,29 +425,32 @@ export default function ProfilePage() {
         </Button>
       </form>
 
-      {/* Appearance */}
-      <div className="bg-card rounded-2xl border border-border p-6 space-y-5">
-        <h2 className="font-display font-semibold text-lg flex items-center gap-2">
-          <Palette className="w-5 h-5 text-primary" />
-          Оформление
-        </h2>
-
-        {/* Light / Dark */}
+      {/* Appearance — unified settings (same style as /admin/appearance) */}
+      <div id="appearance" className="bg-card rounded-2xl border border-border p-6 space-y-6">
         <div>
-          <p className="text-sm font-medium mb-2">Режим</p>
+          <h2 className="font-semibold text-lg flex items-center gap-2">
+            <Palette className="w-5 h-5 text-primary" />
+            Оформление
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">Тема, цветовая палитра, фон и шрифт</p>
+        </div>
+
+        {/* Theme mode */}
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Режим</p>
           <div className="flex gap-2">
             {[
               { value: "light", label: "Светлая", icon: <Sun className="w-4 h-4" /> },
               { value: "dark",  label: "Тёмная",  icon: <Moon className="w-4 h-4" /> },
-              { value: "system", label: "Авто",   icon: <span className="text-xs">A</span> },
+              { value: "system", label: "Авто",   icon: <Monitor className="w-4 h-4" /> },
             ].map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => setTheme(opt.value)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm border transition-all ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border-2 transition-all ${
                   theme === opt.value
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                    ? "border-primary bg-primary/15 text-primary font-medium"
+                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05] text-muted-foreground"
                 }`}
               >
                 {opt.icon}
@@ -352,44 +460,204 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Palette */}
+        {/* Color palette */}
         <div className="space-y-3">
           <p className="text-sm font-medium">Цветовая тема</p>
           {PALETTE_GROUPS.map((group) => {
             const visiblePalettes = group.palettes.filter((p) => enabledIds.includes(p.id));
             if (visiblePalettes.length === 0) return null;
             return (
-            <div key={group.label}>
-              <p className="text-xs text-muted-foreground mb-2">{group.label}</p>
-              <div className="flex gap-2 flex-wrap">
-                {visiblePalettes.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setPalette(p.id)}
-                    title={p.name}
-                    className={`flex flex-col items-center gap-1 group`}
-                  >
-                    <span
-                      className={`w-8 h-8 rounded-full border-2 transition-all block ${
-                        palette === p.id
-                          ? "border-foreground scale-110 shadow-md"
-                          : "border-transparent opacity-60 hover:opacity-100 hover:scale-105"
-                      }`}
-                      style={{
-                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                      }}
-                    />
-                    <span className={`text-xs transition-colors ${
-                      palette === p.id ? "text-foreground font-medium" : "text-muted-foreground"
-                    }`}>
-                      {p.name}
-                    </span>
-                  </button>
-                ))}
+              <div key={group.label}>
+                <p className="text-xs text-muted-foreground mb-2">{group.label}</p>
+                <div className="flex gap-3 flex-wrap">
+                  {visiblePalettes.map((p) => {
+                    const active = palette === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => setPalette(p.id)}
+                        title={p.name}
+                        className="flex flex-col items-center gap-1.5 group"
+                      >
+                        <span
+                          className={`w-9 h-9 rounded-full border-2 transition-all block shadow-sm ${
+                            active
+                              ? "border-primary scale-110 shadow-md"
+                              : "border-white/20 opacity-60 hover:opacity-100 hover:scale-105"
+                          }`}
+                          style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                        />
+                        <span className={`text-[10px] leading-tight transition-colors ${active ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                          {p.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
             );
           })}
+        </div>
+
+        {/* Background mode */}
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Фон панели</p>
+          <div className="flex gap-2">
+            {[
+              { id: "classic" as const, label: "Классика", icon: Monitor },
+              { id: "video" as const, label: "Видео", icon: Film },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setBgMode(opt.id)}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border-2 transition-all ${
+                  bgMode === opt.id
+                    ? "border-primary bg-primary/15 text-primary font-medium"
+                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05] text-muted-foreground"
+                }`}
+              >
+                <opt.icon className="w-4 h-4" />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font size */}
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Размер шрифта</p>
+          <div className="flex gap-2">
+            {[
+              { id: "compact", label: "Компакт", size: "text-xs" },
+              { id: "normal", label: "Стандарт", size: "text-sm" },
+              { id: "large", label: "Крупный", size: "text-base" },
+            ].map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setFontSize(opt.id)}
+                className={`flex flex-col items-center gap-1 flex-1 py-3 rounded-xl text-sm border-2 transition-all ${
+                  fontSize === opt.id
+                    ? "border-primary bg-primary/15 text-primary font-medium"
+                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05] text-muted-foreground"
+                }`}
+              >
+                <span className={`font-bold ${opt.size}`}>A</span>
+                <span className="text-[10px]">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Language */}
+        <div className="space-y-3">
+          <p className="text-sm font-medium">Язык</p>
+          <AdminLangPickerInline />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Crop modal — simple circular crop with drag & zoom */
+function AvatarCropModal({ src, onSave, onClose }: { src: string; onSave: (blob: Blob) => void; onClose: () => void }) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const imgRef = React.useRef<HTMLImageElement | null>(null);
+  const [scale, setScale] = useState(1);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [saving, setSaving] = useState(false);
+  const SIZE = 280;
+
+  useEffect(() => {
+    const img = new window.Image();
+    img.onload = () => { imgRef.current = img; draw(img, pos, scale); };
+    img.src = src;
+  }, [src]);
+
+  useEffect(() => {
+    if (imgRef.current) draw(imgRef.current, pos, scale);
+  }, [pos, scale]);
+
+  const draw = (img: HTMLImageElement, p: { x: number; y: number }, s: number) => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, SIZE, SIZE);
+    const aspect = img.width / img.height;
+    let w: number, h: number;
+    if (aspect > 1) { h = SIZE * s; w = h * aspect; }
+    else { w = SIZE * s; h = w / aspect; }
+    const x = (SIZE - w) / 2 + p.x;
+    const y = (SIZE - h) / 2 + p.y;
+    ctx.drawImage(img, x, y, w, h);
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setDragging(true);
+    setDragStart({ x: e.clientX - pos.x, y: e.clientY - pos.y });
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    setPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+
+  const handlePointerUp = () => setDragging(false);
+
+  const handleSave = () => {
+    setSaving(true);
+    // Export circular crop as 256x256
+    const out = document.createElement("canvas");
+    out.width = 256; out.height = 256;
+    const ctx = out.getContext("2d")!;
+    ctx.beginPath();
+    ctx.arc(128, 128, 128, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(canvasRef.current!, 0, 0, SIZE, SIZE, 0, 0, 256, 256);
+    out.toBlob((blob) => { if (blob) onSave(blob); }, "image/jpeg", 0.9);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={onClose}>
+      <div className="bg-card rounded-2xl border border-border p-5 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-semibold text-base text-center">Обрезать фото</h3>
+
+        <div className="relative mx-auto" style={{ width: SIZE, height: SIZE }}>
+          <canvas
+            ref={canvasRef}
+            width={SIZE}
+            height={SIZE}
+            className="rounded-full border-2 border-border cursor-grab active:cursor-grabbing touch-none"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+          />
+          {/* Circle overlay guide */}
+          <div className="absolute inset-0 rounded-full ring-4 ring-primary/20 pointer-events-none" />
+        </div>
+
+        {/* Zoom slider */}
+        <div className="flex items-center gap-3 px-2">
+          <span className="text-xs text-muted-foreground">−</span>
+          <input
+            type="range"
+            min={0.5}
+            max={3}
+            step={0.05}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+            className="flex-1 accent-primary"
+          />
+          <span className="text-xs text-muted-foreground">+</span>
+        </div>
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onClose} className="flex-1">Отмена</Button>
+          <Button onClick={handleSave} disabled={saving} className="flex-1">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+            Сохранить
+          </Button>
         </div>
       </div>
     </div>

@@ -11,6 +11,8 @@ interface ReviewFormProps {
   userName?: string | null;
   /** Pre-fill from server: logged-in user's email */
   userEmail?: string | null;
+  /** Pre-fill from server: logged-in user's avatar URL */
+  userAvatar?: string | null;
   /** Is the user logged in? */
   isLoggedIn?: boolean;
 }
@@ -20,6 +22,7 @@ export function ReviewForm({
   productName,
   userName,
   userEmail,
+  userAvatar,
   isLoggedIn = false,
 }: ReviewFormProps) {
   const [authorName, setAuthorName] = useState(userName || "");
@@ -205,7 +208,26 @@ export function ReviewForm({
       {/* Name + Email: hidden for logged-in users, shown for guests */}
       {isLoggedIn ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-xl px-4 py-3 border border-border">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          {userAvatar ? (
+            <img
+              src={userAvatar}
+              alt={authorName || "User"}
+              className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+                const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                if (fallback) (fallback as HTMLElement).style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0 ${
+              userAvatar ? "bg-primary/10 hidden" : "bg-primary/10"
+            }`}
+            style={{
+              display: userAvatar ? "none" : "flex",
+            }}
+          >
             {authorName?.charAt(0)?.toUpperCase() || "?"}
           </div>
           <div>

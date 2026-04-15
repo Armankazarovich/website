@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     await writeFile(path.join(uploadDir, filename), buffer);
 
-    const url = `/uploads/reviews/${filename}`;
+    const url = `/api/uploads/reviews/${filename}`;
 
     return NextResponse.json({ ok: true, url }, { status: 201 });
   } catch (error) {

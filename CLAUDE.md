@@ -522,6 +522,13 @@ export function AutoRefresh({ intervalMs = 30000 }) {
 - Всегда: `bg-popover border-border text-foreground`
 - Никогда: хардкодные цвета
 
+### Аватарки пользователей — ВСЕГДА показывать
+- При отображении ЛЮБОГО пользователя — ВСЕГДА подгружать `avatarUrl`
+- Если `avatarUrl` есть → `<img src={avatarUrl} className="rounded-full object-cover" onError={fallback} />`
+- Если нет → инициалы в цветном круге (как было)
+- При создании ЛЮБОЙ новой фичи с пользователями — добавлять `avatarUrl: true` в select/include
+- Места где уже реализовано: staff-list, clients-list, reviews (description-accordion + review-form)
+
 ### Телефоны
 - Хранить в формате `+7XXXXXXXXXX`
 - Всегда применять `normalizePhone()` при сохранении
@@ -590,6 +597,67 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 15.04.2026 — Визуальный аудит + декомпозиция admin-shell + auth-helpers
+
+**Production проверка:**
+- ✅ curl все страницы: /, /catalog, /login, /cabinet, /admin — все HTTP 200
+- ✅ Chrome console: 0 ошибок на /admin
+- ✅ `npx tsc --noEmit` — 0 ошибок
+
+**Визуальный аудит всех тем:**
+- ✅ 13 палитр проверены в light mode (timber, forest, ocean, midnight, slate, crimson, wildberries, ozon, yandex, aliexpress, amazon, avito, sber) — все читаемы
+- ✅ Dark mode проверен: timber, ocean, sber, avito, wildberries — отличный контраст
+- ✅ Nature mode: работает, карточки с glass-эффектом
+- ⚠️ Nature mode: жёлтый баннер "отзывов ждут модерации" — текст плохо читаем (для следующей сессии)
+- ✅ Мобильная навигация: bottom dock с 5 табами отображается корректно
+- ✅ `/admin/appearance` — НЕ тронута
+
+**Декомпозиция admin-shell.tsx (1108 → 611 строк):**
+- ✅ `components/admin/aray-control-center.tsx` (282 строки) — ArayControlCenter вынесен
+- ✅ `components/admin/admin-mobile-settings.tsx` (233 строки) — MobileFontControl, AdminMobileActionPill, ArayTranslationCheck вынесены
+- ✅ admin-shell.tsx экспортирует: useClassicMode, playOrderChime, LS_FONT (для подкомпонентов)
+- ✅ TSC: 0 ошибок после декомпозиции
+
+**Централизованные auth-helpers:**
+- ✅ Создан `lib/auth-helpers.ts` — requireAdmin(), requireManager(), requireStaff(), requireRole(), getSessionRole()
+- ✅ Константы ролей: ALL_STAFF_ROLES, MANAGEMENT_ROLES, ADMIN_ROLES
+- ⚠️ Ещё НЕ применён к 30+ route файлам (безопасная инкрементальная миграция в следующих сессиях)
+
+**Legacy sheets.ts:**
+- ⚠️ НЕ удалён — используется в 2 файлах (instrumentation.ts, api/sync/sheets/route.ts)
+- ⚠️ Миграция на google-sheets.ts требует тестирования — отложена
+
+### Сессия 14.04.2026 (ночь, 3-я) — 78 TS ошибок + единый стиль + cleanup
+
+**TypeScript: 78 → 0 ошибок:**
+- ✅ `npx prisma generate` — устранил 43 ошибки (stale Prisma client)
+- ✅ `role as string` в `.includes()` — 15 API route файлов
+- ✅ `app/api/ai/chat/route.ts` — 9 ошибок: OrderItem.productName, типы параметров reduce/forEach
+- ✅ `lib/workflow-engine.ts` — 5 ошибок: `opValue as number/any[]` для сравнений
+- ✅ `components/admin/admin-aray.tsx` — reorder spread (`...getArayContext(), page: pathname`), добавлен `CHAT_KEY`
+- ✅ `components/store/aray-widget.tsx` — аналогичный spread reorder
+- ✅ `lib/admin-i18n-pages.ts` — `Partial<Record<LangCode, Translations>>`
+
+**Профиль оформления (`/cabinet/profile#appearance`):**
+- ✅ Стиль как `/admin/appearance` — `bg-card rounded-2xl border border-border p-6`
+- ✅ Компактные контролы: `border-2 border-primary bg-primary/15` для active
+- ✅ Убран WOW-превью (большой градиентный хедер) — не вписывался в единый стиль
+- ✅ Палитры: кружки 9x9 с названиями, flex-wrap
+
+**ARAY Control Center (admin-shell.tsx):**
+- ✅ Убрана вкладка "Оформление" со всеми дублями
+- ✅ Добавлена кнопка "Настроить оформление →" → `/cabinet/profile#appearance`
+
+**Mobile drawer (admin-shell.tsx):**
+- ✅ Убраны дубли настроек, оставлены: ссылка на профиль + язык
+
+**Glassmorphism в светлой теме (globals.css):**
+- ✅ `.glass-card/.glass-control/.glass-pill/.glass-mobile-header` → `bg-white/70 backdrop-blur-xl`
+- ✅ Dark fallbacks через `.dark .aray-classic-mode`
+
+**Hover эффекты стандартизированы:**
+- ✅ Все `hover:bg-primary/[0.08]` и `[0.06]` → `hover:bg-primary/[0.05]` (analytics, dashboard)
 
 ### Сессия 14.04.2026 (вечер) — Единая экосистема + навигация + баги светлой темы
 
@@ -787,9 +855,34 @@ const { theme, setTheme } = useTheme();
 
 ## На следующую сессию (план)
 
-> Последнее обновление: 14.04.2026
+> Последнее обновление: 15.04.2026 (ночь — 3-я сессия)
 
-### 🔥 ПРИОРИТЕТ 1 — Единая админка для всех ролей ✅ ФУНДАМЕНТ ГОТОВ (14.04.2026)
+### 🚨 СТИЛЕВЫЕ ПРАВИЛА — НЕ НАРУШАТЬ
+```
+Карточки:        bg-card rounded-2xl border border-border p-6
+Hover кнопок:    hover:bg-primary/[0.05]
+Hover строк:     hover:bg-primary/[0.05]  
+Active controls: border-2 border-primary bg-primary/15
+Inactive:        border-2 border-border
+Focus:           focus:ring-2 focus:ring-primary/30 focus:border-primary
+Radius:          rounded-xl (контролы), rounded-2xl (карточки)
+Текст:           text-foreground, text-muted-foreground, text-primary — НЕ hardcoded
+Glass светлая:   bg-white/70 backdrop-blur-xl border-white/30
+Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
+НЕ ИСПОЛЬЗОВАТЬ: rounded-md, border-input, ring-ring, hardcoded rgba/hex
+НЕ ПРИДУМЫВАТЬ:  новые стили. Собирать из существующих glass-*/bg-card/border-border
+```
+
+### 🔥 ПРИОРИТЕТ 0 — Полировка стилей ✅ ГОТОВО (15.04.2026)
+**Что сделано:**
+- ✅ 78 → 0 TypeScript ошибок (Prisma generate + role casts + types)
+- ✅ Профиль оформления в едином стиле (как `/admin/appearance`)
+- ✅ ARAY Control: только уведомления + кнопка "Настроить →"
+- ✅ Mobile drawer: убраны дубли, ссылка на профиль + язык
+- ✅ Glassmorphism в светлой теме
+- ✅ Hover эффекты стандартизированы → `primary/[0.05]`
+
+### 🔥 ПРИОРИТЕТ 1 — Единая админка для всех ролей ✅ ПОЛНОСТЬЮ ГОТОВ (14.04.2026)
 **Что сделано:**
 - ✅ `cabinet/layout.tsx` → AdminShell (glassmorphism) для всех ролей
 - ✅ `admin-nav.tsx` → единая навигация: общие разделы (Профиль, Отзывы, Медиа, Подписки, История) + ролевые
@@ -798,11 +891,11 @@ const { theme, setTheme } = useTheme();
 - ✅ Сотрудники тоже имеют доступ к `/cabinet/*` (личные разделы)
 
 **Что осталось (следующие сессии):**
-- [ ] Профиль с аватаркой (загрузка фото, кроп)
-- [ ] Наполнить Медиабиблиотеку (агрегация фото из отзывов, документов заказов)
-- [ ] Подписки — привязка к поставщикам/магазинам
-- [ ] История — логирование действий (просмотры, заказы)
-- [ ] Permissions система: каждый раздел проверяет права
+- [x] Профиль с аватаркой (загрузка фото, кроп) ✅ ГОТОВО
+- [x] Наполнить Медиабиблиотеку (агрегация фото из отзывов, документов заказов) ✅ ГОТОВО
+- [x] Подписки — привязка к поставщикам/магазинам ✅ ГОТОВО
+- [x] История — логирование действий (просмотры, заказы) ✅ ГОТОВО
+- [x] Permissions система: каждый раздел проверяет права ✅ ГОТОВО
 - [x] `/cabinet/appearance` — персональные настройки темы ✅ СОЗДАНО
 
 ### 🔥 ПРИОРИТЕТ 2 — Профили отзывщиков + статусы (для биржи)
@@ -827,12 +920,34 @@ const { theme, setTheme } = useTheme();
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
 
 ### Известные баги (исправить в начале следующей сессии)
-- [ ] **Формы профиля: синяя подсветка focus** — при клике на input подсвечивается синим (дефолтный browser focus) вместо `--primary` цвета темы. Нужно унифицировать все формы: `focus:ring-primary focus:border-primary`. Затронуты: `cabinet/profile/page.tsx` (input'ы), и проверить ВСЕ формы на сайте (checkout, login, register, review-form). Эталон: форма отзывов на клиентском сайте — без внутреннего фона, рамка подсвечивается цветом темы.
-- [ ] **Аудит всех форм** — пройтись по всем `<Input>`, `<textarea>`, `<select>` на сайте и привести к единому стилю: `border-border focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-xl`
+- [x] **Формы профиля: синяя подсветка focus** — ✅ ИСПРАВЛЕНО (сессия 14.04.2026). Все Input/Select/Textarea/Button переведены на `focus:ring-primary/30 focus:border-primary`. Убраны все `ring-ring`, `border-input` → `border-border`, `rounded-md` → `rounded-xl`. Затронуто 15+ файлов.
+- [x] **Аудит всех форм** — ✅ ИСПРАВЛЕНО. Единый стиль на всех формах: login, register, checkout, profile, reviews, staff, email, join, contact-form, partnership-modal. Создан `components/ui/textarea.tsx`.
+
+### Сессия 14.04.2026 — Экосистема кабинета
+- [x] Аватар профиля — загрузка, кроп (circular canvas crop modal), сохранение
+  - `User.avatarUrl` поле в Prisma
+  - `POST/DELETE /api/cabinet/avatar` — загрузка/удаление
+  - Кроп-модал: drag + zoom slider → export 256x256 JPEG
+- [x] Медиабиблиотека — агрегация фото из отзывов + PDF счетов
+  - `GET /api/cabinet/media` — собирает review photos, avatar, order PDFs
+  - UI с табами (Все/Фото/Документы), lightbox, скачивание PDF
+- [x] Подписки — модель Subscription + CRUD API + UI
+  - `Subscription` модель: userId + targetType (supplier/category/brand) + targetId + targetName
+  - `GET/POST/DELETE /api/cabinet/subscriptions`
+  - UI с категориями, статистикой, отписка в один клик
+- [x] История — ActivityLog модель + API + UI
+  - `ActivityLog` модель: userId + action + targetId + meta (JSON)
+  - `GET/POST /api/cabinet/history` — с фильтрами по типу действия
+  - UI: карточки статистики (кликабельные фильтры) + лента активности
+- [x] Permissions система — `lib/permissions.ts`
+  - `canAccess(role, section)` — проверка прав по роли
+  - `pathToSection(path)` — маппинг URL → section
+  - `AccessGuard` компонент в admin-shell — блокирует доступ с красивой заглушкой
+  - SUPER_ADMIN/ADMIN имеют доступ ко всему
+  - Каждая роль видит только свои разделы
 
 ### Средний приоритет
 - Аналитика с DatePicker + экспорт Excel/PDF
-- Права сотрудников (permissions String[])
 - Фото в отзывах — CDN/S3 вместо локального `/uploads/`
 - PhoneInput с маской +7
 

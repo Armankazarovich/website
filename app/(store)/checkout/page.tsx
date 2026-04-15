@@ -761,7 +761,7 @@ export default function CheckoutPage() {
               id="comment"
               placeholder="Особые пожелания, удобное время доставки..."
               rows={3}
-              className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               {...register("comment")}
             />
           </div>

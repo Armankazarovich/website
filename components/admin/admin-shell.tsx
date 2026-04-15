@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
+import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdminPageHelp, LazyAdminTour } from "@/components/admin/lazy-components";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -16,11 +17,11 @@ import {
 // ── Ключи localStorage ────────────────────────────────────────────────────────
 const LS_CLASSIC = "aray-classic-mode";
 const LS_BG_MODE = "aray-bg-mode"; // "classic" | "video"
-const LS_FONT    = "aray-font-size";
+export const LS_FONT    = "aray-font-size";
 
 type BgMode = "classic" | "video";
 
-function useClassicMode() {
+export function useClassicMode() {
   const [bgMode, setBgMode] = useState<BgMode>("classic");
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
@@ -62,7 +63,7 @@ function useClassicMode() {
 }
 
 // ── Звук нового заказа (Web Audio API, без файлов) ───────────────────────────
-function playOrderChime() {
+export function playOrderChime() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
     const o1 = ctx.createOscillator(); const g1 = ctx.createGain();
@@ -252,542 +253,12 @@ import { usePalette, PALETTES } from "@/components/palette-provider";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { AdminSidebarWeather } from "@/components/admin/admin-dashboard-widgets";
 import { TourTriggerButton } from "@/components/admin/admin-tour";
-
-// ── ARAY Translation Check — проверка грамматики перевода ────────────────────
-function ArayTranslationCheck() {
-  const { lang } = useAdminLang();
-  const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; issues: string[] } | null>(null);
-
-  if (lang === "ru") return null; // Русский — проверка не нужна
-
-  async function checkGrammar() {
-    setChecking(true);
-    setResult(null);
-    try {
-      // Собираем видимый текст страницы (main контент, не сайдбар)
-      const main = document.querySelector("main");
-      if (!main) { setResult({ ok: true, issues: [] }); return; }
-      const text = main.innerText.substring(0, 2000); // Первые 2000 символов
-      const langName = lang === "en" ? "English" : lang === "de" ? "German" : lang === "fr" ? "French" : lang === "es" ? "Spanish" : lang;
-
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{
-            role: "user",
-            content: `You are a professional translator and grammar checker. Check this ${langName} translation for grammar errors, awkward phrasing, or untranslated words. The original language is Russian. Reply in JSON format: {"ok": true/false, "issues": ["issue1", "issue2"]}. Max 5 issues. If translation is good, return {"ok": true, "issues": []}. Be concise.\n\nText to check:\n${text}`
-          }],
-          context: "translation_check"
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const reply = data.reply || data.message || "";
-        try {
-          const jsonMatch = reply.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            setResult(JSON.parse(jsonMatch[0]));
-          } else {
-            setResult({ ok: true, issues: [reply.substring(0, 200)] });
-          }
-        } catch {
-          setResult({ ok: true, issues: [] });
-        }
-      }
-    } catch {
-      setResult({ ok: false, issues: ["Не удалось проверить — попробуйте позже"] });
-    } finally {
-      setChecking(false);
-    }
-  }
-
-  return (
-    <div className="pt-2 border-t" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-      <button
-        onClick={checkGrammar}
-        disabled={checking}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[11px] font-semibold transition-all"
-        style={{
-          background: result?.ok === true ? "rgba(34,197,94,0.15)" : result?.ok === false ? "rgba(239,68,68,0.15)" : "hsl(var(--primary)/0.12)",
-          color: result?.ok === true ? "#22c55e" : result?.ok === false ? "#ef4444" : "hsl(var(--primary))",
-          border: "1px solid " + (result?.ok === true ? "rgba(34,197,94,0.25)" : result?.ok === false ? "rgba(239,68,68,0.25)" : "hsl(var(--primary)/0.2)"),
-        }}
-      >
-        {checking ? (
-          <><span className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" /> Проверяю...</>
-        ) : result?.ok === true ? (
-          "✓ Перевод OK"
-        ) : result?.ok === false ? (
-          "⚠ Найдены замечания"
-        ) : (
-          "🔍 ARAY: Проверить перевод"
-        )}
-      </button>
-      {result && result.issues.length > 0 && (
-        <div className="mt-2 p-2 rounded-xl text-[10px] space-y-1" style={{ background: "rgba(239,68,68,0.08)" }}>
-          {result.issues.map((issue, i) => (
-            <p key={i} className="text-white/70">• {issue}</p>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
-function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
-  const [count, setCount] = useState(0);
-  const [bellOpen, setBellOpen] = useState(false);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-  const router = useRouter();
-  const classic = useClassicMode();
-
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const res = await fetch("/api/admin/notifications/count");
-        if (res.ok) { const d = await res.json(); setCount(d.total ?? 0); }
-      } catch {}
-    };
-    fetchCount();
-    const t = setInterval(fetchCount, 30000);
-    return () => clearInterval(t);
-  }, []);
-
-  const openBell = async () => {
-    setBellOpen(true);
-    if (!orders.length) {
-      setLoadingOrders(true);
-      try {
-        const res = await fetch("/api/admin/orders?status=NEW&limit=5");
-        if (res.ok) { const d = await res.json(); setOrders(d.orders ?? []); }
-      } catch {} finally { setLoadingOrders(false); }
-    }
-  };
-
-  return (
-    <div className="flex items-center gap-1.5 shrink-0">
-      {/* Уведомления — pill кнопка */}
-      <div className="relative">
-        <button
-          onClick={openBell}
-          style={{ WebkitTapHighlightColor: "transparent",
-            ...(count > 0 ? { background: "hsl(var(--primary)/0.20)", border: "1px solid hsl(var(--primary)/0.40)" } : {}),
-          }}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all active:scale-95 ${count > 0 ? "" : "glass-pill"}`}
-        >
-          <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.55)" }} />
-          {count > 0 && (
-            <span className="text-[11px] font-bold leading-none" style={{ color: "hsl(var(--primary))" }}>
-              {count > 99 ? "99+" : count}
-            </span>
-          )}
-        </button>
-
-        {/* Dropdown уведомлений */}
-        {bellOpen && (
-          <>
-            <div className="fixed inset-0 z-[80]" onClick={() => setBellOpen(false)} />
-            <div className="glass-popup absolute right-0 top-full mt-2 z-[81] w-72 rounded-2xl overflow-hidden">
-              <div className="px-4 py-3 border-b glass-popup-divider">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Новые заказы</p>
-              </div>
-              {loadingOrders ? (
-                <div className="flex justify-center py-6">
-                  <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                </div>
-              ) : orders.length === 0 ? (
-                <p className="text-center text-muted-foreground text-sm py-6">Нет новых заказов</p>
-              ) : (
-                <div className="py-1.5 max-h-64 overflow-y-auto">
-                  {orders.map((o: any) => (
-                    <button key={o.id} onClick={() => { router.push(`/admin/orders/${o.id}`); setBellOpen(false); }}
-                      className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-primary/[0.04] transition-colors text-left">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">#{o.orderNumber} {o.guestName || "—"}</p>
-                        <p className="text-[11px] text-muted-foreground">{o.guestPhone || ""}</p>
-                      </div>
-                      <span className="text-xs font-semibold text-primary shrink-0">
-                        {o.totalAmount ? `${Number(o.totalAmount).toLocaleString()} ₽` : ""}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="border-t glass-popup-divider">
-                <button onClick={() => { router.push("/admin/orders"); setBellOpen(false); }}
-                  className="w-full py-3 text-center text-xs font-semibold text-primary hover:text-primary/80 transition-colors">
-                  Все заказы →
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Настройки — gear pill */}
-      <button
-        onClick={onSettingsOpen}
-        style={{ WebkitTapHighlightColor: "transparent" }}
-        className="glass-pill flex items-center gap-1 px-2.5 py-1.5 rounded-full transition-all active:scale-95"
-      >
-        <Settings className="w-4 h-4 glass-text-secondary" />
-      </button>
-    </div>
-  );
-}
+import { ArayControlCenter } from "@/components/admin/aray-control-center";
+import { MobileFontControl, AdminMobileActionPill, ArayTranslationCheck } from "@/components/admin/admin-mobile-settings";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // ✦ ARAY Control Center — единая панель уведомлений + оформления
 // ══════════════════════════════════════════════════════════════════════════════
-function ArayControlCenter({ userRole }: { userRole?: string }) {
-  const isClient = userRole === "USER";
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"notif" | "style">(userRole === "USER" ? "style" : "notif");
-  const [count, setCount] = useState(0);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [pendingStaff, setPendingStaff] = useState<any[]>([]);
-  const [loadingNotif, setLoadingNotif] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const { palette, setPalette } = usePalette();
-  const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
-  const { t } = useAdminLang();
-  const ccSidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
-  const ref = useRef<HTMLDivElement>(null);
-  const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
-  // Mounted guard for hydration safety (useTheme returns undefined on server)
-  const [ccMounted, setCcMounted] = useState(false);
-  useEffect(() => setCcMounted(true), []);
-  const safeTheme = ccMounted ? theme : "dark";
-  const router = useRouter();
-  const prevCountRef = useRef<number | null>(null);
-
-  // Закрытие по клику снаружи
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
-
-  // Polling счётчика новых заказов (staff only)
-  useEffect(() => {
-    if (isClient) return;
-    const fetchCount = async () => {
-      try {
-        const res = await fetch("/api/admin/notifications/count");
-        if (res.ok) {
-          const d = await res.json();
-          const newOrders = d.newOrders ?? 0;
-          if (prevCountRef.current !== null && newOrders > prevCountRef.current) playOrderChime();
-          prevCountRef.current = newOrders;
-          setCount(d.total ?? 0);
-        }
-      } catch {}
-    };
-    fetchCount();
-    const t = setInterval(fetchCount, 30000);
-    return () => clearInterval(t);
-  }, [isClient]);
-
-  const calcPos = () => {
-    if (ref.current) {
-      const r = ref.current.getBoundingClientRect();
-      setPanelPos({ bottom: window.innerHeight - r.top + 6, left: r.left });
-    }
-  };
-
-  const openNotif = async () => {
-    calcPos(); setTab("notif"); setOpen(true);
-    setLoadingNotif(true);
-    try {
-      const [ordersRes, reviewsRes, staffRes] = await Promise.all([
-        fetch("/api/admin/orders?status=NEW&limit=5").then(r => r.ok ? r.json() : { orders: [] }).catch(() => ({ orders: [] })),
-        fetch("/api/admin/reviews?pending=true&limit=5").then(r => r.ok ? r.json() : []).catch(() => []),
-        fetch("/api/admin/staff?status=PENDING&limit=5").then(r => r.ok ? r.json() : []).catch(() => []),
-      ]);
-      setOrders(ordersRes.orders ?? []);
-      setReviews(Array.isArray(reviewsRes) ? reviewsRes : reviewsRes.reviews ?? []);
-      setPendingStaff(Array.isArray(staffRes) ? staffRes : staffRes.staff ?? []);
-    } catch {} finally { setLoadingNotif(false); }
-  };
-
-  // Единые размеры шрифтов — те же значения что в AdminFontPicker
-  const FONT_SIZES_CC = [
-    { id: "sm", label: "Компакт", px: "13px",   scale: "0.929" },
-    { id: "md", label: "Норм",    px: "14px",   scale: "1"     },
-    { id: "lg", label: "Крупн",   px: "15.5px", scale: "1.107" },
-  ];
-  const [fontActive, setFontActive] = useState("md");
-
-  // ── Инициализация шрифта при загрузке (применяет к DOM, не только к state) ──
-  useEffect(() => {
-    const saved = localStorage.getItem(LS_FONT);
-    const id = saved || (window.innerWidth < 768 ? "sm" : "md");
-    setFontActive(id);
-    const size = FONT_SIZES_CC.find(f => f.id === id) || FONT_SIZES_CC[1];
-    document.documentElement.style.setProperty("font-size", size.px);
-    document.documentElement.style.setProperty("--aray-font-scale", size.scale);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const pickFont = (id: string) => {
-    const s = FONT_SIZES_CC.find(f => f.id === id)!;
-    setFontActive(id);
-    localStorage.setItem(LS_FONT, id);
-    document.documentElement.style.setProperty("font-size", s.px);
-    document.documentElement.style.setProperty("--aray-font-scale", s.scale);
-  };
-
-  return (
-    <div ref={ref} className="relative flex-1 flex items-center">
-
-      {/* ── Trigger: Bell (staff only) + ARAY ─────────────────── */}
-      {!isClient && (
-        <button onClick={openNotif} title="Уведомления"
-          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 transition-all hover:bg-white/[0.06]">
-          <div className="relative">
-            <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
-            {count > 0 && (
-              <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white leading-none"
-                style={{ background: "hsl(var(--primary))" }}>
-                {count > 9 ? "9+" : count}
-              </span>
-            )}
-          </div>
-        </button>
-      )}
-
-      <button onClick={() => { calcPos(); setTab("style"); setOpen(o => !o); }} title="Оформление — палитра, тема, шрифт"
-        className="flex-1 flex items-center justify-center gap-1 py-2.5 transition-all hover:bg-white/[0.06]"
-        style={{ borderLeft: "1px solid rgba(255,255,255,0.06)" }}>
-        <Zap className="w-3.5 h-3.5" style={{ color: open && tab === "style" ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
-        <span className="text-[10px] font-bold tracking-wider" style={{ color: open && tab === "style" ? "hsl(var(--primary))" : "rgba(255,255,255,0.28)" }}>ARAY</span>
-      </button>
-
-      {/* ══ ARAY Control Center Panel ════════════════════════════ */}
-      {open && panelPos && (
-        <div className="aray-dark-panel fixed w-[260px] z-[200] rounded-2xl overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200"
-          style={{ bottom: panelPos.bottom, left: panelPos.left, background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}ee)`, border: "1px solid rgba(255,255,255,0.08)", backdropFilter: "blur(24px)" }}>
-
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b glass-popup-divider">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.45), hsl(var(--primary)/0.12))", boxShadow: "0 0 10px hsl(var(--primary)/0.3)" }}>
-                <Zap className="w-3 h-3 text-primary" />
-              </div>
-              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted-foreground">ARAY Control</span>
-            </div>
-            <button onClick={() => setOpen(false)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-primary/[0.04] transition-colors">
-              <X className="w-3 h-3 text-muted-foreground" />
-            </button>
-          </div>
-
-          {/* Tab switcher (staff sees both, clients see only style) */}
-          {!isClient ? (
-            <div className="flex gap-1 p-2 border-b glass-popup-divider">
-              <button onClick={() => setTab("notif")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "notif" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
-                <Bell className="w-3 h-3" />
-                Уведомления
-                {count > 0 && (
-                  <span className="px-1 py-0.5 rounded-full text-[8px] font-bold leading-none"
-                    style={{ background: "hsl(var(--primary))", color: "#fff" }}>{count}</span>
-                )}
-              </button>
-              <button onClick={() => setTab("style")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-[10px] font-semibold transition-all border ${tab === "style" ? "glass-control-active text-primary" : "glass-control glass-text-muted"}`}>
-                <Palette className="w-3 h-3" />
-                Оформление
-              </button>
-            </div>
-          ) : (
-            <div className="px-4 py-2 border-b glass-popup-divider">
-              <p className="text-[10px] font-semibold glass-text-muted text-center">Настройки оформления</p>
-            </div>
-          )}
-
-          {/* Tab content */}
-          <div className="overflow-y-auto" style={{ maxHeight: "68vh" }}>
-
-            {/* ── NOTIFICATIONS ── */}
-            {tab === "notif" && (
-              <div>
-                {loadingNotif ? (
-                  <div className="flex justify-center py-8">
-                    <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                  </div>
-                ) : (orders.length === 0 && reviews.length === 0 && pendingStaff.length === 0) ? (
-                  <div className="text-center py-8">
-                    <Bell className="w-7 h-7 text-muted-foreground/20 mx-auto mb-2" />
-                    <p className="text-muted-foreground text-xs">Нет новых уведомлений</p>
-                  </div>
-                ) : (
-                  <div className="py-1">
-                    {/* Новые заказы */}
-                    {orders.map((o: any) => (
-                      <button key={`order-${o.id}`}
-                        onClick={() => { router.push(`/admin/orders`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: "hsl(var(--primary)/0.14)", border: "1px solid hsl(var(--primary)/0.22)" }}>
-                          <ShoppingBag className="w-3 h-3 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold text-foreground truncate">
-                            #{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
-                        </div>
-                        <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-                      </button>
-                    ))}
-                    {/* Новые отзывы */}
-                    {reviews.map((r: any) => (
-                      <button key={`review-${r.id}`}
-                        onClick={() => { router.push(`/admin/reviews`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: "hsl(45 93% 47% / 0.14)", border: "1px solid hsl(45 93% 47% / 0.22)" }}>
-                          <Star className="w-3 h-3" style={{ color: "hsl(45 93% 47%)" }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold text-foreground truncate">
-                            {r.name || "Отзыв"} · {"★".repeat(r.rating || 5)}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground truncate">{r.text?.slice(0, 60) || "Новый отзыв"}</p>
-                        </div>
-                        <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-                      </button>
-                    ))}
-                    {/* Заявки сотрудников */}
-                    {pendingStaff.map((s: any) => (
-                      <button key={`staff-${s.id}`}
-                        onClick={() => { router.push(`/admin/staff`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
-                        <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: "hsl(200 80% 50% / 0.14)", border: "1px solid hsl(200 80% 50% / 0.22)" }}>
-                          <UserPlus className="w-3 h-3" style={{ color: "hsl(200 80% 50%)" }} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-semibold text-foreground truncate">
-                            {s.name || s.email || "Заявка"}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground">Ожидает одобрения</p>
-                        </div>
-                        <ArrowRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div className="px-3 py-2 border-t glass-popup-divider">
-                  <button onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-                    className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-primary/[0.04] transition-colors"
-                    style={{ color: "hsl(var(--primary))" }}>
-                    Все новые заказы →
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ── STYLE ── */}
-            {tab === "style" && (
-              <div className="p-4 space-y-4">
-
-                {/* Палитра */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Цвет интерфейса</p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {PALETTES.map((p) => (
-                      <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                        className="w-7 h-7 rounded-full shrink-0 transition-all active:scale-90"
-                        style={{
-                          background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                          ...(palette === p.id
-                            ? { outline: classic ? "2px solid hsl(var(--primary))" : "2px solid rgba(255,255,255,0.85)", outlineOffset: "2px" }
-                            : { opacity: 0.55 })
-                        }} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Тема */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Тема</p>
-                  <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                    className="glass-control w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                      {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5 text-violet-400" /> : <Moon className="w-3.5 h-3.5 text-violet-400" />}
-                    </div>
-                    <span className="flex-1 text-left text-[12px] font-medium glass-text-primary">
-                      {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
-                    </span>
-                    <div className="relative w-9 h-5 rounded-full shrink-0 glass-pill"
-                      style={{ background: safeTheme === "dark" ? "hsl(var(--primary)/0.45)" : undefined }}>
-                      <div className="absolute top-[3px] w-3.5 h-3.5 rounded-full transition-all duration-200"
-                        style={{ background: safeTheme === "dark" ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", left: safeTheme === "dark" ? "calc(100% - 17px)" : "3px" }} />
-                    </div>
-                  </button>
-                </div>
-
-                {/* Фон */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("bg_panel")}</p>
-                  <div className="flex gap-1">
-                    {([
-                      { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic") },
-                      { id: "video" as BgMode, icon: Film, label: t("bg_video") },
-                    ]).map(opt => (
-                      <button key={opt.id} onClick={() => setBg(opt.id)}
-                        className={`flex flex-col items-center gap-1 flex-1 py-2.5 rounded-xl transition-all border ${bgMode === opt.id ? "glass-control-active" : "glass-control"}`}>
-                        <opt.icon className={`w-4 h-4 ${bgMode === opt.id ? "text-primary" : "glass-text-muted"}`} />
-                        <span className={`text-[9px] leading-none ${bgMode === opt.id ? "text-primary font-semibold" : "glass-text-muted"}`}>{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Шрифт */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">{t("font_size")}</p>
-                  <div className="flex items-end gap-1">
-                    {FONT_SIZES_CC.map(s => (
-                      <button key={s.id} onClick={() => pickFont(s.id)}
-                        className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-xl transition-all border ${fontActive === s.id ? "glass-control-active" : "glass-control"}`}>
-                        <span className={fontActive === s.id ? "text-primary" : "glass-text-muted"} style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}>A</span>
-                        <span className="text-[8px] leading-none glass-text-muted">{s.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Язык */}
-                <div>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] mb-2 glass-text-label">Язык</p>
-                  <AdminLangPickerInline />
-                </div>
-
-                {/* ARAY грамматика — проверка качества перевода */}
-                <ArayTranslationCheck />
-
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface AdminShellProps {
   role: string;
@@ -841,44 +312,6 @@ function usePageTitle() {
     if (pathname === path || (path !== "/admin" && pathname.startsWith(path))) return title;
   }
   return "Панель управления";
-}
-
-// ── Mobile font size inline control ──────────────────────────────────────────
-const FONT_SIZES = [
-  { id: "xs", label: "Мини",    px: "12px",   scale: "0.857" },
-  { id: "sm", label: "Компакт", px: "13px",   scale: "0.929" },
-  { id: "md", label: "Обычный", px: "14px",   scale: "1" },
-  { id: "lg", label: "Крупнее", px: "15.5px", scale: "1.107" },
-  { id: "xl", label: "Макс",    px: "17px",   scale: "1.214" },
-];
-
-function MobileFontControl() {
-  const [active, setActive] = useState("md");
-  useEffect(() => {
-    const saved = localStorage.getItem(LS_FONT);
-    if (saved) setActive(saved);
-  }, []);
-
-  function pick(id: string) {
-    const s = FONT_SIZES.find(f => f.id === id)!;
-    setActive(id);
-    localStorage.setItem(LS_FONT, id);
-    document.documentElement.style.setProperty("font-size", s.px);
-    document.documentElement.style.setProperty("--aray-font-scale", s.scale);
-  }
-
-  return (
-    <div className="flex items-end justify-between gap-1.5">
-      {FONT_SIZES.map(s => (
-        <button key={s.id} onClick={() => pick(s.id)}
-          className={`flex flex-col items-center gap-1 flex-1 py-2 rounded-2xl transition-all border ${active === s.id ? "glass-control-active" : "glass-control"}`}>
-          <span style={{ fontSize: s.px, lineHeight: 1, fontWeight: 800 }}
-            className={active === s.id ? "text-primary" : "text-white/50"}>A</span>
-          <span className="text-[9px] font-medium text-white/40 leading-none">{s.label.slice(0, 4)}</span>
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
@@ -1101,105 +534,30 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             </button>
           </div>
 
-          {/* Settings content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-6">
+          {/* Settings content — links only, no duplicate controls */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
 
-            {/* Язык */}
-            <div>
+            {/* Оформление — ссылка на профиль */}
+            <Link href="/cabinet/profile#appearance"
+              className="glass-control w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all"
+              onClick={() => setMobileSettingsOpen(false)}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.08))" }}>
+                <Palette className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/90"}`}>Оформление</p>
+                <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Тема, палитра, фон, шрифт</p>
+              </div>
+              <ArrowRight className={`w-4 h-4 ${classic ? "text-muted-foreground/30" : "text-white/30"}`} />
+            </Link>
+
+            {/* Язык — быстрый переключатель оставляем */}
+            <div className="glass-card rounded-2xl p-4">
               <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
                 Язык / Language
               </p>
               <AdminLangPickerInline />
-            </div>
-
-            {/* Размер шрифта */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <ALargeSmall className="w-3.5 h-3.5 text-cyan-400" />
-                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
-                  Размер шрифта
-                </p>
-              </div>
-              <MobileFontControl />
-            </div>
-
-
-            {/* Режим фона */}
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>{t("bg_panel")}</p>
-              <div className="flex gap-2">
-                {([
-                  { id: "classic" as BgMode, icon: Monitor, label: t("bg_classic"), desc: "—" },
-                  { id: "video" as BgMode, icon: Film, label: t("bg_video"), desc: "—" },
-                ]).map(opt => (
-                  <button key={opt.id} onClick={() => setBg(opt.id)}
-                    className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-2xl transition-all border ${bgMode === opt.id ? "glass-control-active" : "glass-control"}`}>
-                    <opt.icon className={`w-5 h-5 ${bgMode === opt.id ? "text-primary" : "glass-text-muted"}`} />
-                    <span className={`text-[11px] font-semibold ${bgMode === opt.id ? "text-primary" : "text-white/60"}`}>{opt.label}</span>
-                    <span className="text-[9px] glass-text-muted">{opt.desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Палитра */}
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
-                Цветовая палитра
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                {PALETTES.map((p) => (
-                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className="w-9 h-9 rounded-full shrink-0 transition-all active:scale-90"
-                    style={{
-                      background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                      ...(palette === p.id
-                        ? { outline: "2.5px solid rgba(255,255,255,0.9)", outlineOffset: "3px" }
-                        : { opacity: 0.5 })
-                    }} />
-                ))}
-              </div>
-            </div>
-
-            {/* Тема */}
-            <div>
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
-                Тема
-              </p>
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="glass-control w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(167,139,250,0.3), rgba(167,139,250,0.08))" }}>
-                  {safeTheme === "dark"
-                    ? <Sun className="w-4 h-4 text-violet-400" />
-                    : <Moon className="w-4 h-4 text-violet-400" />}
-                </div>
-                <div className="flex-1 text-left">
-                  <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/85"}`}>
-                    {safeTheme === "dark" ? "Тёмная тема" : "Светлая тема"}
-                  </p>
-                  <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/35"}`}>
-                    Нажми чтобы переключить
-                  </p>
-                </div>
-                <div className="w-10 h-5.5 rounded-full relative"
-                  style={classic ? {
-                    background: safeTheme === "dark" ? "hsl(var(--primary)/0.4)" : "hsl(var(--muted))",
-                    border: "1px solid hsl(var(--border))",
-                  } : {
-                    background: safeTheme === "dark"
-                      ? "hsl(var(--primary)/0.4)"
-                      : "rgba(255,255,255,0.15)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                  }}>
-                  <div className="absolute top-0.5 w-4 h-4 rounded-full transition-all duration-200"
-                    style={{
-                      background: safeTheme === "dark" ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)",
-                      left: safeTheme === "dark" ? "calc(100% - 18px)" : "2px",
-                    }} />
-                </div>
-              </button>
             </div>
 
             {/* На сайт */}
@@ -1233,7 +591,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         {/* Desktop: хедер убран полностью — поиск через Арая снизу */}
 
         <div className="pt-0" style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}>
-          <div className="px-2.5 py-2 lg:p-6">{children}</div>
+          <div className="px-2.5 py-2 lg:p-6"><AccessGuard role={role}>{children}</AccessGuard></div>
         </div>
       </main>
 

@@ -35,7 +35,7 @@ const STATUS_DESCRIPTIONS: Record<string, string> = {
 export async function GET(req: NextRequest) {
   const session = await auth();
   const role = session?.user?.role;
-  if (!session || !STAFF_ROLES.includes(role)) {
+  if (!session || !STAFF_ROLES.includes(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const session = await auth();
   const role = session?.user?.role;
-  if (!session || !STAFF_ROLES.includes(role)) {
+  if (!session || !STAFF_ROLES.includes(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

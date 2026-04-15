@@ -67,14 +67,14 @@ function matchConditions(conditions: Record<string, any>, payload: Record<string
     if (typeof expectedValue === "object" && expectedValue !== null) {
       // Handle ranges or complex conditions: { $gt: 30000 }
       for (const [op, opValue] of Object.entries(expectedValue)) {
-        if (op === "$gt" && !(payloadValue > opValue)) return false;
-        if (op === "$gte" && !(payloadValue >= opValue)) return false;
-        if (op === "$lt" && !(payloadValue < opValue)) return false;
-        if (op === "$lte" && !(payloadValue <= opValue)) return false;
+        if (op === "$gt" && !(payloadValue > (opValue as number))) return false;
+        if (op === "$gte" && !(payloadValue >= (opValue as number))) return false;
+        if (op === "$lt" && !(payloadValue < (opValue as number))) return false;
+        if (op === "$lte" && !(payloadValue <= (opValue as number))) return false;
         if (op === "$eq" && payloadValue !== opValue) return false;
         if (op === "$ne" && payloadValue === opValue) return false;
         if (op === "$in" && !Array.isArray(opValue)) return false;
-        if (op === "$in" && !opValue.includes(payloadValue)) return false;
+        if (op === "$in" && !(opValue as any[]).includes(payloadValue)) return false;
       }
     } else {
       // Simple equality check
