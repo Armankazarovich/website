@@ -225,8 +225,8 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Размер шрифта</p>
                     <div className="flex gap-1.5">
                       {FONT_SIZES_CC.map((f) => (
-                        <button key={f.id} onClick={() => applyFont(f.id)}
-                          className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${currentFont === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                        <button key={f.id} onClick={() => pickFont(f.id)}
+                          className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${fontActive === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
                           {f.label}
                         </button>
                       ))}
