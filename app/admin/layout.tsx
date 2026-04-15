@@ -58,9 +58,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   let userName: string | null = (session.user as any)?.name || null;
   let avatarUrl: string | null = null;
   if (userId) {
-    const u = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, avatarUrl: true } }).catch(() => null);
-    if (u?.name && !userName) userName = u.name;
-    if (u?.avatarUrl) avatarUrl = u.avatarUrl;
+    try {
+      const u = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+      if (u?.name && !userName) userName = u.name;
+      // avatarUrl: try separately in case field doesn't exist in DB schema
+      try {
+        const av = await prisma.$queryRaw`SELECT "avatarUrl" FROM "User" WHERE id = ${userId} LIMIT 1` as any[];
+        if (av?.[0]?.avatarUrl) avatarUrl = av[0].avatarUrl;
+      } catch {}
+    } catch {}
   }
 
   return (
