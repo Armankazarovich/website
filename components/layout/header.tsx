@@ -251,8 +251,8 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
 
         <div className="container flex items-center justify-between h-[64px] gap-3">
           {/* Logo + статус */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="relative w-10 h-10 sm:w-11 sm:h-11 shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+            <div className="relative w-11 h-11 shrink-0">
               <Image
                 src="/logo.png"
                 alt="ПилоРус"
@@ -262,15 +262,15 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 priority
               />
             </div>
-            <div className="hidden min-[380px]:flex flex-col">
-              <p className="font-display font-bold text-base sm:text-lg leading-tight text-foreground tracking-wide">
+            <div className="hidden min-[380px]:flex flex-col gap-0">
+              <p className="font-display font-bold text-lg leading-none text-foreground tracking-wide">
                 ПилоРус
               </p>
-              {/* Кнопка "Работаем" с popup расписания */}
-              <div className="relative -mt-px" ref={scheduleRef}>
+              {/* Кнопка "Работаем" с popup расписания — только десктоп */}
+              <div className="relative mt-0.5 hidden lg:block" ref={scheduleRef}>
                 <button
                   onClick={() => setScheduleOpen((v) => !v)}
-                  className="flex items-center gap-1 group cursor-pointer min-h-0 py-0"
+                  className="flex items-center gap-1.5 group cursor-pointer min-h-0 py-0"
                   aria-label="График работы"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
