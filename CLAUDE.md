@@ -688,6 +688,78 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 16.04.2026 (ночь 3) — Централизация телефонов + email sanitization
+
+**Централизация телефонов (22 файла):**
+- ✅ Создан `lib/phone-constants.ts` — PHONE_LINK, PHONE_DISPLAY, PHONE2/3 для client-компонентов
+- ✅ Server-компоненты (terms, privacy, cabinet): используют `getSiteSettings()`/`getSetting()` для динамических телефонов из БД
+- ✅ Client-компоненты (track, forgot-password, cart, variant-selector, contact-form, partnership-modal, admin/help, admin/email): используют `PHONE_LINK`/`PHONE_DISPLAY` из phone-constants
+- ✅ Lib-файлы (email.ts, mail.ts, invoice-pdf.tsx): используют `DEFAULT_SETTINGS.phone` / `DEFAULT_SETTINGS.phone_link`
+- ✅ API routes (partnership, admin/email, admin/seo): используют `DEFAULT_SETTINGS.phone`
+- ✅ Homepage (page.tsx): все 3 ссылки на телефон теперь динамические через `getSetting()`
+
+**Где телефоны остались hardcoded (намеренно):**
+- `lib/site-settings.ts` — DEFAULT_SETTINGS (источник правды)
+- `lib/phone-constants.ts` — клиентские константы (зеркало DEFAULT_SETTINGS)
+- `components/layout/header.tsx` — DEFAULT_PHONES (fallback для client)
+- `components/store/contact-widget.tsx` — default props
+- `app/admin/site/page.tsx` — placeholder текст в UI настроек
+- Metadata объекты (static export) — не могут быть динамическими
+
+**Email HTML sanitization:**
+- ✅ `app/api/admin/email/route.ts` — strip `<script>`, event handlers (`onXxx=`), `javascript:` URLs
+
+**Файлы изменены (22 файла):**
+- `lib/phone-constants.ts` — NEW: централизованные телефонные константы
+- `app/(store)/page.tsx` — 3-я ссылка на телефон динамическая
+- `app/(store)/cart/page.tsx` — PHONE_LINK/PHONE_DISPLAY
+- `app/(store)/terms/page.tsx` — getSetting()
+- `app/(store)/privacy/page.tsx` — getSetting()
+- `app/(store)/track/page.tsx` — PHONE_LINK
+- `app/(store)/product/[slug]/page.tsx` — DEFAULT_SETTINGS.phone в metadata
+- `app/(auth)/forgot-password/page.tsx` — PHONE_LINK/PHONE_DISPLAY
+- `app/cabinet/page.tsx` — getSetting()
+- `app/admin/email/page.tsx` — PHONE_DISPLAY
+- `app/admin/help/page.tsx` — PHONE_LINK/PHONE_DISPLAY
+- `app/api/admin/email/route.ts` — DEFAULT_SETTINGS.phone + HTML sanitization
+- `app/api/admin/seo/route.ts` — DEFAULT_SETTINGS.phone
+- `app/api/partnership/route.ts` — DEFAULT_SETTINGS.phone
+- `components/store/variant-selector.tsx` — PHONE_LINK
+- `components/store/partnership-modal.tsx` — PHONE_DISPLAY
+- `components/store/contact-form.tsx` — PHONE_LINK
+- `lib/email.ts` — DEFAULT_SETTINGS.phone/phone_link
+- `lib/mail.ts` — DEFAULT_SETTINGS.phone/phone_link
+- `lib/invoice-pdf.tsx` — DEFAULT_SETTINGS.phone
+
+### Сессия 16.04.2026 (ночь 2) — Полировка дизайна + UX аудит
+
+**Checkout динамический:**
+- ✅ Адрес самовывоза берётся из settings (не hardcoded)
+- ✅ Координаты Яндекс.Карт динамические (`pickup_coords` setting)
+- ✅ Режим работы уже загружался из API, теперь и адрес тоже
+
+**Orders QuickView — полный рефакторинг стилей:**
+- ✅ Убраны все inline `style={{}}` с rgba/hsl — заменены на Tailwind classes
+- ✅ Убрана зависимость от `useClassicMode()` — теперь используются CSS vars автоматически
+- ✅ `bg-muted/50 border border-border` вместо `{ background: "rgba(255,255,255,0.05)" }`
+- ✅ `text-foreground`, `text-muted-foreground`, `text-primary` вместо inline color
+
+**Глобальные стили:**
+- ✅ `globals.css`: добавлен `-webkit-tap-highlight-color: transparent` на все интерактивные элементы
+- ✅ Admin-shell: Google Translate div → Tailwind classes вместо inline style
+
+**Mobile UX:**
+- ✅ Bottom nav badge: 18px вместо 14px, text 10px вместо 9px, `bg-destructive` вместо hardcoded gradient
+- ✅ Product page edit button: `safe-area-inset-bottom` для устройств с нотчем
+
+**Файлы изменены (7 файлов):**
+- `app/(store)/checkout/page.tsx` — dynamic address/coords
+- `app/(store)/product/[slug]/page.tsx` — safe-area on edit button
+- `app/admin/orders/orders-client.tsx` — QuickView CSS refactor (removed ~30 inline styles)
+- `app/globals.css` — global tap-highlight-color
+- `components/admin/admin-shell.tsx` — cleanup inline style
+- `components/admin/admin-mobile-bottom-nav.tsx` — badge size fix
+
 ### Сессия 16.04.2026 (ночь) — Аудит: batch 2 — безопасность, UX, rate limiting
 
 **Безопасность (4 бага закрыто):**
@@ -1144,13 +1216,13 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 - [x] **Site settings API**: whitelist ключей → ЗАКРЫТО (сессия вечер)
 - [x] **Import товаров**: parseFloat NaN + sanitize → ЗАКРЫТО (сессия ночь)
 - [x] **Media API**: path traversal → ЗАКРЫТО (сессия ночь)
-- [ ] **Email API**: HTML без санитизации → `api/admin/email/route.ts` (установить sanitize-html)
+- [x] **Email API**: HTML sanitization (strip script/event handlers/javascript:) → ЗАКРЫТО (сессия ночь 3)
 - [x] **Rate limiting**: reset-password, register, staff-register → ЗАКРЫТО (сессия ночь)
 
 **Из аудита 16.04.2026 — UX/КАЧЕСТВО (средний приоритет):**
-- [ ] **Хардкод телефонов**: 15+ файлов с вписанными номерами вместо `getPhones()` → масштабный рефакторинг
+- [x] **Хардкод телефонов**: 22 файла рефакторено → `phone-constants.ts` + `getSetting()` + `DEFAULT_SETTINGS` ✅ ЗАКРЫТО (сессия ночь 3)
 - [x] **Каталог**: try/catch на Promise.all → ЗАКРЫТО (сессия вечер)
-- [ ] **Корзина**: вечный loading при ошибке API → нужен error state + "Попробовать снова"
+- [x] **Корзина**: проверено — cart использует localStorage (Zustand), нет API-вызовов → не нужен error state
 - [x] **Поиск**: error state → ЗАКРЫТО (сессия ночь)
 - [ ] **Категории/Отзывы**: жёсткое удаление без корзины (заказы имеют soft-delete, а эти нет)
 - [x] **Watermark fetch**: AbortSignal.timeout(10000) → ЗАКРЫТО (сессия ночь)
