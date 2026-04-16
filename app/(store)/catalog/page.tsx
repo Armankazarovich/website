@@ -84,11 +84,17 @@ export default async function CatalogPage({
   };
 
   // Базовый where без фильтра по типу — для подсчёта доступных типов
+  // Но учитывает выбранный размер и "в наличии", чтобы скрыть пустые типы
+  const sizeVariantFilter: Record<string, unknown> = {};
+  if (currentSize) sizeVariantFilter.size = { contains: currentSize };
+  if (currentInStock) sizeVariantFilter.inStock = true;
+
   const whereForTypes = {
     active: true,
     category: searchParams.category
       ? { slug: searchParams.category, showInMenu: true }
       : { showInMenu: true },
+    ...(Object.keys(sizeVariantFilter).length > 0 ? { variants: { some: sizeVariantFilter } } : {}),
   };
 
   const [categories, productsRaw, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
@@ -110,7 +116,14 @@ export default async function CatalogPage({
     }),
     prisma.product.count({ where }),
     prisma.productVariant.findMany({
-      where: { product: { active: true, category: categoryFilter } },
+      where: {
+        product: {
+          active: true,
+          category: categoryFilter,
+          ...(currentType ? { name: { contains: currentType, mode: "insensitive" as const } } : {}),
+        },
+        ...(currentInStock ? { inStock: true } : {}),
+      },
       select: { size: true },
       distinct: ["size"],
     }),
