@@ -257,7 +257,7 @@ export default function ProfilePage() {
         <div>
           <Label className="text-sm font-medium mb-1.5 block text-muted-foreground">Email</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Mail className="w-4 h-4" />
             </div>
             <Input
@@ -273,7 +273,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="name" className="text-sm font-medium mb-1.5 block">Ваше имя</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <User className="w-4 h-4" />
             </div>
             <Input
@@ -291,7 +291,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="phone" className="text-sm font-medium mb-1.5 block">Телефон</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Phone className="w-4 h-4" />
             </div>
             <Input
@@ -311,7 +311,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="address" className="text-sm font-medium mb-1.5 block">Адрес доставки</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <MapPin className="w-4 h-4" />
             </div>
             <Input
@@ -351,7 +351,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="currentPassword" className="text-sm font-medium mb-1.5 block">Текущий пароль</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
             </div>
             <Input
@@ -373,7 +373,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="newPassword" className="text-sm font-medium mb-1.5 block">Новый пароль</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
             </div>
             <Input
@@ -396,7 +396,7 @@ export default function ProfilePage() {
         <div>
           <Label htmlFor="confirmPassword" className="text-sm font-medium mb-1.5 block">Повторите новый пароль</Label>
           <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
             </div>
             <Input
@@ -425,135 +425,7 @@ export default function ProfilePage() {
         </Button>
       </form>
 
-      {/* Appearance — unified settings (same style as /admin/appearance) */}
-      <div id="appearance" className="bg-card rounded-2xl border border-border p-6 space-y-6">
-        <div>
-          <h2 className="font-semibold text-lg flex items-center gap-2">
-            <Palette className="w-5 h-5 text-primary" />
-            Оформление
-          </h2>
-          <p className="text-sm text-muted-foreground mt-1">Тема, цветовая палитра, фон и шрифт</p>
-        </div>
-
-        {/* Theme mode */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Режим</p>
-          <div className="flex gap-2">
-            {[
-              { value: "light", label: "Светлая", icon: <Sun className="w-4 h-4" /> },
-              { value: "dark",  label: "Тёмная",  icon: <Moon className="w-4 h-4" /> },
-              { value: "system", label: "Авто",   icon: <Monitor className="w-4 h-4" /> },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setTheme(opt.value)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border-2 transition-all ${
-                  theme === opt.value
-                    ? "border-primary bg-primary/15 text-primary font-medium"
-                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05] text-muted-foreground"
-                }`}
-              >
-                {opt.icon}
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Color palette */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Цветовая тема</p>
-          {PALETTE_GROUPS.map((group) => {
-            const visiblePalettes = group.palettes.filter((p) => enabledIds.includes(p.id));
-            if (visiblePalettes.length === 0) return null;
-            return (
-              <div key={group.label}>
-                <p className="text-xs text-muted-foreground mb-2">{group.label}</p>
-                <div className="flex gap-3 flex-wrap">
-                  {visiblePalettes.map((p) => {
-                    const active = palette === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => setPalette(p.id)}
-                        title={p.name}
-                        className="flex flex-col items-center gap-1.5 group"
-                      >
-                        <span
-                          className={`w-9 h-9 rounded-full border-2 transition-all block shadow-sm ${
-                            active
-                              ? "border-primary scale-110 shadow-md"
-                              : "border-white/20 opacity-60 hover:opacity-100 hover:scale-105"
-                          }`}
-                          style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
-                        />
-                        <span className={`text-[10px] leading-tight transition-colors ${active ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                          {p.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Background mode */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Фон панели</p>
-          <div className="flex gap-2">
-            {[
-              { id: "classic" as const, label: "Классика", icon: Monitor },
-              { id: "video" as const, label: "Видео", icon: Film },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setBgMode(opt.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border-2 transition-all ${
-                  bgMode === opt.id
-                    ? "border-primary bg-primary/15 text-primary font-medium"
-                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05] text-muted-foreground"
-                }`}
-              >
-                <opt.icon className="w-4 h-4" />
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Font size */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Размер шрифта</p>
-          <div className="flex gap-2">
-            {[
-              { id: "compact", label: "Компакт", size: "text-xs" },
-              { id: "normal", label: "Стандарт", size: "text-sm" },
-              { id: "large", label: "Крупный", size: "text-base" },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setFontSize(opt.id)}
-                className={`flex flex-col items-center gap-1 flex-1 py-3 rounded-xl text-sm border-2 transition-all ${
-                  fontSize === opt.id
-                    ? "border-primary bg-primary/15 text-primary font-medium"
-                    : "border-border hover:border-primary/40 hover:bg-primary/[0.05] text-muted-foreground"
-                }`}
-              >
-                <span className={`font-bold ${opt.size}`}>A</span>
-                <span className="text-[10px]">{opt.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Language */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Язык</p>
-          <AdminLangPickerInline />
-        </div>
-      </div>
+      {/* Оформление УБРАНО — всё управляется через ARAY Control справа */}
     </div>
   );
 }

@@ -371,17 +371,22 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Desktop sidebar ──────────────────────────────────── */}
       <aside className="hidden lg:flex w-60 shrink-0 aray-sidebar text-white flex-col fixed top-0 left-0 h-screen z-30"
         style={{ background: sidebarBg }}>
-        <div className="px-5 py-5 border-b border-white/10 shrink-0">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))", boxShadow: "0 0 12px hsl(var(--primary)/0.5)" }}>
-              <span className="text-white font-bold text-xs">П</span>
+        <div className="px-4 py-4 border-b border-white/10 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
+              {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
             </div>
-            <div>
-              <p className="font-display font-bold text-base text-white leading-none">ПилоРус</p>
-              <p className="text-[10px] text-white/45 mt-0.5 leading-none">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-sm text-white leading-none truncate">
+                {userName || (email ? email.split("@")[0] : "Пользователь")}
+              </p>
+              <p className="text-[10px] text-white/40 mt-0.5 leading-none truncate">{email}</p>
             </div>
-          </Link>
+            <Link href="/cabinet/profile" className="p-1.5 rounded-lg hover:bg-white/10 transition-colors shrink-0" title="Настройки профиля">
+              <Settings className="w-4 h-4 text-white/50" />
+            </Link>
+          </div>
         </div>
 
         {/* Nav + weather scrollable, footer always pinned at bottom */}
@@ -391,44 +396,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           <AdminSidebarWeather />
         </div>
 
-        {/* ── Подвал сайдбара: палитра + пользователь + контролы ── */}
-        <div className="shrink-0 border-t border-white/10 p-3 space-y-2">
+        {/* ── Подвал сайдбара: PWA + ссылка на сайт ── */}
+        <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
           <AdminPwaInstall />
-
-          {/* ── User Card — профессиональная карточка пользователя ── */}
-          <div className="glass-card rounded-2xl overflow-hidden">
-
-            {/* Верх карточки — аватар + имя + роль */}
-            <div className="flex items-center gap-3 px-3 py-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0 select-none"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.55))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
-                {email ? email[0].toUpperCase() : "A"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-white/90 truncate leading-tight">
-                  {email ? email.split("@")[0].split(".").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Admin"}
-                </p>
-                <p className="text-[10px] text-white/38 truncate leading-tight mt-0.5">{email}</p>
-              </div>
-              {role && (
-                <span className="shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
-                  style={{ background: "hsl(var(--primary)/0.18)", color: "hsl(var(--primary))", border: "1px solid hsl(var(--primary)/0.28)" }}>
-                  {role === "SUPER_ADMIN" ? "Владелец" : role === "ADMIN" ? "Адм" : role === "MANAGER" ? "Менеджер" : role === "COURIER" ? "Курьер" : role === "ACCOUNTANT" ? "Бухгалтер" : role === "WAREHOUSE" ? "Склад" : role === "SELLER" ? "Продавец" : role === "USER" ? "Клиент" : role}
-                </span>
-              )}
-            </div>
-
-            {/* Нижние кнопки — ARAY Control Center + На сайт */}
-            <div className="flex items-center" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-              <ArayControlCenter userRole={role} />
-              <Link href="/"
-                className="flex items-center justify-center gap-1 px-3 py-2.5 text-[10px] text-white/35 hover:text-white/75 hover:bg-white/[0.06] transition-colors shrink-0"
-                style={{ borderLeft: "1px solid rgba(255,255,255,0.06)" }}
-                title="Перейти на сайт">
-                <ShoppingBag className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
+          <Link href="/"
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors"
+            title="Перейти на сайт">
+            <ShoppingBag className="w-3.5 h-3.5" />
+            На сайт
+          </Link>
         </div>
       </aside>
 
@@ -456,24 +432,27 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           }}
           aria-describedby={undefined}>
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
-          <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between shrink-0">
-            <div>
-              <p className="font-display font-bold text-xl text-white">ПилоРус</p>
-              <p className="text-[11px] text-white/45 mt-0.5">{role === "USER" ? "Личный кабинет" : "Панель управления"}</p>
+          <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3 shrink-0">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-base"
+              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))" }}>
+              {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
             </div>
-            <div className="flex items-center gap-1">
-              <button onClick={() => { setOpen(false); setMobileSettingsOpen(true); }}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-                style={{ WebkitTapHighlightColor: "transparent" }}
-                title="Оформление">
-                <Settings className="w-5 h-5 text-white/60" />
-              </button>
-              <button onClick={() => setOpen(false)}
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-                style={{ WebkitTapHighlightColor: "transparent" }}>
-                <X className="w-5 h-5" />
-              </button>
+            <div className="flex-1 min-w-0">
+              <p className="font-display font-bold text-base text-white leading-tight truncate">
+                {userName || (email ? email.split("@")[0] : "Пользователь")}
+              </p>
+              <p className="text-[10px] text-white/40 mt-0.5 truncate">{email}</p>
             </div>
+            <Link href="/cabinet/profile" onClick={() => setOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
+              title="Настройки профиля">
+              <Settings className="w-4.5 h-4.5 text-white/50" />
+            </Link>
+            <button onClick={() => setOpen(false)}
+              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
+              style={{ WebkitTapHighlightColor: "transparent" }}>
+              <X className="w-5 h-5" />
+            </button>
           </div>
           <div className="flex-1 overflow-y-auto overscroll-contain">
             <AdminNav role={role} onNavigate={() => setOpen(false)} />
@@ -481,21 +460,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           <AdminPushPrompt />
           <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
             <AdminPwaInstall />
-            <div className="px-3 py-2">
-              <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/55 mb-2">Тема</p>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {PALETTES.map((p) => (
-                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
-                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                ))}
-                <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                  className="w-7 h-7 rounded-full shrink-0 bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
-                  {safeTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-            <div className="px-3 py-1 text-[11px] text-white/58 truncate">{email}</div>
             <Link href="/"
               className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors"
               onClick={() => setOpen(false)}>
@@ -537,20 +501,51 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           {/* Settings content — links only, no duplicate controls */}
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
 
-            {/* Оформление — ссылка на профиль */}
-            <Link href="/cabinet/profile#appearance"
-              className="glass-control w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all"
-              onClick={() => setMobileSettingsOpen(false)}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.08))" }}>
-                <Palette className="w-4 h-4 text-primary" />
+            {/* Оформление — встроенные контролы */}
+            <div className="glass-card rounded-2xl p-4 space-y-4">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Оформление</p>
+              {/* Палитры */}
+              <div className="flex flex-wrap gap-1.5">
+                {PALETTES.map((p) => (
+                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                    className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
+                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
+                ))}
               </div>
-              <div className="flex-1 text-left">
-                <p className={`text-sm font-semibold ${classic ? "text-foreground" : "text-white/90"}`}>Оформление</p>
-                <p className={`text-[11px] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Тема, палитра, фон, шрифт</p>
+              {/* Тема */}
+              <div className="flex gap-2">
+                {["light", "dark"].map((t) => (
+                  <button key={t} onClick={() => setTheme(t)}
+                    className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                    {t === "light" ? "Светлая" : "Тёмная"}
+                  </button>
+                ))}
               </div>
-              <ArrowRight className={`w-4 h-4 ${classic ? "text-muted-foreground/30" : "text-white/30"}`} />
-            </Link>
+            </div>
+
+            {/* Размер шрифта */}
+            <div className="glass-card rounded-2xl p-4">
+              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Шрифт</p>
+              <div className="flex gap-1.5">
+                {[
+                  { id: "sm", label: "Компакт" },
+                  { id: "md", label: "Норм" },
+                  { id: "lg", label: "Крупн" },
+                ].map((f) => (
+                  <button key={f.id}
+                    onClick={() => {
+                      const sizes: Record<string, { px: string; scale: string }> = { sm: { px: "13px", scale: "0.929" }, md: { px: "14px", scale: "1" }, lg: { px: "15.5px", scale: "1.107" } };
+                      const s = sizes[f.id];
+                      document.documentElement.style.setProperty("font-size", s.px);
+                      document.documentElement.style.setProperty("--aray-font-scale", s.scale);
+                      try { localStorage.setItem("aray_font", f.id); } catch {}
+                    }}
+                    className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-white/10 text-white/50 hover:bg-white/15 transition-all">
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Язык — быстрый переключатель оставляем */}
             <div className="glass-card rounded-2xl p-4">
@@ -582,6 +577,11 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
         onSettingsOpen={() => setMobileSettingsOpen(true)}
       />
+
+      {/* ─── ARAY CONTROL — липкая панель справа ─────────────── */}
+      <div className="hidden lg:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
+        <ArayControlCenter userRole={role} position="right" />
+      </div>
 
       {/* ─── Main content ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 overflow-auto lg:ml-60 relative z-[5]">
