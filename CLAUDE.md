@@ -688,6 +688,34 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 16.04.2026 (ночь) — Аудит: batch 2 — безопасность, UX, rate limiting
+
+**Безопасность (4 бага закрыто):**
+- ✅ Import API: parseFloat/parseInt валидация (NaN, отрицательные) + sanitize категорий/slug/названий (strip HTML, length limit)
+- ✅ Media API: path traversal prevention — проверка `..`, `\\`, `//` + resolvedPath.startsWith(allowedBase)
+- ✅ Watermark fetch: `AbortSignal.timeout(10000)` + проверка `res.ok`
+- ✅ Rate limiting: создан `lib/rate-limit.ts` (in-memory, cleanup каждые 100 вызовов)
+  - `POST /api/admin/clients/[id]/reset-password` — 5 за 15 мин
+  - `POST /api/staff/register` — 3 в час (по IP)
+  - `POST /api/auth/register` — 5 в час (по IP)
+
+**UX/Quality (3 бага закрыто):**
+- ✅ Search modal: error state с кнопкой "Попробовать снова" вместо тихого `.catch(() => {})`
+- ✅ Product card: `onError={() => setImgError(true)}` → fallback градиент при битых картинках (и magazine, и обычный стиль)
+- ✅ Пустой каталог: умное сообщение — объясняет ПОЧЕМУ пусто (поиск/тип/размер/наличие)
+
+**Файлы изменены (10 файлов):**
+- `app/api/admin/products/import/route.ts` — parseFloat validation + sanitize
+- `app/api/admin/media/route.ts` — path traversal checks
+- `app/api/admin/watermark/route.ts` — fetch timeout
+- `app/api/admin/clients/[id]/reset-password/route.ts` — rate limiting
+- `app/api/staff/register/route.ts` — rate limiting
+- `app/api/auth/register/route.ts` — rate limiting
+- `app/(store)/catalog/page.tsx` — smart empty state
+- `components/store/search-modal.tsx` — error state
+- `components/store/product-card.tsx` — image onError fallback
+- `lib/rate-limit.ts` — NEW: shared rate limiter
+
 ### Сессия 16.04.2026 (вечер) — Аудит безопасности + деплой-инструкция + быстрые переходы
 
 **Деплой-инструкция:**
@@ -1112,22 +1140,22 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
   - Убрать bottom nav, меню справа, ARAY Control липкий, единый правый drawer
 
 **Из аудита 16.04.2026 — БЕЗОПАСНОСТЬ (высокий приоритет):**
-- [ ] **Bulk price API**: нет лимита на процент (можно 999999%) → `api/admin/products/bulk-price/route.ts`
-- [ ] **Site settings API**: принимает любые ключи без whitelist → `api/admin/site-settings/route.ts`
-- [ ] **Import товаров**: parseFloat без проверки NaN, создание категорий без sanitize → `api/admin/products/import/route.ts`
-- [ ] **Media API**: потенциальный path traversal (`../`) → `api/admin/media/route.ts`
+- [x] **Bulk price API**: лимит -50%..+200% → ЗАКРЫТО (сессия вечер)
+- [x] **Site settings API**: whitelist ключей → ЗАКРЫТО (сессия вечер)
+- [x] **Import товаров**: parseFloat NaN + sanitize → ЗАКРЫТО (сессия ночь)
+- [x] **Media API**: path traversal → ЗАКРЫТО (сессия ночь)
 - [ ] **Email API**: HTML без санитизации → `api/admin/email/route.ts` (установить sanitize-html)
-- [ ] **Rate limiting**: нет на reset-password, email, staff creation → добавить in-memory лимитер
+- [x] **Rate limiting**: reset-password, register, staff-register → ЗАКРЫТО (сессия ночь)
 
 **Из аудита 16.04.2026 — UX/КАЧЕСТВО (средний приоритет):**
 - [ ] **Хардкод телефонов**: 15+ файлов с вписанными номерами вместо `getPhones()` → масштабный рефакторинг
-- [ ] **Каталог**: нет try/catch на Promise.all → 500 при падении одного запроса
+- [x] **Каталог**: try/catch на Promise.all → ЗАКРЫТО (сессия вечер)
 - [ ] **Корзина**: вечный loading при ошибке API → нужен error state + "Попробовать снова"
-- [ ] **Поиск**: `.catch(() => {})` глотает ошибки → нужен error state
+- [x] **Поиск**: error state → ЗАКРЫТО (сессия ночь)
 - [ ] **Категории/Отзывы**: жёсткое удаление без корзины (заказы имеют soft-delete, а эти нет)
-- [ ] **Watermark fetch**: нет таймаута → `AbortSignal.timeout(5000)`
-- [ ] **Пустой каталог**: не объясняет ПОЧЕМУ пусто → "Нет товаров по фильтру X. Сбросить?"
-- [ ] **Картинки товаров**: нет onError fallback → пустое место при битой картинке
+- [x] **Watermark fetch**: AbortSignal.timeout(10000) → ЗАКРЫТО (сессия ночь)
+- [x] **Пустой каталог**: умное сообщение → ЗАКРЫТО (сессия ночь)
+- [x] **Картинки товаров**: onError fallback → ЗАКРЫТО (сессия ночь)
 - [ ] **unoptimized={true}**: все картинки в product-card обходят Next.js оптимизацию
 
 **Из аудита 16.04.2026 — СТИЛЬ (низкий приоритет):**

@@ -166,7 +166,8 @@ export default async function ProductPage({ params }: Props) {
       {isAdmin && (
         <Link
           href={`/admin/products/${product.id}`}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl hover:bg-primary/90 hover:shadow-2xl transition-all duration-200 font-semibold text-sm group"
+          className="fixed z-50 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl hover:bg-primary/90 hover:shadow-2xl transition-all duration-200 font-semibold text-sm group"
+          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", right: "1.5rem" }}
           title="Редактировать товар в админке"
         >
           <Pencil className="w-4 h-4 group-hover:rotate-12 transition-transform" />

@@ -12,7 +12,6 @@ import {
   ChevronLeft, ChevronRight, Clock,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { useClassicMode } from "@/lib/use-classic-mode";
 
 type Order = {
   id: string;
@@ -33,17 +32,8 @@ type Stats = { todayCount: number; todayRevenue: number; newCount: number };
 function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpenFull: () => void }) {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const classic = useClassicMode();
-
-  // helpers for conditional styles
-  const cardStyle = classic
-    ? { background: "hsl(var(--muted)/0.5)", border: "1px solid hsl(var(--border))" }
-    : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" };
-  const labelColor = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)";
-  const textColor  = classic ? "hsl(var(--foreground))"       : "#fff";
-  const mutedColor = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.55)";
-  const iconColor  = classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)";
-  const divColor   = classic ? "hsl(var(--border))"           : "rgba(255,255,255,0.08)";
+  // Use CSS variable-based styling — works with both classic and glass themes
+  // Glass mode sets these vars to white-based values, classic uses standard theme values
 
   useEffect(() => {
     setLoading(true);
@@ -63,7 +53,7 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
 
   if (!order) {
     return (
-      <div className="text-center py-16" style={{ color: mutedColor }}>
+      <div className="text-center py-16 text-muted-foreground">
         <p>Не удалось загрузить заказ</p>
       </div>
     );
@@ -81,21 +71,20 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
         <span className={`text-xs font-semibold px-3 py-1.5 rounded-full ${statusColor}`}>
           {statusLabel}
         </span>
-        <div className="flex items-center gap-1.5" style={{ color: mutedColor }}>
+        <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock className="w-3.5 h-3.5" />
           <span className="text-xs">{formatDate(order.createdAt)}</span>
         </div>
       </div>
 
       {/* Клиент */}
-      <div className="rounded-2xl p-4 space-y-3" style={cardStyle}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: labelColor }}>Клиент</p>
+      <div className="rounded-2xl p-4 space-y-3 bg-muted/50 border border-border">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Клиент</p>
         <div className="flex items-center justify-between">
-          <p className="text-base font-semibold" style={{ color: textColor }}>{order.guestName || "—"}</p>
+          <p className="text-base font-semibold text-foreground">{order.guestName || "—"}</p>
           {order.guestPhone && (
             <a href={`tel:${order.guestPhone}`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium"
-              style={{ background: "hsl(var(--primary)/0.15)", border: "1px solid hsl(var(--primary)/0.4)", color: "hsl(var(--primary))" }}>
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium bg-primary/15 border border-primary/40 text-primary">
               <Phone className="w-3.5 h-3.5" />
               {order.guestPhone}
             </a>
@@ -103,38 +92,38 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
         </div>
         {order.deliveryAddress && (
           <div className="flex items-start gap-2">
-            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" style={{ color: iconColor }} />
-            <p className="text-sm" style={{ color: mutedColor }}>{order.deliveryAddress}</p>
+            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">{order.deliveryAddress}</p>
           </div>
         )}
         {order.contactMethod && (
           <div className="flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5 shrink-0" style={{ color: iconColor }} />
-            <p className="text-sm" style={{ color: mutedColor }}>Связь: {order.contactMethod}</p>
+            <MessageSquare className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Связь: {order.contactMethod}</p>
           </div>
         )}
       </div>
 
       {/* Позиции */}
       {order.items?.length > 0 && (
-        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${divColor}` }}>
-          <div className="px-4 py-2.5" style={{ background: classic ? "hsl(var(--muted)/0.3)" : "rgba(255,255,255,0.04)", borderBottom: `1px solid ${divColor}` }}>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] flex items-center gap-2" style={{ color: labelColor }}>
+        <div className="rounded-2xl overflow-hidden border border-border">
+          <div className="px-4 py-2.5 bg-muted/30 border-b border-border">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] flex items-center gap-2 text-muted-foreground">
               <Package className="w-3.5 h-3.5" /> Позиции ({order.items.length})
             </p>
           </div>
-          <div className="divide-y" style={{ borderColor: divColor }}>
+          <div className="divide-y divide-border">
             {order.items.map((item: any) => (
               <div key={item.id} className="px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: textColor }}>{item.productName}</p>
+                  <p className="text-sm font-medium truncate text-foreground">{item.productName}</p>
                   {item.variantName && (
-                    <p className="text-xs mt-0.5" style={{ color: mutedColor }}>{item.variantName}</p>
+                    <p className="text-xs mt-0.5 text-muted-foreground">{item.variantName}</p>
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold" style={{ color: textColor }}>{formatPrice(Number(item.price))}</p>
-                  <p className="text-xs" style={{ color: mutedColor }}>× {item.quantity}</p>
+                  <p className="text-sm font-bold text-foreground">{formatPrice(Number(item.price))}</p>
+                  <p className="text-xs text-muted-foreground">× {item.quantity}</p>
                 </div>
               </div>
             ))}
@@ -143,43 +132,42 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
       )}
 
       {/* Итого */}
-      <div className="rounded-2xl p-4 space-y-2" style={cardStyle}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] flex items-center gap-2" style={{ color: labelColor }}>
+      <div className="rounded-2xl p-4 space-y-2 bg-muted/50 border border-border">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] flex items-center gap-2 text-muted-foreground">
           <CreditCard className="w-3.5 h-3.5" /> Оплата
         </p>
-        <div className="flex justify-between text-sm" style={{ color: mutedColor }}>
+        <div className="flex justify-between text-sm text-muted-foreground">
           <span>Товары</span>
           <span>{formatPrice(Number(order.totalAmount))}</span>
         </div>
         {Number(order.deliveryCost) > 0 && (
-          <div className="flex justify-between text-sm" style={{ color: mutedColor }}>
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5"><Truck className="w-3.5 h-3.5" />Доставка</span>
             <span>{formatPrice(Number(order.deliveryCost))}</span>
           </div>
         )}
-        <div className="flex justify-between text-base font-bold pt-2" style={{ borderTop: `1px solid ${divColor}`, color: textColor }}>
+        <div className="flex justify-between text-base font-bold pt-2 border-t border-border text-foreground">
           <span>Итого</span>
-          <span style={{ color: "hsl(var(--primary))" }}>{formatPrice(total)}</span>
+          <span className="text-primary">{formatPrice(total)}</span>
         </div>
         {order.paymentMethod && (
-          <p className="text-xs" style={{ color: mutedColor }}>{order.paymentMethod}</p>
+          <p className="text-xs text-muted-foreground">{order.paymentMethod}</p>
         )}
       </div>
 
       {/* Изменить статус */}
-      <div className="rounded-2xl p-4" style={cardStyle}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3" style={{ color: labelColor }}>Изменить статус</p>
+      <div className="rounded-2xl p-4 bg-muted/50 border border-border">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3 text-muted-foreground">Изменить статус</p>
         <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
       </div>
 
       {/* Открыть полную страницу */}
       <button
         onClick={onOpenFull}
-        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all active:scale-[0.98]"
-        style={{ background: "hsl(var(--primary)/0.20)", border: "1.5px solid hsl(var(--primary)/0.40)" }}
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98] bg-primary/20 border-[1.5px] border-primary/40 text-primary hover:bg-primary/30"
       >
-        <ExternalLink className="w-4 h-4 text-primary" />
-        <span style={{ color: "hsl(var(--primary))" }}>Открыть полную страницу</span>
+        <ExternalLink className="w-4 h-4" />
+        Открыть полную страницу
       </button>
     </div>
   );

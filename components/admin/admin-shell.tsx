@@ -363,7 +363,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode bg-background" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
       {/* Google Translate скрытый контейнер — переводит страницу целиком */}
-      <div id="google_translate_element" style={{ position: "absolute", top: -9999, left: -9999, opacity: 0, pointerEvents: "none" }} />
+      <div id="google_translate_element" className="absolute -top-[9999px] -left-[9999px] opacity-0 pointer-events-none" />
       {bgMode === "video" && <LazyAdminVideoBg enabled />}
       {bgMode === "classic" && <LazyNeuralBg enabled />}
       <LazyCursorGlow />

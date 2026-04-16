@@ -191,8 +191,7 @@ function DockTab({ tab, pathname, badge = 0 }: {
             }}
           />
           {badge > 0 && (
-            <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-0.5 rounded-full text-[9px] font-bold text-white flex items-center justify-center leading-none"
-              style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)", boxShadow: "0 2px 6px rgba(239,68,68,0.5)" }}>
+            <span className="absolute -top-1 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white flex items-center justify-center leading-none bg-destructive shadow-sm shadow-destructive/50">
               {badge > 9 ? "9+" : badge}
             </span>
           )}

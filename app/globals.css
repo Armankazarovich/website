@@ -34,6 +34,11 @@ html.translated-ltr > body { top: 0 !important; }
 font[style], font { font-size: inherit !important; font-family: inherit !important; }
 .translated-ltr, .translated-rtl { font-family: inherit !important; }
 
+/* Убираем tap highlight на мобильных */
+button, a, [role="button"], input, select, textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @layer base {
   :root {
     --mobile-nav-bg: rgba(255, 255, 255, 0.82);
