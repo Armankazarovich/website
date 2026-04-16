@@ -6,20 +6,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const TYPE_LABELS: Record<string, string> = {
-  "обрезная":  "Доска обрезная",
-  "террасная": "Террасная доска",
-  "пола":      "Доска пола",
-  "строганная":"Строганная доска",
-  "брус":      "Брус / Брусок",
-  "вагонка":   "Вагонка",
-  "планкен":   "Планкен",
-  "блок-хаус": "Блок-хаус",
-  "плинтус":   "Погонаж / Плинтус",
-  "фанера":    "Фанера",
-  "дсп":       "ДСП / МДФ / ОСБ",
-  "доска":     "Доска",
-};
+interface TypeInfo {
+  label: string;
+  keyword: string;
+}
 
 interface Category {
   id: string;
@@ -30,7 +20,7 @@ interface Category {
 interface CatalogMobileFilterProps {
   categories: Category[];
   sizes: string[];
-  availableTypes: string[];
+  types: TypeInfo[];
   currentCategory?: string;
   currentSize: string;
   currentType: string;
@@ -40,7 +30,7 @@ interface CatalogMobileFilterProps {
 export function CatalogMobileFilter({
   categories,
   sizes,
-  availableTypes,
+  types,
   currentCategory,
   currentSize,
   currentType,
@@ -259,22 +249,22 @@ export function CatalogMobileFilter({
                   )}
 
                   {/* Types */}
-                  {availableTypes.length > 0 && (
+                  {types.length > 0 && (
                     <div>
                       <p className="py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider">Тип</p>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {availableTypes.map(type => (
+                        {types.map(t => (
                           <button
-                            key={type}
-                            onClick={() => setParam("type", currentType === type ? null : type)}
+                            key={t.keyword}
+                            onClick={() => setParam("type", currentType === t.keyword ? null : t.keyword)}
                             className={cn(
                               "px-3 py-1.5 rounded-lg text-sm border transition-all",
-                              currentType === type
+                              currentType === t.keyword
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground hover:border-primary/40"
                             )}
                           >
-                            {TYPE_LABELS[type] ?? type}
+                            {t.label}
                           </button>
                         ))}
                       </div>

@@ -4,26 +4,17 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition, useState } from "react";
 import { Filter, X, ChevronDown, Ruler } from "lucide-react";
 
-const PRODUCT_TYPES = [
-  { label: "Доска обрезная", value: "обрезная" },
-  { label: "Террасная доска", value: "террасная" },
-  { label: "Доска пола", value: "пола" },
-  { label: "Строганная доска", value: "строганная" },
-  { label: "Брус / Брусок", value: "брус" },
-  { label: "Вагонка", value: "вагонка" },
-  { label: "Планкен", value: "планкен" },
-  { label: "Блок-хаус", value: "блок-хаус" },
-  { label: "Погонаж / Плинтус", value: "плинтус" },
-  { label: "Фанера", value: "фанера" },
-  { label: "ДСП / МДФ / ОСБ", value: "дсп" },
-];
+interface TypeInfo {
+  label: string;
+  keyword: string;
+}
 
 interface CatalogFiltersProps {
   currentInStock: boolean;
   currentSize: string;
   sizes: string[];
   currentType?: string;
-  availableTypes?: string[];
+  types?: TypeInfo[];
   onClose?: () => void;
 }
 
@@ -31,7 +22,7 @@ export function CatalogFilters({
   currentSize,
   sizes,
   currentType = "",
-  availableTypes,
+  types = [],
   onClose,
 }: CatalogFiltersProps) {
   const router = useRouter();
@@ -64,67 +55,72 @@ export function CatalogFilters({
     });
   };
 
+  // Находим label текущего типа
+  const currentTypeLabel = types.find(t => t.keyword === currentType)?.label || currentType;
+
   return (
     <div className={`space-y-3 ${isPending ? "opacity-60" : ""} transition-opacity`}>
 
-      {/* Type filter — accordion, closed by default */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setTypeOpen(!typeOpen)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
-        >
-          <h3 className="font-display font-semibold text-sm flex items-center gap-2">
-            <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
-            Тип товара
-          </h3>
-          <div className="flex items-center gap-2 shrink-0">
-            {currentType && (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
-                1
-              </span>
-            )}
-            <ChevronDown
-              className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
-                typeOpen ? "rotate-180" : ""
-              }`}
-            />
-          </div>
-        </button>
-
-        {typeOpen && (
-          <div className="px-5 pb-5 border-t border-border">
-            {currentType && (
-              <button
-                onClick={() => navigate(createUrl({ type: null }))}
-                className="mt-3 mb-2 text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
-              >
-                <X className="w-3 h-3" />
-                Сбросить
-              </button>
-            )}
-            <div className={`flex flex-wrap gap-2 ${currentType ? "" : "mt-3"}`}>
-              {(availableTypes ? PRODUCT_TYPES.filter(t => availableTypes.includes(t.value)) : PRODUCT_TYPES).map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() =>
-                    navigate(createUrl({ type: currentType === t.value ? null : t.value }))
-                  }
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                    currentType === t.value
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border bg-background hover:border-primary/50 hover:bg-accent text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+      {/* Type filter — accordion */}
+      {types.length > 0 && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setTypeOpen(!typeOpen)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
+          >
+            <h3 className="font-display font-semibold text-sm flex items-center gap-2">
+              <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+              Тип товара
+            </h3>
+            <div className="flex items-center gap-2 shrink-0">
+              {currentType && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                  1
+                </span>
+              )}
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                  typeOpen ? "rotate-180" : ""
+                }`}
+              />
             </div>
-          </div>
-        )}
-      </div>
+          </button>
 
-      {/* Size filter — accordion, closed by default */}
+          {typeOpen && (
+            <div className="px-5 pb-5 border-t border-border">
+              {currentType && (
+                <button
+                  onClick={() => navigate(createUrl({ type: null }))}
+                  className="mt-3 mb-2 text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+                >
+                  <X className="w-3 h-3" />
+                  Сбросить ({currentTypeLabel})
+                </button>
+              )}
+              <div className={`flex flex-wrap gap-2 ${currentType ? "" : "mt-3"}`}>
+                {types.map((t) => (
+                  <button
+                    key={t.keyword}
+                    onClick={() =>
+                      navigate(createUrl({ type: currentType === t.keyword ? null : t.keyword }))
+                    }
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                      currentType === t.keyword
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border bg-background hover:border-primary/50 hover:bg-accent text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Size filter — accordion */}
       {sizes.length > 0 && (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <button

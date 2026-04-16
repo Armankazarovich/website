@@ -117,10 +117,12 @@ export default function CalculatorPage() {
   const [length, setLength] = useState(6);
   const [quantity, setQuantity] = useState(10);
   const [pricePerCube, setPricePerCube] = useState(15000);
+  const [pricePerPiece, setPricePerPiece] = useState<number | null>(null);
   const [cubeNeed, setCubeNeed] = useState(1);
+  const [sqmNeed, setSqmNeed] = useState(10);
 
   /* UI state */
-  const [mode, setMode] = useState<"pieces" | "cube">("pieces");
+  const [mode, setMode] = useState<"pieces" | "cube" | "sqm">("pieces");
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showExplain, setShowExplain] = useState(false);
@@ -153,18 +155,32 @@ export default function CalculatorPage() {
         setWidth(dims.width);
         setLength(dims.length);
       }
-      const price = v.pricePerCube ? Number(v.pricePerCube) : 15000;
-      setPricePerCube(price);
+      const cubePr = v.pricePerCube ? Number(v.pricePerCube) : null;
+      const piecePr = v.pricePerPiece ? Number(v.pricePerPiece) : null;
+      setPricePerCube(cubePr ?? (piecePr && v.piecesPerCube ? piecePr * Number(v.piecesPerCube) : 15000));
+      setPricePerPiece(piecePr);
     }
   }, []);
 
   /* Calculated values */
   const volumePerPiece = calcVolume(thickness, width, length, 1);
-  const totalVolume = mode === "pieces" ? volumePerPiece * quantity : cubeNeed;
-  const totalPrice = totalVolume * pricePerCube;
+  const areaPerPiece = (width / 1000) * length; // м² одной доски (рабочая ширина × длина)
+
   const piecesNeeded = mode === "cube"
-    ? Math.ceil(cubeNeed / volumePerPiece)
+    ? Math.ceil(cubeNeed / (volumePerPiece || 0.001))
+    : mode === "sqm"
+    ? Math.ceil(sqmNeed / (areaPerPiece || 0.001))
     : quantity;
+
+  const totalVolume = mode === "cube" ? cubeNeed : volumePerPiece * piecesNeeded;
+  const totalArea = areaPerPiece * piecesNeeded;
+
+  // Цена: если есть pricePerPiece — считаем по шт, иначе по м³
+  const effectivePricePerPiece = pricePerPiece ?? (volumePerPiece * pricePerCube);
+  const totalPrice = pricePerPiece
+    ? effectivePricePerPiece * piecesNeeded
+    : totalVolume * pricePerCube;
+
   const piecesPerCubeCalc = volumePerPiece > 0 ? Math.round(1 / volumePerPiece) : 0;
 
   const handleAddToCart = () => {
@@ -172,6 +188,7 @@ export default function CalculatorPage() {
     const v = selectedProduct.variants[0];
     if (!v) return;
 
+    const usePiece = pricePerPiece && (mode === "sqm" || selectedProduct.saleUnit === "PIECE");
     addItem({
       variantId: v.id,
       productId: selectedProduct.id,
@@ -179,9 +196,9 @@ export default function CalculatorPage() {
       productSlug: selectedProduct.slug,
       productImage: selectedProduct.images?.[0],
       variantSize: v.size,
-      unitType: "CUBE",
-      quantity: parseFloat(totalVolume.toFixed(4)),
-      price: pricePerCube,
+      unitType: usePiece ? "PIECE" : "CUBE",
+      quantity: usePiece ? piecesNeeded : parseFloat(totalVolume.toFixed(4)),
+      price: usePiece ? pricePerPiece! : pricePerCube,
     });
     setAdded(true);
     setCartOpen(true);
@@ -226,18 +243,18 @@ export default function CalculatorPage() {
                 Режим расчёта
               </h2>
               <div className="flex rounded-xl bg-muted/60 p-1 gap-1">
-                {(["pieces", "cube"] as const).map((m) => (
+                {(["pieces", "cube", "sqm"] as const).map((m) => (
                   <button
                     key={m}
                     onClick={() => setMode(m)}
                     className={cn(
-                      "flex-1 py-2.5 rounded-lg text-sm font-medium transition-all",
+                      "flex-1 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
                       mode === m
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    {m === "pieces" ? "По размерам (шт → м³)" : "Мне нужно м³"}
+                    {m === "pieces" ? "Штуки → м³" : m === "cube" ? "Нужно м³" : "Нужно м²"}
                   </button>
                 ))}
               </div>
@@ -286,7 +303,7 @@ export default function CalculatorPage() {
             {/* Inputs */}
             <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
               <h2 className="font-display font-semibold text-lg mb-4">
-                {mode === "pieces" ? "Размеры и количество" : "Нужный объём"}
+                {mode === "pieces" ? "Размеры и количество" : mode === "cube" ? "Нужный объём" : "Нужная площадь"}
               </h2>
 
               {mode === "pieces" ? (
@@ -331,7 +348,7 @@ export default function CalculatorPage() {
                     hint="Из карточки товара"
                   />
                 </>
-              ) : (
+              ) : mode === "cube" ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <NumInput
                     label="Сколько м³ нужно"
@@ -369,6 +386,47 @@ export default function CalculatorPage() {
                     step={0.5}
                   />
                 </div>
+              ) : (
+                /* Режим м² — для вагонки, планкена, блок-хауса, доски пола */
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <NumInput
+                    label="Площадь покрытия"
+                    unit="м²"
+                    value={sqmNeed}
+                    onChange={setSqmNeed}
+                    step={1}
+                    hint="Стены, пол, потолок"
+                  />
+                  <NumInput
+                    label={pricePerPiece ? "Цена за шт" : "Цена за м³"}
+                    unit="₽"
+                    value={pricePerPiece ?? pricePerCube}
+                    onChange={pricePerPiece ? setPricePerPiece : setPricePerCube}
+                    step={pricePerPiece ? 10 : 500}
+                    hint="Из карточки товара"
+                  />
+                  <NumInput
+                    label="Ширина доски"
+                    unit="мм"
+                    value={width}
+                    onChange={setWidth}
+                    hint="Рабочая ширина"
+                  />
+                  <NumInput
+                    label="Длина доски"
+                    unit="м"
+                    value={length}
+                    onChange={setLength}
+                    step={0.5}
+                  />
+                  <NumInput
+                    label="Толщина"
+                    unit="мм"
+                    value={thickness}
+                    onChange={setThickness}
+                    hint="Для расчёта м³"
+                  />
+                </div>
               )}
             </div>
 
@@ -400,6 +458,10 @@ export default function CalculatorPage() {
                         value: `${formatVolume(volumePerPiece)} м³`,
                       },
                       {
+                        label: "Площадь 1 штуки",
+                        value: `${areaPerPiece.toFixed(2)} м²`,
+                      },
+                      {
                         label: "Штук в 1 м³",
                         value: `~${piecesPerCubeCalc} шт`,
                       },
@@ -411,6 +473,14 @@ export default function CalculatorPage() {
                         label: "Итого объём",
                         value: `${formatVolume(totalVolume)} м³`,
                       },
+                      {
+                        label: "Итого площадь",
+                        value: `${totalArea.toFixed(2)} м²`,
+                      },
+                      ...(pricePerPiece ? [{
+                        label: "Цена за шт",
+                        value: formatPrice(pricePerPiece),
+                      }] : []),
                       {
                         label: "Цена за м³",
                         value: formatPrice(pricePerCube),
@@ -518,18 +588,42 @@ export default function CalculatorPage() {
                 </p>
 
                 <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 mb-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {mode === "pieces"
-                      ? `${piecesNeeded} шт × ${formatVolume(volumePerPiece)} м³`
-                      : `${piecesNeeded} шт × ${formatVolume(volumePerPiece)} м³`}
-                  </p>
-                  <p className="font-display font-bold text-4xl text-primary leading-none">
-                    {formatVolume(totalVolume)} м³
-                  </p>
+                  {/* Основной результат зависит от режима */}
+                  {mode === "sqm" ? (
+                    <>
+                      <p className="font-display font-bold text-4xl text-primary leading-none">
+                        {piecesNeeded} шт
+                      </p>
+                      <div className="flex items-center justify-center gap-3 mt-2 text-sm text-muted-foreground">
+                        <span>{totalArea.toFixed(1)} м²</span>
+                        <span>•</span>
+                        <span>{formatVolume(totalVolume)} м³</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {piecesNeeded} шт × {formatVolume(volumePerPiece)} м³
+                      </p>
+                      <p className="font-display font-bold text-4xl text-primary leading-none">
+                        {formatVolume(totalVolume)} м³
+                      </p>
+                      {totalArea > 0 && (
+                        <p className="text-sm text-muted-foreground mt-1.5">
+                          ≈ {totalArea.toFixed(1)} м² • {piecesNeeded} шт
+                        </p>
+                      )}
+                    </>
+                  )}
                   <div className="my-3 h-px bg-primary/20" />
                   <p className="font-display font-bold text-3xl text-foreground leading-none">
                     {formatPrice(totalPrice)}
                   </p>
+                  {pricePerPiece && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatPrice(effectivePricePerPiece)} / шт
+                    </p>
+                  )}
                 </div>
 
                 {/* Add to cart button */}

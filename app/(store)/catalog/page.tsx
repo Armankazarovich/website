@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
+import { getAvailableTypes, findTypeByKeyword } from "@/lib/product-types";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
@@ -149,20 +150,12 @@ export default async function CatalogPage({
     products.sort((a, b) => getMinPrice(b) - getMinPrice(a));
   }
 
-  // Доступные типы — только те, для которых есть товары в категории
-  const productNamesLower = productsForTypes.map((p) => p.name.toLowerCase());
+  // Доступные типы — ДИНАМИЧЕСКИ из реальных названий товаров
+  const productNames = productsForTypes.map((p) => p.name);
+  const dynamicTypes = getAvailableTypes(productNames);
 
-  // Для ГОРИЗОНТАЛЬНОЙ полосы — грубые типы (одна кнопка = весь класс)
-  const coarseTypeValues = ["доска", "брус", "вагонка", "планкен", "блок-хаус", "плинтус", "строганная", "фанера", "дсп"];
-  const availableCoarseTypes = coarseTypeValues.filter((tv) =>
-    productNamesLower.some((name) => name.includes(tv))
-  );
-
-  // Для БОКОВОГО фильтра — точные подтипы (точное совпадение ключевого слова)
-  const preciseTypeValues = ["обрезная", "террасная", "пола", "строганная", "брус", "вагонка", "планкен", "блок-хаус", "плинтус", "фанера", "дсп"];
-  const availableTypes = preciseTypeValues.filter((tv) =>
-    productNamesLower.some((name) => name.includes(tv))
-  );
+  // Находим текущий тип по keyword для отображения label
+  const currentTypeInfo = currentType ? findTypeByKeyword(currentType) : null;
 
   const totalPages = Math.ceil(totalCount / perPage);
 
@@ -249,7 +242,7 @@ export default async function CatalogPage({
       <CatalogTypeFilter
         currentType={currentType}
         category={searchParams.category}
-        availableTypes={availableCoarseTypes}
+        types={dynamicTypes}
         preserveParams={{
           ...(searchParams.sort ? { sort: searchParams.sort } : {}),
           ...(searchParams.size ? { size: searchParams.size } : {}),
@@ -264,7 +257,7 @@ export default async function CatalogPage({
         <CatalogMobileFilter
           categories={categories}
           sizes={crossSections}
-          availableTypes={availableTypes}
+          types={dynamicTypes}
           currentCategory={searchParams.category}
           currentSize={currentSize}
           currentType={currentType}
@@ -331,7 +324,7 @@ export default async function CatalogPage({
                 currentSize={currentSize}
                 sizes={crossSections}
                 currentType={currentType}
-                availableTypes={availableTypes}
+                types={dynamicTypes}
               />
             </Suspense>
 
@@ -407,7 +400,7 @@ export default async function CatalogPage({
             <div className="flex flex-wrap gap-2 mb-4">
               {currentType && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
-                  Тип: {currentType}
+                  Тип: {currentTypeInfo?.label || currentType}
                   <Link
                     href={buildFilterUrl({ type: null })}
                     className="ml-0.5 hover:text-destructive"
