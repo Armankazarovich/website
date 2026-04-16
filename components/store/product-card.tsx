@@ -57,7 +57,7 @@ interface ProductCardProps {
 
 /* Градиент-заглушка когда нет фото */
 const FALLBACK_GRADIENT =
-  "bg-gradient-to-br from-amber-900/80 via-amber-800/60 to-brand-brown/80";
+  "bg-gradient-to-br from-amber-900/80 via-amber-800/60 to-brand-brown/80 dark:from-amber-950/90 dark:via-amber-900/70 dark:to-brand-brown/90";
 
 export function ProductCard({
   id, slug, name, category, images, saleUnit, variants, featured,
@@ -374,7 +374,7 @@ export function ProductCard({
 
         {/* Hover overlay с кнопкой "Подробнее" */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
-          <span className="bg-white/95 dark:bg-neutral-900/95 text-foreground text-xs font-semibold px-4 py-2 rounded-xl shadow-lg translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+          <span className="bg-card/95 text-foreground text-xs font-semibold px-4 py-2 rounded-xl shadow-lg translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
             Подробнее →
           </span>
         </div>

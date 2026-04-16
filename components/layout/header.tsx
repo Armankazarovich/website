@@ -240,7 +240,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             : "hsl(var(--background) / 0.78)",
           borderBottom: `1px solid hsl(var(--primary) / ${scrolled ? "0.28" : "0.12"})`,
           boxShadow: scrolled
-            ? "0 8px 40px rgba(0,0,0,0.22), 0 1px 0 hsl(var(--primary) / 0.15)"
+            ? "0 8px 40px hsl(var(--foreground) / 0.08), 0 1px 0 hsl(var(--primary) / 0.15)"
             : "none",
         }}
       >
@@ -341,7 +341,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                         backdropFilter: "blur(28px) saturate(180%)",
                         WebkitBackdropFilter: "blur(28px) saturate(180%)",
                         background: "hsl(var(--background) / 0.96)",
-                        boxShadow: "0 24px 60px rgba(0,0,0,0.28), 0 0 0 1px hsl(var(--primary)/0.08)",
+                        boxShadow: "0 24px 60px hsl(var(--foreground) / 0.12), 0 0 0 1px hsl(var(--primary)/0.08)",
                       }}
                     >
                       <div className="flex">
@@ -717,7 +717,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-0 top-0 h-full w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 dark:bg-neutral-950/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
+              className="fixed left-0 top-0 h-full w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
             >
               {/* ── Шапка ── */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">

@@ -437,7 +437,7 @@ export function ReviewsClient({
             onClick={() => setRatingFilter(null)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               ratingFilter === null
-                ? "bg-amber-500 text-white"
+                ? "bg-amber-500/90 text-white dark:bg-amber-600 dark:text-amber-50"
                 : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
             }`}
           >
@@ -449,7 +449,7 @@ export function ReviewsClient({
               onClick={() => setRatingFilter(ratingFilter === r ? null : r)}
               className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 ratingFilter === r
-                  ? "bg-amber-500 text-white"
+                  ? "bg-amber-500/90 text-white dark:bg-amber-600 dark:text-amber-50"
                   : "bg-muted/40 text-muted-foreground hover:bg-primary/[0.08]"
               }`}
             >
