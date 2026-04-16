@@ -94,9 +94,7 @@ export function InfoPopup({
           "inline-flex items-center justify-center w-5 h-5 rounded-full transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
           open
             ? "bg-primary/25 text-primary scale-110"
-            : classic
-              ? "text-muted-foreground/60 hover:text-foreground hover:bg-muted hover:scale-110"
-              : "text-white/35 hover:text-white/80 hover:bg-white/10 hover:scale-110",
+            : "text-muted-foreground/60 hover:text-foreground hover:bg-muted hover:scale-110",
           triggerClassName,
         )}
       >
@@ -118,48 +116,23 @@ export function InfoPopup({
         >
           {/* Стрелка */}
           <div
-            className="absolute w-3 h-3 rotate-45"
+            className="absolute w-3 h-3 rotate-45 bg-card border-border"
             style={{
               ...arrowAlignStyle,
               ...(activeSide === "top"
-                ? {
-                    bottom: "-6px",
-                    borderRight:  classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
-                    borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
-                    background:   classic ? "hsl(var(--card))" : "rgba(12,12,14,0.97)",
-                  }
-                : {
-                    top:        "-6px",
-                    borderLeft: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
-                    borderTop:  classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.12)",
-                    background: classic ? "hsl(var(--card))" : "rgba(12,12,14,0.97)",
-                  }
+                ? { bottom: "-6px", borderRight: "1px solid hsl(var(--border))", borderBottom: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }
+                : { top: "-6px", borderLeft: "1px solid hsl(var(--border))", borderTop: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }
               ),
             }}
           />
 
           {/* Панель */}
-          <div
-            className="animate-in fade-in-0 zoom-in-95 duration-150"
-            style={classic ? {
-              background:   "hsl(var(--card))",
-              border:       "1px solid hsl(var(--border))",
-              borderRadius: "16px",
-              boxShadow:    "0 12px 32px rgba(0,0,0,0.12)",
-            } : {
-              background:             "rgba(12,12,14,0.97)",
-              backdropFilter:         "blur(32px) saturate(200%)",
-              WebkitBackdropFilter:   "blur(32px) saturate(200%)",
-              border:                 "1px solid rgba(255,255,255,0.12)",
-              borderRadius:           "16px",
-              boxShadow:              "0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
-            }}
-          >
+          <div className={`animate-in fade-in-0 zoom-in-95 duration-150 rounded-2xl border border-border bg-card shadow-2xl ${!classic ? "backdrop-blur-xl" : ""}`}>
             <div className="p-4">
               {typeof content === "string" ? (
-                <p className={`text-sm leading-relaxed ${classic ? "text-foreground" : "text-white/80"}`}>{content}</p>
+                <p className="text-sm leading-relaxed text-foreground">{content}</p>
               ) : (
-                <div className={classic ? "info-popup-classic text-foreground" : "text-white/80"}>{content}</div>
+                <div className="text-foreground">{content}</div>
               )}
             </div>
           </div>

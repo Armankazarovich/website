@@ -77,26 +77,15 @@ export function ConfirmDialog({
 
       {/* Dialog */}
       <div
-        className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl"
-        style={classic ? {
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
-          animation: "dialog-pop 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
-        } : {
-          background: "rgba(12, 12, 14, 0.82)",
-          backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-          WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-          border: "1px solid rgba(255,255,255,0.14)",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.05) inset",
-          animation: "dialog-pop 0.18s cubic-bezier(0.34,1.56,0.64,1) both",
-        }}
+        className={`relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl ${classic ? "bg-card border border-border" : "glass-popup"}`}
+        style={{ animation: "dialog-pop 0.18s cubic-bezier(0.34,1.56,0.64,1) both" }}
+        role="alertdialog"
+        aria-labelledby="confirm-dialog-title"
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg transition-colors"
-          style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.35)" }}
+          className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -110,9 +99,9 @@ export function ConfirmDialog({
               </div>
             )}
             <div className="flex-1 min-w-0 pt-1">
-              <h3 className="font-semibold text-base leading-tight" style={{ color: classic ? "hsl(var(--foreground))" : "rgba(255,255,255,0.92)" }}>{title}</h3>
+              <h3 id="confirm-dialog-title" className="font-semibold text-base leading-tight text-foreground">{title}</h3>
               {description && (
-                <p className="text-sm mt-1 leading-relaxed" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.50)" }}>{description}</p>
+                <p className="text-sm mt-1 leading-relaxed text-muted-foreground">{description}</p>
               )}
             </div>
           </div>
@@ -123,16 +112,7 @@ export function ConfirmDialog({
               ref={cancelRef}
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors"
-              style={classic ? {
-                border: "1px solid hsl(var(--border))",
-                color: "hsl(var(--muted-foreground))",
-                background: "transparent",
-              } : {
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "rgba(255,255,255,0.60)",
-                background: "transparent",
-              }}
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors border border-border text-muted-foreground hover:bg-primary/[0.05]"
             >
               {cancelLabel}
             </button>

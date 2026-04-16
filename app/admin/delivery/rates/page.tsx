@@ -17,6 +17,7 @@ const emptyNew = { vehicleName: "", payload: "", maxVolume: "", basePrice: "" };
 export default function DeliveryRatesPage() {
   const [rates, setRates] = useState<Rate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Partial<Rate>>({});
   const [saving, setSaving] = useState(false);
@@ -37,7 +38,7 @@ export default function DeliveryRatesPage() {
     fetch("/api/admin/delivery-rates")
       .then((r) => r.json())
       .then((data) => { setRates(Array.isArray(data) ? data : []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { setError("Не удалось загрузить тарифы"); setLoading(false); });
   }, []);
 
   const startEdit = (rate: Rate) => {
@@ -116,6 +117,14 @@ export default function DeliveryRatesPage() {
         <Truck className="w-5 h-5 text-primary" />
         <h1 className="font-display font-bold text-2xl">Тарифы доставки</h1>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-3 px-4 py-3 bg-destructive/10 border border-destructive/30 rounded-2xl">
+          <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+          <p className="text-sm text-destructive font-medium">{error}</p>
+          <button onClick={() => { setError(""); setLoading(true); fetch("/api/admin/delivery-rates").then(r => r.json()).then(d => { setRates(Array.isArray(d) ? d : []); setLoading(false); }).catch(() => { setError("Не удалось загрузить"); setLoading(false); }); }} className="ml-auto text-xs text-primary hover:underline shrink-0">Повторить</button>
+        </div>
+      )}
 
       {/* Calculator */}
       <div className="bg-card border border-border rounded-2xl p-5 space-y-4">

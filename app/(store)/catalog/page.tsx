@@ -112,42 +112,48 @@ export default async function CatalogPage({
     ...(Object.keys(sizeVariantFilter).length > 0 ? { variants: { some: sizeVariantFilter } } : {}),
   };
 
-  const [categories, productsRaw, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
-    prisma.category.findMany({
-      where: { showInMenu: true },
-      orderBy: { sortOrder: "asc" },
-      include: { _count: { select: { products: { where: { active: true } } } } },
-    }),
-    prisma.product.findMany({
-      where,
-      include: {
-        category: true,
-        variants: { orderBy: { pricePerCube: "asc" } },
-      },
-      orderBy:
-        searchParams.sort === "name" ? { name: "asc" } : { createdAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
-    }),
-    prisma.product.count({ where }),
-    prisma.productVariant.findMany({
-      where: {
-        product: {
-          active: true,
-          category: categoryFilter,
-          ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
+  let categories: any[] = [], productsRaw: any[] = [], totalCount = 0, allVariantSizes: any[] = [], productsForTypes: any[] = [];
+  try {
+    [categories, productsRaw, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
+      prisma.category.findMany({
+        where: { showInMenu: true },
+        orderBy: { sortOrder: "asc" },
+        include: { _count: { select: { products: { where: { active: true } } } } },
+      }),
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          variants: { orderBy: { pricePerCube: "asc" } },
         },
-        ...(currentInStock ? { inStock: true } : {}),
-      },
-      select: { size: true },
-      distinct: ["size"],
-    }),
-    // Получаем все названия товаров в текущей категории для умных фильтров
-    prisma.product.findMany({
-      where: whereForTypes,
-      select: { name: true },
-    }),
-  ]);
+        orderBy:
+          searchParams.sort === "name" ? { name: "asc" } : { createdAt: "desc" },
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      prisma.product.count({ where }),
+      prisma.productVariant.findMany({
+        where: {
+          product: {
+            active: true,
+            category: categoryFilter,
+            ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
+          },
+          ...(currentInStock ? { inStock: true } : {}),
+        },
+        select: { size: true },
+        distinct: ["size"],
+      }),
+      // Получаем все названия товаров в текущей категории для умных фильтров
+      prisma.product.findMany({
+        where: whereForTypes,
+        select: { name: true },
+      }),
+    ]);
+  } catch (err) {
+    console.error("Catalog query error:", err);
+    // Продолжаем с пустыми данными — страница покажет "нет товаров" вместо 500
+  }
 
   // Если запрошена скрытая или несуществующая категория — редирект в каталог
   if (searchParams.category && !categories.find((c) => c.slug === searchParams.category)) {

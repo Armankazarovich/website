@@ -20,7 +20,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "productIds and percent required" }, { status: 400 });
   }
 
-  const multiplier = 1 + percent / 100;
+  const numPercent = Number(percent);
+  if (isNaN(numPercent) || numPercent < -50 || numPercent > 200) {
+    return NextResponse.json({ error: "Процент должен быть от -50% до +200%" }, { status: 400 });
+  }
+
+  const multiplier = 1 + numPercent / 100;
 
   // Get all variants for selected products
   const variants = await prisma.productVariant.findMany({

@@ -52,7 +52,7 @@ export default async function ClientsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-2xl p-4 text-center">
           <p className="text-2xl font-bold">{totalClients}</p>
           <p className="text-xs text-muted-foreground mt-0.5">Всего клиентов</p>
