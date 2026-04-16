@@ -59,7 +59,7 @@ function OrderQuickViewContent({ orderId, onOpenFull }: { orderId: string; onOpe
     );
   }
 
-  const statusColor = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
+  const statusColor = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
   const total = Number(order.totalAmount || 0) + Number(order.deliveryCost || 0);
 

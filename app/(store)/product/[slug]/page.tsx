@@ -229,7 +229,7 @@ export default async function ProductPage({ params }: Props) {
           </div>
 
           {/* Quick features */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { label: "Производитель", sub: "Без посредников", icon: (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 22V9L12 3L22 9V22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 22h20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M9 22v-7h6v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>

@@ -443,7 +443,7 @@ export function ProductCard({
             <div className="flex items-center gap-2">
               <button
                 onClick={handleDecrement}
-                className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
+                className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
               >
                 <Minus className="w-3.5 h-3.5" />
               </button>
@@ -455,7 +455,7 @@ export function ProductCard({
 
               <button
                 onClick={handleIncrement}
-                className="flex items-center justify-center w-10 h-10 sm:w-9 sm:h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
+                className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
