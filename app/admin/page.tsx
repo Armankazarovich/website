@@ -249,7 +249,7 @@ export default async function AdminDashboard() {
         </div>
         <div className="divide-y divide-border">
           {recentOrders.map((order) => {
-            const color = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
+            const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
             const label = ORDER_STATUS_LABELS[order.status] || order.status;
             return (
               <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-4 py-3.5 hover:bg-primary/[0.05] active:bg-primary/10 transition-colors" style={{ WebkitTapHighlightColor: "transparent" }}>

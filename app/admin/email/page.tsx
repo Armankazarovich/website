@@ -835,7 +835,7 @@ export default function EmailPage() {
                       </button>
                     </div>
                   </div>
-                  <div className="bg-gray-100 py-4 flex justify-center">
+                  <div className="bg-muted py-4 flex justify-center">
                     <iframe
                       srcDoc={html}
                       sandbox="allow-same-origin"

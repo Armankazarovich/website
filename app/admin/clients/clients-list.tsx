@@ -434,7 +434,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                   <div className="divide-y divide-border">
                     {client.orders.map((order) => {
                       const total = Number(order.totalAmount) + Number(order.deliveryCost ?? 0);
-                      const color = STATUS_COLORS[order.status] || "bg-gray-100 text-gray-700";
+                      const color = STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
                       const label = STATUS_LABELS[order.status] || order.status;
                       return (
                         <Link key={order.id} href={`/admin/orders/${order.id}`}
