@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : '';
 
   return {
-    title: `${product.name} ${minPrice} — купить в Химках с доставкой по Москве | ПилоРус`,
+    title: `${product.name} ${minPrice} — купить в Химках с доставкой`,
     description: `${product.name} от производителя ООО ПИТИ в Химках. ${minPrice}. Доставка по Москве и МО за 1-3 дня. Гарантия качества, ГОСТ. ☎ ${DEFAULT_SETTINGS.phone}`,
     keywords: `${product.name}, купить ${product.name}, ${product.name} цена, ${product.name} Москва, ${product.name} Химки, пиломатериалы от производителя`,
     openGraph: {
@@ -154,12 +154,30 @@ export default async function ProductPage({ params }: Props) {
     };
   }
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://pilo-rus.ru/" },
+      { "@type": "ListItem", "position": 2, "name": "Каталог", "item": "https://pilo-rus.ru/catalog" },
+      ...(product.category.sortOrder < 900 ? [{
+        "@type": "ListItem", "position": 3, "name": product.category.name,
+        "item": `https://pilo-rus.ru/catalog?category=${product.category.slug}`,
+      }] : []),
+      { "@type": "ListItem", "position": product.category.sortOrder < 900 ? 4 : 3, "name": product.name },
+    ],
+  };
+
   return (
     <div className="container py-8">
       {/* Schema.org JSON-LD */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaOrg) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* ── Admin floating edit button ── */}

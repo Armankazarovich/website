@@ -3,7 +3,7 @@ import { BackButton } from "@/components/ui/back-button";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
-  title: "Пользовательское соглашение и политика конфиденциальности | ПилоРус",
+  title: "Пользовательское соглашение и политика конфиденциальности",
   description: "Условия использования сайта pilo-rus.ru, политика конфиденциальности и обработки персональных данных ООО ПИТИ (ПилоРус).",
   openGraph: {
     title: "Пользовательское соглашение — ПилоРус",

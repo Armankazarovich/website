@@ -17,12 +17,12 @@ import { getSiteSettings, getSetting } from "@/lib/site-settings";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Услуги | ПилоРус",
+  title: "Услуги — покраска, распил, доставка",
   description:
-    "Дополнительные услуги от ПилоРус: покраска и антисептирование, распил в размер, доставка по МО, строгание и шлифовка пиломатериалов.",
+    "Услуги ПилоРус: покраска, антисептирование, распил в размер, доставка по МО, строгание и шлифовка пиломатериалов.",
   alternates: { canonical: "https://pilo-rus.ru/services" },
   openGraph: {
-    title: "Услуги | ПилоРус",
+    title: "Услуги ПилоРус — обработка и доставка пиломатериалов",
     description: "Услуги по обработке и доставке пиломатериалов от производителя ПилоРус",
     url: "https://pilo-rus.ru/services",
   },

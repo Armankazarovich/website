@@ -22,14 +22,16 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     });
     if (cat) {
       return {
-        title: cat.seoTitle || `${cat.name} — пиломатериалы ПилоРус`,
+        title: cat.seoTitle || `${cat.name} — купить от производителя`,
         description: cat.seoDescription || `Купить ${cat.name} от производителя. Широкий ассортимент, доставка по Москве и МО.`,
+        alternates: { canonical: `https://pilo-rus.ru/catalog?category=${searchParams.category}` },
       };
     }
   }
   return {
-    title: "Каталог пиломатериалов",
-    description: "Широкий выбор пиломатериалов: доска, брус, вагонка, блок-хаус. Цены от производителя.",
+    title: "Каталог пиломатериалов — цены от производителя",
+    description: "Доска, брус, вагонка, блок-хаус от производителя в Химках. Цены без посредников, доставка по Москве и МО.",
+    alternates: { canonical: "https://pilo-rus.ru/catalog" },
   };
 }
 
@@ -244,8 +246,30 @@ export default async function CatalogPage({
     return `/catalog?${params.toString()}`;
   };
 
+  // BreadcrumbList schema
+  const currentCat = searchParams.category
+    ? categories.find((c) => c.slug === searchParams.category)
+    : null;
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Главная", "item": "https://pilo-rus.ru/" },
+      ...(currentCat
+        ? [
+            { "@type": "ListItem", "position": 2, "name": "Каталог", "item": "https://pilo-rus.ru/catalog" },
+            { "@type": "ListItem", "position": 3, "name": currentCat.name },
+          ]
+        : [{ "@type": "ListItem", "position": 2, "name": "Каталог" }]),
+    ],
+  };
+
   return (
     <div className="container py-6">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       {/* ── Заголовок ── */}
       <div className="mb-3">

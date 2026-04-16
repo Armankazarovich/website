@@ -7,12 +7,12 @@ import { AdminEditButton } from "@/components/admin/admin-edit-button";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Новости и статьи | ПилоРус",
+  title: "Новости и статьи",
   description:
-    "Полезные статьи о пиломатериалах: как выбрать доску, антисептирование, расчёт материалов, советы по строительству в Подмосковье.",
+    "Полезные статьи о пиломатериалах: как выбрать доску, антисептирование, расчёт материалов, советы по строительству.",
   alternates: { canonical: "https://pilo-rus.ru/news" },
   openGraph: {
-    title: "Новости и статьи | ПилоРус",
+    title: "Новости и статьи — ПилоРус",
     description: "Полезные статьи о пиломатериалах от производителя ПилоРус",
     url: "https://pilo-rus.ru/news",
   },

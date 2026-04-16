@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
   if (!post) return { title: "Статья не найдена" };
   return {
-    title: `${post.title} | ПилоРус`,
+    title: post.title,
     description: post.excerpt,
     alternates: { canonical: `https://pilo-rus.ru/news/${params.slug}` },
     openGraph: {
