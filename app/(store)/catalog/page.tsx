@@ -87,12 +87,16 @@ export default async function CatalogPage({
   const whereForTypes = {
     active: true,
     category: searchParams.category
-      ? { slug: searchParams.category, sortOrder: { lt: 900 } }
-      : { sortOrder: { lt: 900 } },
+      ? { slug: searchParams.category, showInMenu: true }
+      : { showInMenu: true },
   };
 
   const [categories, productsRaw, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
-    prisma.category.findMany({ where: { showInMenu: true }, orderBy: { sortOrder: "asc" } }),
+    prisma.category.findMany({
+      where: { showInMenu: true },
+      orderBy: { sortOrder: "asc" },
+      include: { _count: { select: { products: { where: { active: true } } } } },
+    }),
     prisma.product.findMany({
       where,
       include: {
@@ -158,6 +162,26 @@ export default async function CatalogPage({
     )
   ).sort((a, b) => parseInt(a.split("×")[0]) - parseInt(b.split("×")[0]));
 
+  /** Builds URL removing/setting specific filter params while keeping all others */
+  const buildFilterUrl = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams();
+    if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.sort) params.set("sort", searchParams.sort);
+    if (searchParams.size) params.set("size", searchParams.size);
+    if (searchParams.type) params.set("type", searchParams.type);
+    if (searchParams.instock) params.set("instock", searchParams.instock);
+    if (searchParams.minprice) params.set("minprice", searchParams.minprice);
+    if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
+    // Apply updates
+    for (const [key, value] of Object.entries(updates)) {
+      if (value === null) params.delete(key);
+      else params.set(key, value);
+    }
+    params.delete("page");
+    const q = params.toString();
+    return `/catalog${q ? `?${q}` : ""}`;
+  };
+
   const buildPageUrl = (p: number) => {
     const params = new URLSearchParams();
     if (searchParams.category) params.set("category", searchParams.category);
@@ -213,6 +237,13 @@ export default async function CatalogPage({
         currentType={currentType}
         category={searchParams.category}
         availableTypes={availableCoarseTypes}
+        preserveParams={{
+          ...(searchParams.sort ? { sort: searchParams.sort } : {}),
+          ...(searchParams.size ? { size: searchParams.size } : {}),
+          ...(searchParams.instock ? { instock: searchParams.instock } : {}),
+          ...(searchParams.minprice ? { minprice: searchParams.minprice } : {}),
+          ...(searchParams.maxprice ? { maxprice: searchParams.maxprice } : {}),
+        }}
       />
 
       {/* ── Мобильная строка фильтров (только на мобильном) ── */}
@@ -257,13 +288,16 @@ export default async function CatalogPage({
                   <li key={cat.id}>
                     <Link
                       href={`/catalog?category=${cat.slug}`}
-                      className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                         searchParams.category === cat.slug
                           ? "bg-primary/10 text-primary font-medium"
                           : "hover:bg-accent text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {cat.name}
+                      <span>{cat.name}</span>
+                      {(cat as any)._count?.products > 0 && (
+                        <span className="text-xs text-muted-foreground/70">{(cat as any)._count.products}</span>
+                      )}
                     </Link>
                   </li>
                 ))}
@@ -362,7 +396,7 @@ export default async function CatalogPage({
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
                   Тип: {currentType}
                   <Link
-                    href={buildSortUrl(searchParams.sort || "").replace(`type=${encodeURIComponent(currentType)}&`, "").replace(`&type=${encodeURIComponent(currentType)}`, "").replace(`type=${encodeURIComponent(currentType)}`, "")}
+                    href={buildFilterUrl({ type: null })}
                     className="ml-0.5 hover:text-destructive"
                   >
                     ×
@@ -373,7 +407,7 @@ export default async function CatalogPage({
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
                   Сечение: {currentSize}
                   <Link
-                    href={buildSortUrl(searchParams.sort || "").replace(`size=${encodeURIComponent(currentSize)}&`, "").replace(`&size=${encodeURIComponent(currentSize)}`, "").replace(`size=${encodeURIComponent(currentSize)}`, "")}
+                    href={buildFilterUrl({ size: null })}
                     className="ml-0.5 hover:text-destructive"
                   >
                     ×

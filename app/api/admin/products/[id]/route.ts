@@ -4,13 +4,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-async function checkAdmin() {
+const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+
+async function checkProductsAccess() {
   const session = await auth();
-  return session && session.user.role === "ADMIN";
+  const role = session?.user?.role as string | undefined;
+  return session && role && PRODUCTS_ROLES.includes(role);
 }
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const product = await prisma.product.findUnique({
     where: { id: params.id },
     include: { category: true, variants: { orderBy: { size: "asc" } } },
@@ -20,7 +23,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const { name, slug, description, categoryId, images, saleUnit, active, featured, variants } = body;
 
@@ -91,7 +94,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 }
 
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await prisma.product.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });
 }

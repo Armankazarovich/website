@@ -8,6 +8,8 @@ interface CatalogTypeFilterProps {
   currentType: string;
   category?: string;
   availableTypes: string[];
+  /** All current search params to preserve when switching type */
+  preserveParams?: Record<string, string>;
 }
 
 const typeFilters = [
@@ -50,7 +52,7 @@ const typeFilters = [
   },
 ];
 
-export function CatalogTypeFilter({ currentType, category, availableTypes }: CatalogTypeFilterProps) {
+export function CatalogTypeFilter({ currentType, category, availableTypes, preserveParams = {} }: CatalogTypeFilterProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll active pill to center on mobile
@@ -81,14 +83,16 @@ export function CatalogTypeFilter({ currentType, category, availableTypes }: Cat
         )}
         {visibleFilters.map((f) => {
           const isActive = currentType === f.type;
+          const params = new URLSearchParams(preserveParams);
+          if (category) params.set("category", category);
+          if (f.type) params.set("type", f.type); else params.delete("type");
+          params.delete("page");
+          const q = params.toString();
           return (
             <Link
               key={f.type}
               data-active={isActive ? "true" : undefined}
-              href={`/catalog?${new URLSearchParams({
-                ...(f.type ? { type: f.type } : {}),
-                ...(category ? { category } : {}),
-              }).toString()}`}
+              href={`/catalog${q ? `?${q}` : ""}`}
               className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap border transition-all shrink-0 ${
                 isActive
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"

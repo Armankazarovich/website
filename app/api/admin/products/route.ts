@@ -4,14 +4,16 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-async function checkAdmin() {
+const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+
+async function checkProductsAccess() {
   const session = await auth();
-  const role = session?.user?.role;
-  return session && (role === "ADMIN" || role === "SUPER_ADMIN");
+  const role = session?.user?.role as string | undefined;
+  return session && role && PRODUCTS_ROLES.includes(role);
 }
 
 export async function GET() {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const products = await prisma.product.findMany({
     include: { category: true, variants: true },
     orderBy: { createdAt: "desc" },
@@ -20,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const { name, slug, description, categoryId, images, saleUnit, active, featured } = body;
 
