@@ -698,6 +698,60 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 17.04.2026 (сессия 3) — Навигация + ARAY Control совершенство
+
+**Глобальный Input компонент:**
+- ✅ `components/ui/input.tsx` — h-10→h-11 на мобилке (40→44px), py-2→py-2.5, text-base→text-base sm:text-sm
+
+**Checkout мобильная полировка:**
+- ✅ Login/register формы: inputs py-2→py-3 sm:py-2, text-sm→text-base sm:text-sm
+- ✅ Login/register кнопки: py-2→py-3 sm:py-2
+- ✅ Auth toggle (Гость/Войти/Регистрация): py-2→py-2.5 sm:py-2
+- ✅ Textarea комментарий: py-2→py-3, text-sm→text-base sm:text-sm
+- ✅ Push "Включить" кнопка: py-1.5→py-2.5 sm:py-1.5
+- ✅ "Построить маршрут" ссылка: py-2.5→py-3 sm:py-2.5
+
+**Header store icons (5 кнопок):**
+- ✅ Поиск, Избранное, Тема, Корзина, Личный кабинет: w-9 h-9→w-10 h-10 (36→40px)
+
+**Admin nav:**
+- ✅ Навигационные пункты: py-2.5→py-3 (40→44px touch targets)
+- ✅ Staff pending badge: 18px→20px, text-[9px]→text-[10px], text-black→text-amber-950
+
+**Admin bottom nav dock:**
+- ✅ Все текст-метки: text-[9px]→text-[10px] (DockTab, ARAY орб, "Ещё")
+- ✅ Активный индикатор: w-1 h-1 точка → w-4 h-1 полоска (гораздо заметнее)
+
+**ARAY Control Center (полная полировка):**
+- ✅ Размеры шрифтов: 3→5 ступеней (xs/sm/md/lg/xl) — синхронизация с MobileFontControl
+- ✅ Collapsed pill buttons: p-2→p-2.5 (больше touch area)
+- ✅ Badge text: text-[9px]→text-[10px], text-[8px]→text-[10px]
+- ✅ Badge размер: min-w-[14px]→min-w-[16px], h-3.5→h-4
+- ✅ Notification items: py-2.5→py-3, text-[11px]→text-[12px] (обе панели — right и bottom)
+- ✅ Hover: bg-white/[0.04]→bg-white/[0.06] и bg-primary/[0.04]→bg-primary/[0.06]
+- ✅ Кнопка закрытия: p-1→p-1.5
+- ✅ "Все новые заказы →": text-[11px]→text-[12px], py-2→py-2.5
+- ✅ Header label: text-[11px]→text-[12px]
+- ✅ Палитры: w-7→w-8, gap-1.5→gap-2
+- ✅ Тема/шрифт кнопки: py-2→py-2.5
+- ✅ Язык кнопки: py-2.5→py-3
+- ✅ aria-label добавлены на все кнопки collapsed pill
+- ✅ Tab count badge: text-[9px]→text-[10px]
+
+**Z-index аудит:**
+- ✅ Проверен — уже консистентный: z-[5] main → z-40 panels → z-50 nav → z-[200] overlays → z-[201] content
+
+**Файлы изменены (9 файлов):**
+- `components/ui/input.tsx`
+- `components/store/wishlist-count.tsx`
+- `components/layout/header.tsx`
+- `components/admin/admin-nav.tsx`
+- `components/admin/admin-mobile-bottom-nav.tsx`
+- `components/admin/aray-control-center.tsx`
+- `app/(store)/checkout/page.tsx`
+
+**Деплой:** commit `43edb6b`, все страницы HTTP 200 ✅
+
 ### Сессия 17.04.2026 (продолжение) — Мобильный UX аудит + touch targets
 
 **Мобильный код-аудит (2 параллельных агента):**
