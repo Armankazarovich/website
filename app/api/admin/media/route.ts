@@ -85,7 +85,7 @@ export async function POST(req: Request) {
   // ── Save ALT text for one or many images ──
   if (action === "save_alt") {
     const { url, alt } = body as { url: string; alt: string };
-    if (!url) return NextResponse.json({ error: "url required" }, { status: 400 });
+    if (!url || !url.startsWith("/images/") || url.includes("..")) return NextResponse.json({ error: "Invalid url" }, { status: 400 });
 
     const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
     const altMap: Record<string, string> = altRow ? JSON.parse(altRow.value) : {};
@@ -137,12 +137,22 @@ export async function POST(req: Request) {
     const { url } = body as { url: string };
     if (!url || !url.startsWith("/images/")) return NextResponse.json({ error: "Invalid url" }, { status: 400 });
 
+    // Prevent path traversal: reject urls with ".." or that escape /images/
+    if (url.includes("..") || url.includes("\\") || url.includes("//")) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+    }
+    const resolvedPath = join(process.cwd(), "public", url);
+    const allowedBase = join(process.cwd(), "public", "images");
+    if (!resolvedPath.startsWith(allowedBase)) {
+      return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+    }
+
     // Check if used
     const products = await prisma.product.findMany({ select: { id: true, images: true } });
     const isUsed = products.some((p) => p.images.includes(url));
     if (isUsed) return NextResponse.json({ error: "Файл используется в товарах — сначала удалите его оттуда" }, { status: 400 });
 
-    const filePath = join(process.cwd(), "public", url);
+    const filePath = resolvedPath;
     if (existsSync(filePath)) await unlink(filePath);
 
     // Remove from ALT map

@@ -5,6 +5,9 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { normalizePhone } from "@/lib/phone";
+import { rateLimit } from "@/lib/rate-limit";
+
+const limiter = rateLimit("client-register", 5, 60 * 60 * 1000); // 5 per hour
 
 const schema = z.object({
   name: z.string().min(2),
@@ -15,6 +18,11 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!limiter.check(ip)) {
+      return NextResponse.json({ error: "Слишком много попыток. Попробуйте позже." }, { status: 429 });
+    }
+
     const body = await req.json();
     const parsed = schema.safeParse(body);
 

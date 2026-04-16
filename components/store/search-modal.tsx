@@ -24,6 +24,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -43,12 +44,15 @@ export function SearchModal({ onClose }: SearchModalProps) {
 
     const timer = setTimeout(async () => {
       setLoading(true);
+      setError(false);
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        if (!res.ok) throw new Error("search failed");
         const data = await res.json();
         setResults(data.results || []);
       } catch {
         setResults([]);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -93,7 +97,19 @@ export function SearchModal({ onClose }: SearchModalProps) {
 
         {/* Results */}
         <div className="max-h-80 overflow-y-auto">
-          {!loading && results.length === 0 && query.length >= 2 && (
+          {!loading && error && query.length >= 2 && (
+            <div className="py-10 text-center text-sm text-destructive">
+              <p>Не удалось выполнить поиск</p>
+              <button
+                onClick={() => setQuery((q) => q + " ")}
+                className="mt-2 text-primary hover:underline text-xs"
+              >
+                Попробовать снова
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && results.length === 0 && query.length >= 2 && (
             <div className="py-10 text-center text-sm text-muted-foreground">
               По запросу «{query}» ничего не найдено
             </div>

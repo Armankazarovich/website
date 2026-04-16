@@ -454,7 +454,19 @@ export default async function CatalogPage({
             <div className="text-center py-20 text-muted-foreground">
               <div className="text-5xl mb-4">🪵</div>
               <p className="text-lg font-medium">Товары не найдены</p>
-              <p className="text-sm mt-2">Попробуйте изменить фильтры</p>
+              <p className="text-sm mt-2 max-w-md mx-auto">
+                {searchParams.search
+                  ? `По запросу «${searchParams.search}» ничего не нашлось`
+                  : currentType && currentSize
+                  ? `Нет товаров типа «${currentType}» с размером «${currentSize}»`
+                  : currentType
+                  ? `Нет товаров типа «${currentType}» в этой категории`
+                  : currentSize
+                  ? `Нет товаров с размером «${currentSize}»`
+                  : currentInStock
+                  ? "Нет товаров в наличии по текущим фильтрам"
+                  : "Попробуйте изменить фильтры или выбрать другую категорию"}
+              </p>
               <Link href="/catalog" className="inline-block mt-4 text-primary hover:underline text-sm">
                 Сбросить все фильтры
               </Link>

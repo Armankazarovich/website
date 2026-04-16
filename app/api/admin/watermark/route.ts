@@ -194,7 +194,8 @@ async function applyWatermark(
     const isExternal = imageUrl.startsWith("http");
     let imageBuffer: Buffer;
     if (isExternal) {
-      const res = await fetch(imageUrl);
+      const res = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
       imageBuffer = Buffer.from(await res.arrayBuffer());
     } else {
       const localPath = join(process.cwd(), "public", imageUrl);

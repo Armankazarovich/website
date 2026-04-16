@@ -65,6 +65,7 @@ export function ProductCard({
   const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
   const { cardStyle } = useStoreSettings();
+  const [imgError, setImgError] = useState(false);
 
   const activeVariants = variants.filter((v) => v.inStock);
   const hasStock = activeVariants.length > 0;
@@ -212,10 +213,11 @@ export function ProductCard({
         <AdminEditButton href={`/admin/products/${id}`} mode="overlay" label="Изменить товар" />
         {/* Full-bleed image */}
         <Link href={`/product/${slug}`} className="absolute inset-0">
-          {images[0] ? (
+          {images[0] && !imgError ? (
             <Image src={images[0]} alt={name} fill
               className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
-              sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px" unoptimized />
+              sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px" unoptimized
+              onError={() => setImgError(true)} />
           ) : (
             <div className={`absolute inset-0 ${FALLBACK_GRADIENT}`} />
           )}
@@ -307,7 +309,7 @@ export function ProductCard({
 
       {/* ── Изображение ── */}
       <Link href={`/product/${slug}`} className="block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}>
-        {images[0] ? (
+        {images[0] && !imgError ? (
           <Image
             src={images[0]}
             alt={name}
@@ -315,6 +317,7 @@ export function ProductCard({
             className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
             sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px"
             unoptimized
+            onError={() => setImgError(true)}
           />
         ) : (
           /* Красивый градиент если нет фото */

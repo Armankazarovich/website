@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
+import { rateLimit } from "@/lib/rate-limit";
+
+const limiter = rateLimit("reset-password", 5, 15 * 60 * 1000); // 5 per 15 min
 
 function generatePassword(length = 10): string {
   const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -15,6 +18,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const session = await auth();
   if (session?.user?.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
+  // Rate limit by admin user ID
+  if (!limiter.check(session.user.id || "unknown")) {
+    return NextResponse.json({ error: "Слишком много запросов. Подождите 15 минут." }, { status: 429 });
   }
 
   const user = await prisma.user.findUnique({

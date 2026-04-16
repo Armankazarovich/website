@@ -117,11 +117,26 @@ export async function POST(req: NextRequest) {
 
       if (!size && !slug) { errors.push(`Строка без размера и slug — пропущена`); continue; }
 
+      // Validate numeric fields
+      const parsedPricePerCube = pricePerCube ? parseFloat(pricePerCube) : null;
+      const parsedPricePerPiece = pricePerPiece ? parseFloat(pricePerPiece) : null;
+      const parsedPiecesPerCube = piecesPerCube ? parseInt(piecesPerCube) : null;
+
+      if (parsedPricePerCube !== null && (isNaN(parsedPricePerCube) || parsedPricePerCube < 0)) {
+        errors.push(`Некорректная цена м³ "${pricePerCube}" для ${slug || size}`); continue;
+      }
+      if (parsedPricePerPiece !== null && (isNaN(parsedPricePerPiece) || parsedPricePerPiece < 0)) {
+        errors.push(`Некорректная цена шт "${pricePerPiece}" для ${slug || size}`); continue;
+      }
+      if (parsedPiecesPerCube !== null && (isNaN(parsedPiecesPerCube) || parsedPiecesPerCube < 0)) {
+        errors.push(`Некорректное кол-во шт/м³ "${piecesPerCube}" для ${slug || size}`); continue;
+      }
+
       const variantData = {
         size: size || "—",
-        pricePerCube: pricePerCube ? parseFloat(pricePerCube) : null,
-        pricePerPiece: pricePerPiece ? parseFloat(pricePerPiece) : null,
-        piecesPerCube: piecesPerCube ? parseInt(piecesPerCube) : null,
+        pricePerCube: parsedPricePerCube,
+        pricePerPiece: parsedPricePerPiece,
+        piecesPerCube: parsedPiecesPerCube,
         inStock,
       };
 
@@ -161,16 +176,24 @@ export async function POST(req: NextRequest) {
 
       // Create new product if all required fields present
       if (slug && productName && categoryName && size) {
-        let category = await prisma.category.findFirst({ where: { name: categoryName } });
+        // Sanitize inputs: strip HTML tags, limit length
+        const safeCategoryName = categoryName.replace(/<[^>]*>/g, "").trim().slice(0, 100);
+        const safeProductName = productName.replace(/<[^>]*>/g, "").trim().slice(0, 200);
+        const safeSlug = slug.replace(/[^a-zA-Zа-яА-ЯёЁ0-9_-]/g, "").slice(0, 100);
+        if (!safeCategoryName || !safeProductName || !safeSlug) {
+          errors.push(`Некорректные данные после очистки: slug="${slug}"`); continue;
+        }
+
+        let category = await prisma.category.findFirst({ where: { name: safeCategoryName } });
         if (!category) {
           category = await prisma.category.create({
-            data: { name: categoryName, slug: categoryName.toLowerCase().replace(/\s+/g, "-") },
+            data: { name: safeCategoryName, slug: safeCategoryName.toLowerCase().replace(/[^a-zа-яёЁ0-9]+/g, "-").replace(/-+$/, "") },
           });
         }
         const newProduct = await prisma.product.create({
           data: {
-            slug,
-            name: productName,
+            slug: safeSlug,
+            name: safeProductName,
             categoryId: category.id,
             saleUnit,
             active: true,

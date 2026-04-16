@@ -4,6 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
+import { rateLimit } from "@/lib/rate-limit";
+
+const limiter = rateLimit("staff-register", 3, 60 * 60 * 1000); // 3 per hour
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -21,6 +24,12 @@ const VALID_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER", 
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit by IP (from headers)
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    if (!limiter.check(ip)) {
+      return NextResponse.json({ error: "Слишком много попыток регистрации. Попробуйте через час." }, { status: 429 });
+    }
+
     const body = await req.json();
     const { name, phone, email, password, role, customRole } = body;
 
