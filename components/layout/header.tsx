@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -155,8 +155,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   const [partnershipOpen, setPartnershipOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState<string>("");
-  const [selectedSize, setSelectedSize] = useState<string>("");
+  // selectedType/selectedSize removed — mega menu is now pure navigation
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -221,20 +220,8 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   const handleCatalogLeave = () => {
     closeTimeout.current = setTimeout(() => {
       setCatalogOpen(false);
-      setSelectedType("");
-      setSelectedSize("");
     }, 350);
   };
-
-  const handleApplyFilters = useCallback(() => {
-    const params = new URLSearchParams();
-    if (selectedType) params.set("type", selectedType);
-    if (selectedSize) params.set("size", selectedSize);
-    router.push(`/catalog${params.toString() ? `?${params}` : ""}`);
-    setCatalogOpen(false);
-    setSelectedType("");
-    setSelectedSize("");
-  }, [selectedType, selectedSize, router]);
 
   return (
     <>
@@ -349,36 +336,36 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                     onMouseEnter={handleCatalogEnter}
                     onMouseLeave={handleCatalogLeave}
                   >
-                    <div className="w-[680px] rounded-2xl shadow-2xl overflow-hidden border border-primary/10"
+                    <div className="w-[760px] rounded-2xl shadow-2xl overflow-hidden border border-primary/10"
                       style={{
                         backdropFilter: "blur(28px) saturate(180%)",
                         WebkitBackdropFilter: "blur(28px) saturate(180%)",
-                        background: "hsl(var(--background) / 0.94)",
+                        background: "hsl(var(--background) / 0.96)",
                         boxShadow: "0 24px 60px rgba(0,0,0,0.28), 0 0 0 1px hsl(var(--primary)/0.08)",
                       }}
                     >
                       <div className="flex">
 
-                        {/* ── Категории ── */}
-                        <div className="flex-1 p-5">
-                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3">Категории</p>
-                          <div className="grid grid-cols-2 gap-1">
+                        {/* ── Колонка 1: Категории ── */}
+                        <div className="w-[220px] p-5 shrink-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3">Порода дерева</p>
+                          <div className="space-y-0.5">
                             {categories.map((cat) => (
                               <Link
                                 key={cat.id}
                                 href={`/catalog?category=${cat.slug}`}
-                                onClick={() => { setCatalogOpen(false); setSelectedType(""); setSelectedSize(""); }}
-                                className="group flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent transition-all duration-150"
+                                onClick={() => { setCatalogOpen(false); }}
+                                className="group flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-accent transition-all duration-150"
                               >
-                                <div className="w-8 h-8 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all shrink-0">
+                                <div className="w-7 h-7 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all shrink-0">
                                   {CAT_ICONS[cat.slug] ?? (
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg>
                                   )}
                                 </div>
-                                <div className="min-w-0">
-                                  <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{cat.name}</p>
-                                  {cat._count && <p className="text-[11px] text-muted-foreground mt-0.5">{cat._count.products} товаров</p>}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-[13px] font-medium line-clamp-1 group-hover:text-primary transition-colors">{cat.name}</p>
                                 </div>
+                                <span className="text-[10px] text-muted-foreground/50 shrink-0">{cat._count?.products ?? 0}</span>
                               </Link>
                             ))}
                           </div>
@@ -387,88 +374,102 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                         {/* ── Разделитель ── */}
                         <div className="w-px bg-border/40 my-5" />
 
-                        {/* ── Параметры ── */}
-                        <div className="w-[240px] p-5 shrink-0 flex flex-col gap-4">
-                          {/* Тип — динамический из реальных товаров */}
-                          {dynamicTypes.length > 0 && (
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">Тип материала</p>
-                            <div className="flex flex-wrap gap-1.5">
+                        {/* ── Колонка 2: Типы — сгруппированные ── */}
+                        <div className="flex-1 p-5">
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3">Тип материала</p>
+                          {dynamicTypes.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                               {dynamicTypes.map((f) => (
-                                <button
+                                <Link
                                   key={f.keyword}
-                                  onClick={() => setSelectedType(selectedType === f.keyword ? "" : f.keyword)}
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                    selectedType === f.keyword
-                                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                      : "border-border bg-muted/40 text-foreground/60 hover:border-primary/40 hover:text-foreground hover:bg-accent"
-                                  }`}
+                                  href={`/catalog?type=${encodeURIComponent(f.keyword)}`}
+                                  onClick={() => { setCatalogOpen(false); }}
+                                  className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-accent transition-colors"
                                 >
-                                  <span className={selectedType === f.keyword ? "text-primary-foreground" : "text-muted-foreground"}>{TYPE_ICONS[f.keyword] ?? DEFAULT_TYPE_ICON}</span>
-                                  {f.label}
-                                </button>
+                                  <span className="text-muted-foreground group-hover:text-primary transition-colors shrink-0">
+                                    {TYPE_ICONS[f.keyword] ?? DEFAULT_TYPE_ICON}
+                                  </span>
+                                  <span className="text-[13px] text-foreground/70 group-hover:text-foreground transition-colors">{f.label}</span>
+                                </Link>
                               ))}
                             </div>
-                          </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Загрузка...</p>
                           )}
+                        </div>
 
-                          {/* Сечение — динамическое из реальных вариантов */}
-                          {dynamicSizes.length > 0 && (
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">Сечение (мм)</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {dynamicSizes.map((s) => (
-                                <button
-                                  key={s}
-                                  onClick={() => setSelectedSize(selectedSize === s ? "" : s)}
-                                  className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-medium border transition-all ${
-                                    selectedSize === s
-                                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                      : "border-border bg-muted/40 text-foreground/60 hover:border-primary/40 hover:text-foreground hover:bg-accent"
-                                  }`}
-                                >
-                                  {s}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          )}
+                        {/* ── Разделитель ── */}
+                        <div className="w-px bg-border/40 my-5" />
 
-                          {/* Кнопка */}
-                          <button
-                            onClick={handleApplyFilters}
-                            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all mt-auto ${
-                              selectedType || selectedSize
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-md shadow-primary/20"
-                                : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
-                            }`}
+                        {/* ── Колонка 3: Быстрые действия ── */}
+                        <div className="w-[190px] p-5 shrink-0 flex flex-col gap-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-1">Полезное</p>
+
+                          <Link
+                            href="/calculator"
+                            onClick={() => setCatalogOpen(false)}
+                            className="group flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary/5 border border-primary/15 hover:bg-primary/10 hover:border-primary/25 transition-all"
                           >
-                            {selectedType || selectedSize ? "Показать товары" : "Весь каталог"}
-                            <ArrowRight className="w-4 h-4" />
-                          </button>
+                            <Calculator className="w-4 h-4 text-primary shrink-0" />
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">Калькулятор</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">м³, шт, м²</p>
+                            </div>
+                          </Link>
+
+                          <Link
+                            href="/catalog?instock=1"
+                            onClick={() => { setCatalogOpen(false); }}
+                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-accent border border-border/60 transition-all"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse shrink-0" />
+                            <span className="text-xs font-medium">В наличии</span>
+                          </Link>
+
+                          <Link
+                            href="/promotions"
+                            onClick={() => setCatalogOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-accent border border-border/60 transition-all"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-brand-orange shrink-0"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/></svg>
+                            <span className="text-xs font-medium">Акции</span>
+                          </Link>
+
+                          <Link
+                            href="/delivery"
+                            onClick={() => setCatalogOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-accent border border-border/60 transition-all"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-muted-foreground shrink-0"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>
+                            <span className="text-xs font-medium">Доставка</span>
+                          </Link>
+
+                          {/* Телефон */}
+                          {phones[0] && (
+                            <a
+                              href={`tel:${phones[0].tel}`}
+                              className="mt-auto flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
+                              <span className="text-xs font-medium text-muted-foreground">{phones[0].display}</span>
+                            </a>
+                          )}
                         </div>
                       </div>
 
                       {/* ── Нижняя полоса ── */}
-                      <div className="border-t border-border/40 px-5 py-2.5 bg-muted/20 flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
+                      <div className="border-t border-border/40 px-5 py-2 bg-muted/20 flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">
                           {categories.reduce((s, c) => s + (c._count?.products ?? 0), 0)} товаров в каталоге
                         </span>
-                        <div className="flex items-center gap-3">
-                          {(selectedType || selectedSize) && (
-                            <button onClick={() => { setSelectedType(""); setSelectedSize(""); }} className="text-xs text-muted-foreground hover:text-destructive transition-colors">
-                              Сбросить
-                            </button>
-                          )}
-                          <Link
-                            href="/calculator"
-                            onClick={() => { setCatalogOpen(false); }}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
-                          >
-                            <Calculator className="w-3.5 h-3.5" />
-                            Рассчитать количество
-                          </Link>
-                        </div>
+                        <Link
+                          href="/catalog"
+                          onClick={() => { setCatalogOpen(false); }}
+                          className="flex items-center gap-1.5 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                        >
+                          Весь каталог
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
                       </div>
                     </div>
                   </motion.div>
