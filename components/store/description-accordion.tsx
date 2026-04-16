@@ -129,6 +129,7 @@ export function DescriptionAccordion({
   productName,
   userName,
   userEmail,
+  userAvatar,
   isLoggedIn = false,
 }: Props) {
   const [descOpen, setDescOpen] = useState(false);
@@ -251,26 +252,7 @@ export function DescriptionAccordion({
                       >
                         <div className="flex items-center justify-between mb-2.5">
                           <div className="flex items-center gap-2">
-                            {review.user?.avatarUrl ? (
-                              <img
-                                src={review.user.avatarUrl}
-                                alt={review.name}
-                                className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = "none";
-                                  const fallback = (e.target as HTMLImageElement).nextElementSibling;
-                                  if (fallback) (fallback as HTMLElement).style.display = "flex";
-                                }}
-                              />
-                            ) : null}
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0 ${
-                                review.user?.avatarUrl ? "bg-primary/10 hidden" : "bg-primary/10"
-                              }`}
-                              style={{
-                                display: review.user?.avatarUrl ? "none" : "flex",
-                              }}
-                            >
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                               {review.name.charAt(0).toUpperCase()}
                             </div>
                             <span className="font-semibold text-sm">
@@ -287,8 +269,8 @@ export function DescriptionAccordion({
                         {review.images && review.images.filter(u => u && !u.startsWith("data:")).length > 0 && (
                           <div className="flex gap-1.5 mt-3 overflow-x-auto">
                             {review.images.filter(u => u && !u.startsWith("data:")).map((img, i) => (
-                              <img key={i} src={img} alt="" className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border shrink-0"
-                                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                              <img key={i} src={img} alt="Фото к отзыву" className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg object-cover border border-border shrink-0"
+                                onError={(e) => { const el = e.target as HTMLImageElement; el.style.opacity = "0.3"; el.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' fill='%23999'%3E%3Crect width='64' height='64' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' font-size='10'%3E%F0%9F%96%BC%EF%B8%8F%3C/text%3E%3C/svg%3E"; }} />
                             ))}
                           </div>
                         )}

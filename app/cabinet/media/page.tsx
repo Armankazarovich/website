@@ -105,7 +105,8 @@ export default function MyMediaPage() {
                     onClick={() => setLightbox(item.url)}
                     className="aspect-square rounded-xl overflow-hidden border border-border bg-muted relative group"
                   >
-                    <img src={item.url} alt="" className="w-full h-full object-cover" />
+                    <img src={item.url} alt="" className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.opacity = "0.2"; }} />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                     {item.type === "avatar" && (
                       <span className="absolute top-1 left-1 text-[9px] bg-primary/80 text-primary-foreground px-1.5 py-0.5 rounded-full">

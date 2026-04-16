@@ -4,6 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { normalizePhone } from "@/lib/phone";
 
 const loginSchema = z.object({
   login: z.string().min(1),
@@ -14,18 +15,6 @@ const loginSchema = z.object({
 // Определяем — телефон или email
 function isPhone(input: string): boolean {
   return /^[\d\s\-\+\(\)]{7,}$/.test(input.trim()) && !input.includes("@");
-}
-
-// Нормализуем телефон → +7XXXXXXXXXX
-function normalizePhone(input: string): string {
-  const digits = input.replace(/\D/g, "");
-  if (digits.length === 11 && (digits[0] === "7" || digits[0] === "8")) {
-    return "+7" + digits.slice(1);
-  }
-  if (digits.length === 10) {
-    return "+7" + digits;
-  }
-  return "+" + digits;
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -51,14 +40,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         let user;
         if (isPhone(login)) {
           const normalized = normalizePhone(login);
+          const phoneVariants: { phone: string }[] = [
+            { phone: login.trim() },
+            { phone: login.replace(/\D/g, "") },
+          ];
+          if (normalized) phoneVariants.unshift({ phone: normalized });
           user = await prisma.user.findFirst({
-            where: {
-              OR: [
-                { phone: normalized },
-                { phone: login.trim() },
-                { phone: login.replace(/\D/g, "") },
-              ],
-            },
+            where: { OR: phoneVariants },
           });
         } else {
           user = await prisma.user.findUnique({

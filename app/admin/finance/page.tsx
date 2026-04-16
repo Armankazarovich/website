@@ -87,7 +87,7 @@ export default function FinancePage() {
   useEffect(() => { load(); }, [load]);
 
   const addExpense = async () => {
-    if (!newAmount || isNaN(Number(newAmount))) return;
+    if (!newAmount || isNaN(Number(newAmount)) || Number(newAmount) <= 0) return;
     setSaving(true);
     try {
       await fetch("/api/admin/finance/expenses", {

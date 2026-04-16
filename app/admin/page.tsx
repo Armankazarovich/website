@@ -126,10 +126,10 @@ export default async function AdminDashboard() {
       take: 5,
       select: { id: true, orderNumber: true, guestName: true, totalAmount: true, status: true, createdAt: true },
     }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
-    prisma.order.findMany({ where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null }, select: { createdAt: true, totalAmount: true }, orderBy: { createdAt: "asc" } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.findMany({ where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null }, select: { createdAt: true, totalAmount: true, deliveryCost: true }, orderBy: { createdAt: "asc" } }),
     prisma.orderItem.groupBy({ by: ["productName"], _sum: { price: true }, _count: { _all: true } }),
     prisma.order.groupBy({ by: ["status"], where: { deletedAt: null }, _count: { _all: true } }),
     prisma.user.count({ where: { staffStatus: "PENDING" } }).catch(() => 0),
@@ -144,13 +144,13 @@ export default async function AdminDashboard() {
   for (const o of allOrdersForChart) {
     const d = new Date(o.createdAt); d.setHours(0, 0, 0, 0);
     const slot = chartDays.find(c => c.date.getTime() === d.getTime());
-    if (slot) slot.amount += Number(o.totalAmount);
+    if (slot) slot.amount += Number(o.totalAmount) + Number(o.deliveryCost || 0);
   }
 
   const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
-  const revenue30total = Number(revenue30._sum.totalAmount || 0);
-  const revenue7total = Number(revenue7._sum.totalAmount || 0);
-  const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0);
+  const revenue30total = Number(revenue30._sum.totalAmount || 0) + Number(revenue30._sum.deliveryCost || 0);
+  const revenue7total = Number(revenue7._sum.totalAmount || 0) + Number(revenue7._sum.deliveryCost || 0);
+  const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0) + Number(revenueToday._sum.deliveryCost || 0);
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
 
   return (

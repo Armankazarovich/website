@@ -919,15 +919,23 @@ export default async function HomePage() {
           <div className="container">
             {/* Rating header */}
             <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-8 mb-10">
-              <div className="text-center shrink-0">
-                <p className="font-display font-bold text-6xl sm:text-7xl text-primary leading-none">4.9</p>
-                <div className="flex gap-0.5 justify-center mt-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-muted-foreground text-xs mt-1.5">средняя оценка</p>
-              </div>
+              {(() => {
+                const avg = reviews.length > 0
+                  ? reviews.reduce((sum: number, r: any) => sum + (r.rating || 5), 0) / reviews.length
+                  : 5;
+                const rounded = Math.round(avg * 10) / 10;
+                return (
+                  <div className="text-center shrink-0">
+                    <p className="font-display font-bold text-6xl sm:text-7xl text-primary leading-none">{rounded}</p>
+                    <div className="flex gap-0.5 justify-center mt-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-5 h-5 ${i < Math.round(avg) ? "fill-yellow-400 text-yellow-400" : "fill-muted text-muted"}`} />
+                      ))}
+                    </div>
+                    <p className="text-muted-foreground text-xs mt-1.5">средняя оценка</p>
+                  </div>
+                );
+              })()}
               <div className="w-px h-16 bg-border hidden sm:block" />
               <div className="text-center sm:text-left">
                 <h2 className="font-display font-bold text-3xl sm:text-4xl">Отзывы покупателей</h2>

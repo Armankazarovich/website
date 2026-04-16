@@ -11,6 +11,10 @@ export async function PATCH(req: Request) {
 
   const { currentPassword, newPassword } = await req.json();
 
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 6) {
+    return NextResponse.json({ error: "Пароль должен содержать минимум 6 символов" }, { status: 400 });
+  }
+
   const user = await prisma.user.findUnique({ where: { id: session.user.id } });
   if (!user) return NextResponse.json({ error: "Пользователь не найден" }, { status: 404 });
 

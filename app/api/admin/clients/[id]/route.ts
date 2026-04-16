@@ -14,8 +14,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const body = await req.json();
     const { name, phone, address, role } = body;
 
-    const STAFF_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "ADMIN"] as const;
-    const isRolePromotion = role && STAFF_ROLES.includes(role);
+    // ADMIN и SUPER_ADMIN нельзя назначить через этот endpoint — только через staff
+    const PROMOTABLE_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] as const;
+    const isRolePromotion = role && (PROMOTABLE_ROLES as readonly string[]).includes(role);
+
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Нельзя назначить эту роль через клиентов" }, { status: 403 });
+    }
 
     const user = await prisma.user.update({
       where: { id: params.id },
@@ -24,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ...(phone !== undefined ? { phone: phone || null } : {}),
         ...(address !== undefined ? { address: address || null } : {}),
         ...(isRolePromotion ? {
-          role: role as "MANAGER" | "COURIER" | "ACCOUNTANT" | "WAREHOUSE" | "SELLER" | "ADMIN",
+          role: role as "MANAGER" | "COURIER" | "ACCOUNTANT" | "WAREHOUSE" | "SELLER",
           staffStatus: "ACTIVE" as const,
         } : {}),
       },

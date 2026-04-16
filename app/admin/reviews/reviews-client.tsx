@@ -34,7 +34,9 @@ function AdminReplyBlock({ reviewId, onReply }: { reviewId: string; onReply: (re
         onReply(replyText.trim());
         setOpen(false);
       }
-    } catch {}
+    } catch (e) {
+      console.error("Reply failed:", e);
+    }
     setSending(false);
   };
 
