@@ -197,7 +197,7 @@ export function CatalogFilters({
                 /* ── Grouped mode: сечения → раскрытие полных размеров ── */
                 <div className="mt-3 space-y-2.5">
                   {/* Сечения (первые 2 числа) */}
-                  <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto scrollbar-thin pr-1">
+                  <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-y-auto scrollbar-thin pr-1">
                     {crossSections.map((cs) => {
                       const isExpanded = visibleCS === cs;
                       const hasActive = activeCS === cs;
