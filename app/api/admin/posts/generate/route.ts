@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireManager } from "@/lib/auth-helpers";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +23,8 @@ function toSlug(text: string): string {
 }
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireManager();
+  if (!auth.authorized) return auth.response;
 
   const { topic, keywords } = await req.json();
 

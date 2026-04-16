@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -297,8 +297,8 @@ const INITIAL_SERVICES = [
 ];
 
 export async function POST() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if (!auth.authorized) return auth.response;
 
   const existingPostsCount = await prisma.post.count();
   const existingServicesCount = await prisma.service.count();

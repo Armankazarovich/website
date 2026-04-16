@@ -73,8 +73,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   return NextResponse.json({
     success: true,
-    newPassword,   // Показываем пароль в админке
     emailSent,
     email: user.email,
+    // Пароль показываем в UI только если email НЕ отправлен (чтобы админ мог передать вручную)
+    ...(emailSent ? {} : { newPassword }),
+    message: emailSent
+      ? `Новый пароль отправлен на ${user.email}`
+      : "Email не отправлен — передайте пароль клиенту вручную",
   });
 }

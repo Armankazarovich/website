@@ -13,9 +13,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Файл не найден" }, { status: 400 });
     }
 
-    // Validate type
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Только изображения" }, { status: 400 });
+    // Validate MIME type
+    const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!ALLOWED_MIME.includes(file.type)) {
+      return NextResponse.json({ error: "Допустимые форматы: JPG, PNG, WebP, GIF" }, { status: 400 });
     }
 
     // Validate size (5MB max)
@@ -23,8 +24,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Максимальный размер 5MB" }, { status: 400 });
     }
 
-    // Generate unique filename
+    // Validate & whitelist extension
+    const ALLOWED_EXT = ["jpg", "jpeg", "png", "webp", "gif"];
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    if (!ALLOWED_EXT.includes(ext)) {
+      return NextResponse.json({ error: "Недопустимое расширение файла" }, { status: 400 });
+    }
     const filename = `review-${randomUUID().slice(0, 8)}.${ext}`;
 
     // Save to public/uploads/reviews/ (persists on VPS across deploys)

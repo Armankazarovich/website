@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +24,8 @@ const PING_TARGETS: PingTarget[] = [
 ];
 
 export async function POST() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireStaff();
+  if (!auth.authorized) return auth.response;
 
   const results: { name: string; status: "ok" | "error"; ms: number }[] = [];
 
