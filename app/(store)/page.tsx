@@ -250,7 +250,9 @@ const faqSchema = {
 
 export default async function HomePage() {
   const { categories, featuredProducts, promotions, reviews, settings } = await getData();
-  const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
+  const workingHours = getSetting(settings, "working_hours") || "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00";
+  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
+  const phoneDisplay = getSetting(settings, "phone") || "8-985-970-71-33";
   const advantages = getAdvantages(workingHours);
   const TICKER_ITEMS = getTickerItems(workingHours);
 
@@ -323,7 +325,7 @@ export default async function HomePage() {
 
               {/* Кнопка 2 — звонок, glassmorphism */}
               <a
-                href="tel:+79859707133"
+                href={`tel:${phoneLink}`}
                 className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-xl bg-white/10 hover:bg-white/18 active:scale-95 border border-white/25 hover:border-white/45 text-white text-base sm:text-lg font-semibold backdrop-blur-md transition-all duration-200 shadow-lg"
               >
                 <Phone className="w-5 h-5 shrink-0 text-brand-orange" />
@@ -844,10 +846,10 @@ export default async function HomePage() {
               <div className="bg-brand-orange/8 border border-brand-orange/25 rounded-2xl p-5 mb-6">
                 <p className="text-sm text-muted-foreground mb-1.5">Узнать стоимость доставки:</p>
                 <a
-                  href="tel:+79859707133"
+                  href={`tel:${phoneLink}`}
                   className="font-display font-bold text-2xl sm:text-3xl text-brand-orange hover:underline block"
                 >
-                  8-985-970-71-33
+                  {phoneDisplay}
                 </a>
               </div>
               <Button variant="outline" size="lg" asChild>
@@ -1023,11 +1025,11 @@ export default async function HomePage() {
             </Link>
             {/* Кнопка 2 — glassmorphism */}
             <a
-              href="tel:+79859707133"
+              href={`tel:${phoneLink}`}
               className="inline-flex items-center justify-center gap-2 h-14 px-10 rounded-xl bg-white/10 hover:bg-white/18 active:scale-95 border border-white/25 hover:border-white/45 text-white text-lg font-semibold backdrop-blur-md transition-all duration-200 shadow-lg"
             >
               <Phone className="w-5 h-5 shrink-0 text-brand-orange" />
-              8-985-970-71-33
+              {phoneDisplay}
             </a>
           </div>
         </div>

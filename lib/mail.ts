@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 
@@ -210,7 +211,7 @@ export async function sendCustomerOrderConfirmation(
 
             <p style="margin:0;color:#999;font-size:13px;line-height:1.8;">
               Вопросы? Звоните:<br>
-              <a href="tel:+79859707133" style="color:#E8700A;font-weight:700;font-size:16px;text-decoration:none;">8-985-970-71-33</a><br>
+              <a href="tel:${DEFAULT_SETTINGS.phone_link}" style="color:#E8700A;font-weight:700;font-size:16px;text-decoration:none;">${DEFAULT_SETTINGS.phone}</a><br>
               <span style="font-size:12px;">Пн–Сб 9:00–18:00 МСК</span>
             </p>
           </td>

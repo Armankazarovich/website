@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BackButton } from "@/components/ui/back-button";
+import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Политика конфиденциальности — ПилоРус",
   description: "Политика конфиденциальности ООО «ПИТИ» (ПилоРус). Правила обработки персональных данных.",
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const settings = await getSiteSettings();
+  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
+  const phoneDisplay = getSetting(settings, "phone") || "8-985-970-71-33";
   return (
     <div className="container max-w-3xl py-12">
       <div className="flex items-start gap-3 mb-2">
@@ -114,7 +118,7 @@ export default function PrivacyPage() {
               <li><strong>ИНН:</strong> 504712164 / <strong>КПП:</strong> 504701001</li>
               <li><strong>Адрес:</strong> Московская обл., г. Химки, Заводская 2А, стр.28</li>
               <li><strong>Email:</strong> <a href="mailto:info@pilo-rus.ru" className="text-primary hover:underline">info@pilo-rus.ru</a></li>
-              <li><strong>Телефон:</strong> <a href="tel:+79859707133" className="text-primary hover:underline">8-985-970-71-33</a></li>
+              <li><strong>Телефон:</strong> <a href={`tel:${phoneLink}`} className="text-primary hover:underline">{phoneDisplay}</a></li>
             </ul>
           </div>
         </section>

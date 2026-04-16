@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Minus, Plus, ShoppingCart, Phone, Check } from "lucide-react";
 import { useCartStore, type UnitType } from "@/store/cart";
+import { PHONE_LINK } from "@/lib/phone-constants";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -259,7 +260,7 @@ export function VariantSelector({
           )}
         </Button>
         <Button size="lg" variant="outline" asChild>
-          <a href="tel:+79859707133">
+          <a href={`tel:${PHONE_LINK}`}>
             <Phone className="w-5 h-5" />
           </a>
         </Button>
@@ -268,7 +269,7 @@ export function VariantSelector({
       {!selectedVariant?.inStock && (
         <p className="text-sm text-muted-foreground text-center">
           Этот размер временно отсутствует.{" "}
-          <a href="tel:+79859707133" className="text-primary hover:underline">
+          <a href={`tel:${PHONE_LINK}`} className="text-primary hover:underline">
             Позвоните нам
           </a>{" "}
           для уточнения сроков поставки.

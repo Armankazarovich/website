@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
+import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Пользовательское соглашение и политика конфиденциальности | ПилоРус",
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const settings = await getSiteSettings();
+  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
+  const phoneDisplay = getSetting(settings, "phone") || "8-985-970-71-33";
   return (
     <div className="container py-12 max-w-3xl">
       <div className="flex items-start gap-3 mb-3">
@@ -94,7 +98,7 @@ export default function TermsPage() {
           <p className="text-muted-foreground leading-relaxed mt-2">
             Для реализации прав обратитесь по email:{" "}
             <a href="mailto:info@pilo-rus.ru" className="text-primary hover:underline">info@pilo-rus.ru</a> или по телефону{" "}
-            <a href="tel:+79859707133" className="text-primary hover:underline">8-985-970-71-33</a>.
+            <a href={`tel:${phoneLink}`} className="text-primary hover:underline">{phoneDisplay}</a>.
           </p>
         </section>
 
@@ -121,7 +125,7 @@ export default function TermsPage() {
               <a href="mailto:info@pilo-rus.ru" className="text-primary hover:underline">info@pilo-rus.ru</a>
             </p>
             <p><strong className="text-foreground">Телефон:</strong>{" "}
-              <a href="tel:+79859707133" className="text-primary hover:underline">8-985-970-71-33</a>
+              <a href={`tel:${phoneLink}`} className="text-primary hover:underline">{phoneDisplay}</a>
             </p>
           </div>
         </section>

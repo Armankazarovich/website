@@ -15,6 +15,7 @@ import {
   Lock, Key, Bot, Wifi,
 } from "lucide-react";
 import Link from "next/link";
+import { PHONE_LINK, PHONE_DISPLAY } from "@/lib/phone-constants";
 
 /* ─── Roles ─── */
 const ROLES = [
@@ -636,7 +637,7 @@ const ARTICLES: Article[] = [
       "Самовывоз: Химки, ул. Заводская 2А, стр.28 — бесплатно",
       "Режим самовывоза: Пн–Пт 09:00–18:00, Сб 09:00–15:00",
       "Есть погрузчик на месте — пиломатериалы погрузят в вашу машину",
-      "Позвоните заранее для резервирования нужного объёма: 8-985-970-71-33",
+      `Позвоните заранее для резервирования нужного объёма: ${PHONE_DISPLAY}`,
     ],
     tip: "При самовывозе позвоните за день — мы подготовим и отложим ваш заказ. Это экономит время при визите на склад.",
     link: { href: "/delivery", label: "Страница доставки" },
@@ -1044,7 +1045,7 @@ export default function HelpPage() {
           <p className="font-semibold text-sm mb-1">Не нашли ответ?</p>
           <p className="text-xs text-muted-foreground mb-3">Напишите нам — ответим и добавим инструкцию</p>
           <div className="flex justify-center gap-3 flex-wrap">
-            <a href="tel:+79859707133"
+            <a href={`tel:${PHONE_LINK}`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors">
               <Phone className="w-3.5 h-3.5" /> Позвонить
             </a>

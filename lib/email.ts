@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 
@@ -60,7 +61,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
               <!-- Footer -->
               <tr>
                 <td style="background:#f9f9f9;padding:20px 36px;border-top:1px solid #eee;">
-                  <p style="margin:0;color:#aaa;font-size:12px;">© 2024 ПилоРус · Химки, ул. Заводская 2А, стр.28 · 8-985-970-71-33</p>
+                  <p style="margin:0;color:#aaa;font-size:12px;">© 2024 ПилоРус · Химки, ул. Заводская 2А, стр.28 · ${DEFAULT_SETTINGS.phone}</p>
                 </td>
               </tr>
             </table>
@@ -154,7 +155,7 @@ export async function sendOrderStatusEmail(email: string, data: {
             </a>
             <hr style="border:none;border-top:1px solid #eee;margin:28px 0 20px;">
             <p style="margin:0;color:#999;font-size:13px;line-height:1.6;">
-              Вопросы? Звоните: <a href="tel:+79859707133" style="color:#E8700A;font-weight:600;text-decoration:none;">8-985-970-71-33</a><br>
+              Вопросы? Звоните: <a href="tel:${DEFAULT_SETTINGS.phone_link}" style="color:#E8700A;font-weight:600;text-decoration:none;">${DEFAULT_SETTINGS.phone}</a><br>
               <span style="font-size:12px;">Пн–Сб 9:00–18:00 МСК</span>
             </p>
           </td>

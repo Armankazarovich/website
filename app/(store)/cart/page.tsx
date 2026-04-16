@@ -37,6 +37,7 @@ import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
+import { PHONE_LINK, PHONE_DISPLAY } from "@/lib/phone-constants";
 
 // ─── Share Banner (detects ?share= param) ─────────────────────────────────────
 function ShareBanner() {
@@ -420,11 +421,7 @@ export default function CartPage() {
 
             <div className="text-center text-sm text-muted-foreground">
               Или позвоните:{" "}
-              <span className="inline-flex flex-wrap justify-center gap-x-3 gap-y-1">
-                <a href="tel:+79859707133" className="text-primary font-medium hover:underline whitespace-nowrap">8-985-970-71-33</a>
-                <a href="tel:+79996622602" className="text-primary font-medium hover:underline whitespace-nowrap">8-999-662-26-02</a>
-                <a href="tel:+79776068020" className="text-primary font-medium hover:underline whitespace-nowrap">8-977-606-80-20</a>
-              </span>
+              <a href={`tel:${PHONE_LINK}`} className="text-primary font-medium hover:underline whitespace-nowrap">{PHONE_DISPLAY}</a>
             </div>
 
             {/* Share shortcut in sidebar */}

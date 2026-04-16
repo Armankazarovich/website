@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import nodemailer from "nodemailer";
+import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 import bcrypt from "bcryptjs";
 
 async function checkAdmin() {
@@ -103,10 +104,15 @@ export async function POST(req: Request) {
   }
 
   if (action === "send") {
-    const { subject, html, recipients } = body;
-    if (!subject || !html || !recipients?.length) {
+    const { subject, html: rawHtml, recipients } = body;
+    if (!subject || !rawHtml || !recipients?.length) {
       return NextResponse.json({ error: "Заполните все поля" }, { status: 400 });
     }
+    // Sanitize: strip script tags, event handlers, and javascript: URLs
+    const html = (rawHtml as string)
+      .replace(/<script[\s\S]*?<\/script>/gi, "")
+      .replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, "")
+      .replace(/javascript\s*:/gi, "");
     const cfg = await getSmtpConfig();
     if (!cfg.smtp_host || !cfg.smtp_user || !cfg.smtp_pass) {
       return NextResponse.json(
@@ -210,7 +216,7 @@ export async function POST(req: Request) {
 <p style="margin:20px 0 0;font-size:12px;color:#aaa">Рекомендуем сменить пароль после первого входа в разделе «Настройки».</p>
 </div>
 <div style="padding:16px 32px;background:#f9f9f9;border-top:1px solid #eee;text-align:center">
-<p style="margin:0;font-size:12px;color:#aaa">ПилоРус · Химки МО · <a href="https://pilo-rus.ru" style="color:#e8700a">pilo-rus.ru</a> · 8-985-970-71-33</p>
+<p style="margin:0;font-size:12px;color:#aaa">ПилоРус · Химки МО · <a href="https://pilo-rus.ru" style="color:#e8700a">pilo-rus.ru</a> · ${DEFAULT_SETTINGS.phone}</p>
 </div>
 </div></body></html>`;
           try {

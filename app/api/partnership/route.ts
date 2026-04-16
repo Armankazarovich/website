@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -72,7 +73,7 @@ async function sendPartnershipEmail(data: {
           </table>
         </div>
         <div style="background:#f9f9f9;padding:16px 32px;border-top:1px solid #eee;">
-          <p style="margin:0;color:#aaa;font-size:12px;">ПилоРус · pilo-rus.ru · 8-985-970-71-33</p>
+          <p style="margin:0;color:#aaa;font-size:12px;">ПилоРус · pilo-rus.ru · ${DEFAULT_SETTINGS.phone}</p>
         </div>
       </div>
     `,

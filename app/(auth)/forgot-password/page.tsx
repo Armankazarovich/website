@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { PHONE_LINK, PHONE_DISPLAY } from "@/lib/phone-constants";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -78,7 +79,7 @@ export default function ForgotPasswordPage() {
                 <div className="bg-muted/50 rounded-2xl p-4 text-left">
                   <p className="text-xs text-muted-foreground">
                     💡 Ссылка действительна <strong>1 час</strong>. Если письмо не пришло через 5 минут — попробуйте ещё раз или позвоните нам:{" "}
-                    <a href="tel:+79859707133" className="text-primary hover:underline">8-985-970-71-33</a>
+                    <a href={`tel:${PHONE_LINK}`} className="text-primary hover:underline">{PHONE_DISPLAY}</a>
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 pt-2">

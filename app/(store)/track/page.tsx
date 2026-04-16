@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, Package, Clock, CheckCircle, Truck, XCircle, Phone, ArrowRight } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
+import { PHONE_LINK } from "@/lib/phone-constants";
 import { Button } from "@/components/ui/button";
 
 type OrderStatus = "NEW" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -227,7 +228,7 @@ function TrackForm() {
               <p className="font-medium text-sm">Вопросы по заказу?</p>
               <p className="text-muted-foreground text-xs mt-0.5">Менеджер ответит на все вопросы</p>
             </div>
-            <a href="tel:+79859707133" className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+            <a href={`tel:${PHONE_LINK}`} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
               <Phone className="w-4 h-4" />
               Позвонить
             </a>

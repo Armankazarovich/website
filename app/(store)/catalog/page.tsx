@@ -11,6 +11,8 @@ import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
 import { Calculator, ArrowRight, Phone } from "lucide-react";
+import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
+import { PhoneLinks } from "@/components/shared/phone-links";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   if (searchParams.category) {
@@ -111,6 +113,9 @@ export default async function CatalogPage({
       : { showInMenu: true },
     ...(Object.keys(sizeVariantFilter).length > 0 ? { variants: { some: sizeVariantFilter } } : {}),
   };
+
+  const settings = await getSiteSettings();
+  const phones = getPhones(settings);
 
   let categories: any[] = [], productsRaw: any[] = [], totalCount = 0, allVariantSizes: any[] = [], productsForTypes: any[] = [];
   try {
@@ -360,25 +365,7 @@ export default async function CatalogPage({
               <p className="text-xs text-muted-foreground mb-3">
                 Наши менеджеры помогут подобрать нужный материал
               </p>
-              <a
-                href="tel:+79859707133"
-                className="flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-xl py-2.5 text-sm font-semibold hover:bg-primary/90 active:scale-95 transition-all shadow-sm shadow-primary/20"
-              >
-                <Phone className="w-4 h-4 shrink-0" />
-                8-985-970-71-33
-              </a>
-              <a
-                href="tel:+79996622602"
-                className="block mt-1.5 text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                8-999-662-26-02
-              </a>
-              <a
-                href="tel:+79776068020"
-                className="block mt-1.5 text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                8-977-606-80-20
-              </a>
+              <PhoneLinks phones={phones} variant="sidebar" />
             </div>
           </div>
         </aside>

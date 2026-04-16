@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 
 async function checkAdmin() {
   const session = await auth();
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
 
     let updated = 0;
     for (const p of products) {
-      const description = `${p.name} — купить в ПилоРус. ${p.category?.name || "Пиломатериалы"} от производителя в Химках. Доставка по Москве и МО за 1-3 дня. Звоните: 8-985-970-71-33`;
+      const description = `${p.name} — купить в ПилоРус. ${p.category?.name || "Пиломатериалы"} от производителя в Химках. Доставка по Москве и МО за 1-3 дня. Звоните: ${DEFAULT_SETTINGS.phone}`;
       await prisma.product.update({ where: { id: p.id }, data: { description } });
       updated++;
     }

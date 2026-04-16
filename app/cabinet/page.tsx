@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
+import { getSiteSettings, getSetting } from "@/lib/site-settings";
 import Link from "next/link";
 import {
   ShoppingBag, ArrowRight, Package, Clock, CheckCircle, Truck,
@@ -20,6 +21,9 @@ const STATUS_ICONS: Record<string, React.ElementType> = {
 export default async function CabinetDashboard() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+
+  const settings = await getSiteSettings();
+  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
 
   const [orders, user] = await Promise.all([
     prisma.order.findMany({
@@ -105,7 +109,7 @@ export default async function CabinetDashboard() {
             { href: "/calculator",       label: "Калькулятор",icon: Calculator,    color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-white/[0.04]" },
             { href: "/cabinet/profile",  label: "Профиль",    icon: User,          color: "text-slate-600 dark:text-slate-300",  bg: "bg-slate-50 dark:bg-white/[0.04]" },
             { href: "/cabinet",          label: "Заказы",     icon: ReceiptText,   color: "text-emerald-600 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-white/[0.04]" },
-            { href: "tel:+79859707133",  label: "Позвонить",  icon: Phone,         color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-white/[0.04]" },
+            { href: `tel:${phoneLink}`,  label: "Позвонить",  icon: Phone,         color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-white/[0.04]" },
             { href: "/reviews",          label: "Отзывы",     icon: Star,          color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-white/[0.04]" },
           ].map((action) => (
             <Link
@@ -227,7 +231,7 @@ export default async function CabinetDashboard() {
           <p className="text-sm font-semibold">Нужна помощь?</p>
           <p className="text-xs text-muted-foreground">Менеджер поможет с выбором и расчётом</p>
         </div>
-        <a href="tel:+79859707133" className="shrink-0 bg-primary text-white text-xs font-bold px-3 py-2 rounded-xl">
+        <a href={`tel:${phoneLink}`} className="shrink-0 bg-primary text-white text-xs font-bold px-3 py-2 rounded-xl">
           Позвонить
         </a>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, CheckCircle, Loader2, Handshake, Building2, HardHat, TreePine, ShoppingBag, Wrench } from "lucide-react";
+import { PHONE_DISPLAY } from "@/lib/phone-constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -66,7 +67,7 @@ export function PartnershipModal({ onClose }: Props) {
       if (!res.ok) throw new Error("Ошибка отправки");
       setSuccess(true);
     } catch {
-      setErrors({ submit: "Ошибка отправки. Позвоните нам по телефону 8-985-970-71-33" });
+      setErrors({ submit: `Ошибка отправки. Позвоните нам по телефону ${PHONE_DISPLAY}` });
     } finally {
       setSubmitting(false);
     }

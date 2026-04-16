@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PHONE_DISPLAY } from "@/lib/phone-constants";
 import {
   Mail,
   Send,
@@ -55,7 +56,7 @@ const makeBase = (header: { title: string; sub?: string }, headerBg: string, bod
 <div class="wrap">
 <div class="header"><h1>${header.title}</h1>${header.sub ? `<p>${header.sub}</p>` : ''}</div>
 <div class="body">${body}</div>
-<div class="footer"><p>ПилоРус — Пиломатериалы в Химках · <a href="https://pilo-rus.ru" style="color:#e8700a">pilo-rus.ru</a> · 8-985-970-71-33</p></div>
+<div class="footer"><p>ПилоРус — Пиломатериалы в Химках · <a href="https://pilo-rus.ru" style="color:#e8700a">pilo-rus.ru</a> · ${PHONE_DISPLAY}</p></div>
 </div></div></body></html>`;
 
 const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; desc: string; subject: string; html: () => string }[] = [
@@ -132,7 +133,7 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 <p>Если вы планируете новое строительство или ремонт — мы здесь и готовы помочь с подбором материалов и расчётом стоимости.</p>
 <p><b>Актуальные цены и ассортимент — на сайте:</b></p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог</a>
-<p>Звоните: <b>8-985-970-71-33</b> — менеджер ответит и поможет подобрать нужное.</p>`
+<p>Звоните: <b>${PHONE_DISPLAY}</b> — менеджер ответит и поможет подобрать нужное.</p>`
     ),
   },
   {
@@ -192,7 +193,7 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 <p>Если вам интересно сотрудничество — я готов выслать актуальный прайс-лист и ответить на вопросы.</p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог и цены</a>
 <p style="color:#666;font-size:13px">Если вы не заинтересованы — просто проигнорируйте это письмо. Повторно писать не буду.</p>
-<p><b>Арман Казарович</b><br>ПилоРус — пиломатериалы от производителя<br>📞 8-985-970-71-33 | 📧 info@pilo-rus.ru</p>`
+<p><b>Арман Казарович</b><br>ПилоРус — пиломатериалы от производителя<br>📞 ${PHONE_DISPLAY} | 📧 info@pilo-rus.ru</p>`
     ),
   },
   {
@@ -224,7 +225,7 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 </table>
 <p style="font-size:12px;color:#666">* Цены указаны за 1 м³ с НДС. Окончательная цена зависит от объёма и условий доставки.</p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Полный каталог с ценами</a>
-<p>Для расчёта стоимости вашего заказа — позвоните или напишите:<br><b>📞 8-985-970-71-33</b> | 📧 info@pilo-rus.ru</p>`
+<p>Для расчёта стоимости вашего заказа — позвоните или напишите:<br><b>📞 ${PHONE_DISPLAY}</b> | 📧 info@pilo-rus.ru</p>`
     ),
   },
   {

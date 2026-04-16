@@ -12,7 +12,7 @@ import { DescriptionAccordion } from "@/components/store/description-accordion";
 import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { auth } from "@/lib/auth";
-import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getSiteSettings, getSetting, DEFAULT_SETTINGS } from "@/lib/site-settings";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${product.name} ${minPrice} — купить в Химках с доставкой по Москве | ПилоРус`,
-    description: `${product.name} от производителя ООО ПИТИ в Химках. ${minPrice}. Доставка по Москве и МО за 1-3 дня. Гарантия качества, ГОСТ. ☎ 8-985-970-71-33`,
+    description: `${product.name} от производителя ООО ПИТИ в Химках. ${minPrice}. Доставка по Москве и МО за 1-3 дня. Гарантия качества, ГОСТ. ☎ ${DEFAULT_SETTINGS.phone}`,
     keywords: `${product.name}, купить ${product.name}, ${product.name} цена, ${product.name} Москва, ${product.name} Химки, пиломатериалы от производителя`,
     openGraph: {
       title: `${product.name} — ПилоРус`,

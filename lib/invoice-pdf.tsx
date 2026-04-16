@@ -1,5 +1,6 @@
 import React from "react";
 import path from "path";
+import { DEFAULT_SETTINGS } from "@/lib/site-settings";
 import {
   Document,
   Page,
@@ -122,7 +123,7 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
               <Text style={styles.companyInfo}>
                 {"Пиломатериалы от производителя\n"}
                 {"Химки, ул. Заводская 2А, стр.28\n"}
-                {"Тел: 8-985-970-71-33 · pilo-rus.ru"}
+                {`Тел: ${DEFAULT_SETTINGS.phone} · pilo-rus.ru`}
               </Text>
             </View>
           </View>
@@ -205,7 +206,7 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
 
         {/* Подвал */}
         <View style={styles.footer} fixed>
-          <Text style={styles.footerText}>ПилоРус — Химки, ул. Заводская 2А, стр.28 · 8-985-970-71-33</Text>
+          <Text style={styles.footerText}>{`ПилоРус — Химки, ул. Заводская 2А, стр.28 · ${DEFAULT_SETTINGS.phone}`}</Text>
           <Text style={styles.footerText}>Спасибо за заказ! pilo-rus.ru</Text>
         </View>
       </Page>
