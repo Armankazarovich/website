@@ -13,8 +13,8 @@ export function WishlistCount() {
       aria-label="Избранное"
       className={
         count > 0
-          ? "relative flex items-center justify-center w-9 h-9 rounded-xl border border-red-400/40 bg-red-500/8 text-red-500 hover:bg-red-500/15 transition-all duration-200"
-          : "relative flex items-center justify-center w-9 h-9 rounded-xl border border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border transition-all duration-200"
+          ? "relative flex items-center justify-center w-10 h-10 rounded-xl border border-red-400/40 bg-red-500/8 text-red-500 hover:bg-red-500/15 transition-all duration-200"
+          : "relative flex items-center justify-center w-10 h-10 rounded-xl border border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-foreground hover:border-border transition-all duration-200"
       }
     >
       <Heart className={`w-4 h-4 transition-all ${count > 0 ? "fill-red-500/20" : ""}`} />

@@ -573,7 +573,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleSearch}
               aria-label="Поиск"
-              className="hidden sm:flex w-9 h-9 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <Search className="w-4 h-4" />
             </button>
@@ -585,7 +585,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Переключить тему"
-              className="w-9 h-9 flex items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground relative overflow-hidden"
+              className="w-10 h-10 flex items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground relative overflow-hidden"
             >
               <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -599,7 +599,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 data-cart-icon
                 aria-label="Корзина"
                 className={cn(
-                  "relative w-9 h-9 flex items-center justify-center rounded-xl border transition-all duration-200",
+                  "relative w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200",
                   mounted && totalItems > 0
                     ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 hover:border-brand-orange/70 hover:shadow-[0_0_14px_3px_rgba(232,112,10,0.25)]"
                     : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-brand-orange hover:border-brand-orange/30 hover:shadow-[0_0_10px_2px_rgba(232,112,10,0.12)]"
@@ -647,7 +647,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleAccount}
               aria-label="Личный кабинет"
-              className="hidden lg:flex w-9 h-9 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="hidden lg:flex w-10 h-10 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <User className="w-4 h-4" />
             </button>

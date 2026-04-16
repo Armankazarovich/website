@@ -83,11 +83,13 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
     } catch {} finally { setLoadingNotif(false); }
   };
 
-  // Единые размеры шрифтов — те же значения что в AdminFontPicker
+  // Единые размеры шрифтов — 5 ступеней как в MobileFontControl
   const FONT_SIZES_CC = [
+    { id: "xs", label: "Мини",    px: "12px",   scale: "0.857" },
     { id: "sm", label: "Компакт", px: "13px",   scale: "0.929" },
     { id: "md", label: "Норм",    px: "14px",   scale: "1"     },
     { id: "lg", label: "Крупн",   px: "15.5px", scale: "1.107" },
+    { id: "xl", label: "Макс",    px: "17px",   scale: "1.214" },
   ];
   const [fontActive, setFontActive] = useState("md");
 
@@ -119,21 +121,21 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
           <div className="aray-dark-panel flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl"
             style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}dd)`, backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.1)", borderRight: "none" }}>
             {!isClient && (
-              <button onClick={() => { setTab("notif"); setOpen(true); }} title="Уведомления"
-                className="p-2 rounded-xl hover:bg-white/10 transition-colors relative">
+              <button onClick={() => { setTab("notif"); setOpen(true); }} title="Уведомления" aria-label={`Уведомления: ${count}`}
+                className="p-2.5 rounded-xl hover:bg-white/10 transition-colors relative">
                 <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)" }} />
                 {count > 0 && (
-                  <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                  <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
                     style={{ background: "hsl(var(--primary))" }}>{count > 9 ? "9+" : count}</span>
                 )}
               </button>
             )}
-            <button onClick={() => { setTab("style"); setOpen(true); }} title="Оформление"
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+            <button onClick={() => { setTab("style"); setOpen(true); }} title="Оформление" aria-label="Оформление"
+              className="p-2.5 rounded-xl hover:bg-white/10 transition-colors">
               <Palette className="w-4 h-4 text-white/50" />
             </button>
-            <button onClick={() => { setTab("lang"); setOpen(true); }} title="Язык"
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+            <button onClick={() => { setTab("lang"); setOpen(true); }} title="Язык" aria-label="Выбрать язык"
+              className="p-2.5 rounded-xl hover:bg-white/10 transition-colors">
               <span className="text-[11px] font-bold text-white/50">{lang.toUpperCase()}</span>
             </button>
           </div>
@@ -147,7 +149,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 <Zap className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold text-white">ARAY Control</span>
               </div>
-              <button onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" aria-label="Закрыть">
                 <X className="w-4 h-4 text-white/50" />
               </button>
             </div>
@@ -157,7 +159,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 <button onClick={() => setTab("notif")}
                   className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "notif" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
                   style={tab === "notif" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
-                  Уведомления {count > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[9px] text-white" style={{ background: "hsl(var(--primary))" }}>{count}</span>}
+                  Уведомления {count > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] text-white" style={{ background: "hsl(var(--primary))" }}>{count}</span>}
                 </button>
               )}
               <button onClick={() => setTab("style")}
@@ -183,21 +185,21 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                     <div className="py-1">
                       {orders.map((o: any) => (
                         <button key={o.id} onClick={() => { router.push("/admin/orders"); setOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] transition-colors text-left">
                           <ShoppingBag className="w-4 h-4 text-primary shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold text-white/90 truncate">#{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}</p>
-                            <p className="text-[10px] text-white/40">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
+                            <p className="text-[12px] font-semibold text-white/90 truncate">#{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}</p>
+                            <p className="text-[10px] text-white/40 mt-0.5">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
                           </div>
                         </button>
                       ))}
                       {reviews.map((r: any) => (
                         <button key={r.id} onClick={() => { router.push("/admin/reviews"); setOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.04] transition-colors text-left">
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] transition-colors text-left">
                           <Star className="w-4 h-4 text-yellow-400 shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[11px] font-semibold text-white/90 truncate">{r.name} · {"⭐".repeat(r.rating)}</p>
-                            <p className="text-[10px] text-white/40 truncate">{r.text?.substring(0, 40)}</p>
+                            <p className="text-[12px] font-semibold text-white/90 truncate">{r.name} · {"⭐".repeat(r.rating)}</p>
+                            <p className="text-[10px] text-white/40 mt-0.5 truncate">{r.text?.substring(0, 40)}</p>
                           </div>
                         </button>
                       ))}
@@ -209,22 +211,22 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 <div className="p-4 space-y-4">
                   {/* Палитры */}
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Палитра</p>
-                    <div className="flex flex-wrap gap-1.5">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Палитра</p>
+                    <div className="flex flex-wrap gap-2">
                       {PALETTES.map((p) => (
                         <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                          className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-60 hover:opacity-100 hover:scale-105"}`}
+                          className={`w-8 h-8 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-60 hover:opacity-100 hover:scale-105"}`}
                           style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
                       ))}
                     </div>
                   </div>
                   {/* Тема */}
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Тема</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Тема</p>
                     <div className="flex gap-2">
                       {["light", "dark"].map((t) => (
                         <button key={t} onClick={() => setTheme(t)}
-                          className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                          className={`flex-1 py-2.5 rounded-xl text-[12px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
                           {t === "light" ? "Светлая" : "Тёмная"}
                         </button>
                       ))}
@@ -232,11 +234,11 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                   </div>
                   {/* Шрифт */}
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Размер шрифта</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Размер шрифта</p>
                     <div className="flex gap-1.5">
                       {FONT_SIZES_CC.map((f) => (
                         <button key={f.id} onClick={() => pickFont(f.id)}
-                          className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${fontActive === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                          className={`flex-1 py-2.5 rounded-xl text-[11px] font-semibold transition-all ${fontActive === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
                           {f.label}
                         </button>
                       ))}
@@ -251,7 +253,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                   <div className="grid grid-cols-2 gap-2">
                     {ADMIN_LANGUAGES.map((l) => (
                       <button key={l.code} onClick={() => { setLang(l.code); }}
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[12px] transition-all text-left ${lang === l.code ? "bg-primary text-white font-semibold" : "bg-white/10 text-white/70 hover:bg-white/15"}`}>
+                        className={`flex items-center gap-2.5 px-3 py-3 rounded-xl text-[12px] transition-all text-left ${lang === l.code ? "bg-primary text-white font-semibold" : "bg-white/10 text-white/70 hover:bg-white/15"}`}>
                         <img src={getFlagUrl(l.flag)} alt="" className="w-6 h-4 rounded-sm object-cover shrink-0" />
                         {l.label}
                       </button>
@@ -277,7 +279,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
           <div className="relative">
             <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.38)" }} />
             {count > 0 && (
-              <span className="absolute -top-1.5 -right-2 min-w-[14px] h-3.5 px-0.5 rounded-full flex items-center justify-center text-[8px] font-bold text-white leading-none"
+              <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center text-[10px] font-bold text-white leading-none"
                 style={{ background: "hsl(var(--primary))" }}>
                 {count > 9 ? "9+" : count}
               </span>
@@ -305,7 +307,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.45), hsl(var(--primary)/0.12))", boxShadow: "0 0 10px hsl(var(--primary)/0.3)" }}>
                 <Zap className="w-3 h-3 text-primary" />
               </div>
-              <span className="text-[11px] font-bold tracking-[0.12em] uppercase text-muted-foreground">ARAY Control</span>
+              <span className="text-[12px] font-bold tracking-[0.12em] uppercase text-muted-foreground">ARAY Control</span>
             </div>
             <button onClick={() => setOpen(false)}
               className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-primary/[0.04] transition-colors">
@@ -320,7 +322,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 <Bell className="w-3 h-3" />
                 Уведомления
                 {count > 0 && (
-                  <span className="px-1 py-0.5 rounded-full text-[8px] font-bold leading-none"
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
                     style={{ background: "hsl(var(--primary))", color: "#fff" }}>{count}</span>
                 )}
               </div>
@@ -352,7 +354,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                     {orders.map((o: any) => (
                       <button key={`order-${o.id}`}
                         onClick={() => { router.push(`/admin/orders`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/[0.06] transition-colors text-left">
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: "hsl(var(--primary)/0.14)", border: "1px solid hsl(var(--primary)/0.22)" }}>
                           <ShoppingBag className="w-3 h-3 text-primary" />
@@ -370,7 +372,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                     {reviews.map((r: any) => (
                       <button key={`review-${r.id}`}
                         onClick={() => { router.push(`/admin/reviews`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/[0.06] transition-colors text-left">
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: "hsl(45 93% 47% / 0.14)", border: "1px solid hsl(45 93% 47% / 0.22)" }}>
                           <Star className="w-3 h-3" style={{ color: "hsl(45 93% 47%)" }} />
@@ -388,7 +390,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                     {pendingStaff.map((s: any) => (
                       <button key={`staff-${s.id}`}
                         onClick={() => { router.push(`/admin/staff`); setOpen(false); }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary/[0.04] transition-colors text-left">
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/[0.06] transition-colors text-left">
                         <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
                           style={{ background: "hsl(200 80% 50% / 0.14)", border: "1px solid hsl(200 80% 50% / 0.22)" }}>
                           <UserPlus className="w-3 h-3" style={{ color: "hsl(200 80% 50%)" }} />
@@ -406,7 +408,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 )}
                 <div className="px-3 py-2 border-t glass-popup-divider">
                   <button onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
-                    className="w-full text-center text-[11px] font-semibold py-2 rounded-xl hover:bg-primary/[0.04] transition-colors"
+                    className="w-full text-center text-[12px] font-semibold py-2.5 rounded-xl hover:bg-primary/[0.06] transition-colors"
                     style={{ color: "hsl(var(--primary))" }}>
                     Все новые заказы →
                   </button>

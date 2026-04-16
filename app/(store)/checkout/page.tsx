@@ -75,17 +75,17 @@ function CheckoutLoginForm({ onSuccess }: { onSuccess: () => void }) {
         value={login}
         onChange={e => setLogin(e.target.value)}
         placeholder="Телефон или email"
-        className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="w-full px-3 py-3 sm:py-2 rounded-xl border border-border bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       <input
         type="password"
         value={password}
         onChange={e => setPassword(e.target.value)}
         placeholder="Пароль"
-        className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="w-full px-3 py-3 sm:py-2 rounded-xl border border-border bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       {error && <p className="text-destructive text-xs">{error}</p>}
-      <button type="submit" disabled={loading} className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+      <button type="submit" disabled={loading} className="bg-primary text-primary-foreground px-4 py-3 sm:py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
         {loading ? "Входим..." : "Войти"}
       </button>
     </form>
@@ -121,11 +121,11 @@ function CheckoutRegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
   return (
     <form onSubmit={handleRegister} className="space-y-3">
-      <input value={name} onChange={e => setName(e.target.value)} placeholder="Ваше имя" className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Пароль (минимум 6 символов)" className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+      <input value={name} onChange={e => setName(e.target.value)} placeholder="Ваше имя" className="w-full px-3 py-3 sm:py-2 rounded-xl border border-border bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-3 sm:py-2 rounded-xl border border-border bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Пароль (минимум 6 символов)" className="w-full px-3 py-3 sm:py-2 rounded-xl border border-border bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
       {error && <p className="text-destructive text-xs">{error}</p>}
-      <button type="submit" disabled={loading} className="bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
+      <button type="submit" disabled={loading} className="bg-primary text-primary-foreground px-4 py-3 sm:py-2 rounded-xl text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
         {loading ? "Регистрируем..." : "Зарегистрироваться"}
       </button>
     </form>
@@ -359,7 +359,7 @@ export default function CheckoutPage() {
                 <button
                   onClick={handleEnablePush}
                   disabled={pushState === "busy"}
-                  className="shrink-0 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors"
+                  className="shrink-0 px-4 py-2.5 sm:py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors"
                 >
                   {pushState === "busy" ? "..." : "Включить"}
                 </button>
@@ -427,7 +427,7 @@ export default function CheckoutPage() {
                 key={opt.id}
                 type="button"
                 onClick={() => setAuthMode(opt.id as any)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                className={`px-4 py-2.5 sm:py-2 rounded-xl text-sm font-medium border transition-colors ${
                   authMode === opt.id
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border hover:bg-accent text-muted-foreground"
@@ -682,7 +682,7 @@ export default function CheckoutPage() {
                   href={`https://yandex.ru/maps/?mode=routes&rtext=~${pickupCoords}&rtt=auto`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-primary/10 hover:bg-primary/20 transition-colors text-sm font-medium text-primary border-t border-primary/20"
+                  className="flex items-center justify-center gap-2 w-full py-3 sm:py-2.5 bg-primary/10 hover:bg-primary/20 transition-colors text-sm font-medium text-primary border-t border-primary/20"
                 >
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
                   Построить маршрут в Яндекс.Картах
@@ -767,7 +767,7 @@ export default function CheckoutPage() {
               id="comment"
               placeholder="Особые пожелания, удобное время доставки..."
               rows={3}
-              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+              className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-3 sm:py-2 text-base sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               {...register("comment")}
             />
           </div>

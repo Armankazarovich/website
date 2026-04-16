@@ -220,7 +220,7 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
                     key={item.href}
                     href={item.href}
                     onClick={onNavigate}
-                    className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden aray-icon-spin ${
+                    className={`relative flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden aray-icon-spin ${
                       isActive ? "aray-nav-active text-white" : "text-white/60 hover:text-white aray-nav-hover"
                     }`}
                   >
@@ -229,7 +229,7 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
                     }`} />
                     <span className="flex-1">{item.labelKey ? t(item.labelKey) : item.label}</span>
                     {item.href === "/admin/staff" && pendingCount > 0 && (
-                      <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-amber-400 text-[9px] font-bold text-black flex items-center justify-center leading-none">
+                      <span className="min-w-[20px] h-[20px] px-1 rounded-full bg-amber-400 text-[10px] font-bold text-amber-950 flex items-center justify-center leading-none">
                         {pendingCount > 9 ? "9+" : pendingCount}
                       </span>
                     )}

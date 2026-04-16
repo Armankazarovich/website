@@ -128,7 +128,7 @@ export function AdminMobileBottomNav({
               style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
             >
               <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
-              <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
+              <span className="text-[10px] font-semibold mt-0.5 tracking-wide"
                 style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
             </button>
           </div>
@@ -153,12 +153,12 @@ export function AdminMobileBottomNav({
                   color: menuOpen ? "hsl(var(--primary))" : "var(--admin-dock-text)",
                 }}
               />
-              <span className="text-[9px] font-semibold leading-none mt-1.5 transition-all duration-300"
+              <span className="text-[10px] font-semibold leading-none mt-1.5 transition-all duration-300"
                 style={{ color: menuOpen ? "hsl(var(--primary))" : "var(--admin-dock-text)" }}>
                 Ещё
               </span>
               {menuOpen && (
-                <span className="absolute -bottom-0.5 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary))" }} />
+                <span className="absolute -bottom-0.5 w-4 h-1 rounded-full" style={{ background: "hsl(var(--primary))", opacity: 0.7 }} />
               )}
             </div>
           </button>
@@ -196,16 +196,16 @@ function DockTab({ tab, pathname, badge = 0 }: {
             </span>
           )}
         </div>
-        <span className="text-[9px] font-semibold leading-none mt-1.5 transition-all duration-300"
+        <span className="text-[10px] font-semibold leading-none mt-1.5 transition-all duration-300"
           style={{
             color: isActive ? "hsl(var(--primary))" : "var(--admin-dock-text)",
             letterSpacing: "0.01em",
           }}>
           {tab.label}
         </span>
-        {/* Точка-индикатор под активным табом */}
+        {/* Индикатор под активным табом */}
         {isActive && (
-          <span className="absolute -bottom-0.5 w-1 h-1 rounded-full" style={{ background: "hsl(var(--primary))" }} />
+          <span className="absolute -bottom-0.5 w-4 h-1 rounded-full" style={{ background: "hsl(var(--primary))", opacity: 0.7 }} />
         )}
       </div>
     </Link>
