@@ -483,18 +483,18 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
 
           {/* Header */}
-          <div className={`px-5 py-4 flex items-center justify-between shrink-0 ${classic ? "border-b border-border" : "border-b border-white/10"}`}>
+          <div className="px-5 py-4 flex items-center justify-between shrink-0 border-b border-white/10">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.1))" }}>
                 <Settings className="w-3.5 h-3.5 text-primary" />
               </div>
-              <p className={`font-display font-bold text-lg ${classic ? "text-foreground" : "text-white"}`}>Настройки</p>
+              <p className="font-display font-bold text-lg text-white">Настройки</p>
             </div>
             <button onClick={() => setMobileSettingsOpen(false)}
               className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
               style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className={`w-5 h-5 ${classic ? "text-foreground" : "text-white"}`} />
+              <X className="w-5 h-5 text-white" />
             </button>
           </div>
 
@@ -503,7 +503,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Оформление — встроенные контролы */}
             <div className="glass-card rounded-2xl p-4 space-y-4">
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Оформление</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Оформление</p>
               {/* Палитры */}
               <div className="flex flex-wrap gap-1.5">
                 {PALETTES.map((p) => (
@@ -525,7 +525,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Размер шрифта */}
             <div className="glass-card rounded-2xl p-4">
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>Шрифт</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3 text-white/40">Шрифт</p>
               <div className="flex gap-1.5">
                 {[
                   { id: "sm", label: "Компакт" },
@@ -549,7 +549,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
             {/* Язык — быстрый переключатель оставляем */}
             <div className="glass-card rounded-2xl p-4">
-              <p className={`text-[10px] font-bold uppercase tracking-[0.18em] mb-3 ${classic ? "text-muted-foreground/50" : "text-white/40"}`}>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3 text-white/40">
                 Язык / Language
               </p>
               <AdminLangPickerInline />
@@ -559,8 +559,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             <Link href="/"
               className="glass-control flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
               onClick={() => setMobileSettingsOpen(false)}>
-              <LogOut className={`w-4 h-4 ${classic ? "text-muted-foreground/40" : "text-white/45"}`} />
-              <span className={`text-sm ${classic ? "text-muted-foreground/70" : "text-white/60"}`}>Перейти на сайт</span>
+              <LogOut className="w-4 h-4 text-white/45" />
+              <span className="text-sm text-white/60">Перейти на сайт</span>
             </Link>
 
             <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />

@@ -2270,6 +2270,10 @@ aside.aray-sidebar {
 .aray-classic-mode .aray-sidebar [class*="text-white/3"] {
   color: rgba(255, 255, 255, 0.50) !important;
 }
+.aray-classic-mode .aray-sidebar [class*="text-white/2"],
+.aray-classic-mode .aray-sidebar [class*="text-white/1"] {
+  color: rgba(255, 255, 255, 0.30) !important;
+}
 .aray-classic-mode .aray-sidebar .text-muted-foreground {
   color: rgba(255, 255, 255, 0.55) !important;
 }
@@ -2294,6 +2298,25 @@ aside.aray-sidebar {
 }
 .aray-classic-mode .aray-dark-panel .text-primary {
   color: hsl(var(--primary)) !important;
+}
+.aray-classic-mode .aray-dark-panel .text-white {
+  color: white !important;
+}
+/* Preserve text-white/XX opacity hierarchy inside dark panels */
+.aray-classic-mode .aray-dark-panel [class*="text-white/9"],
+.aray-classic-mode .aray-dark-panel [class*="text-white/8"],
+.aray-classic-mode .aray-dark-panel [class*="text-white/7"],
+.aray-classic-mode .aray-dark-panel [class*="text-white/6"] {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+.aray-classic-mode .aray-dark-panel [class*="text-white/5"],
+.aray-classic-mode .aray-dark-panel [class*="text-white/4"],
+.aray-classic-mode .aray-dark-panel [class*="text-white/3"] {
+  color: rgba(255, 255, 255, 0.50) !important;
+}
+.aray-classic-mode .aray-dark-panel [class*="text-white/2"],
+.aray-classic-mode .aray-dark-panel [class*="text-white/1"] {
+  color: rgba(255, 255, 255, 0.30) !important;
 }
 .aray-classic-mode .aray-dark-panel .glass-popup-divider {
   border-color: rgba(255, 255, 255, 0.08) !important;

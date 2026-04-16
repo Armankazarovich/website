@@ -116,7 +116,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
       <div ref={ref} className="flex flex-col items-center gap-1">
         {/* Collapsed: vertical pill with icons */}
         {!open ? (
-          <div className="flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl"
+          <div className="aray-dark-panel flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl"
             style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}dd)`, backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.1)", borderRight: "none" }}>
             {!isClient && (
               <button onClick={() => { setTab("notif"); setOpen(true); }} title="Уведомления"
@@ -139,7 +139,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
           </div>
         ) : (
           /* Expanded: full panel */
-          <div className="w-[280px] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200"
+          <div className="aray-dark-panel w-[280px] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200"
             style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}ee)`, border: "1px solid rgba(255,255,255,0.08)", borderRight: "none", backdropFilter: "blur(24px)", maxHeight: "80vh" }}>
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
