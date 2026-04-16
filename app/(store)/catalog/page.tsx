@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { getAvailableTypes, findTypeByKeyword } from "@/lib/product-types";
+import { getAvailableTypes, findTypeByKeyword, extractProductType } from "@/lib/product-types";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
@@ -72,10 +72,23 @@ export default async function CatalogPage({
     ? { slug: searchParams.category, showInMenu: true }
     : { showInMenu: true };
 
+  // Умная фильтрация по типу: regex-based через extractProductType
+  // (простой contains "брус" ловил бы и "Имитацию бруса" — это баг)
+  let typeProductIds: string[] | null = null;
+  if (currentType) {
+    const allProds = await prisma.product.findMany({
+      where: { active: true, category: categoryFilter },
+      select: { id: true, name: true },
+    });
+    typeProductIds = allProds
+      .filter(p => extractProductType(p.name)?.keyword === currentType)
+      .map(p => p.id);
+  }
+
   const where = {
     active: true,
     category: categoryFilter,
-    ...(currentType ? { name: { contains: currentType, mode: "insensitive" as const } } : {}),
+    ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
     ...(Object.keys(variantWhere).length > 0 ? { variants: { some: variantWhere } } : {}),
   };
 
@@ -116,7 +129,7 @@ export default async function CatalogPage({
         product: {
           active: true,
           category: categoryFilter,
-          ...(currentType ? { name: { contains: currentType, mode: "insensitive" as const } } : {}),
+          ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
         },
         ...(currentInStock ? { inStock: true } : {}),
       },
