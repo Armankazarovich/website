@@ -664,7 +664,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {/* Hamburger (mobile only) — animates to X */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden flex flex-col items-center justify-center w-9 h-9 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
+              className="lg:hidden flex flex-col items-center justify-center w-11 h-11 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
               aria-label={mobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
             >
               <motion.span
@@ -733,7 +733,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   aria-label="Закрыть меню"
-                  className="w-8 h-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                  className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>

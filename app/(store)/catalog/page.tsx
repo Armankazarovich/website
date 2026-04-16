@@ -510,13 +510,13 @@ export default async function CatalogPage({
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-10">
               {page > 1 && (
-                <Link href={buildPageUrl(page - 1)} className="px-4 h-10 rounded-lg flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">←</Link>
+                <Link href={buildPageUrl(page - 1)} className="px-4 h-11 rounded-lg flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">←</Link>
               )}
               {Array.from({ length: Math.min(totalPages, 7) }).map((_, i) => (
                 <Link
                   key={i + 1}
                   href={buildPageUrl(i + 1)}
-                  className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
+                  className={`w-11 h-11 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
                     page === i + 1 ? "bg-primary text-primary-foreground" : "border border-border hover:bg-accent"
                   }`}
                 >
@@ -524,7 +524,7 @@ export default async function CatalogPage({
                 </Link>
               ))}
               {page < totalPages && (
-                <Link href={buildPageUrl(page + 1)} className="px-4 h-10 rounded-lg flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">→</Link>
+                <Link href={buildPageUrl(page + 1)} className="px-4 h-11 rounded-lg flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">→</Link>
               )}
             </div>
           )}

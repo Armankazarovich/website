@@ -121,7 +121,7 @@ export function VariantSelector({
               onClick={() => setSelectedVariant(v)}
               disabled={!v.inStock}
               className={cn(
-                "px-3 py-2.5 sm:py-1.5 rounded-lg border text-sm font-medium transition-all",
+                "px-4 py-3 sm:py-1.5 rounded-lg border text-sm font-medium transition-all",
                 selectedVariant?.id === v.id
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:border-primary/50",

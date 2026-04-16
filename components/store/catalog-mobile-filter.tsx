@@ -234,7 +234,7 @@ export function CatalogMobileFilter({
                               key={size}
                               onClick={() => setParam("size", currentSize === size ? null : size)}
                               className={cn(
-                                "inline-flex mr-1.5 mb-1.5 px-3 py-1.5 rounded-lg text-sm font-mono border transition-all",
+                                "inline-flex mr-1.5 mb-1.5 px-3 py-2.5 rounded-lg text-sm font-mono border transition-all",
                                 currentSize === size
                                   ? "bg-primary text-primary-foreground border-primary"
                                   : "border-border text-muted-foreground hover:border-primary/40"
@@ -258,7 +258,7 @@ export function CatalogMobileFilter({
                             key={t.keyword}
                             onClick={() => setParam("type", currentType === t.keyword ? null : t.keyword)}
                             className={cn(
-                              "px-3 py-1.5 rounded-lg text-sm border transition-all",
+                              "px-3 py-2.5 rounded-lg text-sm border transition-all",
                               currentType === t.keyword
                                 ? "bg-primary text-primary-foreground border-primary"
                                 : "border-border text-muted-foreground hover:border-primary/40"

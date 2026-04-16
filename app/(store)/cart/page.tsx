@@ -332,11 +332,11 @@ export default function CartPage() {
                           parseFloat((item.quantity - (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
                         )
                       }
-                      className="px-3 py-2.5 sm:py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
+                      className="px-3 py-3 sm:py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="px-3 py-2.5 sm:py-1.5 text-sm font-medium min-w-[3rem] text-center">
+                    <span className="px-3 py-3 sm:py-1.5 text-sm font-medium min-w-[3rem] text-center">
                       {item.unitType === "CUBE"
                         ? item.quantity.toFixed(1)
                         : item.quantity}{" "}
@@ -349,7 +349,7 @@ export default function CartPage() {
                           parseFloat((item.quantity + (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
                         )
                       }
-                      className="px-3 py-2.5 sm:py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
+                      className="px-3 py-3 sm:py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
