@@ -18,8 +18,12 @@ interface CatalogFiltersProps {
   onClose?: () => void;
 }
 
+/** Проверяет, является ли размер форматом сечения (содержит ×) */
+const isCrossSectionFormat = (s: string) => /\d+\s*[×xXхХ]\s*\d+/.test(s);
+
 /** Извлекает сечение (первые 2 числа) из полного размера: "25×100×6000" → "25×100" */
 function getCrossSection(size: string): string {
+  if (!isCrossSectionFormat(size)) return size;
   const nums = size.match(/\d+/g);
   if (!nums || nums.length < 2) return size;
   return `${nums[0]}×${nums[1]}`;
@@ -50,13 +54,24 @@ export function CatalogFilters({
   const [sizeOpen, setSizeOpen] = useState(false);
   const [expandedCS, setExpandedCS] = useState<string | null>(null);
 
-  // Группировка по сечению
+  // Определяем формат размеров: сечение (25×100) или листовые (18 мм)
+  const hasCrossSections = useMemo(
+    () => sizes.some(s => isCrossSectionFormat(s)),
+    [sizes]
+  );
+  const sizeLabel = hasCrossSections ? "Сечение" : "Размер";
+
+  // Группировка по сечению (только для формата с ×)
   const grouped = useMemo(() => groupSizesByCrossSection(sizes), [sizes]);
   const crossSections = useMemo(() => {
     return Array.from(grouped.keys()).sort((a, b) => {
-      const [a1, a2] = a.split("×").map(Number);
-      const [b1, b2] = b.split("×").map(Number);
-      return a1 - b1 || a2 - b2;
+      const aNums = a.match(/\d+/g)?.map(Number) || [0];
+      const bNums = b.match(/\d+/g)?.map(Number) || [0];
+      for (let i = 0; i < Math.max(aNums.length, bNums.length); i++) {
+        const diff = (aNums[i] || 0) - (bNums[i] || 0);
+        if (diff !== 0) return diff;
+      }
+      return a.localeCompare(b);
     });
   }, [grouped]);
 
@@ -90,8 +105,8 @@ export function CatalogFilters({
 
   const currentTypeLabel = types.find(t => t.keyword === currentType)?.label || currentType;
 
-  // Порог: если размеров мало — показать плоским списком, иначе — группами
-  const useGroups = sizes.length > 12;
+  // Порог: группировка только если есть сечения (×) И размеров много
+  const useGroups = hasCrossSections && sizes.length > 12;
 
   return (
     <div className={`space-y-3 ${isPending ? "opacity-60" : ""} transition-opacity`}>
@@ -165,7 +180,7 @@ export function CatalogFilters({
           >
             <h3 className="font-display font-semibold text-sm flex items-center gap-2">
               <Ruler className="w-3.5 h-3.5 text-primary shrink-0" />
-              Сечение
+              {sizeLabel}
             </h3>
             <div className="flex items-center gap-2 shrink-0">
               {currentSize && (

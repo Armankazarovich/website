@@ -90,9 +90,34 @@ export function getAvailableTypes(productNames: string[]): ProductTypeInfo[] {
 }
 
 /**
+ * Группы типов — для "быстрых переходов" на главной.
+ * type=доска → показать все доски (обрезную, строганную, террасную, пола)
+ */
+const TYPE_GROUPS: Record<string, { label: string; keywords: string[] }> = {
+  "доска": {
+    label: "Доска",
+    keywords: ["террасная", "доска пола", "строганн", "обрезн"],
+  },
+};
+
+/**
  * Находит ProductTypeInfo по keyword (из URL параметра type=XXX)
  */
 export function findTypeByKeyword(keyword: string): ProductTypeInfo | null {
+  // Проверяем сначала группы
+  if (TYPE_GROUPS[keyword]) {
+    return { label: TYPE_GROUPS[keyword].label, keyword };
+  }
   const rule = TYPE_RULES.find(r => r.keyword === keyword);
   return rule ? { label: rule.label, keyword: rule.keyword } : null;
+}
+
+/**
+ * Если keyword — групповой (например "доска"),
+ * возвращает список дочерних keyword'ов.
+ * Если нет — возвращает null (обычная фильтрация по одному типу).
+ */
+export function getTypeGroupKeywords(keyword: string): string[] | null {
+  const group = TYPE_GROUPS[keyword];
+  return group ? group.keywords : null;
 }

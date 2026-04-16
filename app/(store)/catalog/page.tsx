@@ -4,7 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
-import { getAvailableTypes, findTypeByKeyword, extractProductType } from "@/lib/product-types";
+import { getAvailableTypes, findTypeByKeyword, extractProductType, getTypeGroupKeywords } from "@/lib/product-types";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
@@ -73,15 +73,21 @@ export default async function CatalogPage({
     : { showInMenu: true };
 
   // Умная фильтрация по типу: regex-based через extractProductType
-  // (простой contains "брус" ловил бы и "Имитацию бруса" — это баг)
+  // Поддержка групп: type=доска → все подтипы (обрезная, строганная, пола, террасная)
   let typeProductIds: string[] | null = null;
   if (currentType) {
     const allProds = await prisma.product.findMany({
       where: { active: true, category: categoryFilter },
       select: { id: true, name: true },
     });
+    const groupKeywords = getTypeGroupKeywords(currentType);
     typeProductIds = allProds
-      .filter(p => extractProductType(p.name)?.keyword === currentType)
+      .filter(p => {
+        const pt = extractProductType(p.name);
+        if (!pt) return false;
+        if (groupKeywords) return groupKeywords.includes(pt.keyword);
+        return pt.keyword === currentType;
+      })
       .map(p => p.id);
   }
 
@@ -168,12 +174,18 @@ export default async function CatalogPage({
   const totalPages = Math.ceil(totalCount / perPage);
 
   // Полные размеры вариантов (как есть в БД) — для sidebar фильтра
+  // Включаем ВСЕ форматы: "25×100×6000" (пиломатериалы), "18 мм (1/1)" (фанера/листовые)
   const fullSizes = Array.from(new Set(allVariantSizes.map(v => v.size)))
-    .filter(s => /\d+\s*[×xXхХ]\s*\d+/.test(s))  // Только размеры с "×" (не "10 мм")
+    .filter(s => s && s.trim().length > 0)
     .sort((a, b) => {
-      const [a1, a2] = a.match(/\d+/g)?.map(Number) || [0, 0];
-      const [b1, b2] = b.match(/\d+/g)?.map(Number) || [0, 0];
-      return a1 - b1 || a2 - b2;
+      const aNums = a.match(/\d+/g)?.map(Number) || [0];
+      const bNums = b.match(/\d+/g)?.map(Number) || [0];
+      // Сортировка по первому числу, затем по второму (если есть)
+      for (let i = 0; i < Math.max(aNums.length, bNums.length); i++) {
+        const diff = (aNums[i] || 0) - (bNums[i] || 0);
+        if (diff !== 0) return diff;
+      }
+      return a.localeCompare(b);
     });
 
   /** Builds URL removing/setting specific filter params while keeping all others */
@@ -419,7 +431,7 @@ export default async function CatalogPage({
               )}
               {currentSize && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
-                  Сечение: {currentSize}
+                  Размер: {currentSize}
                   <Link
                     href={buildFilterUrl({ size: null })}
                     className="ml-0.5 hover:text-destructive"

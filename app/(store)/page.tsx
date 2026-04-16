@@ -13,6 +13,7 @@ import { ArrowRight, CheckCircle, Phone, Star, MapPin } from "lucide-react";
 import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
 import { CategoryCard } from "@/components/store/category-card";
 import { SubscribeSection } from "@/components/store/subscribe-section";
+import { HomeReviewPopup } from "@/components/store/home-review-popup";
 
 const AVATAR_COLORS = [
   "bg-brand-orange",
@@ -334,29 +335,23 @@ export default async function HomePage() {
             <div className="pt-5 border-t border-white/10">
               <p className="text-[10px] text-white/30 uppercase tracking-widest mb-3">Быстрый переход</p>
               <div className="flex flex-wrap gap-2">
-                {[
-                  { label: "Доска", type: "доска", icon: (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="3" rx="1" stroke="currentColor" strokeWidth="2"/><rect x="2" y="13" width="20" height="3" rx="1" stroke="currentColor" strokeWidth="2"/></svg>
-                  )},
-                  { label: "Брус", type: "брус", icon: (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.5"/></svg>
-                  )},
-                  { label: "Вагонка", type: "вагонка", icon: (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M2 7h20M2 12h20M2 17h20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                  )},
-                  { label: "Блок-хаус", type: "блок-хаус", icon: (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M2 9c0-1 1-2 2-2h16c1 0 2 1 2 2v1c0 1-1 2-2 2H4c-1 0-2-1-2-2V9z" stroke="currentColor" strokeWidth="1.8"/><path d="M2 16c0-1 1-2 2-2h16c1 0 2 1 2 2v1c0 1-1 2-2 2H4c-1 0-2-1-2-2v-1z" stroke="currentColor" strokeWidth="1.8"/></svg>
-                  )},
-                  { label: "Фанера", type: "фанера", icon: (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 8h18M3 16h18M8 3v18M16 3v18" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5"/></svg>
-                  )},
-                  { label: "Лиственница", type: "лиственница", icon: (
+                {([
+                  { label: "Сосна и Ель", href: "/catalog?category=sosna-el", icon: (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2L6 10h4l-4 7h6v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 2l6 8h-4l4 7h-6v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   )},
-                ].map((cat) => (
+                  { label: "Лиственница", href: "/catalog?category=listvennitsa", icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l-5 7h3l-3 6h5v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 3l5 7h-3l3 6h-5v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )},
+                  { label: "Фанера, ДСП, МДФ", href: "/catalog?category=fanera", icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 8h18M3 16h18M8 3v18M16 3v18" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5"/></svg>
+                  )},
+                  { label: "Липа и Осина", href: "/catalog?category=lipa-osina", icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22V12M12 12C12 12 7 10 7 6c0-2.5 2-4 5-4s5 1.5 5 4c0 4-5 6-5 6z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )},
+                ] as { label: string; href: string; icon: React.ReactNode }[]).map((cat) => (
                   <Link
-                    key={cat.type}
-                    href={`/catalog?type=${cat.type}`}
+                    key={cat.label}
+                    href={cat.href}
                     className="group inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.07] border border-white/[0.15] text-white/65 text-xs font-medium hover:bg-white/[0.15] hover:border-white/[0.35] hover:text-white backdrop-blur-xl transition-all duration-200 shadow-md hover:shadow-lg"
                   >
                     <span className="opacity-70 group-hover:opacity-100 transition-opacity">{cat.icon}</span>
@@ -937,9 +932,12 @@ export default async function HomePage() {
                 );
               })()}
               <div className="w-px h-16 bg-border hidden sm:block" />
-              <div className="text-center sm:text-left">
+              <div className="text-center sm:text-left flex-1">
                 <h2 className="font-display font-bold text-3xl sm:text-4xl">Отзывы покупателей</h2>
                 <p className="text-muted-foreground mt-1">{reviews.length}+ реальных отзывов от наших клиентов</p>
+              </div>
+              <div className="shrink-0">
+                <HomeReviewPopup />
               </div>
             </div>
 

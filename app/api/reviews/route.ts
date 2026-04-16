@@ -31,9 +31,9 @@ export async function POST(req: NextRequest) {
     const { productId, authorName, email, rating, text, images } = body;
 
     // Validation
-    if (!productId || !authorName?.trim()) {
+    if (!authorName?.trim()) {
       return NextResponse.json(
-        { error: "productId и authorName обязательны" },
+        { error: "authorName обязательно" },
         { status: 400 }
       );
     }
@@ -88,23 +88,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if product exists
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!product) {
-      return NextResponse.json(
-        { error: "Товар не найден" },
-        { status: 404 }
-      );
+    // Check if product exists (if productId provided)
+    let product: { name: string } | null = null;
+    if (productId) {
+      product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { name: true },
+      });
+      if (!product) {
+        return NextResponse.json(
+          { error: "Товар не найден" },
+          { status: 404 }
+        );
+      }
     }
 
     // Rate limiting: use email or IP address
     const forwardedFor = req.headers.get("x-forwarded-for");
     const clientIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
     const identifier = email?.trim() || clientIp;
-    const key = `review:${productId}:${identifier}`;
+    const key = `review:${productId || "general"}:${identifier}`;
 
     if (!checkRateLimit(key, 1, 86400000)) {
       return NextResponse.json(
@@ -120,7 +123,7 @@ export async function POST(req: NextRequest) {
     // Create review (PENDING for moderation)
     const review = await prisma.review.create({
       data: {
-        productId,
+        ...(productId ? { productId } : {}),
         name: authorName.trim(),
         rating: numRating,
         text: text.trim(),
@@ -138,7 +141,8 @@ export async function POST(req: NextRequest) {
 
       if (telegramBotToken && telegramChatId) {
         const starsEmoji = "⭐".repeat(Number(rating));
-        const message = `🆕 *Новый отзыв на модерации*\n\n*Товар:* ${product.name}\n*Автор:* ${authorName.trim()}\n*Рейтинг:* ${starsEmoji} (${rating}/5)\n\n*Текст:*\n${text.trim()}\n\n📋 [Посмотреть в админке](https://pilo-rus.ru/admin/reviews)`;
+        const productLine = product ? `*Товар:* ${product.name}\n` : `*Тип:* Общий отзыв (с главной)\n`;
+        const message = `🆕 *Новый отзыв на модерации*\n\n${productLine}*Автор:* ${authorName.trim()}\n*Рейтинг:* ${starsEmoji} (${rating}/5)\n\n*Текст:*\n${text.trim()}\n\n📋 [Посмотреть в админке](https://pilo-rus.ru/admin/reviews)`;
 
         await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: "POST",
