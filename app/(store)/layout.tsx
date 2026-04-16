@@ -10,6 +10,25 @@ import { PageTransition } from "@/components/layout/page-transition";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
+import { getAvailableTypes } from "@/lib/product-types";
+
+/** Извлекает уникальные сечения из variant sizes для мега-меню */
+function extractUniqueCrossSections(sizes: string[]): string[] {
+  const set = new Set<string>();
+  for (const size of sizes) {
+    // 3-part: "25×100×6000" → "25×100"
+    const m3 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)\s*[×xXхХ]\s*\d+/);
+    if (m3) { set.add(`${m3[1]}×${m3[2]}`); continue; }
+    // 2-part: "20×95" → "20×95"
+    const m2 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)$/);
+    if (m2 && parseInt(m2[1]) > 5 && parseInt(m2[2]) > 5) { set.add(`${m2[1]}×${m2[2]}`); }
+  }
+  return Array.from(set).sort((a, b) => {
+    const [a1, a2] = a.split("×").map(Number);
+    const [b1, b2] = b.split("×").map(Number);
+    return a1 - b1 || a2 - b2;
+  });
+}
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
 const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
@@ -22,7 +41,7 @@ const PwaInstall = dynamic(() => import("@/components/store/pwa-install").then(m
 const ScrollToTop = dynamic(() => import("@/components/ui/scroll-to-top").then(m => ({ default: m.ScrollToTop })), { ssr: false });
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [categories, footerCategories, siteSettings] = await Promise.all([
+  const [categories, footerCategories, siteSettings, allProductNames, allVariantSizes] = await Promise.all([
     prisma.category.findMany({
       where: { showInMenu: true, products: { some: { active: true } } },
       orderBy: { sortOrder: "asc" },
@@ -34,7 +53,22 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       select: { id: true, name: true, slug: true },
     }),
     getSiteSettings(),
+    // Для динамических типов в мега-меню
+    prisma.product.findMany({
+      where: { active: true, category: { showInMenu: true } },
+      select: { name: true },
+    }),
+    // Для динамических размеров в мега-меню
+    prisma.productVariant.findMany({
+      where: { product: { active: true, category: { showInMenu: true } } },
+      select: { size: true },
+      distinct: ["size"],
+    }),
   ]);
+
+  // Динамические типы и размеры для мега-меню (из реальных данных)
+  const megaMenuTypes = getAvailableTypes(allProductNames.map(p => p.name));
+  const megaMenuSizes = extractUniqueCrossSections(allVariantSizes.map(v => v.size));
 
   const photoAspect = getSetting(siteSettings, "photo_aspect_ratio") || "1/1";
   const cardStyle = getSetting(siteSettings, "card_style") || "classic";
@@ -44,7 +78,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
     <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
       {/* Хедер — критичный для LCP, рендерим сразу */}
-      <Header categories={categories} phones={getPhones(siteSettings)} workingHours={getSetting(siteSettings, "working_hours") || undefined} />
+      <Header categories={categories} phones={getPhones(siteSettings)} workingHours={getSetting(siteSettings, "working_hours") || undefined} dynamicTypes={megaMenuTypes} dynamicSizes={megaMenuSizes} />
       <main className="flex-1 pb-20 lg:pb-0">{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
 

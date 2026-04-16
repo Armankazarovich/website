@@ -12,6 +12,12 @@ export interface ProductTypeInfo {
   keyword: string;  // Для Prisma name.contains(): "обрезная"
 }
 
+// ⚠️ JS \b НЕ работает с кириллицей! Используем lookbehind/lookahead
+// (?<![а-яёА-ЯЁ]) = перед буквой нет кириллицы (начало слова)
+// (?![а-яёА-ЯЁ])  = после буквы нет кириллицы (конец слова)
+const CYR_START = "(?<![а-яёА-ЯЁ])";
+const CYR_END   = "(?![а-яёА-ЯЁ])";
+
 // Порядок: от специфичных к общим
 // Каждый паттерн — regex для проверки названия товара
 const TYPE_RULES: { pattern: RegExp; label: string; keyword: string }[] = [
@@ -35,13 +41,13 @@ const TYPE_RULES: { pattern: RegExp; label: string; keyword: string }[] = [
   { pattern: /планкен/i,                             label: "Планкен",           keyword: "планкен" },
   { pattern: /плинтус/i,                             label: "Плинтус",           keyword: "плинтус" },
 
-  // Листовые
-  { pattern: /фанера/i,                              label: "Фанера",            keyword: "фанера" },
-  { pattern: /осб|osb/i,                             label: "ОСБ",               keyword: "осб" },
-  { pattern: /\bдсп\b/i,                             label: "ДСП",               keyword: "дсп" },
-  { pattern: /\bдвп\b|оргалит/i,                     label: "ДВП",               keyword: "двп" },
-  { pattern: /\bмдф\b|mdf/i,                         label: "МДФ",               keyword: "мдф" },
-  { pattern: /\bцсп\b/i,                             label: "ЦСП",               keyword: "цсп" },
+  // Листовые — ⚠️ используем кириллические границы слов вместо \b
+  { pattern: /фанера/i,                                                              label: "Фанера",  keyword: "фанера" },
+  { pattern: /осб|osb/i,                                                             label: "ОСБ",     keyword: "осб" },
+  { pattern: new RegExp(`${CYR_START}дсп${CYR_END}`, "i"),                           label: "ДСП",     keyword: "дсп" },
+  { pattern: new RegExp(`${CYR_START}двп${CYR_END}|оргалит`, "i"),                   label: "ДВП",     keyword: "двп" },
+  { pattern: new RegExp(`${CYR_START}мдф${CYR_END}|mdf`, "i"),                       label: "МДФ",     keyword: "мдф" },
+  { pattern: new RegExp(`${CYR_START}цсп${CYR_END}`, "i"),                           label: "ЦСП",     keyword: "цсп" },
 ];
 
 /**

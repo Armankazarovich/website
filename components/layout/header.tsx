@@ -43,10 +43,17 @@ const DEFAULT_PHONES: PhoneItem[] = [
   { display: "8-977-606-80-20", tel: "+79776068020" },
 ];
 
+interface DynamicTypeInfo {
+  label: string;
+  keyword: string;
+}
+
 interface HeaderProps {
   categories?: HeaderCategory[];
   phones?: PhoneItem[];
   workingHours?: string; // "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00"
+  dynamicTypes?: DynamicTypeInfo[];
+  dynamicSizes?: string[];
 }
 
 const infoLinks = [
@@ -98,35 +105,32 @@ const CAT_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-/* ── Типы материалов с SVG ─────────────────────────────────── */
-const MATERIAL_TYPES = [
-  { label: "Доска", type: "доска", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>
-  )},
-  { label: "Брус", type: "брус", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/></svg>
-  )},
-  { label: "Вагонка", type: "вагонка", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M2 7h20M2 12h20M2 17h20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-  )},
-  { label: "Блок-хаус", type: "блок-хаус", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M2 8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V8z" stroke="currentColor" strokeWidth="1.7"/><path d="M2 15c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-2z" stroke="currentColor" strokeWidth="1.7"/></svg>
-  )},
-  { label: "Планкен", type: "планкен", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M2 9h20M2 15h20" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.6"/></svg>
-  )},
-  { label: "Фанера", type: "фанера", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="16" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/></svg>
-  )},
-  { label: "Строганная", type: "строганная", icon: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
-  )},
-];
+/* ── Иконки для типов (по keyword) ─────────────────────────── */
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+  "обрезн":     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>,
+  "строганн":   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 10h16M4 14h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>,
+  "террасная":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>,
+  "доска пола": <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>,
+  "брус":       <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/></svg>,
+  "строган":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/></svg>,
+  "клеен":      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/></svg>,
+  "брусок":     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/></svg>,
+  "имитаци":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="1.8"/><path d="M6 6v12M18 6v12" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.5"/></svg>,
+  "вагонка":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M2 7h20M2 12h20M2 17h20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>,
+  "евровагонка":<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M2 7h20M2 12h20M2 17h20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>,
+  "блок-хаус":  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M2 8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V8z" stroke="currentColor" strokeWidth="1.7"/><path d="M2 15c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2v2c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-2z" stroke="currentColor" strokeWidth="1.7"/></svg>,
+  "планкен":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M2 9h20M2 15h20" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.6"/></svg>,
+  "плинтус":    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.7"/><path d="M2 9h20M2 15h20" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.6"/></svg>,
+  "фанера":     <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="16" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/></svg>,
+  "осб":        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.6"/></svg>,
+  "дсп":        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.6"/></svg>,
+  "двп":        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="16" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/></svg>,
+  "мдф":        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="10" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/><rect x="3" y="16" width="18" height="4" rx="1" stroke="currentColor" strokeWidth="1.7"/></svg>,
+  "цсп":        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.6"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.6"/></svg>,
+};
+const DEFAULT_TYPE_ICON = <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.8"/></svg>;
 
-/* ── Популярные сечения ──────────────────────────────────────── */
-const COMMON_SIZES = ["25×100", "25×150", "50×150", "50×200", "100×100", "150×150", "40×150", "50×100"];
-
-export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours }: HeaderProps) {
+export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours, dynamicTypes = [], dynamicSizes = [] }: HeaderProps) {
   // Парсим строку "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00" в структуру
   const parsedSchedule = (() => {
     const raw = workingHours || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
@@ -385,32 +389,35 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours 
 
                         {/* ── Параметры ── */}
                         <div className="w-[240px] p-5 shrink-0 flex flex-col gap-4">
-                          {/* Тип */}
+                          {/* Тип — динамический из реальных товаров */}
+                          {dynamicTypes.length > 0 && (
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">Тип материала</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {MATERIAL_TYPES.map((f) => (
+                              {dynamicTypes.map((f) => (
                                 <button
-                                  key={f.type}
-                                  onClick={() => setSelectedType(selectedType === f.type ? "" : f.type)}
+                                  key={f.keyword}
+                                  onClick={() => setSelectedType(selectedType === f.keyword ? "" : f.keyword)}
                                   className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                                    selectedType === f.type
+                                    selectedType === f.keyword
                                       ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                       : "border-border bg-muted/40 text-foreground/60 hover:border-primary/40 hover:text-foreground hover:bg-accent"
                                   }`}
                                 >
-                                  <span className={selectedType === f.type ? "text-primary-foreground" : "text-muted-foreground"}>{f.icon}</span>
+                                  <span className={selectedType === f.keyword ? "text-primary-foreground" : "text-muted-foreground"}>{TYPE_ICONS[f.keyword] ?? DEFAULT_TYPE_ICON}</span>
                                   {f.label}
                                 </button>
                               ))}
                             </div>
                           </div>
+                          )}
 
-                          {/* Сечение */}
+                          {/* Сечение — динамическое из реальных вариантов */}
+                          {dynamicSizes.length > 0 && (
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">Сечение (мм)</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {COMMON_SIZES.map((s) => (
+                              {dynamicSizes.map((s) => (
                                 <button
                                   key={s}
                                   onClick={() => setSelectedSize(selectedSize === s ? "" : s)}
@@ -425,6 +432,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours 
                               ))}
                             </div>
                           </div>
+                          )}
 
                           {/* Кнопка */}
                           <button

@@ -42,10 +42,20 @@ interface SearchParams {
   maxprice?: string;
 }
 
-/** Извлекает сечение из строки размера "25×100×6000" → "25×100" */
+/** Извлекает сечение из строки размера.
+ *  "25×100×6000" → "25×100"  (пиломатериалы — первые 2 числа)
+ *  "20×95"       → "20×95"   (2-частный формат — всё сечение)
+ *  "10 мм (50 кг)" → null    (толщина листового — не сечение)
+ */
 function extractCrossSection(size: string): string | null {
-  const match = size.match(/^(\d+[×x]\d+)[×x]/);
-  return match ? match[1].replace("x", "×") : null;
+  // 3-part: "25×100×6000" → "25×100"
+  const m3 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)\s*[×xXхХ]\s*\d+/);
+  if (m3) return `${m3[1]}×${m3[2]}`;
+  // 2-part: "20×95" → "20×95" (оба числа > 5, значит это сечение, не толщина)
+  const m2 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)$/);
+  if (m2 && parseInt(m2[1]) > 5 && parseInt(m2[2]) > 5) return `${m2[1]}×${m2[2]}`;
+  // Листовые "10 мм", "3,2 мм 1220×2140" — не сечение
+  return null;
 }
 
 export default async function CatalogPage({
