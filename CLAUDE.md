@@ -688,6 +688,55 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 16.04.2026 (вечер) — Аудит безопасности + деплой-инструкция + быстрые переходы
+
+**Деплой-инструкция:**
+- ✅ CLAUDE.md обновлён: полный рецепт деплоя через Desktop Commander (sync → commit → verify)
+- ✅ Каждый новый сеанс знает как деплоить без вопросов
+
+**Быстрые переходы на главной:**
+- ✅ Заменены с типов (пустые результаты) на КАТЕГОРИИ (Сосна и Ель, Лиственница, Фанера, Липа и Осина)
+- ✅ Кнопка "Написать отзыв" на главной → popup с формой (HomeReviewPopup компонент)
+- ✅ API reviews: productId теперь необязателен (общий отзыв с главной)
+- ✅ TYPE_GROUPS: `type=доска` показывает все подтипы (обрезная, строганная, террасная, пола)
+
+**Универсальный фильтр размеров:**
+- ✅ Размеры в каталоге работают для ВСЕХ форматов (и "25×100×6000", и "18 мм (1/1)")
+- ✅ Динамический label: "Сечение" для досок/бруса, "Размер" для фанеры/листовых
+
+**Мобильная версия:**
+- ✅ "Работаем" скрыт на мобильном (`hidden lg:block`) — чище хедер
+- ⚠️ Pills (фильтры типов) — Арман просил не трогать, текущий стиль ОК
+
+**Аудит безопасности (42 бага найдено, 9 критических закрыто):**
+- ✅ Posts API: `requireManager()` вместо простой проверки сессии (4 файла)
+- ✅ Services API: `requireManager()` (2 файла)
+- ✅ Posts generate: `requireManager()`
+- ✅ Posts seed: `requireAdmin()`
+- ✅ Ping API: `requireStaff()`
+- ✅ Сброс пароля: plaintext НЕ возвращается если email отправлен
+- ✅ Upload: whitelist MIME (jpeg/png/webp/gif) + whitelist расширений
+
+**Файлы изменены:**
+- `app/api/admin/posts/route.ts` — auth-helpers
+- `app/api/admin/posts/[id]/route.ts` — auth-helpers
+- `app/api/admin/posts/generate/route.ts` — auth-helpers
+- `app/api/admin/posts/seed/route.ts` — auth-helpers
+- `app/api/admin/services/route.ts` — auth-helpers
+- `app/api/admin/services/[id]/route.ts` — auth-helpers
+- `app/api/admin/clients/[id]/reset-password/route.ts` — password safety
+- `app/api/upload/route.ts` — MIME + ext whitelist
+- `app/api/admin/ping/route.ts` — auth-helpers
+- `app/(store)/page.tsx` — quick links → categories + HomeReviewPopup
+- `app/(store)/catalog/page.tsx` — universal sizes + TYPE_GROUPS
+- `app/api/reviews/route.ts` — optional productId
+- `components/store/home-review-popup.tsx` — NEW
+- `components/store/catalog-filters.tsx` — universal size label
+- `components/store/catalog-type-filter.tsx` — reverted to original
+- `components/layout/header.tsx` — hidden Работаем on mobile
+- `lib/product-types.ts` — TYPE_GROUPS + getTypeGroupKeywords()
+- `CLAUDE.md` — deploy recipe
+
 ### Сессия 16.04.2026 — Полная переработка фильтров каталога + мега-меню
 
 **Проблемы которые решили:**
@@ -1055,21 +1104,36 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
 
 ### Известные баги (исправить в начале следующей сессии)
-- [x] **Страница профиля `/cabinet/profile`**: секция «Оформление» внизу — ДУБЛЬ, убрать (оформление уже в ARAY Control справа)
-- [x] **Иконки профиля в тёмной теме**: замочек пароля еле виден — нужен `text-muted-foreground` вместо серого
-- [x] **ARAY Control**: языки занимают много места в «Оформление» — перенести в отдельную 3ю вкладку «Язык» с иконкой глобуса
-- [x] **ARAY Control мобильный**: на мобильном правая панель не показывается (hidden lg:block) — нужно добавить доступ через мобильный drawer или bottom nav
-- [ ] **avatarUrl**: поле есть в Prisma schema локально но может не быть на production БД. НЕ использовать `include: { user: { select: { avatarUrl: true } } }` пока не подтверждено что schema синхронизирована. Используем инициалы.
-- [ ] **Мобильный drawer светлая тема**: сайдбар белый, текст не виден — нужно чтоб drawer ВСЕГДА был тёмным (как десктоп)
-- [x] **Мобильный drawer подвал**: палитры + email убраны (палитры в Settings Sheet)
+
+**Из предыдущих сессий:**
+- [ ] **avatarUrl**: поле есть в Prisma schema локально но может не быть на production БД. Используем инициалы пока не синхронизировано.
+- [ ] **Мобильный drawer светлая тема**: сайдбар белый, текст не виден — drawer ВСЕГДА должен быть тёмным
 - [ ] **БОЛЬШАЯ ЗАДАЧА — Мобильная навигация 2.0 (видение Армана)**:
-  - Убрать bottom nav (нижнее меню как в телеграм)
-  - Меню открывается СПРАВА (не слева)
-  - ARAY Control — липкие кнопки справа на мобильном
-  - Единый правый drawer: навигация + ARAY Control + настройки
-  - Продумать как открывать (свайп справа? кнопка?)
-- [x] **Формы профиля: синяя подсветка focus** — ✅ ИСПРАВЛЕНО (сессия 14.04.2026)
-- [x] **Аудит всех форм** — ✅ ИСПРАВЛЕНО
+  - Убрать bottom nav, меню справа, ARAY Control липкий, единый правый drawer
+
+**Из аудита 16.04.2026 — БЕЗОПАСНОСТЬ (высокий приоритет):**
+- [ ] **Bulk price API**: нет лимита на процент (можно 999999%) → `api/admin/products/bulk-price/route.ts`
+- [ ] **Site settings API**: принимает любые ключи без whitelist → `api/admin/site-settings/route.ts`
+- [ ] **Import товаров**: parseFloat без проверки NaN, создание категорий без sanitize → `api/admin/products/import/route.ts`
+- [ ] **Media API**: потенциальный path traversal (`../`) → `api/admin/media/route.ts`
+- [ ] **Email API**: HTML без санитизации → `api/admin/email/route.ts` (установить sanitize-html)
+- [ ] **Rate limiting**: нет на reset-password, email, staff creation → добавить in-memory лимитер
+
+**Из аудита 16.04.2026 — UX/КАЧЕСТВО (средний приоритет):**
+- [ ] **Хардкод телефонов**: 15+ файлов с вписанными номерами вместо `getPhones()` → масштабный рефакторинг
+- [ ] **Каталог**: нет try/catch на Promise.all → 500 при падении одного запроса
+- [ ] **Корзина**: вечный loading при ошибке API → нужен error state + "Попробовать снова"
+- [ ] **Поиск**: `.catch(() => {})` глотает ошибки → нужен error state
+- [ ] **Категории/Отзывы**: жёсткое удаление без корзины (заказы имеют soft-delete, а эти нет)
+- [ ] **Watermark fetch**: нет таймаута → `AbortSignal.timeout(5000)`
+- [ ] **Пустой каталог**: не объясняет ПОЧЕМУ пусто → "Нет товаров по фильтру X. Сбросить?"
+- [ ] **Картинки товаров**: нет onError fallback → пустое место при битой картинке
+- [ ] **unoptimized={true}**: все картинки в product-card обходят Next.js оптимизацию
+
+**Из аудита 16.04.2026 — СТИЛЬ (низкий приоритет):**
+- [ ] **Тёмная тема**: product-card (magazine), category-card, hero-slider без dark: вариантов
+- [ ] **Несогласованные API ответы**: `{ ok: true }` vs `{ success: true }` vs просто объект
+- [ ] **Пагинация**: нет aria-current для screen reader
 
 ### Сессия 14.04.2026 — Экосистема кабинета
 - [x] Аватар профиля — загрузка, кроп (circular canvas crop modal), сохранение
