@@ -42,21 +42,6 @@ interface SearchParams {
   maxprice?: string;
 }
 
-/** Извлекает сечение из строки размера.
- *  "25×100×6000" → "25×100"  (пиломатериалы — первые 2 числа)
- *  "20×95"       → "20×95"   (2-частный формат — всё сечение)
- *  "10 мм (50 кг)" → null    (толщина листового — не сечение)
- */
-function extractCrossSection(size: string): string | null {
-  // 3-part: "25×100×6000" → "25×100"
-  const m3 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)\s*[×xXхХ]\s*\d+/);
-  if (m3) return `${m3[1]}×${m3[2]}`;
-  // 2-part: "20×95" → "20×95" (оба числа > 5, значит это сечение, не толщина)
-  const m2 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)$/);
-  if (m2 && parseInt(m2[1]) > 5 && parseInt(m2[2]) > 5) return `${m2[1]}×${m2[2]}`;
-  // Листовые "10 мм", "3,2 мм 1220×2140" — не сечение
-  return null;
-}
 
 export default async function CatalogPage({
   searchParams,
@@ -169,14 +154,14 @@ export default async function CatalogPage({
 
   const totalPages = Math.ceil(totalCount / perPage);
 
-  // Extract unique cross-sections
-  const crossSections = Array.from(
-    new Set(
-      allVariantSizes
-        .map((v) => extractCrossSection(v.size))
-        .filter((s): s is string => s !== null)
-    )
-  ).sort((a, b) => parseInt(a.split("×")[0]) - parseInt(b.split("×")[0]));
+  // Полные размеры вариантов (как есть в БД) — для sidebar фильтра
+  const fullSizes = Array.from(new Set(allVariantSizes.map(v => v.size)))
+    .filter(s => /\d+\s*[×xXхХ]\s*\d+/.test(s))  // Только размеры с "×" (не "10 мм")
+    .sort((a, b) => {
+      const [a1, a2] = a.match(/\d+/g)?.map(Number) || [0, 0];
+      const [b1, b2] = b.match(/\d+/g)?.map(Number) || [0, 0];
+      return a1 - b1 || a2 - b2;
+    });
 
   /** Builds URL removing/setting specific filter params while keeping all others */
   const buildFilterUrl = (updates: Record<string, string | null>) => {
@@ -266,7 +251,7 @@ export default async function CatalogPage({
       <div className="flex lg:hidden items-center gap-2 mb-4 pb-1 scrollbar-hide" style={{ overflowX: "auto", overflowY: "visible" }}>
         <CatalogMobileFilter
           categories={categories}
-          sizes={crossSections}
+          sizes={fullSizes}
           types={dynamicTypes}
           currentCategory={searchParams.category}
           currentSize={currentSize}
@@ -332,7 +317,7 @@ export default async function CatalogPage({
               <CatalogFilters
                 currentInStock={currentInStock}
                 currentSize={currentSize}
-                sizes={crossSections}
+                sizes={fullSizes}
                 currentType={currentType}
                 types={dynamicTypes}
               />

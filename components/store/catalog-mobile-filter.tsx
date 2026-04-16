@@ -217,24 +217,24 @@ export function CatalogMobileFilter({
                     )}
                   </div>
 
-                  {/* Sizes */}
+                  {/* Sizes — smart grouped */}
                   {sizes.length > 0 && (
                     <div>
                       <button
                         onClick={() => setSizeOpen(!sizeOpen)}
                         className="w-full flex items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
                       >
-                        Сечение
+                        Размеры
                         {sizeOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                       </button>
                       {sizeOpen && (
-                        <div className="mt-2 flex flex-wrap gap-2">
+                        <div className="mt-2 max-h-[260px] overflow-y-auto scrollbar-thin space-y-2">
                           {sizes.map(size => (
                             <button
                               key={size}
                               onClick={() => setParam("size", currentSize === size ? null : size)}
                               className={cn(
-                                "px-3 py-1.5 rounded-lg text-sm border transition-all",
+                                "inline-flex mr-1.5 mb-1.5 px-3 py-1.5 rounded-lg text-sm font-mono border transition-all",
                                 currentSize === size
                                   ? "bg-primary text-primary-foreground border-primary"
                                   : "border-border text-muted-foreground hover:border-primary/40"
