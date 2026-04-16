@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 16.04.2026
+> Последнее обновление: 17.04.2026
 
 ---
 
@@ -688,6 +688,70 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 17.04.2026 — Визуальный аудит production + полировка стилей
+
+**Визуальный аудит production (pilo-rus.ru в Chrome):**
+- ✅ Главная страница: hero, quick links, benefits, категории, акции, хиты продаж, калькулятор, производство, доставка, отзывы (4.8), CTA, футер — всё чисто
+- ✅ Каталог: фильтры типов, сортировка, карточки товаров, пилюли размеров — ОК в светлой и тёмной темах
+- ✅ Страница товара: фото, quick features (Производитель/ГОСТ/Доставка), размеры, единицы, цена, корзина, варианты, описание-аккордион, отзывы (6), похожие товары
+- ✅ Контакты: 3 телефона, email, адрес, режим работы, реквизиты, форма заявки
+- ✅ Доставка: блоки доставка/самовывоз с детальной информацией
+- ✅ О производстве: статистика (2000 м², 10+ лет, 500+ клиентов), история
+- ✅ Корзина (пустая): аккуратный empty state с кнопкой "Перейти в каталог"
+- ✅ Футер: все 3 телефона, категории, ссылки, соцсети
+
+**Код-аудит админки (21 потенциальная проблема проверена):**
+- ✅ `bg-gray-100 text-gray-700` fallback → `bg-muted text-muted-foreground` (4 файла)
+  - `app/admin/clients/clients-list.tsx` — STATUS_COLORS fallback
+  - `app/admin/page.tsx` — ORDER_STATUS_COLORS fallback на дашборде
+  - `app/admin/orders/[id]/page.tsx` — statusColor fallback
+  - `app/admin/email/page.tsx` — bg-gray-100 → bg-muted
+- ✅ Проверены и оставлены как есть (намеренно):
+  - staff/page.tsx `bg-gray-300` — декоративные точки онлайн-статуса (зелёный/жёлтый/серый)
+  - inventory-client.tsx `text-gray-500` — только для print:block
+  - `classic ? "text-foreground"` в ambient-sound/bg-picker/day-planner — CSS safety net `.aray-sidebar *` перебивает
+  - Inline `style={{}}` с `hsl(var(--primary))` в aray-control-center — уже используют CSS vars
+  - `text-white/*` в admin-nav — внутри always-dark sidebar, корректно
+
+**Файлы изменены (4 файла):**
+- `app/admin/clients/clients-list.tsx`
+- `app/admin/page.tsx`
+- `app/admin/orders/[id]/page.tsx`
+- `app/admin/email/page.tsx`
+
+**Деплой:** commit `14bec5e`, все страницы HTTP 200 ✅
+
+### Сессия 16.04.2026 (ночь 4) — SEO-аудит + оптимизация
+
+**SEO-аудит (полный):**
+- ✅ robots.txt — ОК (Yandex directives, Clean-param, disallow /admin /cabinet /api)
+- ✅ sitemap.xml — динамический из БД (категории + товары + новости)
+- ✅ Метрика + GA4 — подключение через SiteSettings (components/analytics.tsx)
+- ✅ Product Schema (JSON-LD) — уже был: @type Product, AggregateOffer, AggregateRating
+- ✅ LocalBusiness Schema — в root layout (адрес, телефоны, координаты, зона обслуживания)
+- ✅ OG Image — динамическая генерация (app/opengraph-image.tsx, 1200×630)
+- ✅ PWA manifest — полный (icons, screenshots, categories)
+
+**SEO-исправления:**
+- ✅ BreadcrumbList Schema на страницы товаров (Главная → Каталог → Категория → Товар)
+- ✅ BreadcrumbList Schema на каталог (Главная → Каталог [→ Категория])
+- ✅ Убраны дубли "| ПилоРус" в title (template уже добавляет суффикс)
+  - Исправлено: homepage, terms, product, news, news/slug, services
+- ✅ Укорочены длинные title/description (contacts, about, homepage, services)
+- ✅ Добавлен canonical URL на каталог (был MISSING)
+- ✅ Каталог: title улучшен с "Каталог пиломатериалов" → "Каталог пиломатериалов — цены от производителя"
+
+**Файлы изменены (9 файлов):**
+- `app/(store)/page.tsx` — title/desc укорочены
+- `app/(store)/catalog/page.tsx` — BreadcrumbList + canonical + title
+- `app/(store)/product/[slug]/page.tsx` — BreadcrumbList + title без дубля
+- `app/(store)/contacts/page.tsx` — title/desc укорочены
+- `app/(store)/about/page.tsx` — title/desc укорочены
+- `app/(store)/terms/page.tsx` — title без дубля
+- `app/(store)/news/page.tsx` — title без дубля
+- `app/(store)/news/[slug]/page.tsx` — title без дубля
+- `app/(store)/services/page.tsx` — title улучшен + desc
+
 ### Сессия 16.04.2026 (ночь 3) — Централизация телефонов + email sanitization
 
 **Централизация телефонов (22 файла):**
@@ -1139,7 +1203,7 @@ const { theme, setTheme } = useTheme();
 
 ## На следующую сессию (план)
 
-> Последнее обновление: 16.04.2026
+> Последнее обновление: 17.04.2026
 
 ### 🚨 СТИЛЕВЫЕ ПРАВИЛА — НЕ НАРУШАТЬ
 ```
