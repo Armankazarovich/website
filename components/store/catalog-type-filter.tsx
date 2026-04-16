@@ -30,14 +30,18 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
     container.scrollTo({ left: Math.max(0, offset), behavior: "smooth" });
   }, [currentType, category]);
 
+  const pillBase = "inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap border-2 transition-all shrink-0 active:scale-95";
+  const pillActive = "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20";
+  const pillInactive = "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-primary/[0.05]";
+
   return (
-    <div className="sticky top-16 lg:static lg:top-auto z-40 -mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pt-1.5 pb-2 lg:py-0 mb-6 bg-background/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none border-b border-border/60 lg:border-none">
-      <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-none">
+    <div className="sticky top-[64px] lg:static lg:top-auto z-40 -mx-4 sm:-mx-6 lg:mx-0 lg:py-0 mb-4 lg:mb-6 bg-background/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none border-b border-border/40 lg:border-none shadow-sm lg:shadow-none">
+      <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-none px-4 sm:px-6 lg:px-0 py-2.5 lg:py-0">
         {category && (
           <Link
             href="/catalog"
             aria-label="Все категории"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-xl border shrink-0 border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent transition-all"
+            className="inline-flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0 border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-primary/[0.05] transition-all active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -54,11 +58,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
             <Link
               data-active={!currentType ? "true" : undefined}
               href={`/catalog${q ? `?${q}` : ""}`}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap border transition-all shrink-0 ${
-                !currentType
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent"
-              }`}
+              className={`${pillBase} ${!currentType ? pillActive : pillInactive}`}
             >
               Все
             </Link>
@@ -78,11 +78,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
               key={t.keyword}
               data-active={isActive ? "true" : undefined}
               href={`/catalog${q ? `?${q}` : ""}`}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap border transition-all shrink-0 ${
-                isActive
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent"
-              }`}
+              className={`${pillBase} ${isActive ? pillActive : pillInactive}`}
             >
               {t.label}
             </Link>
