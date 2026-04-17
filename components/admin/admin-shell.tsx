@@ -611,9 +611,7 @@ function MobileMenuBottomSheet({
               </Link>
             </div>
 
-            {/* Настройки темы/палитры/шрифта — через ARAY Control (липкий справа) */}
-
-            {/* ── Поиск по разделам ── */}
+            {/* ── Поиск по разделам (sticky — не уходит при скролле) ── */}
             <div className="mx-4 mb-3 shrink-0">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
@@ -621,6 +619,8 @@ function MobileMenuBottomSheet({
                 <input
                   ref={searchRef}
                   type="text"
+                  inputMode="search"
+                  enterKeyHint="search"
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value)}
                   placeholder="Найти раздел…"
@@ -631,6 +631,7 @@ function MobileMenuBottomSheet({
                     color: glass.textPrimary,
                     caretColor: "hsl(var(--primary))",
                     WebkitTapHighlightColor: "transparent",
+                    fontSize: "16px", // prevents iOS zoom on focus
                   }}
                 />
                 {searchQ && (
@@ -643,6 +644,9 @@ function MobileMenuBottomSheet({
                 )}
               </div>
             </div>
+
+            {/* ── Скроллируемая область (всё ниже поиска) ── */}
+            <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
 
             {/* ── Недавние — последние 4 посещённых раздела ── */}
             {!q && recent.length > 0 && (() => {
@@ -716,8 +720,7 @@ function MobileMenuBottomSheet({
             </div>}
 
             {/* ── Навигация — glass секции с аккордеоном ── */}
-            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2"
-              style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="px-4 pb-2">
               {q && groups.length === 0 && (
                 <div className="text-center py-8">
                   <Search className="w-8 h-8 mx-auto mb-2" style={{ color: glass.textMuted, opacity: 0.5 }} />
@@ -807,6 +810,7 @@ function MobileMenuBottomSheet({
                 );
               })}
             </div>
+            </div>{/* end scroll area */}
 
             {/* ── Футер ── */}
             <div className="shrink-0 px-4 pt-2 pb-2"
