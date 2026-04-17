@@ -5,14 +5,12 @@ import { useRouter } from "next/navigation";
 import { Zap, X, Bell, ShoppingBag, Star, ArrowRight, UserPlus, Palette } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { useAdminLang } from "@/lib/admin-lang-context";
-import { ADMIN_LANGUAGES, getFlagUrl } from "@/lib/admin-i18n";
 import { useClassicMode, playOrderChime, LS_FONT } from "@/components/admin/admin-shell";
 
 export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
   const isClient = userRole === "USER";
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"notif" | "style" | "lang">("notif");
+  const [tab, setTab] = useState<"notif" | "style">("notif");
   const [count, setCount] = useState(0);
   const [orders, setOrders] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -21,7 +19,6 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
-  const { t, lang, setLang } = useAdminLang();
   const ccSidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
   const ref = useRef<HTMLDivElement>(null);
   const [panelPos, setPanelPos] = useState<{ bottom: number; left: number } | null>(null);
@@ -68,6 +65,20 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
     }
   };
 
+  const fetchNotifications = async () => {
+    setLoadingNotif(true);
+    try {
+      const [ordersRes, reviewsRes, staffRes] = await Promise.all([
+        fetch("/api/admin/orders?status=NEW&limit=5").then(r => r.ok ? r.json() : { orders: [] }).catch(() => ({ orders: [] })),
+        fetch("/api/admin/reviews?pending=true&limit=5").then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch("/api/admin/staff?status=PENDING&limit=5").then(r => r.ok ? r.json() : []).catch(() => []),
+      ]);
+      setOrders(ordersRes.orders ?? []);
+      setReviews(Array.isArray(reviewsRes) ? reviewsRes : reviewsRes.reviews ?? []);
+      setPendingStaff(Array.isArray(staffRes) ? staffRes : staffRes.staff ?? []);
+    } catch {} finally { setLoadingNotif(false); }
+  };
+
   const openNotif = async () => {
     calcPos(); setTab("notif"); setOpen(true);
     setLoadingNotif(true);
@@ -112,18 +123,51 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
     document.documentElement.style.setProperty("--aray-font-scale", s.scale);
   };
 
-  // ═══ RIGHT SIDE sticky layout ═══════════════════════════════════════════
+  // ── Liquid Glass palette ─────────────────────────────────────────────────
+  const isDark = safeTheme === "dark";
+  const glass = {
+    bg: isDark
+      ? `linear-gradient(180deg, rgba(10,10,18,0.72), rgba(10,10,18,0.65))`
+      : `linear-gradient(180deg, rgba(240,242,248,0.78), rgba(240,242,248,0.72))`,
+    refraction: isDark
+      ? `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%)`
+      : `linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 40%)`,
+    border: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.35)",
+    borderInner: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+    blur: "blur(50px) saturate(200%) brightness(1.05)",
+    textPrimary: isDark ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.88)",
+    textSecondary: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
+    hoverBg: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+    activeBg: isDark ? "rgba(255,255,255,0.10)" : "rgba(0,0,0,0.08)",
+    shadow: isDark
+      ? "0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1)"
+      : "0 8px 32px rgba(0,0,0,0.12), 0 0 1px rgba(0,0,0,0.05)",
+  };
+
+  // ═══ RIGHT SIDE sticky layout (desktop + mobile) ═══════════════════════
   if (position === "right") {
     return (
       <div ref={ref} className="flex flex-col items-center gap-1">
-        {/* Collapsed: vertical pill with icons */}
+        {/* Collapsed: vertical pill with glass effect */}
         {!open ? (
-          <div className="aray-dark-panel flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl"
-            style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}dd)`, backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.1)", borderRight: "none" }}>
+          <div className="flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl relative overflow-hidden"
+            style={{
+              background: glass.bg,
+              backdropFilter: glass.blur,
+              WebkitBackdropFilter: glass.blur,
+              border: `1px solid ${glass.border}`,
+              borderRight: "none",
+              boxShadow: glass.shadow,
+            }}>
+            {/* Refraction highlight */}
+            <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
             {!isClient && (
-              <button onClick={() => { setTab("notif"); setOpen(true); }} title="Уведомления" aria-label={`Уведомления: ${count}`}
-                className="p-2.5 rounded-xl hover:bg-white/10 transition-colors relative">
-                <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : "rgba(255,255,255,0.5)" }} />
+              <button onClick={() => { setTab("notif"); setOpen(true); fetchNotifications(); }} title="Уведомления" aria-label={`Уведомления: ${count}`}
+                className="relative p-2.5 rounded-xl transition-colors"
+                style={{ color: glass.textSecondary }}
+                onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <Bell className="w-4 h-4" style={{ color: count > 0 ? "hsl(var(--primary))" : glass.textSecondary }} />
                 {count > 0 && (
                   <span className="absolute -top-0.5 -left-0.5 min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
                     style={{ background: "hsl(var(--primary))" }}>{count > 9 ? "9+" : count}</span>
@@ -131,102 +175,145 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
               </button>
             )}
             <button onClick={() => { setTab("style"); setOpen(true); }} title="Оформление" aria-label="Оформление"
-              className="p-2.5 rounded-xl hover:bg-white/10 transition-colors">
-              <Palette className="w-4 h-4 text-white/50" />
-            </button>
-            <button onClick={() => { setTab("lang"); setOpen(true); }} title="Язык" aria-label="Выбрать язык"
-              className="p-2.5 rounded-xl hover:bg-white/10 transition-colors">
-              <span className="text-[11px] font-bold text-white/50">{lang.toUpperCase()}</span>
+              className="relative p-2.5 rounded-xl transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+              <Palette className="w-4 h-4" style={{ color: glass.textSecondary }} />
             </button>
           </div>
         ) : (
-          /* Expanded: full panel */
-          <div className="aray-dark-panel w-[280px] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200"
-            style={{ background: `linear-gradient(180deg, ${ccSidebarHex}, ${ccSidebarHex}ee)`, border: "1px solid rgba(255,255,255,0.08)", borderRight: "none", backdropFilter: "blur(24px)", maxHeight: "80vh" }}>
+          /* Expanded: full panel with Liquid Glass */
+          <div className="w-[280px] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200 relative"
+            style={{
+              background: glass.bg,
+              backdropFilter: glass.blur,
+              WebkitBackdropFilter: glass.blur,
+              border: `1px solid ${glass.border}`,
+              borderRight: "none",
+              boxShadow: glass.shadow,
+              maxHeight: "80vh",
+            }}>
+            {/* Refraction highlight */}
+            <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="relative flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${glass.borderInner}` }}>
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold text-white">ARAY Control</span>
+                <span className="text-sm font-bold" style={{ color: glass.textPrimary }}>ARAY Control</span>
               </div>
-              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" aria-label="Закрыть">
-                <X className="w-4 h-4 text-white/50" />
+              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg transition-colors" aria-label="Закрыть"
+                onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                <X className="w-4 h-4" style={{ color: glass.textSecondary }} />
               </button>
             </div>
-            {/* Tabs */}
-            <div className="flex" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            {/* Tabs — only Notifications + Style */}
+            <div className="relative flex" style={{ borderBottom: `1px solid ${glass.borderInner}` }}>
               {!isClient && (
-                <button onClick={() => setTab("notif")}
-                  className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "notif" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
-                  style={tab === "notif" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
+                <button onClick={() => { setTab("notif"); fetchNotifications(); }}
+                  className="flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors"
+                  style={{
+                    color: tab === "notif" ? "hsl(var(--primary))" : glass.textSecondary,
+                    borderBottom: tab === "notif" ? "2px solid hsl(var(--primary))" : "2px solid transparent",
+                  }}>
                   Уведомления {count > 0 && <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] text-white" style={{ background: "hsl(var(--primary))" }}>{count}</span>}
                 </button>
               )}
               <button onClick={() => setTab("style")}
-                className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "style" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
-                style={tab === "style" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
+                className="flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors"
+                style={{
+                  color: tab === "style" ? "hsl(var(--primary))" : glass.textSecondary,
+                  borderBottom: tab === "style" ? "2px solid hsl(var(--primary))" : "2px solid transparent",
+                }}>
                 Оформление
               </button>
-              <button onClick={() => setTab("lang")}
-                className={`flex-1 text-center text-[11px] font-semibold py-2.5 transition-colors ${tab === "lang" ? "text-primary" : "text-white/40 hover:text-white/70"}`}
-                style={tab === "lang" ? { borderBottom: "2px solid hsl(var(--primary))" } : {}}>
-                Язык
-              </button>
             </div>
-            {/* Content — same as bottom panel */}
-            <div className="overflow-y-auto" style={{ maxHeight: "65vh" }}>
+            {/* Content */}
+            <div className="relative overflow-y-auto" style={{ maxHeight: "65vh" }}>
               {tab === "notif" && !isClient && (
                 <div>
                   {loadingNotif ? (
                     <div className="flex justify-center py-8"><div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>
                   ) : orders.length === 0 && reviews.length === 0 && pendingStaff.length === 0 ? (
-                    <div className="text-center py-8"><Bell className="w-6 h-6 text-white/20 mx-auto mb-2" /><p className="text-white/40 text-xs">Нет новых уведомлений</p></div>
+                    <div className="text-center py-8"><Bell className="w-6 h-6 mx-auto mb-2" style={{ color: glass.textSecondary, opacity: 0.4 }} /><p className="text-xs" style={{ color: glass.textSecondary }}>Нет новых уведомлений</p></div>
                   ) : (
                     <div className="py-1">
                       {orders.map((o: any) => (
                         <button key={o.id} onClick={() => { router.push("/admin/orders"); setOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] transition-colors text-left">
+                          className="w-full flex items-center gap-3 px-4 py-3 transition-colors text-left"
+                          onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                           <ShoppingBag className="w-4 h-4 text-primary shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-white/90 truncate">#{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}</p>
-                            <p className="text-[10px] text-white/40 mt-0.5">{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
+                            <p className="text-[12px] font-semibold truncate" style={{ color: glass.textPrimary }}>#{o.orderNumber} · {o.customerName || o.customerPhone || "Клиент"}</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: glass.textSecondary }}>{Number(o.totalAmount || 0).toLocaleString("ru-RU")} ₽</p>
                           </div>
                         </button>
                       ))}
                       {reviews.map((r: any) => (
                         <button key={r.id} onClick={() => { router.push("/admin/reviews"); setOpen(false); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.06] transition-colors text-left">
+                          className="w-full flex items-center gap-3 px-4 py-3 transition-colors text-left"
+                          onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                           <Star className="w-4 h-4 text-yellow-400 shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-white/90 truncate">{r.name} · {"⭐".repeat(r.rating)}</p>
-                            <p className="text-[10px] text-white/40 mt-0.5 truncate">{r.text?.substring(0, 40)}</p>
+                            <p className="text-[12px] font-semibold truncate" style={{ color: glass.textPrimary }}>{r.name} · {"⭐".repeat(r.rating)}</p>
+                            <p className="text-[10px] mt-0.5 truncate" style={{ color: glass.textSecondary }}>{r.text?.substring(0, 40)}</p>
+                          </div>
+                        </button>
+                      ))}
+                      {pendingStaff.map((s: any) => (
+                        <button key={`ps-${s.id}`} onClick={() => { router.push("/admin/staff"); setOpen(false); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 transition-colors text-left"
+                          onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+                          onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                          <UserPlus className="w-4 h-4 shrink-0" style={{ color: "hsl(200 80% 50%)" }} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-semibold truncate" style={{ color: glass.textPrimary }}>{s.name || s.email || "Заявка"}</p>
+                            <p className="text-[10px]" style={{ color: glass.textSecondary }}>Ожидает одобрения</p>
                           </div>
                         </button>
                       ))}
                     </div>
                   )}
+                  <div className="px-3 py-2" style={{ borderTop: `1px solid ${glass.borderInner}` }}>
+                    <button onClick={() => { router.push("/admin/orders?status=NEW"); setOpen(false); }}
+                      className="w-full text-center text-[12px] font-semibold py-2.5 rounded-xl transition-colors"
+                      style={{ color: "hsl(var(--primary))" }}
+                      onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
+                      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                      Все новые заказы →
+                    </button>
+                  </div>
                 </div>
               )}
               {tab === "style" && (
                 <div className="p-4 space-y-4">
                   {/* Палитры */}
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Палитра</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Палитра</p>
                     <div className="flex flex-wrap gap-2">
                       {PALETTES.map((p) => (
                         <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                          className={`w-8 h-8 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-60 hover:opacity-100 hover:scale-105"}`}
-                          style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
+                          className={`w-8 h-8 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-offset-1 ring-offset-transparent scale-110" : "opacity-60 hover:opacity-100 hover:scale-105"}`}
+                          style={{
+                            background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                            ringColor: glass.textPrimary,
+                          }} />
                       ))}
                     </div>
                   </div>
                   {/* Тема */}
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Тема</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Тема</p>
                     <div className="flex gap-2">
                       {["light", "dark"].map((t) => (
                         <button key={t} onClick={() => setTheme(t)}
-                          className={`flex-1 py-2.5 rounded-xl text-[12px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                          className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold transition-all"
+                          style={{
+                            background: safeTheme === t ? "hsl(var(--primary))" : glass.hoverBg,
+                            color: safeTheme === t ? "#fff" : glass.textSecondary,
+                          }}>
                           {t === "light" ? "Светлая" : "Тёмная"}
                         </button>
                       ))}
@@ -234,30 +321,19 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                   </div>
                   {/* Шрифт */}
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2.5">Размер шрифта</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Размер шрифта</p>
                     <div className="flex gap-1.5">
                       {FONT_SIZES_CC.map((f) => (
                         <button key={f.id} onClick={() => pickFont(f.id)}
-                          className={`flex-1 py-2.5 rounded-xl text-[11px] font-semibold transition-all ${fontActive === f.id ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
+                          className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold transition-all"
+                          style={{
+                            background: fontActive === f.id ? "hsl(var(--primary))" : glass.hoverBg,
+                            color: fontActive === f.id ? "#fff" : glass.textSecondary,
+                          }}>
                           {f.label}
                         </button>
                       ))}
                     </div>
-                  </div>
-                </div>
-              )}
-              {/* ── Language tab ── */}
-              {tab === "lang" && (
-                <div className="p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-3">Выберите язык</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {ADMIN_LANGUAGES.map((l) => (
-                      <button key={l.code} onClick={() => { setLang(l.code); }}
-                        className={`flex items-center gap-2.5 px-3 py-3 rounded-xl text-[12px] transition-all text-left ${lang === l.code ? "bg-primary text-white font-semibold" : "bg-white/10 text-white/70 hover:bg-white/15"}`}>
-                        <img src={getFlagUrl(l.flag)} alt="" className="w-6 h-4 rounded-sm object-cover shrink-0" />
-                        {l.label}
-                      </button>
-                    ))}
                   </div>
                 </div>
               )}

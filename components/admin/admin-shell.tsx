@@ -1082,8 +1082,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         onSettingsOpen={() => setMobileSettingsOpen(true)}
       />
 
-      {/* ─── ARAY CONTROL — липкая панель справа ─────────────── */}
-      <div className="hidden lg:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
+      {/* ─── ARAY CONTROL — липкая панель справа (desktop + mobile) ── */}
+      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40">
         <ArayControlCenter userRole={role} position="right" />
       </div>
 
