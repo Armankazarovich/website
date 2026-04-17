@@ -8,6 +8,7 @@ import {
   Truck, CheckSquare, Warehouse, Wallet, Target, UserCircle,
   Star, UserPlus, ArrowRight, X,
 } from "lucide-react";
+import { ArayOrb } from "@/components/shared/aray-orb";
 import { playOrderChime } from "@/components/admin/admin-shell";
 
 // ── Нижние табы по роли: 2 слева от Арая ─────────────────────────────────────
@@ -54,16 +55,14 @@ interface Props {
   onMenuOpen: () => void;
   menuOpen: boolean;
   newOrdersCount?: number;
-  /** @deprecated Арай теперь парит отдельным floating существом (см. ArayFloating) */
   onArayOpen?: () => void;
-  /** @deprecated */
   arayListening?: boolean;
-  /** @deprecated */
   arayHasNew?: boolean;
 }
 
 export function AdminMobileBottomNav({
   role, onMenuOpen, menuOpen, newOrdersCount = 0,
+  onArayOpen, arayListening, arayHasNew,
 }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -279,7 +278,18 @@ export function AdminMobileBottomNav({
             <DockTab key={i} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />
           ))}
 
-          {/* ── Арай больше не в dock — парит отдельно справа (ArayFloating) ── */}
+          {/* ── Центральный слот — Арай ── */}
+          <div className="relative flex flex-col items-center justify-center" style={{ width: 72, minWidth: 72 }}>
+            <button
+              onClick={onArayOpen}
+              className="absolute flex flex-col items-center justify-center focus:outline-none transition-transform duration-150 active:scale-[0.88]"
+              style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
+            >
+              <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
+              <span className="text-[10px] font-semibold mt-0.5 tracking-wide"
+                style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
+            </button>
+          </div>
 
           {/* ── Колокольчик (staff only) ── */}
           {!isClient && (
