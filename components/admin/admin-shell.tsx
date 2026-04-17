@@ -367,6 +367,7 @@ function getQuickActions(role: string) {
 
 function MobileMenuBottomSheet({
   open, onClose, userName, email, role, sheetDragStartY, isDark,
+  palette, setPalette, theme: currentTheme, setTheme,
 }: {
   open: boolean;
   onClose: () => void;
@@ -375,10 +376,15 @@ function MobileMenuBottomSheet({
   role: string;
   sheetDragStartY: React.MutableRefObject<number>;
   isDark: boolean;
+  palette: string;
+  setPalette: (id: string) => void;
+  theme: string;
+  setTheme: (t: string) => void;
 }) {
   const pathname = usePathname();
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings", "help"]));
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => { setPortalTarget(document.body); }, []);
 
@@ -414,52 +420,53 @@ function MobileMenuBottomSheet({
   };
 
   // ── Liquid Glass палитра: тёмная / светлая ──
+  // Ключевое: ПРОЗРАЧНОСТЬ + размытие = жидкое стекло
   const glass = isDark ? {
-    // Dark glass — тёмное стекло
-    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 6%, rgba(15,15,20,0.92) 20%)",
-    sheetBorder: "1px solid rgba(255,255,255,0.15)",
-    sheetSideBorder: "1px solid rgba(255,255,255,0.06)",
-    sheetShadow: "0 -1px 0 rgba(255,255,255,0.1), 0 -12px 50px rgba(0,0,0,0.6)",
-    handle: "bg-white/25",
-    cardBg: "rgba(255,255,255,0.06)",
-    cardBorder: "1px solid rgba(255,255,255,0.08)",
-    cardActiveBg: "rgba(255,255,255,0.12)",
-    cardActiveBorder: "1px solid rgba(255,255,255,0.18)",
-    sectionBg: "rgba(255,255,255,0.03)",
-    sectionBorder: "1px solid rgba(255,255,255,0.05)",
+    // Dark glass — тёмное полупрозрачное стекло
+    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 4%, rgba(10,10,18,0.78) 18%)",
+    sheetBorder: "1px solid rgba(255,255,255,0.18)",
+    sheetSideBorder: "1px solid rgba(255,255,255,0.08)",
+    sheetShadow: "0 -1px 0 rgba(255,255,255,0.12), 0 -16px 60px rgba(0,0,0,0.5)",
+    handle: "bg-white/30",
+    cardBg: "rgba(255,255,255,0.07)",
+    cardBorder: "1px solid rgba(255,255,255,0.10)",
+    cardActiveBg: "rgba(255,255,255,0.14)",
+    cardActiveBorder: "1px solid rgba(255,255,255,0.22)",
+    sectionBg: "rgba(255,255,255,0.04)",
+    sectionBorder: "1px solid rgba(255,255,255,0.06)",
     sectionItemBorder: "1px solid rgba(255,255,255,0.04)",
-    sectionItemActive: "rgba(255,255,255,0.07)",
-    divider: "rgba(255,255,255,0.06)",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.60)",
+    sectionItemActive: "rgba(255,255,255,0.08)",
+    divider: "rgba(255,255,255,0.08)",
+    textPrimary: "rgba(255,255,255,0.93)",
+    textSecondary: "rgba(255,255,255,0.62)",
     textMuted: "rgba(255,255,255,0.35)",
-    textIcon: "rgba(255,255,255,0.38)",
+    textIcon: "rgba(255,255,255,0.40)",
     textIconActive: "hsl(var(--primary))",
-    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.06)",
-    backdrop: "rgba(0,0,0,0.55)",
+    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.08)",
+    backdrop: "rgba(0,0,0,0.45)",
   } : {
-    // Light glass — белое / молочное стекло
-    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 6%, rgba(245,245,250,0.92) 20%)",
-    sheetBorder: "1px solid rgba(0,0,0,0.06)",
-    sheetSideBorder: "1px solid rgba(0,0,0,0.04)",
-    sheetShadow: "0 -1px 0 rgba(255,255,255,0.8), 0 -12px 50px rgba(0,0,0,0.15)",
-    handle: "bg-black/15",
-    cardBg: "rgba(0,0,0,0.03)",
-    cardBorder: "1px solid rgba(0,0,0,0.06)",
-    cardActiveBg: "rgba(0,0,0,0.06)",
-    cardActiveBorder: "1px solid rgba(0,0,0,0.1)",
-    sectionBg: "rgba(0,0,0,0.02)",
-    sectionBorder: "1px solid rgba(0,0,0,0.05)",
+    // Light glass — молочное полупрозрачное стекло с рефракцией
+    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 4%, rgba(240,242,248,0.82) 18%)",
+    sheetBorder: "1px solid rgba(255,255,255,0.6)",
+    sheetSideBorder: "1px solid rgba(255,255,255,0.4)",
+    sheetShadow: "0 -1px 0 rgba(255,255,255,0.9), 0 -16px 60px rgba(0,0,0,0.12)",
+    handle: "bg-black/12",
+    cardBg: "rgba(255,255,255,0.5)",
+    cardBorder: "1px solid rgba(255,255,255,0.6)",
+    cardActiveBg: "rgba(255,255,255,0.7)",
+    cardActiveBorder: "1px solid rgba(0,0,0,0.08)",
+    sectionBg: "rgba(255,255,255,0.4)",
+    sectionBorder: "1px solid rgba(255,255,255,0.5)",
     sectionItemBorder: "1px solid rgba(0,0,0,0.04)",
-    sectionItemActive: "rgba(0,0,0,0.04)",
+    sectionItemActive: "rgba(255,255,255,0.6)",
     divider: "rgba(0,0,0,0.06)",
-    textPrimary: "rgba(0,0,0,0.88)",
+    textPrimary: "rgba(0,0,0,0.85)",
     textSecondary: "rgba(0,0,0,0.55)",
-    textMuted: "rgba(0,0,0,0.32)",
-    textIcon: "rgba(0,0,0,0.30)",
+    textMuted: "rgba(0,0,0,0.30)",
+    textIcon: "rgba(0,0,0,0.32)",
     textIconActive: "hsl(var(--primary))",
-    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.7)",
-    backdrop: "rgba(0,0,0,0.25)",
+    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.8)",
+    backdrop: "rgba(0,0,0,0.18)",
   };
 
   return ReactDOM.createPortal(
@@ -496,8 +503,8 @@ function MobileMenuBottomSheet({
               maxHeight: "90dvh",
               borderRadius: "32px 32px 0 0",
               background: glass.sheetBg,
-              backdropFilter: "blur(40px) saturate(200%)",
-              WebkitBackdropFilter: "blur(40px) saturate(200%)",
+              backdropFilter: "blur(50px) saturate(180%) brightness(1.05)",
+              WebkitBackdropFilter: "blur(50px) saturate(180%) brightness(1.05)",
               boxShadow: glass.sheetShadow,
               borderTop: glass.sheetBorder,
               borderLeft: glass.sheetSideBorder,
@@ -536,17 +543,17 @@ function MobileMenuBottomSheet({
                 </p>
                 <p className="text-[11px] mt-0.5 truncate" style={{ color: glass.textMuted }}>{email}</p>
               </div>
-              {/* ARAY Control кнопка */}
+              {/* ⚡ Настройки темы inline */}
               <button
-                onClick={() => { onClose(); setTimeout(() => window.dispatchEvent(new Event("aray:open")), 200); }}
+                onClick={() => setSettingsOpen(!settingsOpen)}
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
                 style={{
-                  background: glass.cardBg,
-                  border: glass.cardBorder,
+                  background: settingsOpen ? glass.cardActiveBg : glass.cardBg,
+                  border: settingsOpen ? glass.cardActiveBorder : glass.cardBorder,
                   WebkitTapHighlightColor: "transparent",
                 }}
-                title="Арай — настройки интерфейса">
-                <Zap className="w-4.5 h-4.5" style={{ color: glass.textIcon }} />
+                title="Настройки оформления">
+                <Zap className="w-4.5 h-4.5" style={{ color: settingsOpen ? "hsl(var(--primary))" : glass.textIcon }} />
               </button>
               <Link href="/cabinet/profile" onClick={onClose}
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
@@ -558,6 +565,103 @@ function MobileMenuBottomSheet({
                 <Settings className="w-4.5 h-4.5" style={{ color: glass.textIcon }} />
               </Link>
             </div>
+
+            {/* ── Inline Settings Panel (⚡) — liquid glass ── */}
+            <AnimatePresence>
+              {settingsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="overflow-hidden mx-4 mb-3"
+                >
+                  <div className="rounded-2xl p-4 space-y-4"
+                    style={{
+                      background: glass.cardBg,
+                      border: glass.cardBorder,
+                      backdropFilter: "blur(8px)",
+                    }}>
+                    {/* Палитры */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
+                        style={{ color: glass.textMuted }}>Палитра</p>
+                      <div className="flex flex-wrap gap-2">
+                        {PALETTES.map((p) => (
+                          <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                            className="w-8 h-8 rounded-full shrink-0 transition-all active:scale-90"
+                            style={{
+                              background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                              opacity: palette === p.id ? 1 : 0.45,
+                              transform: palette === p.id ? "scale(1.15)" : undefined,
+                              boxShadow: palette === p.id ? `0 0 0 2px ${isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)"}` : undefined,
+                              WebkitTapHighlightColor: "transparent",
+                            }} />
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Тема */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
+                        style={{ color: glass.textMuted }}>Тема</p>
+                      <div className="flex gap-2">
+                        {[
+                          { id: "light", label: "Светлая", icon: Sun },
+                          { id: "dark", label: "Тёмная", icon: Moon },
+                        ].map((t) => (
+                          <button key={t.id} onClick={() => setTheme(t.id)}
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-all active:scale-[0.96]"
+                            style={{
+                              background: currentTheme === t.id ? glass.cardActiveBg : "transparent",
+                              border: currentTheme === t.id ? glass.cardActiveBorder : glass.cardBorder,
+                              color: currentTheme === t.id ? glass.textPrimary : glass.textSecondary,
+                              WebkitTapHighlightColor: "transparent",
+                            }}>
+                            <t.icon className="w-4 h-4" />
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Размер шрифта */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
+                        style={{ color: glass.textMuted }}>Шрифт</p>
+                      <div className="flex gap-2">
+                        {[
+                          { id: "xs", label: "XS", px: "12px", scale: "0.857" },
+                          { id: "sm", label: "S", px: "13px", scale: "0.929" },
+                          { id: "md", label: "M", px: "14px", scale: "1" },
+                          { id: "lg", label: "L", px: "15.5px", scale: "1.107" },
+                          { id: "xl", label: "XL", px: "17px", scale: "1.214" },
+                        ].map((f) => {
+                          const currentFont = (typeof window !== "undefined" && localStorage.getItem("aray_font")) || "md";
+                          return (
+                            <button key={f.id}
+                              onClick={() => {
+                                document.documentElement.style.setProperty("font-size", f.px);
+                                document.documentElement.style.setProperty("--aray-font-scale", f.scale);
+                                try { localStorage.setItem("aray_font", f.id); } catch {}
+                              }}
+                              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold transition-all active:scale-[0.94]"
+                              style={{
+                                background: currentFont === f.id ? glass.cardActiveBg : "transparent",
+                                border: currentFont === f.id ? glass.cardActiveBorder : glass.cardBorder,
+                                color: currentFont === f.id ? glass.textPrimary : glass.textSecondary,
+                                WebkitTapHighlightColor: "transparent",
+                              }}>
+                              {f.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* ── Quick Actions — glass grid ── */}
             <div className="mx-4 mb-3 shrink-0">
@@ -864,6 +968,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         role={role}
         sheetDragStartY={sheetDragStartY}
         isDark={safeTheme === "dark"}
+        palette={palette}
+        setPalette={setPalette}
+        theme={safeTheme}
+        setTheme={setTheme}
       />
 
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
