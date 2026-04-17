@@ -698,6 +698,40 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 17.04.2026 (сессия 6, вечер) — Восстановление повреждённой локальной папки + WebP коммит + 5 TS fixes
+
+**Статус проверки "всё ли четко":**
+- ✅ Production живой (все страницы HTTP 200: /, /catalog, /contacts, /cart, /about, /news)
+- ❌ Но в локальной Cyrillic папке D:\ПилоРус\website обнаружено:
+  - **428 файлов повреждены нулевыми байтами на конце** (обрезанное содержимое + \0 паддинг)
+  - **git index corrupt** — `index uses ��b� extension`
+  - **git diverged**: Cyrillic отставал от origin/main на 17 коммитов + 2 старых своих коммита
+  - **55 TypeScript ошибок** (после prisma generate → 5)
+
+**Что сделано — восстановление:**
+- ✅ Удалён повреждённый `.git/index` + lock-файлы (HEAD.lock, index.lock)
+- ✅ `git fetch origin` → подтянул актуальный origin (9f56ad6 → **350cee2 feat: auto WebP optimization**)
+- ✅ `git reset --hard origin/main` + `git checkout -f HEAD` + `git clean -fdx` → все 428 файлов восстановлены из git
+- ✅ **0 битых файлов** после восстановления (405 OK)
+- ✅ `npx prisma generate` — 55 → 5 TS ошибок (stale client не знал про ArayMessage/ActivityLog/Subscription/avatarUrl — те же 43 что в сессии 14.04)
+- ✅ 5 оставшихся TS ошибок пофикшены:
+  - `app/(store)/catalog/page.tsx`: добавлен `search?: string` в `SearchParams` interface
+  - `app/(store)/catalog/page.tsx`: `(v: any)` вместо implicit any в 2 `.map()` (строки 172, 496) — нужно потому что `productsRaw: any[] = []` fallback для try/catch
+  - `components/admin/admin-shell.tsx`: `safeTheme: string = (mounted ? theme : "dark") ?? "dark"` (гарантирует `string`, не `string | undefined`)
+
+**Деплой:** commit `a8b1888 fix: 5 TS errors — SearchParams.search, implicit any in catalog, safeTheme undefined fallback`, push OK, все страницы HTTP 200 ✅ (включая `/catalog?search=доска`)
+
+**Ключевой урок:** двойной путь Cyrillic ↔ Latin требует периодической синхронизации. Когда файловые тулы Claude видят `D:\ПилоРус\website` — это зеркало, НЕ настоящий git. Настоящий git в `D:\pilorus\website`. Если Cyrillic отстаёт от origin → файлы могут корраптиться при частичной записи. В будущих сессиях: при подозрительных TS ошибках сразу делать `prisma generate`, при подозрении на битые файлы — `git reset --hard origin/main` через Desktop Commander на Cyrillic папке.
+
+**Временные утилиты в D:\pilorus\ (для переиспользования):**
+- `__sync.js` — sync Cyrillic → Latin (список файлов внутри, редактировать)
+- `__commit.js` — git add + commit + push из Latin
+- `__verify.js` — curl проверка production URLs
+- `__recover.js` — восстановление Cyrillic из origin/main (удаление index + reset + checkout -f + clean)
+- `__prisma-gen.js` — prisma generate + tsc --noEmit
+- `__tsc.js` — быстрый TypeScript check
+- `__verify-files.js` — проверка nullbyte corruption в .ts/.tsx/.js
+
 ### Сессия 17.04.2026 (сессия 5) — ARAY Control рефакторинг + колокольчик в dock
 
 **ARAY Control — Liquid Glass + мобилка:**
