@@ -698,6 +698,26 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 17.04.2026 (сессия 4) — Админка: bottom sheet мобильное меню
+
+**Мобильное меню админки — полная переделка:**
+- ✅ Левый Sheet drawer → Bottom Sheet popup (Тинькофф-стиль)
+- ✅ `components/admin/admin-shell.tsx`:
+  - Новый компонент `MobileMenuBottomSheet` с framer-motion
+  - Spring анимация снизу вверх (`type: "spring", damping: 32, stiffness: 300`)
+  - Drag handle (`w-12 h-1.5 rounded-full bg-white/25`) + swipe-to-close (60px threshold)
+  - `rounded-t-[28px]`, `maxHeight: 88dvh`
+  - Glassmorphism: `backdrop-blur(24px) saturate(180%)`
+  - Portal → document.body для правильной z-index иерархии
+  - Профиль пользователя (аватар 48px, имя, email, кнопка настроек 44px)
+  - AdminNav (скроллится), AdminPushPrompt, AdminPwaInstall, "На сайт"
+  - safe-area-inset-bottom для устройств с нотчем
+  - Убран edge-swipe жест (был для левого drawer)
+- ✅ `components/admin/admin-mobile-bottom-nav.tsx` — обновлён комментарий
+- ✅ Правый Settings Sheet оставлен как есть (работает)
+
+**Деплой:** commit `7db6611`, push OK
+
 ### Сессия 17.04.2026 (сессия 3) — Навигация + ARAY Control совершенство
 
 **Глобальный Input компонент:**
