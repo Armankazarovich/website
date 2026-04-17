@@ -101,8 +101,8 @@ function ServiceModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10" style={popupStyle}>
-          <p className="font-display font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>{isNew ? "Новая услуга" : "Редактировать услугу"}</p>
-          <button onClick={onClose} style={{ color: "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity"><X className="w-5 h-5" /></button>
+          <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>{isNew ? "Новая услуга" : "Редактировать услугу"}</p>
+          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
