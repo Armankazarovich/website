@@ -44,6 +44,7 @@ interface SearchParams {
   instock?: string;
   minprice?: string;
   maxprice?: string;
+  search?: string;
 }
 
 
@@ -169,7 +170,7 @@ export default async function CatalogPage({
 
   // Price sort (JS post-fetch since Prisma can't orderBy on has-many aggregate)
   const getMinPrice = (p: typeof productsRaw[0]) =>
-    Math.min(...p.variants.map((v) => Number(v.pricePerCube ?? v.pricePerPiece ?? 999999)));
+    Math.min(...p.variants.map((v: any) => Number(v.pricePerCube ?? v.pricePerPiece ?? 999999)));
   const products = [...productsRaw];
   if (searchParams.sort === "price_asc") {
     products.sort((a, b) => getMinPrice(a) - getMinPrice(b));
@@ -493,7 +494,7 @@ export default async function CatalogPage({
                   category={product.category.name}
                   images={product.images}
                   saleUnit={product.saleUnit}
-                  variants={product.variants.map((v) => ({
+                  variants={product.variants.map((v: any) => ({
                     id: v.id,
                     size: v.size,
                     pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,

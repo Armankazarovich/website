@@ -879,7 +879,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   // Without this, theme-dependent text/icons cause React error #425/#418.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const safeTheme = mounted ? theme : "dark"; // default to dark for SSR
+  const safeTheme: string = (mounted ? theme : "dark") ?? "dark"; // default to dark for SSR
 
   // Цвет сайдбара напрямую из JS палитры — CSS variable может не работать в Sheet Portal
   const sidebarHex = PALETTES.find(p => p.id === palette)?.sidebar ?? "#5C3317";
