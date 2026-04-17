@@ -711,13 +711,13 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               onClick={() => setMobileMenuOpen(false)}
             />
 
-            {/* Drawer */}
+            {/* Drawer — ВСЕГДА тёмный (class="dark" форсит dark-вариант всех Tailwind классов внутри) */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-0 top-0 h-full w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
+              className="dark fixed left-0 top-0 h-full w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl text-foreground"
             >
               {/* ── Шапка ── */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">

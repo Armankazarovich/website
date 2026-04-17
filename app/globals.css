@@ -523,6 +523,11 @@ button, a, [role="button"], input, select, textarea {
     /* Remove 300ms tap delay on mobile */
     touch-action: manipulation;
   }
+  html {
+    /* Резервируем место под scrollbar всегда — исправляет сдвиг layout
+       при открытии/закрытии drawer'ов (body.style.overflow = "hidden") */
+    scrollbar-gutter: stable;
+  }
   body {
     @apply bg-background text-foreground;
     /* Smooth scrolling everywhere */
