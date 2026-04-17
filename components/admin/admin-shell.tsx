@@ -12,7 +12,11 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Menu, X, LogOut, Sun, Moon, Bell, Settings, ShoppingBag,
   ArrowRight, ALargeSmall, Monitor, Zap, Palette, Film,
-  Star, UserPlus,
+  Star, UserPlus, ChevronDown, LayoutDashboard, Target,
+  Package, Truck, Warehouse, CheckSquare, BarChart2, Wallet,
+  UserCircle, Tag, FileDown, Images, BookOpen, Wrench,
+  Megaphone, TrendingUp, Mail, Globe, Stamp, Users,
+  HeartPulse, HelpCircle, ExternalLink,
 } from "lucide-react";
 
 // ── Ключи localStorage ────────────────────────────────────────────────────────
@@ -258,8 +262,108 @@ import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { MobileFontControl, AdminMobileActionPill, ArayTranslationCheck } from "@/components/admin/admin-mobile-settings";
 
 // ══════════════════════════════════════════════════════════════════════════════
-// ✦ Mobile Menu — Bottom Sheet (Тинькофф-стиль)
+// ✦ Liquid Glass Mobile Menu — Bottom Sheet (iOS 26 стиль)
 // ══════════════════════════════════════════════════════════════════════════════
+
+// Все nav-пункты встроены прямо в bottom sheet (не через AdminNav)
+// для полного контроля над UX: quick actions + glass-секции
+
+type MobileNavItem = {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  exact?: boolean;
+  roles: string[];
+  group: string;
+  groupLabel?: string;
+};
+
+const SA = "SUPER_ADMIN";
+const ALL_STAFF_R = [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+
+const MOBILE_NAV: MobileNavItem[] = [
+  // ── Продажи ──
+  { href: "/admin/orders",    label: "Заказы",     icon: ShoppingBag, roles: ALL_STAFF_R, group: "sales", groupLabel: "Продажи" },
+  { href: "/admin/crm",      label: "CRM",         icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/analytics", label: "Аналитика",   icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
+  { href: "/admin/finance",   label: "Финансы",     icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
+  { href: "/admin/clients",   label: "Клиенты",     icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
+  { href: "/admin/tasks",     label: "Задачи",      icon: CheckSquare, roles: ALL_STAFF_R, group: "sales" },
+  { href: "/admin/delivery",  label: "Доставка",    icon: Truck,       roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
+
+  // ── Товары ──
+  { href: "/admin/products",   label: "Каталог",        icon: Package,   roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"], group: "products", groupLabel: "Товары" },
+  { href: "/catalog",          label: "Каталог",        icon: Package,   roles: ["USER"], group: "products", groupLabel: "Магазин" },
+  { href: "/admin/categories", label: "Категории",      icon: Tag,       roles: [SA, "ADMIN"], group: "products" },
+  { href: "/admin/inventory",  label: "Склад",          icon: Warehouse, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/import",     label: "Импорт",         icon: FileDown,  roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
+  { href: "/admin/media",      label: "Медиа",          icon: Images,    roles: [SA, "ADMIN", "MANAGER"], group: "products" },
+
+  // ── Контент ──
+  { href: "/admin/posts",    label: "Статьи",  icon: BookOpen, roles: [SA, "ADMIN", "MANAGER"], group: "content", groupLabel: "Контент" },
+  { href: "/admin/services", label: "Услуги",  icon: Wrench,   roles: [SA, "ADMIN", "MANAGER"], group: "content" },
+
+  // ── Маркетинг ──
+  { href: "/admin/promotions", label: "Акции",      icon: Megaphone,  roles: [SA, "ADMIN", "MANAGER"], group: "marketing", groupLabel: "Маркетинг" },
+  { href: "/admin/reviews",    label: "Отзывы",     icon: Star,       roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
+  { href: "/admin/email",      label: "Рассылка",   icon: Mail,       roles: [SA, "ADMIN"], group: "marketing" },
+  { href: "/admin/promotion",  label: "Продвижение", icon: TrendingUp, roles: [SA, "ADMIN", "MANAGER"], group: "marketing" },
+
+  // ── Настройки ──
+  { href: "/admin/site",           label: "Сайт",       icon: Globe,      roles: [SA, "ADMIN"], group: "settings", groupLabel: "Настройки" },
+  { href: "/admin/settings",       label: "Настройки",  icon: Settings,   roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/appearance",     label: "Оформление", icon: Palette,    roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/staff",          label: "Команда",    icon: Users,      roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/notifications",  label: "Уведомления", icon: Bell,      roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/health",         label: "Система",    icon: HeartPulse, roles: [SA, "ADMIN"], group: "settings" },
+  // USER settings
+  { href: "/cabinet/notifications", label: "Уведомления", icon: Bell,    roles: ["USER"], group: "settings", groupLabel: "Настройки" },
+  { href: "/cabinet/appearance",    label: "Оформление",  icon: Palette, roles: ["USER"], group: "settings" },
+
+  // ── Помощь ──
+  { href: "/admin/help", label: "Помощь", icon: HelpCircle, roles: [...ALL_STAFF_R, "USER"], group: "help", groupLabel: "Помощь" },
+];
+
+// Quick actions по роли — самые частые переходы
+function getQuickActions(role: string) {
+  const isAdmin = ["SUPER_ADMIN", "ADMIN"].includes(role);
+  const isManager = role === "MANAGER";
+  if (isAdmin) return [
+    { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
+    { href: "/admin/orders",   label: "Заказы",    icon: ShoppingBag,     color: "#f59e0b" },
+    { href: "/admin/crm",     label: "CRM",        icon: Target,          color: "#8b5cf6" },
+    { href: "/admin/products", label: "Товары",     icon: Package,         color: "#10b981" },
+    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2,       color: "#3b82f6" },
+    { href: "/admin/staff",    label: "Команда",    icon: Users,           color: "#ec4899" },
+  ];
+  if (isManager) return [
+    { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
+    { href: "/admin/orders",   label: "Заказы",    icon: ShoppingBag,     color: "#f59e0b" },
+    { href: "/admin/crm",     label: "CRM",        icon: Target,          color: "#8b5cf6" },
+    { href: "/admin/delivery", label: "Доставка",   icon: Truck,           color: "#06b6d4" },
+  ];
+  if (role === "COURIER") return [
+    { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
+    { href: "/admin/orders",   label: "Заказы",    icon: ShoppingBag,     color: "#f59e0b" },
+    { href: "/admin/delivery", label: "Маршрут",    icon: Truck,           color: "#06b6d4" },
+  ];
+  if (role === "WAREHOUSE") return [
+    { href: "/admin",           label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
+    { href: "/admin/products",  label: "Товары",    icon: Package,         color: "#10b981" },
+    { href: "/admin/inventory", label: "Склад",     icon: Warehouse,       color: "#f59e0b" },
+  ];
+  if (role === "USER") return [
+    { href: "/cabinet",  label: "Главная",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
+    { href: "/catalog",  label: "Каталог",  icon: Package,         color: "#10b981" },
+    { href: "/cabinet/profile", label: "Профиль", icon: UserCircle, color: "#8b5cf6" },
+  ];
+  // Default for SELLER, ACCOUNTANT
+  return [
+    { href: "/admin",        label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
+    { href: "/admin/orders", label: "Заказы",    icon: ShoppingBag,     color: "#f59e0b" },
+    { href: "/admin/tasks",  label: "Задачи",    icon: CheckSquare,     color: "#8b5cf6" },
+  ];
+}
 
 function MobileMenuBottomSheet({
   open, onClose, sidebarBg, userName, email, role, sheetDragStartY,
@@ -272,100 +376,274 @@ function MobileMenuBottomSheet({
   role: string;
   sheetDragStartY: React.MutableRefObject<number>;
 }) {
+  const pathname = usePathname();
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings", "help"]));
+
   useEffect(() => { setPortalTarget(document.body); }, []);
 
+  // Auto-expand group that has active page
+  useEffect(() => {
+    if (!open) return;
+    const visItems = MOBILE_NAV.filter(i => i.roles.includes(role));
+    const active = visItems.find(i => i.exact ? pathname === i.href : pathname.startsWith(i.href));
+    if (active && collapsed.has(active.group)) {
+      setCollapsed(prev => { const s = new Set(prev); s.delete(active.group); return s; });
+    }
+  }, [open, pathname, role]);
+
   if (!portalTarget) return null;
+
+  const quickActions = getQuickActions(role);
+  const visibleItems = MOBILE_NAV.filter(i => i.roles.includes(role));
+
+  // Group items
+  const groups: { key: string; label: string; items: MobileNavItem[] }[] = [];
+  for (const item of visibleItems) {
+    let g = groups.find(g => g.key === item.group);
+    if (!g) { g = { key: item.group, label: item.groupLabel || "", items: [] }; groups.push(g); }
+    g.items.push(item);
+  }
+
+  const toggleGroup = (key: string) => {
+    setCollapsed(prev => {
+      const s = new Set(prev);
+      s.has(key) ? s.delete(key) : s.add(key);
+      return s;
+    });
+  };
 
   return ReactDOM.createPortal(
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — усиленный blur для глубины */}
           <motion.div
             key="menu-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm"
-            style={{ zIndex: 200 }}
+            transition={{ duration: 0.25 }}
+            className="lg:hidden fixed inset-0"
+            style={{
+              zIndex: 200,
+              background: "rgba(0,0,0,0.55)",
+              backdropFilter: "blur(12px) saturate(140%)",
+              WebkitBackdropFilter: "blur(12px) saturate(140%)",
+            }}
             onClick={onClose}
           />
 
-          {/* Bottom Sheet */}
+          {/* ── Liquid Glass Bottom Sheet ── */}
           <motion.div
             key="menu-sheet"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 300 }}
-            className="lg:hidden fixed bottom-0 left-0 right-0 flex flex-col overflow-hidden"
+            transition={{ type: "spring", damping: 30, stiffness: 280 }}
+            className="lg:hidden fixed bottom-0 left-0 right-0 flex flex-col"
             style={{
               zIndex: 201,
-              maxHeight: "88dvh",
-              borderRadius: "28px 28px 0 0",
-              background: sidebarBg,
-              backdropFilter: "blur(24px) saturate(180%)",
-              WebkitBackdropFilter: "blur(24px) saturate(180%)",
-              boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+              maxHeight: "90dvh",
+              borderRadius: "32px 32px 0 0",
+              /* Liquid Glass — многослойная прозрачность */
+              background: `linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 8%, transparent 20%), ${sidebarBg}`,
+              backdropFilter: "blur(40px) saturate(200%)",
+              WebkitBackdropFilter: "blur(40px) saturate(200%)",
+              boxShadow: "0 -1px 0 rgba(255,255,255,0.15), 0 -12px 50px rgba(0,0,0,0.5)",
+              /* Тонкая "рефракция" бордером */
+              borderTop: "1px solid rgba(255,255,255,0.18)",
+              borderLeft: "1px solid rgba(255,255,255,0.08)",
+              borderRight: "1px solid rgba(255,255,255,0.08)",
             }}
           >
-            {/* ── Drag handle — свайп вниз = закрыть ── */}
+            {/* ── Drag handle ── */}
             <div
-              className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing shrink-0"
+              className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing shrink-0"
               onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; }}
               onTouchEnd={(e) => {
                 const dy = e.changedTouches[0].clientY - sheetDragStartY.current;
                 if (dy > 60) onClose();
               }}
             >
-              <div className="w-12 h-1.5 rounded-full bg-white/25 active:bg-white/50 transition-colors" />
+              <div className="w-10 h-1 rounded-full bg-white/30" />
             </div>
 
-            {/* ── Профиль ── */}
-            <div className="aray-sidebar text-white px-5 pb-4 pt-1 flex items-center gap-3 shrink-0">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-lg"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 16px hsl(var(--primary)/0.35)" }}>
+            {/* ── Профиль — glass card ── */}
+            <div className="mx-4 mb-3 px-4 py-3 flex items-center gap-3 shrink-0 rounded-2xl"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                backdropFilter: "blur(8px)",
+              }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-base"
+                style={{
+                  background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))",
+                  boxShadow: "0 4px 20px hsl(var(--primary)/0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+                }}>
                 {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-display font-bold text-base text-white leading-tight truncate">
+                <p className="font-display font-bold text-[15px] text-white leading-tight truncate">
                   {userName || (email ? email.split("@")[0] : "Пользователь")}
                 </p>
                 <p className="text-[11px] text-white/40 mt-0.5 truncate">{email}</p>
               </div>
               <Link href="/cabinet/profile" onClick={onClose}
-                className="w-11 h-11 rounded-xl hover:bg-white/10 flex items-center justify-center transition-colors active:scale-90 shrink-0"
-                title="Настройки профиля"
-                style={{ WebkitTapHighlightColor: "transparent" }}>
-                <Settings className="w-5 h-5 text-white/50" />
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  WebkitTapHighlightColor: "transparent",
+                }}>
+                <Settings className="w-4.5 h-4.5 text-white/50" />
               </Link>
             </div>
 
-            {/* ── Разделитель ── */}
-            <div className="mx-5 h-px bg-white/10 shrink-0" />
-
-            {/* ── Навигация (скролл) ── */}
-            <div className="aray-sidebar text-white flex-1 overflow-y-auto overscroll-contain">
-              <AdminNav role={role} onNavigate={onClose} />
+            {/* ── Quick Actions — glass grid ── */}
+            <div className="mx-4 mb-3 shrink-0">
+              <div className={`grid gap-2 ${quickActions.length > 4 ? "grid-cols-3" : quickActions.length > 3 ? "grid-cols-3" : "grid-cols-3"}`}>
+                {quickActions.map((qa) => {
+                  const isActive = qa.href === "/admin" || qa.href === "/cabinet"
+                    ? pathname === qa.href
+                    : pathname.startsWith(qa.href);
+                  return (
+                    <Link
+                      key={qa.href}
+                      href={qa.href}
+                      onClick={onClose}
+                      className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all active:scale-[0.94] select-none"
+                      style={{
+                        background: isActive
+                          ? "rgba(255,255,255,0.14)"
+                          : "rgba(255,255,255,0.06)",
+                        border: isActive
+                          ? "1px solid rgba(255,255,255,0.2)"
+                          : "1px solid rgba(255,255,255,0.07)",
+                        boxShadow: isActive
+                          ? `0 4px 16px ${qa.color}33, inset 0 1px 0 rgba(255,255,255,0.12)`
+                          : "inset 0 1px 0 rgba(255,255,255,0.06)",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, ${qa.color}30, ${qa.color}10)`,
+                          boxShadow: isActive ? `0 0 12px ${qa.color}40` : undefined,
+                        }}>
+                        <qa.icon className="w-5 h-5" style={{ color: qa.color }} />
+                      </div>
+                      <span className="text-[11px] font-semibold text-white/80 leading-none">{qa.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* ── Футер ── */}
-            <div className="aray-sidebar text-white shrink-0 border-t border-white/10 px-4 py-3 space-y-1.5">
-              <AdminPushPrompt />
-              <AdminPwaInstall />
-              <Link href="/"
-                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors active:scale-[0.97]"
-                onClick={onClose}
-                style={{ WebkitTapHighlightColor: "transparent" }}>
-                <LogOut className="w-4.5 h-4.5" />
-                На сайт
-              </Link>
+            {/* ── Навигация — glass секции с аккордеоном ── */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2"
+              style={{ WebkitOverflowScrolling: "touch" }}>
+              {groups.map((g) => {
+                const isOpen = !collapsed.has(g.key);
+                const hasActive = g.items.some(i => i.exact ? pathname === i.href : pathname.startsWith(i.href));
+
+                return (
+                  <div key={g.key} className="mb-2">
+                    {/* Section header — кликабельный */}
+                    {g.label && (
+                      <button
+                        onClick={() => toggleGroup(g.key)}
+                        className="w-full flex items-center gap-2 px-3 py-2 select-none group/sec"
+                        style={{ WebkitTapHighlightColor: "transparent" }}
+                      >
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${
+                          hasActive ? "text-white/60" : "text-white/30 group-hover/sec:text-white/45"
+                        }`}>
+                          {g.label}
+                        </span>
+                        <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.1), transparent)" }} />
+                        <ChevronDown
+                          className={`w-3 h-3 text-white/25 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                    )}
+
+                    {/* Items — wrapped in glass card */}
+                    <AnimatePresence initial={false}>
+                      {(isOpen || !g.label) && (
+                        <motion.div
+                          initial={g.label ? { height: 0, opacity: 0 } : false}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <div className="rounded-2xl overflow-hidden mb-1"
+                            style={{
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                            }}>
+                            {g.items.map((item, idx) => {
+                              const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+                              return (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  onClick={onClose}
+                                  className="flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] select-none"
+                                  style={{
+                                    background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
+                                    borderTop: idx > 0 ? "1px solid rgba(255,255,255,0.04)" : undefined,
+                                    WebkitTapHighlightColor: "transparent",
+                                  }}
+                                >
+                                  <item.icon
+                                    className="w-[18px] h-[18px] shrink-0 transition-colors"
+                                    style={{
+                                      color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)",
+                                    }}
+                                  />
+                                  <span className={`text-[13px] font-medium flex-1 transition-colors ${
+                                    isActive ? "text-white" : "text-white/65"
+                                  }`}>
+                                    {item.label}
+                                  </span>
+                                  {isActive && (
+                                    <div className="w-1.5 h-1.5 rounded-full shrink-0"
+                                      style={{ background: "hsl(var(--primary))", boxShadow: "0 0 6px hsl(var(--primary)/0.6)" }} />
+                                  )}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Safe area bottom */}
-            <div className="aray-sidebar shrink-0" style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
+            {/* ── Футер — glass strip ── */}
+            <div className="shrink-0 px-4 pt-2 pb-2"
+              style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+              <div className="flex gap-2">
+                <Link href="/"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl transition-all active:scale-[0.97]"
+                  onClick={onClose}
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    WebkitTapHighlightColor: "transparent",
+                  }}>
+                  <ExternalLink className="w-4 h-4 text-white/40" />
+                  <span className="text-[13px] font-medium text-white/55">На сайт</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Safe area */}
+            <div className="shrink-0" style={{ height: "env(safe-area-inset-bottom, 0px)", background: "transparent" }} />
           </motion.div>
         </>
       )}
