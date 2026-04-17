@@ -31,15 +31,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Максимальный размер 2MB" }, { status: 400 });
     }
 
-    const ext = file.type === "image/png" ? "png" : "jpg";
-    const filename = `avatar-${session.user.id.slice(0, 8)}-${randomUUID().slice(0, 6)}.${ext}`;
-
     const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
     await mkdir(uploadDir, { recursive: true });
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(path.join(uploadDir, filename), buffer);
+
+    // Optimize to WebP (256x256 avatar)
+    let filename: string;
+    try {
+      const sharp = (await import("sharp")).default;
+      const optimized = await sharp(buffer)
+        .resize(256, 256, { fit: "cover" })
+        .webp({ quality: 85 })
+        .toBuffer();
+      filename = `avatar-${session.user.id.slice(0, 8)}-${randomUUID().slice(0, 6)}.webp`;
+      await writeFile(path.join(uploadDir, filename), optimized);
+    } catch {
+      const ext = file.type === "image/png" ? "png" : "jpg";
+      filename = `avatar-${session.user.id.slice(0, 8)}-${randomUUID().slice(0, 6)}.${ext}`;
+      await writeFile(path.join(uploadDir, filename), buffer);
+    }
 
     const avatarUrl = `/api/uploads/avatars/${filename}`;
 

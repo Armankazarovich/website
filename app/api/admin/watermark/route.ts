@@ -262,19 +262,20 @@ async function applyWatermark(
       }).png().toBuffer();
     }
 
+    // Composite + convert to WebP for optimal size
     const resultBuffer = await mainImage
       .composite([{ input: watermarkBuf, gravity, blend: "over" }])
-      .png()
+      .webp({ quality: 85 })
       .toBuffer();
 
     // Save result — deterministic filename prevents duplicates:
-    // same source image → same wm-*.png, re-apply overwrites instead of creating a new file
+    // same source image → same wm-*.webp, re-apply overwrites instead of creating a new file
     const uploadsDir = join(process.cwd(), "public", "images", "products");
     if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true });
 
     const sourceHash = createHash("md5").update(imageUrl).digest("hex").slice(0, 10);
     const sourceBase = basename(imageUrl).replace(/\.[^.]+$/, "").replace(/^wm-[a-f0-9]+-/, "").slice(0, 30);
-    const filename = `wm-${sourceBase}-${sourceHash}.png`;
+    const filename = `wm-${sourceBase}-${sourceHash}.webp`;
     const outPath = join(uploadsDir, filename);
 
     // If source was itself a wm-* file (re-applying), delete the old orphan after writing new

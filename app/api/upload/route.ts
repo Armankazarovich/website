@@ -3,7 +3,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 
-// POST — upload image file, return URL
+// POST — upload image file, auto-optimize to WebP
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
@@ -30,20 +30,32 @@ export async function POST(req: NextRequest) {
     if (!ALLOWED_EXT.includes(ext)) {
       return NextResponse.json({ error: "Недопустимое расширение файла" }, { status: 400 });
     }
-    const filename = `review-${randomUUID().slice(0, 8)}.${ext}`;
 
-    // Save to public/uploads/reviews/ (persists on VPS across deploys)
     const uploadDir = path.join(process.cwd(), "public", "uploads", "reviews");
     await mkdir(uploadDir, { recursive: true });
 
-    // Write file
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(path.join(uploadDir, filename), buffer);
 
-    const url = `/api/uploads/reviews/${filename}`;
+    // Optimize to WebP via sharp (resize + compress)
+    try {
+      const sharp = (await import("sharp")).default;
+      const optimized = await sharp(buffer)
+        .resize(1200, 1200, { fit: "inside", withoutEnlargement: true })
+        .webp({ quality: 82 })
+        .toBuffer();
 
-    return NextResponse.json({ ok: true, url }, { status: 201 });
+      const filename = `review-${randomUUID().slice(0, 8)}.webp`;
+      await writeFile(path.join(uploadDir, filename), optimized);
+      const url = `/api/uploads/reviews/${filename}`;
+      return NextResponse.json({ ok: true, url }, { status: 201 });
+    } catch {
+      // Sharp unavailable — save original
+      const filename = `review-${randomUUID().slice(0, 8)}.${ext}`;
+      await writeFile(path.join(uploadDir, filename), buffer);
+      const url = `/api/uploads/reviews/${filename}`;
+      return NextResponse.json({ ok: true, url }, { status: 201 });
+    }
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ error: "Ошибка загрузки" }, { status: 500 });
