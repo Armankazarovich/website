@@ -366,15 +366,15 @@ function getQuickActions(role: string) {
 }
 
 function MobileMenuBottomSheet({
-  open, onClose, sidebarBg, userName, email, role, sheetDragStartY,
+  open, onClose, userName, email, role, sheetDragStartY, isDark,
 }: {
   open: boolean;
   onClose: () => void;
-  sidebarBg: string;
   userName?: string | null;
   email?: string | null;
   role: string;
   sheetDragStartY: React.MutableRefObject<number>;
+  isDark: boolean;
 }) {
   const pathname = usePathname();
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -413,11 +413,60 @@ function MobileMenuBottomSheet({
     });
   };
 
+  // ── Liquid Glass палитра: тёмная / светлая ──
+  const glass = isDark ? {
+    // Dark glass — тёмное стекло
+    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 6%, rgba(15,15,20,0.92) 20%)",
+    sheetBorder: "1px solid rgba(255,255,255,0.15)",
+    sheetSideBorder: "1px solid rgba(255,255,255,0.06)",
+    sheetShadow: "0 -1px 0 rgba(255,255,255,0.1), 0 -12px 50px rgba(0,0,0,0.6)",
+    handle: "bg-white/25",
+    cardBg: "rgba(255,255,255,0.06)",
+    cardBorder: "1px solid rgba(255,255,255,0.08)",
+    cardActiveBg: "rgba(255,255,255,0.12)",
+    cardActiveBorder: "1px solid rgba(255,255,255,0.18)",
+    sectionBg: "rgba(255,255,255,0.03)",
+    sectionBorder: "1px solid rgba(255,255,255,0.05)",
+    sectionItemBorder: "1px solid rgba(255,255,255,0.04)",
+    sectionItemActive: "rgba(255,255,255,0.07)",
+    divider: "rgba(255,255,255,0.06)",
+    textPrimary: "rgba(255,255,255,0.92)",
+    textSecondary: "rgba(255,255,255,0.60)",
+    textMuted: "rgba(255,255,255,0.35)",
+    textIcon: "rgba(255,255,255,0.38)",
+    textIconActive: "hsl(var(--primary))",
+    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.06)",
+    backdrop: "rgba(0,0,0,0.55)",
+  } : {
+    // Light glass — белое / молочное стекло
+    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.95) 6%, rgba(245,245,250,0.92) 20%)",
+    sheetBorder: "1px solid rgba(0,0,0,0.06)",
+    sheetSideBorder: "1px solid rgba(0,0,0,0.04)",
+    sheetShadow: "0 -1px 0 rgba(255,255,255,0.8), 0 -12px 50px rgba(0,0,0,0.15)",
+    handle: "bg-black/15",
+    cardBg: "rgba(0,0,0,0.03)",
+    cardBorder: "1px solid rgba(0,0,0,0.06)",
+    cardActiveBg: "rgba(0,0,0,0.06)",
+    cardActiveBorder: "1px solid rgba(0,0,0,0.1)",
+    sectionBg: "rgba(0,0,0,0.02)",
+    sectionBorder: "1px solid rgba(0,0,0,0.05)",
+    sectionItemBorder: "1px solid rgba(0,0,0,0.04)",
+    sectionItemActive: "rgba(0,0,0,0.04)",
+    divider: "rgba(0,0,0,0.06)",
+    textPrimary: "rgba(0,0,0,0.88)",
+    textSecondary: "rgba(0,0,0,0.55)",
+    textMuted: "rgba(0,0,0,0.32)",
+    textIcon: "rgba(0,0,0,0.30)",
+    textIconActive: "hsl(var(--primary))",
+    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.7)",
+    backdrop: "rgba(0,0,0,0.25)",
+  };
+
   return ReactDOM.createPortal(
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop — усиленный blur для глубины */}
+          {/* Backdrop */}
           <motion.div
             key="menu-backdrop"
             initial={{ opacity: 0 }}
@@ -427,7 +476,7 @@ function MobileMenuBottomSheet({
             className="lg:hidden fixed inset-0"
             style={{
               zIndex: 200,
-              background: "rgba(0,0,0,0.55)",
+              background: glass.backdrop,
               backdropFilter: "blur(12px) saturate(140%)",
               WebkitBackdropFilter: "blur(12px) saturate(140%)",
             }}
@@ -446,15 +495,13 @@ function MobileMenuBottomSheet({
               zIndex: 201,
               maxHeight: "90dvh",
               borderRadius: "32px 32px 0 0",
-              /* Liquid Glass — многослойная прозрачность */
-              background: `linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 8%, transparent 20%), ${sidebarBg}`,
+              background: glass.sheetBg,
               backdropFilter: "blur(40px) saturate(200%)",
               WebkitBackdropFilter: "blur(40px) saturate(200%)",
-              boxShadow: "0 -1px 0 rgba(255,255,255,0.15), 0 -12px 50px rgba(0,0,0,0.5)",
-              /* Тонкая "рефракция" бордером */
-              borderTop: "1px solid rgba(255,255,255,0.18)",
-              borderLeft: "1px solid rgba(255,255,255,0.08)",
-              borderRight: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: glass.sheetShadow,
+              borderTop: glass.sheetBorder,
+              borderLeft: glass.sheetSideBorder,
+              borderRight: glass.sheetSideBorder,
             }}
           >
             {/* ── Drag handle ── */}
@@ -466,15 +513,14 @@ function MobileMenuBottomSheet({
                 if (dy > 60) onClose();
               }}
             >
-              <div className="w-10 h-1 rounded-full bg-white/30" />
+              <div className={`w-10 h-1 rounded-full ${glass.handle}`} />
             </div>
 
             {/* ── Профиль — glass card ── */}
             <div className="mx-4 mb-3 px-4 py-3 flex items-center gap-3 shrink-0 rounded-2xl"
               style={{
-                background: "rgba(255,255,255,0.07)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                backdropFilter: "blur(8px)",
+                background: glass.cardBg,
+                border: glass.cardBorder,
               }}>
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-base"
                 style={{
@@ -484,25 +530,38 @@ function MobileMenuBottomSheet({
                 {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-display font-bold text-[15px] text-white leading-tight truncate">
+                <p className="font-display font-bold text-[15px] leading-tight truncate"
+                  style={{ color: glass.textPrimary }}>
                   {userName || (email ? email.split("@")[0] : "Пользователь")}
                 </p>
-                <p className="text-[11px] text-white/40 mt-0.5 truncate">{email}</p>
+                <p className="text-[11px] mt-0.5 truncate" style={{ color: glass.textMuted }}>{email}</p>
               </div>
+              {/* ARAY Control кнопка */}
+              <button
+                onClick={() => { onClose(); setTimeout(() => window.dispatchEvent(new Event("aray:open")), 200); }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
+                style={{
+                  background: glass.cardBg,
+                  border: glass.cardBorder,
+                  WebkitTapHighlightColor: "transparent",
+                }}
+                title="Арай — настройки интерфейса">
+                <Zap className="w-4.5 h-4.5" style={{ color: glass.textIcon }} />
+              </button>
               <Link href="/cabinet/profile" onClick={onClose}
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
                 style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: glass.cardBg,
+                  border: glass.cardBorder,
                   WebkitTapHighlightColor: "transparent",
                 }}>
-                <Settings className="w-4.5 h-4.5 text-white/50" />
+                <Settings className="w-4.5 h-4.5" style={{ color: glass.textIcon }} />
               </Link>
             </div>
 
             {/* ── Quick Actions — glass grid ── */}
             <div className="mx-4 mb-3 shrink-0">
-              <div className={`grid gap-2 ${quickActions.length > 4 ? "grid-cols-3" : quickActions.length > 3 ? "grid-cols-3" : "grid-cols-3"}`}>
+              <div className="grid grid-cols-3 gap-2">
                 {quickActions.map((qa) => {
                   const isActive = qa.href === "/admin" || qa.href === "/cabinet"
                     ? pathname === qa.href
@@ -514,26 +573,23 @@ function MobileMenuBottomSheet({
                       onClick={onClose}
                       className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all active:scale-[0.94] select-none"
                       style={{
-                        background: isActive
-                          ? "rgba(255,255,255,0.14)"
-                          : "rgba(255,255,255,0.06)",
-                        border: isActive
-                          ? "1px solid rgba(255,255,255,0.2)"
-                          : "1px solid rgba(255,255,255,0.07)",
+                        background: isActive ? glass.cardActiveBg : glass.cardBg,
+                        border: isActive ? glass.cardActiveBorder : glass.cardBorder,
                         boxShadow: isActive
-                          ? `0 4px 16px ${qa.color}33, inset 0 1px 0 rgba(255,255,255,0.12)`
-                          : "inset 0 1px 0 rgba(255,255,255,0.06)",
+                          ? `0 4px 16px ${qa.color}25, ${glass.insetHighlight}`
+                          : glass.insetHighlight,
                         WebkitTapHighlightColor: "transparent",
                       }}
                     >
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center"
                         style={{
-                          background: `linear-gradient(135deg, ${qa.color}30, ${qa.color}10)`,
-                          boxShadow: isActive ? `0 0 12px ${qa.color}40` : undefined,
+                          background: `linear-gradient(135deg, ${qa.color}25, ${qa.color}08)`,
+                          boxShadow: isActive ? `0 0 12px ${qa.color}30` : undefined,
                         }}>
                         <qa.icon className="w-5 h-5" style={{ color: qa.color }} />
                       </div>
-                      <span className="text-[11px] font-semibold text-white/80 leading-none">{qa.label}</span>
+                      <span className="text-[11px] font-semibold leading-none"
+                        style={{ color: glass.textSecondary }}>{qa.label}</span>
                     </Link>
                   );
                 })}
@@ -549,26 +605,26 @@ function MobileMenuBottomSheet({
 
                 return (
                   <div key={g.key} className="mb-2">
-                    {/* Section header — кликабельный */}
+                    {/* Section header */}
                     {g.label && (
                       <button
                         onClick={() => toggleGroup(g.key)}
                         className="w-full flex items-center gap-2 px-3 py-2 select-none group/sec"
                         style={{ WebkitTapHighlightColor: "transparent" }}
                       >
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${
-                          hasActive ? "text-white/60" : "text-white/30 group-hover/sec:text-white/45"
-                        }`}>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.16em] transition-colors"
+                          style={{ color: hasActive ? glass.textSecondary : glass.textMuted }}>
                           {g.label}
                         </span>
-                        <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.1), transparent)" }} />
+                        <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${glass.divider}, transparent)` }} />
                         <ChevronDown
-                          className={`w-3 h-3 text-white/25 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                          className={`w-3 h-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                          style={{ color: glass.textMuted }}
                         />
                       </button>
                     )}
 
-                    {/* Items — wrapped in glass card */}
+                    {/* Items — glass card */}
                     <AnimatePresence initial={false}>
                       {(isOpen || !g.label) && (
                         <motion.div
@@ -580,8 +636,8 @@ function MobileMenuBottomSheet({
                         >
                           <div className="rounded-2xl overflow-hidden mb-1"
                             style={{
-                              background: "rgba(255,255,255,0.04)",
-                              border: "1px solid rgba(255,255,255,0.06)",
+                              background: glass.sectionBg,
+                              border: glass.sectionBorder,
                             }}>
                             {g.items.map((item, idx) => {
                               const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
@@ -592,20 +648,17 @@ function MobileMenuBottomSheet({
                                   onClick={onClose}
                                   className="flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] select-none"
                                   style={{
-                                    background: isActive ? "rgba(255,255,255,0.08)" : "transparent",
-                                    borderTop: idx > 0 ? "1px solid rgba(255,255,255,0.04)" : undefined,
+                                    background: isActive ? glass.sectionItemActive : "transparent",
+                                    borderTop: idx > 0 ? glass.sectionItemBorder : undefined,
                                     WebkitTapHighlightColor: "transparent",
                                   }}
                                 >
                                   <item.icon
                                     className="w-[18px] h-[18px] shrink-0 transition-colors"
-                                    style={{
-                                      color: isActive ? "hsl(var(--primary))" : "rgba(255,255,255,0.4)",
-                                    }}
+                                    style={{ color: isActive ? glass.textIconActive : glass.textIcon }}
                                   />
-                                  <span className={`text-[13px] font-medium flex-1 transition-colors ${
-                                    isActive ? "text-white" : "text-white/65"
-                                  }`}>
+                                  <span className="text-[13px] font-medium flex-1 transition-colors"
+                                    style={{ color: isActive ? glass.textPrimary : glass.textSecondary }}>
                                     {item.label}
                                   </span>
                                   {isActive && (
@@ -624,26 +677,24 @@ function MobileMenuBottomSheet({
               })}
             </div>
 
-            {/* ── Футер — glass strip ── */}
+            {/* ── Футер ── */}
             <div className="shrink-0 px-4 pt-2 pb-2"
-              style={{ borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-              <div className="flex gap-2">
-                <Link href="/"
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl transition-all active:scale-[0.97]"
-                  onClick={onClose}
-                  style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    WebkitTapHighlightColor: "transparent",
-                  }}>
-                  <ExternalLink className="w-4 h-4 text-white/40" />
-                  <span className="text-[13px] font-medium text-white/55">На сайт</span>
-                </Link>
-              </div>
+              style={{ borderTop: `1px solid ${glass.divider}` }}>
+              <Link href="/"
+                className="flex items-center justify-center gap-2 py-3 rounded-2xl transition-all active:scale-[0.97]"
+                onClick={onClose}
+                style={{
+                  background: glass.cardBg,
+                  border: glass.cardBorder,
+                  WebkitTapHighlightColor: "transparent",
+                }}>
+                <ExternalLink className="w-4 h-4" style={{ color: glass.textMuted }} />
+                <span className="text-[13px] font-medium" style={{ color: glass.textSecondary }}>На сайт</span>
+              </Link>
             </div>
 
             {/* Safe area */}
-            <div className="shrink-0" style={{ height: "env(safe-area-inset-bottom, 0px)", background: "transparent" }} />
+            <div className="shrink-0" style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
           </motion.div>
         </>
       )}
@@ -808,11 +859,11 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       <MobileMenuBottomSheet
         open={open}
         onClose={() => setOpen(false)}
-        sidebarBg={sidebarBg}
         userName={userName}
         email={email}
         role={role}
         sheetDragStartY={sheetDragStartY}
+        isDark={safeTheme === "dark"}
       />
 
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
