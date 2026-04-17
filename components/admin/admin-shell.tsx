@@ -366,7 +366,7 @@ function getQuickActions(role: string) {
 }
 
 function MobileMenuBottomSheet({
-  open, onClose, userName, email, role, sheetDragStartY, isDark,
+  open, onClose, userName, email, role, avatarUrl, sheetDragStartY, isDark,
   palette, setPalette, theme: currentTheme, setTheme,
 }: {
   open: boolean;
@@ -374,6 +374,7 @@ function MobileMenuBottomSheet({
   userName?: string | null;
   email?: string | null;
   role: string;
+  avatarUrl?: string | null;
   sheetDragStartY: React.MutableRefObject<number>;
   isDark: boolean;
   palette: string;
@@ -581,13 +582,17 @@ function MobileMenuBottomSheet({
                 background: glass.cardBg,
                 border: glass.cardBorder,
               }}>
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-base"
-                style={{
-                  background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))",
-                  boxShadow: "0 4px 20px hsl(var(--primary)/0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-                }}>
-                {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-11 h-11 rounded-2xl shrink-0 object-cover" />
+              ) : (
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-base"
+                  style={{
+                    background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))",
+                    boxShadow: "0 4px 20px hsl(var(--primary)/0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+                  }}>
+                  {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
+                </div>
+              )}
               <div className="flex-1 min-w-0">
                 <p className="font-display font-bold text-[15px] leading-tight truncate"
                   style={{ color: glass.textPrimary }}>
@@ -919,6 +924,14 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   // Drag handle ref for bottom sheet swipe-to-close
   const sheetDragStartY = useRef(0);
 
+  // ── Аватар пользователя — загружаем один раз ──
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/cabinet/profile").then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.avatarUrl) setAvatarUrl(d.avatarUrl); })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode bg-background" : "aray-admin-bg aray-nature-mode"}`}
       style={classic ? undefined : { backgroundColor: "rgb(6, 8, 18)" }}>
@@ -933,10 +946,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         style={{ background: sidebarBg }}>
         <div className="px-4 py-4 border-b border-white/10 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
-              {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
-            </div>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="w-10 h-10 rounded-xl shrink-0 object-cover"
+                onError={() => setAvatarUrl(null)} />
+            ) : (
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 12px hsl(var(--primary)/0.35)" }}>
+                {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="font-display font-bold text-sm text-white leading-none truncate">
                 {userName || (email ? email.split("@")[0] : "Пользователь")}
@@ -977,6 +995,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         userName={userName}
         email={email}
         role={role}
+        avatarUrl={avatarUrl}
         sheetDragStartY={sheetDragStartY}
         isDark={safeTheme === "dark"}
         palette={palette}
