@@ -698,6 +698,62 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 17.04.2026 (сессия 7, ночь) — Живой Арай (WebGL/Three.js) 🔥
+
+**Видение Армана реализовано:** Арай больше не иконка в dock, а **живое парящее существо** из вибрирующих нитей энергии. Three.js WebGL, не SVG. Полупрозрачное, дышащее, реагирующее на состояние.
+
+**Новые файлы:**
+- `components/shared/aray-creature.tsx` — **сам организм** (295 строк)
+  - Three.js r184 сфера из 18 меридианов × 12 параллелей × 48 сегментов = ~1500 точек
+  - LineBasicMaterial + AdditiveBlending → мягкое свечение
+  - Inner core sphere (radius 0.3) + outer aura (radius 1.25, BackSide) — многослойное свечение
+  - Perlin-like noise на positions (smoothNoise) → плавная вибрация каждый кадр
+  - Breathing scale oscillation 0.92-1.08 с разной частотой по состоянию
+  - 4 состояния: idle / listening / thinking / speaking (разные vibrateAmp, breatheFreq, radialPull, opacity)
+  - Цвет синхронизирован с `--brand-primary` CSS var (HSL parse → hex), обновляется каждые 800мс
+  - Visibility API: пауза рендера когда tab скрыт (battery)
+  - Mobile detection: меньшая плотность нитей на мобилке (14 меридианов × 9 параллелей × 32 сегмента)
+  - Full cleanup на unmount (dispose всех geometries/materials, remove canvas)
+  - Graceful fallback: CSS glow круг если WebGL не поддерживается
+
+- `components/shared/aray-floating.tsx` — **floating wrapper** (285 строк)
+  - `position: fixed`, привязка к правому краю (EDGE_MARGIN=12px)
+  - Draggable только по Y (вертикально), pointer events + clampY
+  - Y-позиция сохраняется в localStorage (`aray-floating-y`)
+  - **Short tap** (<350мс без движения) → открыть `ArayChatPanel`
+  - **Long press** (≥500мс) → показать `PalettePopup` (inline, с glass-эффектом, кнопки палитр сгруппированы по PALETTE_GROUPS)
+  - **Drag threshold** 8px — отличает tap от drag, cancel long-press если движение
+  - Haptic feedback (vibrate) на tap/long-press/palette-select
+  - State propagation: при press → creature "thinking", при chat open → "speaking", при palette → "listening"
+  - Portal в document.body → всегда поверх, z-index 80
+  - clampY учитывает mobile bottom-nav (90px guard) — не залазит на dock
+  - Accessibility: role=button, tabIndex, Enter/Space, Shift+Enter → palette
+
+**Изменения в интеграции:**
+- `app/(store)/layout.tsx`: `<ArayWidget>` заменён на `<ArayFloating>` (lazy-load через dynamic, ssr: false)
+- `components/store/mobile-bottom-nav.tsx`: убран центральный Арай-таб (dock теперь 4 чистых таба: Каталог | Поиск | Корзина | Профиль), удалены openAray/onArayPointerDown/onArayPointerUp/arayPulse/setArayPulse
+- `components/admin/admin-mobile-bottom-nav.tsx`: убран центральный слот с ArayOrb, props onArayOpen/arayListening/arayHasNew помечены @deprecated (совместимость)
+
+**Зависимости:**
+- `three@0.184.0` — dependencies (runtime бандл)
+- `@types/three@0.184.0` — devDependencies
+
+**⚠️ Важный урок про `NODE_ENV`:**
+- В Desktop Commander `NODE_ENV=production` по умолчанию → `npm install` **выбрасывает devDependencies** (typescript, prisma исчезли, сломали весь build chain)
+- Решение: при установке новых пакетов передавать `env: { ...process.env, NODE_ENV: 'development' }` + `--include=dev`
+- Скрипт `D:\pilorus\__fix-dev.js` лежит на случай повторения
+
+**Деплой:** commit `b89fbd9 feat: living Aray — WebGL creature from threads, floating right edge, replaces dock orb`, push OK, 7 файлов, +794/-66 строк.
+
+**Что осталось для полного завершения видения:**
+- [ ] Добавить ArayFloating в admin layout (сейчас только store) — AdminShell сложный, отдельная итерация
+- [ ] Добавить в cabinet layout
+- [ ] Интеграция состояний с AI: chat.pending → creature.thinking, chat.streaming → creature.speaking
+- [ ] Voice input (Web Speech API) → state=listening
+- [ ] Hide ArayFloating на страницах checkout/auth (когда идёт платёж)
+- [ ] Protect from overlap с другими floating: contact-widget, cart-drawer
+- [ ] Удалить старый компонент `components/store/aray-widget.tsx` (1400+ строк) после проверки что новый работает
+
 ### Сессия 17.04.2026 (сессия 6, вечер) — Восстановление повреждённой локальной папки + WebP коммит + 5 TS fixes
 
 **Статус проверки "всё ли четко":**
