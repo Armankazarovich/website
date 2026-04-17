@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 17.04.2026 (сессия 11)
+> Последнее обновление: 17.04.2026
 
 ---
 
@@ -697,31 +697,6 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
-
-### Сессия 17.04.2026 (сессия 11) — Мелкие баги: тёмный drawer + scrollbar-gutter + модалки
-
-**Аудит прод** через Claude in Chrome: 14/14 страниц HTTP 200, health check зелёный, визуальный обход главной/каталога/товара/контактов/доставки/login — всё отлично.
-
-**Баг 1 — Мобильный drawer в светлой теме (коммит `bdbf51b`):**
-- `admin-shell.tsx` MobileMenuBottomSheet — удалён условный light glass вариант, drawer ВСЕГДА тёмный (стандарт индустрии: VS Code, Figma, Notion). Параметр isDark сохранён но игнорируется.
-- `header.tsx` store mobile drawer — добавлен `className="dark"` на `<motion.div>` drawer. Tailwind dark: варианты (`bg-background/95`, `text-foreground`) применяются forced → drawer тёмный независимо от темы сайта.
-
-**Баг 2 — Сдвиг layout при открытии drawer (коммит `bdbf51b`):**
-- `globals.css` добавлено `html { scrollbar-gutter: stable; }` — резервирует место под scrollbar всегда. При `body.style.overflow = "hidden"` (блок скролла при открытом drawer) scrollbar пропадает, но контент НЕ расширяется → нет сдвига.
-
-**Баг 3 — Текст модалок админки чёрный на тёмном в светлой теме (коммит `71802c8`):**
-- Проблема: модалки в workflows/media/services/posts имеют ЖЁСТКО тёмный фон `rgba(12,12,14,0.82)`, но текст использовал `color: isClassic ? undefined : "rgba(255,255,255,X)"`. В светлой теме classic color сбрасывался на чёрный через CSS fallback → чёрный текст на тёмном фоне = НЕ ЧИТАЛСЯ.
-- Фикс: убрано условие, color всегда `rgba(255,255,255,X)` (соответствует тёмному фону). 12 правок в 4 файлах через replace_all.
-
-**Файлы изменены (7 файлов, 2 коммита):**
-- Коммит `bdbf51b`: `components/admin/admin-shell.tsx`, `components/layout/header.tsx`, `app/globals.css`
-- Коммит `71802c8`: `app/admin/workflows/page.tsx`, `app/admin/media/media-client.tsx`, `app/admin/services/page.tsx`, `app/admin/posts/page.tsx`
-
-**Верификация:** Проверено в Chrome на проде — drawer остаётся тёмным в светлой теме ✅, сдвига при закрытии drawer нет ✅.
-
-**Урок сессии:** я в worktree (`.claude/worktrees/admiring-clarke-f794e8`) — sync-скрипт должен копировать из worktree path, НЕ из `D:\ПилоРус\website`. Иначе git в Latin репе говорит "nothing to commit" потому что файлы Cyrillic main и так синхронны между собой, но с worktree — нет.
-
----
 
 ### Сессия 17.04.2026 (сессия 10) — Моб меню 2.0 ПОШАГОВО (5 коммитов, 0 ошибок)
 
@@ -1693,8 +1668,7 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 
 **Из предыдущих сессий:**
 - [ ] **avatarUrl**: поле есть в Prisma schema локально но может не быть на production БД. Используем инициалы пока не синхронизировано.
-- [x] ~~**Мобильный drawer светлая тема**: сайдбар белый, текст не виден — drawer ВСЕГДА должен быть тёмным~~ — ЗАКРЫТО сессия 11 (class="dark" на store drawer, убран light glass в admin drawer)
-- [x] ~~**Сдвиг layout при закрытии drawer**~~ — ЗАКРЫТО сессия 11 (scrollbar-gutter: stable на html в globals.css)
+- [ ] **Мобильный drawer светлая тема**: сайдбар белый, текст не виден — drawer ВСЕГДА должен быть тёмным
 - [ ] **БОЛЬШАЯ ЗАДАЧА — Мобильная навигация 2.0 (видение Армана)**:
   - Убрать bottom nav, меню справа, ARAY Control липкий, единый правый drawer
 
