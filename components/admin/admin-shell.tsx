@@ -248,7 +248,7 @@ function AdminNotificationBell({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
-import { AdminLangPicker, AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
+// Language picker moved to /cabinet/profile
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { useTheme } from "next-themes";
 import { AdminNav } from "@/components/admin/admin-nav";
@@ -1049,14 +1049,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Язык — быстрый переключатель оставляем */}
-            <div className="glass-card rounded-2xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3 text-white/40">
-                Язык / Language
-              </p>
-              <AdminLangPickerInline />
             </div>
 
             {/* На сайт */}

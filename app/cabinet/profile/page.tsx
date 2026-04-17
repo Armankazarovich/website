@@ -425,7 +425,14 @@ export default function ProfilePage() {
         </Button>
       </form>
 
-      {/* Оформление УБРАНО — всё управляется через ARAY Control справа */}
+      {/* Язык интерфейса */}
+      <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+        <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+          <Globe className="w-5 h-5 text-primary" />
+          Язык интерфейса
+        </h2>
+        <AdminLangPickerInline />
+      </div>
     </div>
   );
 }
