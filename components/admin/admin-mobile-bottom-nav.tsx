@@ -4,48 +4,42 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, ShoppingBag, Package, User, Bell,
+  LayoutDashboard, ShoppingBag, Package, MoreHorizontal, Bell,
   Truck, CheckSquare, Warehouse, Wallet, Target, UserCircle,
-  Star, UserPlus, ArrowRight, X, ShoppingCart,
+  Star, UserPlus, ArrowRight, X,
 } from "lucide-react";
+import { ArayOrb } from "@/components/shared/aray-orb";
 import { playOrderChime } from "@/components/admin/admin-shell";
 
-// ── Нижние табы по роли: 3 быстрых таба (+ 4-й = Аккаунт, открывает drawer) ────
+// ── Нижние табы по роли: 2 слева от Арая ─────────────────────────────────────
 const ROLE_TABS: Record<string, { href: string; label: string; icon: React.ElementType; exact?: boolean }[]> = {
   owner: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
-    { href: "/admin/tasks",    label: "Задачи",  icon: CheckSquare },
-    { href: "/admin/finance",  label: "Финансы", icon: Wallet },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
+    { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
   ],
   manager: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
-    { href: "/admin/tasks",    label: "Задачи",  icon: CheckSquare },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
   ],
   courier: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
-    { href: "/admin/delivery", label: "Доставка",icon: Truck },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
   ],
   warehouse: [
-    { href: "/admin",           label: "Дашборд", icon: LayoutDashboard, exact: true },
-    { href: "/admin/inventory", label: "Склад",   icon: Warehouse },
+    { href: "/admin",           label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/products",  label: "Товары",  icon: Package },
   ],
   accountant: [
-    { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, exact: true },
-    { href: "/admin/finance",  label: "Финансы",  icon: Wallet },
+    { href: "/admin",          label: "Главная",  icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",   icon: ShoppingBag },
   ],
   seller: [
-    { href: "/admin",          label: "Дашборд", icon: LayoutDashboard, exact: true },
-    { href: "/admin/crm",      label: "CRM",     icon: UserCircle },
+    { href: "/admin",          label: "Главная", icon: LayoutDashboard, exact: true },
     { href: "/admin/orders",   label: "Заказы",  icon: ShoppingBag },
   ],
   user: [
     { href: "/cabinet",  label: "Главная",  icon: LayoutDashboard, exact: true },
     { href: "/catalog",  label: "Каталог",  icon: Package },
-    { href: "/cart",     label: "Корзина",  icon: ShoppingCart },
   ],
 };
 
@@ -279,12 +273,23 @@ export function AdminMobileBottomNav({
             boxShadow: "var(--admin-popup-shadow)",
           }}
         >
-          {/* ── Табы по роли (3 tabs) ── */}
+          {/* ── Левые табы ── */}
           {tabs.map((tab, i) => (
             <DockTab key={i} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />
           ))}
 
-          {/* Арай живёт отдельно — плавающей кнопкой справа (AdminArayFloating), не в dock */}
+          {/* ── Центральный слот — Арай ── */}
+          <div className="relative flex flex-col items-center justify-center" style={{ width: 72, minWidth: 72 }}>
+            <button
+              onClick={onArayOpen}
+              className="absolute flex flex-col items-center justify-center focus:outline-none transition-transform duration-150 active:scale-[0.88]"
+              style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
+            >
+              <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
+              <span className="text-[10px] font-semibold mt-0.5 tracking-wide"
+                style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
+            </button>
+          </div>
 
           {/* ── Колокольчик (staff only) ── */}
           {!isClient && (
@@ -320,15 +325,14 @@ export function AdminMobileBottomNav({
             </button>
           )}
 
-          {/* Кнопка Аккаунт → открывает drawer (меню + профиль) */}
+          {/* Кнопка Меню → открывает bottom sheet */}
           <button
             onClick={onMenuOpen}
             className="flex-1 focus:outline-none"
             style={{ WebkitTapHighlightColor: "transparent" }}
-            aria-label="Аккаунт и меню"
           >
             <div className="flex flex-col items-center justify-center py-3 px-1.5 min-w-0 relative transition-all duration-300 active:scale-90 select-none">
-              <User
+              <MoreHorizontal
                 className="transition-all duration-300"
                 style={{
                   width: menuOpen ? 22 : 20,
@@ -338,7 +342,7 @@ export function AdminMobileBottomNav({
               />
               <span className="text-[10px] font-semibold leading-none mt-1.5 transition-all duration-300"
                 style={{ color: menuOpen ? "hsl(var(--primary))" : "var(--admin-dock-text)" }}>
-                Аккаунт
+                Ещё
               </span>
               {menuOpen && (
                 <span className="absolute -bottom-0.5 w-4 h-1 rounded-full" style={{ background: "hsl(var(--primary))", opacity: 0.7 }} />

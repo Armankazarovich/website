@@ -5,7 +5,6 @@ import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 // Sheet removed — all panels use portals now
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
-import { AdminArayFloating } from "@/components/admin/admin-aray-floating";
 import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdminPageHelp, LazyAdminTour } from "@/components/admin/lazy-components";
 import Link from "next/link";
@@ -17,7 +16,7 @@ import {
   Package, Truck, Warehouse, CheckSquare, BarChart2, Wallet,
   UserCircle, Tag, FileDown, Images, BookOpen, Wrench,
   Megaphone, TrendingUp, Mail, Globe, Stamp, Users,
-  HeartPulse, HelpCircle, ExternalLink, Search, Clock,
+  HeartPulse, HelpCircle, ExternalLink,
 } from "lucide-react";
 
 // ── Ключи localStorage ────────────────────────────────────────────────────────
@@ -386,17 +385,8 @@ function MobileMenuBottomSheet({
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings", "help"]));
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [recent, setRecent] = useState<string[]>([]);
-  const [badges, setBadges] = useState<Record<string, number>>({});
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setPortalTarget(document.body); }, []);
-
-  // Reset search at open
-  useEffect(() => {
-    if (!open) setSearch("");
-  }, [open]);
 
   // Auto-expand group that has active page
   useEffect(() => {
@@ -407,52 +397,6 @@ function MobileMenuBottomSheet({
       setCollapsed(prev => { const s = new Set(prev); s.delete(active.group); return s; });
     }
   }, [open, pathname, role]);
-
-  // Load "recent" from localStorage on open
-  useEffect(() => {
-    if (!open) return;
-    try {
-      const raw = localStorage.getItem("admin-recent-sections");
-      const parsed = raw ? JSON.parse(raw) : [];
-      setRecent(Array.isArray(parsed) ? parsed.slice(0, 4) : []);
-    } catch { setRecent([]); }
-  }, [open]);
-
-  // Track current pathname into "recent"
-  useEffect(() => {
-    if (!pathname) return;
-    try {
-      const raw = localStorage.getItem("admin-recent-sections");
-      const list: string[] = Array.isArray(raw ? JSON.parse(raw) : []) ? JSON.parse(raw || "[]") : [];
-      // Only track top-level /admin/* pages (not deep sub-pages)
-      const m = pathname.match(/^\/(admin|cabinet)(\/[^/]+)?/);
-      const base = m ? (m[2] ? `/${m[1]}${m[2]}` : `/${m[1]}`) : pathname;
-      if (!base.startsWith("/admin") && !base.startsWith("/cabinet")) return;
-      const next = [base, ...list.filter((x) => x !== base)].slice(0, 6);
-      localStorage.setItem("admin-recent-sections", JSON.stringify(next));
-    } catch {}
-  }, [pathname]);
-
-  // Poll badges (new orders, pending staff, pending reviews)
-  useEffect(() => {
-    if (role === "USER") return;
-    let mounted = true;
-    const fetchBadges = async () => {
-      try {
-        const res = await fetch("/api/admin/notifications/count");
-        if (!res.ok || !mounted) return;
-        const d = await res.json();
-        setBadges({
-          "/admin/orders": d.newOrders ?? 0,
-          "/admin/staff": d.pendingStaff ?? 0,
-          "/admin/reviews": d.pendingReviews ?? 0,
-        });
-      } catch {}
-    };
-    fetchBadges();
-    const t = setInterval(fetchBadges, 60000);
-    return () => { mounted = false; clearInterval(t); };
-  }, [role]);
 
   if (!portalTarget) return null;
 
@@ -474,22 +418,6 @@ function MobileMenuBottomSheet({
       return s;
     });
   };
-
-  // Search-filtered flat list
-  const q = search.trim().toLowerCase();
-  const searching = q.length > 0;
-  const filteredItems = searching
-    ? visibleItems.filter(i => i.label.toLowerCase().includes(q))
-    : visibleItems;
-
-  // Recent items — resolve localStorage hrefs to visible items
-  const recentItems = recent
-    .map(href => visibleItems.find(i => i.href === href))
-    .filter((x): x is MobileNavItem => !!x && (x.exact ? pathname !== x.href : !pathname.startsWith(x.href))) // hide current page
-    .slice(0, 4);
-
-  // Badge getter
-  const getBadge = (href: string) => badges[href] ?? 0;
 
   // ── Liquid Glass палитра: тёмная / светлая ──
   // Ключевое: ПРОЗРАЧНОСТЬ + размытие = жидкое стекло
@@ -654,8 +582,24 @@ function MobileMenuBottomSheet({
                       border: glass.cardBorder,
                       backdropFilter: "blur(8px)",
                     }}>
-                    {/* Палитра убрана — она доступна в ARAY Control (липкая справа).
-                        Дубликат вносил путаницу, пока с Араем решаем — оставим только Тема + Шрифт. */}
+                    {/* Палитры */}
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
+                        style={{ color: glass.textMuted }}>Палитра</p>
+                      <div className="flex flex-wrap gap-2">
+                        {PALETTES.map((p) => (
+                          <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
+                            className="w-8 h-8 rounded-full shrink-0 transition-all active:scale-90"
+                            style={{
+                              background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                              opacity: palette === p.id ? 1 : 0.45,
+                              transform: palette === p.id ? "scale(1.15)" : undefined,
+                              boxShadow: palette === p.id ? `0 0 0 2px ${isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)"}` : undefined,
+                              WebkitTapHighlightColor: "transparent",
+                            }} />
+                        ))}
+                      </div>
+                    </div>
 
                     {/* Тема */}
                     <div>
@@ -719,233 +663,123 @@ function MobileMenuBottomSheet({
               )}
             </AnimatePresence>
 
-            {/* ── Поиск по разделам ── */}
+            {/* ── Quick Actions — glass grid ── */}
             <div className="mx-4 mb-3 shrink-0">
-              <div className="flex items-center gap-2 px-3.5 h-11 rounded-2xl"
-                style={{ background: glass.cardBg, border: glass.cardBorder }}>
-                <Search className="w-4 h-4 shrink-0" style={{ color: glass.textIcon }} />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Найти раздел…"
-                  aria-label="Поиск раздела"
-                  className="flex-1 bg-transparent border-0 outline-none text-[13px] min-w-0"
-                  style={{ color: glass.textPrimary }}
-                />
-                {search && (
-                  <button onClick={() => setSearch("")} aria-label="Очистить"
-                    className="w-6 h-6 flex items-center justify-center rounded-full active:scale-90 transition-transform"
-                    style={{ WebkitTapHighlightColor: "transparent" }}>
-                    <X className="w-3.5 h-3.5" style={{ color: glass.textMuted }} />
-                  </button>
-                )}
+              <div className="grid grid-cols-3 gap-2">
+                {quickActions.map((qa) => {
+                  const isActive = qa.href === "/admin" || qa.href === "/cabinet"
+                    ? pathname === qa.href
+                    : pathname.startsWith(qa.href);
+                  return (
+                    <Link
+                      key={qa.href}
+                      href={qa.href}
+                      onClick={onClose}
+                      className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all active:scale-[0.94] select-none"
+                      style={{
+                        background: isActive ? glass.cardActiveBg : glass.cardBg,
+                        border: isActive ? glass.cardActiveBorder : glass.cardBorder,
+                        boxShadow: isActive
+                          ? `0 4px 16px ${qa.color}25, ${glass.insetHighlight}`
+                          : glass.insetHighlight,
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                        style={{
+                          background: `linear-gradient(135deg, ${qa.color}25, ${qa.color}08)`,
+                          boxShadow: isActive ? `0 0 12px ${qa.color}30` : undefined,
+                        }}>
+                        <qa.icon className="w-5 h-5" style={{ color: qa.color }} />
+                      </div>
+                      <span className="text-[11px] font-semibold leading-none"
+                        style={{ color: glass.textSecondary }}>{qa.label}</span>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
-            {searching ? (
-              /* ── Результаты поиска — плоский список ── */
-              <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2"
-                style={{ WebkitOverflowScrolling: "touch" }}>
-                <div className="rounded-2xl overflow-hidden"
-                  style={{ background: glass.sectionBg, border: glass.sectionBorder }}>
-                  {filteredItems.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-[12px]" style={{ color: glass.textMuted }}>
-                      Ничего не найдено по «{search}»
-                    </div>
-                  ) : filteredItems.map((item, idx) => {
-                    const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-                    const count = getBadge(item.href);
-                    return (
-                      <Link key={item.href} href={item.href} onClick={onClose}
-                        className="flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] select-none"
-                        style={{
-                          background: isActive ? glass.sectionItemActive : "transparent",
-                          borderTop: idx > 0 ? glass.sectionItemBorder : undefined,
-                          WebkitTapHighlightColor: "transparent",
-                        }}>
-                        <item.icon className="w-[18px] h-[18px] shrink-0 transition-colors"
-                          style={{ color: isActive ? glass.textIconActive : glass.textIcon }} />
-                        <span className="text-[13px] font-medium flex-1 transition-colors"
-                          style={{ color: isActive ? glass.textPrimary : glass.textSecondary }}>
-                          {item.label}
+            {/* ── Навигация — glass секции с аккордеоном ── */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2"
+              style={{ WebkitOverflowScrolling: "touch" }}>
+              {groups.map((g) => {
+                const isOpen = !collapsed.has(g.key);
+                const hasActive = g.items.some(i => i.exact ? pathname === i.href : pathname.startsWith(i.href));
+
+                return (
+                  <div key={g.key} className="mb-2">
+                    {/* Section header */}
+                    {g.label && (
+                      <button
+                        onClick={() => toggleGroup(g.key)}
+                        className="w-full flex items-center gap-2 px-3 py-2 select-none group/sec"
+                        style={{ WebkitTapHighlightColor: "transparent" }}
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-[0.16em] transition-colors"
+                          style={{ color: hasActive ? glass.textSecondary : glass.textMuted }}>
+                          {g.label}
                         </span>
-                        {count > 0 && (
-                          <span className="px-1.5 rounded-full text-[10px] font-bold text-white min-w-[18px] h-[18px] flex items-center justify-center shrink-0"
-                            style={{ background: "hsl(var(--destructive))" }}>{count > 9 ? "9+" : count}</span>
-                        )}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* ── Недавние ── */}
-                {recentItems.length > 0 && (
-                  <div className="mx-4 mb-3 shrink-0">
-                    <div className="flex items-center gap-2 px-1 mb-2">
-                      <Clock className="w-3 h-3" style={{ color: glass.textMuted }} />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.16em]"
-                        style={{ color: glass.textMuted }}>Недавние</span>
-                    </div>
-                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4"
-                      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                      {recentItems.map(item => {
-                        const count = getBadge(item.href);
-                        return (
-                          <Link key={item.href} href={item.href} onClick={onClose}
-                            className="flex items-center gap-2 px-3 h-9 rounded-xl shrink-0 transition-all active:scale-[0.96]"
-                            style={{
-                              background: glass.cardBg,
-                              border: glass.cardBorder,
-                              WebkitTapHighlightColor: "transparent",
-                            }}>
-                            <item.icon className="w-3.5 h-3.5 shrink-0" style={{ color: glass.textIcon }} />
-                            <span className="text-[12px] font-medium whitespace-nowrap" style={{ color: glass.textSecondary }}>{item.label}</span>
-                            {count > 0 && (
-                              <span className="px-1.5 rounded-full text-[9px] font-bold text-white min-w-[16px] h-4 flex items-center justify-center"
-                                style={{ background: "hsl(var(--destructive))" }}>{count > 9 ? "9+" : count}</span>
-                            )}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                        <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${glass.divider}, transparent)` }} />
+                        <ChevronDown
+                          className={`w-3 h-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                          style={{ color: glass.textMuted }}
+                        />
+                      </button>
+                    )}
 
-                {/* ── Quick Actions — glass grid ── */}
-                <div className="mx-4 mb-3 shrink-0">
-                  <div className="grid grid-cols-3 gap-2">
-                    {quickActions.map((qa) => {
-                      const isActive = qa.href === "/admin" || qa.href === "/cabinet"
-                        ? pathname === qa.href
-                        : pathname.startsWith(qa.href);
-                      const count = getBadge(qa.href);
-                      return (
-                        <Link
-                          key={qa.href}
-                          href={qa.href}
-                          onClick={onClose}
-                          className="relative flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all active:scale-[0.94] select-none"
-                          style={{
-                            background: isActive ? glass.cardActiveBg : glass.cardBg,
-                            border: isActive ? glass.cardActiveBorder : glass.cardBorder,
-                            boxShadow: isActive
-                              ? `0 4px 16px ${qa.color}25, ${glass.insetHighlight}`
-                              : glass.insetHighlight,
-                            WebkitTapHighlightColor: "transparent",
-                          }}
+                    {/* Items — glass card */}
+                    <AnimatePresence initial={false}>
+                      {(isOpen || !g.label) && (
+                        <motion.div
+                          initial={g.label ? { height: 0, opacity: 0 } : false}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          className="overflow-hidden"
                         >
-                          <div className="relative w-10 h-10 rounded-xl flex items-center justify-center"
+                          <div className="rounded-2xl overflow-hidden mb-1"
                             style={{
-                              background: `linear-gradient(135deg, ${qa.color}25, ${qa.color}08)`,
-                              boxShadow: isActive ? `0 0 12px ${qa.color}30` : undefined,
+                              background: glass.sectionBg,
+                              border: glass.sectionBorder,
                             }}>
-                            <qa.icon className="w-5 h-5" style={{ color: qa.color }} />
-                            {count > 0 && (
-                              <span className="absolute -top-1 -right-1 px-1 rounded-full text-[9px] font-bold text-white min-w-[16px] h-4 flex items-center justify-center"
-                                style={{ background: "hsl(var(--destructive))", boxShadow: "0 0 0 2px " + (isDark ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.8)") }}>
-                                {count > 9 ? "9+" : count}
-                              </span>
-                            )}
+                            {g.items.map((item, idx) => {
+                              const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+                              return (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  onClick={onClose}
+                                  className="flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] select-none"
+                                  style={{
+                                    background: isActive ? glass.sectionItemActive : "transparent",
+                                    borderTop: idx > 0 ? glass.sectionItemBorder : undefined,
+                                    WebkitTapHighlightColor: "transparent",
+                                  }}
+                                >
+                                  <item.icon
+                                    className="w-[18px] h-[18px] shrink-0 transition-colors"
+                                    style={{ color: isActive ? glass.textIconActive : glass.textIcon }}
+                                  />
+                                  <span className="text-[13px] font-medium flex-1 transition-colors"
+                                    style={{ color: isActive ? glass.textPrimary : glass.textSecondary }}>
+                                    {item.label}
+                                  </span>
+                                  {isActive && (
+                                    <div className="w-1.5 h-1.5 rounded-full shrink-0"
+                                      style={{ background: "hsl(var(--primary))", boxShadow: "0 0 6px hsl(var(--primary)/0.6)" }} />
+                                  )}
+                                </Link>
+                              );
+                            })}
                           </div>
-                          <span className="text-[11px] font-semibold leading-none"
-                            style={{ color: glass.textSecondary }}>{qa.label}</span>
-                        </Link>
-                      );
-                    })}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
-                </div>
-
-                {/* ── Навигация — glass секции с аккордеоном ── */}
-                <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-2"
-                  style={{ WebkitOverflowScrolling: "touch" }}>
-                  {groups.map((g) => {
-                    const isOpen = !collapsed.has(g.key);
-                    const hasActive = g.items.some(i => i.exact ? pathname === i.href : pathname.startsWith(i.href));
-
-                    return (
-                      <div key={g.key} className="mb-2">
-                        {/* Section header */}
-                        {g.label && (
-                          <button
-                            onClick={() => toggleGroup(g.key)}
-                            className="w-full flex items-center gap-2 px-3 py-2 select-none group/sec"
-                            style={{ WebkitTapHighlightColor: "transparent" }}
-                          >
-                            <span className="text-[10px] font-bold uppercase tracking-[0.16em] transition-colors"
-                              style={{ color: hasActive ? glass.textSecondary : glass.textMuted }}>
-                              {g.label}
-                            </span>
-                            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${glass.divider}, transparent)` }} />
-                            <ChevronDown
-                              className={`w-3 h-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                              style={{ color: glass.textMuted }}
-                            />
-                          </button>
-                        )}
-
-                        {/* Items — glass card */}
-                        <AnimatePresence initial={false}>
-                          {(isOpen || !g.label) && (
-                            <motion.div
-                              initial={g.label ? { height: 0, opacity: 0 } : false}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="overflow-hidden"
-                            >
-                              <div className="rounded-2xl overflow-hidden mb-1"
-                                style={{
-                                  background: glass.sectionBg,
-                                  border: glass.sectionBorder,
-                                }}>
-                                {g.items.map((item, idx) => {
-                                  const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-                                  const count = getBadge(item.href);
-                                  return (
-                                    <Link
-                                      key={item.href}
-                                      href={item.href}
-                                      onClick={onClose}
-                                      className="flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] select-none"
-                                      style={{
-                                        background: isActive ? glass.sectionItemActive : "transparent",
-                                        borderTop: idx > 0 ? glass.sectionItemBorder : undefined,
-                                        WebkitTapHighlightColor: "transparent",
-                                      }}
-                                    >
-                                      <item.icon
-                                        className="w-[18px] h-[18px] shrink-0 transition-colors"
-                                        style={{ color: isActive ? glass.textIconActive : glass.textIcon }}
-                                      />
-                                      <span className="text-[13px] font-medium flex-1 transition-colors"
-                                        style={{ color: isActive ? glass.textPrimary : glass.textSecondary }}>
-                                        {item.label}
-                                      </span>
-                                      {count > 0 && (
-                                        <span className="px-1.5 rounded-full text-[10px] font-bold text-white min-w-[18px] h-[18px] flex items-center justify-center shrink-0"
-                                          style={{ background: "hsl(var(--destructive))" }}>{count > 9 ? "9+" : count}</span>
-                                      )}
-                                      {isActive && count === 0 && (
-                                        <div className="w-1.5 h-1.5 rounded-full shrink-0"
-                                          style={{ background: "hsl(var(--primary))", boxShadow: "0 0 6px hsl(var(--primary)/0.6)" }} />
-                                      )}
-                                    </Link>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+                );
+              })}
+            </div>
 
             {/* ── Футер ── */}
             <div className="shrink-0 px-4 pt-2 pb-2"
@@ -1129,15 +963,13 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         setTheme={setTheme}
       />
 
-      {/* ─── Mobile bottom nav (4 таба без Арая) ─────────────── */}
+      {/* ─── Mobile bottom nav ───────────────────────────────── */}
       <AdminMobileBottomNav
         role={role}
         onMenuOpen={() => setOpen(true)}
         menuOpen={open}
+        onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
       />
-
-      {/* ─── Арай — плавающая FAB справа (мобилка), старый SVG-орб ── */}
-      <AdminArayFloating />
 
       {/* ─── ARAY CONTROL — липкая панель справа (desktop + mobile) ── */}
       <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40">
