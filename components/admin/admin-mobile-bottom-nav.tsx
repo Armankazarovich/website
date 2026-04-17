@@ -138,7 +138,7 @@ export function AdminMobileBottomNav({
             <DockTab key={`r${i}`} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />
           ))}
 
-          {/* Кнопка Меню → открывает боковой drawer */}
+          {/* Кнопка Меню → открывает bottom sheet */}
           <button
             onClick={onMenuOpen}
             className="flex-1 focus:outline-none"

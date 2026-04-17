@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { AccessGuard } from "@/components/admin/access-guard";
@@ -257,6 +258,123 @@ import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { MobileFontControl, AdminMobileActionPill, ArayTranslationCheck } from "@/components/admin/admin-mobile-settings";
 
 // ══════════════════════════════════════════════════════════════════════════════
+// ✦ Mobile Menu — Bottom Sheet (Тинькофф-стиль)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function MobileMenuBottomSheet({
+  open, onClose, sidebarBg, userName, email, role, sheetDragStartY,
+}: {
+  open: boolean;
+  onClose: () => void;
+  sidebarBg: string;
+  userName?: string | null;
+  email?: string | null;
+  role: string;
+  sheetDragStartY: React.MutableRefObject<number>;
+}) {
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => { setPortalTarget(document.body); }, []);
+
+  if (!portalTarget) return null;
+
+  return ReactDOM.createPortal(
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="menu-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm"
+            style={{ zIndex: 200 }}
+            onClick={onClose}
+          />
+
+          {/* Bottom Sheet */}
+          <motion.div
+            key="menu-sheet"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 32, stiffness: 300 }}
+            className="lg:hidden fixed bottom-0 left-0 right-0 flex flex-col overflow-hidden"
+            style={{
+              zIndex: 201,
+              maxHeight: "88dvh",
+              borderRadius: "28px 28px 0 0",
+              background: sidebarBg,
+              backdropFilter: "blur(24px) saturate(180%)",
+              WebkitBackdropFilter: "blur(24px) saturate(180%)",
+              boxShadow: "0 -8px 40px rgba(0,0,0,0.5)",
+            }}
+          >
+            {/* ── Drag handle — свайп вниз = закрыть ── */}
+            <div
+              className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing shrink-0"
+              onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; }}
+              onTouchEnd={(e) => {
+                const dy = e.changedTouches[0].clientY - sheetDragStartY.current;
+                if (dy > 60) onClose();
+              }}
+            >
+              <div className="w-12 h-1.5 rounded-full bg-white/25 active:bg-white/50 transition-colors" />
+            </div>
+
+            {/* ── Профиль ── */}
+            <div className="aray-sidebar text-white px-5 pb-4 pt-1 flex items-center gap-3 shrink-0">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 text-white font-bold text-lg"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))", boxShadow: "0 4px 16px hsl(var(--primary)/0.35)" }}>
+                {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-display font-bold text-base text-white leading-tight truncate">
+                  {userName || (email ? email.split("@")[0] : "Пользователь")}
+                </p>
+                <p className="text-[11px] text-white/40 mt-0.5 truncate">{email}</p>
+              </div>
+              <Link href="/cabinet/profile" onClick={onClose}
+                className="w-11 h-11 rounded-xl hover:bg-white/10 flex items-center justify-center transition-colors active:scale-90 shrink-0"
+                title="Настройки профиля"
+                style={{ WebkitTapHighlightColor: "transparent" }}>
+                <Settings className="w-5 h-5 text-white/50" />
+              </Link>
+            </div>
+
+            {/* ── Разделитель ── */}
+            <div className="mx-5 h-px bg-white/10 shrink-0" />
+
+            {/* ── Навигация (скролл) ── */}
+            <div className="aray-sidebar text-white flex-1 overflow-y-auto overscroll-contain">
+              <AdminNav role={role} onNavigate={onClose} />
+            </div>
+
+            {/* ── Футер ── */}
+            <div className="aray-sidebar text-white shrink-0 border-t border-white/10 px-4 py-3 space-y-1.5">
+              <AdminPushPrompt />
+              <AdminPwaInstall />
+              <Link href="/"
+                className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors active:scale-[0.97]"
+                onClick={onClose}
+                style={{ WebkitTapHighlightColor: "transparent" }}>
+                <LogOut className="w-4.5 h-4.5" />
+                На сайт
+              </Link>
+            </div>
+
+            {/* Safe area bottom */}
+            <div className="aray-sidebar shrink-0" style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>,
+    portalTarget
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // ✦ ARAY Control Center — единая панель уведомлений + оформления
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -343,21 +461,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
     };
   }, [classic]);
 
-  // Свайп от левого края → открыть меню
-  const touchStartX = useRef(0);
-  useEffect(() => {
-    const onTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-    const onTouchEnd = (e: TouchEvent) => {
-      const dx = e.changedTouches[0].clientX - touchStartX.current;
-      if (!open && touchStartX.current < 32 && dx > 60) setOpen(true);
-    };
-    document.addEventListener("touchstart", onTouchStart, { passive: true });
-    document.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart);
-      document.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [open]);
+  // Drag handle ref for bottom sheet swipe-to-close
+  const sheetDragStartY = useRef(0);
 
   return (
     <div className={`flex min-h-screen relative ${classic ? "aray-classic-mode bg-background" : "aray-admin-bg aray-nature-mode"}`}
@@ -410,65 +515,27 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
       {/* ─── Mobile header убран — заменён compact sticky search bar внутри main ── */}
 
-      {/* ─── Direct overlays via Portal — renders to document.body to avoid stacking context issues ── */}
-      {(open || mobileSettingsOpen) && typeof document !== "undefined" && ReactDOM.createPortal(
+      {/* ─── Direct overlay for settings panel via Portal ── */}
+      {mobileSettingsOpen && typeof document !== "undefined" && ReactDOM.createPortal(
         <div
           className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm"
           style={{ zIndex: 69 }}
-          onClick={() => { setOpen(false); setMobileSettingsOpen(false); }}
+          onClick={() => setMobileSettingsOpen(false)}
           aria-hidden="true"
         />,
         document.body
       )}
 
-      {/* ─── Mobile sidebar drawer (левый) ───────────────────── */}
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="lg:hidden w-72 aray-sidebar text-white flex flex-col"
-          style={{
-            boxShadow: "4px 0 32px rgba(0,0,0,0.4)",
-            background: sidebarBg,
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          }}
-          aria-describedby={undefined}>
-          <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
-          <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3 shrink-0">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-base"
-              style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.5))" }}>
-              {userName ? userName.charAt(0).toUpperCase() : email ? email.charAt(0).toUpperCase() : "A"}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-display font-bold text-base text-white leading-tight truncate">
-                {userName || (email ? email.split("@")[0] : "Пользователь")}
-              </p>
-              <p className="text-[10px] text-white/40 mt-0.5 truncate">{email}</p>
-            </div>
-            <Link href="/cabinet/profile" onClick={() => setOpen(false)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
-              title="Настройки профиля">
-              <Settings className="w-4.5 h-4.5 text-white/50" />
-            </Link>
-            <button onClick={() => setOpen(false)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90 shrink-0"
-              style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto overscroll-contain">
-            <AdminNav role={role} onNavigate={() => setOpen(false)} />
-          </div>
-          <AdminPushPrompt />
-          <div className="shrink-0 border-t border-white/10 p-3 space-y-1">
-            <AdminPwaInstall />
-            <Link href="/"
-              className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/65 hover:text-white hover:bg-white/[0.08] transition-colors"
-              onClick={() => setOpen(false)}>
-              <LogOut className="w-4 h-4" />
-              На сайт
-            </Link>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* ─── Mobile menu — Bottom Sheet (portal) ────────────── */}
+      <MobileMenuBottomSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        sidebarBg={sidebarBg}
+        userName={userName}
+        email={email}
+        role={role}
+        sheetDragStartY={sheetDragStartY}
+      />
 
       {/* ─── Mobile settings panel (правый) ──────────────────── */}
       <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
