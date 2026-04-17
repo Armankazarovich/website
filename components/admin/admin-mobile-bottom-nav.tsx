@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, ShoppingBag, Package, MoreHorizontal, Bell,
+  LayoutDashboard, ShoppingBag, Package, Bell,
   Truck, CheckSquare, Warehouse, Wallet, Target, UserCircle,
   Star, UserPlus, ArrowRight, X,
 } from "lucide-react";
@@ -325,14 +325,14 @@ export function AdminMobileBottomNav({
             </button>
           )}
 
-          {/* Кнопка Меню → открывает bottom sheet */}
+          {/* Кнопка Аккаунт → открывает bottom sheet */}
           <button
             onClick={onMenuOpen}
             className="flex-1 focus:outline-none"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
             <div className="flex flex-col items-center justify-center py-3 px-1.5 min-w-0 relative transition-all duration-300 active:scale-90 select-none">
-              <MoreHorizontal
+              <UserCircle
                 className="transition-all duration-300"
                 style={{
                   width: menuOpen ? 22 : 20,
@@ -342,7 +342,7 @@ export function AdminMobileBottomNav({
               />
               <span className="text-[10px] font-semibold leading-none mt-1.5 transition-all duration-300"
                 style={{ color: menuOpen ? "hsl(var(--primary))" : "var(--admin-dock-text)" }}>
-                Ещё
+                Аккаунт
               </span>
               {menuOpen && (
                 <span className="absolute -bottom-0.5 w-4 h-1 rounded-full" style={{ background: "hsl(var(--primary))", opacity: 0.7 }} />
