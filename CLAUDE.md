@@ -698,25 +698,27 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
-### Сессия 17.04.2026 (сессия 4) — Админка: bottom sheet мобильное меню
+### Сессия 17.04.2026 (сессия 4) — Liquid Glass мобильное меню (iOS 26)
 
-**Мобильное меню админки — полная переделка:**
-- ✅ Левый Sheet drawer → Bottom Sheet popup (Тинькофф-стиль)
+**Мобильное меню админки — Liquid Glass Bottom Sheet:**
+- ✅ Левый Sheet drawer → Bottom Sheet popup с Liquid Glass эффектом
 - ✅ `components/admin/admin-shell.tsx`:
-  - Новый компонент `MobileMenuBottomSheet` с framer-motion
-  - Spring анимация снизу вверх (`type: "spring", damping: 32, stiffness: 300`)
-  - Drag handle (`w-12 h-1.5 rounded-full bg-white/25`) + swipe-to-close (60px threshold)
-  - `rounded-t-[28px]`, `maxHeight: 88dvh`
-  - Glassmorphism: `backdrop-blur(24px) saturate(180%)`
-  - Portal → document.body для правильной z-index иерархии
-  - Профиль пользователя (аватар 48px, имя, email, кнопка настроек 44px)
-  - AdminNav (скроллится), AdminPushPrompt, AdminPwaInstall, "На сайт"
-  - safe-area-inset-bottom для устройств с нотчем
-  - Убран edge-swipe жест (был для левого drawer)
+  - **Liquid Glass фон**: multi-layer transparency — `linear-gradient` рефракция на верхнем крае + `backdrop-blur(40px) saturate(200%)` + тонкие borders `rgba(255,255,255,0.18)`
+  - **Quick Actions grid**: 3-колоночная сетка самых частых разделов по ролям (admin: 6 кнопок, manager: 4, courier: 3, warehouse: 3, user: 3). Каждая кнопка — glass card с цветной иконкой и подсветкой
+  - **Навигационные секции**: glass-карточки с аккордеоном (Продажи/Товары/Контент/Маркетинг/Настройки/Помощь). Кликабельный заголовок + ChevronDown для сворачивания
+  - **Встроенная навигация**: вся MOBILE_NAV определена прямо в компоненте (не через AdminNav) — полный контроль UX: quick actions + glass секции
+  - **getQuickActions(role)**: smart подбор по роли — ADMIN видит 6 кнопок (Дашборд/Заказы/CRM/Товары/Аналитика/Команда), COURIER — 3 (Дашборд/Заказы/Маршрут), и т.д.
+  - Spring анимация: `type: "spring", damping: 30, stiffness: 280`
+  - `rounded-t-[32px]`, `maxHeight: 90dvh`
+  - Профиль в glass card, кнопка настроек в glass button
+  - Active state: glow эффект (`boxShadow: 0 0 12px color/40`) + точка-индикатор
+  - Backdrop: `blur(12px) saturate(140%)`
+  - safe-area-inset-bottom, swipe-to-close (60px threshold)
+  - Auto-expand секции с активной страницей
 - ✅ `components/admin/admin-mobile-bottom-nav.tsx` — обновлён комментарий
-- ✅ Правый Settings Sheet оставлен как есть (работает)
+- ✅ Правый Settings Sheet оставлен как есть
 
-**Деплой:** commit `7db6611`, push OK
+**Деплой:** commits `7db6611` → `4e71c36`, push OK
 
 ### Сессия 17.04.2026 (сессия 3) — Навигация + ARAY Control совершенство
 
