@@ -582,24 +582,7 @@ function MobileMenuBottomSheet({
                       border: glass.cardBorder,
                       backdropFilter: "blur(8px)",
                     }}>
-                    {/* Палитры */}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
-                        style={{ color: glass.textMuted }}>Палитра</p>
-                      <div className="flex flex-wrap gap-2">
-                        {PALETTES.map((p) => (
-                          <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                            className="w-8 h-8 rounded-full shrink-0 transition-all active:scale-90"
-                            style={{
-                              background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                              opacity: palette === p.id ? 1 : 0.45,
-                              transform: palette === p.id ? "scale(1.15)" : undefined,
-                              boxShadow: palette === p.id ? `0 0 0 2px ${isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.2)"}` : undefined,
-                              WebkitTapHighlightColor: "transparent",
-                            }} />
-                        ))}
-                      </div>
-                    </div>
+                    {/* Палитра убрана из drawer — доступна через ARAY Control (липкий справа) */}
 
                     {/* Тема */}
                     <div>
