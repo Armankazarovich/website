@@ -506,8 +506,8 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               <Trash2 className="w-6 h-6 text-destructive" />
             </div>
             <div>
-              <p className="font-display font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Удалить {bulkSelectedDeletable.length} фото?</p>
-              <p className="text-sm mt-1" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.55)" }}>Файлы будут удалены с сервера навсегда. Это действие нельзя отменить.</p>
+              <p className="font-display font-bold text-lg" style={{ color: "rgba(255,255,255,0.92)" }}>Удалить {bulkSelectedDeletable.length} фото?</p>
+              <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>Файлы будут удалены с сервера навсегда. Это действие нельзя отменить.</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -550,8 +550,8 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden" style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+          <h2 className="font-bold text-lg" style={{ color: "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: "rgba(255,255,255,0.6)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>

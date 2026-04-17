@@ -218,11 +218,11 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
         <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold text-xl flex items-center gap-2" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>
+          <h2 className="font-display font-bold text-xl flex items-center gap-2" style={{ color: "rgba(255,255,255,0.92)" }}>
             <Zap className="w-5 h-5 text-primary" />
             Новый воркфлоу
           </h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-primary/[0.04] transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-primary/[0.04] transition-colors" style={{ color: "rgba(255,255,255,0.7)" }}><X className="w-4 h-4" /></button>
         </div>
 
         <div className="p-6 space-y-5">

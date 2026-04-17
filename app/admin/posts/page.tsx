@@ -122,8 +122,8 @@ function EditModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="rounded-2xl w-full max-w-xl" style={popupStyle}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Редактировать статью</p>
-          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
+          <p className="font-display font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Редактировать статью</p>
+          <button onClick={onClose} style={{ color: "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -361,9 +361,9 @@ function GenerateDialog({
         <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10" style={popupStyle}>
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-primary" />
-            <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Генерация статьи с Арай</p>
+            <p className="font-display font-semibold" style={{ color: "rgba(255,255,255,0.92)" }}>Генерация статьи с Арай</p>
           </div>
-          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
+          <button onClick={onClose} style={{ color: "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
             <X className="w-5 h-5" />
           </button>
         </div>
