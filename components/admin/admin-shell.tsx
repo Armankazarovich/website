@@ -16,7 +16,7 @@ import {
   Package, Truck, Warehouse, CheckSquare, BarChart2, Wallet,
   UserCircle, Tag, FileDown, Images, BookOpen, Wrench,
   Megaphone, TrendingUp, Mail, Globe, Stamp, Users,
-  HeartPulse, HelpCircle, ExternalLink, Search,
+  HeartPulse, HelpCircle, ExternalLink,
 } from "lucide-react";
 
 // ── Ключи localStorage ────────────────────────────────────────────────────────
@@ -385,13 +385,10 @@ function MobileMenuBottomSheet({
   const pathname = usePathname();
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings", "help"]));
-  const [searchQ, setSearchQ] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
+  // Search removed — was frustrating on mobile keyboards
 
   useEffect(() => { setPortalTarget(document.body); }, []);
 
-  // Reset search on close
-  useEffect(() => { if (!open) setSearchQ(""); }, [open]);
 
   // ── Бейджи на разделах (загружаем при открытии) ──
   const [badges, setBadges] = useState<Record<string, number>>({});
@@ -438,14 +435,8 @@ function MobileMenuBottomSheet({
   const allQuickActions = getQuickActions(role);
   const visibleItems = MOBILE_NAV.filter(i => i.roles.includes(role));
 
-  // Фильтрация по поиску
-  const q = searchQ.toLowerCase().trim();
-  const quickActions = q
-    ? allQuickActions.filter(a => a.label.toLowerCase().includes(q))
-    : allQuickActions;
-  const filteredItems = q
-    ? visibleItems.filter(i => i.label.toLowerCase().includes(q) || (i.groupLabel || "").toLowerCase().includes(q))
-    : visibleItems;
+  const quickActions = allQuickActions;
+  const filteredItems = visibleItems;
 
   // Group items
   const groups: { key: string; label: string; items: MobileNavItem[] }[] = [];
@@ -611,45 +602,11 @@ function MobileMenuBottomSheet({
               </Link>
             </div>
 
-            {/* ── Поиск по разделам (sticky — не уходит при скролле) ── */}
-            <div className="mx-4 mb-3 shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-                  style={{ color: glass.textMuted }} />
-                <input
-                  ref={searchRef}
-                  type="text"
-                  inputMode="search"
-                  enterKeyHint="search"
-                  value={searchQ}
-                  onChange={(e) => setSearchQ(e.target.value)}
-                  placeholder="Найти раздел…"
-                  className="w-full pl-9 pr-8 py-2.5 rounded-xl text-[13px] font-medium outline-none transition-all"
-                  style={{
-                    background: glass.cardBg,
-                    border: glass.cardBorder,
-                    color: glass.textPrimary,
-                    caretColor: "hsl(var(--primary))",
-                    WebkitTapHighlightColor: "transparent",
-                    fontSize: "16px", // prevents iOS zoom on focus
-                  }}
-                />
-                {searchQ && (
-                  <button
-                    onClick={() => { setSearchQ(""); searchRef.current?.focus(); }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center active:scale-90"
-                    style={{ background: glass.cardActiveBg }}>
-                    <X className="w-3 h-3" style={{ color: glass.textSecondary }} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* ── Скроллируемая область (всё ниже поиска) ── */}
+            {/* ── Скроллируемая область ── */}
             <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
 
             {/* ── Недавние — последние 4 посещённых раздела ── */}
-            {!q && recent.length > 0 && (() => {
+            {recent.length > 0 && (() => {
               // Resolve recent hrefs to nav items
               const allItems = [...allQuickActions, ...visibleItems];
               const recentItems = recent
@@ -683,7 +640,7 @@ function MobileMenuBottomSheet({
             })()}
 
             {/* ── Quick Actions — glass grid (hidden during search) ── */}
-            {!q && <div className="mx-4 mb-3 shrink-0">
+            {<div className="mx-4 mb-3 shrink-0">
               <div className="grid grid-cols-3 gap-2">
                 {quickActions.map((qa) => {
                   const isActive = qa.href === "/admin" || qa.href === "/cabinet"
@@ -721,14 +678,8 @@ function MobileMenuBottomSheet({
 
             {/* ── Навигация — glass секции с аккордеоном ── */}
             <div className="px-4 pb-2">
-              {q && groups.length === 0 && (
-                <div className="text-center py-8">
-                  <Search className="w-8 h-8 mx-auto mb-2" style={{ color: glass.textMuted, opacity: 0.5 }} />
-                  <p className="text-[13px]" style={{ color: glass.textMuted }}>Ничего не найдено</p>
-                </div>
-              )}
               {groups.map((g) => {
-                const isOpen = q ? true : !collapsed.has(g.key);
+                const isOpen = !collapsed.has(g.key);
                 const hasActive = g.items.some(i => i.exact ? pathname === i.href : pathname.startsWith(i.href));
 
                 return (
