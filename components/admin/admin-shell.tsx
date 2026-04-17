@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+// Sheet removed — all panels use portals now
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyNeuralBg, LazyCursorGlow, LazyAdminVideoBg, LazyAdminAray, LazyAdminPageHelp, LazyAdminTour } from "@/components/admin/lazy-components";
@@ -867,7 +867,7 @@ function usePageTitle() {
 
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [open, setOpen] = useState(false);
-  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  // Settings panel removed — ARAY Control sticky handles it
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const { classic, bgMode, setBg, toggle: toggleClassic } = useClassicMode();
@@ -948,17 +948,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
       {/* ─── Mobile header убран — заменён compact sticky search bar внутри main ── */}
 
-      {/* ─── Direct overlay for settings panel via Portal ── */}
-      {mobileSettingsOpen && typeof document !== "undefined" && ReactDOM.createPortal(
-        <div
-          className="lg:hidden fixed inset-0 bg-black/80 backdrop-blur-sm"
-          style={{ zIndex: 69 }}
-          onClick={() => setMobileSettingsOpen(false)}
-          aria-hidden="true"
-        />,
-        document.body
-      )}
-
       {/* ─── Mobile menu — Bottom Sheet (portal) ────────────── */}
       <MobileMenuBottomSheet
         open={open}
@@ -974,104 +963,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         setTheme={setTheme}
       />
 
-      {/* ─── Mobile settings panel (правый) ──────────────────── */}
-      <Sheet open={mobileSettingsOpen} onOpenChange={setMobileSettingsOpen}>
-        <SheetContent side="right" className="lg:hidden w-80 aray-sidebar text-white flex flex-col"
-          style={{
-            boxShadow: "-4px 0 32px rgba(0,0,0,0.4)",
-            background: sidebarBg,
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-          }}
-          aria-describedby={undefined}>
-          <div style={{ height: "env(safe-area-inset-top, 0px)", flexShrink: 0 }} />
-
-          {/* Header */}
-          <div className="px-5 py-4 flex items-center justify-between shrink-0 border-b border-white/10">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, hsl(var(--primary)/0.3), hsl(var(--primary)/0.1))" }}>
-                <Settings className="w-3.5 h-3.5 text-primary" />
-              </div>
-              <p className="font-display font-bold text-lg text-white">Настройки</p>
-            </div>
-            <button onClick={() => setMobileSettingsOpen(false)}
-              className="p-2 rounded-xl hover:bg-white/10 transition-colors active:scale-90"
-              style={{ WebkitTapHighlightColor: "transparent" }}>
-              <X className="w-5 h-5 text-white" />
-            </button>
-          </div>
-
-          {/* Settings content — links only, no duplicate controls */}
-          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-3">
-
-            {/* Оформление — встроенные контролы */}
-            <div className="glass-card rounded-2xl p-4 space-y-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/40">Оформление</p>
-              {/* Палитры */}
-              <div className="flex flex-wrap gap-1.5">
-                {PALETTES.map((p) => (
-                  <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                    className={`w-7 h-7 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-white ring-offset-1 ring-offset-transparent scale-110" : "opacity-50 hover:opacity-90 hover:scale-105"}`}
-                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                ))}
-              </div>
-              {/* Тема */}
-              <div className="flex gap-2">
-                {["light", "dark"].map((t) => (
-                  <button key={t} onClick={() => setTheme(t)}
-                    className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all ${safeTheme === t ? "bg-primary text-white" : "bg-white/10 text-white/50 hover:bg-white/15"}`}>
-                    {t === "light" ? "Светлая" : "Тёмная"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Размер шрифта */}
-            <div className="glass-card rounded-2xl p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] mb-3 text-white/40">Шрифт</p>
-              <div className="flex gap-1.5">
-                {[
-                  { id: "sm", label: "Компакт" },
-                  { id: "md", label: "Норм" },
-                  { id: "lg", label: "Крупн" },
-                ].map((f) => (
-                  <button key={f.id}
-                    onClick={() => {
-                      const sizes: Record<string, { px: string; scale: string }> = { sm: { px: "13px", scale: "0.929" }, md: { px: "14px", scale: "1" }, lg: { px: "15.5px", scale: "1.107" } };
-                      const s = sizes[f.id];
-                      document.documentElement.style.setProperty("font-size", s.px);
-                      document.documentElement.style.setProperty("--aray-font-scale", s.scale);
-                      try { localStorage.setItem("aray_font", f.id); } catch {}
-                    }}
-                    className="flex-1 py-2 rounded-xl text-[11px] font-semibold bg-white/10 text-white/50 hover:bg-white/15 transition-all">
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* На сайт */}
-            <Link href="/"
-              className="glass-control flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors"
-              onClick={() => setMobileSettingsOpen(false)}>
-              <LogOut className="w-4 h-4 text-white/45" />
-              <span className="text-sm text-white/60">Перейти на сайт</span>
-            </Link>
-
-            <div style={{ height: "env(safe-area-inset-bottom, 0px)" }} />
-
-          </div>
-        </SheetContent>
-      </Sheet>
-
       {/* ─── Mobile bottom nav ───────────────────────────────── */}
       <AdminMobileBottomNav
         role={role}
         onMenuOpen={() => setOpen(true)}
         menuOpen={open}
         onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
-        onSettingsOpen={() => setMobileSettingsOpen(true)}
       />
 
       {/* ─── ARAY CONTROL — липкая панель справа (desktop + mobile) ── */}

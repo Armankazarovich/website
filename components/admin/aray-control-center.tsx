@@ -319,8 +319,8 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                       ))}
                     </div>
                   </div>
-                  {/* Шрифт */}
-                  <div>
+                  {/* Шрифт — только на десктопе */}
+                  <div className="hidden lg:block">
                     <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Размер шрифта</p>
                     <div className="flex gap-1.5">
                       {FONT_SIZES_CC.map((f) => (
