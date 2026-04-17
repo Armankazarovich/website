@@ -197,7 +197,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
       <button
         onClick={handleDownloadPdf}
         disabled={downloading}
-        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors disabled:opacity-50 min-h-[38px]"
+        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors disabled:opacity-50 min-h-[44px]"
       >
         {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
         Скачать PDF
@@ -206,7 +206,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
       {!editing ? (
         <button
           onClick={() => setEditing(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors min-h-[38px]"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors min-h-[44px]"
         >
           <Pencil className="w-3.5 h-3.5" />
           Редактировать
@@ -229,7 +229,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                     type={type}
                     value={(form as any)[key]}
                     onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="w-full px-3 py-2.5 text-base sm:text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               ))}
@@ -238,7 +238,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                 <select
                   value={form.paymentMethod}
                   onChange={(e) => setForm((f) => ({ ...f, paymentMethod: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option>Наличные</option>
                   <option>Безнал по счёту</option>
@@ -251,7 +251,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                   value={form.comment}
                   onChange={(e) => setForm((f) => ({ ...f, comment: e.target.value }))}
                   rows={2}
-                  className="w-full px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
               </div>
             </div>
@@ -353,7 +353,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                     setSelVariantId("");
                     if (p) setSelUnit(p.saleUnit === "PIECE" ? "PIECE" : "CUBE");
                   }}
-                  className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="px-3 py-2.5 text-base sm:text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">— товар —</option>
                   {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
