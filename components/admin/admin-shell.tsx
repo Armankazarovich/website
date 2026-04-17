@@ -472,12 +472,11 @@ function MobileMenuBottomSheet({
     });
   };
 
-  // ── Liquid Glass палитра: ВСЕГДА ТЁМНАЯ ──
-  // Drawer ВСЕГДА тёмный — независимо от темы сайта (стандарт индустрии: VS Code, Figma, Notion).
-  // Гарантирует читаемость и единый стиль. Параметр isDark игнорируется.
-  void isDark;
-  const glass = {
-    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 4%, rgba(10,10,18,0.88) 18%)",
+  // ── Liquid Glass палитра: тёмная / светлая ──
+  // Ключевое: ПРОЗРАЧНОСТЬ + размытие = жидкое стекло
+  const glass = isDark ? {
+    // Dark glass — тёмное полупрозрачное стекло
+    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 4%, rgba(10,10,18,0.78) 18%)",
     sheetBorder: "1px solid rgba(255,255,255,0.18)",
     sheetSideBorder: "1px solid rgba(255,255,255,0.08)",
     sheetShadow: "0 -1px 0 rgba(255,255,255,0.12), 0 -16px 60px rgba(0,0,0,0.5)",
@@ -497,7 +496,30 @@ function MobileMenuBottomSheet({
     textIcon: "rgba(255,255,255,0.40)",
     textIconActive: "hsl(var(--primary))",
     insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.08)",
-    backdrop: "rgba(0,0,0,0.55)",
+    backdrop: "rgba(0,0,0,0.45)",
+  } : {
+    // Light glass — молочное полупрозрачное стекло с рефракцией
+    sheetBg: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 4%, rgba(240,242,248,0.82) 18%)",
+    sheetBorder: "1px solid rgba(255,255,255,0.6)",
+    sheetSideBorder: "1px solid rgba(255,255,255,0.4)",
+    sheetShadow: "0 -1px 0 rgba(255,255,255,0.9), 0 -16px 60px rgba(0,0,0,0.12)",
+    handle: "bg-black/12",
+    cardBg: "rgba(255,255,255,0.5)",
+    cardBorder: "1px solid rgba(255,255,255,0.6)",
+    cardActiveBg: "rgba(255,255,255,0.7)",
+    cardActiveBorder: "1px solid rgba(0,0,0,0.08)",
+    sectionBg: "rgba(255,255,255,0.4)",
+    sectionBorder: "1px solid rgba(255,255,255,0.5)",
+    sectionItemBorder: "1px solid rgba(0,0,0,0.04)",
+    sectionItemActive: "rgba(255,255,255,0.6)",
+    divider: "rgba(0,0,0,0.06)",
+    textPrimary: "rgba(0,0,0,0.85)",
+    textSecondary: "rgba(0,0,0,0.55)",
+    textMuted: "rgba(0,0,0,0.30)",
+    textIcon: "rgba(0,0,0,0.32)",
+    textIconActive: "hsl(var(--primary))",
+    insetHighlight: "inset 0 1px 0 rgba(255,255,255,0.8)",
+    backdrop: "rgba(0,0,0,0.18)",
   };
 
   return ReactDOM.createPortal(
