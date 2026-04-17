@@ -14,16 +14,14 @@ import {
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
-import { ArayOrb } from "@/components/shared/aray-orb";
 
-export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean }) {
+export function MobileBottomNav({ arayEnabled: _arayEnabled = true }: { arayEnabled?: boolean }) {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
   const totalPrice = useCartStore((s) => s.totalPrice());
   const { setCartOpen } = useCartStore();
   const [mounted, setMounted] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
-  const [arayPulse, setArayPulse] = useState(false);
   const prevItemsRef = useRef(0);
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
@@ -50,9 +48,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
     if (totalItems !== prevItemsRef.current) {
       if (totalItems > prevItemsRef.current) {
         setCartBounce(true);
-        setArayPulse(true);
         setTimeout(() => setCartBounce(false), 600);
-        setTimeout(() => setArayPulse(false), 1000);
       }
       prevItemsRef.current = totalItems;
     }
@@ -63,30 +59,6 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
     if (typeof navigator !== "undefined" && navigator.vibrate) {
       navigator.vibrate([6]);
     }
-  }, []);
-
-  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTriggered = useRef(false);
-
-  const openAray = useCallback(() => {
-    haptic();
-    if (!longPressTriggered.current) {
-      window.dispatchEvent(new CustomEvent("aray:open"));
-    }
-  }, [haptic]);
-
-  const onArayPointerDown = useCallback(() => {
-    longPressTriggered.current = false;
-    longPressRef.current = setTimeout(() => {
-      longPressTriggered.current = true;
-      haptic();
-      // Push-to-talk: слушает без открытия чата
-      window.dispatchEvent(new CustomEvent("aray:voice"));
-    }, 400);
-  }, [haptic]);
-
-  const onArayPointerUp = useCallback(() => {
-    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
   }, []);
 
   // Левые пункты
@@ -192,30 +164,11 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
       <div className="flex items-end justify-around px-1 pt-1 relative" style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}>
-
-        {/* Левые пункты */}
+        {/* Арай вытащен из dock — теперь парит справа (см. ArayFloating в layout).
+            Dock: чистые 4 таба (Каталог | Поиск | Корзина | Профиль). */}
         <div className="flex items-center justify-around flex-1 pt-1">
           {leftItems.map(renderNavItem)}
         </div>
-
-        {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
-        {arayEnabled && <div className="flex flex-col items-center" style={{ marginTop: "-18px", minWidth: "72px" }}>
-          <button
-            onClick={openAray}
-            onPointerDown={onArayPointerDown}
-            onPointerUp={onArayPointerUp}
-            onPointerCancel={onArayPointerUp}
-            aria-label="Удерживай для голоса, нажми для чата"
-            className="flex flex-col items-center transition-transform duration-150 active:scale-[0.88] focus:outline-none"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-          >
-            <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
-            <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
-              style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
-          </button>
-        </div>}
-
-        {/* Правые пункты */}
         <div className="flex items-center justify-around flex-1 pt-1">
           {rightItems.map(renderNavItem)}
         </div>

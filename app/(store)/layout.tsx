@@ -31,7 +31,8 @@ function extractUniqueCrossSections(sizes: string[]): string[] {
 }
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
-const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
+// ArayFloating — новое «живое существо» из вибрирующих нитей (WebGL/Three.js), парит справа
+const ArayFloating = dynamic(() => import("@/components/shared/aray-floating").then(m => ({ default: m.ArayFloating })), { ssr: false });
 const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
 const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
 const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
@@ -93,7 +94,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SearchDrawer />
       <CartDrawer />
       <ScrollToTop />
-      <ArayWidget enabled={arayEnabled} />
+      {arayEnabled && <ArayFloating />}
     </div>
     </StoreSettingsProvider>
   );
