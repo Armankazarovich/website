@@ -393,6 +393,29 @@ function MobileMenuBottomSheet({
   // Reset search on close
   useEffect(() => { if (!open) setSearchQ(""); }, [open]);
 
+  // ── Бейджи на разделах (загружаем при открытии) ──
+  const [badges, setBadges] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!open || role === "USER") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [ordersRes, reviewsRes, staffRes] = await Promise.all([
+          fetch("/api/admin/orders?status=NEW&limit=1").then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch("/api/admin/reviews?pending=true&limit=1").then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch("/api/admin/staff?status=PENDING&limit=1").then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+        if (cancelled) return;
+        const b: Record<string, number> = {};
+        if (ordersRes?.total) b["/admin/orders"] = ordersRes.total;
+        if (reviewsRes?.total) b["/admin/reviews"] = reviewsRes.total;
+        if (staffRes?.total) b["/admin/staff"] = staffRes.total;
+        setBadges(b);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [open, role]);
+
   // ── Недавние разделы (localStorage) ──
   const LS_RECENT = "aray-recent-sections";
   const [recent, setRecent] = useState<string[]>([]);
@@ -849,6 +872,12 @@ function MobileMenuBottomSheet({
                                     style={{ color: isActive ? glass.textPrimary : glass.textSecondary }}>
                                     {item.label}
                                   </span>
+                                  {badges[item.href] > 0 && (
+                                    <span className="min-w-[20px] h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                                      style={{ background: "hsl(var(--destructive, 0 84% 60%))" }}>
+                                      {badges[item.href]}
+                                    </span>
+                                  )}
                                   {isActive && (
                                     <div className="w-1.5 h-1.5 rounded-full shrink-0"
                                       style={{ background: "hsl(var(--primary))", boxShadow: "0 0 6px hsl(var(--primary)/0.6)" }} />
