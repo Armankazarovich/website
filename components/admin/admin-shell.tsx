@@ -393,6 +393,13 @@ function MobileMenuBottomSheet({
   // Reset search on close
   useEffect(() => { if (!open) setSearchQ(""); }, [open]);
 
+  // ── Недавние разделы (localStorage) ──
+  const LS_RECENT = "aray-recent-sections";
+  const [recent, setRecent] = useState<string[]>([]);
+  useEffect(() => {
+    try { setRecent(JSON.parse(localStorage.getItem(LS_RECENT) || "[]")); } catch { setRecent([]); }
+  }, [open]);
+
   // Auto-expand group that has active page
   useEffect(() => {
     if (!open) return;
@@ -424,6 +431,15 @@ function MobileMenuBottomSheet({
     if (!g) { g = { key: item.group, label: item.groupLabel || "", items: [] }; groups.push(g); }
     g.items.push(item);
   }
+
+  // Track navigation for "Recent"
+  const trackRecent = (href: string) => {
+    try {
+      const prev = JSON.parse(localStorage.getItem(LS_RECENT) || "[]") as string[];
+      const next = [href, ...prev.filter(h => h !== href)].slice(0, 4);
+      localStorage.setItem(LS_RECENT, JSON.stringify(next));
+    } catch {}
+  };
 
   const toggleGroup = (key: string) => {
     setCollapsed(prev => {
@@ -691,6 +707,40 @@ function MobileMenuBottomSheet({
               </div>
             </div>
 
+            {/* ── Недавние — последние 4 посещённых раздела ── */}
+            {!q && recent.length > 0 && (() => {
+              // Resolve recent hrefs to nav items
+              const allItems = [...allQuickActions, ...visibleItems];
+              const recentItems = recent
+                .map(href => allItems.find(i => i.href === href))
+                .filter(Boolean) as (typeof allItems[number])[];
+              if (recentItems.length === 0) return null;
+              return (
+                <div className="mx-4 mb-3 shrink-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2 px-1"
+                    style={{ color: glass.textMuted }}>Недавние</p>
+                  <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                    {recentItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => { trackRecent(item.href); onClose(); }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl shrink-0 transition-all active:scale-[0.95]"
+                        style={{
+                          background: glass.cardBg,
+                          border: glass.cardBorder,
+                          WebkitTapHighlightColor: "transparent",
+                        }}>
+                        <item.icon className="w-4 h-4 shrink-0" style={{ color: "color" in item ? (item as any).color : glass.textIcon }} />
+                        <span className="text-[12px] font-medium whitespace-nowrap"
+                          style={{ color: glass.textSecondary }}>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ── Quick Actions — glass grid (hidden during search) ── */}
             {!q && <div className="mx-4 mb-3 shrink-0">
               <div className="grid grid-cols-3 gap-2">
@@ -702,7 +752,7 @@ function MobileMenuBottomSheet({
                     <Link
                       key={qa.href}
                       href={qa.href}
-                      onClick={onClose}
+                      onClick={() => { trackRecent(qa.href); onClose(); }}
                       className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-2xl transition-all active:scale-[0.94] select-none"
                       style={{
                         background: isActive ? glass.cardActiveBg : glass.cardBg,
@@ -783,7 +833,7 @@ function MobileMenuBottomSheet({
                                 <Link
                                   key={item.href}
                                   href={item.href}
-                                  onClick={onClose}
+                                  onClick={() => { trackRecent(item.href); onClose(); }}
                                   className="flex items-center gap-3 px-4 py-3 transition-all active:scale-[0.98] select-none"
                                   style={{
                                     background: isActive ? glass.sectionItemActive : "transparent",
