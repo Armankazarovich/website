@@ -384,7 +384,6 @@ function MobileMenuBottomSheet({
   const pathname = usePathname();
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["settings", "help"]));
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [searchQ, setSearchQ] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -596,18 +595,6 @@ function MobileMenuBottomSheet({
                 </p>
                 <p className="text-[11px] mt-0.5 truncate" style={{ color: glass.textMuted }}>{email}</p>
               </div>
-              {/* ⚡ Настройки темы inline */}
-              <button
-                onClick={() => setSettingsOpen(!settingsOpen)}
-                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
-                style={{
-                  background: settingsOpen ? glass.cardActiveBg : glass.cardBg,
-                  border: settingsOpen ? glass.cardActiveBorder : glass.cardBorder,
-                  WebkitTapHighlightColor: "transparent",
-                }}
-                title="Настройки оформления">
-                <Zap className="w-4.5 h-4.5" style={{ color: settingsOpen ? "hsl(var(--primary))" : glass.textIcon }} />
-              </button>
               <Link href="/cabinet/profile" onClick={onClose}
                 className="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 shrink-0"
                 style={{
@@ -619,85 +606,7 @@ function MobileMenuBottomSheet({
               </Link>
             </div>
 
-            {/* ── Inline Settings Panel (⚡) — liquid glass ── */}
-            <AnimatePresence>
-              {settingsOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="overflow-hidden mx-4 mb-3"
-                >
-                  <div className="rounded-2xl p-4 space-y-4"
-                    style={{
-                      background: glass.cardBg,
-                      border: glass.cardBorder,
-                      backdropFilter: "blur(8px)",
-                    }}>
-                    {/* Палитра убрана из drawer — доступна через ARAY Control (липкий справа) */}
-
-                    {/* Тема */}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
-                        style={{ color: glass.textMuted }}>Тема</p>
-                      <div className="flex gap-2">
-                        {[
-                          { id: "light", label: "Светлая", icon: Sun },
-                          { id: "dark", label: "Тёмная", icon: Moon },
-                        ].map((t) => (
-                          <button key={t.id} onClick={() => setTheme(t.id)}
-                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold transition-all active:scale-[0.96]"
-                            style={{
-                              background: currentTheme === t.id ? glass.cardActiveBg : "transparent",
-                              border: currentTheme === t.id ? glass.cardActiveBorder : glass.cardBorder,
-                              color: currentTheme === t.id ? glass.textPrimary : glass.textSecondary,
-                              WebkitTapHighlightColor: "transparent",
-                            }}>
-                            <t.icon className="w-4 h-4" />
-                            {t.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Размер шрифта */}
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] mb-2.5"
-                        style={{ color: glass.textMuted }}>Шрифт</p>
-                      <div className="flex gap-2">
-                        {[
-                          { id: "xs", label: "XS", px: "12px", scale: "0.857" },
-                          { id: "sm", label: "S", px: "13px", scale: "0.929" },
-                          { id: "md", label: "M", px: "14px", scale: "1" },
-                          { id: "lg", label: "L", px: "15.5px", scale: "1.107" },
-                          { id: "xl", label: "XL", px: "17px", scale: "1.214" },
-                        ].map((f) => {
-                          const currentFont = (typeof window !== "undefined" && localStorage.getItem("aray_font")) || "md";
-                          return (
-                            <button key={f.id}
-                              onClick={() => {
-                                document.documentElement.style.setProperty("font-size", f.px);
-                                document.documentElement.style.setProperty("--aray-font-scale", f.scale);
-                                try { localStorage.setItem("aray_font", f.id); } catch {}
-                              }}
-                              className="flex-1 py-2.5 rounded-xl text-[11px] font-bold transition-all active:scale-[0.94]"
-                              style={{
-                                background: currentFont === f.id ? glass.cardActiveBg : "transparent",
-                                border: currentFont === f.id ? glass.cardActiveBorder : glass.cardBorder,
-                                color: currentFont === f.id ? glass.textPrimary : glass.textSecondary,
-                                WebkitTapHighlightColor: "transparent",
-                              }}>
-                              {f.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Настройки темы/палитры/шрифта — через ARAY Control (липкий справа) */}
 
             {/* ── Поиск по разделам ── */}
             <div className="mx-4 mb-3 shrink-0">
