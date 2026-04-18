@@ -41,8 +41,8 @@ export function DashboardTopItems() {
   if (!loading && items.length === 0) return null;
 
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+    <div className="arayglass rounded-2xl">
+      <div className="flex items-center justify-between px-5 py-3.5 arayglass-divider border-b">
         <AdminSectionTitle icon={Package} title="Топ товаров" className="mb-0" />
         <div className="flex items-center gap-3">
           {lastUpdate && (
@@ -52,7 +52,7 @@ export function DashboardTopItems() {
           )}
           <button
             onClick={fetchItems}
-            className="text-muted-foreground hover:text-primary transition-colors"
+            className="text-muted-foreground hover:text-primary transition-colors arayglass-icon"
             title="Обновить"
           >
             <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
@@ -62,7 +62,7 @@ export function DashboardTopItems() {
           </Link>
         </div>
       </div>
-      <div className="divide-y divide-border">
+      <div className="divide-y arayglass-divider">
         {loading
           ? Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-5 py-3 animate-pulse">
@@ -72,7 +72,7 @@ export function DashboardTopItems() {
               </div>
             ))
           : items.map((item, i) => (
-              <div key={item.productName} className="flex items-center gap-3 px-5 py-3">
+              <div key={item.productName} className="arayglass-row flex items-center gap-3 px-5 py-3">
                 <span className="w-5 text-center text-xs font-bold text-muted-foreground/60">{i + 1}</span>
                 <p className="flex-1 text-sm font-medium truncate">{item.productName}</p>
                 <p className="text-sm font-bold shrink-0 text-primary">{formatPrice(item.totalPrice)}</p>

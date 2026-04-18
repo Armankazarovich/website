@@ -27,7 +27,7 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
   return (
     <Link
       href="/admin/analytics"
-      className="block bg-card rounded-2xl border border-border p-5 active:scale-[0.99] transition-all duration-300 hover:border-primary/20 group"
+      className="block arayglass arayglass-shimmer rounded-2xl p-5 active:scale-[0.99] transition-all duration-300 group"
     >
       <div className="flex items-center justify-between mb-4">
         <AdminSectionTitle icon={BarChart3} title="Выручка — 7 дней" className="mb-0" />

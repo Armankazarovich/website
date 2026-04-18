@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 17.04.2026
+> Последнее обновление: 18.04.2026
 
 ---
 
@@ -727,6 +727,60 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 18.04.2026 (сессия 13) — ARAY лицо + деплой-фикс + перформанс-оптимизация
+
+**Контекст:** Арман хочет живого Арая с реальным лицом вместо абстрактного SVG-орба. Также жалуется что сайт тормозит на чужих телефонах.
+
+**1. ARAY лицо — реальный портрет вместо SVG орба:**
+- ✅ `public/images/aray/face.png` — основной портрет 512×512, 151KB (оптимизирован sharp из 1.45MB)
+- ✅ `public/images/aray/face-mob.png` — мобильный кроп 256×256, 34KB (оптимизирован из 18.4MB!)
+- ✅ `components/shared/aray-orb.tsx` — полная переработка:
+  - SVG-орб заменён на `<img src="/images/aray/face-mob.png">` с rounded-full
+  - CSS анимации усилены: `arayBreathe` (scale 1.0→1.05, brightness 1.0→1.4) + `arayInnerPulse` (glow 0.3→0.7)
+  - Все 6+ мест использования автоматически получили лицо (dock, sidebar, chat, widget)
+- ✅ `components/store/aray-chat-panel.tsx` — аватар в чате: лицо вместо Sparkles иконки
+
+**2. Deploy workflow fix — картинки 404 на проде:**
+- ✅ `.github/workflows/deploy.yml` — исправлен `--exclude='./public/images'` (убивал ВСЕ картинки)
+  - Заменён на точечные exclude: `--exclude='./public/images/products'`, `categories`, `production`
+  - Теперь `images/aray/` деплоится нормально (это код, не user uploads)
+
+**3. Перформанс-оптимизация (сайт тормозил на чужих телефонах):**
+- ✅ `components/store/product-card.tsx` — `loading="lazy"` на оба Image (magazine + standard)
+- ✅ `components/store/hero-slider.tsx` — `loading={i === 0 ? "eager" : "lazy"}` (только 1й слайд сразу)
+- ✅ `components/store/category-card.tsx` — `loading="lazy"` на Image
+- ✅ `app/(store)/page.tsx` — `loading="lazy"` на 2 фоновых секции (hero-about.jpg, hero-cta.jpg)
+- ✅ `components/admin/admin-shell.tsx` — удалено 160 строк мёртвого кода (AdminNotificationBell — определён но НИГДЕ не рендерился), убран один из 3 дублирующих polling интервалов
+- ✅ `components/admin/admin-mobile-bottom-nav.tsx` — polling 30с → 60с, единственный источник уведомлений
+- ✅ `components/admin/admin-mobile-settings.tsx` — получает `notifCount` через prop вместо своего polling
+
+**Результат перформанса:**
+- Экономия ~1MB на начальной загрузке (lazy images)
+- Polling: 3 параллельных интервала → 1 (экономия 66% API-запросов, меньше нагрузка на батарею)
+- -160 строк мёртвого кода
+
+**Деплой:** 3 коммита за сессию, все verified, prod HTTP 200 ✅
+
+**Файлы изменены:**
+- `public/images/aray/face.png` — NEW (151KB)
+- `public/images/aray/face-mob.png` — NEW (34KB)
+- `components/shared/aray-orb.tsx` — SVG→IMG + анимации
+- `components/store/aray-chat-panel.tsx` — аватар в чате
+- `.github/workflows/deploy.yml` — fix excludes
+- `components/store/product-card.tsx` — lazy loading
+- `components/store/hero-slider.tsx` — lazy loading
+- `components/store/category-card.tsx` — lazy loading
+- `app/(store)/page.tsx` — lazy loading
+- `components/admin/admin-shell.tsx` — dead code removal
+- `components/admin/admin-mobile-bottom-nav.tsx` — polling 60s
+- `components/admin/admin-mobile-settings.tsx` — notifCount prop
+
+**Видение Армана на будущее — "Моментальная загрузка" (SPA-like):**
+- Арман хочет чтобы все страницы открывались как попапы (без перезагрузки)
+- На десктопе — "консоль" (dashboard с модалами, как Notion)
+- Технически: Next.js Intercepting Routes + Parallel Routes
+- Это серьёзный архитектурный рефакторинг — отдельная задача на будущее
 
 ### Сессия 17.04.2026 (сессия 12) — Полировка drawer + аватарки + мобильные формы (7 коммитов)
 
@@ -1666,7 +1720,7 @@ const { theme, setTheme } = useTheme();
 
 ## На следующую сессию (план)
 
-> Последнее обновление: 17.04.2026
+> Последнее обновление: 18.04.2026
 
 ### 🚨 СТИЛЕВЫЕ ПРАВИЛА — НЕ НАРУШАТЬ
 ```
@@ -1683,6 +1737,276 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 НЕ ИСПОЛЬЗОВАТЬ: rounded-md, border-input, ring-ring, hardcoded rgba/hex
 НЕ ПРИДУМЫВАТЬ:  новые стили. Собирать из существующих glass-*/bg-card/border-border
 ```
+
+### 🎨 ДИЗАЙН-МАНИФЕСТ — ARAYGLASS (18.04.2026)
+
+> **Видение Армана:** стеклянный, неоновый, живой. Как интерфейс из будущего.
+> Каждый элемент дышит, светится, реагирует. Минимализм + свечение + глубина.
+> Это не тема — это язык дизайна всей экосистемы ПилоРус.
+
+---
+
+#### 1. ФИЛОСОФИЯ
+
+Три столпа ARAYGLASS:
+- **Стекло** — каждая поверхность полупрозрачна, размыта, многослойна. Контент живёт *внутри* стекла, не *на* нём.
+- **Неон** — тонкие обводки и свечение в цвете текущей палитры. Неон оживляет стекло. Без неона стекло мёртвое.
+- **Движение** — ничего не статично. Hover = блеск по обводке. Появление = fade+scale. Иконки = subtle transitions. Всё дышит.
+
+Цветовая палитра (13 штук) автоматически меняет цвет ВСЕХ неоновых элементов через CSS var `--primary`. Ни одного hardcoded цвета.
+
+---
+
+#### 2. CSS-КЛАССЫ (добавить в globals.css)
+
+```css
+/* ── ARAY PRODUCTION: Базовая карточка ── */
+.arayglass {
+  position: relative;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid hsl(var(--primary) / 0.15);
+  border-radius: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+.arayglass:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  box-shadow: 0 0 24px hsl(var(--primary) / 0.08),
+              0 0 0 1px hsl(var(--primary) / 0.1);
+}
+
+/* Светлая тема */
+:root:not(.dark) .arayglass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(150%);
+  border-color: hsl(var(--primary) / 0.12);
+}
+:root:not(.dark) .arayglass:hover {
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: 0 0 16px hsl(var(--primary) / 0.06);
+}
+
+/* ── ARAY PRODUCTION: Неоновый glow (тёмные темы) ── */
+.arayglass-glow {
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.12),
+              inset 0 1px 0 hsl(var(--primary) / 0.08);
+}
+
+/* ── ARAY PRODUCTION: Shimmer — бегающий блеск по обводке ── */
+.arayglass-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.arayglass-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from var(--shimmer-angle, 0deg),
+    transparent 0%,
+    hsl(var(--primary) / 0.4) 8%,
+    transparent 16%
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  padding: 1px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: arayShimmer 3s linear infinite;
+  pointer-events: none;
+}
+.arayglass-shimmer:hover::before {
+  opacity: 1;
+}
+@keyframes arayShimmer {
+  to { --shimmer-angle: 360deg; }
+}
+
+/* ── ARAY PRODUCTION: Статус-бейдж с неоном ── */
+.arayglass-badge {
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ── ARAY PRODUCTION: Иконка с transition ── */
+.arayglass-icon {
+  transition: color 0.2s ease, transform 0.2s ease, filter 0.2s ease;
+}
+.arayglass-icon:hover {
+  filter: drop-shadow(0 0 6px currentColor);
+  transform: scale(1.08);
+}
+```
+
+---
+
+#### 3. РЕЦЕПТЫ ПО ТИПАМ ЭЛЕМЕНТОВ
+
+**Карточка статистики (дашборд):**
+```
+.arayglass .arayglass-shimmer p-6 rounded-2xl
+  → Значение: text-3xl font-bold text-foreground
+  → Подпись: text-sm text-muted-foreground
+  → Иконка: .arayglass-icon w-10 h-10 text-primary/60
+  → Тёмная: aray-glow при idle (без hover)
+```
+
+**Таблица/список:**
+```
+Контейнер: .arayglass rounded-2xl overflow-hidden
+  → Заголовок: px-6 py-4 border-b border-primary/10 text-xs uppercase tracking-wider
+  → Строки: px-6 py-4 border-b border-primary/[0.05] hover:bg-primary/[0.04] transition-colors
+  → Последняя строка: border-b-0
+```
+
+**Форма/инпут:**
+```
+Input: bg-black/20 border border-primary/15 rounded-xl px-4 py-3
+       focus:border-primary/40 focus:ring-2 focus:ring-primary/15
+       placeholder:text-muted-foreground/50
+Светлая: bg-white/50 border-primary/10 focus:border-primary/30
+```
+
+**Кнопка primary:**
+```
+bg-primary text-primary-foreground rounded-xl px-6 py-3
+hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110
+active:scale-[0.98] transition-all duration-200
+```
+
+**Кнопка ghost/secondary:**
+```
+bg-transparent border border-primary/15 text-foreground rounded-xl
+hover:border-primary/30 hover:bg-primary/[0.05]
+```
+
+**Dropdown/popup:**
+```
+.arayglass rounded-xl shadow-2xl border-primary/20
+  → Items: px-4 py-3 hover:bg-primary/[0.06] rounded-lg transition-colors
+```
+
+**Статус-бейдж (заказы):**
+```
+.arayglass-badge
+  → NEW: text-blue-400 (неоновый голубой)
+  → CONFIRMED: text-emerald-400
+  → PROCESSING: text-amber-400
+  → SHIPPED/IN_DELIVERY: text-violet-400
+  → DELIVERED/COMPLETED: text-green-400
+  → CANCELLED: text-red-400/50 (тусклый)
+```
+
+**Навигация/сайдбар:**
+```
+Уже реализовано в admin-shell.tsx — НЕ ТРОГАТЬ.
+Сайдбар = always dark, glass-sidebar стиль.
+```
+
+---
+
+#### 4. АНИМАЦИИ
+
+```
+Появление элемента:     opacity 0→1, translateY 8px→0, duration 300ms, ease-out
+Появление карточки:      opacity 0→1, scale 0.97→1, duration 400ms, ease-out
+Появление попапа:        opacity 0→1, scale 0.95→1, duration 250ms, spring(damping:25)
+Hover карточки:          border-color transition 300ms + shimmer fade-in 300ms
+Hover кнопки:            brightness + shadow transition 200ms
+Hover иконки:            scale 1→1.08 + drop-shadow fade 200ms
+Нажатие кнопки:          scale 1→0.98, duration 100ms
+Skeleton loading:        pulse animation (bg-primary/[0.06] → bg-primary/[0.12])
+```
+
+Никаких резких переходов. Всё плавное, мягкое, как дыхание.
+
+---
+
+#### 5. ЦВЕТА — ТОЛЬКО ЧЕРЕЗ CSS VARS
+
+```
+Текст основной:      text-foreground          (никогда text-white, text-black)
+Текст вторичный:      text-muted-foreground    (никогда text-gray-*)
+Текст акцент:         text-primary             (никогда hardcoded hex/rgb)
+Неон обводка:         hsl(var(--primary) / X)  где X = 0.1-0.5
+Неон свечение:        hsl(var(--primary) / X)  где X = 0.05-0.15
+Фон карточки dark:    rgba(0,0,0,0.4)          + backdrop-blur
+Фон карточки light:   rgba(255,255,255,0.7)    + backdrop-blur
+Фон инпута dark:      rgba(0,0,0,0.2)
+Фон инпута light:     rgba(255,255,255,0.5)
+Разделители:          hsl(var(--primary) / 0.08)
+```
+
+**ЗАПРЕЩЕНО:** `bg-gray-*`, `text-gray-*`, `border-gray-*`, `#hex`, `rgb()` для UI элементов.
+**ИСКЛЮЧЕНИЯ:** декоративные элементы (точки онлайн-статуса), print-стили.
+
+---
+
+#### 6. ЧЕКЛИСТ ПЕРЕД ДЕПЛОЕМ КАЖДОГО РАЗДЕЛА
+
+- [ ] Тёмная тема: карточки стеклянные, обводки видны, неон светится
+- [ ] Светлая тема: матовое стекло, обводки тонкие, читаемость 100%
+- [ ] Hover: shimmer бегает по обводке, всё плавно
+- [ ] Мобилка (375px): карточки не ломаются, touch targets ≥44px, текст ≥12px
+- [ ] Палитра "timber" (дефолт): проверить
+- [ ] Палитра "ocean" (синяя): проверить контраст
+- [ ] Палитра "crimson" (красная): проверить что неон не сливается с ошибками
+- [ ] Нет hardcoded цветов (grep: `text-gray`, `bg-gray`, `#[0-9a-f]`)
+- [ ] Логика/данные НЕ изменены — только визуал
+- [ ] TypeScript: 0 ошибок
+
+---
+
+#### 7. ПОРЯДОК РАБОТ — СТИЛЬ (10 разделов)
+
+| # | Раздел | Путь | Что менять |
+|---|--------|------|-----------|
+| 1 | Дашборд | `/admin` | Карточки статистики, графики → .arayglass + shimmer |
+| 2 | Заказы | `/admin/orders` | Таблица/карточки, QuickView, статус-бейджи |
+| 3 | Товары | `/admin/products` | Карточки товаров, фильтры |
+| 4 | Доставка | `/admin/delivery` | Карточки доставок, тарифы |
+| 5 | CRM/Клиенты | `/admin/clients` | Карточки клиентов, статистика |
+| 6 | Команда | `/admin/staff` | Карточки сотрудников, онлайн-статус |
+| 7 | Отзывы | `/admin/reviews` | Карточки отзывов, модерация |
+| 8 | Настройки | `/admin/settings`, `site`, `appearance` | Формы, контролы |
+| 9 | Аналитика | `/admin/analytics`, `finance` | Графики, таблицы |
+| 10 | Помощь | `/admin/help` | FAQ карточки |
+
+Каждый раздел = 1 коммит → verify prod → следующий.
+
+---
+
+#### 8. ПОСЛЕ СТИЛЯ — СВЕТОВАЯ ТЕХНОЛОГИЯ
+
+| # | Фича | Описание |
+|---|-------|----------|
+| 11 | SPA-попапы | Intercepting Routes + Parallel Routes. Клик → попап мгновенно. URL → полная страница (SEO). |
+| 12 | Command Palette | Ctrl+K / свайп / голос → Арай ищет и открывает любой попап. Как Spotlight, но живой. |
+| 13 | Комната Арая | Полноценная страница: чат + история разговоров + голосовой ввод/вывод. |
+| 14 | Veo3 + Nano + Banana | Интеграция видео-генерации и AI-моделей в экосистему. |
+
+---
+
+#### 9. ПРАВИЛА ПЕРЕДЕЛКИ — ЖЕЛЕЗНЫЕ
+
+1. **НЕ менять логику/данные** — только визуал. Если видишь баг — запиши, не чини в этом коммите.
+2. **Один раздел = один коммит** → verify prod → следующий раздел. Не смешивать.
+3. **CSS-классы в globals.css** — `.arayglass`, `.arayglass-glow`, `.arayglass-shimmer`, `.arayglass-badge`, `.arayglass-icon`. Не inline styles.
+4. **Все цвета через `--primary`** — автоматически меняются с палитрой.
+5. **Тестировать 3 темы**: timber (дефолт) + ocean (синяя) + crimson (красная).
+6. **Тестировать dark + light** — оба режима обязательны.
+7. **Мобилка** — проверять всегда. Карточки stack вертикально, blur не тормозит.
+8. **Не трогать сайдбар/dock** — уже в стиле, работает.
+9. **`position: relative`** на `.arayglass` — обязательно для shimmer ::before.
+10. **`overflow: hidden`** на `.arayglass-shimmer` — чтобы блеск не вылезал за границы.
 
 ### 🔥 ПРИОРИТЕТ 0 — Полировка стилей ✅ ГОТОВО (15.04.2026)
 **Что сделано:**
@@ -1758,6 +2082,23 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 - Голосовой ввод/вывод (Web Speech API + ElevenLabs TTS) — на будущее
 - Контекст товара — Арай знает что смотрит пользователь
 - Быстрые действия: "Подобрать", "Рассчитать", "Доставка"
+
+### 🔥 ПРИОРИТЕТ 5 — SPA-like моментальная навигация ("Консоль")
+Арман хочет чтобы сайт НИКОГДА не перезагружался при навигации — все страницы открываются как full-screen попапы.
+- **Технология**: Next.js Intercepting Routes (`(.)page`, `(..)page`) + Parallel Routes (`@modal`)
+- **Десктоп**: "Консоль" — dashboard с модальными окнами (как Notion/Linear)
+- **Мобилка**: Bottom sheet + модалы (как сейчас, но для ВСЕХ страниц)
+- **Паттерн**: клик по ссылке → попап мгновенно, прямой URL → полная страница (SEO сохраняется)
+- **Объём**: серьёзный архитектурный рефакторинг, 3-5 сессий минимум
+- **Начинать после**: Профили отзывщиков + Биржа MVP
+
+### ARAY — текущее состояние визуала (18.04.2026)
+- **Лицо**: реальный портрет AI-лица вместо абстрактного SVG-орба
+- **Файлы**: `public/images/aray/face.png` (512×512, 151KB), `face-mob.png` (256×256, 34KB)
+- **Компонент**: `components/shared/aray-orb.tsx` — `<img>` с CSS анимациями breathing + pulse
+- **Анимация**: `arayBreathe` (scale 1.05, brightness 1.4) + `arayInnerPulse` (glow box-shadow)
+- **Используется в**: dock, sidebar, chat panel, widget — все автоматически через aray-orb.tsx
+- **Правило**: НЕ менять лицо без одобрения Армана (скрин → одобрение → деплой)
 
 ### Известные баги (исправить в начале следующей сессии)
 

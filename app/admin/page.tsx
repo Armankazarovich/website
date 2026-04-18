@@ -17,53 +17,51 @@ import { DashboardMetrics, CourierMetrics } from "@/components/admin/dashboard-m
 import { DashboardChart } from "@/components/admin/dashboard-chart";
 
 // ── Быстрые действия по ролям ──────────────────────────────────────────────
-// Все иконки = text-primary (следуют палитре), фон = bg-card (тёмное стекло в nature-mode)
-const C = "text-primary";
-const B = "bg-card";
-const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType; color: string; bg: string }[]> = {
+// Все иконки = text-primary (следуют палитре), фон = arayglass (стекло)
+const QUICK_ACTIONS: Record<string, { href: string; label: string; icon: React.ElementType }[]> = {
   owner: [
-    { href: "/admin/orders",       label: "Заказы",      icon: ShoppingBag, color: C, bg: B },
-    { href: "/admin/clients",      label: "Клиенты",     icon: UserCircle,  color: C, bg: B },
-    { href: "/admin/analytics",    label: "Аналитика",   icon: BarChart2,   color: C, bg: B },
-    { href: "/admin/finance",      label: "Финансы",     icon: Wallet,      color: C, bg: B },
-    { href: "/admin/products",     label: "Каталог",     icon: Package,     color: C, bg: B },
-    { href: "/admin/email",        label: "Email",       icon: Mail,        color: C, bg: B },
-    { href: "/admin/notifications",label: "Уведомления", icon: Bell,        color: C, bg: B },
-    { href: "/admin/settings",     label: "Настройки",   icon: Settings,    color: C, bg: B },
+    { href: "/admin/orders",       label: "Заказы",      icon: ShoppingBag },
+    { href: "/admin/clients",      label: "Клиенты",     icon: UserCircle },
+    { href: "/admin/analytics",    label: "Аналитика",   icon: BarChart2 },
+    { href: "/admin/finance",      label: "Финансы",     icon: Wallet },
+    { href: "/admin/products",     label: "Каталог",     icon: Package },
+    { href: "/admin/email",        label: "Email",       icon: Mail },
+    { href: "/admin/notifications",label: "Уведомления", icon: Bell },
+    { href: "/admin/settings",     label: "Настройки",   icon: Settings },
   ],
   manager: [
-    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: C, bg: B },
-    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: C, bg: B },
-    { href: "/admin/crm",       label: "CRM",       icon: Target,      color: C, bg: B },
-    { href: "/admin/delivery",  label: "Доставка",  icon: Truck,       color: C, bg: B },
-    { href: "/admin/products",  label: "Каталог",   icon: Package,     color: C, bg: B },
-    { href: "/admin/reviews",   label: "Отзывы",    icon: Star,        color: C, bg: B },
-    { href: "/admin/tasks",     label: "Задачи",    icon: CheckSquare, color: C, bg: B },
-    { href: "/admin/inventory", label: "Склад",     icon: Warehouse,   color: C, bg: B },
+    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag },
+    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle },
+    { href: "/admin/crm",       label: "CRM",       icon: Target },
+    { href: "/admin/delivery",  label: "Доставка",  icon: Truck },
+    { href: "/admin/products",  label: "Каталог",   icon: Package },
+    { href: "/admin/reviews",   label: "Отзывы",    icon: Star },
+    { href: "/admin/tasks",     label: "Задачи",    icon: CheckSquare },
+    { href: "/admin/inventory", label: "Склад",     icon: Warehouse },
   ],
   courier: [
-    { href: "/admin/delivery", label: "Мои доставки", icon: Truck,       color: C, bg: B },
-    { href: "/admin/orders",   label: "Заказы",       icon: ShoppingBag, color: C, bg: B },
-    { href: "/admin/tasks",    label: "Задачи",       icon: CheckSquare, color: C, bg: B },
-    { href: "/admin/help",     label: "Помощь",       icon: HeartPulse,  color: C, bg: B },
+    { href: "/admin/delivery", label: "Мои доставки", icon: Truck },
+    { href: "/admin/orders",   label: "Заказы",       icon: ShoppingBag },
+    { href: "/admin/tasks",    label: "Задачи",       icon: CheckSquare },
+    { href: "/admin/help",     label: "Помощь",       icon: HeartPulse },
   ],
   accountant: [
-    { href: "/admin/finance",   label: "Финансы",   icon: Wallet,      color: C, bg: B },
-    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag, color: C, bg: B },
-    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2,   color: C, bg: B },
-    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle,  color: C, bg: B },
+    { href: "/admin/finance",   label: "Финансы",   icon: Wallet },
+    { href: "/admin/orders",    label: "Заказы",    icon: ShoppingBag },
+    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2 },
+    { href: "/admin/clients",   label: "Клиенты",   icon: UserCircle },
   ],
   warehouse: [
-    { href: "/admin/inventory", label: "Склад",    icon: Warehouse,   color: C, bg: B },
-    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: C, bg: B },
-    { href: "/admin/import",    label: "Импорт",   icon: FileDown,    color: C, bg: B },
-    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: C, bg: B },
+    { href: "/admin/inventory", label: "Склад",    icon: Warehouse },
+    { href: "/admin/products",  label: "Каталог",  icon: Package },
+    { href: "/admin/import",    label: "Импорт",   icon: FileDown },
+    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag },
   ],
   seller: [
-    { href: "/admin/products",  label: "Каталог",  icon: Package,     color: C, bg: B },
-    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag, color: C, bg: B },
-    { href: "/admin/clients",   label: "Клиенты",  icon: UserCircle,  color: C, bg: B },
-    { href: "/admin/reviews",   label: "Отзывы",   icon: Star,        color: C, bg: B },
+    { href: "/admin/products",  label: "Каталог",  icon: Package },
+    { href: "/admin/orders",    label: "Заказы",   icon: ShoppingBag },
+    { href: "/admin/clients",   label: "Клиенты",  icon: UserCircle },
+    { href: "/admin/reviews",   label: "Отзывы",   icon: Star },
   ],
 };
 
@@ -168,25 +166,25 @@ export default async function AdminDashboard() {
       {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (
         <div className="flex flex-col gap-2">
           {newOrders > 0 && (
-            <Link href="/admin/orders?status=NEW" className="flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl hover:border-orange-400 transition-colors">
+            <Link href="/admin/orders?status=NEW" className="arayglass flex items-center justify-between px-4 py-3 rounded-2xl transition-colors" style={{ borderColor: "hsl(var(--primary) / 0.3)" }}>
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-                <span className="text-sm font-semibold text-orange-800 dark:text-orange-200">{newOrders} новых заказов</span>
+                <span className="text-sm font-semibold text-foreground">{newOrders} новых заказов</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-orange-500" />
+              <ChevronRight className="w-4 h-4 text-primary" />
             </Link>
           )}
           {pendingReviews > 0 && isOwner && (
-            <Link href="/admin/reviews" className="flex items-center justify-between px-4 py-3 bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-2xl hover:border-yellow-400 transition-colors">
+            <Link href="/admin/reviews" className="arayglass flex items-center justify-between px-4 py-3 rounded-2xl transition-colors" style={{ borderColor: "hsl(var(--primary) / 0.2)" }}>
               <div className="flex items-center gap-2.5">
-                <Star className="w-4 h-4 text-yellow-600" />
-                <span className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">{pendingReviews} отзывов ждут модерации</span>
+                <Star className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">{pendingReviews} отзывов ждут модерации</span>
               </div>
-              <ChevronRight className="w-4 h-4 text-yellow-500" />
+              <ChevronRight className="w-4 h-4 text-primary" />
             </Link>
           )}
           {pendingStaff > 0 && isOwner && (
-            <Link href="/admin/staff" className="flex items-center justify-between px-4 py-3 bg-primary/10 dark:bg-primary/15 border border-primary/30 rounded-2xl hover:border-primary/50 transition-colors">
+            <Link href="/admin/staff" className="arayglass flex items-center justify-between px-4 py-3 rounded-2xl transition-colors" style={{ borderColor: "hsl(var(--primary) / 0.25)" }}>
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">{pendingStaff} сотрудников ждут одобрения</span>
@@ -220,11 +218,11 @@ export default async function AdminDashboard() {
             <Link
               key={action.href}
               href={action.href}
-              className={`group flex flex-col items-center justify-center gap-2 rounded-2xl border border-primary/20 p-2.5 min-h-[76px] active:scale-[0.93] transition-all duration-200 aray-icon-spin hover:border-primary/55 hover:bg-primary/[0.10] hover:scale-[1.03] hover:shadow-[0_0_18px_hsl(var(--primary)/0.22)] ${action.bg}`}
+              className={`group arayglass arayglass-shimmer flex flex-col items-center justify-center gap-2 rounded-2xl p-2.5 min-h-[76px] active:scale-[0.93] transition-all duration-200 hover:scale-[1.03]`}
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
-              <action.icon className={`w-6 h-6 ${action.color} transition-all duration-200 group-hover:scale-110`} />
-              <span className={`text-[10px] font-semibold text-center leading-tight ${action.color}`}>
+              <action.icon className="w-6 h-6 text-primary arayglass-icon" />
+              <span className="text-[10px] font-semibold text-center leading-tight text-foreground">
                 {action.label}
               </span>
             </Link>
@@ -242,17 +240,17 @@ export default async function AdminDashboard() {
       )}
 
       {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ ── */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+      <div className="arayglass rounded-2xl">
+        <div className="flex items-center justify-between px-5 py-3.5 arayglass-divider border-b">
           <AdminSectionTitle icon={ShoppingBag} title="Последние заказы" className="mb-0" />
           <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all">Все <ChevronRight className="w-3 h-3" /></Link>
         </div>
-        <div className="divide-y divide-border">
+        <div className="divide-y arayglass-divider">
           {recentOrders.map((order) => {
             const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
             const label = ORDER_STATUS_LABELS[order.status] || order.status;
             return (
-              <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-4 py-3.5 hover:bg-primary/[0.05] active:bg-primary/10 transition-colors" style={{ WebkitTapHighlightColor: "transparent" }}>
+              <Link key={order.id} href={`/admin/orders/${order.id}`} className="arayglass-row flex items-center justify-between px-4 py-3.5 active:bg-primary/10" style={{ WebkitTapHighlightColor: "transparent" }}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
                   <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>
