@@ -93,7 +93,7 @@ export function AdminMobileBottomNav({
     return () => vv.removeEventListener("resize", onResize);
   }, []);
 
-  // Polling notification count (staff only)
+  // Single polling source for notifications (60s instead of 30s to save battery)
   useEffect(() => {
     if (isClient) return;
     const fetchCount = async () => {
@@ -109,7 +109,7 @@ export function AdminMobileBottomNav({
       } catch {}
     };
     fetchCount();
-    const t = setInterval(fetchCount, 30000);
+    const t = setInterval(fetchCount, 60000);
     return () => clearInterval(t);
   }, [isClient]);
 

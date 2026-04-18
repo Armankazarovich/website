@@ -732,6 +732,7 @@ export default async function HomePage() {
             src="/images/production/hero-about.jpg"
             alt="Производство пиломатериалов ПилоРус"
             fill
+            loading="lazy"
             className="object-cover object-center"
             sizes="100vw"
           />
@@ -984,6 +985,7 @@ export default async function HomePage() {
             src="/images/production/hero-cta.jpg"
             alt="Производство ПилоРус"
             fill
+            loading="lazy"
             className="object-cover object-center"
             sizes="100vw"
           />

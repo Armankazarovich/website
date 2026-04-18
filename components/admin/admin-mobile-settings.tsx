@@ -45,25 +45,16 @@ export function MobileFontControl() {
 }
 
 // ── Мобильный pill: уведомления + настройки (как кнопка фильтров в магазине) ─
-export function AdminMobileActionPill({ onSettingsOpen }: { onSettingsOpen: () => void }) {
-  const [count, setCount] = useState(0);
+export function AdminMobileActionPill({ onSettingsOpen, notifCount = 0 }: { onSettingsOpen: () => void; notifCount?: number }) {
+  const [count, setCount] = useState(notifCount);
   const [bellOpen, setBellOpen] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const router = useRouter();
   const classic = useClassicMode();
 
-  useEffect(() => {
-    const fetchCount = async () => {
-      try {
-        const res = await fetch("/api/admin/notifications/count");
-        if (res.ok) { const d = await res.json(); setCount(d.total ?? 0); }
-      } catch {}
-    };
-    fetchCount();
-    const t = setInterval(fetchCount, 30000);
-    return () => clearInterval(t);
-  }, []);
+  // Sync from parent instead of own polling
+  useEffect(() => { setCount(notifCount); }, [notifCount]);
 
   const openBell = async () => {
     setBellOpen(true);

@@ -214,7 +214,7 @@ export function ProductCard({
         {/* Full-bleed image */}
         <Link href={`/product/${slug}`} className="absolute inset-0">
           {images[0] && !imgError ? (
-            <Image src={images[0]} alt={name} fill
+            <Image src={images[0]} alt={name} fill loading="lazy"
               className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
               sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px" unoptimized
               onError={() => setImgError(true)} />
@@ -314,6 +314,7 @@ export function ProductCard({
             src={images[0]}
             alt={name}
             fill
+            loading="lazy"
             className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
             sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px"
             unoptimized
