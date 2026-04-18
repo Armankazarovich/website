@@ -24,6 +24,7 @@ jobs:
             --exclude='./.git' \
             --exclude='./public/images/products' \
             --exclude='./public/images/categories' \
+            --exclude='./public/images/production' \
             --exclude='./public/uploads' \
             -czf "$RUNNER_TEMP/deploy.tar.gz" .
           cp "$RUNNER_TEMP/deploy.tar.gz" ./deploy.tar.gz
