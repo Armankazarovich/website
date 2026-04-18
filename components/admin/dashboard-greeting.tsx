@@ -34,7 +34,7 @@ export function DashboardGreeting({ userName, roleLabel, roleColor }: DashboardG
 
   return (
     <div
-      className="arayglass arayglass-shimmer relative rounded-2xl px-4 py-3.5 lg:p-5 transition-all duration-500"
+      className="arayglass arayglass-nopad arayglass-shimmer relative rounded-2xl px-4 py-3.5 sm:px-5 sm:py-4 lg:p-5 transition-all duration-500"
       style={{ opacity: mounted ? 1 : 0, transform: mounted ? "translateY(0)" : "translateY(8px)" }}
     >
       {/* Subtle gradient accent */}

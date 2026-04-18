@@ -1848,6 +1848,24 @@ Glass тёмная:    bg-black/40 backdrop-blur-xl border-white/10
 
 ---
 
+#### 2.5 RESPONSIVE СЕТКИ (мобилка / планшет / десктоп)
+
+Готовые классы в `globals.css` — ставишь один класс, получаешь 3 размера:
+
+```
+.arayglass-grid-metrics  — 2 col моб → 2 col планшет → 4 col десктоп (для метрик)
+.arayglass-grid-actions   — 2 col моб → 3 col планшет → 4 col десктоп (для кнопок)
+.arayglass-grid-cards     — 1 col моб → 2 col планшет → 3 col десктоп (для карточек)
+.arayglass-grid-split     — 1 col моб → 2 col планшет+ (для двух блоков рядом)
+.arayglass-nopad          — отключает адаптивный padding (для кастомного layout)
+.arayglass-value          — адаптивный размер текста значений (1.25→1.5→1.875rem)
+```
+
+Breakpoints: `<640` mobile | `640-1023` tablet | `1024+` desktop
+Не пиши `grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` — ставь `.arayglass-grid-actions`.
+
+---
+
 #### 3. РЕЦЕПТЫ ПО ТИПАМ ЭЛЕМЕНТОВ
 
 **Карточка статистики (дашборд):**

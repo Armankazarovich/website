@@ -3469,6 +3469,93 @@ aside.aray-sidebar {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   ARAYGLASS RESPONSIVE — мобилка / планшет / десктоп
+   Breakpoints: <640 mobile | 640-1023 tablet | 1024+ desktop
+   Один класс = все 3 размера. Не думай — ставь класс.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Сетка метрик: 2 колонки моб → 2 планшет → 4 десктоп ── */
+.arayglass-grid-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .arayglass-grid-metrics { gap: 0.75rem; }
+}
+@media (min-width: 1024px) {
+  .arayglass-grid-metrics {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* ── Сетка Quick Actions: 2 моб → 3 планшет → 4 десктоп ── */
+.arayglass-grid-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+@media (min-width: 640px) {
+  .arayglass-grid-actions {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.625rem;
+  }
+}
+@media (min-width: 1024px) {
+  .arayglass-grid-actions {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+/* ── Сетка карточек: 1 моб → 2 планшет → 3 десктоп ── */
+.arayglass-grid-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+@media (min-width: 640px) {
+  .arayglass-grid-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .arayglass-grid-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Адаптивный padding для arayglass ── */
+.arayglass { padding: 1rem; }
+@media (min-width: 640px) { .arayglass { padding: 1.25rem; } }
+@media (min-width: 1024px) { .arayglass { padding: 1.5rem; } }
+
+/* Вариант без автопаддинга (для кастомного layout) */
+.arayglass-nopad { padding: 0 !important; }
+
+/* ── Адаптивный текст заголовков внутри arayglass ── */
+.arayglass-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+@media (min-width: 640px) { .arayglass-value { font-size: 1.5rem; } }
+@media (min-width: 1024px) { .arayglass-value { font-size: 1.875rem; } }
+
+/* ── Планшетный layout: 2 колонки для chart+list ── */
+.arayglass-grid-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .arayglass-grid-split {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    GLOW CARD — курсорное свечение на карточках админки
    Добавь data-glow или class="glow-card" к любому элементу.
    Автоматически: .bg-card с border внутри админки.

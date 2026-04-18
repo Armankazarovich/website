@@ -24,7 +24,7 @@ function MetricCard({ href, icon: Icon, value, label, prefix = "", suffix = "", 
   return (
     <Link
       href={href}
-      className="dash-metric-card group arayglass arayglass-shimmer rounded-2xl px-3.5 py-3 lg:p-4 active:scale-[0.97] transition-all duration-300"
+      className="dash-metric-card group arayglass arayglass-nopad arayglass-shimmer rounded-2xl px-3.5 py-3 sm:px-4 sm:py-3.5 lg:p-4 active:scale-[0.97] transition-all duration-300"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(12px)",
@@ -69,7 +69,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
   const avg = Math.round(avgOrder);
 
   return (
-    <div className="grid grid-cols-2 gap-2 lg:gap-3">
+    <div className="arayglass-grid-metrics">
       <MetricCard href="/admin/finance" icon={TrendingUp} value={r30} label="Выручка за 30 дн." suffix=" ₽" delay={0} />
       <MetricCard href="/admin/analytics" icon={BarChart3} value={rToday} label="Сегодня" suffix=" ₽" delay={80} />
       <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" delay={160} />

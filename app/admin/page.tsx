@@ -213,7 +213,7 @@ export default async function AdminDashboard() {
       {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
       <div>
         <AdminSectionTitle icon={Zap} title="Быстрый доступ" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        <div className="arayglass-grid-actions">
           {quickActions.map((action) => (
             <Link
               key={action.href}
@@ -239,37 +239,39 @@ export default async function AdminDashboard() {
         />
       )}
 
-      {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ ── */}
-      <div className="arayglass rounded-2xl">
-        <div className="flex items-center justify-between px-5 py-3.5 arayglass-divider border-b">
-          <AdminSectionTitle icon={ShoppingBag} title="Последние заказы" className="mb-0" />
-          <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all">Все <ChevronRight className="w-3 h-3" /></Link>
+      {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ + ТОП ТОВАРОВ (планшет: рядом) ── */}
+      <div className="arayglass-grid-split">
+        <div className="arayglass arayglass-nopad rounded-2xl">
+          <div className="flex items-center justify-between px-5 py-3.5 arayglass-divider border-b">
+            <AdminSectionTitle icon={ShoppingBag} title="Последние заказы" className="mb-0" />
+            <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all">Все <ChevronRight className="w-3 h-3" /></Link>
+          </div>
+          <div className="divide-y arayglass-divider">
+            {recentOrders.map((order) => {
+              const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
+              const label = ORDER_STATUS_LABELS[order.status] || order.status;
+              return (
+                <Link key={order.id} href={`/admin/orders/${order.id}`} className="arayglass-row flex items-center justify-between px-4 py-3.5 active:bg-primary/10" style={{ WebkitTapHighlightColor: "transparent" }}>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
+                    <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <p className="text-sm font-bold">{formatPrice(Number(order.totalAmount))}</p>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
+                  </div>
+                </Link>
+              );
+            })}
+            {recentOrders.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Заказов ещё нет</p>}
+          </div>
         </div>
-        <div className="divide-y arayglass-divider">
-          {recentOrders.map((order) => {
-            const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
-            const label = ORDER_STATUS_LABELS[order.status] || order.status;
-            return (
-              <Link key={order.id} href={`/admin/orders/${order.id}`} className="arayglass-row flex items-center justify-between px-4 py-3.5 active:bg-primary/10" style={{ WebkitTapHighlightColor: "transparent" }}>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
-                  <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <p className="text-sm font-bold">{formatPrice(Number(order.totalAmount))}</p>
-                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/50" />
-                </div>
-              </Link>
-            );
-          })}
-          {recentOrders.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Заказов ещё нет</p>}
-        </div>
-      </div>
 
-      {/* ── ТОП ТОВАРОВ — live обновление каждые 30с ── */}
-      {(isOwner || roleGroup === "manager" || roleGroup === "seller") && (
-        <DashboardTopItems />
-      )}
+        {/* ── ТОП ТОВАРОВ — live обновление каждые 30с ── */}
+        {(isOwner || roleGroup === "manager" || roleGroup === "seller") ? (
+          <DashboardTopItems />
+        ) : <div />}
+      </div>
 
     </div>
   );
