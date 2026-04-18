@@ -89,9 +89,12 @@ function ChatBubble({ message }: { message: Message }) {
     >
       {/* Aray avatar */}
       {!isUser && (
-        <div className="w-8 h-8 rounded-full shrink-0 mr-2 mt-1 flex items-center justify-center"
-          style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}>
-          <Sparkles className="w-3.5 h-3.5 text-white" />
+        <div className="w-8 h-8 rounded-full shrink-0 mr-2 mt-1 overflow-hidden"
+          style={{ border: "1.5px solid rgba(96,165,250,0.3)" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/aray/face-mob.png" alt="ARAY" width={32} height={32}
+            className="w-full h-full object-cover rounded-full"
+            style={{ filter: "brightness(1.1) contrast(1.1) saturate(1.1)" }} />
         </div>
       )}
 
