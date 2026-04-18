@@ -142,19 +142,19 @@ export function ArayOrb({
       {/* Global keyframes (injected once) */}
       <style jsx global>{`
         @keyframes arayBreathe {
-          0%, 100% { transform: scale(1); filter: brightness(1.1) contrast(1.1) saturate(1.1); }
-          35% { transform: scale(1.02); filter: brightness(1.25) contrast(1.15) saturate(1.15); }
-          65% { transform: scale(0.99); filter: brightness(1.05) contrast(1.1) saturate(1.05); }
-          85% { transform: scale(1.01); filter: brightness(1.2) contrast(1.1) saturate(1.1); }
+          0%, 100% { transform: scale(1); filter: brightness(1.0) contrast(1.05) saturate(1.1); }
+          25% { transform: scale(1.04); filter: brightness(1.35) contrast(1.15) saturate(1.3); }
+          50% { transform: scale(1.01); filter: brightness(1.15) contrast(1.1) saturate(1.15); }
+          75% { transform: scale(1.05); filter: brightness(1.4) contrast(1.2) saturate(1.35); }
         }
         @keyframes arayInnerPulse {
           0%, 100% {
-            box-shadow: inset 0 0 8px rgba(96,165,250,0.25), 0 0 4px rgba(96,165,250,0.1);
+            box-shadow: inset 0 0 12px rgba(96,165,250,0.3), 0 0 6px rgba(96,165,250,0.15);
             border-color: rgba(96,165,250,0.3);
           }
           50% {
-            box-shadow: inset 0 0 16px rgba(96,165,250,0.4), 0 0 8px rgba(96,165,250,0.2);
-            border-color: rgba(96,165,250,0.5);
+            box-shadow: inset 0 0 24px rgba(96,165,250,0.6), 0 0 14px rgba(96,165,250,0.35);
+            border-color: rgba(96,165,250,0.7);
           }
         }
       `}</style>
