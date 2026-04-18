@@ -166,7 +166,7 @@ export default async function AdminDashboard() {
       {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (
         <div className="flex flex-col gap-2">
           {newOrders > 0 && (
-            <Link href="/admin/orders?status=NEW" className="arayglass flex items-center justify-between px-4 py-3 rounded-2xl transition-colors" style={{ borderColor: "hsl(var(--primary) / 0.3)" }}>
+            <Link href="/admin/orders?status=NEW" className="aray-stat-card !py-3 flex items-center justify-between transition-colors">
               <div className="flex items-center gap-2.5">
                 <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
                 <span className="text-sm font-semibold text-foreground">{newOrders} новых заказов</span>
@@ -175,7 +175,7 @@ export default async function AdminDashboard() {
             </Link>
           )}
           {pendingReviews > 0 && isOwner && (
-            <Link href="/admin/reviews" className="arayglass flex items-center justify-between px-4 py-3 rounded-2xl transition-colors" style={{ borderColor: "hsl(var(--primary) / 0.2)" }}>
+            <Link href="/admin/reviews" className="aray-stat-card !py-3 flex items-center justify-between transition-colors">
               <div className="flex items-center gap-2.5">
                 <Star className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">{pendingReviews} отзывов ждут модерации</span>
@@ -184,7 +184,7 @@ export default async function AdminDashboard() {
             </Link>
           )}
           {pendingStaff > 0 && isOwner && (
-            <Link href="/admin/staff" className="arayglass flex items-center justify-between px-4 py-3 rounded-2xl transition-colors" style={{ borderColor: "hsl(var(--primary) / 0.25)" }}>
+            <Link href="/admin/staff" className="aray-stat-card !py-3 flex items-center justify-between transition-colors">
               <div className="flex items-center gap-2.5">
                 <Users className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold text-foreground">{pendingStaff} сотрудников ждут одобрения</span>
@@ -218,10 +218,10 @@ export default async function AdminDashboard() {
             <Link
               key={action.href}
               href={action.href}
-              className={`group arayglass arayglass-shimmer flex flex-col items-center justify-center gap-2 rounded-2xl p-2.5 min-h-[76px] active:scale-[0.93] transition-all duration-200 hover:scale-[1.03]`}
+              className="group aray-stat-card !p-2.5 flex flex-col items-center justify-center gap-2 min-h-[76px] active:scale-[0.93] transition-all duration-200 hover:scale-[1.03]"
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
-              <action.icon className="w-6 h-6 text-primary arayglass-icon" />
+              <action.icon className="w-6 h-6 text-primary" />
               <span className="text-[10px] font-semibold text-center leading-tight text-foreground">
                 {action.label}
               </span>
@@ -241,17 +241,17 @@ export default async function AdminDashboard() {
 
       {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ + ТОП ТОВАРОВ (планшет: рядом) ── */}
       <div className="arayglass-grid-split">
-        <div className="arayglass arayglass-nopad rounded-2xl">
-          <div className="flex items-center justify-between px-5 py-3.5 arayglass-divider border-b">
+        <div className="aray-stat-card !p-0 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50">
             <AdminSectionTitle icon={ShoppingBag} title="Последние заказы" className="mb-0" />
             <Link href="/admin/orders" className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all">Все <ChevronRight className="w-3 h-3" /></Link>
           </div>
-          <div className="divide-y arayglass-divider">
+          <div className="divide-y divide-border/30">
             {recentOrders.map((order) => {
               const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
               const label = ORDER_STATUS_LABELS[order.status] || order.status;
               return (
-                <Link key={order.id} href={`/admin/orders/${order.id}`} className="arayglass-row flex items-center justify-between px-4 py-3.5 active:bg-primary/10" style={{ WebkitTapHighlightColor: "transparent" }}>
+                <Link key={order.id} href={`/admin/orders/${order.id}`} className="flex items-center justify-between px-4 py-3.5 hover:bg-primary/[0.04] transition-colors active:bg-primary/10" style={{ WebkitTapHighlightColor: "transparent" }}>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">#{order.orderNumber} · {order.guestName || "Клиент"}</p>
                     <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-medium ${color}`}>{label}</span>
