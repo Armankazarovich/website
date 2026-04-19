@@ -123,7 +123,7 @@ const ALL_STAFF_R = [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE
 const MOBILE_NAV: MobileNavItem[] = [
   // ── Продажи ──
   { href: "/admin/orders",    label: "Заказы",     icon: ShoppingBag, roles: ALL_STAFF_R, group: "sales", groupLabel: "Продажи" },
-  { href: "/admin/crm",      label: "CRM",         icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/crm",      label: "ARAY CRM",    icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
   { href: "/admin/analytics", label: "Аналитика",   icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/finance",   label: "Финансы",     icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/clients",   label: "Клиенты",     icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
@@ -170,7 +170,7 @@ function getQuickActions(role: string) {
   if (isAdmin) return [
     { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
     { href: "/admin/orders",   label: "Заказы",    icon: ShoppingBag,     color: "#f59e0b" },
-    { href: "/admin/crm",     label: "CRM",        icon: Target,          color: "#8b5cf6" },
+    { href: "/admin/crm",     label: "ARAY CRM",   icon: Target,          color: "#8b5cf6" },
     { href: "/admin/products", label: "Товары",     icon: Package,         color: "#10b981" },
     { href: "/admin/analytics", label: "Аналитика", icon: BarChart2,       color: "#3b82f6" },
     { href: "/admin/staff",    label: "Команда",    icon: Users,           color: "#ec4899" },
@@ -178,7 +178,7 @@ function getQuickActions(role: string) {
   if (isManager) return [
     { href: "/admin",          label: "Дашборд",  icon: LayoutDashboard, color: "hsl(var(--primary))" },
     { href: "/admin/orders",   label: "Заказы",    icon: ShoppingBag,     color: "#f59e0b" },
-    { href: "/admin/crm",     label: "CRM",        icon: Target,          color: "#8b5cf6" },
+    { href: "/admin/crm",     label: "ARAY CRM",   icon: Target,          color: "#8b5cf6" },
     { href: "/admin/delivery", label: "Доставка",   icon: Truck,           color: "#06b6d4" },
   ];
   if (role === "COURIER") return [
@@ -642,7 +642,7 @@ interface AdminShellProps {
 const PAGE_TITLES: Record<string, string> = {
   "/admin": "",
   "/admin/orders": "Заказы",
-  "/admin/crm": "CRM — Лиды",
+  "/admin/crm": "ARAY CRM",
   "/admin/tasks": "Задачи",
   "/admin/workflows": "Автоворкфлоу",
   "/admin/delivery": "Доставка",

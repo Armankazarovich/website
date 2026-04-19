@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import { CrmClient } from "./crm-client";
 
 export const metadata: Metadata = {
-  title: "CRM — Воронка продаж | ПилоРус Админ",
+  title: "ARAY CRM — Воронка продаж",
 };
 
 export default function CrmPage() {

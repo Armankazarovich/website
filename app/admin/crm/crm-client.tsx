@@ -12,201 +12,165 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { useClassicMode } from "@/lib/use-classic-mode";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 const STAGES = [
-  { key: "NEW",         label: "Новый лид",     color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",   border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400" },
-  { key: "CONTACTED",   label: "Связались",     color: "bg-cyan-600",    light: "bg-cyan-50 dark:bg-cyan-900/20",     border: "border-cyan-200 dark:border-cyan-800",     dot: "bg-cyan-400" },
-  { key: "QUALIFIED",   label: "Квалифицирован",color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20", border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400" },
-  { key: "MEETING",     label: "Замер/встреча", color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",   border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400" },
-  { key: "PROPOSAL",    label: "КП отправлено", color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20", border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400" },
-  { key: "NEGOTIATION", label: "Переговоры",    color: "bg-rose-500",    light: "bg-rose-50 dark:bg-rose-900/20",     border: "border-rose-200 dark:border-rose-800",     dot: "bg-rose-400" },
-  { key: "WON",         label: "Успех ✓",       color: "bg-emerald-500", light: "bg-emerald-50 dark:bg-emerald-900/20", border: "border-emerald-200 dark:border-emerald-800", dot: "bg-emerald-400" },
-  { key: "LOST",        label: "Отказ",         color: "bg-gray-400",    light: "bg-gray-50 dark:bg-gray-900/20",     border: "border-gray-200 dark:border-gray-700",     dot: "bg-gray-400" },
+  { key: "NEW",         label: "Новый лид",     dot: "bg-blue-400" },
+  { key: "CONTACTED",   label: "Контакт",       dot: "bg-cyan-400" },
+  { key: "PROPOSAL",    label: "Предложение",   dot: "bg-violet-400" },
+  { key: "NEGOTIATION", label: "Переговоры",    dot: "bg-amber-400" },
+  { key: "WON",         label: "Выигран",       dot: "bg-emerald-400" },
+  { key: "LOST",        label: "Проигран",      dot: "bg-red-400/50" },
+  { key: "DEFERRED",    label: "Отложен",       dot: "bg-orange-400" },
+  { key: "RECURRING",   label: "Повторный",     dot: "bg-purple-400" },
+];
+
+const ORDER_STAGES = [
+  { key: "NEW",          label: "Новый",          dot: "bg-blue-400",     icon: Inbox },
+  { key: "CONFIRMED",    label: "Подтверждён",    dot: "bg-teal-400",     icon: CheckCircle2 },
+  { key: "PROCESSING",   label: "В комплектации", dot: "bg-violet-400",   icon: Settings2 },
+  { key: "SHIPPED",      label: "Отгружен",       dot: "bg-amber-400",    icon: Truck },
+  { key: "IN_DELIVERY",  label: "Доставляется",   dot: "bg-orange-400",   icon: Navigation },
+  { key: "READY_PICKUP", label: "Готов к выдаче", dot: "bg-cyan-400",     icon: Package },
+  { key: "DELIVERED",    label: "Доставлен",      dot: "bg-emerald-400",  icon: Home },
+  { key: "COMPLETED",    label: "Завершён",       dot: "bg-green-500",    icon: Flag },
+  { key: "CANCELLED",    label: "Отменён",        dot: "bg-red-400/50",   icon: XCircle },
 ];
 
 const SOURCE_LABELS: Record<string, string> = {
-  WEBSITE: "Сайт", TELEGRAM: "Telegram", PHONE: "Звонок",
-  REFERRAL: "Рекомендация", PARTNER: "Партнёр", OTHER: "Другое",
+  WEBSITE: "Сайт",
+  PHONE: "Звонок",
+  SOCIAL: "Соц.сети",
+  EMAIL: "Email",
+  REFERRAL: "Рекомендация",
+  PARTNER: "Партнёр",
+  OTHER: "Другое",
 };
 
-const ACTIVITY_ICONS: Record<string, any> = {
-  NOTE: MessageSquare, CALL: PhoneCall, EMAIL: Mail,
-  MEETING: Calendar, TASK: CheckCircle2, STAGE_CHANGE: ArrowRight, SYSTEM: Zap,
-};
-
-const ACTIVITY_LABELS: Record<string, string> = {
-  NOTE: "Заметка", CALL: "Звонок", EMAIL: "Email",
-  MEETING: "Встреча", TASK: "Задача", STAGE_CHANGE: "Смена этапа", SYSTEM: "Система",
+const SOURCE_ICONS: Record<string, typeof Phone> = {
+  PHONE: PhoneCall,
+  WEBSITE: ExternalLink,
+  SOCIAL: Users,
+  EMAIL: Mail,
+  REFERRAL: Star,
+  PARTNER: Building2,
+  OTHER: MoreHorizontal,
 };
 
 type Lead = {
   id: string;
   name: string;
+  company?: string | null;
   phone?: string | null;
   email?: string | null;
-  company?: string | null;
   source: string;
   stage: string;
   value?: number | null;
   comment?: string | null;
   tags: string[];
-  assigneeId?: string | null;
-  assignee?: { id: string; name: string | null; email: string } | null;
-  convertedAt?: string | null;
-  sortOrder: number;
+  assignedTo?: string | null;
+  assignedUser?: { name: string } | null;
   createdAt: string;
   updatedAt: string;
-  activities?: Activity[];
   _count?: { activities: number };
 };
 
-type Activity = {
-  id: string;
-  type: string;
-  text: string;
-  scheduledFor?: string | null;
-  completedAt?: string | null;
-  userId?: string | null;
-  user?: { id: string; name: string | null } | null;
-  createdAt: string;
-};
+type StaffMember = { id: string; name: string | null; role: string };
 
-type StaffMember = { id: string; name: string | null; email: string; role: string };
-
-// ─── Утилиты ──────────────────────────────────────────────────────────────────
-
-function formatMoney(v: number | null | undefined) {
-  if (!v) return null;
-  return new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 }).format(v);
+function timeAgo(dateStr: string) {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "только что";
+  if (min < 60) return `${min} мин`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} ч`;
+  const d = Math.floor(h / 24);
+  return `${d} дн`;
 }
 
-function timeAgo(iso: string) {
-  const d = new Date(iso);
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return "только что";
-  if (diff < 3600) return `${Math.floor(diff / 60)} мин назад`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} ч назад`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)} дн назад`;
-  return d.toLocaleDateString("ru-RU");
+function formatMoney(n: number) {
+  if (!n) return "";
+  return n.toLocaleString("ru-RU") + " ₽";
 }
 
-function initials(name?: string | null) {
-  if (!name) return "?";
-  return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-}
-
-// ─── Карточка лида ────────────────────────────────────────────────────────────
+// ─── LeadCard ─────────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, stageColor, stageDot,
-  onClick, onDragStart, onDragEnd,
+  lead, onDragStart, onDragEnd, onClick, staff,
 }: {
   lead: Lead;
-  stageColor: string;
-  stageDot: string;
-  onClick: () => void;
   onDragStart: (e: React.DragEvent, lead: Lead) => void;
   onDragEnd: (e: React.DragEvent) => void;
+  onClick: (lead: Lead) => void;
+  staff: StaffMember[];
 }) {
-  const daysSince = Math.floor((Date.now() - new Date(lead.updatedAt).getTime()) / 86400000);
-  const urgency = daysSince >= 7 ? "red" : daysSince >= 3 ? "amber" : null;
+  const SrcIcon = SOURCE_ICONS[lead.source] || MoreHorizontal;
+  const isUrgent = lead.tags.some(t => t.toLowerCase().includes("срочн") || t.toLowerCase().includes("urgent") || t.toLowerCase().includes("vip"));
 
   return (
     <div
       draggable
       onDragStart={(e) => onDragStart(e, lead)}
       onDragEnd={onDragEnd}
-      onClick={onClick}
-      className="bg-card border border-border rounded-xl p-3 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-150 group select-none overflow-hidden relative"
-      style={urgency === "red" ? { borderLeftColor: "rgb(248,113,113)", borderLeftWidth: "3px" }
-        : urgency === "amber" ? { borderLeftColor: "rgb(251,191,36)", borderLeftWidth: "3px" }
-        : undefined}
+      onClick={() => onClick(lead)}
+      className={`arayglass arayglass-shimmer rounded-xl p-3 cursor-pointer select-none transition-all duration-200 group ${
+        isUrgent ? "arayglass-glow" : ""
+      }`}
     >
-      {/* Шапка */}
-      <div className="flex items-start justify-between gap-2 mb-2">
+      {/* Urgency indicator */}
+      {isUrgent && (
+        <div className="absolute top-0 right-3 w-1.5 h-6 rounded-b-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+      )}
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="min-w-0">
-          <p className="font-semibold text-sm text-foreground truncate leading-tight">{lead.name}</p>
+          <p className="text-sm font-semibold text-foreground truncate">{lead.name}</p>
           {lead.company && (
-            <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-              <Building2 className="w-3 h-3 shrink-0" />{lead.company}
+            <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+              <Building2 className="w-2.5 h-2.5 shrink-0" />{lead.company}
             </p>
           )}
         </div>
-        {lead.value && (
-          <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg whitespace-nowrap"
-            style={{
-              color: "hsl(var(--emerald-600, 142 71% 45%))",
-              backgroundColor: "hsl(var(--emerald-100, 142 76% 92%))"
-            }}>
-            {formatMoney(Number(lead.value))}
+        {lead.value && lead.value > 0 && (
+          <span className="shrink-0 text-xs font-bold text-emerald-500 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg bg-emerald-500/10">
+            {formatMoney(lead.value)}
           </span>
         )}
       </div>
 
-      {/* Контакты */}
-      <div className="space-y-1 mb-2">
+      {/* Contacts */}
+      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1.5">
         {lead.phone && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Phone className="w-3 h-3 shrink-0" />
-            <span className="truncate">{lead.phone}</span>
-          </div>
+          <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{lead.phone}</span>
         )}
         {lead.email && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Mail className="w-3 h-3 shrink-0" />
-            <span className="truncate">{lead.email}</span>
-          </div>
+          <span className="flex items-center gap-0.5 truncate"><Mail className="w-2.5 h-2.5" />{lead.email}</span>
         )}
       </div>
 
-      {/* Теги */}
-      {lead.tags?.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {lead.tags.slice(0, 3).map(tag => (
-            <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-md font-medium"
-              style={{
-                backgroundColor: "hsl(var(--primary-100, 198 93% 90%))",
-                color: "hsl(var(--primary, 198 93% 60%))"
-              }}>
+      {/* Tags */}
+      {lead.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-1.5">
+          {lead.tags.map(tag => (
+            <span key={tag} className="arayglass-badge text-[9px] px-1.5 py-0 text-primary/80">
               {tag}
             </span>
           ))}
         </div>
       )}
 
-      {/* Футер */}
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-        <div className="flex items-center gap-1.5">
-          {lead.assignee ? (
-            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[9px] font-bold text-primary">
-              {initials(lead.assignee.name)}
-            </div>
-          ) : (
-            <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
-              <User className="w-3 h-3 text-muted-foreground" />
-            </div>
-          )}
-          <span className="text-[10px] text-muted-foreground">
-            {SOURCE_LABELS[lead.source] || lead.source}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {urgency && (
-            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md"
-              style={urgency === "red"
-                ? { backgroundColor: "hsl(var(--red-100, 0 84% 97%))", color: "hsl(var(--red-600, 0 84% 47%))" }
-                : { backgroundColor: "hsl(var(--amber-100, 39 96% 84%))", color: "hsl(var(--amber-600, 38 92% 50%))" }
-              }>
-              {daysSince}д
-            </span>
-          )}
-          {(lead._count?.activities || 0) > 0 && (
-            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-              <MessageSquare className="w-3 h-3" />
-              {lead._count?.activities}
+      {/* Footer */}
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <SrcIcon className="w-2.5 h-2.5" />
+          {SOURCE_LABELS[lead.source] || lead.source}
+        </span>
+        <div className="flex items-center gap-2">
+          {lead._count && lead._count.activities > 0 && (
+            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+              <MessageSquare className="w-2.5 h-2.5" /> {lead._count.activities}
             </span>
           )}
           <span className="text-[10px] text-muted-foreground">{timeAgo(lead.createdAt)}</span>
@@ -216,15 +180,13 @@ function LeadCard({
   );
 }
 
-// ─── Колонка этапа ─────────────────────────────────────────────────────────────
+// ─── StageColumn ──────────────────────────────────────────────────────────────
 
 function StageColumn({
   stage, leads, staff, total, totalValue,
-  onLeadClick, onAddLead,
-  onDragStart, onDragEnd, onDrop, onDragOver,
-  isDragOver,
+  onLeadClick, onAddLead, onDragStart, onDragEnd, onDrop, onDragOver, isDragOver,
 }: {
-  stage: typeof STAGES[0];
+  stage: typeof STAGES[number];
   leads: Lead[];
   staff: StaffMember[];
   total: number;
@@ -239,275 +201,222 @@ function StageColumn({
 }) {
   return (
     <div
-      className={`flex flex-col rounded-2xl border-2 transition-all duration-150 min-w-[260px] max-w-[280px] ${
-        isDragOver
-          ? "border-primary/50 bg-primary/15 shadow-lg shadow-primary/10"
-          : `${stage.border} ${stage.light}`
+      className={`flex flex-col arayglass rounded-2xl min-w-[260px] max-w-[280px] transition-all duration-200 ${
+        isDragOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
       }`}
       onDrop={(e) => onDrop(e, stage.key)}
-      onDragOver={onDragOver}
+      onDragOver={(e) => { e.preventDefault(); onDragOver(e); }}
     >
-      {/* Заголовок */}
-      <div className="px-3 pt-3 pb-2 flex-shrink-0">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${stage.dot}`} />
-            <span className="text-xs font-bold text-foreground">{stage.label}</span>
-            <span className="text-xs text-muted-foreground bg-background/60 px-1.5 py-0.5 rounded-lg font-medium">
-              {total}
-            </span>
-          </div>
-          <button
-            onClick={() => onAddLead(stage.key)}
-            className="w-6 h-6 rounded-lg hover:bg-background/80 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 hover:!opacity-100"
-          >
-            <Plus className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
+      {/* Column header */}
+      <div className="px-3 pt-3 pb-2 flex-shrink-0 border-b border-primary/[0.08]">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${stage.dot}`} />
+          <span className="text-xs font-bold text-foreground">{stage.label}</span>
+          <span className="text-xs text-muted-foreground bg-primary/[0.06] px-1.5 py-0.5 rounded-lg font-medium ml-auto">
+            {total}
+          </span>
         </div>
         {totalValue > 0 && (
-          <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          <p className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 ml-[18px]">
             {formatMoney(totalValue)}
           </p>
         )}
       </div>
 
-      {/* Карточки */}
-      <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 max-h-[calc(100vh-260px)] scrollbar-thin">
+      {/* Cards */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-380px)] scrollbar-thin">
         {leads.map(lead => (
           <LeadCard
             key={lead.id}
             lead={lead}
-            stageColor={stage.color}
-            stageDot={stage.dot}
-            onClick={() => onLeadClick(lead)}
+            staff={staff}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onClick={onLeadClick}
           />
         ))}
 
-        {/* Зона дропа когда пусто */}
         {isDragOver && leads.length === 0 && (
-          <div className="border-2 border-dashed border-primary/40 rounded-xl h-20 flex items-center justify-center text-xs text-primary/60">
+          <div className="border-2 border-dashed border-primary/40 rounded-xl h-16 flex items-center justify-center text-xs text-primary/60">
             Перетащить сюда
           </div>
         )}
 
-        {/* Кнопка добавить */}
+        {leads.length === 0 && !isDragOver && (
+          <p className="text-xs text-muted-foreground text-center py-6 opacity-50">Пусто</p>
+        )}
+      </div>
+
+      {/* Add button */}
+      <div className="p-2 flex-shrink-0">
         <button
           onClick={() => onAddLead(stage.key)}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors border-2 border-dashed border-border/50 hover:border-primary/30"
+          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-muted-foreground border border-dashed border-primary/15 hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground transition-all"
         >
-          <Plus className="w-3.5 h-3.5" />
-          Добавить лид
+          <Plus className="w-3 h-3" /> Добавить
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Форма создания/редактирования лида ───────────────────────────────────────
+// ─── LeadForm (модал создания лида) ───────────────────────────────────────────
 
 function LeadForm({
-  onClose, onSave, initial, staff,
+  onClose, onSave, staff, initial,
 }: {
   onClose: () => void;
-  onSave: (data: Partial<Lead>) => Promise<void>;
-  initial?: Partial<Lead>;
+  onSave: (data: Partial<Lead>) => void;
   staff: StaffMember[];
+  initial?: Partial<Lead>;
 }) {
-  const isClassic = useClassicMode();
-  const popupStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-  } : {
-    background: "rgba(12,12,14,0.88)",
-    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04) inset",
-  };
-  const headerStyle = isClassic ? {
-    borderBottom: "1px solid hsl(var(--border))",
-    background: "hsl(var(--card))",
-  } : {
-    borderBottom: "1px solid rgba(255,255,255,0.09)",
-    background: "rgba(12,12,14,0.70)",
-    backdropFilter: "blur(20px)",
-  };
   const [name, setName] = useState(initial?.name || "");
+  const [company, setCompany] = useState(initial?.company || "");
   const [phone, setPhone] = useState(initial?.phone || "");
   const [email, setEmail] = useState(initial?.email || "");
-  const [company, setCompany] = useState(initial?.company || "");
   const [source, setSource] = useState(initial?.source || "PHONE");
   const [stage, setStage] = useState(initial?.stage || "NEW");
-  const [value, setValue] = useState(initial?.value ? String(initial.value) : "");
+  const [value, setValue] = useState(initial?.value?.toString() || "");
   const [comment, setComment] = useState(initial?.comment || "");
-  const [assigneeId, setAssigneeId] = useState(initial?.assigneeId || "");
-  const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>(initial?.tags || []);
-  const [saving, setSaving] = useState(false);
+  const [tags, setTags] = useState(initial?.tags?.join(", ") || "");
+  const [assignedTo, setAssignedTo] = useState(initial?.assignedTo || "");
 
-  const addTag = () => {
-    const t = tagInput.trim();
-    if (t && !tags.includes(t)) setTags([...tags, t]);
-    setTagInput("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = () => {
     if (!name.trim()) return;
-    setSaving(true);
-    await onSave({ name, phone: phone || null, email: email || null, company: company || null, source, stage, value: value ? parseFloat(value) : null, comment: comment || null, assigneeId: assigneeId || null, tags });
-    setSaving(false);
+    onSave({
+      name: name.trim(),
+      company: company.trim() || null,
+      phone: phone.trim() || null,
+      email: email.trim() || null,
+      source,
+      stage,
+      value: value ? parseFloat(value) : null,
+      comment: comment.trim() || null,
+      tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+      assignedTo: assignedTo || null,
+    });
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0" style={{ background: "rgba(0,0,0,0.55)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }} onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
-        style={popupStyle}>
-        <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10"
-          style={headerStyle}>
-          <h2 className="font-bold text-foreground">{initial?.id ? "Редактировать лид" : "Новый лид"}</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.08] flex items-center justify-center transition-colors">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative arayglass rounded-2xl w-full max-w-md shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
+          <div>
+            <h2 className="font-bold text-foreground">Новый лид</h2>
+            <p className="text-xs mt-0.5 text-muted-foreground">Заполните данные о потенциальном клиенте</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {/* Имя */}
+        {/* Form */}
+        <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Имя / ФИО *</label>
-            <input value={name} onChange={e => setName(e.target.value)} required
-              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              placeholder="Иван Иванов" />
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Имя / Компания *</label>
+            <input value={name} onChange={e => setName(e.target.value)}
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+              placeholder="Имя контакта"
+            />
           </div>
 
-          {/* Компания */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Компания</label>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Организация</label>
             <input value={company} onChange={e => setCompany(e.target.value)}
-              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              placeholder="ООО Стройтех" />
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+              placeholder="ООО, ИП..."
+            />
           </div>
 
-          {/* Телефон + Email */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Телефон</label>
-              <input value={phone} onChange={e => setPhone(e.target.value)} type="tel"
-                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="+7 999 000-00-00" />
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Телефон</label>
+              <input value={phone} onChange={e => setPhone(e.target.value)}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+                placeholder="+7..."
+              />
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Email</label>
-              <input value={email} onChange={e => setEmail(e.target.value)} type="email"
-                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="ivan@mail.ru" />
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
+              <input value={email} onChange={e => setEmail(e.target.value)}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+                placeholder="email@..."
+              />
             </div>
           </div>
 
-          {/* Источник + Этап */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Источник</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Источник</label>
               <select value={source} onChange={e => setSource(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
-                {Object.entries(SOURCE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+                {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Этап</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Этап</label>
               <select value={stage} onChange={e => setStage(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
-                {STAGES.map(s => (
-                  <option key={s.key} value={s.key}>{s.label}</option>
-                ))}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+                {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Сумма + Ответственный */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Сумма сделки ₽</label>
-              <input value={value} onChange={e => setValue(e.target.value)} type="number" min="0"
-                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="150 000" />
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Сумма ₽</label>
+              <input type="number" value={value} onChange={e => setValue(e.target.value)}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+                placeholder="0"
+              />
             </div>
             <div>
-              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Ответственный</label>
-              <select value={assigneeId} onChange={e => setAssigneeId(e.target.value)}
-                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Ответственный</label>
+              <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
                 <option value="">Не назначен</option>
-                {staff.map(m => (
-                  <option key={m.id} value={m.id}>{m.name || m.email}</option>
-                ))}
+                {staff.map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
               </select>
             </div>
           </div>
 
-          {/* Теги */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Теги</label>
-            <div className="flex gap-2">
-              <input value={tagInput} onChange={e => setTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                className="flex-1 bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="Срочный, VIP, Перезвонить..." />
-              <button type="button" onClick={addTag}
-                className="px-3 py-2.5 bg-muted rounded-xl text-sm hover:bg-muted/80 transition-colors">
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {tags.map(tag => (
-                  <span key={tag} className="flex items-center gap-1 text-xs px-2 py-1 rounded-lg"
-                    style={{
-                      backgroundColor: "hsl(var(--primary-100, 198 93% 90%))",
-                      color: "hsl(var(--primary, 198 93% 60%))"
-                    }}>
-                    {tag}
-                    <button type="button" onClick={() => setTags(tags.filter(t => t !== tag))}>
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Теги (через запятую)</label>
+            <input value={tags} onChange={e => setTags(e.target.value)}
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+              placeholder="VIP, Срочный, Опт..."
+            />
           </div>
 
-          {/* Комментарий */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground mb-1 block">Комментарий</label>
-            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={3}
-              className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-              placeholder="Детали, пожелания клиента..." />
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Комментарий</label>
+            <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none"
+              placeholder="Детали запроса..."
+            />
           </div>
+        </div>
 
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors">
-              Отмена
-            </button>
-            <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {initial?.id ? "Сохранить" : "Создать лид"}
-            </button>
-          </div>
-        </form>
+        {/* Actions */}
+        <div className="flex gap-3 px-5 pb-5 pt-2">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
+            Отмена
+          </button>
+          <button onClick={handleSave} disabled={!name.trim()}
+            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
+            Создать лид
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Панель деталей лида ───────────────────────────────────────────────────────
+// ─── LeadDetailPanel (правая панель с деталями лида) ──────────────────────────
 
 function LeadDetailPanel({
   lead, staff, onClose, onUpdate, onDelete,
@@ -515,328 +424,282 @@ function LeadDetailPanel({
   lead: Lead;
   staff: StaffMember[];
   onClose: () => void;
-  onUpdate: (updated: Lead) => void;
+  onUpdate: (lead: Lead) => void;
   onDelete: (id: string) => void;
 }) {
-  const [fullLead, setFullLead] = useState<Lead>(lead);
-  const [newActivity, setNewActivity] = useState("");
-  const [activityType, setActivityType] = useState("NOTE");
-  const [addingActivity, setAddingActivity] = useState(false);
+  const [activities, setActivities] = useState<any[]>([]);
+  const [actLoading, setActLoading] = useState(true);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [changingStage, setChangingStage] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [editName, setEditName] = useState(lead.name);
+  const [editCompany, setEditCompany] = useState(lead.company || "");
+  const [editPhone, setEditPhone] = useState(lead.phone || "");
+  const [editEmail, setEditEmail] = useState(lead.email || "");
+  const [editValue, setEditValue] = useState(lead.value?.toString() || "");
+  const [editComment, setEditComment] = useState(lead.comment || "");
+  const [editAssignedTo, setEditAssignedTo] = useState(lead.assignedTo || "");
 
+  // Синхронизируем поля при смене лида
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/admin/crm/leads/${lead.id}`)
-      .then(r => r.json())
-      .then(data => { setFullLead(data); setLoading(false); });
+    setEditName(lead.name);
+    setEditCompany(lead.company || "");
+    setEditPhone(lead.phone || "");
+    setEditEmail(lead.email || "");
+    setEditValue(lead.value?.toString() || "");
+    setEditComment(lead.comment || "");
+    setEditAssignedTo(lead.assignedTo || "");
+    setEditing(false);
   }, [lead.id]);
 
-  const handleAddActivity = async () => {
-    if (!newActivity.trim()) return;
-    setAddingActivity(true);
-    const res = await fetch(`/api/admin/crm/leads/${lead.id}/activities`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: activityType, text: newActivity.trim() }),
-    });
-    const act = await res.json();
-    setFullLead(prev => ({ ...prev, activities: [act, ...(prev.activities || [])] }));
-    setNewActivity("");
-    setAddingActivity(false);
-  };
+  useEffect(() => {
+    setActLoading(true);
+    fetch(`/api/admin/crm/leads/${lead.id}/activities`)
+      .then(r => r.json())
+      .then(d => { setActivities(d.activities || []); setActLoading(false); })
+      .catch(() => setActLoading(false));
+  }, [lead.id]);
 
   const handleStageChange = async (newStage: string) => {
-    setChangingStage(true);
     const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ stage: newStage }),
     });
     const updated = await res.json();
-    setFullLead(updated);
     onUpdate(updated);
-    setChangingStage(false);
+  };
+
+  const handleSaveEdit = async () => {
+    const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: editName.trim(),
+        company: editCompany.trim() || null,
+        phone: editPhone.trim() || null,
+        email: editEmail.trim() || null,
+        value: editValue ? parseFloat(editValue) : null,
+        comment: editComment.trim() || null,
+        assignedTo: editAssignedTo || null,
+      }),
+    });
+    const updated = await res.json();
+    onUpdate(updated);
+    setEditing(false);
   };
 
   const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      await fetch(`/api/admin/crm/leads/${lead.id}`, { method: "DELETE" });
-      setConfirmDelete(false);
-      onDelete(lead.id);
-      onClose();
-    } finally {
-      setDeleting(false);
-    }
+    await fetch(`/api/admin/crm/leads/${lead.id}`, { method: "DELETE" });
+    onDelete(lead.id);
+    onClose();
   };
 
-  const isClassic = useClassicMode();
-  const drawerStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    borderLeft: "1px solid hsl(var(--border))",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-  } : {
-    background: "rgba(12,12,14,0.82)",
-    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    borderLeft: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.55)",
-  };
-  const drawerHeaderStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    borderBottom: "1px solid hsl(var(--border))",
-  } : {
-    background: "rgba(12,12,14,0.70)",
-    backdropFilter: "blur(20px)",
-    borderBottom: "1px solid rgba(255,255,255,0.09)",
-  };
-  const currentStage = STAGES.find(s => s.key === fullLead.stage);
+  const currentStage = STAGES.find(s => s.key === lead.stage);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg h-full overflow-y-auto shadow-lg flex flex-col" style={drawerStyle}>
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
-        {/* Заголовок */}
-        <div className="flex items-center justify-between px-5 py-4 sticky top-0 z-10" style={drawerHeaderStyle}>
+      {/* Panel */}
+      <div className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-50 arayglass rounded-none sm:rounded-l-2xl shadow-2xl flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08] flex-shrink-0">
           <div className="min-w-0">
-            <h2 className="font-bold truncate text-foreground">{fullLead.name}</h2>
-            {fullLead.company && (
-              <p className="text-xs flex items-center gap-1 text-muted-foreground">
-                <Building2 className="w-3 h-3" />{fullLead.company}
-              </p>
-            )}
+            <p className="font-bold text-foreground truncate text-base">{lead.name}</p>
+            {lead.company && <p className="text-xs text-muted-foreground truncate mt-0.5">{lead.company}</p>}
           </div>
-          <div className="flex items-center gap-2 ml-3">
-            <button onClick={() => setEditing(true)} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => setEditing(!editing)}
+              className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground arayglass-icon">
               <Pencil className="w-4 h-4" />
             </button>
-            <button onClick={() => setConfirmDelete(true)} className="w-8 h-8 rounded-xl hover:bg-destructive/10 flex items-center justify-center transition-colors">
-              <Trash2 className="w-4 h-4 text-destructive" />
+            <button onClick={() => setShowConfirmDelete(true)}
+              className="w-8 h-8 rounded-xl hover:bg-red-500/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500">
+              <Trash2 className="w-4 h-4" />
             </button>
-            <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+            <button onClick={onClose}
+              className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          {/* Воронка */}
-          <div className="px-5 py-4 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground mb-3">ЭТАП ВОРОНКИ</p>
-            <div className="flex gap-1.5 flex-wrap">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Stage selector */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-2 block">Этап воронки</label>
+            <div className="flex flex-wrap gap-1.5">
               {STAGES.map(s => (
-                <button
-                  key={s.key}
-                  onClick={() => handleStageChange(s.key)}
-                  disabled={changingStage}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    fullLead.stage === s.key
-                      ? `${s.color} text-white shadow-sm`
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
+                <button key={s.key} onClick={() => handleStageChange(s.key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                    lead.stage === s.key
+                      ? "border-2 border-primary bg-primary/15 text-foreground shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
+                      : "border border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05]"
+                  }`}>
+                  <span className={`w-2 h-2 rounded-full ${s.dot}`} />
                   {s.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Информация */}
-          <div className="px-5 py-4 border-b border-border space-y-2.5">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">КОНТАКТЫ</p>
-            {fullLead.phone && (
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                <a href={`tel:${fullLead.phone}`} className="text-sm text-foreground hover:text-primary transition-colors">
-                  {fullLead.phone}
-                </a>
+          {/* Edit form or info */}
+          {editing ? (
+            <div className="space-y-3">
+              <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Имя"
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+              <input value={editCompany} onChange={e => setEditCompany(e.target.value)} placeholder="Компания"
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+              <div className="grid grid-cols-2 gap-3">
+                <input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Телефон"
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email"
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
               </div>
-            )}
-            {fullLead.email && (
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                <a href={`mailto:${fullLead.email}`} className="text-sm text-foreground hover:text-primary transition-colors">
-                  {fullLead.email}
-                </a>
+              <div className="grid grid-cols-2 gap-3">
+                <input type="number" value={editValue} onChange={e => setEditValue(e.target.value)} placeholder="Сумма"
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                <select value={editAssignedTo} onChange={e => setEditAssignedTo(e.target.value)}
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+                  <option value="">Не назначен</option>
+                  {staff.map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
+                </select>
               </div>
-            )}
-            {fullLead.value && (
-              <div className="flex items-center gap-2">
-                <Banknote className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-sm font-semibold"
-                  style={{ color: "hsl(var(--emerald-600, 142 71% 45%))" }}>
-                  {formatMoney(Number(fullLead.value))}
-                </span>
+              <textarea value={editComment} onChange={e => setEditComment(e.target.value)} rows={2} placeholder="Комментарий"
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none" />
+              <div className="flex gap-2">
+                <button onClick={() => setEditing(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-primary/15 text-sm font-medium hover:bg-primary/[0.05] transition-all">
+                  Отмена
+                </button>
+                <button onClick={handleSaveEdit}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
+                  Сохранить
+                </button>
               </div>
-            )}
-            {fullLead.assignee && (
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-sm text-foreground">{fullLead.assignee.name || fullLead.assignee.email}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <Tag className="w-4 h-4 text-muted-foreground shrink-0" />
-              <span className="text-sm text-muted-foreground">{SOURCE_LABELS[fullLead.source]}</span>
             </div>
-            {fullLead.comment && (
-              <div className="flex items-start gap-2">
-                <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                <p className="text-sm text-foreground">{fullLead.comment}</p>
+          ) : (
+            <div className="space-y-3">
+              {/* Contact info */}
+              <div className="arayglass rounded-xl p-3 space-y-2">
+                {lead.phone && (
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors">
+                    <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                    {lead.phone}
+                  </a>
+                )}
+                {lead.email && (
+                  <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors">
+                    <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                    {lead.email}
+                  </a>
+                )}
+                {lead.value && lead.value > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Banknote className="w-4 h-4 text-muted-foreground" />
+                    <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatMoney(lead.value)}</span>
+                  </div>
+                )}
+                {lead.assignedUser && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <User className="w-4 h-4" />
+                    <span>{lead.assignedUser.name}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {fullLead.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-1">
-                {fullLead.tags.map(tag => (
-                  <span key={tag} className="text-xs px-2 py-0.5 rounded-lg font-medium"
-                    style={{
-                      backgroundColor: "hsl(var(--primary-100, 198 93% 90%))",
-                      color: "hsl(var(--primary, 198 93% 60%))"
-                    }}>
-                    {tag}
-                  </span>
+
+              {/* Comment */}
+              {lead.comment && (
+                <div className="arayglass rounded-xl p-3">
+                  <p className="text-xs text-muted-foreground mb-1 font-medium">Комментарий</p>
+                  <p className="text-sm text-foreground">{lead.comment}</p>
+                </div>
+              )}
+
+              {/* Tags */}
+              {lead.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {lead.tags.map(tag => (
+                    <span key={tag} className="arayglass-badge text-[10px] text-primary/80">
+                      <Tag className="w-2.5 h-2.5 inline mr-0.5" />{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Meta */}
+              <div className="text-[10px] text-muted-foreground space-y-1 pt-1">
+                <p>Создан: {new Date(lead.createdAt).toLocaleString("ru-RU")}</p>
+                <p>Обновлён: {new Date(lead.updatedAt).toLocaleString("ru-RU")}</p>
+                <p>Источник: {SOURCE_LABELS[lead.source] || lead.source}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Activities / Timeline */}
+          <div>
+            <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+              История ({activities.length})
+            </h3>
+            {actLoading ? (
+              <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+            ) : activities.length > 0 ? (
+              <div className="space-y-2">
+                {activities.map((a: any) => (
+                  <div key={a.id} className="arayglass rounded-xl p-2.5 flex gap-2">
+                    <div className="w-1 shrink-0 rounded-full bg-primary/20 self-stretch" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-foreground">{a.content || a.type}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(a.createdAt)}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Добавить активность */}
-          <div className="px-5 py-4 border-b border-border">
-            <p className="text-xs font-semibold text-muted-foreground mb-3">ДОБАВИТЬ АКТИВНОСТЬ</p>
-            <div className="flex gap-2 mb-2 flex-wrap">
-              {["NOTE", "CALL", "EMAIL", "MEETING"].map(t => {
-                const Icon = ACTIVITY_ICONS[t];
-                return (
-                  <button key={t} onClick={() => setActivityType(t)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
-                      activityType === t ? "bg-primary text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    }`}>
-                    <Icon className="w-3.5 h-3.5" />
-                    {ACTIVITY_LABELS[t]}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              <textarea
-                value={newActivity}
-                onChange={e => setNewActivity(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey) handleAddActivity(); }}
-                rows={2}
-                className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-                placeholder={activityType === "CALL" ? "Результат звонка..." : activityType === "MEETING" ? "Детали встречи..." : "Заметка..."}
-              />
-              <button onClick={handleAddActivity} disabled={addingActivity || !newActivity.trim()}
-                className="px-3 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50 self-end">
-                {addingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          {/* Лента активностей */}
-          <div className="px-5 py-4">
-            <p className="text-xs font-semibold text-muted-foreground mb-3">ИСТОРИЯ</p>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : fullLead.activities?.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Активностей пока нет</p>
             ) : (
-              <div className="space-y-3">
-                {fullLead.activities?.map(act => {
-                  const Icon = ACTIVITY_ICONS[act.type] || MessageSquare;
-                  return (
-                    <div key={act.id} className="flex gap-3">
-                      <div className={`w-7 h-7 rounded-xl shrink-0 flex items-center justify-center ${
-                        act.type === "CALL" ? "bg-orange-500/15" :
-                        "bg-muted"
-                      }`}
-                        style={act.type === "WON"
-                          ? { backgroundColor: "hsl(var(--emerald-100, 142 76% 92%))" }
-                          : act.type === "STAGE_CHANGE"
-                          ? { backgroundColor: "hsl(var(--violet-100, 258 90% 92%))" }
-                          : undefined
-                        }>
-                        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground">{act.text}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {act.user?.name && (
-                            <span className="text-[10px] text-muted-foreground font-medium">{act.user.name}</span>
-                          )}
-                          <span className="text-[10px] text-muted-foreground">{timeAgo(act.createdAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <p className="text-xs text-muted-foreground opacity-50 text-center py-3">Нет записей</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Форма редактирования */}
-      {editing && (
-        <LeadForm
-          onClose={() => setEditing(false)}
-          staff={staff}
-          initial={fullLead}
-          onSave={async (data) => {
-            const res = await fetch(`/api/admin/crm/leads/${fullLead.id}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
-            });
-            const updated = await res.json();
-            setFullLead(updated);
-            onUpdate(updated);
-          }}
+      {showConfirmDelete && (
+        <ConfirmDialog
+          title="Удалить лид?"
+          description={`Лид "${lead.name}" будет удалён безвозвратно.`}
+          onConfirm={handleDelete}
+          onCancel={() => setShowConfirmDelete(false)}
+          variant="destructive"
         />
       )}
-
-      <ConfirmDialog
-        open={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        onConfirm={handleDelete}
-        title="Удалить лид?"
-        description="Лид и вся его история будут удалены без возможности восстановления."
-        confirmLabel="Удалить"
-        variant="danger"
-        loading={deleting}
-      />
-    </div>
+    </>
   );
 }
 
-// ─── Статистика ───────────────────────────────────────────────────────────────
+// ─── CrmStats ─────────────────────────────────────────────────────────────────
 
 function CrmStats({ leads }: { leads: Lead[] }) {
-  const total = leads.length;
-  const won = leads.filter(l => l.stage === "WON").length;
   const totalValue = leads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
-  const wonValue = leads.filter(l => l.stage === "WON" && l.value).reduce((s, l) => s + Number(l.value), 0);
-  const convRate = total > 0 ? Math.round((won / total) * 100) : 0;
+  const activeLeads = leads.filter(l => !["WON", "LOST"].includes(l.stage)).length;
+  const wonLeads = leads.filter(l => l.stage === "WON").length;
+  const convRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
+
+  const stats = [
+    { label: "Всего лидов", value: leads.length, icon: Users, color: "text-primary" },
+    { label: "Активных", value: activeLeads, icon: TrendingUp, color: "text-amber-500" },
+    { label: "Выиграно", value: wonLeads, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Конверсия", value: `${convRate}%`, icon: Star, color: "text-violet-500" },
+  ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 border-b border-border">
-      {[
-        { label: "Всего лидов", value: total, icon: Users, color: "text-primary" },
-        { label: "Успешных", value: won, icon: CheckCircle2, color: "text-emerald-500" },
-        { label: "Конверсия", value: `${convRate}%`, icon: TrendingUp, color: "text-violet-500" },
-        { label: "Сумма воронки", value: formatMoney(totalValue) || "—", icon: Banknote, color: "text-amber-500" },
-      ].map(stat => (
-        <div key={stat.label} className="flex items-center gap-3 bg-card border border-border rounded-xl px-3 py-2.5">
-          <stat.icon className={`w-4 h-4 shrink-0 ${stat.color}`} />
+    <div className="arayglass-grid-metrics gap-3 px-4 py-3 border-b border-primary/[0.08] flex-shrink-0">
+      {stats.map(stat => (
+        <div key={stat.label} className="arayglass arayglass-shimmer rounded-xl px-3 py-2.5 flex items-center gap-3">
+          <stat.icon className={`w-4 h-4 shrink-0 arayglass-icon ${stat.color}`} />
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground leading-none mb-0.5">{stat.label}</p>
+            <p className="text-[10px] text-muted-foreground leading-none mb-0.5">{stat.label}</p>
             <p className="font-bold text-sm text-foreground truncate">{stat.value}</p>
           </div>
         </div>
@@ -845,7 +708,7 @@ function CrmStats({ leads }: { leads: Lead[] }) {
   );
 }
 
-// ─── Пресеты отраслей ─────────────────────────────────────────────────────────
+// ─── Presets Modal ─────────────────────────────────────────────────────────────
 
 const PRESETS = [
   {
@@ -875,40 +738,29 @@ const PRESETS = [
 ];
 
 function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (leads: any[]) => void }) {
-  const isClassic = useClassicMode();
-  const popupStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-  } : {
-    background: "rgba(12,12,14,0.82)",
-    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
-  };
   const [selected, setSelected] = useState<string | null>(null);
-
   const preset = PRESETS.find(p => p.key === selected);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative rounded-2xl w-full max-w-md" style={popupStyle}>
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="relative arayglass rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
           <div>
             <h2 className="font-bold text-foreground">Пресеты по отраслям</h2>
             <p className="text-xs mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-5 space-y-2">
           {PRESETS.map(p => (
             <button key={p.key} onClick={() => setSelected(p.key)}
-              className={`w-full text-left px-4 py-3 rounded-xl border-2 transition-all ${
-                selected === p.key ? "border-primary bg-primary/15" : "border-border hover:border-primary/30"
+              className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
+                selected === p.key
+                  ? "border-2 border-primary bg-primary/15 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
+                  : "border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/[0.05]"
               }`}>
               <p className="font-semibold text-sm text-foreground">{p.label}</p>
               <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
@@ -916,13 +768,14 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
           ))}
         </div>
         <div className="flex gap-3 px-5 pb-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors">
+          <button onClick={onClose}
+            className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
             Отмена
           </button>
           <button
             disabled={!selected || !preset?.sampleLeads.length}
             onClick={() => { preset && onApply(preset.sampleLeads); onClose(); }}
-            className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-40">
+            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
             Загрузить демо ({preset?.sampleLeads.length || 0} лидов)
           </button>
         </div>
@@ -932,18 +785,6 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
 }
 
 // ─── Orders Kanban (заказы по статусам) ───────────────────────────────────────
-
-const ORDER_STAGES = [
-  { key: "NEW",          label: "Новый",          color: "bg-slate-500",   light: "bg-slate-50 dark:bg-slate-900/40",    border: "border-slate-200 dark:border-slate-700",   dot: "bg-slate-400",   icon: Inbox },
-  { key: "CONFIRMED",    label: "Подтверждён",    color: "bg-teal-500",    light: "bg-teal-50 dark:bg-teal-900/20",      border: "border-teal-200 dark:border-teal-800",     dot: "bg-teal-400",    icon: CheckCircle2 },
-  { key: "PROCESSING",   label: "В комплектации", color: "bg-violet-500",  light: "bg-violet-50 dark:bg-violet-900/20",  border: "border-violet-200 dark:border-violet-800", dot: "bg-violet-400",  icon: Settings2 },
-  { key: "SHIPPED",      label: "Отгружен",       color: "bg-amber-500",   light: "bg-amber-50 dark:bg-amber-900/20",    border: "border-amber-200 dark:border-amber-800",   dot: "bg-amber-400",   icon: Truck },
-  { key: "IN_DELIVERY",  label: "Доставляется",   color: "bg-orange-500",  light: "bg-orange-50 dark:bg-orange-900/20",  border: "border-orange-200 dark:border-orange-800", dot: "bg-orange-400",  icon: Navigation },
-  { key: "READY_PICKUP", label: "Готов к выдаче", color: "bg-cyan-500",    light: "bg-cyan-50 dark:bg-cyan-900/20",      border: "border-cyan-200 dark:border-cyan-800",     dot: "bg-cyan-400",    icon: Package },
-  { key: "DELIVERED",    label: "Доставлен",      color: "bg-emerald-500", light: "bg-emerald-50 dark:bg-emerald-900/20",border: "border-emerald-200 dark:border-emerald-800",dot: "bg-emerald-400", icon: Home },
-  { key: "COMPLETED",    label: "Завершён",       color: "bg-green-600",   light: "bg-green-50 dark:bg-green-900/20",    border: "border-green-200 dark:border-green-800",   dot: "bg-green-500",   icon: Flag },
-  { key: "CANCELLED",    label: "Отменён",        color: "bg-gray-400",    light: "bg-gray-50 dark:bg-gray-900/20",      border: "border-gray-200 dark:border-gray-700",     dot: "bg-gray-400",    icon: XCircle },
-];
 
 type OrderCard = {
   id: string;
@@ -977,7 +818,7 @@ function OrderKanbanCard({
       draggable
       onDragStart={(e) => onDragStart(e, order)}
       onDragEnd={onDragEnd}
-      className="block bg-card border border-border rounded-xl p-3 hover:shadow-md hover:border-primary/30 transition-all duration-150 group select-none"
+      className="block arayglass arayglass-shimmer rounded-xl p-3 transition-all duration-200 group select-none"
     >
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <div className="min-w-0">
@@ -991,11 +832,7 @@ function OrderKanbanCard({
             </p>
           )}
         </div>
-        <span className="shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-lg whitespace-nowrap"
-          style={{
-            color: "hsl(var(--emerald-600, 142 71% 45%))",
-            backgroundColor: "hsl(var(--emerald-100, 142 76% 92%))"
-          }}>
+        <span className="shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-lg text-emerald-500 dark:text-emerald-400 bg-emerald-500/10">
           {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
         </span>
       </div>
@@ -1094,17 +931,17 @@ function OrdersKanban({ search }: { search: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Статистика */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-4 py-3 border-b border-border flex-shrink-0">
+      <div className="arayglass-grid-metrics gap-3 px-4 py-3 border-b border-primary/[0.08] flex-shrink-0">
         {[
           { label: "Всего заказов", value: orders.length, icon: ShoppingBag, color: "text-primary" },
           { label: "Активных", value: activeOrders, icon: TrendingUp, color: "text-amber-500" },
           { label: "Завершённых", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length, icon: CheckCircle2, color: "text-emerald-500" },
           { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, color: "text-violet-500" },
         ].map(stat => (
-          <div key={stat.label} className="flex items-center gap-3 bg-card border border-border rounded-xl px-3 py-2.5">
-            <stat.icon className={`w-4 h-4 shrink-0 ${stat.color}`} />
+          <div key={stat.label} className="arayglass arayglass-shimmer rounded-xl px-3 py-2.5 flex items-center gap-3">
+            <stat.icon className={`w-4 h-4 shrink-0 arayglass-icon ${stat.color}`} />
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground leading-none mb-0.5">{stat.label}</p>
+              <p className="text-[10px] text-muted-foreground leading-none mb-0.5">{stat.label}</p>
               <p className="font-bold text-sm text-foreground truncate">{stat.value}</p>
             </div>
           </div>
@@ -1112,20 +949,20 @@ function OrdersKanban({ search }: { search: string }) {
       </div>
 
       {/* Синхронизация */}
-      <div className="px-4 py-2 border-b border-border flex items-center gap-3 flex-shrink-0">
+      <div className="px-4 py-2 border-b border-primary/[0.08] flex items-center gap-3 flex-shrink-0">
         <button
           onClick={handleSyncToLeads}
           disabled={syncing}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-primary/[0.08] transition-colors disabled:opacity-50"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-primary/15 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all disabled:opacity-50"
         >
           {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
           Синхронизировать с лидами
         </button>
         {syncResult && (
-          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {syncResult}</span>
+          <span className="flex items-center gap-1 text-xs text-emerald-500 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {syncResult}</span>
         )}
-        <span className="text-xs text-muted-foreground ml-auto">
-          Перетащите карточку чтобы изменить статус заказа
+        <span className="text-xs text-muted-foreground ml-auto hidden sm:block">
+          Перетащите карточку чтобы изменить статус
         </span>
       </div>
 
@@ -1137,7 +974,7 @@ function OrdersKanban({ search }: { search: string }) {
       ) : (
         <>
           {/* Мобильный переключатель этапов заказов */}
-          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-border">
+          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
             {ORDER_STAGES.map(s => {
               const cnt = (ordersByStatus[s.key] || []).length;
               return (
@@ -1151,63 +988,75 @@ function OrdersKanban({ search }: { search: string }) {
             })}
           </div>
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
-          <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 240}px` }}>
-            {ORDER_STAGES.map(stage => {
-              const stageOrders = ordersByStatus[stage.key] || [];
-              const stageTotal = stageOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
-              const isOver = dragOverStage === stage.key;
-
-              return (
-                <div
-                  key={stage.key}
-                  className={`flex flex-col rounded-2xl border-2 transition-all duration-150 min-w-[230px] max-w-[250px] ${
-                    isOver ? "border-primary/50 bg-primary/15 shadow-lg" : `${stage.border} ${stage.light}`
-                  }`}
-                  onDrop={(e) => handleDrop(e, stage.key)}
-                  onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.key); }}
-                  onDragLeave={() => setDragOverStage(null)}
-                >
-                  {/* Заголовок колонки */}
-                  <div className="px-3 pt-3 pb-2 flex-shrink-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <stage.icon className="w-3.5 h-3.5 text-foreground/60" />
-                      <span className="text-xs font-bold text-foreground">{stage.label}</span>
-                      <span className="text-xs text-muted-foreground bg-background/60 px-1.5 py-0.5 rounded-lg font-medium ml-auto">
-                        {stageOrders.length}
-                      </span>
-                    </div>
-                    {stageTotal > 0 && (
-                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                        {stageTotal.toLocaleString("ru-RU")} ₽
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Карточки */}
-                  <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-2 max-h-[calc(100vh-320px)] scrollbar-thin">
-                    {stageOrders.map(order => (
-                      <OrderKanbanCard
-                        key={order.id}
-                        order={order}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                      />
-                    ))}
-                    {isOver && stageOrders.length === 0 && (
-                      <div className="border-2 border-dashed border-primary/40 rounded-xl h-16 flex items-center justify-center text-xs text-primary/60">
-                        Перетащить сюда
-                      </div>
-                    )}
-                    {stageOrders.length === 0 && !isOver && (
-                      <p className="text-xs text-muted-foreground text-center py-4 opacity-50">Пусто</p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+          {/* Мобильный вид — одна колонка */}
+          <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {(ordersByStatus[mobileOrderStage] || []).map(order => (
+              <OrderKanbanCard key={order.id} order={order} onDragStart={handleDragStart} onDragEnd={handleDragEnd} />
+            ))}
+            {(ordersByStatus[mobileOrderStage] || []).length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-8 opacity-50">Нет заказов в этом статусе</p>
+            )}
           </div>
-        </div>
+
+          {/* Десктоп — горизонтальный Kanban */}
+          <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
+            <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 240}px` }}>
+              {ORDER_STAGES.map(stage => {
+                const stageOrders = ordersByStatus[stage.key] || [];
+                const stageTotal = stageOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
+                const isOver = dragOverStage === stage.key;
+                const StageIcon = stage.icon;
+
+                return (
+                  <div
+                    key={stage.key}
+                    className={`flex flex-col arayglass rounded-2xl min-w-[230px] max-w-[250px] transition-all duration-200 ${
+                      isOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
+                    }`}
+                    onDrop={(e) => handleDrop(e, stage.key)}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverStage(stage.key); }}
+                    onDragLeave={() => setDragOverStage(null)}
+                  >
+                    {/* Заголовок колонки */}
+                    <div className="px-3 pt-3 pb-2 flex-shrink-0 border-b border-primary/[0.08]">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <StageIcon className="w-3.5 h-3.5 text-muted-foreground arayglass-icon" />
+                        <span className="text-xs font-bold text-foreground">{stage.label}</span>
+                        <span className="text-xs text-muted-foreground bg-primary/[0.06] px-1.5 py-0.5 rounded-lg font-medium ml-auto">
+                          {stageOrders.length}
+                        </span>
+                      </div>
+                      {stageTotal > 0 && (
+                        <p className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 ml-[22px]">
+                          {stageTotal.toLocaleString("ru-RU")} ₽
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Карточки */}
+                    <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-380px)] scrollbar-thin">
+                      {stageOrders.map(order => (
+                        <OrderKanbanCard
+                          key={order.id}
+                          order={order}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
+                        />
+                      ))}
+                      {isOver && stageOrders.length === 0 && (
+                        <div className="border-2 border-dashed border-primary/40 rounded-xl h-16 flex items-center justify-center text-xs text-primary/60">
+                          Перетащить сюда
+                        </div>
+                      )}
+                      {stageOrders.length === 0 && !isOver && (
+                        <p className="text-xs text-muted-foreground text-center py-4 opacity-50">Пусто</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -1246,7 +1095,7 @@ export function CrmClient() {
   // Фильтрация по источнику
   const filteredLeads = sourceFilter === "ALL" ? leads : leads.filter(l => l.source === sourceFilter);
 
-  // Группировка по этапам (используем filteredLeads для канбана)
+  // Группировка по этапам
   const leadsByStage = STAGES.reduce((acc, s) => {
     acc[s.key] = filteredLeads.filter(l => l.stage === s.key);
     return acc;
@@ -1326,7 +1175,7 @@ export function CrmClient() {
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">CRM</h1>
+            <h1 className="font-display text-xl font-bold text-foreground">ARAY CRM</h1>
             <p className="text-xs text-muted-foreground mt-0.5">
               {tab === "orders" ? "Перетащи карточку → статус заказа меняется" : "Перетащи лид между этапами воронки"}
             </p>
@@ -1335,17 +1184,17 @@ export function CrmClient() {
             {tab === "leads" && (
               <>
                 <button onClick={() => setShowPresets(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-primary/[0.08] transition-colors text-muted-foreground">
-                  <Zap className="w-4 h-4" />
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/15 text-sm font-medium hover:border-primary/30 hover:bg-primary/[0.05] transition-all text-muted-foreground">
+                  <Zap className="w-4 h-4 arayglass-icon" />
                   <span className="hidden sm:inline">Пресеты</span>
                 </button>
                 <button onClick={fetchLeads}
-                  className="w-9 h-9 rounded-xl border border-border flex items-center justify-center hover:bg-primary/[0.08] transition-colors text-muted-foreground">
-                  <RefreshCw className="w-4 h-4" />
+                  className="w-9 h-9 rounded-xl border border-primary/15 flex items-center justify-center hover:border-primary/30 hover:bg-primary/[0.05] transition-all text-muted-foreground">
+                  <RefreshCw className="w-4 h-4 arayglass-icon" />
                 </button>
                 <button
                   onClick={() => handleAddLead("NEW")}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm">
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
                   <Plus className="w-4 h-4" />
                   Новый лид
                 </button>
@@ -1355,13 +1204,13 @@ export function CrmClient() {
         </div>
 
         {/* Таб-переключатель */}
-        <div className="flex items-center gap-1 mb-3 p-1 bg-muted rounded-xl w-fit">
+        <div className="flex items-center gap-1 mb-3 p-1 arayglass rounded-xl w-fit">
           <button
             onClick={() => setTab("orders")}
             className={`admin-pill-btn ${tab === "orders" ? "admin-pill-btn-active" : ""}`}
           >
             <ShoppingBag className="w-4 h-4" />
-            Заказы по статусам
+            Заказы
           </button>
           <button
             onClick={() => setTab("leads")}
@@ -1383,7 +1232,7 @@ export function CrmClient() {
           <CrmStats leads={leads} />
 
           {/* Фильтр по источнику */}
-          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border overflow-x-auto flex-shrink-0">
+          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-primary/[0.08] overflow-x-auto flex-shrink-0">
             {[{ key: "ALL", label: "Все" }, ...Object.entries(SOURCE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(s => {
               const isActive = sourceFilter === s.key;
               return (
@@ -1409,7 +1258,7 @@ export function CrmClient() {
           ) : (
             <>
               {/* Мобильный переключатель этапов */}
-              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-border">
+              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
                 {STAGES.map(s => {
                   const cnt = (leadsByStage[s.key] || []).length;
                   return (
