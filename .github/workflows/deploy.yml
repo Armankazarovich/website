@@ -66,15 +66,22 @@ jobs:
             du -sh /home/armankmb/.npm 2>/dev/null || true
             du -sh /tmp/pilorus-* 2>/dev/null || true
 
-            # ── 0.1 Агрессивная очистка диска ──
-            echo "🧹 Cleaning up disk space..."
-            # Удаляем app-previous (он содержит дубль node_modules ~1GB)
+            # ── 0.1 Сохраняем .next для отката ПЕРЕД очисткой ──
+            echo "📦 Saving previous .next for rollback..."
             rm -rf "$PREV_DIR"
-            # Очистка npm кэша
+            if [ -d "$APP_DIR/.next" ]; then
+              mkdir -p "$PREV_DIR"
+              cp -r "$APP_DIR/.next" "$PREV_DIR/.next"
+              echo "✅ Previous .next saved ($(du -sh "$PREV_DIR/.next" | cut -f1))"
+            else
+              echo "⚠️ No previous .next to save"
+            fi
+
+            # ── 0.2 Очистка диска ──
+            echo "🧹 Cleaning up disk space..."
             npm cache clean --force 2>/dev/null || true
-            # Удаляем старые temp файлы
             rm -rf /tmp/pilorus-uploads-backup /tmp/pilorus-images-backup 2>/dev/null || true
-            # Удаляем старый .next cache (принудительная чистая сборка)
+            # Удаляем .next для чистой сборки
             rm -rf "$APP_DIR/.next" 2>/dev/null || true
             echo "💿 Disk usage AFTER cleanup:"
             df -h / | tail -1
@@ -89,17 +96,7 @@ jobs:
                 pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && echo "✅ DB backup: $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))" || echo "⚠️ DB backup failed (non-critical, continuing)"
               fi
             fi
-            # Храним только 3 последних бэкапа (было 5)
             ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs rm -f 2>/dev/null || true
-
-            # ── 2. Сохраняем ТОЛЬКО .next для отката (БЕЗ node_modules) ──
-            echo "📦 Saving previous .next for rollback..."
-            rm -rf "$PREV_DIR"
-            if [ -d "$APP_DIR/.next" ]; then
-              mkdir -p "$PREV_DIR"
-              cp -r "$APP_DIR/.next" "$PREV_DIR/.next"
-              echo "✅ Previous .next saved"
-            fi
 
             echo "📂 Extracting code..."
             mkdir -p "$APP_DIR"
