@@ -146,7 +146,35 @@ jobs:
             npx prisma db push --skip-generate
 
             echo "🔨 Building..."
-            npm run build
+            npm run build 2>&1 | tee /tmp/build.log || true
+            BUILD_EXIT=$?
+
+            # ── Диагностика: проверяем что CRM-страницы попали в билд ──
+            echo "🔍 Build diagnostics..."
+            echo "Build exit code: $BUILD_EXIT"
+            if [ -f ".next/server/app/admin/crm/automation/page.js" ]; then
+              echo "✅ CRM automation page: EXISTS"
+            else
+              echo "❌ CRM automation page: MISSING"
+              echo "--- Last 30 lines of build log ---"
+              tail -30 /tmp/build.log 2>/dev/null || true
+              echo "--- Checking .next/server/app/admin/crm/ ---"
+              ls -la .next/server/app/admin/crm/ 2>/dev/null || echo "CRM directory not found"
+              find .next/server/app/admin/crm/ -name "*.js" 2>/dev/null || echo "No CRM JS files"
+            fi
+            if [ -f ".next/server/app/api/admin/crm/workflows/route.js" ]; then
+              echo "✅ CRM workflows API: EXISTS"
+            else
+              echo "❌ CRM workflows API: MISSING"
+              ls -la .next/server/app/api/admin/crm/ 2>/dev/null || echo "CRM API directory not found"
+            fi
+
+            if [ "$BUILD_EXIT" -ne 0 ]; then
+              echo "❌ Build failed with exit code $BUILD_EXIT"
+              echo "--- Full build errors ---"
+              grep -i "error\|fail\|ERR!" /tmp/build.log | tail -20 || true
+              exit 1
+            fi
 
             echo "🚀 Restarting pm2..."
             pm2 restart pilo-rus --update-env
