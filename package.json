@@ -7,14 +7,15 @@
     "dev": "next dev",
     "backup": "node D:/pilorus/scripts/backup.js",
     "deploy": "node D:/pilorus/scripts/deploy.js",
-    "build": "prisma db push --skip-generate && tsx prisma/data-migrate.ts && next build",
+    "build": "prisma generate && prisma db push --skip-generate && tsx prisma/data-migrate.ts && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:prod": "node D:/pilorus/scripts/test-production.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
