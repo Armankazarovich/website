@@ -1,37 +1,35 @@
-export const dynamic = "force-dynamic";
+/**
+ * CRM Workflow Logs — последние исполнения роботов
+ * GET ?limit=50&workflowId=xxx
+ */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireManager } from "@/lib/auth-helpers";
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
+export async function GET(req: Request) {
+  const authResult = await requireManager();
+  if (!authResult.authorized) return authResult.response;
 
-export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session || !STAFF_ROLES.includes(session.user.role as string)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const { searchParams } = new URL(req.url);
+  const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
+  const workflowId = searchParams.get("workflowId");
 
   try {
-    const { searchParams } = new URL(req.url);
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
+    const where: any = {};
+    if (workflowId) where.workflowId = workflowId;
 
-    const logs = await (prisma as any).workflowLog.findMany({
+    const logs = await prisma.workflowLog.findMany({
+      where,
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
-        workflow: {
-          select: { name: true, trigger: true, category: true },
-        },
+        workflow: { select: { name: true, trigger: true, category: true } },
       },
     });
 
     return NextResponse.json({ logs });
-  } catch (err: any) {
-    if (err.code === "P2021" || err.message?.includes("does not exist")) {
-      return NextResponse.json({ logs: [] });
-    }
-    console.error("Workflow logs GET error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (e: any) {
+    return NextResponse.json({ logs: [] });
   }
 }
