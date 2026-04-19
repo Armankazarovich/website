@@ -54,7 +54,34 @@ jobs:
           script: |
             set -eo pipefail
             APP_DIR="/home/armankmb/pilo-rus/app"
+            PREV_DIR="/home/armankmb/pilo-rus/app-previous"
             ARCHIVE="/home/armankmb/pilo-rus/deploy.tar.gz"
+            BACKUP_DIR="/home/armankmb/pilo-rus/backups"
+
+            # ── 1. Бэкап БД перед деплоем ──
+            echo "🗄️ Backing up database..."
+            mkdir -p "$BACKUP_DIR"
+            DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
+            # Читаем DATABASE_URL из .env для pg_dump
+            if [ -f "$APP_DIR/.env" ]; then
+              DB_URL=$(grep "^DATABASE_URL=" "$APP_DIR/.env" | cut -d'"' -f2 | cut -d"'" -f2)
+              if [ -n "$DB_URL" ]; then
+                pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && echo "✅ DB backup: $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))" || echo "⚠️ DB backup failed (non-critical, continuing)"
+              fi
+            fi
+            # Храним только 5 последних бэкапов
+            ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+
+            # ── 2. Сохраняем предыдущую версию для отката ──
+            echo "📦 Saving previous version for rollback..."
+            rm -rf "$PREV_DIR"
+            if [ -d "$APP_DIR/.next" ]; then
+              mkdir -p "$PREV_DIR"
+              cp -r "$APP_DIR/.next" "$PREV_DIR/.next"
+              cp -r "$APP_DIR/node_modules" "$PREV_DIR/node_modules" 2>/dev/null || true
+              cp "$APP_DIR/package.json" "$PREV_DIR/package.json" 2>/dev/null || true
+              echo "✅ Previous .next saved"
+            fi
 
             echo "📂 Extracting code..."
             mkdir -p "$APP_DIR"
@@ -124,5 +151,26 @@ jobs:
             echo "🚀 Restarting pm2..."
             pm2 restart pilo-rus --update-env
             pm2 save
+
+            # ── 3. Health check после деплоя ──
+            echo "🏥 Health check..."
+            sleep 5
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Health check OK (HTTP $HTTP_CODE)"
+            else
+              echo "❌ Health check FAILED (HTTP $HTTP_CODE)"
+              # Пытаемся откатить на предыдущую версию
+              if [ -d "$PREV_DIR/.next" ]; then
+                echo "🔄 Rolling back to previous version..."
+                rm -rf "$APP_DIR/.next"
+                cp -r "$PREV_DIR/.next" "$APP_DIR/.next"
+                pm2 restart pilo-rus --update-env
+                sleep 3
+                ROLLBACK_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
+                echo "🔄 Rollback result: HTTP $ROLLBACK_CODE"
+              fi
+              exit 1
+            fi
 
             echo "✅ Deployed at $(date)"

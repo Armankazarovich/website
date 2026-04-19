@@ -7,7 +7,7 @@
     "dev": "next dev",
     "backup": "node D:/pilorus/scripts/backup.js",
     "deploy": "node D:/pilorus/scripts/deploy.js",
-    "build": "prisma db push --accept-data-loss && tsx prisma/data-migrate.ts && next build",
+    "build": "prisma db push --skip-generate && tsx prisma/data-migrate.ts && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
