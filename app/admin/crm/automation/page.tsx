@@ -1,10 +1,13 @@
+import { AutoRefresh } from "@/components/admin/auto-refresh";
+import { AutomationClient } from "./automation-client";
+
 export const dynamic = "force-dynamic";
 
 export default function AutomationPage() {
   return (
-    <div style={{ padding: 40 }}>
-      <h1>CRM Automation — Test Page</h1>
-      <p>If you see this, the route works.</p>
-    </div>
+    <>
+      <AutoRefresh intervalMs={30000} />
+      <AutomationClient />
+    </>
   );
 }
