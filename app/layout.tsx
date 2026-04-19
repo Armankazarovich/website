@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
-import { Oswald } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { PaletteProvider } from "@/components/palette-provider";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,16 +10,35 @@ import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin", "cyrillic"],
+// Шрифты локальные (vendored в public/fonts/) — не зависим от fonts.gstatic.com при билде
+const inter = localFont({
+  src: [
+    { path: "../public/fonts/inter-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/inter-cyrillic-400.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/inter-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/inter-cyrillic-500.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/inter-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/inter-cyrillic-600.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/inter-latin-700.woff2", weight: "700", style: "normal" },
+    { path: "../public/fonts/inter-cyrillic-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-inter",
   display: "swap",
+  fallback: ["system-ui", "arial"],
 });
 
-const oswald = Oswald({
-  subsets: ["latin", "cyrillic"],
+const oswald = localFont({
+  src: [
+    { path: "../public/fonts/oswald-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/oswald-cyrillic-400.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/oswald-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/oswald-cyrillic-500.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/oswald-latin-700.woff2", weight: "700", style: "normal" },
+    { path: "../public/fonts/oswald-cyrillic-700.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-oswald",
   display: "swap",
+  fallback: ["system-ui", "arial"],
 });
 
 export const metadata: Metadata = {
