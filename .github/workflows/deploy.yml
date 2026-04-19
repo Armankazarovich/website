@@ -49,7 +49,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 15m
+          command_timeout: 30m
           envs: ANTHROPIC_API_KEY,ELEVENLABS_API_KEY,GOOGLE_AI_API_KEY
           script: |
             set -eo pipefail
@@ -81,8 +81,9 @@ jobs:
             echo "🧹 Cleaning up disk space..."
             npm cache clean --force 2>/dev/null || true
             rm -rf /tmp/pilorus-uploads-backup /tmp/pilorus-images-backup 2>/dev/null || true
-            # Удаляем .next для чистой сборки
-            rm -rf "$APP_DIR/.next" 2>/dev/null || true
+            # НЕ удаляем .next — инкрементальный билд быстрее (2-3 мин vs 15+)
+            # Только чистим кэш webpack если он раздулся
+            rm -rf "$APP_DIR/.next/cache/webpack" 2>/dev/null || true
             echo "💿 Disk usage AFTER cleanup:"
             df -h / | tail -1
 
@@ -166,8 +167,7 @@ jobs:
             ls -la app/api/admin/crm/workflows/route.ts 2>/dev/null && echo "✅ CRM API source exists" || echo "❌ CRM API source MISSING"
 
             # ── Чистая сборка (удаляем старый .next) ──
-            echo "🔨 Clean building (removing old .next)..."
-            rm -rf .next
+            echo "🔨 Building (incremental — keeps .next cache for speed)..."
             npm run build 2>&1 | tee /tmp/build.log
             BUILD_EXIT=$?
 
