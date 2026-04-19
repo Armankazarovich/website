@@ -16,15 +16,24 @@ function buildDatabaseUrl(): string | undefined {
 
   try {
     const url = new URL(raw);
-    // Разумные дефолты под single-VPS Node-процесс:
-    //  connection_limit=20  — до 20 коннектов к PG (дефолт Prisma = num_physical_cpus * 2 + 1)
-    //  pool_timeout=20      — ждать коннект до 20 сек вместо падения
-    //  connect_timeout=10   — новый коннект к PG за 10 сек максимум
+    // BUILD-TIME vs RUNTIME: Next.js при SSG запускает много параллельных
+    // рендер-воркеров, каждый создаёт свой PrismaClient. При connection_limit=20
+    // и 5-10 воркерах PG быстро исчерпывается (max_connections=100 минус резерв).
+    //
+    // NEXT_PHASE_BUILD — Next.js выставляет `NEXT_PHASE=phase-production-build`
+    // во время next build. В этом режиме используем connection_limit=3.
+    //
+    // Runtime: 20 коннектов под single Node-процесс достаточно под нагрузку.
+    const isBuild =
+      process.env.NEXT_PHASE === "phase-production-build" ||
+      process.env.NEXT_PHASE === "phase-production-optimize";
+    const defaultLimit = isBuild ? "3" : "20";
+    const defaultPoolTimeout = isBuild ? "30" : "20";
     if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set("connection_limit", "20");
+      url.searchParams.set("connection_limit", defaultLimit);
     }
     if (!url.searchParams.has("pool_timeout")) {
-      url.searchParams.set("pool_timeout", "20");
+      url.searchParams.set("pool_timeout", defaultPoolTimeout);
     }
     if (!url.searchParams.has("connect_timeout")) {
       url.searchParams.set("connect_timeout", "10");

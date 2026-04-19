@@ -1,10 +1,18 @@
 import { prisma } from "@/lib/prisma";
 
+// Graceful degrade: если БД недоступна или исчерпан пул (SSG на build),
+// возвращаем пустой объект — getSetting() перейдёт на DEFAULT_SETTINGS.
+// Это предотвращает падение всего билда из-за одной страницы.
 export async function getSiteSettings(): Promise<Record<string, string>> {
-  const rows = await prisma.siteSettings.findMany();
-  const result: Record<string, string> = {};
-  for (const row of rows) result[row.key] = row.value;
-  return result;
+  try {
+    const rows = await prisma.siteSettings.findMany();
+    const result: Record<string, string> = {};
+    for (const row of rows) result[row.key] = row.value;
+    return result;
+  } catch (e) {
+    console.warn("[site-settings] DB unavailable, using defaults:", (e as Error).message);
+    return {};
+  }
 }
 
 // Default values
