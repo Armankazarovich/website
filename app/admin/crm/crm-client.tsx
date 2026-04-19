@@ -299,22 +299,23 @@ function LeadForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative arayglass rounded-2xl w-full max-w-lg shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
-          <div>
-            <h2 className="text-base font-bold text-foreground">Новый лид</h2>
-            <p className="text-sm mt-0.5 text-muted-foreground">Заполните данные о потенциальном клиенте</p>
+    <>
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className="arayglass-popup arayglass-popup-md">
+          {/* Header */}
+          <div className="arayglass-popup-header">
+            <div>
+              <h2 className="text-base font-bold text-foreground">Новый лид</h2>
+              <p className="text-sm mt-0.5 text-muted-foreground">Заполните данные о потенциальном клиенте</p>
+            </div>
+            <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
 
-        {/* Form */}
-        <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
+          {/* Form */}
+          <div className="arayglass-popup-body space-y-3">
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Имя / Компания *</label>
             <input value={name} onChange={e => setName(e.target.value)}
@@ -400,19 +401,22 @@ function LeadForm({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-3 px-5 pb-5 pt-2">
-          <button onClick={onClose}
-            className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
-            Отмена
-          </button>
-          <button onClick={handleSave} disabled={!name.trim()}
-            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
-            Создать лид
-          </button>
+          {/* Actions */}
+          <div className="arayglass-popup-footer">
+            <div className="flex gap-3">
+              <button onClick={onClose}
+                className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
+                Отмена
+              </button>
+              <button onClick={handleSave} disabled={!name.trim()}
+                className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
+                Создать лид
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -498,40 +502,39 @@ function LeadDetailPanel({
 
   return (
     <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-
-      {/* Panel */}
-      <div className="fixed top-0 right-0 h-full w-full sm:w-[520px] z-50 arayglass rounded-none sm:rounded-l-2xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08] flex-shrink-0">
-          <div className="min-w-0 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <User className="w-5 h-5 text-primary" />
+      {/* ARAY POPUP */}
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className="arayglass-popup arayglass-popup-lg">
+          {/* Header */}
+          <div className="arayglass-popup-header">
+            <div className="min-w-0 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <User className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground truncate text-base">{lead.name}</p>
+                {lead.company && <p className="text-xs text-muted-foreground truncate mt-0.5">{lead.company}</p>}
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-foreground truncate text-base">{lead.name}</p>
-              {lead.company && <p className="text-xs text-muted-foreground truncate mt-0.5">{lead.company}</p>}
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => setEditing(!editing)}
+                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground arayglass-icon">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button onClick={() => setShowConfirmDelete(true)}
+                className="w-10 h-10 rounded-xl hover:bg-red-500/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500">
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <button onClick={onClose}
+                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => setEditing(!editing)}
-              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground arayglass-icon">
-              <Pencil className="w-4 h-4" />
-            </button>
-            <button onClick={() => setShowConfirmDelete(true)}
-              className="w-10 h-10 rounded-xl hover:bg-red-500/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500">
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button onClick={onClose}
-              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Body */}
+          <div className="arayglass-popup-body space-y-4">
           {/* Stage selector */}
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-2 block">Этап воронки</label>
@@ -668,6 +671,7 @@ function LeadDetailPanel({
             )}
           </div>
         </div>
+        </div>
       </div>
 
       {showConfirmDelete && (
@@ -747,45 +751,49 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
   const preset = PRESETS.find(p => p.key === selected);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative arayglass rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
-          <div>
-            <h2 className="text-base font-bold text-foreground">Пресеты по отраслям</h2>
-            <p className="text-sm mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
-          </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="p-5 space-y-2">
-          {PRESETS.map(p => (
-            <button key={p.key} onClick={() => setSelected(p.key)}
-              className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
-                selected === p.key
-                  ? "border-2 border-primary bg-primary/15 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
-                  : "border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/[0.05]"
-              }`}>
-              <p className="font-semibold text-sm text-foreground">{p.label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
+    <>
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className="arayglass-popup arayglass-popup-sm">
+          <div className="arayglass-popup-header">
+            <div>
+              <h2 className="text-base font-bold text-foreground">Пресеты по отраслям</h2>
+              <p className="text-sm mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
+            </div>
+            <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
             </button>
-          ))}
-        </div>
-        <div className="flex gap-3 px-5 pb-5">
-          <button onClick={onClose}
-            className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
-            Отмена
-          </button>
-          <button
-            disabled={!selected || !preset?.sampleLeads.length}
-            onClick={() => { preset && onApply(preset.sampleLeads); onClose(); }}
-            className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
-            Загрузить демо ({preset?.sampleLeads.length || 0} лидов)
-          </button>
+          </div>
+          <div className="arayglass-popup-body space-y-2">
+            {PRESETS.map(p => (
+              <button key={p.key} onClick={() => setSelected(p.key)}
+                className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
+                  selected === p.key
+                    ? "border-2 border-primary bg-primary/15 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
+                    : "border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/[0.05]"
+                }`}>
+                <p className="font-semibold text-sm text-foreground">{p.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
+              </button>
+            ))}
+          </div>
+          <div className="arayglass-popup-footer">
+            <div className="flex gap-3">
+              <button onClick={onClose}
+                className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
+                Отмена
+              </button>
+              <button
+                disabled={!selected || !preset?.sampleLeads.length}
+                onClick={() => { preset && onApply(preset.sampleLeads); onClose(); }}
+                className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
+                Загрузить демо ({preset?.sampleLeads.length || 0} лидов)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -804,6 +812,7 @@ type OrderCard = {
   deliveryAddress?: string | null;
   comment?: string | null;
   createdAt: string;
+  updatedAt?: string;
   items: Array<{ productName: string; variantSize: string; quantity: number; price: number; unitType: string }>;
 };
 
@@ -815,8 +824,10 @@ function OrderKanbanCard({
   onDragEnd: (e: React.DragEvent) => void;
   onClick: (order: OrderCard) => void;
 }) {
-  const itemsSummary = order.items.slice(0, 2).map(i => `${i.productName} ${i.variantSize}`).join(", ");
-  const hasMore = order.items.length > 2;
+  const firstItem = order.items[0];
+  const moreCount = order.items.length - 1;
+  const created = new Date(order.createdAt);
+  const dateStr = created.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 
   return (
     <div
@@ -824,41 +835,46 @@ function OrderKanbanCard({
       onDragStart={(e) => onDragStart(e, order)}
       onDragEnd={onDragEnd}
       onClick={() => onClick(order)}
-      className="arayglass arayglass-shimmer rounded-xl p-4 sm:p-3.5 cursor-pointer select-none transition-all duration-200 group"
+      className="arayglass arayglass-shimmer rounded-xl p-3 cursor-pointer select-none transition-all duration-200 group"
     >
-      <div className="flex items-start justify-between gap-2 mb-2.5">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-primary">#{order.orderNumber}</span>
-            <span className="text-sm font-medium text-foreground truncate">{order.guestName || "Клиент"}</span>
-          </div>
-          {order.guestPhone && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <Phone className="w-3 h-3 shrink-0" />{order.guestPhone}
-            </p>
-          )}
+      {/* Row 1: номер + имя + сумма */}
+      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="text-xs font-bold text-primary shrink-0">#{order.orderNumber}</span>
+          <span className="text-sm font-semibold text-foreground truncate">{order.guestName || "Клиент"}</span>
         </div>
-        <span className="shrink-0 text-sm font-bold px-2.5 py-1 rounded-xl text-emerald-500 dark:text-emerald-400 bg-emerald-500/10">
+        <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
           {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
         </span>
       </div>
 
-      {itemsSummary && (
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-2.5 flex items-start gap-1.5">
-          <Package className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary/40" />
-          <span>{itemsSummary}{hasMore ? ` +${order.items.length - 2}` : ""}</span>
+      {/* Row 2: телефон */}
+      {order.guestPhone && (
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
+          <Phone className="w-3 h-3 shrink-0 text-primary/40" />
+          <span className="font-medium">{order.guestPhone}</span>
         </p>
       )}
 
-      <div className="flex items-center justify-between pt-2 border-t border-primary/[0.06]">
-        <span className="text-xs text-muted-foreground flex items-center gap-1">
-          {order.paymentMethod === "Наличные"
-            ? <><Banknote className="w-3 h-3" /> Нал</>
-            : <><Building2 className="w-3 h-3" /> Безнал</>}
+      {/* Row 3: товар */}
+      {firstItem && (
+        <p className="text-xs text-muted-foreground truncate mb-2 flex items-center gap-1.5">
+          <Package className="w-3 h-3 shrink-0 text-primary/40" />
+          <span>{firstItem.productName} {firstItem.variantSize}{moreCount > 0 ? ` +${moreCount}` : ""}</span>
+        </p>
+      )}
+
+      {/* Row 4: footer — оплата + дата */}
+      <div className="flex items-center justify-between pt-1.5 border-t border-primary/[0.06]">
+        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+          <Banknote className="w-3 h-3" />
+          {order.paymentMethod === "Наличные" ? "Нал" : "Безнал"}
         </span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</span>
-          <ArrowRight className="w-3 h-3 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> {dateStr}
+          </span>
+          <ArrowRight className="w-3 h-3 text-muted-foreground/30 group-hover:text-primary transition-colors" />
         </div>
       </div>
     </div>
@@ -877,140 +893,159 @@ function OrderDetailPanel({
   const currentStage = ORDER_STAGES.find(s => s.key === order.status);
   const itemsTotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
 
+  const createdStr = new Date(order.createdAt).toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  const updatedStr = order.updatedAt ? new Date(order.updatedAt).toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
+
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed top-0 right-0 h-full w-full sm:w-[520px] z-50 arayglass rounded-none sm:rounded-l-2xl shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08] flex-shrink-0">
-          <div className="min-w-0 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-              <ShoppingBag className="w-5 h-5 text-primary" />
+      {/* ARAY POPUP */}
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className="arayglass-popup arayglass-popup-lg">
+          {/* Header */}
+          <div className="arayglass-popup-header">
+            <div className="min-w-0 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-bold text-foreground text-base">Заказ #{order.orderNumber}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{order.guestName || "Клиент"}</p>
+              </div>
             </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Link href={`/admin/orders/${order.id}`}
+                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-primary arayglass-icon">
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+              <button onClick={onClose}
+                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="arayglass-popup-body space-y-4">
+            {/* Status selector */}
             <div>
-              <p className="font-bold text-foreground text-base">Заказ #{order.orderNumber}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{order.guestName || "Клиент"}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Link href={`/admin/orders/${order.id}`}
-              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-primary arayglass-icon">
-              <ExternalLink className="w-4 h-4" />
-            </Link>
-            <button onClick={onClose}
-              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {/* Status selector */}
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">Статус заказа</label>
-            <div className="flex flex-wrap gap-1.5">
-              {ORDER_STAGES.filter(s => s.key !== "CANCELLED").map(s => {
-                const StIcon = s.icon;
-                return (
-                  <button key={s.key} onClick={() => { onStatusChange(order.id, s.key); }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
-                      order.status === s.key
-                        ? "border-2 border-primary bg-primary/15 text-foreground shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
-                        : "border border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05]"
-                    }`}>
-                    <StIcon className="w-3.5 h-3.5" />
-                    {s.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Сумма */}
-          <div className="arayglass rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm text-muted-foreground">Сумма товаров</span>
-              <span className="text-sm font-semibold text-foreground">{itemsTotal.toLocaleString("ru-RU")} ₽</span>
-            </div>
-            {order.deliveryCost && Number(order.deliveryCost) > 0 && (
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">Доставка</span>
-                <span className="text-sm font-semibold text-foreground">{Number(order.deliveryCost).toLocaleString("ru-RU")} ₽</span>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">Статус заказа</label>
+              <div className="flex flex-wrap gap-1.5">
+                {ORDER_STAGES.filter(s => s.key !== "CANCELLED").map(s => {
+                  const StIcon = s.icon;
+                  return (
+                    <button key={s.key} onClick={() => { onStatusChange(order.id, s.key); }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                        order.status === s.key
+                          ? "border-2 border-primary bg-primary/15 text-foreground shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
+                          : "border border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05]"
+                      }`}>
+                      <StIcon className="w-3.5 h-3.5" />
+                      {s.label}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-            <div className="flex items-center justify-between pt-3 border-t border-primary/[0.08]">
-              <span className="text-sm font-bold text-foreground">Итого</span>
-              <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</span>
             </div>
-          </div>
 
-          {/* Контактная информация */}
-          <div className="arayglass rounded-xl p-4 space-y-3">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Контакт</p>
-            {order.guestPhone && (
-              <a href={`tel:${order.guestPhone}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
-                <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
-                {order.guestPhone}
-              </a>
-            )}
-            {order.guestEmail && (
-              <a href={`mailto:${order.guestEmail}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
-                <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
-                {order.guestEmail}
-              </a>
-            )}
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-h-[36px]">
-              <Banknote className="w-4 h-4" />
-              {order.paymentMethod}
-            </div>
-            {order.deliveryAddress && (
-              <div className="flex items-start gap-2.5 text-sm text-muted-foreground min-h-[36px]">
-                <Navigation className="w-4 h-4 shrink-0 mt-0.5" />
-                <span>{order.deliveryAddress}</span>
-              </div>
-            )}
-          </div>
-
-          {/* Товары */}
-          <div className="arayglass rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-primary/[0.08]">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Товары ({order.items.length})</p>
-            </div>
-            <div className="divide-y divide-primary/[0.05]">
-              {order.items.map((item, i) => (
-                <div key={i} className="px-4 py-3 flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-foreground truncate">{item.productName}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.variantSize} · {item.quantity} {item.unitType}</p>
-                  </div>
-                  <span className="text-sm font-semibold text-foreground shrink-0">
-                    {(item.price * item.quantity).toLocaleString("ru-RU")} ₽
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Комментарий */}
-          {order.comment && (
+            {/* Сумма */}
             <div className="arayglass rounded-xl p-4">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Комментарий</p>
-              <p className="text-sm text-foreground leading-relaxed">{order.comment}</p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground">Сумма товаров</span>
+                <span className="text-sm font-semibold text-foreground">{itemsTotal.toLocaleString("ru-RU")} ₽</span>
+              </div>
+              {order.deliveryCost && Number(order.deliveryCost) > 0 && (
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm text-muted-foreground">Доставка</span>
+                  <span className="text-sm font-semibold text-foreground">{Number(order.deliveryCost).toLocaleString("ru-RU")} ₽</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between pt-3 border-t border-primary/[0.08]">
+                <span className="text-sm font-bold text-foreground">Итого</span>
+                <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</span>
+              </div>
             </div>
-          )}
 
-          {/* Мета */}
-          <div className="text-xs text-muted-foreground space-y-1.5 pt-1">
-            <p>Создан: {new Date(order.createdAt).toLocaleString("ru-RU")}</p>
+            {/* Контактная информация */}
+            <div className="arayglass rounded-xl p-4 space-y-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Контакт</p>
+              {order.guestPhone && (
+                <a href={`tel:${order.guestPhone}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                  <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                  {order.guestPhone}
+                </a>
+              )}
+              {order.guestEmail && (
+                <a href={`mailto:${order.guestEmail}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                  <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                  {order.guestEmail}
+                </a>
+              )}
+              <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-h-[36px]">
+                <Banknote className="w-4 h-4" />
+                {order.paymentMethod}
+              </div>
+              {order.deliveryAddress && (
+                <div className="flex items-start gap-2.5 text-sm text-muted-foreground min-h-[36px]">
+                  <Navigation className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{order.deliveryAddress}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Товары */}
+            <div className="arayglass rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-primary/[0.08]">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Товары ({order.items.length})</p>
+              </div>
+              <div className="divide-y divide-primary/[0.05]">
+                {order.items.map((item, i) => (
+                  <div key={i} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm text-foreground truncate">{item.productName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{item.variantSize} · {item.quantity} {item.unitType}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-foreground shrink-0">
+                      {(item.price * item.quantity).toLocaleString("ru-RU")} ₽
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Комментарий */}
+            {order.comment && (
+              <div className="arayglass rounded-xl p-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Комментарий</p>
+                <p className="text-sm text-foreground leading-relaxed">{order.comment}</p>
+              </div>
+            )}
+
+            {/* Даты */}
+            <div className="arayglass rounded-xl p-4">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-primary/40" />
+                  Оформлен: {createdStr}
+                </span>
+                {updatedStr && updatedStr !== createdStr && (
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-primary/40" />
+                    Изменён: {updatedStr}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Кнопка перейти */}
-          <Link href={`/admin/orders/${order.id}`}
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
-            <ExternalLink className="w-4 h-4" />
-            Открыть полную карточку
-          </Link>
+          {/* Footer */}
+          <div className="arayglass-popup-footer">
+            <Link href={`/admin/orders/${order.id}`}
+              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
+              <ExternalLink className="w-4 h-4" />
+              Открыть полную карточку
+            </Link>
+          </div>
         </div>
       </div>
     </>
@@ -1198,18 +1233,18 @@ function OrdersKanban({ search }: { search: string }) {
                     onDragLeave={() => setDragOverStage(null)}
                   >
                     {/* Заголовок колонки */}
-                    <div className="px-4 pt-4 pb-3 flex-shrink-0 border-b border-primary/[0.08]">
-                      <div className="flex items-center gap-2.5 mb-1">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10">
-                          <StageIcon className="w-4 h-4 text-primary arayglass-icon" />
+                    <div className="px-3 pt-3 pb-2.5 flex-shrink-0 border-b border-primary/[0.08]">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center bg-primary/10">
+                          <StageIcon className="w-3.5 h-3.5 text-primary arayglass-icon" />
                         </div>
                         <span className="text-sm font-bold text-foreground">{stage.label}</span>
-                        <span className="text-xs font-bold text-primary bg-primary/[0.1] px-2.5 py-0.5 rounded-xl ml-auto">
+                        <span className="text-xs font-bold text-primary bg-primary/[0.1] px-2 py-0.5 rounded-xl ml-auto">
                           {stageOrders.length}
                         </span>
                       </div>
                       {stageTotal > 0 && (
-                        <p className="text-sm font-semibold text-emerald-500 dark:text-emerald-400 ml-[38px]">
+                        <p className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 ml-8">
                           {stageTotal.toLocaleString("ru-RU")} ₽
                         </p>
                       )}

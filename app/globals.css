@@ -3556,6 +3556,154 @@ aside.aray-sidebar {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   ARAY POPUP — единый стандарт попапов экосистемы ПилоРус
+   Центрированный, адаптивный, стеклянный. Работает на всех устройствах.
+
+   Использование:
+   <div class="arayglass-popup-backdrop" />           — бэкдроп (blur + затемнение)
+   <div class="arayglass-popup arayglass-popup-md" />  — сам попап (sm/md/lg/xl/full)
+
+   Размеры: sm (420px) | md (560px) | lg (720px) | xl (900px) | full (95vw)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Бэкдроп — overlay на весь экран */
+.arayglass-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  animation: arayPopupFadeIn 200ms ease-out;
+}
+
+/* Контейнер (центрирование) */
+.arayglass-popup-container {
+  position: fixed;
+  inset: 0;
+  z-index: 51;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  pointer-events: none;
+}
+@media (min-width: 640px) {
+  .arayglass-popup-container { padding: 1.5rem; }
+}
+
+/* Сам попап */
+.arayglass-popup {
+  position: relative;
+  pointer-events: auto;
+  width: 100%;
+  max-height: 90vh;
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  /* ARAYGLASS стиль */
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid hsl(var(--primary) / 0.15);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.05),
+    0 8px 40px rgba(0, 0, 0, 0.4),
+    0 0 80px hsl(var(--primary) / 0.06);
+
+  /* Анимация появления */
+  animation: arayPopupSlideUp 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Светлая тема */
+:root:not(.dark) .arayglass-popup {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border-color: hsl(var(--primary) / 0.12);
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.04),
+    0 8px 40px rgba(0, 0, 0, 0.12),
+    0 0 60px hsl(var(--primary) / 0.04);
+}
+
+/* Размеры */
+.arayglass-popup-sm  { max-width: 420px; }
+.arayglass-popup-md  { max-width: 560px; }
+.arayglass-popup-lg  { max-width: 720px; }
+.arayglass-popup-xl  { max-width: 900px; }
+.arayglass-popup-full { max-width: 95vw; }
+
+/* Внутренние секции */
+.arayglass-popup-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid hsl(var(--primary) / 0.08);
+}
+@media (min-width: 640px) {
+  .arayglass-popup-header { padding: 1.125rem 1.5rem; }
+}
+
+.arayglass-popup-body {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1.25rem;
+}
+@media (min-width: 640px) {
+  .arayglass-popup-body { padding: 1.25rem 1.5rem; }
+}
+
+.arayglass-popup-footer {
+  flex-shrink: 0;
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid hsl(var(--primary) / 0.08);
+}
+@media (min-width: 640px) {
+  .arayglass-popup-footer { padding: 0.75rem 1.5rem 1.25rem; }
+}
+
+/* Мобилка (< 640px): попап растягивается и прижимается к низу как bottom sheet */
+@media (max-width: 639px) {
+  .arayglass-popup-container {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .arayglass-popup {
+    border-radius: 1.25rem 1.25rem 0 0;
+    max-height: 92vh;
+    max-height: 92dvh;
+    width: 100%;
+    max-width: 100%;
+    animation: arayPopupSlideUpMobile 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Safe area для устройств с нотчем */
+  .arayglass-popup-footer {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Анимации */
+@keyframes arayPopupFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes arayPopupSlideUp {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes arayPopupSlideUpMobile {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════
    GLOW CARD — курсорное свечение на карточках админки
    Добавь data-glow или class="glow-card" к любому элементу.
    Автоматически: .bg-card с border внутри админки.

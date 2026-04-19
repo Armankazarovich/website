@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { X } from "lucide-react";
-import { useClassicMode } from "@/lib/use-classic-mode";
 
 interface AdminQuickViewProps {
   open: boolean;
@@ -10,18 +9,17 @@ interface AdminQuickViewProps {
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
+  /** Размер попапа: sm (420), md (560), lg (720), xl (900). По умолчанию lg */
+  size?: "sm" | "md" | "lg" | "xl";
 }
 
 /**
- * Универсальный Quick View попап — новое поколение ARAY UI.
- * Мобильный: поднимается снизу (bottom sheet)
- * Десктоп: появляется справа (side panel)
- * Закрывается по клику на backdrop или кнопку X
+ * Универсальный Quick View попап — ARAY POPUP стандарт.
+ * Мобильный: поднимается снизу (bottom sheet) — автоматически через CSS
+ * Десктоп: центрированный попап
+ * Закрывается по клику на backdrop, кнопку X или Escape
  */
-export function AdminQuickView({ open, onClose, title, subtitle, children }: AdminQuickViewProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const classic = useClassicMode();
-
+export function AdminQuickView({ open, onClose, title, subtitle, children, size = "lg" }: AdminQuickViewProps) {
   // Закрытие по Escape
   useEffect(() => {
     if (!open) return;
@@ -38,72 +36,46 @@ export function AdminQuickView({ open, onClose, title, subtitle, children }: Adm
 
   if (!open) return null;
 
+  const sizeClass = {
+    sm: "arayglass-popup-sm",
+    md: "arayglass-popup-md",
+    lg: "arayglass-popup-lg",
+    xl: "arayglass-popup-xl",
+  }[size];
+
   return (
-    <div className="fixed inset-0 z-[80] flex items-end lg:items-stretch lg:justify-end">
+    <>
+      {/* ARAY POPUP */}
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className={`arayglass-popup ${sizeClass}`} role="dialog" aria-label={title || "Quick View"}>
 
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 animate-in fade-in duration-200"
-        style={{ backdropFilter: "blur(6px)" }}
-        onClick={onClose}
-      />
+          {/* Header */}
+          {(title || subtitle) && (
+            <div className="arayglass-popup-header flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                {title && (
+                  <h2 className="text-base font-bold leading-tight truncate text-foreground">{title}</h2>
+                )}
+                {subtitle && (
+                  <p className="text-xs mt-0.5 truncate text-muted-foreground">{subtitle}</p>
+                )}
+              </div>
+              <button
+                onClick={onClose}
+                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ml-3 transition-all active:scale-90 text-muted-foreground hover:text-foreground hover:bg-primary/[0.05]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
-      {/* Panel — bottom sheet on mobile, right side panel on desktop */}
-      <div
-        ref={panelRef}
-        className={`
-          relative z-10 flex flex-col
-          w-full lg:w-[460px] lg:max-w-[460px]
-          rounded-t-[28px] lg:rounded-none lg:rounded-l-[28px]
-          overflow-hidden
-          animate-in slide-in-from-bottom lg:slide-in-from-right duration-300
-          max-h-[92dvh] lg:max-h-full lg:h-full
-        `}
-        style={classic ? {
-          background: "hsl(var(--card))",
-          border: "1px solid hsl(var(--border))",
-          boxShadow: "-8px 0 48px rgba(0,0,0,0.12)",
-        } : {
-          background: "rgba(12, 12, 14, 0.82)",
-          backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-          WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-          border: "1px solid rgba(255,255,255,0.14)",
-          boxShadow: "-8px 0 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.05) inset",
-        }}
-      >
-        {/* Drag handle (mobile only) */}
-        <div className="lg:hidden flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
-        </div>
-
-        {/* Header */}
-        <div
-          className="flex items-center justify-between px-5 py-4 shrink-0"
-          style={{ borderBottom: classic ? "1px solid hsl(var(--border))" : "1px solid rgba(255,255,255,0.08)" }}
-        >
-          <div className="min-w-0">
-            {title && (
-              <h2 className="text-base font-bold leading-tight truncate" style={{ color: classic ? "hsl(var(--foreground))" : "#fff" }}>{title}</h2>
-            )}
-            {subtitle && (
-              <p className="text-xs mt-0.5 truncate" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.45)" }}>{subtitle}</p>
-            )}
+          {/* Content */}
+          <div className="arayglass-popup-body">
+            {children}
           </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ml-3 transition-all active:scale-90 hover:bg-primary/[0.06]"
-            style={{ WebkitTapHighlightColor: "transparent" }}
-          >
-            <X className="w-4 h-4" style={{ color: classic ? "hsl(var(--muted-foreground))" : "rgba(255,255,255,0.6)" }} />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain">
-          {children}
-          <div style={{ height: "max(16px, env(safe-area-inset-bottom, 16px))" }} />
         </div>
       </div>
-    </div>
+    </>
   );
 }

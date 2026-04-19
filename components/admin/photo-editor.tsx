@@ -393,39 +393,43 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-xl animate-in slide-in-from-bottom-2 fade-in">
-          {toast}
-        </div>
-      )}
+    <>
+      {/* ARAY POPUP — full-width editor */}
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className="arayglass-popup" style={{ maxWidth: "1152px" }} role="dialog" aria-label="Редактор фото">
 
-      <div className="bg-card border border-border rounded-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col shadow-2xl">
+          {/* Toast */}
+          {toast && (
+            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow-xl animate-in slide-in-from-bottom-2 fade-in">
+              {toast}
+            </div>
+          )}
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-          <h2 className="font-display font-semibold text-lg flex items-center gap-2">
-            <PenTool className="w-5 h-5 text-primary" /> Редактор фото
-          </h2>
-          <div className="flex items-center gap-2">
-            <button onClick={applyWatermark} disabled={applyingWm} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border hover:bg-accent transition-colors disabled:opacity-50">
-              {applyingWm ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />} Водяной знак
-            </button>
-            <button onClick={undo} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-border hover:bg-accent transition-colors">
-              <RotateCcw className="w-3.5 h-3.5" /> Отмена
-            </button>
-            {hasSel && (
-              <button onClick={deleteSelected} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors">
-                <Trash2 className="w-3.5 h-3.5" /> Удалить
+          {/* Header */}
+          <div className="arayglass-popup-header flex items-center justify-between">
+            <h2 className="font-semibold text-base flex items-center gap-2 text-foreground">
+              <PenTool className="w-5 h-5 text-primary" /> Редактор фото
+            </h2>
+            <div className="flex items-center gap-2">
+              <button onClick={applyWatermark} disabled={applyingWm} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border border-primary/15 hover:bg-primary/[0.05] transition-colors disabled:opacity-50">
+                {applyingWm ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Award className="w-3.5 h-3.5" />} Водяной знак
               </button>
-            )}
-            <button onClick={handleSave} disabled={saving || !fabricLoaded} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {saving ? "Сохраняем..." : "Сохранить"}
-            </button>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-accent transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={undo} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border border-primary/15 hover:bg-primary/[0.05] transition-colors">
+                <RotateCcw className="w-3.5 h-3.5" /> Отмена
+              </button>
+              {hasSel && (
+                <button onClick={deleteSelected} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" /> Удалить
+                </button>
+              )}
+              <button onClick={handleSave} disabled={saving || !fabricLoaded} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {saving ? "Сохраняем..." : "Сохранить"}
+              </button>
+              <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/[0.05] transition-colors"><X className="w-4 h-4" /></button>
+            </div>
           </div>
-        </div>
 
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
@@ -728,7 +732,8 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
 
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

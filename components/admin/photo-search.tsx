@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import {
   Search, Loader2, Download, Check, X,
@@ -26,6 +26,12 @@ interface PhotoSearchProps {
 }
 
 export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: PhotoSearchProps) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
   const [query, setQuery] = useState(productName);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,24 +93,27 @@ export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: P
   const totalPages = Math.ceil(Math.min(total, 500) / 12);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="bg-background rounded-3xl shadow-2xl w-full max-w-4xl my-4">
+    <>
+      {/* ARAY POPUP */}
+      <div className="arayglass-popup-backdrop" onClick={onClose} />
+      <div className="arayglass-popup-container">
+        <div className="arayglass-popup arayglass-popup-lg" role="dialog" aria-label="Поиск фото">
 
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="font-display font-bold text-lg">Найти фото бесплатно</h2>
-            <span className="text-xs bg-emerald-100 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-full font-medium">
-              Pixabay — бесплатно
-            </span>
+          {/* Header */}
+          <div className="arayglass-popup-header flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h2 className="font-semibold text-base">Найти фото бесплатно</h2>
+              <span className="text-xs bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full font-medium">
+                Pixabay
+              </span>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-primary/[0.05] transition-colors">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-primary/[0.08] transition-colors">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
 
-        <div className="p-6 space-y-5">
+          <div className="arayglass-popup-body space-y-5">
 
           {/* Search bar */}
           <div className="flex gap-2">
@@ -315,8 +324,9 @@ export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: P
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
