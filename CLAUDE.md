@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 19.04.2026
+> Последнее обновление: 19.04.2026 (сессия 17 — авария VPS + восстановление)
 
 ---
 
@@ -736,6 +736,131 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 19.04.2026 (сессия 17) — Авария VPS (2ч downtime) + восстановление + UptimeRobot + план staging
+
+**Контекст:** После VPS upgrade (Beget: новый IP 85.198.86.153, 10GB RAM / 10 CPU) прод лежал 2 часа — деплои #806-#808 падали подряд.
+
+**Причина #1 — Шрифты fonts.gstatic.com:**
+- Новый VPS не мог достучаться до fonts.gstatic.com при `next build` (DNS/IPv6 проблема на VPS)
+- `next/font/google` висел в retry-loop 15+ минут → SSH timeout → Actions красный крест
+- **Фикс (commit `8ceb4a0`):**
+  - Скачал Inter (400/500/600/700) + Oswald (400/500/700) woff2 через Google Fonts CSS2 API
+  - Сохранил 14 файлов (~381KB) в `public/fonts/` (latin + cyrillic subsets)
+  - `app/layout.tsx`: `import { Inter } from "next/font/google"` → `import localFont from "next/font/local"` с массивом src
+  - **Next.js больше не делает ни одного HTTP-запроса к Google при build**
+  - Утилита `D:\pilorus\__fetch-fonts.js` — переиспользовать если появятся ещё Google Fonts
+
+**Причина #2 — Prisma connection exhaustion на SSG:**
+- После фикса шрифтов билд дошёл до "Generating static pages (70/70)" и упал с:
+  ```
+  PrismaClientKnownRequestError: Too many database connections opened:
+  FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute
+  ```
+- Корень: в сессии 16 я поставил `connection_limit=20` в `lib/prisma.ts` для runtime scale
+- НО при `next build` Next.js запускает N параллельных worker-процессов для SSG — каждый создаёт свой PrismaClient → 20×N коннектов → PG (max_connections ~100) исчерпался
+- **Фикс (commit `382a954`):**
+  - `lib/prisma.ts`: различаем build-phase vs runtime через `NEXT_PHASE` env var
+    - `phase-production-build` → `connection_limit=3, pool_timeout=30`
+    - Runtime → `connection_limit=20` (как было, масштабирование)
+  - `lib/site-settings.ts`: `getSiteSettings()` обёрнут в try/catch → при сбое БД возвращает `{}` → `getSetting()` падает на `DEFAULT_SETTINGS` → страница рендерится с дефолтами (telephone, email, etc)
+  - Graceful degrade: даже если БД 1 раз дёрнется, страницы /terms /privacy /about /contacts отрендерятся
+
+**Результат:**
+- Deploy #809 прошёл за ~6 минут (incremental, .next кэш)
+- Прод HTTP 200, **test-production.js: 44/44 PASS**, среднее время 239ms
+- Downtime: 20:11 → 22:38 (2ч 27м)
+
+**UptimeRobot мониторинг (настроен в этой же сессии):**
+- Account: Arman's UptimeRobot (main API key `u3445951-147a3d76b85e3cd54971c93d`)
+- 3 монитора активны:
+  - ID 802877516: `https://pilo-rus.ru/api/health` (существовал)
+  - ID 802879498: `PiloRus Production Main` → `https://pilo-rus.ru/`
+  - ID 802879499: `PiloRus Catalog` → `https://pilo-rus.ru/catalog`
+- Email alerts: ID 8341156 → armankazarovich@gmail.com (рабочий, пришло письмо во время аварии)
+- Interval: 5 минут (free tier)
+- **Telegram alerts ещё НЕ подключены** — требуют ручного setup с @UptimeRobot_Bot (на следующую сессию)
+- Утилиты в `D:\pilorus\`:
+  - `__uptimerobot-setup.js` — создание мониторов
+  - `__uptimerobot-alerts.js` — привязка email к мониторам
+
+**🔥 ПРАВИЛА ДЛЯ БУДУЩИХ СЕССИЙ (усвоенные уроки):**
+
+1. **Vendored deps = ЗАКОН.** Любая build-time зависимость от внешнего CDN (шрифты, иконки, npm пакеты) — потенциальный single point of failure. После этой аварии всё что можно vendor'ить → vendor'им.
+2. **connection_limit НЕ трогать на build.** Сейчас `NEXT_PHASE` детект работает. НЕ возвращать `connection_limit=20` без разделения build/runtime.
+3. **getSiteSettings обёрнут в try/catch** — НЕ убирать. Это safety net для случаев когда БД недоступна.
+4. **При падении деплоя — ЧИТАТЬ Actions log ПОЛНОСТЬЮ.** Не останавливаться на первой найденной причине. У нас было 2 причины наслоены — если бы починили только шрифты, упали бы на Prisma.
+5. **CLAUDE.md = мозг.** Каждая сессия обновляет. Особенно когда есть "усвоенный урок".
+6. **SSH с моей машины работает через GitHub Actions deploy-bot только.** Мои личные ключи `pilorus_deploy` и `pilorus_vps` НЕ в authorized_keys на новом VPS. Для прямого SSH на VPS → Арман должен добавить через Beget Console.
+
+**Staging VPS — план (решено, ждём заказа VPS Арманом):**
+- Арман берёт отдельный VPS на Beget, рекомендация 4GB RAM / 4 CPU / 50GB NVMe, Ubuntu 22.04, ~500-700₽/мес
+- Имя: `aray-test` или `pilorus-staging`
+- Поддомен: `staging.pilo-rus.ru`
+- GitHub Actions: ветка `staging` → staging VPS, `main` → prod
+- Workflow: код → staging → проверка → merge в main → prod
+- Следующая сессия: настройка staging (2-4 часа)
+
+**На следующую сессию:**
+- [ ] Настроить staging VPS (когда Арман закажет и пришлёт IP/credentials)
+- [ ] Task #19: Harden deploy.yml rollback — при неудачном билде автоматом rollback на app-previous/
+- [ ] Task #17 (частично сделан): аудит остальных external build deps (npm registry mirror, скачивания в postinstall)
+- [ ] Добавить мой SSH-ключ на VPS через Beget Console (`ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGEggEh6FP10clWs7u7goKU0jVNDrUvHRk9FNByxCIhM pilorus-deploy`)
+- [ ] Telegram alerts в UptimeRobot (требует @UptimeRobot_Bot setup)
+- [ ] Возврат к ARAYGLASS дизайн-рефакторингу (п.7 манифеста)
+
+### Сессия 19.04.2026 (сессия 16) — Scale Prep Stage 1: готовность к миллионам пользователей И сайтов
+
+**Контекст:** Арман: "газуем брат подготовимся так чтоб проблемы не были с раширениями и мы смогли рости хоть миллионы пользователей и сайтов". Выбрал "Этап 1: Код (без инфраструктурных затрат)".
+
+**Архитектурный аудит — найдено 10 bottlenecks:**
+- Connection pool = 10 (дефолт Prisma) → фейлы на трафике
+- Нет multi-tenancy (один сайт = один магазин)
+- fs.writeFile для uploads на продакшене (уйдёт в S3 в Stage 2)
+- NextAuth beta, нет partitioning, bundle bloat, no CDN, no error tracking
+
+**Два деплоя Stage 1 (6 задач, 0 инфра-затрат):**
+
+**Deploy #1 (commit `24abbe6`):**
+1. ✅ **Prisma connection pooling** — `lib/prisma.ts` переписан с `buildDatabaseUrl()` который автоматически добавляет `connection_limit=20&pool_timeout=20&connect_timeout=10` если их нет в DATABASE_URL. Было 10, стало 20 (2x запас на пики). Логирование: dev → query/error/warn, prod → warn/error.
+2. ✅ **10 новых индексов БД** — User.phone, Product.name, Order.guestPhone+telegramMessageId, Review.userId+createdAt, PushSubscription.userId+createdAt, PasswordResetToken.email+expiresAt, Post composite indexes. Масштаб до миллионов строк.
+3. ✅ **force-dynamic на 5 CRM admin API** — workflows, workflows/[id], workflows/logs, documents, hints. Больше не кэшируются случайно.
+4. ✅ **Bug fix — CRM workflows auth** — handlers использовали устаревший `if (authError) return authError` вместо `if (!authResult.authorized) return authResult.response`.
+6. ✅ **Middleware для tenant detection** — `middleware.ts`: detectTenant(host) по hostname (`pilo-rus.ru` → "pilorus", `*.pilo-rus.ru` → slug). `x-tenant-id` header прокидывается в request и response. Редиректы категорий сохранены. Matcher исключает статику.
+
+**Deploy #2 (commit `ab65265`):**
+4. ✅ **Bundle оптимизация** — `next.config.js`: добавлены `googleapis`, `sharp`, `bcryptjs` в `serverComponentsExternalPackages`. Тяжёлые server-only пакеты не идут в client bundle.
+5. ✅ **tenantId prep в Prisma schema** — через скрипт `__tenant-prep.js`:
+   - +Модель `Tenant` (slug, name, domain, plan, settings, primaryColor, logoUrl)
+   - +`tenantId String @default("pilorus")` + `@@index([tenantId])` на 21 core модели:
+     User, Category, Product, Order, Review, Promotion, DeliveryRate, SiteSettings, NewsletterSubscriber, PromoCode, PartnershipLead, Expense, Task, Lead, Workflow, Post, Service, DocumentTemplate, ReportSchedule, CrmHint, NicheTemplate
+   - Child-таблицы наследуют tenantId через FK parent — не трогали
+   - `prisma db push` автоматически backfill'ит существующие строки = "pilorus"
+   - `data-migrate.ts` шаг 10 — создаёт дефолтный `Tenant("pilorus", plan="enterprise")` идемпотентно
+
+**Data separation НЕ активно** — это подготовка. В Stage 3 (multi-tenancy) добавим:
+- Middleware фильтр `{ tenantId: headers["x-tenant-id"] }` через Prisma Client extensions
+- Row Level Security в PostgreSQL
+- Admin UI для создания новых тенантов
+
+**SCALING.md** — roadmap на 4 этапа:
+- Stage 1: Код (0₽) ✅ СДЕЛАНО
+- Stage 2: Инфра (+1500-2000₽/мес) — VPS 4-6GB RAM, S3, CDN, managed PG
+- Stage 3: Multi-tenancy — активация tenantId + RLS
+- Stage 4: Enterprise — partitioning, read replicas, Redis
+
+**Production test:** 43/44 PASS (health 503 на optional aray_api/google_ai — давний)
+
+**🚨 ВАЖНО ДЛЯ СЛЕДУЮЩИХ СЕССИЙ:**
+- **tenantId ВСЕГДА "pilorus"** в существующих запросах — не фильтруйте пока не скажу!
+- Новые модели — добавлять `tenantId String @default("pilorus") @@index([tenantId])` по паттерну
+- `lib/prisma.ts` — НЕ возвращать обратно к `new PrismaClient()` без buildDatabaseUrl (важно для пула)
+- Middleware читает tenant из hostname — custom domains будут через БД lookup (Stage 3)
+
+**На следующую сессию:**
+- [ ] Task #7: UptimeRobot (бесплатно) + Sentry (до 5K событий бесплатно) — нужен аккаунт Армана
+- [ ] Stage 2 (когда готов +2000₽/мес): VPS upgrade, S3, CDN, managed PostgreSQL
+- [ ] Stage 3 (после Stage 2): активация tenantId фильтрации + RLS + admin UI для тенантов
 
 ### Сессия 19.04.2026 (сессия 15) — CRM 404 FIX + Deploy reliability + Архитектурный план
 
