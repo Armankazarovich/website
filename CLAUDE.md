@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 18.04.2026
+> Последнее обновление: 19.04.2026
 
 ---
 
@@ -727,6 +727,42 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 19.04.2026 (сессия 14) — Подушка безопасности + полный аудит + ARAYGLASS дашборд
+
+**Контекст:** Арман попросил полный аудит проекта + подушку безопасности перед движением вперёд.
+
+**1. Полный аудит проекта (4 направления):**
+- ✅ Архитектура: проверены тяжёлые зависимости, bundle size, серверные компоненты
+- ✅ Безопасность: `--accept-data-loss` в build script (КРИТИЧНО), отсутствие бэкапов БД
+- ✅ Качество кода: TypeScript `ignoreBuildErrors: true`, отсутствие индексов БД
+- ✅ Инфраструктура: отсутствие rollback-механизма, нет внешнего мониторинга
+
+**2. ARAYGLASS дашборд — новый визуальный стиль:**
+- ✅ `app/admin/page.tsx` — карточки статистики переведены на `.aray-stat-card` стиль
+- ✅ Коммит `5cb6f9f`, задеплоен, prod OK
+
+**3. Подушка безопасности — 5 критических улучшений (коммит `9ec3517`):**
+- ✅ **Пункт 1**: Убран `--accept-data-loss` из build script → заменён на `--skip-generate`
+  - `package.json` строка 10: `prisma db push --skip-generate && tsx prisma/data-migrate.ts && next build`
+- ✅ **Пункт 2**: DB бэкап перед каждым деплоем
+  - `.github/workflows/deploy.yml`: `pg_dump` → gzip → `/home/armankmb/pilo-rus/backups/`
+  - Хранит 5 последних бэкапов, старые автоудаляются
+- ✅ **Пункт 3**: 8 новых индексов БД для ускорения частых запросов
+  - `prisma/schema.prisma`: Product (featured, active+featured), Review (approved+createdAt, productId), OrderItem (orderId, productName), User (role+staffStatus, lastActiveAt)
+- ✅ **Пункт 4**: Тяжёлые библиотеки — УЖЕ оптимизированы (dynamic import, serverComponentsExternalPackages)
+- ✅ **Пункт 5**: Auto-rollback при неудачном деплое
+  - `.github/workflows/deploy.yml`: сохраняет предыдущую `.next` → health check после pm2 restart → если HTTP != 200 → откат на предыдущую версию
+
+**Деплой:** коммит `9ec3517`, все страницы HTTP 200, health check OK ✅
+
+**Файлы изменены:**
+- `package.json` — убран --accept-data-loss
+- `prisma/schema.prisma` — 8 новых индексов
+- `.github/workflows/deploy.yml` — DB backup + rollback + health check
+
+**Для Армана вручную:**
+- [ ] UptimeRobot — настроить внешний мониторинг https://pilo-rus.ru/api/health (бесплатно, 5 мин интервал)
 
 ### Сессия 18.04.2026 (сессия 13) — ARAY лицо + деплой-фикс + перформанс-оптимизация
 
@@ -1720,7 +1756,7 @@ const { theme, setTheme } = useTheme();
 
 ## На следующую сессию (план)
 
-> Последнее обновление: 18.04.2026
+> Последнее обновление: 19.04.2026
 
 ### 🚨 СТИЛЕВЫЕ ПРАВИЛА — НЕ НАРУШАТЬ
 ```
