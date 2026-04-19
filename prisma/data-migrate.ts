@@ -152,6 +152,30 @@ async function main() {
   }
   console.log("[data-migrate] ✓ Редиректы категорий установлены (шаг 9)");
 
+  // ── 2026-04-19: Multi-tenancy подготовка (Stage 1) ───────────────────────
+  // 10. Создаём дефолтный тенант "pilorus" (если нет)
+  //     Все существующие данные получили tenantId="pilorus" через @default.
+  try {
+    const existingTenant = await (prisma as any).tenant?.findUnique?.({ where: { slug: "pilorus" } });
+    if (existingTenant === null || existingTenant === undefined) {
+      await (prisma as any).tenant?.create?.({
+        data: {
+          slug: "pilorus",
+          name: "ПилоРус",
+          domain: "pilo-rus.ru",
+          plan: "enterprise",
+          active: true,
+        },
+      });
+      console.log("[data-migrate] ✓ Дефолтный тенант pilorus создан (шаг 10)");
+    } else {
+      console.log("[data-migrate] ✓ Дефолтный тенант pilorus уже существует (шаг 10)");
+    }
+  } catch (e: any) {
+    // Если модель Tenant ещё не сгенерирована в prisma client — не фейлим билд
+    console.log("[data-migrate] ⚠ Tenant seed пропущен:", e.message);
+  }
+
   console.log("[data-migrate] Готово.");
   await prisma.$disconnect();
 }

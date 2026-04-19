@@ -71,6 +71,9 @@ const nextConfig = {
       '@react-pdf/renderer',
       '@imgly/background-removal-node',
       'onnxruntime-node',
+      'googleapis',
+      'sharp',
+      'bcryptjs',
     ],
   },
   webpack: (config, { webpack }) => {

@@ -9,6 +9,7 @@ datasource db {
 
 model User {
   id             String             @id @default(cuid())
+  tenantId        String         @default("pilorus")
   name           String?
   email          String             @unique
   phone          String?
@@ -32,6 +33,8 @@ model User {
   createdTasks   Task[]             @relation("TaskCreator")
   taskComments   TaskComment[]
 
+  @@index([tenantId])
+
   @@index([role, staffStatus])
   @@index([lastActiveAt])
   @@index([phone])
@@ -39,6 +42,7 @@ model User {
 
 model Category {
   id             String     @id @default(cuid())
+  tenantId        String         @default("pilorus")
   name           String
   slug           String     @unique
   image          String?
@@ -52,10 +56,13 @@ model Category {
   parent         Category?  @relation("sub", fields: [parentId], references: [id])
   children       Category[] @relation("sub")
   products       Product[]
+
+  @@index([tenantId])
 }
 
 model Product {
   id          String           @id @default(cuid())
+  tenantId        String         @default("pilorus")
   slug        String           @unique
   name        String
   description String?
@@ -69,6 +76,8 @@ model Product {
   category    Category         @relation(fields: [categoryId], references: [id])
   variants    ProductVariant[]
   reviews     Review[]
+
+  @@index([tenantId])
 
   @@index([categoryId])
   @@index([active])
@@ -95,6 +104,7 @@ model ProductVariant {
 
 model Order {
   id                String      @id @default(cuid())
+  tenantId        String         @default("pilorus")
   orderNumber       Int         @default(autoincrement())
   userId            String?
   guestName         String?
@@ -117,6 +127,8 @@ model Order {
   user              User?       @relation(fields: [userId], references: [id])
   items             OrderItem[]
   tasks             Task[]
+
+  @@index([tenantId])
 
   @@index([userId, createdAt])
   @@index([status, deletedAt])
@@ -143,6 +155,7 @@ model OrderItem {
 
 model Review {
   id           String    @id @default(cuid())
+  tenantId        String         @default("pilorus")
   userId       String?
   productId    String?
   name         String
@@ -161,6 +174,8 @@ model Review {
   user         User?     @relation(fields: [userId], references: [id])
   product      Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
 
+  @@index([tenantId])
+
   @@index([approved, createdAt(sort: Desc)])
   @@index([productId])
   @@index([userId, createdAt(sort: Desc)])
@@ -168,6 +183,7 @@ model Review {
 
 model Promotion {
   id          String    @id @default(cuid())
+  tenantId        String         @default("pilorus")
   title       String
   description String
   discount    Int?
@@ -175,15 +191,20 @@ model Promotion {
   validUntil  DateTime?
   active      Boolean   @default(true)
   createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
 }
 
 model DeliveryRate {
   id          String @id @default(cuid())
+  tenantId        String         @default("pilorus")
   vehicleName String
   payload     String
   maxVolume   Float
   basePrice   Int
   sortOrder   Int    @default(0)
+
+  @@index([tenantId])
 }
 
 model PushSubscription {
@@ -200,12 +221,16 @@ model PushSubscription {
 
 model SiteSettings {
   id    String @id @default("default")
+  tenantId        String         @default("pilorus")
   key   String @unique
   value String
+
+  @@index([tenantId])
 }
 
 model NewsletterSubscriber {
   id           String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
   email        String   @unique
   name         String?
   pushEnabled  Boolean  @default(false)
@@ -213,10 +238,13 @@ model NewsletterSubscriber {
   source       String   @default("site")
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 model PromoCode {
   id          String    @id @default(cuid())
+  tenantId        String         @default("pilorus")
   code        String    @unique
   type        String
   value       Int
@@ -228,15 +256,20 @@ model PromoCode {
   validUntil  DateTime?
   description String?
   createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
 }
 
 model PartnershipLead {
   id        String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
   name      String
   company   String?
   phone     String
   message   String?
   createdAt DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 model PasswordResetToken {
@@ -261,11 +294,14 @@ model CategoryRedirect {
 
 model Expense {
   id          String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
   amount      Decimal  @db.Decimal(10, 2)
   category    String
   description String?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
+
+  @@index([tenantId])
 }
 
 model CostPrice {
@@ -278,6 +314,7 @@ model CostPrice {
 
 model Task {
   id          String        @id @default(cuid())
+  tenantId        String         @default("pilorus")
   title       String
   description String?
   status      TaskStatus    @default(TODO)
@@ -295,6 +332,8 @@ model Task {
   createdBy   User?         @relation("TaskCreator", fields: [createdById], references: [id])
   order       Order?        @relation(fields: [orderId], references: [id])
   comments    TaskComment[]
+
+  @@index([tenantId])
 }
 
 model TaskComment {
@@ -309,6 +348,7 @@ model TaskComment {
 
 model Lead {
   id               String         @id @default(cuid())
+  tenantId        String         @default("pilorus")
   name             String
   phone            String?
   email            String?
@@ -328,6 +368,8 @@ model Lead {
   deletedAt        DateTime?
   assignee         User?          @relation("LeadAssignee", fields: [assigneeId], references: [id])
   activities       LeadActivity[]
+
+  @@index([tenantId])
 
   @@index([assigneeId, stage])
   @@index([stage])
@@ -350,22 +392,25 @@ model LeadActivity {
 }
 
 model Workflow {
-  id             String        @id @default(cuid())
-  name           String
-  description    String?
-  active         Boolean       @default(true)
-  trigger        String
-  conditions     Json          @default("{}")
-  actions        Json          @default("[]")
-  delayMinutes   Int? // задержка перед выполнением (в минутах)
-  category       String        @default("robot") // "robot" | "tunnel" | "report"
-  nicheTag       String? // привязка к шаблону ниши
-  sortOrder      Int           @default(0)
-  executionCount Int           @default(0) // сколько раз сработал
-  lastExecutedAt DateTime? // когда последний раз
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-  logs           WorkflowLog[]
+  id          String        @id @default(cuid())
+  tenantId        String         @default("pilorus")
+  name        String
+  description String?
+  active      Boolean       @default(true)
+  trigger     String
+  conditions  Json          @default("{}")
+  actions     Json          @default("[]")
+  delayMinutes Int?                        // задержка перед выполнением (в минутах)
+  category    String        @default("robot") // "robot" | "tunnel" | "report"
+  nicheTag    String?                      // привязка к шаблону ниши
+  sortOrder   Int           @default(0)
+  executionCount Int        @default(0)    // сколько раз сработал
+  lastExecutedAt DateTime?                 // когда последний раз
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  logs        WorkflowLog[]
+
+  @@index([tenantId])
 }
 
 model WorkflowLog {
@@ -396,6 +441,7 @@ model ArayMemory {
 
 model Post {
   id          String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
   slug        String   @unique
   title       String
   excerpt     String
@@ -410,12 +456,15 @@ model Post {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([tenantId])
+
   @@index([published, createdAt(sort: Desc)])
   @@index([published, featured])
 }
 
 model Service {
   id          String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
   slug        String   @unique
   title       String
   description String
@@ -428,14 +477,16 @@ model Service {
   sortOrder   Int      @default(100)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model ActivityLog {
   id        String   @id @default(cuid())
   userId    String
-  action    String // VIEW_PRODUCT, PLACE_ORDER, WRITE_REVIEW, LOGIN, PAGE_VISIT
-  targetId  String? // productId, orderId, etc.
-  meta      Json? // extra data (product name, page url, etc.)
+  action    String   // VIEW_PRODUCT, PLACE_ORDER, WRITE_REVIEW, LOGIN, PAGE_VISIT
+  targetId  String?  // productId, orderId, etc.
+  meta      Json?    // extra data (product name, page url, etc.)
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
@@ -444,13 +495,37 @@ model ActivityLog {
 model Subscription {
   id         String   @id @default(cuid())
   userId     String
-  targetType String // "supplier" | "category" | "brand"
+  targetType String   // "supplier" | "category" | "brand"
   targetId   String
   targetName String
   createdAt  DateTime @default(now())
 
   @@unique([userId, targetType, targetId])
   @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MULTI-TENANCY (Stage 1 подготовка — схема готова, Row-Level Security в Stage 3)
+// ═══════════════════════════════════════════════════════════════════════════
+// Главная таблица тенантов. Один тенант = один магазин-поставщик.
+// tenantId "pilorus" — дефолтный (сам ПилоРус).
+// Колонка tenantId добавлена ко всем core моделям с @default("pilorus"),
+// @@index([tenantId]) — для быстрой фильтрации.
+// Пока данные НЕ разделяются (в Этапе 3 добавим middleware фильтр + RLS).
+model Tenant {
+  id          String   @id @default(cuid())
+  slug        String   @unique           // "pilorus", "severniy-les"
+  name        String                     // "ПилоРус", "Северный Лес"
+  domain      String?  @unique           // "pilo-rus.ru" (custom domain, опционально)
+  logoUrl     String?
+  primaryColor String?                   // HSL для темы: "35 60% 45%"
+  plan        String   @default("free")  // "free", "pro", "enterprise"
+  active      Boolean  @default(true)
+  settings    Json     @default("{}")    // доп. настройки тенанта
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([active])
 }
 
 enum Role {
@@ -552,10 +627,10 @@ enum ArayLevel {
 // Эта таблица — для отслеживания расходов и оптимизации.
 model ArayTokenLog {
   id           String   @id @default(cuid())
-  userId       String? // null = гость
-  sessionId    String? // aray_sid из cookie
-  model        String // claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-6
-  tier         String // haiku, sonnet, opus
+  userId       String?  // null = гость
+  sessionId    String?  // aray_sid из cookie
+  model        String   // claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-6
+  tier         String   // haiku, sonnet, opus
   inputTokens  Int      @default(0)
   outputTokens Int      @default(0)
   costUsd      Float    @default(0) // Расчётная стоимость в $
@@ -570,11 +645,11 @@ model ArayTokenLog {
 // ─── Единая история чата Арая ───────────────────────────────────────────────
 model ArayMessage {
   id        String   @id @default(cuid())
-  userId    String? // null = гость (sessionId)
-  sessionId String? // для гостей — cookie aray_sid
-  role      String // "user" | "assistant"
-  content   String   @db.Text // текст сообщения
-  context   Json? // { page, zone, actions[] }
+  userId    String?              // null = гость (sessionId)
+  sessionId String?              // для гостей — cookie aray_sid
+  role      String               // "user" | "assistant"
+  content   String   @db.Text    // текст сообщения
+  context   Json?                // { page, zone, actions[] }
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -584,18 +659,21 @@ model ArayMessage {
 
 // ─── CRM: Шаблоны документов (КП, договоры, счета, акты) ────────────────────
 model DocumentTemplate {
-  id        String              @id @default(cuid())
-  name      String // "КП для оптовиков", "Договор поставки"
-  type      DocumentType // КП, CONTRACT, INVOICE, ACT, UPD
-  content   String              @db.Text // HTML шаблон с {{переменными}}
-  variables Json                @default("[]") // описание доступных переменных
-  active    Boolean             @default(true)
-  isDefault Boolean             @default(false) // предустановленный шаблон
-  nicheTag  String? // "lumber", "construction", "retail" — для шаблонов ниш
-  sortOrder Int                 @default(0)
-  createdAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-  documents GeneratedDocument[]
+  id          String              @id @default(cuid())
+  tenantId        String         @default("pilorus")
+  name        String              // "КП для оптовиков", "Договор поставки"
+  type        DocumentType        // КП, CONTRACT, INVOICE, ACT, UPD
+  content     String   @db.Text   // HTML шаблон с {{переменными}}
+  variables   Json     @default("[]") // описание доступных переменных
+  active      Boolean  @default(true)
+  isDefault   Boolean  @default(false) // предустановленный шаблон
+  nicheTag    String?              // "lumber", "construction", "retail" — для шаблонов ниш
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  documents   GeneratedDocument[]
+
+  @@index([tenantId])
 }
 
 model GeneratedDocument {
@@ -604,7 +682,7 @@ model GeneratedDocument {
   orderId    String?
   leadId     String?
   fileName   String
-  fileUrl    String // путь к сгенерированному PDF
+  fileUrl    String           // путь к сгенерированному PDF
   data       Json             @default("{}") // данные, использованные при генерации
   createdBy  String?
   createdAt  DateTime         @default(now())
@@ -615,39 +693,45 @@ model GeneratedDocument {
 }
 
 enum DocumentType {
-  KP // Коммерческое предложение
-  CONTRACT // Договор
-  INVOICE // Счёт
-  ACT // Акт выполненных работ
-  UPD // Универсальный передаточный документ
-  CUSTOM // Произвольный
+  KP           // Коммерческое предложение
+  CONTRACT     // Договор
+  INVOICE      // Счёт
+  ACT          // Акт выполненных работ
+  UPD          // Универсальный передаточный документ
+  CUSTOM       // Произвольный
 }
 
 // ─── CRM: Расписание отчётов ────────────────────────────────────────────────
 model ReportSchedule {
-  id         String    @id @default(cuid())
-  name       String // "Ежедневная сводка", "Месячный отчёт"
-  type       String // "daily_summary", "weekly_digest", "monthly_report", "custom"
-  schedule   String // "daily", "weekly", "monthly" или cron
-  recipients Json      @default("[]") // [{type: "email", value: "..."}, {type: "telegram", value: "..."}]
-  filters    Json      @default("{}") // фильтры для отчёта
-  active     Boolean   @default(true)
-  lastRunAt  DateTime?
-  nextRunAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id          String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
+  name        String   // "Ежедневная сводка", "Месячный отчёт"
+  type        String   // "daily_summary", "weekly_digest", "monthly_report", "custom"
+  schedule    String   // "daily", "weekly", "monthly" или cron
+  recipients  Json     @default("[]") // [{type: "email", value: "..."}, {type: "telegram", value: "..."}]
+  filters     Json     @default("{}") // фильтры для отчёта
+  active      Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 // ─── CRM: Контекстные подсказки по ролям ────────────────────────────────────
 model CrmHint {
   id       String  @id @default(cuid())
-  role     String // "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "USER", "ALL"
-  section  String // "dashboard", "orders", "crm", "delivery", "products", "reports"
+  tenantId        String         @default("pilorus")
+  role     String  // "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "USER", "ALL"
+  section  String  // "dashboard", "orders", "crm", "delivery", "products", "reports"
   title    String
   text     String
   icon     String? // lucide icon name
   priority Int     @default(0)
   active   Boolean @default(true)
+
+  @@index([tenantId])
 
   @@index([role, section])
 }
@@ -655,12 +739,15 @@ model CrmHint {
 // ─── CRM: Шаблоны ниш (готовые конфигурации) ────────────────────────────────
 model NicheTemplate {
   id          String   @id @default(cuid())
+  tenantId        String         @default("pilorus")
   slug        String   @unique // "lumber", "construction", "retail"
-  name        String // "Пиломатериалы", "Стройматериалы", "Розница"
+  name        String   // "Пиломатериалы", "Стройматериалы", "Розница"
   description String?
-  icon        String? // lucide icon
-  config      Json // { workflows: [], stages: [], documents: [], hints: [], settings: {} }
+  icon        String?  // lucide icon
+  config      Json     // { workflows: [], stages: [], documents: [], hints: [], settings: {} }
   isBuiltIn   Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([tenantId])
 }
