@@ -737,6 +737,52 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 19.04.2026 (сессия 15) — CRM 404 FIX + Deploy reliability + Архитектурный план
+
+**Контекст:** CRM automation страница возвращала 404 на production уже 5+ сессий. Деплои #796-#798 падали с красным X.
+
+**1. ROOT CAUSE найден — Build Timeout:**
+- ✅ `next build` на VPS (3GB RAM) при чистой сборке занимает 15+ мин
+- ✅ SSH `command_timeout` в deploy.yml был 15m → `Run Command Timeout` убивал build
+- ✅ `.next` удалялся перед билдом → каждый деплой = полный rebuild = 15+ мин
+- ✅ Инкрементальный билд (с кэшем .next) = 2-5 мин
+
+**2. Deploy.yml — 4 критических фикса (коммит `b875eb9`):**
+- ✅ `command_timeout: 15m` → `command_timeout: 30m`
+- ✅ Убраны ОБА `rm -rf .next` → только `rm -rf .next/cache/webpack`
+- ✅ Rollback order fix: сохранение `.next` в `$PREV_DIR` ПЕРЕД очисткой (был баг — удалялось ДО сохранения)
+- ✅ Добавлена диагностика: disk usage, build exit code, CRM file checks
+
+**3. Cleanup (коммит `77752a7`):**
+- ✅ Удалён `app/api/admin/debug-build/route.ts` — временный diagnostic endpoint
+- ✅ Восстановлен полный `app/admin/crm/automation/page.tsx` (AutoRefresh + AutomationClient)
+
+**4. Решение Армана — АРХИТЕКТУРА ПЕРВЫМ ПРИОРИТЕТОМ:**
+- Арман: "давай все что есть фиксим, улучшаем, делаем архитектуру, потом расширяем"
+- CRM расширение ПРИОСТАНОВЛЕНО до построения инфраструктуры
+- План: VPS upgrade (4-6GB RAM, 100+ GB) → S3 для картинок → CDN → managed PostgreSQL
+
+**Production test: 44/44 PASS**
+
+**Деплой:** коммиты `b875eb9` (deploy fix) + `77752a7` (cleanup), deploy #799 GREEN (21m 21s), #800 GREEN
+
+**Файлы изменены:**
+- `.github/workflows/deploy.yml` — timeout 30m, incremental builds, rollback fix
+- `app/api/admin/debug-build/route.ts` — DELETED
+- `app/admin/crm/automation/page.tsx` — restored full version
+
+**🚨 КРИТИЧЕСКИ ВАЖНО ДЛЯ СЛЕДУЮЩИХ СЕССИЙ:**
+- **НЕ удалять `.next` на сервере** — инкрементальный билд 2-5 мин vs полный 15+ мин
+- **VPS 3GB RAM = потолок** — нужен upgrade для дальнейшего развития
+- **Архитектура → потом фичи** — решение Армана, не менять без его одобрения
+
+**На следующую сессию (ПРИОРИТЕТ 0 — Архитектура):**
+1. VPS upgrade — Beget тариф с 4-6GB RAM, 100+ GB NVMe
+2. S3 для картинок — Yandex Object Storage или Selectel
+3. CDN — Beget CDN или CloudFlare
+4. Managed PostgreSQL — отдельный сервер БД
+5. После архитектуры → продолжить CRM (Тоннели, Шаблоны документов, Отчёты)
+
 ### Сессия 19.04.2026 (сессия 14) — Подушка безопасности + полный аудит + ARAYGLASS дашборд
 
 **Контекст:** Арман попросил полный аудит проекта + подушку безопасности перед движением вперёд.
