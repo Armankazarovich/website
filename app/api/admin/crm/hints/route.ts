@@ -8,6 +8,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth-helpers";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: Request) {
   const authResult = await requireStaff();
   if (!authResult.authorized) return authResult.response;

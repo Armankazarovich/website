@@ -6,6 +6,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
 
+export const dynamic = "force-dynamic";
+
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const authResult = await requireManager();
   if (!authResult.authorized) return authResult.response;
