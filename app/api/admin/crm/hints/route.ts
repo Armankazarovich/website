@@ -9,8 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth-helpers";
 
 export async function GET(req: Request) {
-  const authError = await requireStaff();
-  if (authError) return authError;
+  const authResult = await requireStaff();
+  if (!authResult.authorized) return authResult.response;
 
   const { searchParams } = new URL(req.url);
   const role = searchParams.get("role");
@@ -34,8 +34,8 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   const { requireAdmin } = await import("@/lib/auth-helpers");
-  const authError = await requireAdmin();
-  if (authError) return authError;
+  const authResult = await requireAdmin();
+  if (!authResult.authorized) return authResult.response;
 
   try {
     const body = await req.json();

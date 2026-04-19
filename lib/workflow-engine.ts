@@ -225,9 +225,10 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
         // Use mail.ts sendOrderNotification as generic sender
         await sendOrderNotification({
           orderNumber: payload.orderNumber || 0,
-          customerName: payload.customerName || "Клиент",
+          guestName: payload.customerName || "Клиент",
+          guestEmail: payload.customerEmail || payload.email || null,
+          guestPhone: payload.customerPhone || null,
           totalAmount: payload.totalAmount || 0,
-          deliveryCost: 0,
           deliveryAddress: payload.deliveryAddress || null,
           paymentMethod: payload.paymentMethod || "",
           items: [],

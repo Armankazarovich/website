@@ -9,8 +9,8 @@ import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
 
 export async function GET(req: Request) {
-  const authError = await requireManager();
-  if (authError) return authError;
+  const authResult = await requireManager();
+  if (!authResult.authorized) return authResult.response;
 
   const { searchParams } = new URL(req.url);
   const type = searchParams.get("type"); // KP, CONTRACT, INVOICE, ACT, UPD, CUSTOM
@@ -35,8 +35,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const authError = await requireManager();
-  if (authError) return authError;
+  const authResult = await requireManager();
+  if (!authResult.authorized) return authResult.response;
 
   try {
     const body = await req.json();
