@@ -58,35 +58,53 @@ jobs:
             ARCHIVE="/home/armankmb/pilo-rus/deploy.tar.gz"
             BACKUP_DIR="/home/armankmb/pilo-rus/backups"
 
+            # ── 0. Диагностика диска ──
+            echo "💿 Disk usage BEFORE cleanup:"
+            df -h / | tail -1
+            echo "Top-level dirs by size:"
+            du -sh /home/armankmb/pilo-rus/*/ 2>/dev/null | sort -rh | head -10
+            du -sh /home/armankmb/.npm 2>/dev/null || true
+            du -sh /tmp/pilorus-* 2>/dev/null || true
+
+            # ── 0.1 Агрессивная очистка диска ──
+            echo "🧹 Cleaning up disk space..."
+            # Удаляем app-previous (он содержит дубль node_modules ~1GB)
+            rm -rf "$PREV_DIR"
+            # Очистка npm кэша
+            npm cache clean --force 2>/dev/null || true
+            # Удаляем старые temp файлы
+            rm -rf /tmp/pilorus-uploads-backup /tmp/pilorus-images-backup 2>/dev/null || true
+            # Удаляем старый .next cache (принудительная чистая сборка)
+            rm -rf "$APP_DIR/.next" 2>/dev/null || true
+            echo "💿 Disk usage AFTER cleanup:"
+            df -h / | tail -1
+
             # ── 1. Бэкап БД перед деплоем ──
             echo "🗄️ Backing up database..."
             mkdir -p "$BACKUP_DIR"
             DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
-            # Читаем DATABASE_URL из .env для pg_dump
             if [ -f "$APP_DIR/.env" ]; then
               DB_URL=$(grep "^DATABASE_URL=" "$APP_DIR/.env" | cut -d'"' -f2 | cut -d"'" -f2)
               if [ -n "$DB_URL" ]; then
                 pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && echo "✅ DB backup: $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))" || echo "⚠️ DB backup failed (non-critical, continuing)"
               fi
             fi
-            # Храним только 5 последних бэкапов
-            ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+            # Храним только 3 последних бэкапа (было 5)
+            ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs rm -f 2>/dev/null || true
 
-            # ── 2. Сохраняем предыдущую версию для отката ──
-            echo "📦 Saving previous version for rollback..."
+            # ── 2. Сохраняем ТОЛЬКО .next для отката (БЕЗ node_modules) ──
+            echo "📦 Saving previous .next for rollback..."
             rm -rf "$PREV_DIR"
             if [ -d "$APP_DIR/.next" ]; then
               mkdir -p "$PREV_DIR"
               cp -r "$APP_DIR/.next" "$PREV_DIR/.next"
-              cp -r "$APP_DIR/node_modules" "$PREV_DIR/node_modules" 2>/dev/null || true
-              cp "$APP_DIR/package.json" "$PREV_DIR/package.json" 2>/dev/null || true
               echo "✅ Previous .next saved"
             fi
 
             echo "📂 Extracting code..."
             mkdir -p "$APP_DIR"
 
-            # Preserve user uploads (avatars, review photos, product images)
+            # Preserve user uploads
             if [ -d "$APP_DIR/public/uploads" ]; then
               echo "💾 Saving uploads..."
               cp -r "$APP_DIR/public/uploads" /tmp/pilorus-uploads-backup
@@ -145,34 +163,53 @@ jobs:
             echo "🗄️ Syncing database schema..."
             npx prisma db push --skip-generate
 
-            echo "🔨 Building..."
-            npm run build 2>&1 | tee /tmp/build.log || true
+            # ── Проверяем что CRM исходники есть ──
+            echo "🔍 Pre-build: checking CRM source files..."
+            ls -la app/admin/crm/automation/page.tsx 2>/dev/null && echo "✅ CRM page source exists" || echo "❌ CRM page source MISSING"
+            ls -la app/api/admin/crm/workflows/route.ts 2>/dev/null && echo "✅ CRM API source exists" || echo "❌ CRM API source MISSING"
+
+            # ── Чистая сборка (удаляем старый .next) ──
+            echo "🔨 Clean building (removing old .next)..."
+            rm -rf .next
+            npm run build 2>&1 | tee /tmp/build.log
             BUILD_EXIT=$?
 
-            # ── Диагностика: проверяем что CRM-страницы попали в билд ──
+            # ── Диагностика билда ──
             echo "🔍 Build diagnostics..."
             echo "Build exit code: $BUILD_EXIT"
+            echo "💿 Disk after build:"
+            df -h / | tail -1
+
             if [ -f ".next/server/app/admin/crm/automation/page.js" ]; then
               echo "✅ CRM automation page: EXISTS"
             else
               echo "❌ CRM automation page: MISSING"
-              echo "--- Last 30 lines of build log ---"
-              tail -30 /tmp/build.log 2>/dev/null || true
-              echo "--- Checking .next/server/app/admin/crm/ ---"
-              ls -la .next/server/app/admin/crm/ 2>/dev/null || echo "CRM directory not found"
-              find .next/server/app/admin/crm/ -name "*.js" 2>/dev/null || echo "No CRM JS files"
+              echo "--- Last 50 lines of build log ---"
+              tail -50 /tmp/build.log 2>/dev/null || true
+              echo "--- Searching for CRM in build output ---"
+              find .next/server/app/admin/ -maxdepth 3 -type f 2>/dev/null | head -20 || echo "No admin files in build"
+              echo "--- Checking source exists ---"
+              find app/admin/crm/ -type f 2>/dev/null || echo "No CRM source files"
+              find app/api/admin/crm/ -type f 2>/dev/null || echo "No CRM API source files"
+              echo "--- Build errors ---"
+              grep -i "error\|fail\|crm" /tmp/build.log 2>/dev/null | tail -20 || true
             fi
+
             if [ -f ".next/server/app/api/admin/crm/workflows/route.js" ]; then
               echo "✅ CRM workflows API: EXISTS"
             else
               echo "❌ CRM workflows API: MISSING"
-              ls -la .next/server/app/api/admin/crm/ 2>/dev/null || echo "CRM API directory not found"
             fi
 
             if [ "$BUILD_EXIT" -ne 0 ]; then
               echo "❌ Build failed with exit code $BUILD_EXIT"
-              echo "--- Full build errors ---"
               grep -i "error\|fail\|ERR!" /tmp/build.log | tail -20 || true
+              # Откат если есть предыдущий билд
+              if [ -d "$PREV_DIR/.next" ]; then
+                echo "🔄 Rolling back..."
+                cp -r "$PREV_DIR/.next" "$APP_DIR/.next"
+                pm2 restart pilo-rus --update-env
+              fi
               exit 1
             fi
 
@@ -180,7 +217,7 @@ jobs:
             pm2 restart pilo-rus --update-env
             pm2 save
 
-            # ── 3. Health check после деплоя ──
+            # ── 3. Health check ──
             echo "🏥 Health check..."
             sleep 5
             HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
@@ -188,7 +225,6 @@ jobs:
               echo "✅ Health check OK (HTTP $HTTP_CODE)"
             else
               echo "❌ Health check FAILED (HTTP $HTTP_CODE)"
-              # Пытаемся откатить на предыдущую версию
               if [ -d "$PREV_DIR/.next" ]; then
                 echo "🔄 Rolling back to previous version..."
                 rm -rf "$APP_DIR/.next"
@@ -200,5 +236,12 @@ jobs:
               fi
               exit 1
             fi
+
+            # ── 4. Финальная очистка ──
+            echo "🧹 Post-deploy cleanup..."
+            rm -rf "$PREV_DIR" 2>/dev/null || true
+            npm cache clean --force 2>/dev/null || true
+            echo "💿 Final disk usage:"
+            df -h / | tail -1
 
             echo "✅ Deployed at $(date)"
