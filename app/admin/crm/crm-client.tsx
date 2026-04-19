@@ -69,8 +69,8 @@ type Lead = {
   value?: number | null;
   comment?: string | null;
   tags: string[];
-  assignedTo?: string | null;
-  assignedUser?: { name: string } | null;
+  assigneeId?: string | null;
+  assignee?: { id: string; name: string; email?: string } | null;
   createdAt: string;
   updatedAt: string;
   _count?: { activities: number };
@@ -114,7 +114,7 @@ function LeadCard({
       onDragStart={(e) => onDragStart(e, lead)}
       onDragEnd={onDragEnd}
       onClick={() => onClick(lead)}
-      className={`arayglass arayglass-shimmer rounded-xl p-3 cursor-pointer select-none transition-all duration-200 group ${
+      className={`arayglass arayglass-shimmer rounded-xl p-3.5 sm:p-3 cursor-pointer select-none transition-all duration-200 group ${
         isUrgent ? "arayglass-glow" : ""
       }`}
     >
@@ -124,37 +124,37 @@ function LeadCard({
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-1.5">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{lead.name}</p>
           {lead.company && (
-            <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1 mt-0.5">
-              <Building2 className="w-2.5 h-2.5 shrink-0" />{lead.company}
+            <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+              <Building2 className="w-3 h-3 shrink-0" />{lead.company}
             </p>
           )}
         </div>
         {lead.value && lead.value > 0 && (
-          <span className="shrink-0 text-xs font-bold text-emerald-500 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg bg-emerald-500/10">
+          <span className="shrink-0 text-sm font-bold text-emerald-500 dark:text-emerald-400 px-2 py-1 rounded-xl bg-emerald-500/10">
             {formatMoney(lead.value)}
           </span>
         )}
       </div>
 
       {/* Contacts */}
-      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mb-1.5">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
         {lead.phone && (
-          <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5" />{lead.phone}</span>
+          <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>
         )}
         {lead.email && (
-          <span className="flex items-center gap-0.5 truncate"><Mail className="w-2.5 h-2.5" />{lead.email}</span>
+          <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{lead.email}</span>
         )}
       </div>
 
       {/* Tags */}
       {lead.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-1.5">
+        <div className="flex flex-wrap gap-1 mb-2">
           {lead.tags.map(tag => (
-            <span key={tag} className="arayglass-badge text-[9px] px-1.5 py-0 text-primary/80">
+            <span key={tag} className="arayglass-badge text-[10px] px-2 py-0.5 text-primary/80">
               {tag}
             </span>
           ))}
@@ -162,18 +162,18 @@ function LeadCard({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <SrcIcon className="w-2.5 h-2.5" />
+      <div className="flex items-center justify-between pt-1.5 border-t border-primary/[0.06]">
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <SrcIcon className="w-3 h-3" />
           {SOURCE_LABELS[lead.source] || lead.source}
         </span>
         <div className="flex items-center gap-2">
           {lead._count && lead._count.activities > 0 && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-              <MessageSquare className="w-2.5 h-2.5" /> {lead._count.activities}
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <MessageSquare className="w-3 h-3" /> {lead._count.activities}
             </span>
           )}
-          <span className="text-[10px] text-muted-foreground">{timeAgo(lead.createdAt)}</span>
+          <span className="text-xs text-muted-foreground">{timeAgo(lead.createdAt)}</span>
         </div>
       </div>
     </div>
@@ -201,30 +201,30 @@ function StageColumn({
 }) {
   return (
     <div
-      className={`flex flex-col arayglass rounded-2xl min-w-[260px] max-w-[280px] transition-all duration-200 ${
+      className={`flex flex-col arayglass rounded-2xl min-w-[260px] max-w-[300px] flex-1 transition-all duration-200 ${
         isDragOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
       }`}
       onDrop={(e) => onDrop(e, stage.key)}
       onDragOver={(e) => { e.preventDefault(); onDragOver(e); }}
     >
       {/* Column header */}
-      <div className="px-3 pt-3 pb-2 flex-shrink-0 border-b border-primary/[0.08]">
+      <div className="px-3.5 pt-3.5 pb-2.5 flex-shrink-0 border-b border-primary/[0.08]">
         <div className="flex items-center gap-2 mb-0.5">
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${stage.dot}`} />
-          <span className="text-xs font-bold text-foreground">{stage.label}</span>
-          <span className="text-xs text-muted-foreground bg-primary/[0.06] px-1.5 py-0.5 rounded-lg font-medium ml-auto">
+          <span className="text-sm font-bold text-foreground">{stage.label}</span>
+          <span className="text-xs text-muted-foreground bg-primary/[0.08] px-2 py-0.5 rounded-xl font-semibold ml-auto">
             {total}
           </span>
         </div>
         {totalValue > 0 && (
-          <p className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 ml-[18px]">
+          <p className="text-sm font-semibold text-emerald-500 dark:text-emerald-400 ml-[18px]">
             {formatMoney(totalValue)}
           </p>
         )}
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-380px)] scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 max-h-[calc(100vh-400px)] scrollbar-thin">
         {leads.map(lead => (
           <LeadCard
             key={lead.id}
@@ -237,23 +237,23 @@ function StageColumn({
         ))}
 
         {isDragOver && leads.length === 0 && (
-          <div className="border-2 border-dashed border-primary/40 rounded-xl h-16 flex items-center justify-center text-xs text-primary/60">
+          <div className="border-2 border-dashed border-primary/40 rounded-xl h-20 flex items-center justify-center text-sm text-primary/60">
             Перетащить сюда
           </div>
         )}
 
         {leads.length === 0 && !isDragOver && (
-          <p className="text-xs text-muted-foreground text-center py-6 opacity-50">Пусто</p>
+          <p className="text-sm text-muted-foreground text-center py-6 opacity-50">Пусто</p>
         )}
       </div>
 
       {/* Add button */}
-      <div className="p-2 flex-shrink-0">
+      <div className="p-2.5 flex-shrink-0">
         <button
           onClick={() => onAddLead(stage.key)}
-          className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium text-muted-foreground border border-dashed border-primary/15 hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground transition-all"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium text-muted-foreground border border-dashed border-primary/15 hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground transition-all"
         >
-          <Plus className="w-3 h-3" /> Добавить
+          <Plus className="w-4 h-4" /> Добавить
         </button>
       </div>
     </div>
@@ -279,7 +279,7 @@ function LeadForm({
   const [value, setValue] = useState(initial?.value?.toString() || "");
   const [comment, setComment] = useState(initial?.comment || "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") || "");
-  const [assignedTo, setAssignedTo] = useState(initial?.assignedTo || "");
+  const [assigneeId, setAssigneeId] = useState(initial?.assigneeId || "");
 
   const handleSave = () => {
     if (!name.trim()) return;
@@ -293,7 +293,7 @@ function LeadForm({
       value: value ? parseFloat(value) : null,
       comment: comment.trim() || null,
       tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-      assignedTo: assignedTo || null,
+      assigneeId: assigneeId || null,
     });
     onClose();
   };
@@ -305,10 +305,10 @@ function LeadForm({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
           <div>
-            <h2 className="font-bold text-foreground">Новый лид</h2>
-            <p className="text-xs mt-0.5 text-muted-foreground">Заполните данные о потенциальном клиенте</p>
+            <h2 className="text-base font-bold text-foreground">Новый лид</h2>
+            <p className="text-sm mt-0.5 text-muted-foreground">Заполните данные о потенциальном клиенте</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -316,33 +316,33 @@ function LeadForm({
         {/* Form */}
         <div className="p-5 space-y-3 max-h-[60vh] overflow-y-auto">
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Имя / Компания *</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Имя / Компания *</label>
             <input value={name} onChange={e => setName(e.target.value)}
-              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
               placeholder="Имя контакта"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Организация</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Организация</label>
             <input value={company} onChange={e => setCompany(e.target.value)}
-              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
               placeholder="ООО, ИП..."
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Телефон</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Телефон</label>
               <input value={phone} onChange={e => setPhone(e.target.value)}
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
                 placeholder="+7..."
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Email</label>
               <input value={email} onChange={e => setEmail(e.target.value)}
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
                 placeholder="email@..."
               />
             </div>
@@ -350,16 +350,16 @@ function LeadForm({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Источник</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Источник</label>
               <select value={source} onChange={e => setSource(e.target.value)}
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
                 {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Этап</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Этап</label>
               <select value={stage} onChange={e => setStage(e.target.value)}
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
                 {STAGES.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
               </select>
             </div>
@@ -367,16 +367,16 @@ function LeadForm({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Сумма ₽</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Сумма ₽</label>
               <input type="number" value={value} onChange={e => setValue(e.target.value)}
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
                 placeholder="0"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Ответственный</label>
-              <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Ответственный</label>
+              <select value={assigneeId} onChange={e => setAssigneeId(e.target.value)}
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
                 <option value="">Не назначен</option>
                 {staff.map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
               </select>
@@ -384,17 +384,17 @@ function LeadForm({
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Теги (через запятую)</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Теги (через запятую)</label>
             <input value={tags} onChange={e => setTags(e.target.value)}
-              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
               placeholder="VIP, Срочный, Опт..."
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1 block">Комментарий</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Комментарий</label>
             <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
-              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none"
+              className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none"
               placeholder="Детали запроса..."
             />
           </div>
@@ -437,7 +437,7 @@ function LeadDetailPanel({
   const [editEmail, setEditEmail] = useState(lead.email || "");
   const [editValue, setEditValue] = useState(lead.value?.toString() || "");
   const [editComment, setEditComment] = useState(lead.comment || "");
-  const [editAssignedTo, setEditAssignedTo] = useState(lead.assignedTo || "");
+  const [editAssigneeId, setEditAssigneeId] = useState(lead.assigneeId || "");
 
   // Синхронизируем поля при смене лида
   useEffect(() => {
@@ -447,7 +447,7 @@ function LeadDetailPanel({
     setEditEmail(lead.email || "");
     setEditValue(lead.value?.toString() || "");
     setEditComment(lead.comment || "");
-    setEditAssignedTo(lead.assignedTo || "");
+    setEditAssigneeId(lead.assigneeId || "");
     setEditing(false);
   }, [lead.id]);
 
@@ -480,7 +480,7 @@ function LeadDetailPanel({
         email: editEmail.trim() || null,
         value: editValue ? parseFloat(editValue) : null,
         comment: editComment.trim() || null,
-        assignedTo: editAssignedTo || null,
+        assigneeId: editAssigneeId || null,
       }),
     });
     const updated = await res.json();
@@ -511,15 +511,15 @@ function LeadDetailPanel({
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button onClick={() => setEditing(!editing)}
-              className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground arayglass-icon">
+              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground arayglass-icon">
               <Pencil className="w-4 h-4" />
             </button>
             <button onClick={() => setShowConfirmDelete(true)}
-              className="w-8 h-8 rounded-xl hover:bg-red-500/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500">
+              className="w-10 h-10 rounded-xl hover:bg-red-500/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500">
               <Trash2 className="w-4 h-4" />
             </button>
             <button onClick={onClose}
-              className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -529,11 +529,11 @@ function LeadDetailPanel({
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
           {/* Stage selector */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground mb-2 block">Этап воронки</label>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">Этап воронки</label>
             <div className="flex flex-wrap gap-1.5">
               {STAGES.map(s => (
                 <button key={s.key} onClick={() => handleStageChange(s.key)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                     lead.stage === s.key
                       ? "border-2 border-primary bg-primary/15 text-foreground shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
                       : "border border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05]"
@@ -549,26 +549,26 @@ function LeadDetailPanel({
           {editing ? (
             <div className="space-y-3">
               <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Имя"
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
               <input value={editCompany} onChange={e => setEditCompany(e.target.value)} placeholder="Компания"
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
               <div className="grid grid-cols-2 gap-3">
                 <input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Телефон"
-                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
                 <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email"
-                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <input type="number" value={editValue} onChange={e => setEditValue(e.target.value)} placeholder="Сумма"
-                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
-                <select value={editAssignedTo} onChange={e => setEditAssignedTo(e.target.value)}
-                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
+                <select value={editAssigneeId} onChange={e => setEditAssigneeId(e.target.value)}
+                  className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all">
                   <option value="">Не назначен</option>
                   {staff.map(s => <option key={s.id} value={s.id}>{s.name || s.id}</option>)}
                 </select>
               </div>
               <textarea value={editComment} onChange={e => setEditComment(e.target.value)} rows={2} placeholder="Комментарий"
-                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none" />
+                className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none" />
               <div className="flex gap-2">
                 <button onClick={() => setEditing(false)}
                   className="flex-1 py-2.5 rounded-xl border border-primary/15 text-sm font-medium hover:bg-primary/[0.05] transition-all">
@@ -583,38 +583,38 @@ function LeadDetailPanel({
           ) : (
             <div className="space-y-3">
               {/* Contact info */}
-              <div className="arayglass rounded-xl p-3 space-y-2">
+              <div className="arayglass rounded-xl p-4 space-y-3">
                 {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors">
+                  <a href={`tel:${lead.phone}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                     <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
                     {lead.phone}
                   </a>
                 )}
                 {lead.email && (
-                  <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-sm text-foreground hover:text-primary transition-colors">
+                  <a href={`mailto:${lead.email}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                     <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
                     {lead.email}
                   </a>
                 )}
                 {lead.value && lead.value > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2.5 text-sm min-h-[36px]">
                     <Banknote className="w-4 h-4 text-muted-foreground" />
                     <span className="font-bold text-emerald-500 dark:text-emerald-400">{formatMoney(lead.value)}</span>
                   </div>
                 )}
-                {lead.assignedUser && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {lead.assignee && (
+                  <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-h-[36px]">
                     <User className="w-4 h-4" />
-                    <span>{lead.assignedUser.name}</span>
+                    <span>{lead.assignee.name}</span>
                   </div>
                 )}
               </div>
 
               {/* Comment */}
               {lead.comment && (
-                <div className="arayglass rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground mb-1 font-medium">Комментарий</p>
-                  <p className="text-sm text-foreground">{lead.comment}</p>
+                <div className="arayglass rounded-xl p-4">
+                  <p className="text-sm text-muted-foreground mb-1.5 font-medium">Комментарий</p>
+                  <p className="text-sm text-foreground leading-relaxed">{lead.comment}</p>
                 </div>
               )}
 
@@ -622,15 +622,15 @@ function LeadDetailPanel({
               {lead.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {lead.tags.map(tag => (
-                    <span key={tag} className="arayglass-badge text-[10px] text-primary/80">
-                      <Tag className="w-2.5 h-2.5 inline mr-0.5" />{tag}
+                    <span key={tag} className="arayglass-badge text-xs text-primary/80">
+                      <Tag className="w-3 h-3 inline mr-0.5" />{tag}
                     </span>
                   ))}
                 </div>
               )}
 
               {/* Meta */}
-              <div className="text-[10px] text-muted-foreground space-y-1 pt-1">
+              <div className="text-xs text-muted-foreground space-y-1.5 pt-1">
                 <p>Создан: {new Date(lead.createdAt).toLocaleString("ru-RU")}</p>
                 <p>Обновлён: {new Date(lead.updatedAt).toLocaleString("ru-RU")}</p>
                 <p>Источник: {SOURCE_LABELS[lead.source] || lead.source}</p>
@@ -640,26 +640,26 @@ function LeadDetailPanel({
 
           {/* Activities / Timeline */}
           <div>
-            <h3 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-muted-foreground" />
               История ({activities.length})
             </h3>
             {actLoading ? (
-              <div className="flex justify-center py-4"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
             ) : activities.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {activities.map((a: any) => (
-                  <div key={a.id} className="arayglass rounded-xl p-2.5 flex gap-2">
+                  <div key={a.id} className="arayglass rounded-xl p-3 flex gap-2.5">
                     <div className="w-1 shrink-0 rounded-full bg-primary/20 self-stretch" />
                     <div className="min-w-0">
-                      <p className="text-xs text-foreground">{a.content || a.type}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{timeAgo(a.createdAt)}</p>
+                      <p className="text-sm text-foreground">{a.content || a.type}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{timeAgo(a.createdAt)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground opacity-50 text-center py-3">Нет записей</p>
+              <p className="text-sm text-muted-foreground opacity-50 text-center py-4">Нет записей</p>
             )}
           </div>
         </div>
@@ -687,21 +687,21 @@ function CrmStats({ leads }: { leads: Lead[] }) {
   const convRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
 
   const stats = [
-    { label: "Всего лидов", value: leads.length, icon: Users, color: "text-primary" },
-    { label: "Активных", value: activeLeads, icon: TrendingUp, color: "text-amber-500" },
-    { label: "Выиграно", value: wonLeads, icon: CheckCircle2, color: "text-emerald-500" },
-    { label: "Конверсия", value: `${convRate}%`, icon: Star, color: "text-violet-500" },
+    { label: "Всего лидов", value: leads.length.toString(), icon: Users, iconBg: "bg-primary" },
+    { label: "Активных", value: activeLeads.toString(), icon: TrendingUp, iconBg: "bg-amber-500" },
+    { label: "Выиграно", value: wonLeads.toString(), icon: CheckCircle2, iconBg: "bg-emerald-500" },
+    { label: "Конверсия", value: `${convRate}%`, icon: Star, iconBg: "bg-violet-500" },
   ];
 
   return (
-    <div className="arayglass-grid-metrics gap-3 px-4 py-3 border-b border-primary/[0.08] flex-shrink-0">
+    <div className="arayglass-grid-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
       {stats.map(stat => (
-        <div key={stat.label} className="arayglass arayglass-shimmer rounded-xl px-3 py-2.5 flex items-center gap-3">
-          <stat.icon className={`w-4 h-4 shrink-0 arayglass-icon ${stat.color}`} />
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground leading-none mb-0.5">{stat.label}</p>
-            <p className="font-bold text-sm text-foreground truncate">{stat.value}</p>
+        <div key={stat.label} className="aray-stat-card relative overflow-hidden">
+          <div className={`absolute top-3 right-3 p-2 rounded-xl ${stat.iconBg}`}>
+            <stat.icon className="w-4 h-4 text-white" />
           </div>
+          <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-10">{stat.label}</p>
+          <p className="text-xl lg:text-2xl font-bold mt-1 font-display leading-tight text-foreground">{stat.value}</p>
         </div>
       ))}
     </div>
@@ -747,10 +747,10 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
       <div className="relative arayglass rounded-2xl w-full max-w-md shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
           <div>
-            <h2 className="font-bold text-foreground">Пресеты по отраслям</h2>
-            <p className="text-xs mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
+            <h2 className="text-base font-bold text-foreground">Пресеты по отраслям</h2>
+            <p className="text-sm mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -818,39 +818,39 @@ function OrderKanbanCard({
       draggable
       onDragStart={(e) => onDragStart(e, order)}
       onDragEnd={onDragEnd}
-      className="block arayglass arayglass-shimmer rounded-xl p-3 transition-all duration-200 group select-none"
+      className="block arayglass arayglass-shimmer rounded-xl p-3.5 sm:p-3 transition-all duration-200 group select-none"
     >
-      <div className="flex items-start justify-between gap-2 mb-1.5">
+      <div className="flex items-start justify-between gap-2 mb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-primary">#{order.orderNumber}</span>
-            <span className="text-xs text-muted-foreground truncate">{order.guestName || "Клиент"}</span>
+            <span className="text-sm font-bold text-primary">#{order.orderNumber}</span>
+            <span className="text-sm text-muted-foreground truncate">{order.guestName || "Клиент"}</span>
           </div>
           {order.guestPhone && (
-            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-              <Phone className="w-2.5 h-2.5" />{order.guestPhone}
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <Phone className="w-3 h-3" />{order.guestPhone}
             </p>
           )}
         </div>
-        <span className="shrink-0 text-xs font-bold px-1.5 py-0.5 rounded-lg text-emerald-500 dark:text-emerald-400 bg-emerald-500/10">
+        <span className="shrink-0 text-sm font-bold px-2 py-1 rounded-xl text-emerald-500 dark:text-emerald-400 bg-emerald-500/10">
           {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
         </span>
       </div>
 
       {itemsSummary && (
-        <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5 flex items-center gap-1">
-          <Package className="w-2.5 h-2.5 shrink-0" />
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex items-start gap-1.5">
+          <Package className="w-3 h-3 shrink-0 mt-0.5" />
           {itemsSummary}{hasMore ? `... +${order.items.length - 2}` : ""}
         </p>
       )}
 
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+      <div className="flex items-center justify-between pt-1 border-t border-primary/[0.06]">
+        <span className="text-xs text-muted-foreground flex items-center gap-1">
           {order.paymentMethod === "Наличные"
-            ? <><Banknote className="w-2.5 h-2.5" /> Нал</>
-            : <><Building2 className="w-2.5 h-2.5" /> Безнал</>}
+            ? <><Banknote className="w-3 h-3" /> Нал</>
+            : <><Building2 className="w-3 h-3" /> Безнал</>}
         </span>
-        <span className="text-[10px] text-muted-foreground">{timeAgo(order.createdAt)}</span>
+        <span className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</span>
       </div>
     </Link>
   );
@@ -931,37 +931,37 @@ function OrdersKanban({ search }: { search: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Статистика */}
-      <div className="arayglass-grid-metrics gap-3 px-4 py-3 border-b border-primary/[0.08] flex-shrink-0">
+      <div className="arayglass-grid-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
         {[
-          { label: "Всего заказов", value: orders.length, icon: ShoppingBag, color: "text-primary" },
-          { label: "Активных", value: activeOrders, icon: TrendingUp, color: "text-amber-500" },
-          { label: "Завершённых", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length, icon: CheckCircle2, color: "text-emerald-500" },
-          { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, color: "text-violet-500" },
+          { label: "Всего заказов", value: orders.length.toString(), icon: ShoppingBag, iconBg: "bg-primary" },
+          { label: "Активных", value: activeOrders.toString(), icon: TrendingUp, iconBg: "bg-amber-500" },
+          { label: "Завершённых", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length.toString(), icon: CheckCircle2, iconBg: "bg-emerald-500" },
+          { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, iconBg: "bg-violet-500" },
         ].map(stat => (
-          <div key={stat.label} className="arayglass arayglass-shimmer rounded-xl px-3 py-2.5 flex items-center gap-3">
-            <stat.icon className={`w-4 h-4 shrink-0 arayglass-icon ${stat.color}`} />
-            <div className="min-w-0">
-              <p className="text-[10px] text-muted-foreground leading-none mb-0.5">{stat.label}</p>
-              <p className="font-bold text-sm text-foreground truncate">{stat.value}</p>
+          <div key={stat.label} className="aray-stat-card relative overflow-hidden">
+            <div className={`absolute top-3 right-3 p-2 rounded-xl ${stat.iconBg}`}>
+              <stat.icon className="w-4 h-4 text-white" />
             </div>
+            <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-10">{stat.label}</p>
+            <p className="text-xl lg:text-2xl font-bold mt-1 font-display leading-tight text-foreground">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Синхронизация */}
-      <div className="px-4 py-2 border-b border-primary/[0.08] flex items-center gap-3 flex-shrink-0">
+      <div className="px-4 sm:px-5 py-2.5 border-b border-primary/[0.08] flex items-center gap-3 flex-shrink-0">
         <button
           onClick={handleSyncToLeads}
           disabled={syncing}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-primary/15 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/15 text-sm font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all disabled:opacity-50"
         >
-          {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+          {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
           Синхронизировать с лидами
         </button>
         {syncResult && (
-          <span className="flex items-center gap-1 text-xs text-emerald-500 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {syncResult}</span>
+          <span className="flex items-center gap-1.5 text-sm text-emerald-500 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-4 h-4 shrink-0" /> {syncResult}</span>
         )}
-        <span className="text-xs text-muted-foreground ml-auto hidden sm:block">
+        <span className="text-sm text-muted-foreground ml-auto hidden sm:block">
           Перетащите карточку чтобы изменить статус
         </span>
       </div>
@@ -974,15 +974,15 @@ function OrdersKanban({ search }: { search: string }) {
       ) : (
         <>
           {/* Мобильный переключатель этапов заказов */}
-          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
+          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
             {ORDER_STAGES.map(s => {
               const cnt = (ordersByStatus[s.key] || []).length;
               return (
                 <button key={s.key} onClick={() => setMobileOrderStage(s.key)}
-                  className={`admin-pill-btn shrink-0 ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
+                  className={`admin-pill-btn shrink-0 min-h-[36px] ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
                   <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
                   {s.label}
-                  <span className={`px-1 rounded text-[9px] font-bold ${mobileOrderStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
+                  <span className={`px-1.5 rounded text-[10px] font-bold ${mobileOrderStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
                 </button>
               );
             })}
@@ -994,13 +994,13 @@ function OrdersKanban({ search }: { search: string }) {
               <OrderKanbanCard key={order.id} order={order} onDragStart={handleDragStart} onDragEnd={handleDragEnd} />
             ))}
             {(ordersByStatus[mobileOrderStage] || []).length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-8 opacity-50">Нет заказов в этом статусе</p>
+              <p className="text-sm text-muted-foreground text-center py-8 opacity-50">Нет заказов в этом статусе</p>
             )}
           </div>
 
           {/* Десктоп — горизонтальный Kanban */}
-          <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
-            <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 240}px` }}>
+          <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 sm:px-5 py-4">
+            <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 270}px` }}>
               {ORDER_STAGES.map(stage => {
                 const stageOrders = ordersByStatus[stage.key] || [];
                 const stageTotal = stageOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
@@ -1010,7 +1010,7 @@ function OrdersKanban({ search }: { search: string }) {
                 return (
                   <div
                     key={stage.key}
-                    className={`flex flex-col arayglass rounded-2xl min-w-[230px] max-w-[250px] transition-all duration-200 ${
+                    className={`flex flex-col arayglass rounded-2xl min-w-[255px] max-w-[280px] flex-1 transition-all duration-200 ${
                       isOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
                     }`}
                     onDrop={(e) => handleDrop(e, stage.key)}
@@ -1018,23 +1018,23 @@ function OrdersKanban({ search }: { search: string }) {
                     onDragLeave={() => setDragOverStage(null)}
                   >
                     {/* Заголовок колонки */}
-                    <div className="px-3 pt-3 pb-2 flex-shrink-0 border-b border-primary/[0.08]">
+                    <div className="px-3.5 pt-3.5 pb-2.5 flex-shrink-0 border-b border-primary/[0.08]">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <StageIcon className="w-3.5 h-3.5 text-muted-foreground arayglass-icon" />
-                        <span className="text-xs font-bold text-foreground">{stage.label}</span>
-                        <span className="text-xs text-muted-foreground bg-primary/[0.06] px-1.5 py-0.5 rounded-lg font-medium ml-auto">
+                        <StageIcon className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                        <span className="text-sm font-bold text-foreground">{stage.label}</span>
+                        <span className="text-xs text-muted-foreground bg-primary/[0.08] px-2 py-0.5 rounded-xl font-semibold ml-auto">
                           {stageOrders.length}
                         </span>
                       </div>
                       {stageTotal > 0 && (
-                        <p className="text-xs font-semibold text-emerald-500 dark:text-emerald-400 ml-[22px]">
+                        <p className="text-sm font-semibold text-emerald-500 dark:text-emerald-400 ml-6">
                           {stageTotal.toLocaleString("ru-RU")} ₽
                         </p>
                       )}
                     </div>
 
                     {/* Карточки */}
-                    <div className="flex-1 overflow-y-auto p-2 space-y-2 max-h-[calc(100vh-380px)] scrollbar-thin">
+                    <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 max-h-[calc(100vh-400px)] scrollbar-thin">
                       {stageOrders.map(order => (
                         <OrderKanbanCard
                           key={order.id}
@@ -1044,12 +1044,12 @@ function OrdersKanban({ search }: { search: string }) {
                         />
                       ))}
                       {isOver && stageOrders.length === 0 && (
-                        <div className="border-2 border-dashed border-primary/40 rounded-xl h-16 flex items-center justify-center text-xs text-primary/60">
+                        <div className="border-2 border-dashed border-primary/40 rounded-xl h-20 flex items-center justify-center text-sm text-primary/60">
                           Перетащить сюда
                         </div>
                       )}
                       {stageOrders.length === 0 && !isOver && (
-                        <p className="text-xs text-muted-foreground text-center py-4 opacity-50">Пусто</p>
+                        <p className="text-sm text-muted-foreground text-center py-6 opacity-50">Пусто</p>
                       )}
                     </div>
                   </div>
@@ -1175,8 +1175,8 @@ export function CrmClient() {
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div>
-            <h1 className="font-display text-xl font-bold text-foreground">ARAY CRM</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <h1 className="font-display text-xl lg:text-2xl font-bold text-foreground">ARAY CRM</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               {tab === "orders" ? "Перетащи карточку → статус заказа меняется" : "Перетащи лид между этапами воронки"}
             </p>
           </div>
@@ -1258,18 +1258,18 @@ export function CrmClient() {
           ) : (
             <>
               {/* Мобильный переключатель этапов */}
-              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
+              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
                 {STAGES.map(s => {
                   const cnt = (leadsByStage[s.key] || []).length;
                   return (
                     <button
                       key={s.key}
                       onClick={() => setMobileStage(s.key)}
-                      className={`admin-pill-btn shrink-0 ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
+                      className={`admin-pill-btn shrink-0 min-h-[36px] ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
                     >
                       <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
                       {s.label}
-                      <span className={`px-1 rounded text-[9px] font-bold ${mobileStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
+                      <span className={`px-1.5 rounded text-[10px] font-bold ${mobileStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
                     </button>
                   );
                 })}
@@ -1302,7 +1302,7 @@ export function CrmClient() {
 
               {/* Десктоп — горизонтальный Kanban */}
               <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
-                <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 280}px` }}>
+                <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 315}px` }}>
                   {STAGES.map(stage => {
                     const stageleads = leadsByStage[stage.key] || [];
                     const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
