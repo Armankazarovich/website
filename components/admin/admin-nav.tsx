@@ -74,6 +74,7 @@ const allNavItems: NavItem[] = [
   // ── Продажи ──
   { href: "/admin/orders",    label: "Заказы",        labelKey: "orders",    icon: ShoppingBag, roles: ALL_STAFF, group: "sales", groupKey: "sales" },
   { href: "/admin/crm",      label: "ARAY CRM",      labelKey: "crm",       icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/crm/automation", label: "Автоматизация", icon: Zap, roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
   { href: "/admin/analytics", label: "Аналитика",     labelKey: "analytics", icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/finance",   label: "Финансы",       labelKey: "finance",   icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/clients",   label: "Клиенты",       labelKey: "clients",   icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },

@@ -116,6 +116,18 @@ export async function POST(req: NextRequest) {
       ).catch(console.error);
     }
 
+    // CRM Automation — trigger workflows
+    import("@/lib/workflow-engine").then(({ runWorkflows }) => {
+      runWorkflows("order_created", {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: "NEW",
+        totalAmount: Number(order.totalAmount),
+        customerName: order.guestName || "Клиент",
+        customerPhone: order.guestPhone,
+      }).catch(console.error);
+    }).catch(() => {});
+
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });
   } catch (err) {
     console.error("Admin order creation error:", err);

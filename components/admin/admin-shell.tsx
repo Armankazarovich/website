@@ -124,6 +124,7 @@ const MOBILE_NAV: MobileNavItem[] = [
   // ── Продажи ──
   { href: "/admin/orders",    label: "Заказы",     icon: ShoppingBag, roles: ALL_STAFF_R, group: "sales", groupLabel: "Продажи" },
   { href: "/admin/crm",      label: "ARAY CRM",    icon: Target,      roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales" },
+  { href: "/admin/crm/automation", label: "Автоматизация", icon: Zap, roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
   { href: "/admin/analytics", label: "Аналитика",   icon: BarChart2,   roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/finance",   label: "Финансы",     icon: Wallet,      roles: [SA, "ADMIN", "ACCOUNTANT"], group: "sales" },
   { href: "/admin/clients",   label: "Клиенты",     icon: UserCircle,  roles: [SA, "ADMIN", "MANAGER"], group: "sales" },
@@ -643,6 +644,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/admin": "",
   "/admin/orders": "Заказы",
   "/admin/crm": "ARAY CRM",
+  "/admin/crm/automation": "Автоматизация",
   "/admin/tasks": "Задачи",
   "/admin/workflows": "Автоворкфлоу",
   "/admin/delivery": "Доставка",

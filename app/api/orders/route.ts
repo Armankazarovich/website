@@ -245,6 +245,19 @@ export async function POST(req: NextRequest) {
       },
     }).catch(console.error);
 
+    // CRM Automation — trigger workflows
+    import("@/lib/workflow-engine").then(({ runWorkflows }) => {
+      runWorkflows("order_created", {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: "NEW",
+        totalAmount: Number(totalAmount),
+        customerName: name || guestName || "Клиент",
+        customerPhone: phone || guestPhone,
+        customerEmail: email || guestEmail,
+      }).catch(console.error);
+    }).catch(() => {});
+
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });
   } catch (err) {
     console.error("Order creation error:", err);

@@ -347,6 +347,12 @@ model Workflow {
   trigger     String
   conditions  Json          @default("{}")
   actions     Json          @default("[]")
+  delayMinutes Int?                        // задержка перед выполнением (в минутах)
+  category    String        @default("robot") // "robot" | "tunnel" | "report"
+  nicheTag    String?                      // привязка к шаблону ниши
+  sortOrder   Int           @default(0)
+  executionCount Int        @default(0)    // сколько раз сработал
+  lastExecutedAt DateTime?                 // когда последний раз
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   logs        WorkflowLog[]
@@ -507,6 +513,8 @@ enum LeadStage {
   NEGOTIATION
   WON
   LOST
+  DEFERRED
+  RECURRING
 }
 
 enum LeadActivityType {
@@ -559,4 +567,87 @@ model ArayMessage {
 
   @@index([userId, createdAt])
   @@index([sessionId, createdAt])
+}
+
+// ─── CRM: Шаблоны документов (КП, договоры, счета, акты) ────────────────────
+model DocumentTemplate {
+  id          String              @id @default(cuid())
+  name        String              // "КП для оптовиков", "Договор поставки"
+  type        DocumentType        // КП, CONTRACT, INVOICE, ACT, UPD
+  content     String   @db.Text   // HTML шаблон с {{переменными}}
+  variables   Json     @default("[]") // описание доступных переменных
+  active      Boolean  @default(true)
+  isDefault   Boolean  @default(false) // предустановленный шаблон
+  nicheTag    String?              // "lumber", "construction", "retail" — для шаблонов ниш
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  documents   GeneratedDocument[]
+}
+
+model GeneratedDocument {
+  id         String           @id @default(cuid())
+  templateId String
+  orderId    String?
+  leadId     String?
+  fileName   String
+  fileUrl    String           // путь к сгенерированному PDF
+  data       Json             @default("{}") // данные, использованные при генерации
+  createdBy  String?
+  createdAt  DateTime         @default(now())
+  template   DocumentTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([orderId])
+  @@index([leadId])
+}
+
+enum DocumentType {
+  KP           // Коммерческое предложение
+  CONTRACT     // Договор
+  INVOICE      // Счёт
+  ACT          // Акт выполненных работ
+  UPD          // Универсальный передаточный документ
+  CUSTOM       // Произвольный
+}
+
+// ─── CRM: Расписание отчётов ────────────────────────────────────────────────
+model ReportSchedule {
+  id          String   @id @default(cuid())
+  name        String   // "Ежедневная сводка", "Месячный отчёт"
+  type        String   // "daily_summary", "weekly_digest", "monthly_report", "custom"
+  schedule    String   // "daily", "weekly", "monthly" или cron
+  recipients  Json     @default("[]") // [{type: "email", value: "..."}, {type: "telegram", value: "..."}]
+  filters     Json     @default("{}") // фильтры для отчёта
+  active      Boolean  @default(true)
+  lastRunAt   DateTime?
+  nextRunAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── CRM: Контекстные подсказки по ролям ────────────────────────────────────
+model CrmHint {
+  id       String  @id @default(cuid())
+  role     String  // "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "USER", "ALL"
+  section  String  // "dashboard", "orders", "crm", "delivery", "products", "reports"
+  title    String
+  text     String
+  icon     String? // lucide icon name
+  priority Int     @default(0)
+  active   Boolean @default(true)
+
+  @@index([role, section])
+}
+
+// ─── CRM: Шаблоны ниш (готовые конфигурации) ────────────────────────────────
+model NicheTemplate {
+  id          String   @id @default(cuid())
+  slug        String   @unique // "lumber", "construction", "retail"
+  name        String   // "Пиломатериалы", "Стройматериалы", "Розница"
+  description String?
+  icon        String?  // lucide icon
+  config      Json     // { workflows: [], stages: [], documents: [], hints: [], settings: {} }
+  isBuiltIn   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
