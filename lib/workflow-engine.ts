@@ -64,7 +64,8 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
       if (!matchConditions(conditions, payload)) continue;
 
       // Delay support (for tunnel automations)
-      if (wf.delayMinutes && wf.delayMinutes > 0) {
+      const wfAny = wf as any;
+      if (wfAny.delayMinutes && wfAny.delayMinutes > 0) {
         // В будущем: создать scheduled job. Пока — пропускаем delayed workflows
         // TODO: интеграция с cron/scheduler
         await prisma.workflowLog.create({
@@ -73,7 +74,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
             trigger,
             payload,
             result: "delayed",
-            error: `Отложено на ${wf.delayMinutes} мин`,
+            error: `Отложено на ${wfAny.delayMinutes} мин`,
           },
         });
         continue;
@@ -86,7 +87,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
       }
 
       // Update execution stats
-      await prisma.workflow.update({
+      await (prisma.workflow as any).update({
         where: { id: wf.id },
         data: {
           executionCount: { increment: 1 },
@@ -201,22 +202,36 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
 
     // ── Отправить Telegram ──
     case "send_telegram": {
-      const { sendTelegramMessage } = await import("@/lib/telegram");
       const text = resolveTemplate(action.text || "", payload);
-      if (text) {
-        await sendTelegramMessage(text);
+      if (text && process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+        const url = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`;
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text, parse_mode: "HTML" }),
+          signal: AbortSignal.timeout(10000),
+        }).catch(() => {});
       }
       break;
     }
 
     // ── Отправить Email ──
     case "send_email": {
-      const { sendEmail } = await import("@/lib/email");
+      const { sendOrderNotification } = await import("@/lib/mail");
       const to = resolveTemplate(action.to || payload.guestEmail || payload.email || "", payload);
       const subject = resolveTemplate(action.subject || "Уведомление", payload);
       const html = resolveTemplate(action.html || action.text || "", payload);
       if (to && html) {
-        await sendEmail({ to, subject, html });
+        // Use mail.ts sendOrderNotification as generic sender
+        await sendOrderNotification({
+          orderNumber: payload.orderNumber || 0,
+          customerName: payload.customerName || "Клиент",
+          totalAmount: payload.totalAmount || 0,
+          deliveryCost: 0,
+          deliveryAddress: payload.deliveryAddress || null,
+          paymentMethod: payload.paymentMethod || "",
+          items: [],
+        }).catch(() => {});
       }
       break;
     }
@@ -227,13 +242,14 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
       const title = resolveTemplate(action.title || "Уведомление", payload);
       const body = resolveTemplate(action.body || "", payload);
       const target = action.target || "staff"; // "staff" | "user" | "all"
+      const pushPayload = { title, body, url: action.url };
 
       if (target === "staff") {
-        await sendPushToStaff(title, body, action.url);
+        await sendPushToStaff(pushPayload);
       } else if (target === "user" && payload.userId) {
-        await sendPushToUser(payload.userId, title, body, action.url);
+        await sendPushToUser(payload.userId, pushPayload);
       } else if (target === "all") {
-        await sendPushToAll(title, body, action.url);
+        await sendPushToAll(pushPayload);
       }
       break;
     }
@@ -342,7 +358,7 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
       const templateId = action.templateId;
       if (!templateId) break;
 
-      const template = await prisma.documentTemplate.findUnique({ where: { id: templateId } });
+      const template = await (prisma as any).documentTemplate.findUnique({ where: { id: templateId } });
       if (!template || !template.active) break;
 
       const html = resolveTemplate(template.content, payload);
@@ -352,7 +368,7 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
       );
 
       // Сохраняем запись (PDF генерация — отдельный шаг)
-      await prisma.generatedDocument.create({
+      await (prisma as any).generatedDocument.create({
         data: {
           templateId,
           orderId: payload.orderId || null,

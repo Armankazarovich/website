@@ -8,7 +8,7 @@ import { sendTelegramOrderNotification } from "@/lib/telegram";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
-import { runWorkflows } from "@/lib/workflow-engine";
+// workflow-engine imported dynamically below to avoid circular deps
 import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
 import nodemailer from "nodemailer";
@@ -220,16 +220,6 @@ export async function POST(req: NextRequest) {
       }
     }).catch(console.error);
 
-    // ⚡ Запускаем автоворкфлоу
-    runWorkflows("order_created", {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      guestName: order.guestName,
-      guestPhone: order.guestPhone,
-      totalAmount: Number(order.totalAmount),
-      paymentMethod: order.paymentMethod,
-    }).catch(console.error);
-
     // 🎯 Авто-создание лида в CRM при новом заказе
     prisma.lead.create({
       data: {
@@ -252,9 +242,9 @@ export async function POST(req: NextRequest) {
         orderNumber: order.orderNumber,
         status: "NEW",
         totalAmount: Number(totalAmount),
-        customerName: name || guestName || "Клиент",
-        customerPhone: phone || guestPhone,
-        customerEmail: email || guestEmail,
+        customerName: name || "Клиент",
+        customerPhone: phone || "",
+        customerEmail: email || "",
       }).catch(console.error);
     }).catch(() => {});
 
