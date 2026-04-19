@@ -301,7 +301,7 @@ function LeadForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative arayglass rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="relative arayglass rounded-2xl w-full max-w-lg shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08]">
           <div>
@@ -502,12 +502,17 @@ function LeadDetailPanel({
       <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="fixed top-0 right-0 h-full w-full sm:w-[420px] z-50 arayglass rounded-none sm:rounded-l-2xl shadow-2xl flex flex-col overflow-hidden">
+      <div className="fixed top-0 right-0 h-full w-full sm:w-[520px] z-50 arayglass rounded-none sm:rounded-l-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08] flex-shrink-0">
-          <div className="min-w-0">
-            <p className="font-bold text-foreground truncate text-base">{lead.name}</p>
-            {lead.company && <p className="text-xs text-muted-foreground truncate mt-0.5">{lead.company}</p>}
+          <div className="min-w-0 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <User className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-bold text-foreground truncate text-base">{lead.name}</p>
+              {lead.company && <p className="text-xs text-muted-foreground truncate mt-0.5">{lead.company}</p>}
+            </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <button onClick={() => setEditing(!editing)}
@@ -697,11 +702,11 @@ function CrmStats({ leads }: { leads: Lead[] }) {
     <div className="arayglass-grid-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
       {stats.map(stat => (
         <div key={stat.label} className="aray-stat-card relative overflow-hidden">
-          <div className={`absolute top-3 right-3 p-2 rounded-xl ${stat.iconBg}`}>
-            <stat.icon className="w-4 h-4 text-white" />
+          <div className={`absolute top-3 right-3 p-2.5 rounded-xl ${stat.iconBg}`}>
+            <stat.icon className="w-5 h-5 text-white" />
           </div>
-          <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-10">{stat.label}</p>
-          <p className="text-xl lg:text-2xl font-bold mt-1 font-display leading-tight text-foreground">{stat.value}</p>
+          <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-12">{stat.label}</p>
+          <p className="text-2xl lg:text-3xl font-bold mt-1.5 font-display leading-tight text-foreground">{stat.value}</p>
         </div>
       ))}
     </div>
@@ -803,56 +808,212 @@ type OrderCard = {
 };
 
 function OrderKanbanCard({
-  order, onDragStart, onDragEnd,
+  order, onDragStart, onDragEnd, onClick,
 }: {
   order: OrderCard;
   onDragStart: (e: React.DragEvent, order: OrderCard) => void;
   onDragEnd: (e: React.DragEvent) => void;
+  onClick: (order: OrderCard) => void;
 }) {
   const itemsSummary = order.items.slice(0, 2).map(i => `${i.productName} ${i.variantSize}`).join(", ");
   const hasMore = order.items.length > 2;
 
   return (
-    <Link
-      href={`/admin/orders/${order.id}`}
+    <div
       draggable
       onDragStart={(e) => onDragStart(e, order)}
       onDragEnd={onDragEnd}
-      className="block arayglass arayglass-shimmer rounded-xl p-3.5 sm:p-3 transition-all duration-200 group select-none"
+      onClick={() => onClick(order)}
+      className="arayglass arayglass-shimmer rounded-xl p-4 sm:p-3.5 cursor-pointer select-none transition-all duration-200 group"
     >
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 mb-2.5">
         <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-primary">#{order.orderNumber}</span>
-            <span className="text-sm text-muted-foreground truncate">{order.guestName || "Клиент"}</span>
+            <span className="text-sm font-medium text-foreground truncate">{order.guestName || "Клиент"}</span>
           </div>
           {order.guestPhone && (
             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-              <Phone className="w-3 h-3" />{order.guestPhone}
+              <Phone className="w-3 h-3 shrink-0" />{order.guestPhone}
             </p>
           )}
         </div>
-        <span className="shrink-0 text-sm font-bold px-2 py-1 rounded-xl text-emerald-500 dark:text-emerald-400 bg-emerald-500/10">
+        <span className="shrink-0 text-sm font-bold px-2.5 py-1 rounded-xl text-emerald-500 dark:text-emerald-400 bg-emerald-500/10">
           {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
         </span>
       </div>
 
       {itemsSummary && (
-        <p className="text-xs text-muted-foreground line-clamp-2 mb-2 flex items-start gap-1.5">
-          <Package className="w-3 h-3 shrink-0 mt-0.5" />
-          {itemsSummary}{hasMore ? `... +${order.items.length - 2}` : ""}
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-2.5 flex items-start gap-1.5">
+          <Package className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary/40" />
+          <span>{itemsSummary}{hasMore ? ` +${order.items.length - 2}` : ""}</span>
         </p>
       )}
 
-      <div className="flex items-center justify-between pt-1 border-t border-primary/[0.06]">
+      <div className="flex items-center justify-between pt-2 border-t border-primary/[0.06]">
         <span className="text-xs text-muted-foreground flex items-center gap-1">
           {order.paymentMethod === "Наличные"
             ? <><Banknote className="w-3 h-3" /> Нал</>
             : <><Building2 className="w-3 h-3" /> Безнал</>}
         </span>
-        <span className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">{timeAgo(order.createdAt)}</span>
+          <ArrowRight className="w-3 h-3 text-muted-foreground/50 group-hover:text-primary transition-colors" />
+        </div>
       </div>
-    </Link>
+    </div>
+  );
+}
+
+// ─── OrderDetailPanel (попап деталей заказа из канбана) ─────────────────────
+
+function OrderDetailPanel({
+  order, onClose, onStatusChange,
+}: {
+  order: OrderCard;
+  onClose: () => void;
+  onStatusChange: (orderId: string, newStatus: string) => void;
+}) {
+  const currentStage = ORDER_STAGES.find(s => s.key === order.status);
+  const itemsTotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed top-0 right-0 h-full w-full sm:w-[520px] z-50 arayglass rounded-none sm:rounded-l-2xl shadow-2xl flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-primary/[0.08] flex-shrink-0">
+          <div className="min-w-0 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-bold text-foreground text-base">Заказ #{order.orderNumber}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{order.guestName || "Клиент"}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <Link href={`/admin/orders/${order.id}`}
+              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-primary arayglass-icon">
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+            <button onClick={onClose}
+              className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Status selector */}
+          <div>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">Статус заказа</label>
+            <div className="flex flex-wrap gap-1.5">
+              {ORDER_STAGES.filter(s => s.key !== "CANCELLED").map(s => {
+                const StIcon = s.icon;
+                return (
+                  <button key={s.key} onClick={() => { onStatusChange(order.id, s.key); }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      order.status === s.key
+                        ? "border-2 border-primary bg-primary/15 text-foreground shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
+                        : "border border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05]"
+                    }`}>
+                    <StIcon className="w-3.5 h-3.5" />
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Сумма */}
+          <div className="arayglass rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm text-muted-foreground">Сумма товаров</span>
+              <span className="text-sm font-semibold text-foreground">{itemsTotal.toLocaleString("ru-RU")} ₽</span>
+            </div>
+            {order.deliveryCost && Number(order.deliveryCost) > 0 && (
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-sm text-muted-foreground">Доставка</span>
+                <span className="text-sm font-semibold text-foreground">{Number(order.deliveryCost).toLocaleString("ru-RU")} ₽</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between pt-3 border-t border-primary/[0.08]">
+              <span className="text-sm font-bold text-foreground">Итого</span>
+              <span className="text-lg font-bold text-emerald-500 dark:text-emerald-400">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</span>
+            </div>
+          </div>
+
+          {/* Контактная информация */}
+          <div className="arayglass rounded-xl p-4 space-y-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Контакт</p>
+            {order.guestPhone && (
+              <a href={`tel:${order.guestPhone}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                {order.guestPhone}
+              </a>
+            )}
+            {order.guestEmail && (
+              <a href={`mailto:${order.guestEmail}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                {order.guestEmail}
+              </a>
+            )}
+            <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-h-[36px]">
+              <Banknote className="w-4 h-4" />
+              {order.paymentMethod}
+            </div>
+            {order.deliveryAddress && (
+              <div className="flex items-start gap-2.5 text-sm text-muted-foreground min-h-[36px]">
+                <Navigation className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{order.deliveryAddress}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Товары */}
+          <div className="arayglass rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-primary/[0.08]">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Товары ({order.items.length})</p>
+            </div>
+            <div className="divide-y divide-primary/[0.05]">
+              {order.items.map((item, i) => (
+                <div key={i} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm text-foreground truncate">{item.productName}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.variantSize} · {item.quantity} {item.unitType}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-foreground shrink-0">
+                    {(item.price * item.quantity).toLocaleString("ru-RU")} ₽
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Комментарий */}
+          {order.comment && (
+            <div className="arayglass rounded-xl p-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Комментарий</p>
+              <p className="text-sm text-foreground leading-relaxed">{order.comment}</p>
+            </div>
+          )}
+
+          {/* Мета */}
+          <div className="text-xs text-muted-foreground space-y-1.5 pt-1">
+            <p>Создан: {new Date(order.createdAt).toLocaleString("ru-RU")}</p>
+          </div>
+
+          {/* Кнопка перейти */}
+          <Link href={`/admin/orders/${order.id}`}
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
+            <ExternalLink className="w-4 h-4" />
+            Открыть полную карточку
+          </Link>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -863,6 +1024,7 @@ function OrdersKanban({ search }: { search: string }) {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [mobileOrderStage, setMobileOrderStage] = useState("NEW");
+  const [selectedOrder, setSelectedOrder] = useState<OrderCard | null>(null);
   const dragOrderRef = useRef<OrderCard | null>(null);
 
   const fetchOrders = useCallback(async () => {
@@ -917,6 +1079,18 @@ function OrdersKanban({ search }: { search: string }) {
     });
   };
 
+  const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder({ ...selectedOrder, status: newStatus });
+    }
+    await fetch("/api/admin/crm/orders-kanban", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, status: newStatus }),
+    });
+  };
+
   const ordersByStatus = ORDER_STAGES.reduce((acc, s) => {
     acc[s.key] = orders.filter(o => o.status === s.key);
     return acc;
@@ -939,11 +1113,11 @@ function OrdersKanban({ search }: { search: string }) {
           { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, iconBg: "bg-violet-500" },
         ].map(stat => (
           <div key={stat.label} className="aray-stat-card relative overflow-hidden">
-            <div className={`absolute top-3 right-3 p-2 rounded-xl ${stat.iconBg}`}>
-              <stat.icon className="w-4 h-4 text-white" />
+            <div className={`absolute top-3 right-3 p-2.5 rounded-xl ${stat.iconBg}`}>
+              <stat.icon className="w-5 h-5 text-white" />
             </div>
-            <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-10">{stat.label}</p>
-            <p className="text-xl lg:text-2xl font-bold mt-1 font-display leading-tight text-foreground">{stat.value}</p>
+            <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-12">{stat.label}</p>
+            <p className="text-2xl lg:text-3xl font-bold mt-1.5 font-display leading-tight text-foreground">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -953,16 +1127,16 @@ function OrdersKanban({ search }: { search: string }) {
         <button
           onClick={handleSyncToLeads}
           disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-primary/15 text-sm font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary/15 text-sm font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all disabled:opacity-50"
         >
-          {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+          {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 arayglass-icon" />}
           Синхронизировать с лидами
         </button>
         {syncResult && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-500 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-4 h-4 shrink-0" /> {syncResult}</span>
         )}
         <span className="text-sm text-muted-foreground ml-auto hidden sm:block">
-          Перетащите карточку чтобы изменить статус
+          Перетащите карточку для смены статуса · Клик → детали
         </span>
       </div>
 
@@ -979,28 +1153,34 @@ function OrdersKanban({ search }: { search: string }) {
               const cnt = (ordersByStatus[s.key] || []).length;
               return (
                 <button key={s.key} onClick={() => setMobileOrderStage(s.key)}
-                  className={`admin-pill-btn shrink-0 min-h-[36px] ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                  className={`admin-pill-btn shrink-0 min-h-[40px] ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
+                  <s.icon className="w-3.5 h-3.5" />
                   {s.label}
-                  <span className={`px-1.5 rounded text-[10px] font-bold ${mobileOrderStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
+                  {cnt > 0 && <span className={`px-1.5 rounded-md text-[10px] font-bold ${mobileOrderStage === s.key ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>{cnt}</span>}
                 </button>
               );
             })}
           </div>
 
           {/* Мобильный вид — одна колонка */}
-          <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 space-y-2">
+          <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
             {(ordersByStatus[mobileOrderStage] || []).map(order => (
-              <OrderKanbanCard key={order.id} order={order} onDragStart={handleDragStart} onDragEnd={handleDragEnd} />
+              <OrderKanbanCard key={order.id} order={order} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onClick={setSelectedOrder} />
             ))}
             {(ordersByStatus[mobileOrderStage] || []).length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-8 opacity-50">Нет заказов в этом статусе</p>
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-primary/[0.08] flex items-center justify-center mb-3">
+                  <Inbox className="w-6 h-6 text-muted-foreground/50" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">Нет заказов</p>
+                <p className="text-xs text-muted-foreground/60 mt-0.5">в статусе «{ORDER_STAGES.find(s => s.key === mobileOrderStage)?.label}»</p>
+              </div>
             )}
           </div>
 
           {/* Десктоп — горизонтальный Kanban */}
           <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 sm:px-5 py-4">
-            <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 270}px` }}>
+            <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 280}px` }}>
               {ORDER_STAGES.map(stage => {
                 const stageOrders = ordersByStatus[stage.key] || [];
                 const stageTotal = stageOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
@@ -1010,7 +1190,7 @@ function OrdersKanban({ search }: { search: string }) {
                 return (
                   <div
                     key={stage.key}
-                    className={`flex flex-col arayglass rounded-2xl min-w-[255px] max-w-[280px] flex-1 transition-all duration-200 ${
+                    className={`flex flex-col arayglass rounded-2xl min-w-[265px] max-w-[300px] flex-1 transition-all duration-200 ${
                       isOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
                     }`}
                     onDrop={(e) => handleDrop(e, stage.key)}
@@ -1018,38 +1198,44 @@ function OrdersKanban({ search }: { search: string }) {
                     onDragLeave={() => setDragOverStage(null)}
                   >
                     {/* Заголовок колонки */}
-                    <div className="px-3.5 pt-3.5 pb-2.5 flex-shrink-0 border-b border-primary/[0.08]">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <StageIcon className="w-4 h-4 text-muted-foreground arayglass-icon" />
+                    <div className="px-4 pt-4 pb-3 flex-shrink-0 border-b border-primary/[0.08]">
+                      <div className="flex items-center gap-2.5 mb-1">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary/10">
+                          <StageIcon className="w-4 h-4 text-primary arayglass-icon" />
+                        </div>
                         <span className="text-sm font-bold text-foreground">{stage.label}</span>
-                        <span className="text-xs text-muted-foreground bg-primary/[0.08] px-2 py-0.5 rounded-xl font-semibold ml-auto">
+                        <span className="text-xs font-bold text-primary bg-primary/[0.1] px-2.5 py-0.5 rounded-xl ml-auto">
                           {stageOrders.length}
                         </span>
                       </div>
                       {stageTotal > 0 && (
-                        <p className="text-sm font-semibold text-emerald-500 dark:text-emerald-400 ml-6">
+                        <p className="text-sm font-semibold text-emerald-500 dark:text-emerald-400 ml-[38px]">
                           {stageTotal.toLocaleString("ru-RU")} ₽
                         </p>
                       )}
                     </div>
 
                     {/* Карточки */}
-                    <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 max-h-[calc(100vh-400px)] scrollbar-thin">
+                    <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 max-h-[calc(100vh-420px)] scrollbar-thin">
                       {stageOrders.map(order => (
                         <OrderKanbanCard
                           key={order.id}
                           order={order}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
+                          onClick={setSelectedOrder}
                         />
                       ))}
                       {isOver && stageOrders.length === 0 && (
-                        <div className="border-2 border-dashed border-primary/40 rounded-xl h-20 flex items-center justify-center text-sm text-primary/60">
-                          Перетащить сюда
+                        <div className="border-2 border-dashed border-primary/40 rounded-xl h-24 flex items-center justify-center text-sm text-primary/60">
+                          <ArrowRight className="w-4 h-4 mr-2" /> Перетащить сюда
                         </div>
                       )}
                       {stageOrders.length === 0 && !isOver && (
-                        <p className="text-sm text-muted-foreground text-center py-6 opacity-50">Пусто</p>
+                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                          <Inbox className="w-5 h-5 text-muted-foreground/30 mb-1.5" />
+                          <p className="text-xs text-muted-foreground/50">Пусто</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1058,6 +1244,15 @@ function OrdersKanban({ search }: { search: string }) {
             </div>
           </div>
         </>
+      )}
+
+      {/* Попап деталей заказа */}
+      {selectedOrder && (
+        <OrderDetailPanel
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+          onStatusChange={handleOrderStatusChange}
+        />
       )}
     </div>
   );
@@ -1265,11 +1460,11 @@ export function CrmClient() {
                     <button
                       key={s.key}
                       onClick={() => setMobileStage(s.key)}
-                      className={`admin-pill-btn shrink-0 min-h-[36px] ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
+                      className={`admin-pill-btn shrink-0 min-h-[40px] ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
                     >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${s.dot}`} />
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.dot}`} />
                       {s.label}
-                      <span className={`px-1.5 rounded text-[10px] font-bold ${mobileStage === s.key ? "bg-primary/15 text-primary" : "bg-muted"}`}>{cnt}</span>
+                      {cnt > 0 && <span className={`px-1.5 rounded-md text-[10px] font-bold ${mobileStage === s.key ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>{cnt}</span>}
                     </button>
                   );
                 })}
