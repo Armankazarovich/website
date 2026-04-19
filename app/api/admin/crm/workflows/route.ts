@@ -1,123 +1,129 @@
-/**
- * CRM Workflows (Роботы + Тоннели) — CRUD API
- * GET  — список всех workflows + статистика
- * POST — создать новый workflow или применить пресет
- */
+export const dynamic = "force-dynamic";
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireManager } from "@/lib/auth-helpers";
-import { LUMBER_PRESET_WORKFLOWS } from "@/lib/workflow-engine";
+import { auth } from "@/lib/auth";
 
-export async function GET(req: Request) {
-  const authError = await requireManager();
-  if (authError) return authError;
+const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
-  const { searchParams } = new URL(req.url);
-  const category = searchParams.get("category"); // "robot" | "tunnel" | "report"
-  const includeStats = searchParams.get("stats") === "true";
+const DEFAULT_PRESETS = [
+  {
+    name: "Новый заказ → задача менеджеру",
+    description: "Автоматически создаёт задачу при новом заказе",
+    trigger: "order_created",
+    category: "robot",
+    conditions: {},
+    actions: [{ type: "create_task", taskTitle: "Обработать заказ #{orderNumber}", assignRole: "MANAGER" }],
+  },
+  {
+    name: "Заказ > 50 000 ₽ → уведомление",
+    description: "Push и email при крупном заказе",
+    trigger: "order_created",
+    category: "robot",
+    conditions: { field: "totalAmount", operator: "gte", value: 50000 },
+    actions: [
+      { type: "send_push", title: "Крупный заказ!", body: "Заказ на сумму {totalAmount} ₽" },
+      { type: "send_email", subject: "Крупный заказ #{orderNumber}", to: "admin" },
+    ],
+  },
+  {
+    name: "Отменённый заказ → Telegram",
+    description: "Уведомление в Telegram при отмене",
+    trigger: "order_status_changed",
+    category: "robot",
+    conditions: { field: "status", operator: "eq", value: "CANCELLED" },
+    actions: [{ type: "send_telegram", message: "Заказ #{orderNumber} отменён" }],
+  },
+];
+
+export async function GET(req: NextRequest) {
+  const session = await auth();
+  if (!session || !STAFF_ROLES.includes(session.user.role as string)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
 
   try {
-    const where: any = {};
-    if (category) where.category = category;
+    const { searchParams } = new URL(req.url);
+    const withStats = searchParams.get("stats") === "true";
 
-    const workflows = await prisma.workflow.findMany({
-      where,
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
-      include: includeStats
-        ? {
-            logs: {
-              take: 5,
-              orderBy: { createdAt: "desc" },
-              select: { id: true, result: true, createdAt: true, error: true },
-            },
-            _count: { select: { logs: true } },
-          }
-        : undefined,
-    });
-
-    // Общая статистика
-    const [totalLogs, errorLogs] = await Promise.all([
-      prisma.workflowLog.count({
-        where: { createdAt: { gte: new Date(Date.now() - 86400000) } },
-      }),
-      prisma.workflowLog.count({
-        where: {
-          createdAt: { gte: new Date(Date.now() - 86400000) },
-          result: "error",
-        },
-      }),
-    ]);
-
-    return NextResponse.json({
-      workflows,
-      stats: {
-        total: workflows.length,
-        active: workflows.filter((w) => w.active).length,
-        logsToday: totalLogs,
-        errorsToday: errorLogs,
+    const workflows = await (prisma as any).workflow.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        logs: { take: 5, orderBy: { createdAt: "desc" } },
+        _count: { select: { logs: true } },
       },
-      presets: LUMBER_PRESET_WORKFLOWS,
     });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+
+    if (withStats) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const [logsToday, errorsToday] = await Promise.all([
+        (prisma as any).workflowLog.count({ where: { createdAt: { gte: today } } }),
+        (prisma as any).workflowLog.count({ where: { createdAt: { gte: today }, result: "error" } }),
+      ]);
+      return NextResponse.json({
+        workflows,
+        stats: {
+          total: workflows.length,
+          active: workflows.filter((w: any) => w.active).length,
+          logsToday,
+          errorsToday,
+        },
+      });
+    }
+    return NextResponse.json({ workflows });
+  } catch (err: any) {
+    if (err.code === "P2021" || err.message?.includes("does not exist")) {
+      return NextResponse.json({ workflows: [], stats: { total: 0, active: 0, logsToday: 0, errorsToday: 0 } });
+    }
+    console.error("Workflows GET error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
 
-export async function POST(req: Request) {
-  const authError = await requireManager();
-  if (authError) return authError;
+export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session || !STAFF_ROLES.includes(session.user.role as string)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
 
-    // Применить пресет (массив workflow)
+    // Apply presets
     if (body.applyPreset) {
-      const presets = LUMBER_PRESET_WORKFLOWS;
       const created = [];
-      for (const preset of presets) {
-        // Проверяем дубликат по имени
-        const existing = await prisma.workflow.findFirst({ where: { name: preset.name } });
-        if (existing) continue;
-
-        const wf = await prisma.workflow.create({
-          data: {
-            name: preset.name,
-            description: preset.description,
-            trigger: preset.trigger,
-            category: preset.category,
-            conditions: preset.conditions,
-            actions: preset.actions,
-            active: true,
-          },
-        });
-        created.push(wf);
+      for (const preset of DEFAULT_PRESETS) {
+        const existing = await (prisma as any).workflow.findFirst({ where: { name: preset.name } });
+        if (!existing) {
+          const wf = await (prisma as any).workflow.create({ data: { ...preset, active: true } });
+          created.push(wf);
+        }
       }
       return NextResponse.json({ ok: true, created: created.length });
     }
 
-    // Создать один workflow
-    const { name, description, trigger, conditions, actions, category, delayMinutes, nicheTag } = body;
-
+    // Create new workflow
+    const { name, description, trigger, category, actions, conditions } = body;
     if (!name || !trigger) {
-      return NextResponse.json({ error: "Название и триггер обязательны" }, { status: 400 });
+      return NextResponse.json({ error: "Name and trigger required" }, { status: 400 });
     }
 
-    const wf = await prisma.workflow.create({
+    const workflow = await (prisma as any).workflow.create({
       data: {
         name,
         description: description || null,
         trigger,
-        conditions: conditions || {},
-        actions: actions || [],
         category: category || "robot",
-        delayMinutes: delayMinutes || null,
-        nicheTag: nicheTag || null,
+        actions: actions || [],
+        conditions: conditions || {},
+        active: true,
       },
     });
 
-    return NextResponse.json({ ok: true, workflow: wf });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json({ ok: true, workflow });
+  } catch (err) {
+    console.error("Workflows POST error:", err);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
