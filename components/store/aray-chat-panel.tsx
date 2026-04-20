@@ -89,8 +89,7 @@ function ChatBubble({ message }: { message: Message }) {
     >
       {/* Aray avatar */}
       {!isUser && (
-        <div className="w-8 h-8 rounded-full shrink-0 mr-2 mt-1 overflow-hidden"
-          style={{ border: "1.5px solid rgba(96,165,250,0.3)" }}>
+        <div className="w-8 h-8 rounded-full shrink-0 mr-2 mt-1 overflow-hidden border-[1.5px] border-primary/30">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/aray/face-mob.png" alt="ARAY" width={32} height={32}
             className="w-full h-full object-cover rounded-full"
