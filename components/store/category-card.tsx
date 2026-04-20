@@ -3,16 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { TreePine, Trees, Leaf, Layers, SquareStack, Package } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const CATEGORY_STYLES: Record<string, { gradient: string; emoji: string }> = {
-  "sosna-el":     { gradient: "from-amber-800 via-amber-700 to-yellow-600",  emoji: "🌲" },
-  "listvennitsa": { gradient: "from-red-900 via-rose-800 to-amber-700",       emoji: "🍂" },
-  "kedr":         { gradient: "from-amber-900 via-amber-800 to-yellow-700",   emoji: "🌿" },
-  "fanera":       { gradient: "from-stone-700 via-stone-600 to-amber-600",    emoji: "🪵" },
-  "dsp-mdf-osb":  { gradient: "from-slate-700 via-slate-600 to-zinc-500",    emoji: "📋" },
-  "lipa-osina":   { gradient: "from-lime-800 via-emerald-700 to-green-600",   emoji: "🌳" },
+const CATEGORY_STYLES: Record<string, { gradient: string; Icon: LucideIcon }> = {
+  "sosna-el":     { gradient: "from-amber-800 via-amber-700 to-yellow-600",  Icon: TreePine },
+  "listvennitsa": { gradient: "from-red-900 via-rose-800 to-amber-700",       Icon: Trees },
+  "kedr":         { gradient: "from-amber-900 via-amber-800 to-yellow-700",   Icon: TreePine },
+  "fanera":       { gradient: "from-stone-700 via-stone-600 to-amber-600",    Icon: Layers },
+  "dsp-mdf-osb":  { gradient: "from-slate-700 via-slate-600 to-zinc-500",    Icon: SquareStack },
+  "lipa-osina":   { gradient: "from-lime-800 via-emerald-700 to-green-600",   Icon: Leaf },
 };
-const DEFAULT_STYLE = { gradient: "from-amber-900 via-amber-800 to-brand-brown", emoji: "🪵" };
+const DEFAULT_STYLE = { gradient: "from-amber-900 via-amber-800 to-brand-brown", Icon: Package };
 
 interface CategoryCardProps {
   slug: string;
@@ -49,8 +51,8 @@ export function CategoryCard({ slug, name, image, productCount, className }: Cat
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/8" />
           <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-black/20" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-white/5" />
-          <div className="absolute inset-0 flex items-center justify-center text-5xl sm:text-6xl opacity-20 select-none">
-            {style.emoji}
+          <div className="absolute inset-0 flex items-center justify-center opacity-25 select-none">
+            <style.Icon className="w-16 h-16 sm:w-20 sm:h-20 text-white" strokeWidth={1.5} />
           </div>
         </div>
       )}

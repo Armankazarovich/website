@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Phone } from "lucide-react";
+import { Phone, Check } from "lucide-react";
 import { PHONE_LINK } from "@/lib/phone-constants";
 
 export function ContactForm() {
@@ -43,7 +43,7 @@ export function ContactForm() {
       {done ? (
         <div className="text-center py-10">
           <div className="w-16 h-16 rounded-full bg-brand-green/10 flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">✅</span>
+            <Check className="w-8 h-8 text-brand-green" strokeWidth={2.5} />
           </div>
           <h3 className="font-display font-semibold text-lg mb-2">Заявка отправлена!</h3>
           <p className="text-muted-foreground text-sm">

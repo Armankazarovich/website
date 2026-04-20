@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { CheckCircle, Loader2, User, Building2 } from "lucide-react";
+import { CheckCircle, Loader2, User, Building2, Bell, Info } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useSession, signIn } from "next-auth/react";
 
@@ -270,7 +270,7 @@ export default function CheckoutPage() {
       // Build comment with company info + preferred contact
       let comment = data.comment || "";
       if (data.contactMethod) {
-        const labels: Record<string, string> = { phone: "📞 Телефон", whatsapp: "💬 WhatsApp", telegram: "✈️ Telegram", sms: "📱 SMS" };
+        const labels: Record<string, string> = { phone: "Телефон", whatsapp: "WhatsApp", telegram: "Telegram", sms: "SMS" };
         const contactLine = `Способ связи: ${labels[data.contactMethod]}${data.contactExtra ? ` — ${data.contactExtra}` : ""}`;
         comment = comment ? `${contactLine}\n${comment}` : contactLine;
       }
@@ -346,12 +346,15 @@ export default function CheckoutPage() {
         {pushState !== "unsupported" && pushState !== "done" && (
           <div className={`rounded-2xl p-4 mb-4 border ${pushState === "denied" ? "bg-muted/30 border-border" : "bg-primary/5 border-primary/20"}`}>
             {pushState === "denied" ? (
-              <p className="text-xs text-muted-foreground text-center">
-                💡 Разрешите уведомления в настройках браузера — и мы пришлём статус заказа
+              <p className="text-xs text-muted-foreground text-center inline-flex items-center justify-center gap-2">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>Разрешите уведомления в настройках браузера — и мы пришлём статус заказа</span>
               </p>
             ) : (
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">🔔</div>
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Bell className="w-5 h-5 text-primary" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm">Следите за заказом</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Пришлём уведомление когда заказ будет готов</p>

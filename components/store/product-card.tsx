@@ -128,7 +128,7 @@ export function ProductCard({
       sessionStorage.setItem(PUSH_TOAST_KEY, "1");
       setTimeout(() => {
         toast({
-          title: "Товар добавлен в корзину 🛒",
+          title: "Товар добавлен в корзину",
           description: "Включить уведомления об изменении цен и акциях?",
           duration: 8000,
           action: (

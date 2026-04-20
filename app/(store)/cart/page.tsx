@@ -305,7 +305,9 @@ export default function CartPage() {
                 {item.productImage ? (
                   <CartItemImage src={item.productImage} alt={item.productName} />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-2xl">🪵</div>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-8 h-8 text-muted-foreground/30" />
+                  </div>
                 )}
               </div>
 

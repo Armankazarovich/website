@@ -10,9 +10,10 @@ import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
-import { Calculator, ArrowRight, Phone } from "lucide-react";
+import { Calculator, ArrowRight, Phone, SearchX } from "lucide-react";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
+import { getPublicProductsFilter } from "@/lib/product-seo";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   if (searchParams.category) {
@@ -61,7 +62,7 @@ export default async function CatalogPage({
   const currentMinPrice = searchParams.minprice ? Number(searchParams.minprice) : null;
   const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
 
-  // Build variant sub-filter
+  // Build variant sub-filter (user-driven: size, instock, price)
   const variantWhere: Record<string, unknown> = {};
   if (currentSize) variantWhere.size = { contains: currentSize };
   if (currentInStock) variantWhere.inStock = true;
@@ -72,7 +73,17 @@ export default async function CatalogPage({
     };
   }
 
-  // Build where clause (always filter hidden categories)
+  // Public safety filter — не показываем в каталоге товары без фото/цены/остатка.
+  // Админ видит всё в /admin/products с индикаторами, публика — только готовое.
+  const publicFilter = getPublicProductsFilter();
+  const publicVariantSome = (publicFilter.variants as any)?.some ?? {};
+
+  // Комбинируем публичный variant-фильтр с пользовательским через AND
+  const combinedVariantSome = Object.keys(variantWhere).length > 0
+    ? { AND: [publicVariantSome, variantWhere] }
+    : publicVariantSome;
+
+  // Build where clause (always filter hidden categories + public safety)
   const categoryFilter = searchParams.category
     ? { slug: searchParams.category, showInMenu: true }
     : { showInMenu: true };
@@ -82,7 +93,7 @@ export default async function CatalogPage({
   let typeProductIds: string[] | null = null;
   if (currentType) {
     const allProds = await prisma.product.findMany({
-      where: { active: true, category: categoryFilter },
+      where: { active: true, category: categoryFilter, images: { isEmpty: false } },
       select: { id: true, name: true },
     });
     const groupKeywords = getTypeGroupKeywords(currentType);
@@ -98,23 +109,29 @@ export default async function CatalogPage({
 
   const where = {
     active: true,
+    images: { isEmpty: false },
     category: categoryFilter,
     ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
-    ...(Object.keys(variantWhere).length > 0 ? { variants: { some: variantWhere } } : {}),
+    variants: { some: combinedVariantSome },
   };
 
   // Базовый where без фильтра по типу — для подсчёта доступных типов
-  // Но учитывает выбранный размер и "в наличии", чтобы скрыть пустые типы
+  // Учитывает выбранный размер и "в наличии", и public safety (без фото/цены — не считаем)
   const sizeVariantFilter: Record<string, unknown> = {};
   if (currentSize) sizeVariantFilter.size = { contains: currentSize };
   if (currentInStock) sizeVariantFilter.inStock = true;
 
+  const combinedTypesVariantSome = Object.keys(sizeVariantFilter).length > 0
+    ? { AND: [publicVariantSome, sizeVariantFilter] }
+    : publicVariantSome;
+
   const whereForTypes = {
     active: true,
+    images: { isEmpty: false },
     category: searchParams.category
       ? { slug: searchParams.category, showInMenu: true }
       : { showInMenu: true },
-    ...(Object.keys(sizeVariantFilter).length > 0 ? { variants: { some: sizeVariantFilter } } : {}),
+    variants: { some: combinedTypesVariantSome },
   };
 
   const settings = await getSiteSettings();
@@ -144,10 +161,15 @@ export default async function CatalogPage({
         where: {
           product: {
             active: true,
+            images: { isEmpty: false },
             category: categoryFilter,
             ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
           },
-          ...(currentInStock ? { inStock: true } : {}),
+          inStock: true,
+          OR: [
+            { pricePerCube: { not: null, gt: 0 } },
+            { pricePerPiece: { not: null, gt: 0 } },
+          ],
         },
         select: { size: true },
         distinct: ["size"],
@@ -464,7 +486,7 @@ export default async function CatalogPage({
           {/* Products grid */}
           {products.length === 0 ? (
             <div className="text-center py-20 text-muted-foreground">
-              <div className="text-5xl mb-4">🪵</div>
+              <SearchX className="w-16 h-16 mx-auto mb-4 opacity-40" strokeWidth={1.5} />
               <p className="text-lg font-medium">Товары не найдены</p>
               <p className="text-sm mt-2 max-w-md mx-auto">
                 {searchParams.search

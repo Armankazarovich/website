@@ -13,6 +13,7 @@ import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react
 import { ProductGallery } from "@/components/store/product-gallery";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { getPublicProductsFilter } from "@/lib/product-seo";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${product.name} ${minPrice} — купить в Химках с доставкой`,
-    description: `${product.name} от производителя ООО ПИТИ в Химках. ${minPrice}. Доставка по Москве и МО за 1-3 дня. Гарантия качества, ГОСТ. ☎ ${DEFAULT_SETTINGS.phone}`,
+    description: `${product.name} от производителя ООО ПИТИ в Химках. ${minPrice}. Доставка по Москве и МО за 1-3 дня. Гарантия качества, ГОСТ. Тел: ${DEFAULT_SETTINGS.phone}`,
     keywords: `${product.name}, купить ${product.name}, ${product.name} цена, ${product.name} Москва, ${product.name} Химки, пиломатериалы от производителя`,
     openGraph: {
       title: `${product.name} — ПилоРус`,
@@ -64,10 +65,10 @@ export default async function ProductPage({ params }: Props) {
 
   if (!product) notFound();
 
-  // Related products
+  // Related products — только публичные (с фото, ценой, в наличии)
   const related = await prisma.product.findMany({
     where: {
-      active: true,
+      ...getPublicProductsFilter(),
       categoryId: product.categoryId,
       NOT: { id: product.id },
     },
