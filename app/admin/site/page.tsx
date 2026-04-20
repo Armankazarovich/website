@@ -175,8 +175,8 @@ export default function AdminSitePage() {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Телефон 1 (отображаемый)" settingKey="phone" placeholder="8-985-970-71-33" />
             <Field label="Телефон 1 (для tel: ссылки)" settingKey="phone_link" placeholder="+79859707133" />
-            <Field label="Телефон 2 (отображаемый)" settingKey="phone2" placeholder="8-999-662-26-02" />
-            <Field label="Телефон 2 (для tel: ссылки)" settingKey="phone2_link" placeholder="+79996622602" />
+            <Field label="Телефон 2 (отображаемый)" settingKey="phone2" placeholder="пусто или новый номер" />
+            <Field label="Телефон 2 (для tel: ссылки)" settingKey="phone2_link" placeholder="+7XXXXXXXXXX" />
             <Field label="Телефон 3 (отображаемый)" settingKey="phone3" placeholder="8-977-606-80-20" />
             <Field label="Телефон 3 (для tel: ссылки)" settingKey="phone3_link" placeholder="+79776068020" />
             <Field label="Email" settingKey="email" placeholder="info@pilo-rus.ru" type="email" />
@@ -188,6 +188,10 @@ export default function AdminSitePage() {
           <div className="grid grid-cols-2 gap-4">
             <Field label="Адрес (текст)" settingKey="address" placeholder="Химки, ул. Заводская 2А, стр.28" />
             <Field label="Ссылка на Яндекс.Карты" settingKey="address_map" placeholder="https://yandex.ru/maps/..." />
+            <Field label="Город компании (для SEO)" settingKey="company_city" placeholder="Химки"
+              hint="Используется в автоописаниях товаров: «от производителя в Химках»" />
+            <Field label="Регион доставки (для SEO)" settingKey="delivery_region" placeholder="Москва и Московская область"
+              hint="Используется в автоописаниях: «Доставка по Москве и МО»" />
           </div>
 
           <Divider />

@@ -36,10 +36,9 @@ export interface HeaderCategory {
   _count?: { products: number };
 }
 
-// v2 - 3 phones
+// v3 - 2 phones (phone2 removed 20.04.2026 per client request)
 const DEFAULT_PHONES: PhoneItem[] = [
   { display: "8-985-970-71-33", tel: "+79859707133" },
-  { display: "8-999-662-26-02", tel: "+79996622602" },
   { display: "8-977-606-80-20", tel: "+79776068020" },
 ];
 

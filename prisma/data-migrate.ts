@@ -30,17 +30,21 @@ async function main() {
   }
 
   // 2. Дополнительные телефоны (если нет)
-  const phone2 = await prisma.siteSettings.findUnique({ where: { key: "phone2" } });
-  if (!phone2) {
-    await upsertSetting("phone2", "8-999-662-26-02");
-    await upsertSetting("phone2_link", "+79996622602");
-    console.log("[data-migrate] ✓ phone2 добавлен");
-  }
+  // 20.04.2026: phone2 (8-999-662-26-02) удалён по просьбе клиента.
+  // Слот сохранён в БД и админке — клиент может заполнить новым номером.
   const phone3 = await prisma.siteSettings.findUnique({ where: { key: "phone3" } });
   if (!phone3) {
     await upsertSetting("phone3", "8-977-606-80-20");
     await upsertSetting("phone3_link", "+79776068020");
     console.log("[data-migrate] ✓ phone3 добавлен");
+  }
+
+  // 20.04.2026: одноразовая очистка старого phone2 (идемпотентно — проверяем точное значение)
+  const currentPhone2 = await prisma.siteSettings.findUnique({ where: { key: "phone2" } });
+  if (currentPhone2 && currentPhone2.value === "8-999-662-26-02") {
+    await upsertSetting("phone2", "");
+    await upsertSetting("phone2_link", "");
+    console.log("[data-migrate] ✓ phone2 (8-999-662-26-02) очищен по запросу клиента");
   }
 
   // 3. Категории — найти по slug

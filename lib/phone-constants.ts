@@ -7,7 +7,7 @@
  */
 export const PHONE_LINK = "+79859707133";
 export const PHONE_DISPLAY = "8-985-970-71-33";
-export const PHONE2_LINK = "+79996622602";
-export const PHONE2_DISPLAY = "8-999-662-26-02";
+// PHONE2 removed per client request (19.04.2026 → 20.04.2026)
+// Slot in DB/admin preserved — client can add new number later without code changes
 export const PHONE3_LINK = "+79776068020";
 export const PHONE3_DISPLAY = "8-977-606-80-20";

@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSiteSettings } from "@/lib/site-settings";
+import { generateProductDescription } from "@/lib/product-seo";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 
@@ -27,13 +29,73 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const body = await req.json();
   const { name, slug, description, categoryId, images, saleUnit, active, featured, variants } = body;
 
+  // Авто-описание: если менеджер явно очистил / оставил слишком короткое описание —
+  // подставляем шаблон из полей товара (город, размеры, цена, доставка из settings)
+  let finalDescription = description;
+  const descProvided = description !== undefined;
+  const descTooShort = descProvided && (!description || String(description).trim().length < 40);
+  if (descTooShort) {
+    try {
+      const [current, settings] = await Promise.all([
+        prisma.product.findUnique({
+          where: { id: params.id },
+          include: {
+            category: { select: { name: true } },
+            variants: {
+              select: {
+                size: true,
+                pricePerCube: true,
+                pricePerPiece: true,
+                inStock: true,
+              },
+            },
+          },
+        }),
+        getSiteSettings(),
+      ]);
+      if (current) {
+        const effectiveCategory = categoryId
+          ? await prisma.category.findUnique({
+              where: { id: categoryId },
+              select: { name: true },
+            })
+          : current.category;
+        const effectiveVariants = Array.isArray(variants) && variants.length > 0
+          ? variants.map((v: any) => ({
+              size: v.size,
+              pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+              pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+              inStock: v.inStock ?? true,
+            }))
+          : current.variants.map((v) => ({
+              size: v.size,
+              pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+              pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+              inStock: v.inStock,
+            }));
+        finalDescription = generateProductDescription(
+          {
+            name: name !== undefined ? name : current.name,
+            description: null,
+            category: effectiveCategory ? { name: effectiveCategory.name } : null,
+            variants: effectiveVariants,
+          },
+          settings
+        );
+      }
+    } catch (err) {
+      console.warn(`[products:patch] auto-description failed for ${params.id}`, err);
+      finalDescription = description;
+    }
+  }
+
   // Update product
   await prisma.product.update({
     where: { id: params.id },
     data: {
       ...(name !== undefined && { name }),
       ...(slug !== undefined && { slug }),
-      ...(description !== undefined && { description }),
+      ...(descProvided && { description: finalDescription }),
       ...(categoryId !== undefined && { categoryId }),
       ...(images !== undefined && { images }),
       ...(saleUnit !== undefined && { saleUnit }),

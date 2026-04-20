@@ -8,8 +8,9 @@ import {
   Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
-  ImageOff, Stamp,
+  ImageOff, Stamp, AlertTriangle, Sparkles, Loader2,
 } from "lucide-react";
+import { checkProductReadiness, readinessIssueLabel, type ProductReadinessIssue } from "@/lib/product-seo";
 
 type Product = {
   id: string;
@@ -19,7 +20,12 @@ type Product = {
   active: boolean;
   featured: boolean;
   images: string[];
-  variants: { pricePerCube: unknown; pricePerPiece: unknown }[];
+  description?: string | null;
+  variants: {
+    pricePerCube: number | string | null;
+    pricePerPiece: number | string | null;
+    inStock?: boolean;
+  }[];
   category: { name: string };
 };
 
@@ -44,9 +50,11 @@ export function ProductsClient({
   const urlActive = searchParams.get("active");     // "1" | "0" | null
   const urlNophoto = searchParams.get("nophoto");   // "1" | null
   const urlFeatured = searchParams.get("featured"); // "1" | null
+  const urlHidden = searchParams.get("hidden");     // "1" | null — скрыто от публики
 
   // Локальный toggle "Без фото" (по кнопке или из URL)
   const noPhotoOnly = urlNophoto === "1";
+  const hiddenOnly = urlHidden === "1";
   const [drawer, setDrawer] = useState<Product | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
 
@@ -63,6 +71,9 @@ export function ProductsClient({
   const [dCat, setDCat] = useState("");
   const [dActive, setDActive] = useState(true);
   const [dFeatured, setDFeatured] = useState(false);
+  const [dDesc, setDDesc] = useState("");
+  const [improving, setImproving] = useState(false);
+  const [improveError, setImproveError] = useState<string | null>(null);
 
   const minPrice = (p: Product) => {
     const min = p.variants.reduce((m, v) => {
@@ -91,7 +102,8 @@ export function ProductsClient({
       const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
       const matchNophoto = !noPhotoOnly || p.images.length === 0;
       const matchFeatured = !urlFeatured || p.featured;
-      return matchCat && matchS && matchActive && matchNophoto && matchFeatured;
+      const matchHidden = !hiddenOnly || !checkProductReadiness(p).ready;
+      return matchCat && matchS && matchActive && matchNophoto && matchFeatured && matchHidden;
     });
     return list.sort((a, b) => {
       if (sortBy === "name_az") return a.name.localeCompare(b.name, "ru");
@@ -102,7 +114,13 @@ export function ProductsClient({
       if (sortBy === "price_desc") return (minPrice(b) ?? 0) - (minPrice(a) ?? 0);
       return 0; // newest — сервер уже вернул в нужном порядке
     });
-  }, [products, search, catFilter, noPhotoOnly, urlActive, urlFeatured, sortBy]);
+  }, [products, search, catFilter, noPhotoOnly, hiddenOnly, urlActive, urlFeatured, sortBy]);
+
+  /* счётчик скрытых от публики товаров (для бейджа) */
+  const hiddenFromPublicCount = useMemo(
+    () => products.filter((p) => !checkProductReadiness(p).ready).length,
+    [products]
+  );
 
   /* ── selection helpers ── */
   const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id));
@@ -210,6 +228,8 @@ export function ProductsClient({
     e.preventDefault(); e.stopPropagation();
     setDName(p.name); setDCat(p.categoryId);
     setDActive(p.active); setDFeatured(p.featured);
+    setDDesc(p.description ?? "");
+    setImproveError(null);
     setDrawer(p);
   };
 
@@ -217,11 +237,48 @@ export function ProductsClient({
     if (!drawer) return;
     const cat = categories.find(c => c.id === dCat);
     setProducts(ps => ps.map(x => x.id === drawer.id
-      ? { ...x, name: dName, categoryId: dCat, active: dActive, featured: dFeatured, category: cat ? { name: cat.name } : x.category }
+      ? {
+          ...x,
+          name: dName,
+          categoryId: dCat,
+          active: dActive,
+          featured: dFeatured,
+          description: dDesc,
+          category: cat ? { name: cat.name } : x.category,
+        }
       : x
     ));
     setDrawer(null);
-    await patch(drawer.id, { name: dName, categoryId: dCat, active: dActive, featured: dFeatured });
+    await patch(drawer.id, {
+      name: dName,
+      categoryId: dCat,
+      active: dActive,
+      featured: dFeatured,
+      description: dDesc,
+    });
+  };
+
+  /* ── ARAY: улучшить описание ── */
+  const improveDescription = async () => {
+    if (!drawer) return;
+    setImproving(true);
+    setImproveError(null);
+    try {
+      const res = await fetch(`/api/admin/products/${drawer.id}/improve-seo`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Не удалось получить ответ от ARAY");
+      }
+      if (data?.description) {
+        setDDesc(data.description);
+      }
+    } catch (err) {
+      setImproveError(err instanceof Error ? err.message : "Ошибка связи с ARAY");
+    } finally {
+      setImproving(false);
+    }
   };
 
   /* ── status badge ── */
@@ -240,6 +297,68 @@ export function ProductsClient({
       {p.active ? "Активен" : "Скрыт"}
     </button>
   );
+
+  /* ── Readiness индикатор публикации ── */
+  const ReadinessBadge = ({ p, compact = false }: { p: Product; compact?: boolean }) => {
+    const r = checkProductReadiness(p);
+    if (r.ready && r.warnings.length === 0) {
+      // Всё ок
+      if (compact) {
+        return (
+          <span
+            title="Показывается клиентам"
+            className="inline-flex items-center justify-center w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+            aria-label="Публикация: всё хорошо"
+          />
+        );
+      }
+      return (
+        <span
+          title="Показывается клиентам"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          На витрине
+        </span>
+      );
+    }
+
+    const allIssues: ProductReadinessIssue[] = [...r.blockers, ...r.warnings];
+    const titleText = r.ready
+      ? `Показывается, но есть замечания:\n• ${r.warnings.map(readinessIssueLabel).join("\n• ")}`
+      : `СКРЫТО от клиентов.\nПричины:\n• ${r.blockers.map(readinessIssueLabel).join("\n• ")}${r.warnings.length ? "\nТакже:\n• " + r.warnings.map(readinessIssueLabel).join("\n• ") : ""}`;
+
+    if (compact) {
+      return (
+        <span
+          title={titleText}
+          className={`inline-flex items-center justify-center w-2 h-2 rounded-full ${
+            r.ready
+              ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]"
+              : "bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]"
+          }`}
+          aria-label={r.ready ? "Публикация: есть замечания" : "Публикация: скрыто от клиентов"}
+        />
+      );
+    }
+
+    return (
+      <span
+        title={titleText}
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
+          r.ready
+            ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+            : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
+        }`}
+      >
+        <AlertTriangle className="w-3 h-3 shrink-0" />
+        {r.ready ? "Замечания" : "Скрыто"}
+        {allIssues.length > 1 && (
+          <span className="ml-0.5 text-[10px] opacity-70">({allIssues.length})</span>
+        )}
+      </span>
+    );
+  };
 
   return (
     <>
@@ -262,10 +381,22 @@ export function ProductsClient({
             if (noPhotoOnly) { params.delete("nophoto"); } else { params.set("nophoto", "1"); }
             router.push(`${pathname}?${params.toString()}`);
           }}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700" : "border-border text-muted-foreground hover:bg-primary/[0.08]"}`}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
         >
           <ImageOff className="w-4 h-4" />
           Без фото {noPhotoOnly && `(${products.filter(p => p.images.length === 0).length})`}
+        </button>
+        <button
+          onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (hiddenOnly) { params.delete("hidden"); } else { params.set("hidden", "1"); }
+            router.push(`${pathname}?${params.toString()}`);
+          }}
+          title="Товары, которые не показываются клиентам (нет фото, цены или всё не в наличии)"
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${hiddenOnly ? "border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
+        >
+          <AlertTriangle className="w-4 h-4" />
+          Скрытые от клиентов {hiddenFromPublicCount > 0 && `(${hiddenFromPublicCount})`}
         </button>
         <div className="relative">
           <select
@@ -413,7 +544,10 @@ export function ProductsClient({
                     <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{p.variants.length}</span>
                     {minPrice(p) !== null && <span className="font-medium text-foreground">{formatPrice(minPrice(p)!)}</span>}
                   </div>
-                  <StatusBadge p={p} />
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <ReadinessBadge p={p} />
+                    <StatusBadge p={p} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -442,13 +576,14 @@ export function ProductsClient({
                 <th className="text-center px-4 py-3 font-semibold">Вариантов</th>
                 <th className="text-right px-4 py-3 font-semibold">Цена от</th>
                 <th className="text-center px-4 py-3 font-semibold">Статус</th>
+                <th className="text-center px-4 py-3 font-semibold">Публикация</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-muted-foreground">
+                  <td colSpan={9} className="text-center py-12 text-muted-foreground">
                     {products.length === 0
                       ? <Link href="/admin/products/new" className="text-primary hover:underline">Добавить первый товар</Link>
                       : "Ничего не найдено"}
@@ -489,6 +624,7 @@ export function ProductsClient({
                     {minPrice(p) !== null ? formatPrice(minPrice(p)!) : "—"}
                   </td>
                   <td className="px-4 py-3 text-center"><StatusBadge p={p} /></td>
+                  <td className="px-4 py-3 text-center"><ReadinessBadge p={p} /></td>
                   <td className="px-4 py-3 text-right">
                     <button
                       onClick={(e) => openDrawer(p, e)}
@@ -562,6 +698,72 @@ export function ProductsClient({
                   </button>
                 </div>
               </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Описание
+                  </label>
+                  <button
+                    type="button"
+                    onClick={improveDescription}
+                    disabled={improving}
+                    title="ARAY перепишет описание под SEO и живой язык"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/15 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                  >
+                    {improving ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
+                    {improving ? "ARAY думает…" : "Улучшить"}
+                  </button>
+                </div>
+                <textarea
+                  value={dDesc}
+                  onChange={(e) => setDDesc(e.target.value)}
+                  rows={5}
+                  placeholder="Пусто — будет авто-описание из полей товара"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none min-h-[120px]"
+                />
+                {improveError && (
+                  <p className="mt-1.5 text-[11px] text-rose-600 dark:text-rose-400">
+                    {improveError}
+                  </p>
+                )}
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  Если оставить пустым — при сохранении сгенерируется шаблонное описание (город, размеры, цена, доставка).
+                </p>
+              </div>
+
+              {/* Публикация — статус видимости клиентам */}
+              {(() => {
+                const r = checkProductReadiness({
+                  ...drawer,
+                  description: dDesc,
+                  active: dActive,
+                });
+                if (r.ready && r.warnings.length === 0) return null;
+                return (
+                  <div
+                    className={`p-3 rounded-xl border text-xs space-y-1.5 ${
+                      r.ready
+                        ? "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300"
+                        : "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300"
+                    }`}
+                  >
+                    <p className="font-semibold flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      {r.ready ? "Замечания" : "Товар скрыт от клиентов"}
+                    </p>
+                    <ul className="pl-5 list-disc space-y-0.5">
+                      {[...r.blockers, ...r.warnings].map((i) => (
+                        <li key={i}>{readinessIssueLabel(i)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()}
+
               <div className="p-3 rounded-xl bg-muted/50 text-xs text-muted-foreground space-y-1">
                 <p>Вариантов: <span className="font-medium text-foreground">{drawer.variants.length}</span></p>
                 <p>Slug: <span className="font-mono text-foreground">{drawer.slug}</span></p>
