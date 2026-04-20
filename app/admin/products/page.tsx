@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Plus, FileCheck } from "lucide-react";
+import { Plus, FileCheck, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductsClient } from "./products-client";
 
@@ -21,7 +21,13 @@ export default async function AdminProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="font-display font-bold text-2xl">Товары</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button asChild variant="outline">
+            <Link href="/admin/products/audit">
+              <Stethoscope className="w-4 h-4 mr-2" />
+              Аудит каталога
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href="/admin/products/import-prices">
               <FileCheck className="w-4 h-4 mr-2" />
