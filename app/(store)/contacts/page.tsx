@@ -21,6 +21,7 @@ export default async function ContactsPage() {
   const settings = await getSiteSettings();
   const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
   const phones = getPhones(settings);
+  const firstPhoneLink = phones[0]?.tel || getSetting(settings, "phone_link");
   const email = getSetting(settings, "email");
   const address = getSetting(settings, "address");
   const inn = getSetting(settings, "inn");
@@ -102,7 +103,7 @@ export default async function ContactsPage() {
         </div>
 
         {/* Quick request form */}
-        <ContactForm />
+        <ContactForm phoneLink={firstPhoneLink} />
       </div>
     </div>
   );

@@ -23,7 +23,7 @@ export default async function CabinetDashboard() {
   if (!session?.user?.id) redirect("/login");
 
   const settings = await getSiteSettings();
-  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
+  const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
 
   const [orders, user] = await Promise.all([
     prisma.order.findMany({

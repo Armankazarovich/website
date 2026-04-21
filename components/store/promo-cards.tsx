@@ -14,6 +14,7 @@ type Promotion = {
 
 interface Props {
   promotions: Promotion[];
+  phoneLink?: string;
 }
 
 /* Темы карточек (по индексу) — первая зелёная "Выгода", вторая синяя "Доставка" */
@@ -59,7 +60,7 @@ const THEMES = [
   },
 ];
 
-export function PromoCards({ promotions }: Props) {
+export function PromoCards({ promotions, phoneLink }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
 
   return (
@@ -126,7 +127,7 @@ export function PromoCards({ promotions }: Props) {
       })}
 
       {/* Попап заявки — боковая панель */}
-      <PromoQuoteModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <PromoQuoteModal open={modalOpen} onClose={() => setModalOpen(false)} phoneLink={phoneLink} />
     </>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { getPublicProductsFilter } from "@/lib/product-seo";
 
 // Кэш 60 сек — быстрее чем force-dynamic, но данные актуальны
@@ -212,7 +212,7 @@ const faqSchema = {
       "name": "Где купить пиломатериалы в Москве и Московской области?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ПилоРус (ООО ПИТИ) — производитель пиломатериалов в г. Химки, Московская область. Адрес склада: ул. Заводская 2А, стр.28. Доставка по всей Москве и МО за 1-3 дня. Телефон: 8-985-970-71-33."
+        "text": "ПилоРус (ООО ПИТИ) — производитель пиломатериалов в г. Химки, Московская область. Адрес склада: ул. Заводская 2А, стр.28. Доставка по всей Москве и МО за 1-3 дня. Телефон: 8-985-067-08-88."
       }
     },
     {
@@ -253,8 +253,8 @@ const faqSchema = {
 export default async function HomePage() {
   const { categories, featuredProducts, promotions, reviews, settings } = await getData();
   const workingHours = getSetting(settings, "working_hours") || "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00";
-  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
-  const phoneDisplay = getSetting(settings, "phone") || "8-985-970-71-33";
+  const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
+  const phoneDisplay = getSetting(settings, "phone") || "8-985-067-08-88";
   const advantages = getAdvantages(workingHours);
   const TICKER_ITEMS = getTickerItems(workingHours);
 
@@ -533,7 +533,7 @@ export default async function HomePage() {
               title: p.title,
               description: p.description,
               validUntil: p.validUntil,
-            }))} />
+            }))} phoneLink={phoneLink} />
           </div>
         </div>
       </section>

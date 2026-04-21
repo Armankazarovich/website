@@ -103,7 +103,7 @@ const organizationSchema = {
   "logo": "https://pilo-rus.ru/logo.png",
   "description": "Производитель пиломатериалов в Химках. Доска обрезная, брус, вагонка, блок-хаус напрямую с завода. Доставка по Москве и Московской области за 1-3 дня.",
   "url": "https://pilo-rus.ru",
-  "telephone": ["+7-985-970-71-33", "+7-977-606-80-20"],
+  "telephone": ["+7-985-067-08-88", "+7-977-606-80-20"],
   "email": "info@pilo-rus.ru",
   "priceRange": "₽₽",
   "address": {

@@ -62,7 +62,7 @@ export default async function ServicesPage() {
     ? `https://t.me/${telegramUsername.replace("@", "")}?text=${encodeURIComponent(telegramMessage)}`
     : null;
 
-  const phone = getSetting(siteSettings, "phone_link") || "+79859707133";
+  const phone = getSetting(siteSettings, "phone_link") || "+79850670888";
 
   return (
     <div className="container py-10 md:py-14">

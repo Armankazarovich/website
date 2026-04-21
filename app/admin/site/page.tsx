@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Save, Check, Loader2, Phone, MapPin, Clock, Building2, Globe,
@@ -10,6 +10,10 @@ import {
 } from "lucide-react";
 
 type Settings = Record<string, string>;
+
+// ── Context shared with hoisted Field component ──────────────────────
+type SettingsCtxValue = { settings: Settings; set: (k: string, v: string) => void };
+const SettingsCtx = createContext<SettingsCtxValue | null>(null);
 
 /* ── Toggle switch ─────────────────────────────────────────────────── */
 function Toggle({ value, onChange, color = "bg-primary" }: {
@@ -63,6 +67,42 @@ function Card({ children, className = "" }: { children: React.ReactNode; classNa
 /* ── Divider ───────────────────────────────────────────────────────── */
 function Divider() { return <hr className="border-border" />; }
 
+/* ── Stable Field (defined OUTSIDE parent — prevents remount on every keystroke) ── */
+/* Reads value + setter from SettingsCtx so call sites stay clean: <Field settingKey="..." /> */
+function Field({
+  label, settingKey, placeholder, type = "text", rows, hint,
+}: {
+  label: string; settingKey: string; placeholder?: string; type?: string; rows?: number; hint?: string;
+}) {
+  const ctx = useContext(SettingsCtx);
+  if (!ctx) return null;
+  const { settings, set } = ctx;
+  const value = settings[settingKey] ?? "";
+  return (
+    <div>
+      {label && <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{label}</label>}
+      {rows ? (
+        <textarea
+          value={value}
+          onChange={(e) => set(settingKey, e.target.value)}
+          rows={rows}
+          placeholder={placeholder}
+          className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+        />
+      ) : (
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => set(settingKey, e.target.value)}
+          placeholder={placeholder}
+          className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      )}
+      {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+    </div>
+  );
+}
+
 export default function AdminSitePage() {
   const [settings, setSettings] = useState<Settings>({});
   const [loading, setLoading] = useState(true);
@@ -105,23 +145,6 @@ export default function AdminSitePage() {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const Field = ({ label, settingKey, placeholder, type = "text", rows, hint }: {
-    label: string; settingKey: string; placeholder?: string; type?: string; rows?: number; hint?: string;
-  }) => (
-    <div>
-      {label && <label className="block text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">{label}</label>}
-      {rows ? (
-        <textarea value={settings[settingKey] ?? ""} onChange={e => set(settingKey, e.target.value)}
-          rows={rows} placeholder={placeholder}
-          className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
-      ) : (
-        <input type={type} value={settings[settingKey] ?? ""} onChange={e => set(settingKey, e.target.value)}
-          placeholder={placeholder}
-          className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-      )}
-      {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
-    </div>
-  );
 
   const tabs: { id: typeof activeTab; label: string; icon: React.ElementType }[] = [
     { id: "contacts",  label: "Контакты",    icon: Phone },
@@ -140,6 +163,7 @@ export default function AdminSitePage() {
   );
 
   return (
+    <SettingsCtx.Provider value={{ settings, set }}>
     <div className="space-y-6 max-w-3xl">
       {/* Page header */}
       <div className="flex items-center justify-between">
@@ -173,8 +197,8 @@ export default function AdminSitePage() {
           <SectionHeader icon={Phone} title="Контактная информация" desc="Телефоны, адрес, часы — отображаются по всему сайту" />
 
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Телефон 1 (отображаемый)" settingKey="phone" placeholder="8-985-970-71-33" />
-            <Field label="Телефон 1 (для tel: ссылки)" settingKey="phone_link" placeholder="+79859707133" />
+            <Field label="Телефон 1 (отображаемый)" settingKey="phone" placeholder="8-985-067-08-88" />
+            <Field label="Телефон 1 (для tel: ссылки)" settingKey="phone_link" placeholder="+79850670888" />
             <Field label="Телефон 2 (отображаемый)" settingKey="phone2" placeholder="пусто или новый номер" />
             <Field label="Телефон 2 (для tel: ссылки)" settingKey="phone2_link" placeholder="+7XXXXXXXXXX" />
             <Field label="Телефон 3 (отображаемый)" settingKey="phone3" placeholder="8-977-606-80-20" />
@@ -543,8 +567,8 @@ export default function AdminSitePage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Номер телефона</label>
-                      <input value={settings["whatsapp_number"] ?? "+79859707133"} onChange={e => set("whatsapp_number", e.target.value)}
-                        placeholder="+79859707133"
+                      <input value={settings["whatsapp_number"] ?? "+79850670888"} onChange={e => set("whatsapp_number", e.target.value)}
+                        placeholder="+79850670888"
                         className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                       <p className="text-xs text-muted-foreground mt-1">Формат: +79XXXXXXXXX</p>
                     </div>
@@ -556,7 +580,7 @@ export default function AdminSitePage() {
                     </div>
                   </div>
                   <div className="p-2.5 bg-[#25D366]/5 border border-[#25D366]/20 rounded-xl text-xs text-muted-foreground">
-                    Ссылка: <span className="text-foreground font-mono">wa.me/{(settings["whatsapp_number"] ?? "+79859707133").replace(/\D/g, "")}</span>
+                    Ссылка: <span className="text-foreground font-mono">wa.me/{(settings["whatsapp_number"] ?? "+79850670888").replace(/\D/g, "")}</span>
                   </div>
                 </div>
               )}
@@ -662,7 +686,7 @@ export default function AdminSitePage() {
           </div>
 
           {[
-            { key: "social_whatsapp", label: "WhatsApp", placeholder: "+79859707133", color: "text-[#25D366]", Icon: () => (
+            { key: "social_whatsapp", label: "WhatsApp", placeholder: "+79850670888", color: "text-[#25D366]", Icon: () => (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             )},
             { key: "social_telegram", label: "Telegram", placeholder: "@piloruswood или https://t.me/...", color: "text-[#2AABEE]", Icon: () => (
@@ -733,5 +757,6 @@ export default function AdminSitePage() {
         </Button>
       </div>
     </div>
+    </SettingsCtx.Provider>
   );
 }

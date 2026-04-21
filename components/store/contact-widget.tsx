@@ -119,8 +119,8 @@ function ChannelBubble({
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
 export function ContactWidget({
-  phone = "8-985-970-71-33",
-  phoneLink = "+79859707133",
+  phone = "8-985-067-08-88",
+  phoneLink = "+79850670888",
   email,
   whatsapp,
   telegram,

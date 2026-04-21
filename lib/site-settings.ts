@@ -17,8 +17,8 @@ export async function getSiteSettings(): Promise<Record<string, string>> {
 
 // Default values
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  phone: "8-985-970-71-33",
-  phone_link: "+79859707133",
+  phone: "8-985-067-08-88",
+  phone_link: "+79850670888",
   phone2: "",
   phone2_link: "",
   phone3: "8-977-606-80-20",
@@ -39,16 +39,16 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   company_city: "Химки",
   social_vk: "",
   social_telegram: "",
-  social_whatsapp: "+79859707133",
+  social_whatsapp: "+79850670888",
   // Мессенджеры — кнопки заказа
   whatsapp_enabled: "true",
-  whatsapp_number: "+79859707133",
+  whatsapp_number: "+79850670888",
   whatsapp_message: "Здравствуйте! Хочу сделать заказ.",
   telegram_enabled: "false",
   telegram_username: "",
   telegram_message: "Здравствуйте! Хочу сделать заказ.",
   seo_title: "ПилоРус — пиломатериалы от производителя в Химках",
-  seo_description: "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1–3 дня. ☎ 8-985-970-71-33",
+  seo_description: "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1–3 дня. ☎ 8-985-067-08-88",
   palettes_enabled: "timber,forest,ocean,midnight,slate,crimson,wildberries,ozon,yandex,aliexpress,amazon,avito,sber",
   photo_aspect_ratio: "3/4",
   card_style: "classic",

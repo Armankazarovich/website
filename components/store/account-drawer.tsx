@@ -101,7 +101,7 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
             <Input
               value={loginValue}
               onChange={handleLoginInput}
-              placeholder="+7 (985) 970-71-33"
+              placeholder="+7 (985) 067-08-88"
               className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary"
               autoComplete="username"
             />

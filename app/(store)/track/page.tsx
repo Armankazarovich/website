@@ -89,7 +89,7 @@ function TrackForm() {
               <input
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                placeholder="+7 (985) 970-71-33"
+                placeholder="+7 (985) 067-08-88"
                 className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 required
               />

@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 
 export default async function TermsPage() {
   const settings = await getSiteSettings();
-  const phoneLink = getSetting(settings, "phone_link") || "+79859707133";
-  const phoneDisplay = getSetting(settings, "phone") || "8-985-970-71-33";
+  const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
+  const phoneDisplay = getSetting(settings, "phone") || "8-985-067-08-88";
   return (
     <div className="container py-12 max-w-3xl">
       <div className="flex items-start gap-3 mb-3">

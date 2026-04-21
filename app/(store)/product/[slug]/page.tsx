@@ -12,7 +12,7 @@ import { DescriptionAccordion } from "@/components/store/description-accordion";
 import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { auth } from "@/lib/auth";
-import { getSiteSettings, getSetting, DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
 import { getPublicProductsFilter } from "@/lib/product-seo";
 // ReviewForm is now rendered inside DescriptionAccordion
 
@@ -95,6 +95,8 @@ export default async function ProductPage({ params }: Props) {
   ]);
   const yandexMapsUrl = yandexMapsSetting?.value || "";
   const showReviewsBlock = showReviewsSetting?.value !== "false";
+  const phonesList = getPhones(siteSettings);
+  const firstPhoneLink = phonesList[0]?.tel || getSetting(siteSettings, "phone_link");
 
   // Messenger settings
   const whatsappEnabled = getSetting(siteSettings, "whatsapp_enabled") === "true";
@@ -269,6 +271,7 @@ export default async function ProductPage({ params }: Props) {
               piecesPerCube: v.piecesPerCube,
               inStock: v.inStock,
             }))}
+            phoneLink={firstPhoneLink}
           />
 
           {/* Messenger order buttons */}

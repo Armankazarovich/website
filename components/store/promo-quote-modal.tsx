@@ -11,9 +11,11 @@ import { SidePanel } from "./side-panel";
 interface Props {
   open: boolean;
   onClose: () => void;
+  phoneLink?: string;
 }
 
-export function PromoQuoteModal({ open, onClose }: Props) {
+export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
+  const effectivePhone = phoneLink || PHONE_LINK;
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", volume: "", message: "" });
@@ -85,7 +87,7 @@ export function PromoQuoteModal({ open, onClose }: Props) {
             Менеджер свяжется с вами в течение 15 минут — рассчитаем лучшее предложение по вашему объёму.
           </p>
           <a
-            href={`tel:${PHONE_LINK}`}
+            href={`tel:${effectivePhone}`}
             className="inline-flex items-center gap-2 text-brand-orange font-semibold hover:underline"
           >
             <Phone className="w-4 h-4" strokeWidth={2} />

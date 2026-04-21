@@ -25,7 +25,7 @@ function isPhone(value: string) {
   return /^[\d\s\-\+\(\)]{7,}$/.test(value.trim()) && !value.includes("@");
 }
 
-// Форматируем телефон по мере набора: +7 (985) 970-71-33
+// Форматируем телефон по мере набора: +7 (985) 067-08-88
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
   if (!digits) return "";

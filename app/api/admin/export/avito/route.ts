@@ -16,7 +16,7 @@ export async function GET() {
   const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
 
   const phoneRow = await prisma.siteSettings.findUnique({ where: { key: "phone_link" } });
-  const phone = phoneRow?.value?.replace(/\D/g, "") || "79859707133";
+  const phone = phoneRow?.value?.replace(/\D/g, "") || "79850670888";
 
   const addressRow = await prisma.siteSettings.findUnique({ where: { key: "address" } });
   const address = addressRow?.value || "Химки, ул. Заводская 2А, стр.28";

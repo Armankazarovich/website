@@ -26,11 +26,13 @@ interface VariantSelectorProps {
   productImage?: string;
   saleUnit: "CUBE" | "PIECE" | "BOTH";
   variants: Variant[];
+  phoneLink?: string;
 }
 
 export function VariantSelector({
-  productId, productName, productSlug, productImage, saleUnit, variants,
+  productId, productName, productSlug, productImage, saleUnit, variants, phoneLink,
 }: VariantSelectorProps) {
+  const effectivePhone = phoneLink || PHONE_LINK;
   const { addItem } = useCartStore();
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
@@ -260,7 +262,7 @@ export function VariantSelector({
           )}
         </Button>
         <Button size="lg" variant="outline" asChild>
-          <a href={`tel:${PHONE_LINK}`}>
+          <a href={`tel:${effectivePhone}`}>
             <Phone className="w-5 h-5" />
           </a>
         </Button>
@@ -269,7 +271,7 @@ export function VariantSelector({
       {!selectedVariant?.inStock && (
         <p className="text-sm text-muted-foreground text-center">
           Этот размер временно отсутствует.{" "}
-          <a href={`tel:${PHONE_LINK}`} className="text-primary hover:underline">
+          <a href={`tel:${effectivePhone}`} className="text-primary hover:underline">
             Позвоните нам
           </a>{" "}
           для уточнения сроков поставки.

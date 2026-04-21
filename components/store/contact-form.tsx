@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Phone, Check } from "lucide-react";
 import { PHONE_LINK } from "@/lib/phone-constants";
 
-export function ContactForm() {
+export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
+  const effectivePhone = phoneLink || PHONE_LINK;
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
@@ -50,7 +51,7 @@ export function ContactForm() {
             Мы перезвоним вам в ближайшее время
           </p>
           <a
-            href={`tel:${PHONE_LINK}`}
+            href={`tel:${effectivePhone}`}
             className="inline-flex items-center gap-2 mt-5 text-brand-orange font-semibold hover:underline text-sm"
           >
             <Phone className="w-4 h-4" /> Или звоните прямо сейчас
@@ -101,7 +102,7 @@ export function ContactForm() {
           </button>
 
           <a
-            href={`tel:${PHONE_LINK}`}
+            href={`tel:${effectivePhone}`}
             className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary/30 transition-colors"
           >
             <Phone className="w-4 h-4 text-brand-orange" />
