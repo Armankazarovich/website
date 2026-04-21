@@ -56,7 +56,7 @@ export function PartnershipPromoCard() {
         </button>
       </div>
 
-      {open && <PartnershipModal onClose={() => setOpen(false)} />}
+      <PartnershipModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

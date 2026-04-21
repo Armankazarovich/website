@@ -16,7 +16,7 @@ export function FooterPartnershipButton() {
         <Handshake className="w-4 h-4 shrink-0" />
         Сотрудничество
       </button>
-      {open && <PartnershipModal onClose={() => setOpen(false)} />}
+      <PartnershipModal open={open} onClose={() => setOpen(false)} />
     </>
   );
 }

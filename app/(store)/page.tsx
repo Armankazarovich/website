@@ -3,14 +3,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getPublicProductsFilter } from "@/lib/product-seo";
 
 // Кэш 60 сек — быстрее чем force-dynamic, но данные актуальны
 export const revalidate = 60;
 import { formatPrice } from "@/lib/utils";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle, Phone, Star, MapPin } from "lucide-react";
+import { ArrowRight, CheckCircle, Phone, Star, MapPin, Search, ClipboardList, CreditCard, Truck, Users, Factory, FileText } from "lucide-react";
 import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
+import { PromoCards } from "@/components/store/promo-cards";
 import { CategoryCard } from "@/components/store/category-card";
 import { SubscribeSection } from "@/components/store/subscribe-section";
 import { HomeReviewPopup } from "@/components/store/home-review-popup";
@@ -119,7 +121,7 @@ async function getData() {
       take: 6,
     }),
     prisma.product.findMany({
-      where: { active: true, featured: true },
+      where: { ...getPublicProductsFilter(), featured: true },
       include: {
         category: true,
         variants: { where: { inStock: true }, orderBy: { pricePerCube: "asc" } },
@@ -526,90 +528,12 @@ export default async function HomePage() {
             {/* Partnership card — always shown */}
             <PartnershipPromoCard />
 
-            {promotions.map((promo, i) => {
-              /* ── Тема карточки ── */
-              const themes = [
-                {
-                  gradient: "from-emerald-950 via-emerald-900 to-teal-800",
-                  accent: "#10b981",
-                  circle1: "bg-emerald-400/10",
-                  circle2: "bg-teal-300/8",
-                  badgeText: "text-emerald-300",
-                  label: "Выгода",
-                  /* Анимированные SVG-слои: каждый слой всплывает по очереди */
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path className="[animation:promoLayer1_2.4s_ease-in-out_infinite]" d="M12 2L2 7l10 5 10-5-10-5z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" style={{transformOrigin:"12px 7px"}}/>
-                      <path className="[animation:promoLayer2_2.4s_ease-in-out_0.3s_infinite]" d="M2 12l10 5 10-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{transformOrigin:"12px 14.5px"}}/>
-                      <path className="[animation:promoLayer3_2.4s_ease-in-out_0.6s_infinite]" d="M2 17l10 5 10-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{transformOrigin:"12px 19.5px"}}/>
-                    </svg>
-                  ),
-                },
-                {
-                  gradient: "from-slate-900 via-blue-950 to-indigo-900",
-                  accent: "#60a5fa",
-                  circle1: "bg-blue-400/10",
-                  circle2: "bg-indigo-300/8",
-                  badgeText: "text-blue-300",
-                  label: "Доставка",
-                  /* Анимированный грузовик: колёса крутятся */
-                  icon: (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M1 4h13v13H1V4z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                      <path d="M14 9h4.5L22 13v4h-8V9z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
-                      <circle cx="5" cy="19" r="2" stroke="white" strokeWidth="1.5"
-                        className="[animation:promoSpin_1.8s_linear_infinite]"
-                        style={{transformOrigin:"5px 19px"}}/>
-                      <circle cx="18" cy="19" r="2" stroke="white" strokeWidth="1.5"
-                        className="[animation:promoSpin_1.8s_linear_infinite]"
-                        style={{transformOrigin:"18px 19px"}}/>
-                      <circle cx="5" cy="19" r="0.6" fill="white"
-                        className="[animation:promoSpin_1.8s_linear_infinite]"
-                        style={{transformOrigin:"5px 19px"}}/>
-                      <circle cx="18" cy="19" r="0.6" fill="white"
-                        className="[animation:promoSpin_1.8s_linear_infinite]"
-                        style={{transformOrigin:"18px 19px"}}/>
-                    </svg>
-                  ),
-                },
-              ];
-              const theme = themes[i % themes.length];
-
-              return (
-                <div
-                  key={promo.id}
-                  className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${theme.gradient} text-white p-6 flex flex-col min-h-[260px]`}
-                >
-                  {/* Декоративные круги */}
-                  <div className={`absolute top-0 right-0 w-44 h-44 rounded-full ${theme.circle1} -translate-y-1/2 translate-x-1/2 pointer-events-none`} />
-                  <div className={`absolute bottom-0 left-0 w-28 h-28 rounded-full ${theme.circle2} translate-y-1/2 -translate-x-1/2 pointer-events-none`} />
-
-                  {/* Бейдж с анимированной иконкой */}
-                  <div className="flex items-center gap-2 mb-4 relative z-10">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: theme.accent + "25", border: `1px solid ${theme.accent}40` }}
-                    >
-                      {theme.icon}
-                    </div>
-                    <span className={`text-xs font-semibold uppercase tracking-widest ${theme.badgeText}`}>
-                      {theme.label}
-                    </span>
-                  </div>
-
-                  {/* Контент */}
-                  <div className="relative z-10 flex-1 flex flex-col">
-                    <h3 className="font-display font-bold text-xl mb-2 leading-tight">{promo.title}</h3>
-                    <p className="text-white/70 text-sm leading-relaxed flex-1">{promo.description}</p>
-                    {promo.validUntil && (
-                      <p className="text-xs text-white/40 mt-4 pt-3 border-t border-white/10">
-                        Акция до {new Date(promo.validUntil).toLocaleDateString("ru-RU")}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            <PromoCards promotions={promotions.map((p) => ({
+              id: p.id,
+              title: p.title,
+              description: p.description,
+              validUntil: p.validUntil,
+            }))} />
           </div>
         </div>
       </section>
@@ -669,14 +593,14 @@ export default async function HomePage() {
             <div className="hidden lg:block absolute top-8 left-[calc(12.5%+2rem)] right-[calc(12.5%+2rem)] h-px border-t-2 border-dashed border-border z-0" />
 
             {[
-              { num: "01", emoji: "🔍", title: "Выбрать товар", desc: "В каталоге или по телефону — поможем подобрать нужный материал и рассчитать объём" },
-              { num: "02", emoji: "📋", title: "Оформить заявку", desc: "Онлайн через сайт или звонком. Менеджер уточнит детали в течение 15 минут" },
-              { num: "03", emoji: "💳", title: "Оплатить", desc: "Наличные, перевод на карту или безнал по счёту с НДС для ИП и ООО" },
-              { num: "04", emoji: "🚛", title: "Получить доставку", desc: "1–3 рабочих дня по Москве и МО собственным транспортом с погрузкой" },
+              { num: "01", Icon: Search, title: "Выбрать товар", desc: "В каталоге или по телефону — поможем подобрать нужный материал и рассчитать объём" },
+              { num: "02", Icon: ClipboardList, title: "Оформить заявку", desc: "Онлайн через сайт или звонком. Менеджер уточнит детали в течение 15 минут" },
+              { num: "03", Icon: CreditCard, title: "Оплатить", desc: "Наличные, перевод на карту или безнал по счёту с НДС для ИП и ООО" },
+              { num: "04", Icon: Truck, title: "Получить доставку", desc: "1–3 рабочих дня по Москве и МО собственным транспортом с погрузкой" },
             ].map((step) => (
               <div key={step.num} className="relative z-10 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-card border-2 border-border mx-auto mb-4 flex items-center justify-center text-2xl shadow-sm">
-                  {step.emoji}
+                <div className="w-16 h-16 rounded-2xl bg-card border-2 border-border mx-auto mb-4 flex items-center justify-center shadow-sm">
+                  <step.Icon className="w-7 h-7 text-primary" strokeWidth={1.75} />
                 </div>
                 <span className="text-xs font-bold text-primary uppercase tracking-widest block mb-2">
                   {step.num}
@@ -1002,16 +926,16 @@ export default async function HomePage() {
           {/* Glass badges */}
           <div className="flex flex-wrap justify-center gap-3 mb-10">
             {[
-              { icon: "✓", text: "Более 500 клиентов" },
-              { icon: "🚛", text: "Доставка 1–3 дня" },
-              { icon: "🏭", text: "10+ лет работы" },
-              { icon: "📋", text: "Работаем по договору" },
+              { Icon: Users, text: "Более 500 клиентов" },
+              { Icon: Truck, text: "Доставка 1–3 дня" },
+              { Icon: Factory, text: "10+ лет работы" },
+              { Icon: FileText, text: "Работаем по договору" },
             ].map((item) => (
               <div
                 key={item.text}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-sm font-medium"
               >
-                <span>{item.icon}</span>
+                <item.Icon className="w-4 h-4 text-brand-orange shrink-0" strokeWidth={1.75} />
                 {item.text}
               </div>
             ))}

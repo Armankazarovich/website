@@ -692,7 +692,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
       {/* Search Modal */}
 
       {/* Partnership Modal */}
-      {partnershipOpen && <PartnershipModal onClose={() => setPartnershipOpen(false)} />}
+      <PartnershipModal open={partnershipOpen} onClose={() => setPartnershipOpen(false)} />
 
       {/* ══════════════════════════════════════════════════
           GLASSMORPHISM MOBILE MENU
