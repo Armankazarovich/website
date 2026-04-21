@@ -131,7 +131,9 @@
 
 ## ⚡ ОБЯЗАТЕЛЬНО ПРИ СТАРТЕ КАЖДОЙ СЕССИИ
 
-0. **🔴 ЗАПУСТИ ТЕСТ PRODUCTION ПЕРВЫМ ДЕЛОМ** — `node D:/pilorus/scripts/test-production.js` через Desktop Commander. Если есть FAIL — сообщи Арману и чини. Не начинай новые задачи пока прод горит.
+-1. **🧠 СНАЧАЛА СИНХРОНИЗИРУЙ ПАМЯТЬ** — через Desktop Commander: `cd D:\pilorus\claude-memory && git pull origin main`. Это **приватный git-репозиторий** `Armankazarovich/claude-memory` — единая память между десктопом и Telegram-ботом Брат Клод. Там свежие записи бота (идеи Армана через `/идея`, обновлённые приоритеты, pending-questions, история сессий). **Без этого шага ты НЕ в контексте.** Ключевые файлы: `brat-klod-memory.md` (правила+клиенты+сервера), `session-log.md` (хронология), `ideas-inbox.md`, `decisions.md`, `state/active-priorities.md`, `state/pending-questions.md`, `arman-notes.md` (приватные заметки Армана). В конце сессии: `git add -A && node D:\pilorus\__memory-commit.js "описание"` чтобы бот увидел что ты сделал.
+
+0. **🔴 ЗАПУСТИ ТЕСТ PRODUCTION** — `node D:/pilorus/scripts/test-production.js`. Если есть FAIL — сообщи Арману и чини. Не начинай новые задачи пока прод горит.
 1. **Прочитай `ROADMAP.md`** — там чеклисты всех фаз. Продолжай с первого незавершённого пункта.
 2. **Не начинай новые фичи** пока Фаза 0 (Полировка) не завершена на 100%.
 3. **Обновляй чеклисты** — после каждой выполненной задачи ставь `[x]` в ROADMAP.md.
