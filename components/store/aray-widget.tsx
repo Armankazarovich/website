@@ -663,6 +663,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressTriggered = useRef(false);
+  // Ref на sendMessage — чтобы event listeners (aray:prompt) не захватывали stale closure
+  const sendMessageRef = useRef<((text?: string) => Promise<void>) | null>(null);
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
   const chips = isAdmin ? getAdminChips(pathname) : buildArayChips({ page: pathname, productName, cartTotal });
@@ -815,6 +817,27 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     };
     window.addEventListener("aray:voice", handler);
     return () => window.removeEventListener("aray:voice", handler);
+  }, [startChat]);
+
+  // Отправка текста из ArayDock (чат-бар внизу)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const ce = e as CustomEvent<{ text?: string }>;
+      const text = ce.detail?.text?.trim();
+      if (!text) return;
+      setVisible(true); setOpen(true); setHasNew(false); startChat();
+      if (voiceModeRef.current !== "text") {
+        setVoiceMode("text"); voiceModeRef.current = "text";
+        localStorage.setItem("aray-voice-mode", "text");
+      }
+      setShowMessages(true);
+      // Микро-задержка чтобы useEffect успел отрендерить приветствие
+      // sendMessageRef — избегаем stale closure (useEffect зависит только от startChat)
+      setTimeout(() => { sendMessageRef.current?.(text); }, 50);
+    };
+    window.addEventListener("aray:prompt", handler as EventListener);
+    return () => window.removeEventListener("aray:prompt", handler as EventListener);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startChat]);
 
   // Проактивный пузырь
@@ -996,6 +1019,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }
   };
 
+  // Поддерживаем актуальный ref на sendMessage для event listeners
+  sendMessageRef.current = sendMessage;
+
   // Голосовой ввод — ВСЕГДА автоотправка
   const startVoice = useCallback(async () => {
     haptic("medium");
@@ -1058,62 +1084,30 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         )}
       </AnimatePresence>
 
-      {/* ══ КНОПКА-ОРБ (когда чат закрыт, скрыта на мобилке — там орб в доке) ══ */}
-      {!open && !isMobile && (
-        <div className="flex fixed z-[101] flex-col items-end gap-2.5"
-          style={{ bottom: "1.5rem", right: "1rem" }}>
-          {/* Проактивный пузырь */}
+      {/* ══ Проактивный пузырь (над дока-баром, когда чат закрыт) ══ */}
+      {!open && proactiveBubble && (
+        <div className="fixed z-[90] pointer-events-none"
+          style={{ bottom: "calc(72px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)" }}>
           <AnimatePresence>
-            {proactiveBubble && (
-              <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.92 }}
-                onClick={handleOpen}
-                className="max-w-[200px] px-3.5 py-2.5 rounded-2xl text-xs cursor-pointer"
-                style={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
-                  color: "hsl(var(--foreground))",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-                }}>
-                {proactiveBubble}
-                <div className="absolute -bottom-1.5 right-4 w-3 h-3 rotate-45"
-                  style={{ background: "hsl(var(--card))", borderRight: "1px solid hsl(var(--border))", borderBottom: "1px solid hsl(var(--border))" }} />
-              </motion.div>
-            )}
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.92 }}
+              onClick={handleOpen}
+              className="max-w-[260px] px-3.5 py-2.5 rounded-2xl text-xs cursor-pointer pointer-events-auto"
+              style={{
+                background: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                color: "hsl(var(--foreground))",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+              }}>
+              {proactiveBubble}
+            </motion.div>
           </AnimatePresence>
-
-          {/* Живая сфера — push-to-talk. БЕЗ motion.button — CSS transform убивает SVG анимации */}
-          <button
-            onClick={() => { if (longPressTriggered.current) return; handleOpen(); }}
-            onPointerDown={() => {
-              longPressTriggered.current = false;
-              longPressTimer.current = window.setTimeout(async () => {
-                longPressTriggered.current = true;
-                startChat();
-                if (voiceMode !== "voice") { setVoiceMode("voice"); voiceModeRef.current = "voice"; localStorage.setItem("aray-voice-mode", "voice"); }
-                try { const text = await micListen(); if (text) sendMessage(text); } catch {}
-              }, 400);
-            }}
-            onPointerUp={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-            onPointerCancel={() => { if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; } }}
-            aria-label={listening ? "Слушаю..." : "Арай — удерживай для голоса"}
-            className="relative focus:outline-none w-14 h-14 rounded-full flex items-center justify-center transition-transform duration-150 hover:scale-[1.08] active:scale-[0.92]"
-            style={{
-              WebkitTapHighlightColor: "transparent",
-              boxShadow: listening
-                ? "0 4px 30px rgba(59,130,246,0.55), 0 0 60px rgba(59,130,246,0.2)"
-                : speaking
-                  ? "0 4px 30px rgba(52,211,153,0.45), 0 0 60px rgba(52,211,153,0.15)"
-                  : "0 4px 30px rgba(255,130,0,0.4), 0 0 60px rgba(255,130,0,0.15)",
-            }}>
-            <ArayOrb size={56} id="float" pulse={orbStatus}
-              badge={hasNew}
-              badgeCount={!isAdmin && !hasNew && !speaking && !listening && cartCount > 0 ? cartCount : undefined} />
-          </button>
         </div>
       )}
+
+      {/* Десктопный floating-орб удалён — ArayDock (чат-бар внизу) единая точка входа на мобилке и десктопе */}
 
       {/* ══ ДЕСКТОП — VOICE-FIRST ПАНЕЛЬ ══ */}
       <AnimatePresence>

@@ -5,7 +5,6 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { MobileBottomNav } from "@/components/store/mobile-bottom-nav";
 import { PageTransition } from "@/components/layout/page-transition";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
@@ -33,6 +32,8 @@ function extractUniqueCrossSections(sizes: string[]): string[] {
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
 const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
+const ArayDock = dynamic(() => import("@/components/store/aray-dock").then(m => ({ default: m.ArayDock })), { ssr: false });
+const SideIconRail = dynamic(() => import("@/components/store/side-icon-rail").then(m => ({ default: m.SideIconRail })), { ssr: false });
 const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
 const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
 const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
@@ -87,11 +88,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
       {/* Хедер — критичный для LCP, рендерим сразу */}
       <Header categories={categories} phones={getPhones(siteSettings)} workingHours={getSetting(siteSettings, "working_hours") || undefined} dynamicTypes={megaMenuTypes} dynamicSizes={megaMenuSizes} />
-      <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+      <main className="flex-1" style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}>{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
 
-      {/* Нав — критичный для мобилки, рендерим сразу */}
-      <MobileBottomNav arayEnabled={arayEnabled} />
+      {/* Боковая колонка навигации (мобилка/планшет) + Арай-дока (чат-бар внизу, единый моб+десктоп) */}
+      <SideIconRail />
+      <ArayDock enabled={arayEnabled} />
 
       {/* Всё остальное — lazy (не блокирует первую отрисовку) */}
       <CookieConsent />
