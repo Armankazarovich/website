@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
+// Force dynamic rendering — страница опирается на динамические настройки телефона из БД
+export const dynamic = "force-dynamic";
+
 export default async function TermsPage() {
   const settings = await getSiteSettings();
   const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
