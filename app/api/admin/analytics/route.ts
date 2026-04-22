@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { classifySource, humanizeSource, type SourceGroup } from "@/lib/utm";
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT"];
 
@@ -37,6 +38,7 @@ export async function GET() {
     clientStats,
     paymentStats,
     contactStats,
+    ordersAttribution30,
   ] = await Promise.all([
     // Raw orders for the chart
     prisma.order.findMany({
@@ -81,7 +83,64 @@ export async function GET() {
       where: { deletedAt: null },
       _count: { _all: true },
     }),
+
+    // UTM attribution — last 30 days (source classification done in JS)
+    prisma.order.findMany({
+      where: { createdAt: { gte: since30 }, deletedAt: null },
+      select: {
+        totalAmount: true,
+        deliveryCost: true,
+        utmSource: true,
+        utmMedium: true,
+        utmCampaign: true,
+        gclid: true,
+        yclid: true,
+        referrer: true,
+      },
+    }),
   ]);
+
+  // Aggregate sources (last 30 days)
+  const sourceAgg: Record<SourceGroup, { count: number; revenue: number }> = {
+    direct_ad: { count: 0, revenue: 0 },
+    google_ads: { count: 0, revenue: 0 },
+    organic: { count: 0, revenue: 0 },
+    social: { count: 0, revenue: 0 },
+    referral: { count: 0, revenue: 0 },
+    direct: { count: 0, revenue: 0 },
+    other: { count: 0, revenue: 0 },
+  };
+  const campaignAgg: Record<string, { count: number; revenue: number; group: SourceGroup }> = {};
+  for (const o of ordersAttribution30) {
+    const group = classifySource(o);
+    const value = Number(o.totalAmount ?? 0) + Number(o.deliveryCost ?? 0);
+    sourceAgg[group].count += 1;
+    sourceAgg[group].revenue += value;
+    if (o.utmCampaign) {
+      const key = o.utmCampaign;
+      if (!campaignAgg[key]) campaignAgg[key] = { count: 0, revenue: 0, group };
+      campaignAgg[key].count += 1;
+      campaignAgg[key].revenue += value;
+    }
+  }
+  const sourceStats = (Object.keys(sourceAgg) as SourceGroup[])
+    .map((group) => ({
+      group,
+      label: humanizeSource(group).label,
+      count: sourceAgg[group].count,
+      revenue: sourceAgg[group].revenue,
+    }))
+    .sort((a, b) => b.revenue - a.revenue || b.count - a.count);
+  const campaignStats = Object.entries(campaignAgg)
+    .map(([campaign, v]) => ({
+      campaign,
+      group: v.group,
+      label: humanizeSource(v.group).label,
+      count: v.count,
+      revenue: v.revenue,
+    }))
+    .sort((a, b) => b.revenue - a.revenue || b.count - a.count)
+    .slice(0, 10);
 
   // Fill daily chart slots
   for (const order of orders30) {
@@ -122,5 +181,7 @@ export async function GET() {
       method: c.contactMethod || "Не указан",
       count: c._count._all,
     })),
+    sourceStats,
+    campaignStats,
   });
 }

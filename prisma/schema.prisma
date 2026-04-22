@@ -124,6 +124,16 @@ model Order {
   contactUsername   String?
   discountAmount    Decimal     @default(0) @db.Decimal(10, 2)
   promoCode         String?
+  utmSource         String?
+  utmMedium         String?
+  utmCampaign       String?
+  utmTerm           String?
+  utmContent        String?
+  gclid             String?
+  yclid             String?
+  referrer          String?
+  landingPage       String?
+  firstTouchAt      DateTime?
   user              User?       @relation(fields: [userId], references: [id])
   items             OrderItem[]
   tasks             Task[]
@@ -135,6 +145,8 @@ model Order {
   @@index([createdAt])
   @@index([guestPhone])
   @@index([telegramMessageId])
+  @@index([utmSource, createdAt])
+  @@index([utmCampaign, createdAt])
 }
 
 model OrderItem {

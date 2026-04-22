@@ -13,7 +13,10 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  Radio,
+  Target,
 } from "lucide-react";
+import Link from "next/link";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 
@@ -42,6 +45,21 @@ interface MethodCount {
   count: number;
 }
 
+interface SourceStat {
+  group: "direct_ad" | "google_ads" | "organic" | "social" | "referral" | "direct" | "other";
+  label: string;
+  count: number;
+  revenue: number;
+}
+
+interface CampaignStat {
+  campaign: string;
+  group: SourceStat["group"];
+  label: string;
+  count: number;
+  revenue: number;
+}
+
 interface AnalyticsData {
   chart: DaySlot[];
   totalRevenue30: number;
@@ -52,7 +70,29 @@ interface AnalyticsData {
   statusCounts: StatusCount[];
   paymentStats: MethodCount[];
   contactStats: MethodCount[];
+  sourceStats: SourceStat[];
+  campaignStats: CampaignStat[];
 }
+
+// Цвет (Tailwind text class) для каждой группы источника — совпадает с humanizeSource
+const SOURCE_COLORS: Record<SourceStat["group"], string> = {
+  direct_ad: "text-red-500",
+  google_ads: "text-blue-500",
+  organic: "text-emerald-500",
+  social: "text-violet-500",
+  referral: "text-amber-500",
+  direct: "text-muted-foreground",
+  other: "text-muted-foreground",
+};
+const SOURCE_BG: Record<SourceStat["group"], string> = {
+  direct_ad: "bg-red-500",
+  google_ads: "bg-blue-500",
+  organic: "bg-emerald-500",
+  social: "bg-violet-500",
+  referral: "bg-amber-500",
+  direct: "bg-muted-foreground",
+  other: "bg-muted-foreground",
+};
 
 // ─── Stat Card ──────────────────────────────────────────────────────────────
 
@@ -572,6 +612,101 @@ export default function AnalyticsPage() {
           )}
         </div>
       </div>
+
+      {/* ── UTM Attribution: Sources + Campaigns ── */}
+      {(() => {
+        const totalSourceOrders = data.sourceStats.reduce((s, x) => s + x.count, 0);
+        const totalSourceRevenue = data.sourceStats.reduce((s, x) => s + x.revenue, 0);
+        const maxSourceRev = Math.max(...data.sourceStats.map(x => x.revenue), 1);
+
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Sources breakdown */}
+            <div className="aray-stat-card space-y-3">
+              <AdminSectionTitle
+                icon={Radio}
+                title="Источники заказов"
+                subtitle={`последние 30 дней · ${totalSourceOrders} заказов`}
+              />
+              {totalSourceOrders === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Нет заказов с UTM-атрибуцией за 30 дней.<br />
+                  <span className="text-xs opacity-70">Запустите рекламу с UTM-метками для отслеживания.</span>
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {data.sourceStats
+                    .filter(s => s.count > 0)
+                    .map(s => {
+                      const pct = totalSourceOrders > 0 ? Math.round((s.count / totalSourceOrders) * 100) : 0;
+                      return (
+                        <Link
+                          key={s.group}
+                          href={`/admin/orders?source=${s.group}`}
+                          className="group block hover:bg-primary/[0.04] -mx-2 px-2 py-1 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${SOURCE_BG[s.group]}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between text-xs mb-0.5">
+                                <span className={`font-medium truncate ${SOURCE_COLORS[s.group]}`}>{s.label}</span>
+                                <span className="text-muted-foreground shrink-0 ml-2">
+                                  {s.count} ({pct}%) · {formatPrice(s.revenue)}
+                                </span>
+                              </div>
+                              <div className="h-1.5 rounded-full bg-muted/50 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${SOURCE_BG[s.group]} transition-all`}
+                                  style={{ width: `${(s.revenue / maxSourceRev) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  {totalSourceRevenue > 0 && (
+                    <p className="text-[11px] text-muted-foreground pt-2 border-t border-border">
+                      Общая выручка с атрибуцией: <span className="font-semibold text-foreground">{formatPrice(totalSourceRevenue)}</span>
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Top campaigns */}
+            <div className="aray-stat-card space-y-3">
+              <AdminSectionTitle
+                icon={Target}
+                title="Топ кампаний"
+                subtitle={`${data.campaignStats.length} кампаний · 30 дней`}
+              />
+              {data.campaignStats.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Нет данных по кампаниям.<br />
+                  <span className="text-xs opacity-70">Добавьте utm_campaign в ссылки на рекламу.</span>
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {data.campaignStats.map((c, i) => (
+                    <div key={i} className="flex items-center gap-3 text-xs py-1.5 border-b border-border/40 last:border-0">
+                      <div className={`w-2 h-2 rounded-full shrink-0 ${SOURCE_BG[c.group]}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate" title={c.campaign}>{c.campaign}</p>
+                        <p className={`text-[10px] ${SOURCE_COLORS[c.group]} opacity-80`}>{c.label}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold">{formatPrice(c.revenue)}</p>
+                        <p className="text-[10px] text-muted-foreground">{c.count} зак.</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Footer note ── */}
       <p className="text-center text-xs text-muted-foreground pb-2">

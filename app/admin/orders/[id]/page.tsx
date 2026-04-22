@@ -5,11 +5,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
-import { Phone, Mail, MapPin, CreditCard, MessageSquare, Package } from "lucide-react";
+import { Phone, Mail, MapPin, CreditCard, MessageSquare, Package, Radio, Target, Link2, Clock } from "lucide-react";
 import { AdminBack } from "@/components/admin/admin-back";
 import { DeleteOrderButton } from "./delete-button";
 import { OrderEditPanel } from "@/components/admin/order-edit-panel";
 import { TrackingLinkCard } from "@/components/admin/tracking-link-card";
+import { classifySource, humanizeSource } from "@/lib/utm";
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({
@@ -98,6 +99,110 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
 
       {/* Ссылка отслеживания */}
       <TrackingLinkCard orderId={order.id} />
+
+      {/* Источник заказа (UTM attribution) */}
+      {(() => {
+        const attr = {
+          utmSource: (order as any).utmSource as string | null,
+          utmMedium: (order as any).utmMedium as string | null,
+          utmCampaign: (order as any).utmCampaign as string | null,
+          utmTerm: (order as any).utmTerm as string | null,
+          utmContent: (order as any).utmContent as string | null,
+          gclid: (order as any).gclid as string | null,
+          yclid: (order as any).yclid as string | null,
+          referrer: (order as any).referrer as string | null,
+          landingPage: (order as any).landingPage as string | null,
+          firstTouchAt: (order as any).firstTouchAt as Date | null,
+        };
+        const hasAttribution =
+          attr.utmSource || attr.utmMedium || attr.utmCampaign || attr.gclid || attr.yclid || attr.referrer;
+        const group = classifySource(attr as any);
+        const { label, color } = humanizeSource(group);
+        return (
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
+            <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide flex items-center gap-2">
+              <Radio className="w-4 h-4" />
+              Источник заказа
+            </h2>
+            {!hasAttribution ? (
+              <p className="text-sm text-muted-foreground">
+                Прямой переход или заказ создан оператором (без UTM-меток).
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-current ${color} text-xs font-semibold`}>
+                    <Target className="w-3.5 h-3.5" />
+                    {label}
+                  </span>
+                  {attr.utmCampaign && (
+                    <span className="text-sm text-foreground font-medium">· {attr.utmCampaign}</span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                  {attr.utmSource && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">utm_source</p>
+                      <p className="font-mono text-xs">{attr.utmSource}</p>
+                    </div>
+                  )}
+                  {attr.utmMedium && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">utm_medium</p>
+                      <p className="font-mono text-xs">{attr.utmMedium}</p>
+                    </div>
+                  )}
+                  {attr.utmTerm && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">utm_term</p>
+                      <p className="font-mono text-xs break-all">{attr.utmTerm}</p>
+                    </div>
+                  )}
+                  {attr.utmContent && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">utm_content</p>
+                      <p className="font-mono text-xs break-all">{attr.utmContent}</p>
+                    </div>
+                  )}
+                  {attr.gclid && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">gclid (Google Ads)</p>
+                      <p className="font-mono text-xs break-all">{attr.gclid.slice(0, 32)}…</p>
+                    </div>
+                  )}
+                  {attr.yclid && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">yclid (Яндекс.Директ)</p>
+                      <p className="font-mono text-xs break-all">{attr.yclid.slice(0, 32)}…</p>
+                    </div>
+                  )}
+                  {attr.referrer && (
+                    <div className="sm:col-span-2 flex items-start gap-2">
+                      <Link2 className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Реферер</p>
+                        <p className="text-xs break-all">{attr.referrer}</p>
+                      </div>
+                    </div>
+                  )}
+                  {attr.landingPage && (
+                    <div className="sm:col-span-2">
+                      <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">Страница входа</p>
+                      <p className="font-mono text-xs break-all">{attr.landingPage}</p>
+                    </div>
+                  )}
+                  {attr.firstTouchAt && (
+                    <div className="sm:col-span-2 flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span className="text-xs">Первое касание: {formatDate(attr.firstTouchAt)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Детали доставки */}
       <div className="bg-card border border-border rounded-2xl p-5 space-y-3">

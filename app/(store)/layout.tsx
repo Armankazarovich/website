@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
 import { getAvailableTypes } from "@/lib/product-types";
+import { getPublicProductsFilter } from "@/lib/product-seo";
 
 /** Извлекает уникальные сечения из variant sizes для мега-меню */
 function extractUniqueCrossSections(sizes: string[]): string[] {
@@ -53,14 +54,21 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       select: { id: true, name: true, slug: true },
     }),
     getSiteSettings(),
-    // Для динамических типов в мега-меню
+    // Для динамических типов в мега-меню (только публичные — с фото, ценой, в наличии)
     prisma.product.findMany({
-      where: { active: true, category: { showInMenu: true } },
+      where: { ...getPublicProductsFilter(), category: { showInMenu: true } },
       select: { name: true },
     }),
-    // Для динамических размеров в мега-меню
+    // Для динамических размеров в мега-меню (только публичные товары + variant с ценой)
     prisma.productVariant.findMany({
-      where: { product: { active: true, category: { showInMenu: true } } },
+      where: {
+        product: { ...getPublicProductsFilter(), category: { showInMenu: true } },
+        inStock: true,
+        OR: [
+          { pricePerCube: { not: null, gt: 0 } },
+          { pricePerPiece: { not: null, gt: 0 } },
+        ],
+      },
       select: { size: true },
       distinct: ["size"],
     }),

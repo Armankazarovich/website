@@ -9,9 +9,10 @@ import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } fro
 import {
   Trash2, Loader2, Download, Phone, MapPin,
   Package, CreditCard, Truck, MessageSquare, ExternalLink,
-  ChevronLeft, ChevronRight, Clock,
+  ChevronLeft, ChevronRight, Clock, Radio, X,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { classifySource, humanizeSource, type SourceGroup } from "@/lib/utm";
 
 type Order = {
   id: string;
@@ -24,6 +25,12 @@ type Order = {
   deliveryCost: any;
   status: string;
   items: { id: string }[];
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  gclid?: string | null;
+  yclid?: string | null;
+  referrer?: string | null;
 };
 
 type Stats = { todayCount: number; todayRevenue: number; newCount: number };
@@ -182,6 +189,8 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
 
   // Статус фильтр берём из URL (?status=NEW) — синхронизируется со Smart Command Bar
   const statusFilter = searchParams.get("status") || "ALL";
+  // Фильтр по источнику (?source=direct_ad|google_ads|organic|social|referral|direct|other)
+  const sourceFilter = (searchParams.get("source") || "ALL") as SourceGroup | "ALL";
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -198,15 +207,42 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   const filtered = useMemo(() => {
     return orders.filter((o) => {
       const matchStatus = statusFilter === "ALL" || o.status === statusFilter;
+      const matchSource =
+        sourceFilter === "ALL" || classifySource(o) === sourceFilter;
       const q = search.toLowerCase();
       const matchSearch =
         !q ||
         (o.guestName || "").toLowerCase().includes(q) ||
         (o.guestPhone || "").includes(q) ||
         String(o.orderNumber).includes(q);
-      return matchStatus && matchSearch;
+      return matchStatus && matchSource && matchSearch;
     });
-  }, [orders, statusFilter, search]);
+  }, [orders, statusFilter, sourceFilter, search]);
+
+  // Счётчики по источникам для панели фильтров
+  const sourceCounts = useMemo(() => {
+    const counts: Record<SourceGroup, number> = {
+      direct_ad: 0,
+      google_ads: 0,
+      organic: 0,
+      social: 0,
+      referral: 0,
+      direct: 0,
+      other: 0,
+    };
+    for (const o of orders) {
+      const g = classifySource(o);
+      counts[g] = (counts[g] || 0) + 1;
+    }
+    return counts;
+  }, [orders]);
+
+  const setSource = (s: SourceGroup | "ALL") => {
+    const sp = new URLSearchParams(searchParams.toString());
+    if (s === "ALL") sp.delete("source");
+    else sp.set("source", s);
+    router.push(`/admin/orders${sp.toString() ? "?" + sp.toString() : ""}`);
+  };
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const stats = useMemo(() => {
@@ -235,16 +271,23 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
 
   const handleExportCSV = () => {
     const rows = [
-      ["№", "Клиент", "Телефон", "Адрес", "Дата", "Сумма", "Статус"],
-      ...filtered.map((o) => [
-        `#${o.orderNumber}`,
-        o.guestName || "",
-        o.guestPhone || "",
-        o.deliveryAddress || "",
-        new Date(o.createdAt).toLocaleDateString("ru-RU"),
-        Number(o.totalAmount),
-        o.status,
-      ]),
+      ["№", "Клиент", "Телефон", "Адрес", "Дата", "Сумма", "Статус", "Источник", "Кампания", "utm_source", "utm_medium"],
+      ...filtered.map((o) => {
+        const g = classifySource(o);
+        return [
+          `#${o.orderNumber}`,
+          o.guestName || "",
+          o.guestPhone || "",
+          o.deliveryAddress || "",
+          new Date(o.createdAt).toLocaleDateString("ru-RU"),
+          Number(o.totalAmount),
+          o.status,
+          humanizeSource(g).label,
+          o.utmCampaign || "",
+          o.utmSource || "",
+          o.utmMedium || "",
+        ];
+      }),
     ];
     const csv = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -295,6 +338,49 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         </div>
       </div>
 
+      {/* Фильтр по источнику */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide flex items-center gap-1.5 mr-1">
+          <Radio className="w-3.5 h-3.5" /> Источник:
+        </span>
+        {([
+          ["ALL", "Все", orders.length],
+          ["direct_ad", humanizeSource("direct_ad").label, sourceCounts.direct_ad],
+          ["google_ads", humanizeSource("google_ads").label, sourceCounts.google_ads],
+          ["organic", humanizeSource("organic").label, sourceCounts.organic],
+          ["social", humanizeSource("social").label, sourceCounts.social],
+          ["referral", humanizeSource("referral").label, sourceCounts.referral],
+          ["direct", humanizeSource("direct").label, sourceCounts.direct],
+          ["other", humanizeSource("other").label, sourceCounts.other],
+        ] as Array<[SourceGroup | "ALL", string, number]>)
+          .filter(([key, , count]) => key === "ALL" || count > 0)
+          .map(([key, label, count]) => {
+            const active = sourceFilter === key;
+            return (
+              <button
+                key={key}
+                onClick={() => setSource(key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                  active
+                    ? "bg-primary/15 border-primary text-primary"
+                    : "bg-card border-border text-muted-foreground hover:bg-primary/[0.05] hover:text-foreground"
+                }`}
+              >
+                {label} <span className="opacity-60">· {count}</span>
+              </button>
+            );
+          })}
+        {sourceFilter !== "ALL" && (
+          <button
+            onClick={() => setSource("ALL")}
+            className="px-2 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground"
+            aria-label="Сбросить фильтр источника"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
       {/* Инструменты — CSV + массовые действия */}
       <div className="flex items-center gap-2 justify-end flex-wrap">
         {statusFilter !== "ALL" && (
@@ -342,6 +428,21 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
                 <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
               </div>
             </div>
+            {/* Источник (mobile hint) */}
+            {(() => {
+              const g = classifySource(order);
+              if (g === "direct") return null;
+              const { label, color } = humanizeSource(g);
+              return (
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <Radio className={`w-3 h-3 ${color}`} />
+                  <span className={`text-[11px] font-medium ${color}`}>{label}</span>
+                  {order.utmCampaign && (
+                    <span className="text-[11px] text-muted-foreground truncate">· {order.utmCampaign}</span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         ))}
         {filtered.length === 0 && (
@@ -369,6 +470,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
                 <th className="text-left px-4 py-3 font-semibold">Дата</th>
                 <th className="text-right px-4 py-3 font-semibold">Сумма</th>
                 <th className="text-center px-4 py-3 font-semibold">Статус</th>
+                <th className="text-left px-4 py-3 font-semibold hidden xl:table-cell">Источник</th>
                 <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Поз.</th>
               </tr>
             </thead>
@@ -397,6 +499,17 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
                   <td className="px-4 py-3 text-right font-bold">{formatPrice(Number(order.totalAmount))}</td>
                   <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
                     <OrderStatusSelect orderId={order.id} currentStatus={order.status} />
+                  </td>
+                  <td className="px-4 py-3 hidden xl:table-cell">
+                    {(() => {
+                      const g = classifySource(order);
+                      const { label, color } = humanizeSource(g);
+                      return (
+                        <span className={`inline-flex items-center gap-1 text-xs font-medium ${color}`}>
+                          <Radio className="w-3 h-3" /> {label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground hidden lg:table-cell">{order.items.length}</td>
                 </tr>

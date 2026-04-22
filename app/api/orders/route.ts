@@ -13,6 +13,19 @@ import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
 import nodemailer from "nodemailer";
 
+const attributionSchema = z.object({
+  utmSource: z.string().max(200).nullable().optional(),
+  utmMedium: z.string().max(200).nullable().optional(),
+  utmCampaign: z.string().max(200).nullable().optional(),
+  utmTerm: z.string().max(200).nullable().optional(),
+  utmContent: z.string().max(200).nullable().optional(),
+  gclid: z.string().max(500).nullable().optional(),
+  yclid: z.string().max(500).nullable().optional(),
+  referrer: z.string().max(500).nullable().optional(),
+  landingPage: z.string().max(500).nullable().optional(),
+  firstTouchAt: z.string().nullable().optional(),
+}).optional();
+
 const orderSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(10),
@@ -31,6 +44,7 @@ const orderSchema = z.object({
     })
   ).min(1),
   totalAmount: z.number().positive(),
+  attribution: attributionSchema,
 });
 
 export async function POST(req: NextRequest) {
@@ -42,7 +56,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Некорректные данные заявки" }, { status: 400 });
     }
 
-    const { name, phone, email, address, paymentMethod, comment, items, totalAmount } = parsed.data;
+    const { name, phone, email, address, paymentMethod, comment, items, totalAmount, attribution } = parsed.data;
+
+    // Парсим firstTouchAt если пришёл как строка
+    let firstTouchAt: Date | null = null;
+    if (attribution?.firstTouchAt) {
+      const parsedDate = new Date(attribution.firstTouchAt);
+      if (!isNaN(parsedDate.getTime())) firstTouchAt = parsedDate;
+    }
 
     // Привязать заказ к аккаунту если пользователь авторизован
     const session = await auth();
@@ -81,6 +102,16 @@ export async function POST(req: NextRequest) {
         paymentMethod: paymentMethod === "cash" ? "Наличные" : "Безнал по счёту",
         comment: comment || null,
         totalAmount,
+        utmSource: attribution?.utmSource ?? null,
+        utmMedium: attribution?.utmMedium ?? null,
+        utmCampaign: attribution?.utmCampaign ?? null,
+        utmTerm: attribution?.utmTerm ?? null,
+        utmContent: attribution?.utmContent ?? null,
+        gclid: attribution?.gclid ?? null,
+        yclid: attribution?.yclid ?? null,
+        referrer: attribution?.referrer ?? null,
+        landingPage: attribution?.landingPage ?? null,
+        firstTouchAt,
         items: {
           create: items.map((item) => ({
             variantId: item.variantId,

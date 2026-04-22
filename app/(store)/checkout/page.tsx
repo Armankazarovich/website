@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle, Loader2, User, Building2, Bell, Info } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useSession, signIn } from "next-auth/react";
+import { loadAttribution } from "@/lib/utm";
 
 type ClientType = "individual" | "company";
 
@@ -279,6 +280,8 @@ export default function CheckoutPage() {
         comment = comment ? `${companyInfo}\n${comment}` : companyInfo;
       }
 
+      const attribution = loadAttribution();
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -294,6 +297,7 @@ export default function CheckoutPage() {
             price: item.price,
           })),
           totalAmount: totalPrice(),
+          attribution: attribution || undefined,
         }),
       });
 

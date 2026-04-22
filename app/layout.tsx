@@ -8,6 +8,7 @@ import { SwRegister } from "@/components/sw-register";
 import { getSiteSettings, DEFAULT_SETTINGS, getSetting } from "@/lib/site-settings";
 import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
+import { UtmTracker } from "@/components/utm-tracker";
 import "./globals.css";
 
 // Шрифты локальные (vendored в public/fonts/) — не зависим от fonts.gstatic.com при билде
@@ -217,6 +218,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
             <Toaster />
             <HapticInit />
+            <UtmTracker />
             <SwRegister />
             <PushSubscription />
             <Analytics
