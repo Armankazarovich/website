@@ -80,11 +80,27 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
+      - name: Apply DB schema + data migrations (via SSH tunnel)
+        env:
+          NODE_ENV: production
+        run: |
+          # Загружаем DATABASE_URL из скачанного .env (Prisma и tsx без него не подхватят)
+          set -a
+          source .env.production.local
+          set +a
+          echo "🗄️ Applying schema (db push) + data migrations to prod DB..."
+          npm run db:deploy 2>&1 | tail -30
+          echo "✅ DB schema + data up to date"
+
       - name: Build Next.js (no DB mutations)
         env:
           NODE_ENV: production
           NEXT_TELEMETRY_DISABLED: '1'
-        run: npm run build:ci
+        run: |
+          set -a
+          source .env.production.local
+          set +a
+          npm run build:ci
 
       - name: Pack artifact (exclude dev caches)
         run: |
