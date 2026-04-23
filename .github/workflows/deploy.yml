@@ -32,6 +32,25 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
+      - name: Open SSH tunnel to VPS PostgreSQL
+        run: |
+          # Туннель форкается в фон, живёт до конца job'а.
+          # При build Next.js Prisma подключается на localhost:5432 → реально идёт на VPS.
+          ssh -f -N -o StrictHostKeyChecking=accept-new \
+              -o ExitOnForwardFailure=yes \
+              -o ServerAliveInterval=30 \
+              -i ~/.ssh/id_ed25519 \
+              -L 5432:localhost:5432 \
+              "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}"
+          sleep 3
+          # Sanity check: порт должен слушаться
+          if command -v nc >/dev/null 2>&1; then
+            nc -z -w 5 localhost 5432 && echo "✅ DB tunnel up (localhost:5432 → VPS)" || { echo "❌ tunnel not listening"; exit 1; }
+          else
+            # Fallback: bash /dev/tcp
+            (echo > /dev/tcp/localhost/5432) 2>/dev/null && echo "✅ DB tunnel up" || { echo "❌ tunnel not listening"; exit 1; }
+          fi
+
       - name: Download .env from server (for build-time NEXT_PUBLIC_*)
         run: |
           scp -o StrictHostKeyChecking=accept-new \
