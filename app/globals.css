@@ -3777,3 +3777,419 @@ aside.aray-sidebar {
   overflow: hidden;
   transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARAYGLASS 2.0 — Design System by Arman × Claude (23.04.2026)
+   Жёсткий стандарт. Законы в D:\pilorus\ARAYGLASS-2.md
+   Цель: от одной кнопки узнаётся ARAY Production.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── ТОКЕНЫ ──────────────────────────────────────────────────────────────── */
+:root {
+  /* Motion */
+  --ag2-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ag2-dur-fast: 200ms;
+  --ag2-dur-base: 300ms;
+  --ag2-dur-slow: 400ms;
+
+  /* Glass — dark mode default */
+  --ag2-card-bg: rgba(0, 0, 0, 0.35);
+  --ag2-card-bg-hover: rgba(0, 0, 0, 0.42);
+  --ag2-glass-blur: blur(24px) saturate(180%);
+
+  /* Gradient light (primary-light/primary/primary-dark) */
+  --ag2-primary-light: hsl(var(--primary) / 1);
+  --ag2-primary-dark: hsl(var(--primary) / 0.75);
+
+  /* Shadows (depth hints) */
+  --ag2-shadow-sm: 0 4px 16px -4px hsl(var(--primary) / 0.12);
+  --ag2-shadow-md: 0 8px 24px -8px hsl(var(--primary) / 0.15);
+  --ag2-shadow-lg: 0 16px 48px -16px hsl(var(--primary) / 0.18);
+
+  /* Focus ring */
+  --ag2-focus-ring: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--primary) / 0.40);
+}
+
+:root:not(.dark) {
+  --ag2-card-bg: rgba(255, 255, 255, 0.68);
+  --ag2-card-bg-hover: rgba(255, 255, 255, 0.78);
+  --ag2-glass-blur: blur(20px) saturate(150%);
+  --ag2-shadow-sm: 0 4px 16px -4px hsl(var(--primary) / 0.08);
+  --ag2-shadow-md: 0 8px 24px -8px hsl(var(--primary) / 0.10);
+  --ag2-shadow-lg: 0 16px 48px -16px hsl(var(--primary) / 0.12);
+}
+
+/* ── OVERRIDES старых классов (тише, по-взрослому) ─────────────────────────
+   Прежние .arayglass-glow / .arayglass-badge / .arayglass-icon светились
+   ВСЕГДА — это создавало "дискотеку". Теперь свет только при hover/active
+   или при явном .arayglass-glow-always (для орба, главного CTA).
+*/
+.arayglass-glow {
+  box-shadow: none;
+  transition: box-shadow var(--ag2-dur-fast) var(--ag2-easing);
+}
+.arayglass-glow:hover,
+.arayglass-glow[data-active="true"],
+.arayglass-glow.is-active {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--primary) / 0.10),
+    0 0 16px hsl(var(--primary) / 0.12);
+}
+.arayglass-glow-always {
+  box-shadow:
+    inset 0 1px 0 hsl(var(--primary) / 0.12),
+    0 0 20px hsl(var(--primary) / 0.16);
+}
+
+/* Бейдж без always-on glow — теперь tinted bg, чистый */
+.arayglass-badge {
+  box-shadow: none;
+  border: 1px solid transparent;
+  background: hsl(var(--primary) / 0.10);
+  color: hsl(var(--primary));
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* Иконка hover — без drop-shadow перебора, просто оттенок + малый lift */
+.arayglass-icon:hover {
+  filter: none;
+  transform: scale(1.04);
+  color: hsl(var(--primary));
+}
+
+/* ── AG2 КЛАССЫ — новые компоненты ─────────────────────────────────────── */
+
+/* Card — базовая стеклянная карточка AG2 */
+.ag2-card {
+  position: relative;
+  background: var(--ag2-card-bg);
+  backdrop-filter: var(--ag2-glass-blur);
+  -webkit-backdrop-filter: var(--ag2-glass-blur);
+  border: 1px solid hsl(var(--primary) / 0.08);
+  border-radius: 1rem;
+  transition:
+    border-color var(--ag2-dur-base) var(--ag2-easing),
+    background-color var(--ag2-dur-base) var(--ag2-easing),
+    box-shadow var(--ag2-dur-base) var(--ag2-easing);
+}
+.ag2-card:hover {
+  border-color: hsl(var(--primary) / 0.18);
+  background: var(--ag2-card-bg-hover);
+}
+.ag2-card-interactive {
+  cursor: pointer;
+}
+.ag2-card-interactive:hover {
+  box-shadow: var(--ag2-shadow-sm);
+  transform: translateY(-1px);
+}
+.ag2-card-interactive:active {
+  transform: translateY(0) scale(0.995);
+}
+
+/* Button Primary — BRAND SIGNATURE (один на экран) */
+.ag2-btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  color: hsl(var(--primary-foreground, 0 0% 100%));
+  background:
+    linear-gradient(135deg,
+      hsl(var(--primary) / 1) 0%,
+      hsl(var(--primary) / 0.92) 50%,
+      hsl(var(--primary) / 0.82) 100%);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.22),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.08),
+    0 2px 12px -2px hsl(var(--primary) / 0.32);
+  border: 1px solid hsl(var(--primary) / 0.45);
+  transition: all var(--ag2-dur-fast) var(--ag2-easing);
+  cursor: pointer;
+  user-select: none;
+}
+.ag2-btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.28),
+    inset 0 -1px 0 hsl(0 0% 0% / 0.06),
+    0 4px 20px -4px hsl(var(--primary) / 0.42);
+}
+.ag2-btn-primary:active {
+  transform: translateY(0) scale(0.985);
+  filter: brightness(0.96);
+  transition-duration: 100ms;
+}
+.ag2-btn-primary:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 hsl(0 0% 100% / 0.22),
+    0 2px 12px -2px hsl(var(--primary) / 0.32),
+    var(--ag2-focus-ring);
+}
+.ag2-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/* Button Ghost — secondary */
+.ag2-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+  color: hsl(var(--foreground));
+  background: transparent;
+  border: 1px solid hsl(var(--primary) / 0.15);
+  transition: all var(--ag2-dur-fast) var(--ag2-easing);
+  cursor: pointer;
+}
+.ag2-btn-ghost:hover {
+  border-color: hsl(var(--primary) / 0.30);
+  background: hsl(var(--primary) / 0.04);
+  color: hsl(var(--primary));
+}
+.ag2-btn-ghost:active {
+  transform: scale(0.985);
+}
+.ag2-btn-ghost:focus-visible {
+  outline: none;
+  box-shadow: var(--ag2-focus-ring);
+}
+
+/* Button Destructive — опасные действия */
+.ag2-btn-destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.125rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.08);
+  border: 1px solid hsl(var(--destructive) / 0.20);
+  transition: all var(--ag2-dur-fast) var(--ag2-easing);
+  cursor: pointer;
+}
+.ag2-btn-destructive:hover {
+  background: hsl(var(--destructive) / 0.14);
+  border-color: hsl(var(--destructive) / 0.35);
+}
+.ag2-btn-destructive:active { transform: scale(0.985); }
+
+/* Input — универсальный стиль для всех форм */
+.ag2-input {
+  width: 100%;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: hsl(var(--foreground));
+  background: hsl(var(--primary) / 0.03);
+  border: 1px solid hsl(var(--primary) / 0.10);
+  transition: all var(--ag2-dur-fast) var(--ag2-easing);
+}
+.ag2-input::placeholder {
+  color: hsl(var(--muted-foreground) / 0.55);
+}
+.ag2-input:hover {
+  border-color: hsl(var(--primary) / 0.18);
+}
+.ag2-input:focus {
+  outline: none;
+  background: hsl(var(--primary) / 0.05);
+  border-color: hsl(var(--primary) / 0.40);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.12);
+}
+.ag2-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Badge — tinted bg, no glow. Variants by data-tone */
+.ag2-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.10);
+}
+.ag2-badge[data-tone="success"] {
+  color: hsl(142 71% 45%);
+  background: hsl(142 71% 45% / 0.12);
+}
+.ag2-badge[data-tone="warning"] {
+  color: hsl(38 92% 50%);
+  background: hsl(38 92% 50% / 0.14);
+}
+.ag2-badge[data-tone="danger"] {
+  color: hsl(var(--destructive));
+  background: hsl(var(--destructive) / 0.12);
+}
+.ag2-badge[data-tone="muted"] {
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted-foreground) / 0.10);
+}
+
+/* Menu Item — для навигации */
+.ag2-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: all var(--ag2-dur-fast) var(--ag2-easing);
+  user-select: none;
+}
+.ag2-menu-item:hover {
+  background: hsl(var(--primary) / 0.04);
+}
+.ag2-menu-item[data-active="true"],
+.ag2-menu-item.is-active {
+  background: hsl(var(--primary) / 0.10);
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+.ag2-menu-item svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Divider — тонкая линия */
+.ag2-divider {
+  height: 1px;
+  background: hsl(var(--primary) / 0.08);
+  border: 0;
+  margin: 0;
+}
+
+/* Section header — eyebrow labels */
+.ag2-eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Modal / Popup — center screen */
+.ag2-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: hsl(var(--background) / 0.60);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  animation: ag2-fade-in var(--ag2-dur-base) var(--ag2-easing);
+}
+.ag2-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--ag2-card-bg);
+  backdrop-filter: var(--ag2-glass-blur);
+  -webkit-backdrop-filter: var(--ag2-glass-blur);
+  border: 1px solid hsl(var(--primary) / 0.12);
+  border-radius: 1rem;
+  box-shadow: var(--ag2-shadow-lg);
+  z-index: 101;
+  padding: 1.5rem;
+  width: calc(100vw - 2rem);
+  max-width: 32rem;
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  animation: ag2-modal-enter var(--ag2-dur-base) var(--ag2-easing);
+}
+@keyframes ag2-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ag2-modal-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Mobile bottom-sheet variant */
+@media (max-width: 640px) {
+  .ag2-modal-mobile-sheet {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transform: none;
+    border-radius: 1.25rem 1.25rem 0 0;
+    max-width: 100vw;
+    max-height: 85vh;
+    animation: ag2-sheet-enter var(--ag2-dur-base) var(--ag2-easing);
+  }
+  @keyframes ag2-sheet-enter {
+    from { transform: translateY(100%); opacity: 0.5; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* Utility — для tight typography */
+.ag2-tracking-tight { letter-spacing: -0.01em; }
+.ag2-tracking-heading { letter-spacing: -0.02em; }
+
+/* Remove tap highlight globally for AG2 interactive */
+.ag2-card-interactive,
+.ag2-btn-primary,
+.ag2-btn-ghost,
+.ag2-btn-destructive,
+.ag2-menu-item,
+.ag2-input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Hover-only эффекты на НЕ-touch устройствах ──────────────────────── */
+@media (hover: none) {
+  .ag2-card-interactive:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .ag2-btn-primary:hover {
+    filter: none;
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Конец ARAYGLASS 2.0
+   ═══════════════════════════════════════════════════════════════════════════ */
