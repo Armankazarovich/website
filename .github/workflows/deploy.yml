@@ -80,17 +80,20 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Apply DB schema + data migrations (via SSH tunnel)
+      - name: Apply DB schema only (via SSH tunnel) — NO data-migrate here!
         env:
           NODE_ENV: production
         run: |
-          # Загружаем DATABASE_URL из скачанного .env (Prisma и tsx без него не подхватят)
+          # ВАЖНО: на CI делаем ТОЛЬКО schema push (нужен чтобы Prisma client совпал с БД при build).
+          # data-migrate.ts (tsx prisma/data-migrate.ts) выполняется ПОЗЖЕ на сервере (release step),
+          # потому что шаг 7 (восстановление фото категорий) использует existsSync на ЛОКАЛЬНОМ диске —
+          # на CI runner'е этих файлов нет, и data-migrate бы перезаписал image на несуществующие пути.
           set -a
           source .env.production.local
           set +a
-          echo "🗄️ Applying schema (db push) + data migrations to prod DB..."
-          npm run db:deploy 2>&1 | tail -30
-          echo "✅ DB schema + data up to date"
+          echo "🗄️ Applying schema (prisma db push) to prod DB..."
+          npx prisma db push --skip-generate 2>&1 | tail -30
+          echo "✅ DB schema up to date (data-migrate runs on server, not here)"
 
       - name: Build Next.js (no DB mutations)
         env:
