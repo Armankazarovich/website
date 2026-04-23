@@ -49,7 +49,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 30m
+          command_timeout: 45m
           envs: ANTHROPIC_API_KEY,ELEVENLABS_API_KEY,GOOGLE_AI_API_KEY
           script: |
             set -eo pipefail
