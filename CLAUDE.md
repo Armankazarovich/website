@@ -864,6 +864,59 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 
 ## Что сделано — полная история
 
+### Сессия 23.04.2026 (сессия 24) — Генеральная проверка: Session 1+2 Products/Variants/Upload + Mobile Arai + клиент Пилорус (5 коммитов)
+
+**Контекст:** Арман пошёл отдыхать, дал карт-бланш на «генеральную проверку по всем фронтам — товары, дизайн ARAYGLASS, мобильное нижнее меню Арая». Плюс мой Session 1 (профаудит Products) из прошлой итерации был закоммичен (commit `ed43917`), но не задеплоен — я продолжил в этой сессии.
+
+**Session 1 деплой (commit `ed43917` — уже на проде до начала этой сессии):**
+- `app/api/upload/route.ts` — rate-limits (5/ч гость, 30/ч user), magic number validation (JPEG/PNG/GIF/WebP signatures), honeypot, full UUID, auth-aware limits
+- `app/api/admin/upload/route.ts` — whitelist folders (path traversal prevention), MIME+ext+size+magic checks, max 10MB
+- `app/api/uploads/[...path]/route.ts` — SVG удалён из MIME_TYPES (XSS vector)
+- `app/api/admin/products/[id]/route.ts` — PATCH: normalized variants, duplicate size check, user-friendly throws; atomic `prisma.$transaction` для delete+upsert вариантов; P2002→409, P2003→400; DELETE: soft-delete когда OrderItem ссылается на варианты
+- `app/api/admin/categories/[id]/route.ts` — `wouldCreateCycle()` walk-up детектор, DELETE проверяет `_count.products > 0` И `_count.children > 0`
+- `app/admin/products/[id]/page.tsx` — client validation, error handling; `setImages(prev => [...prev, finalUrl])` APPEND вместо replace (single-image bug fix)
+
+**Session 2 (3 коммита в этой сессии):**
+
+**Commit `7f45e75` — schema + POST validation + mobile Arai voice:**
+- `prisma/schema.prisma` — `ProductVariant` получил `sortOrder Int @default(0)`, `createdAt DateTime @default(now())`, `updatedAt DateTime @default(now()) @updatedAt`, индекс `@@index([productId, sortOrder])`. Готовит DB к optimistic locking и drag-drop reordering.
+- `app/api/admin/products/route.ts` POST — полная ручная zod-валидация (name, slug regex + length, categoryId, saleUnit enum, images array), проверка существования категории перед созданием, P2002→409 slug conflict, P2003→400 category missing. Возвращает 201 Created.
+- `components/admin/admin-mobile-bottom-nav.tsx` — Арай в dock теперь **long-press 400ms → voice** (dispatch `aray:voice` CustomEvent + haptic 12ms) и **short-tap → chat** (haptic 6ms). `badge` → `badgeCount={notifCount > 0 ? notifCount : undefined}` (согласовано с store dock API). Label меняется "Арай" → "Слушаю…" в voice mode. Haptic добавлен на колокольчик и Аккаунт кнопки.
+
+**Commit `0bc0d8a` — bulk endpoints + audit log + inventory roles:**
+- `app/api/admin/products/bulk-price/route.ts` — переписан: atomic `prisma.$transaction` вместо `Promise.all` (всё или ничего), лимит 500 товаров, audit log в ActivityLog (action: `BULK_PRICE_UPDATE`, non-blocking). Пропускает варианты с pricePerCube=0 или null.
+- `app/api/admin/products/bulk-active/route.ts` — НОВЫЙ: массовое переключение active/featured через `updateMany` (было N параллельных PATCH), audit log `BULK_PRODUCT_FLAGS`, лимит 1000 товаров.
+- `app/api/admin/products/bulk-category/route.ts` — НОВЫЙ: массовый перенос товаров в новую категорию, предварительная проверка существования category, audit log `BULK_PRODUCT_CATEGORY`, P2003 маппинг.
+- `app/api/admin/inventory/route.ts` — переписан: **MANAGER + WAREHOUSE** получили доступ (было только ADMIN/SUPER_ADMIN), **role-separated editing**: WAREHOUSE может менять только stock/inStock/lowStockThreshold, но НЕ цены (бизнес-правило, 403 если пытается). Валидация чисел (≥0), audit log `INVENTORY_UPDATE`, P2025→404.
+
+**Commit `8be6c4c` — убрана «Бесплатная доставка» (запрос клиента Пилорус):**
+- `prisma/data-migrate.ts` шаг 11 — idempotent `updateMany({active: false})` по promotion с title/description содержащими «бесплатн» или «доставка бесплатна». Деактивируется автоматически при каждом деплое.
+- `prisma/seed-promotions.ts` — убрана вторая promotion запись (теперь только «Скидки при большом объёме»).
+- `app/admin/email/page.tsx` — шаблон email: «🚚 Бесплатная доставка при заказе от 10 м³…» → «📞 Доставка по Москве и МО — рассчитаем точную стоимость».
+- `app/admin/orders/new/page.tsx` — подсказка менеджерам Апсейл: «бесплатную доставку по Химкам» → «максимальную скидку на доставку», tip тоже обновлён.
+- `app/api/promo-request/route.ts` — label `"Бесплатная доставка"` → `"Расчёт доставки"` для тэга `free-delivery`.
+- ARAYGLASS полировка (side-effect): `app/cabinet/page.tsx` ORDER_STATUS_COLORS fallback `bg-gray-100 text-gray-800` → `bg-muted text-muted-foreground`, `components/admin/photo-search.tsx` ExternalLink иконка переведена на CSS var.
+
+**ARAYGLASS аудит (агент):** 107 TSX файлов отсканированы. Нарушений: `rounded-md/sm/lg` — 109 файлов, `shadow-sm/md/lg` — 58 файлов, `bg-gray/text-gray/border-gray` — всего 3 критичных (остальные 6 — декоративные календарь-точки staff page + print-only в inventory + backup copies в `.claude/`). Эмодзи в UI — 15+ мест (email templates + workflows page + photo-editor EMOJI_ICONS). НЕ исправлял массово в этой сессии (риск ломки визуала) — оставил на отдельные полировочные сессии #77-#86.
+
+**Mobile dock Arai аудит (агент):** 2 бага в admin dock найдены и исправлены (long-press + haptic + badgeCount несогласованность). Store dock — touch targets 48px (ok), long-press + haptic уже были. Теперь поведение Арая идентично в обоих dock: short tap → chat, long press 400ms → voice.
+
+**Верификация:**
+- TSC 0 ошибок перед каждым коммитом
+- Все 3 деплоя OK, prod HTTP 200 на /, /catalog, /api/health, /login после каждого
+- `test-production.js`: **42/44 PASS, 0 FAIL** (2 WARN — динамические телефоны, не регрессия)
+- Последний деплой `8be6c4c` устоялся через 240 сек (PM2 cold-start margin)
+
+**Осталось на следующие сессии:**
+- ARAYGLASS rounded-md/lg → rounded-xl массово (100+ файлов, точечно по разделам 77-86)
+- shadow-sm/md/lg → arayglass-glow или убрать (58 файлов)
+- Эмодзи в админских UI → lucide-react иконки (photo-editor EMOJI_ICONS array, workflows page, admin/email templates)
+- `@@unique([productId, size])` на ProductVariant — **НЕ добавлено в этой сессии** (нужен preflight check на проде: если есть дубликаты size в одном product, миграция упадёт). Сначала запустить SQL-скрипт проверки, потом добавить constraint.
+- UI для bulk-active/bulk-category (сейчас только endpoints, нужен Client toolbar в `/admin/products`)
+- Полный API-аудит остальных admin routes (services, workflows, email)
+
+---
+
 ### Сессия 22.04.2026 (сессия 21) — Account Drawer редизайн в ARAYGLASS + клиентский CRM Level 1
 
 **Контекст:** Перед запуском Яндекс.Директа Арман хочет живой E2E обход прода вместе со мной — он описывает, я читаю код, чиню одним проходом, деплою, верифицирую. Начинаем с попапа `/cabinet` в ПилоРусе (скрин показал прежний простой drawer с двумя пунктами). Требование: весь клиентский CRM в попапе, ARAYGLASS стиль, каждый клик открывает вложенный попап сбоку, роль-гейтинг, банер «Лаборатория маркетинга ARAY» для сотрудников → ведёт в `/admin` (НЕ новая страница).
