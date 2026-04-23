@@ -182,6 +182,11 @@ jobs:
 
             # ── 6. Apply schema changes + data migrations ──
             echo "🗄️ Applying DB schema + data migrations..."
+            # Load .env into shell env so tsx data-migrate sees DATABASE_URL.
+            # Prisma CLI loads .env sama, но tsx — нет.
+            set -a
+            source .env
+            set +a
             npm run db:deploy 2>&1 | tail -20
 
             # ── 7. Restart pm2 ──
