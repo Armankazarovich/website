@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
@@ -1053,6 +1054,7 @@ function OrderDetailPanel({
 }
 
 function OrdersKanban({ search }: { search: string }) {
+  const { toast } = useToast();
   const [orders, setOrders] = useState<OrderCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -1104,26 +1106,61 @@ function OrdersKanban({ search }: { search: string }) {
     const order = dragOrderRef.current;
     if (!order || order.status === newStatus) return;
 
+    const prevStatus = order.status;
     // Оптимистичное обновление
     setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus } : o));
 
-    await fetch("/api/admin/crm/orders-kanban", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId: order.id, status: newStatus }),
-    });
+    try {
+      const res = await fetch("/api/admin/crm/orders-kanban", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId: order.id, status: newStatus }),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const stageLabel = ORDER_STAGES.find(s => s.key === newStatus)?.label ?? newStatus;
+      toast({ title: "Статус изменён", description: `Заказ #${order.orderNumber} → ${stageLabel}` });
+    } catch (err) {
+      // Откат оптимистичного обновления
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: prevStatus } : o));
+      toast({
+        title: "Не удалось сохранить",
+        description: "Статус заказа не изменён. Проверь соединение и попробуй снова.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleOrderStatusChange = async (orderId: string, newStatus: string) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    const prev = orders.find(o => o.id === orderId);
+    const prevStatus = prev?.status;
+    setOrders(prevArr => prevArr.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder({ ...selectedOrder, status: newStatus });
     }
-    await fetch("/api/admin/crm/orders-kanban", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, status: newStatus }),
-    });
+    try {
+      const res = await fetch("/api/admin/crm/orders-kanban", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const stageLabel = ORDER_STAGES.find(s => s.key === newStatus)?.label ?? newStatus;
+      toast({ title: "Статус изменён", description: `${stageLabel}` });
+    } catch (err) {
+      if (prevStatus) {
+        setOrders(prevArr => prevArr.map(o => o.id === orderId ? { ...o, status: prevStatus } : o));
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder({ ...selectedOrder, status: prevStatus });
+        }
+      }
+      toast({
+        title: "Не удалось сохранить",
+        description: "Проверь соединение и попробуй снова.",
+        variant: "destructive",
+      });
+    }
   };
 
   const ordersByStatus = ORDER_STAGES.reduce((acc, s) => {
@@ -1296,6 +1333,7 @@ function OrdersKanban({ search }: { search: string }) {
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export function CrmClient() {
+  const { toast } = useToast();
   const [tab, setTab] = useState<"orders" | "leads">("orders");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -1354,14 +1392,28 @@ export function CrmClient() {
     const lead = dragLeadRef.current;
     if (!lead || lead.stage === newStage) return;
 
+    const prevStage = lead.stage;
     // Оптимистичное обновление
     setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, stage: newStage } : l));
 
-    await fetch(`/api/admin/crm/leads/${lead.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage: newStage }),
-    });
+    try {
+      const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const stageLabel = STAGES.find(s => s.key === newStage)?.label ?? newStage;
+      toast({ title: "Этап изменён", description: `${lead.name} → ${stageLabel}` });
+    } catch (err) {
+      // Откат при ошибке
+      setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, stage: prevStage } : l));
+      toast({
+        title: "Не удалось сохранить этап",
+        description: "Лид не передвинут. Проверь соединение и попробуй снова.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddLead = (stage: string) => {

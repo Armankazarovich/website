@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { BackButton } from "@/components/ui/back-button";
-import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getSiteSettings, getSetting, DEFAULT_SETTINGS } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Пользовательское соглашение и политика конфиденциальности",
@@ -14,13 +14,24 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-// Force dynamic rendering — страница опирается на динамические настройки телефона из БД
-export const dynamic = "force-dynamic";
+// ISR: кэшируем на 5 минут (настройки телефона меняются редко).
+// Было force-dynamic — приводило к 500 при каждом запросе если runtime
+// getSiteSettings() вылетал. ISR + безопасный fallback на DEFAULT_SETTINGS
+// гарантирует что страница всегда отрендерится.
+export const revalidate = 300;
 
 export default async function TermsPage() {
-  const settings = await getSiteSettings();
-  const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
-  const phoneDisplay = getSetting(settings, "phone") || "8-985-067-08-88";
+  // Безопасное получение настроек — при любой ошибке БД/прокси падаем на DEFAULT_SETTINGS,
+  // страница ВСЕГДА рендерится (ФЗ-152 обязательная — не имеет права упасть).
+  let settings: Record<string, string> = {};
+  try {
+    settings = await getSiteSettings();
+  } catch (e) {
+    console.warn("[terms] getSiteSettings failed, using DEFAULT_SETTINGS:", (e as Error).message);
+    settings = {};
+  }
+  const phoneLink = getSetting(settings, "phone_link") || DEFAULT_SETTINGS.phone_link;
+  const phoneDisplay = getSetting(settings, "phone") || DEFAULT_SETTINGS.phone;
   return (
     <div className="container py-12 max-w-3xl">
       <div className="flex items-start gap-3 mb-3">

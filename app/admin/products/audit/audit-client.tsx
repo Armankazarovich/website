@@ -6,6 +6,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -23,6 +24,7 @@ import {
   RefreshCw,
   Package,
 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Variant {
   id: string;
@@ -58,8 +60,10 @@ interface Props {
 }
 
 export function AuditClient({ products, emptyCategories }: Props) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [working, setWorking] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [rowWorking, setRowWorking] = useState<string | null>(null);
 
   // ─── Вычисляем проблемы ──────────────────────────────────────
 
@@ -135,7 +139,6 @@ export function AuditClient({ products, emptyCategories }: Props) {
     if (ids.length === 0) return;
     if (!confirm(`${label}: ${ids.length} записей. Продолжить?`)) return;
     setWorking(action);
-    setMessage(null);
     try {
       const res = await fetch("/api/admin/products/audit-actions", {
         method: "POST",
@@ -144,14 +147,50 @@ export function AuditClient({ products, emptyCategories }: Props) {
       });
       const data = await res.json();
       if (data.ok) {
-        setMessage(`✓ ${label} — обновлено ${data.updated}. Обнови страницу (F5) чтобы увидеть результат.`);
+        toast({ title: `${label}`, description: `Обновлено ${data.updated}. Список обновляется…` });
+        router.refresh();
       } else {
-        setMessage(`✗ Ошибка: ${data.error || "неизвестная"}`);
+        toast({
+          title: "Ошибка",
+          description: data.error || "Не удалось выполнить действие",
+          variant: "destructive",
+        });
       }
     } catch (e) {
-      setMessage(`✗ Ошибка сети: ${String(e)}`);
+      toast({
+        title: "Ошибка сети",
+        description: String(e),
+        variant: "destructive",
+      });
     } finally {
       setWorking(null);
+    }
+  }
+
+  /** Одиночное действие по кнопке в строке — без confirm, с мгновенным toast */
+  async function rowAction(action: string, id: string, successTitle: string) {
+    setRowWorking(`${action}:${id}`);
+    try {
+      const res = await fetch("/api/admin/products/audit-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ids: [id] }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        toast({ title: successTitle });
+        router.refresh();
+      } else {
+        toast({
+          title: "Ошибка",
+          description: data.error || "Не удалось выполнить",
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
+      toast({ title: "Ошибка сети", description: String(e), variant: "destructive" });
+    } finally {
+      setRowWorking(null);
     }
   }
 
@@ -185,8 +224,8 @@ export function AuditClient({ products, emptyCategories }: Props) {
         <span className="text-muted-foreground">/</span>
         <h1 className="text-2xl font-semibold">Аудит каталога</h1>
         <button
-          onClick={() => window.location.reload()}
-          className="ml-auto inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-border hover:bg-primary/5 transition-colors"
+          onClick={() => router.refresh()}
+          className="ml-auto inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border border-border hover:bg-primary/5 transition-colors"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           Обновить
@@ -205,19 +244,6 @@ export function AuditClient({ products, emptyCategories }: Props) {
           color={totalProblems > 0 ? "amber" : "emerald"}
         />
       </div>
-
-      {/* Системное сообщение */}
-      {message && (
-        <div
-          className={`rounded-2xl p-4 border ${
-            message.startsWith("✓")
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500"
-              : "bg-red-500/10 border-red-500/30 text-red-500"
-          }`}
-        >
-          {message}
-        </div>
-      )}
 
       {/* Если всё ок */}
       {totalProblems === 0 && (
@@ -255,7 +281,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           }
         >
           <Table
-            headers={["Товар", "Размер", "₽/м³", "₽/шт", "В наличии"]}
+            headers={["Товар", "Размер", "₽/м³", "₽/шт", "В наличии", "Действие"]}
             rows={checks.variantsNoPrice.map((v) => [
               <Link
                 key="n"
@@ -274,6 +300,17 @@ export function AuditClient({ products, emptyCategories }: Props) {
               ) : (
                 <span key="is" className="text-muted-foreground text-xs">нет</span>
               ),
+              <RowAction
+                key="a"
+                busy={rowWorking === `hide-variants:${v.variant.id}`}
+                disabled={!!working || !!rowWorking}
+                onClick={() =>
+                  rowAction("hide-variants", v.variant.id, `Вариант скрыт: ${v.product.name} · ${v.variant.size}`)
+                }
+                icon={EyeOff}
+                label="Скрыть"
+                tone="amber"
+              />,
             ])}
           />
         </ProblemSection>
@@ -302,7 +339,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           }
         >
           <Table
-            headers={["Товар", "Вариантов всего", "Категория"]}
+            headers={["Товар", "Вариантов всего", "Категория", "Действие"]}
             rows={checks.productsAllHidden.map((p) => [
               <Link
                 key="n"
@@ -313,6 +350,17 @@ export function AuditClient({ products, emptyCategories }: Props) {
               </Link>,
               p.variants.length,
               p.category?.name || "—",
+              <RowAction
+                key="a"
+                busy={rowWorking === `deactivate-products:${p.id}`}
+                disabled={!!working || !!rowWorking}
+                onClick={() =>
+                  rowAction("deactivate-products", p.id, `Товар скрыт: ${p.name}`)
+                }
+                icon={PowerOff}
+                label="Деактивировать"
+                tone="amber"
+              />,
             ])}
           />
         </ProblemSection>
@@ -327,7 +375,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           color="amber"
         >
           <Table
-            headers={["Товар", "Категория", "Варианты", "Активен"]}
+            headers={["Товар", "Категория", "Варианты", "Активен", "Действие"]}
             rows={checks.productsNoImage.map((p) => [
               <Link
                 key="n"
@@ -343,6 +391,31 @@ export function AuditClient({ products, emptyCategories }: Props) {
               ) : (
                 <span key="a" className="text-muted-foreground text-xs">нет</span>
               ),
+              p.active ? (
+                <RowAction
+                  key="act"
+                  busy={rowWorking === `deactivate-products:${p.id}`}
+                  disabled={!!working || !!rowWorking}
+                  onClick={() =>
+                    rowAction("deactivate-products", p.id, `Товар скрыт: ${p.name}`)
+                  }
+                  icon={PowerOff}
+                  label="Скрыть"
+                  tone="amber"
+                />
+              ) : (
+                <RowAction
+                  key="act"
+                  busy={rowWorking === `activate-products:${p.id}`}
+                  disabled={!!working || !!rowWorking}
+                  onClick={() =>
+                    rowAction("activate-products", p.id, `Товар показан: ${p.name}`)
+                  }
+                  icon={Power}
+                  label="Показать"
+                  tone="emerald"
+                />
+              ),
             ])}
           />
         </ProblemSection>
@@ -357,7 +430,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           color="amber"
         >
           <Table
-            headers={["Товар", "Категория", "Длина описания"]}
+            headers={["Товар", "Категория", "Длина описания", "Действие"]}
             rows={checks.productsNoDescription.map((p) => [
               <Link
                 key="n"
@@ -368,6 +441,31 @@ export function AuditClient({ products, emptyCategories }: Props) {
               </Link>,
               p.category?.name || "—",
               p.description?.trim().length ?? 0,
+              p.active ? (
+                <RowAction
+                  key="act"
+                  busy={rowWorking === `deactivate-products:${p.id}`}
+                  disabled={!!working || !!rowWorking}
+                  onClick={() =>
+                    rowAction("deactivate-products", p.id, `Товар скрыт: ${p.name}`)
+                  }
+                  icon={PowerOff}
+                  label="Скрыть"
+                  tone="amber"
+                />
+              ) : (
+                <RowAction
+                  key="act"
+                  busy={rowWorking === `activate-products:${p.id}`}
+                  disabled={!!working || !!rowWorking}
+                  onClick={() =>
+                    rowAction("activate-products", p.id, `Товар показан: ${p.name}`)
+                  }
+                  icon={Power}
+                  label="Показать"
+                  tone="emerald"
+                />
+              ),
             ])}
           />
         </ProblemSection>
@@ -382,7 +480,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           color="red"
         >
           <Table
-            headers={["Товар", "Категория", "Активен"]}
+            headers={["Товар", "Категория", "Активен", "Действие"]}
             rows={checks.productsNoVariants.map((p) => [
               <Link
                 key="n"
@@ -396,6 +494,31 @@ export function AuditClient({ products, emptyCategories }: Props) {
                 <span key="a" className="text-emerald-500 text-xs">да</span>
               ) : (
                 <span key="a" className="text-muted-foreground text-xs">нет</span>
+              ),
+              p.active ? (
+                <RowAction
+                  key="act"
+                  busy={rowWorking === `deactivate-products:${p.id}`}
+                  disabled={!!working || !!rowWorking}
+                  onClick={() =>
+                    rowAction("deactivate-products", p.id, `Товар скрыт: ${p.name}`)
+                  }
+                  icon={PowerOff}
+                  label="Скрыть"
+                  tone="amber"
+                />
+              ) : (
+                <RowAction
+                  key="act"
+                  busy={rowWorking === `activate-products:${p.id}`}
+                  disabled={!!working || !!rowWorking}
+                  onClick={() =>
+                    rowAction("activate-products", p.id, `Товар показан: ${p.name}`)
+                  }
+                  icon={Power}
+                  label="Показать"
+                  tone="emerald"
+                />
               ),
             ])}
           />
@@ -411,7 +534,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           color="muted"
         >
           <Table
-            headers={["Товар", "Размер", "₽/м³", "₽/шт"]}
+            headers={["Товар", "Размер", "₽/м³", "₽/шт", "Действие"]}
             rows={checks.variantsOutOfStock.map((v) => [
               <Link
                 key="n"
@@ -425,6 +548,17 @@ export function AuditClient({ products, emptyCategories }: Props) {
               </span>,
               v.variant.pricePerCube ? v.variant.pricePerCube.toLocaleString("ru-RU") : "—",
               v.variant.pricePerPiece ? v.variant.pricePerPiece.toLocaleString("ru-RU") : "—",
+              <RowAction
+                key="a"
+                busy={rowWorking === `show-variants:${v.variant.id}`}
+                disabled={!!working || !!rowWorking}
+                onClick={() =>
+                  rowAction("show-variants", v.variant.id, `Вариант показан: ${v.product.name} · ${v.variant.size}`)
+                }
+                icon={Eye}
+                label="Показать"
+                tone="emerald"
+              />,
             ])}
           />
         </ProblemSection>
@@ -554,6 +688,39 @@ function ProblemSection({
       </div>
       {children}
     </div>
+  );
+}
+
+function RowAction({
+  busy,
+  disabled,
+  onClick,
+  icon: Icon,
+  label,
+  tone,
+}: {
+  busy: boolean;
+  disabled: boolean;
+  onClick: () => void;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  tone: "amber" | "emerald" | "red";
+}) {
+  const toneClass =
+    tone === "emerald"
+      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/15"
+      : tone === "red"
+      ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/15"
+      : "bg-amber-500/10 border-amber-500/30 text-amber-600 hover:bg-amber-500/15";
+  return (
+    <button
+      onClick={onClick}
+      disabled={busy || disabled}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-xs font-medium disabled:opacity-50 transition-colors ${toneClass}`}
+    >
+      {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <Icon className="w-3 h-3" />}
+      {label}
+    </button>
   );
 }
 

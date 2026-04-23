@@ -18,6 +18,7 @@ export default async function InventoryPage() {
       pricePerPiece: true,
       inStock: true,
       stockQty: true,
+      lowStockThreshold: true,
       product: {
         select: { id: true, name: true, slug: true, saleUnit: true, category: { select: { name: true } } },
       },

@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Package, CheckCircle2, XCircle, FileDown,
   Printer, ChevronDown, Pencil, Minus, LayoutList, LayoutGrid,
-  Settings2, Check,
+  Settings2, Check, Bell, X as XIcon,
 } from "lucide-react";
 
 type Variant = {
@@ -16,6 +16,7 @@ type Variant = {
   pricePerPiece: unknown;
   inStock: boolean;
   stockQty: number | null;
+  lowStockThreshold?: number;
   product: {
     id: string;
     name: string;
@@ -151,6 +152,8 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
   const [toast, setToast] = useState<{ msg: string; type: "ok" | "err" } | null>(null);
   const [showColMenu, setShowColMenu] = useState(false);
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(new Set(DEFAULT_COLS));
+  const [thresholdModal, setThresholdModal] = useState<{ variant: Variant; value: string } | null>(null);
+  const [thresholdSaving, setThresholdSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const colMenuRef = useRef<HTMLDivElement>(null);
 
@@ -273,6 +276,39 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
     setVariants(vs => vs.map(x => x.id === v.id ? { ...x, inStock: newInStock } : x));
     await patchVariant(v.id, { inStock: newInStock }, newInStock ? "В наличии" : "Нет в наличии");
   }, [patchVariant]);
+
+  /* ── threshold save ── */
+  const saveThreshold = useCallback(async () => {
+    if (!thresholdModal) return;
+    const raw = thresholdModal.value.trim();
+    const n = raw === "" ? 0 : parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 0 || n > 100000) {
+      showToast("Порог: число от 0 до 100000", "err");
+      return;
+    }
+    const variantId = thresholdModal.variant.id;
+    setThresholdSaving(true);
+    try {
+      const res = await fetch("/api/admin/inventory/threshold", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variantId, threshold: n }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        showToast(data?.error || "Не удалось сохранить порог", "err");
+        setThresholdSaving(false);
+        return;
+      }
+      setVariants(vs => vs.map(x => x.id === variantId ? { ...x, lowStockThreshold: n } : x));
+      showToast(n === 0 ? "Порог отключён" : `Порог: ${n} шт.`, "ok");
+      setThresholdModal(null);
+    } catch {
+      showToast("Нет соединения с сервером", "err");
+    } finally {
+      setThresholdSaving(false);
+    }
+  }, [thresholdModal]);
 
   /* shared props for EditCell */
   const editProps = { editing, editVal, saving, inputRef, onStartEdit: startEdit, onChangeVal: setEditVal, onSave: saveEdit, onCancel: cancelEdit };
@@ -424,6 +460,19 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                     </div>
                   )}
                 </div>
+                <button
+                  onClick={() => setThresholdModal({ variant: v, value: String(v.lowStockThreshold ?? 0) })}
+                  className={`w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-colors min-h-[40px] ${
+                    v.lowStockThreshold && v.lowStockThreshold > 0
+                      ? "border-amber-500/40 text-amber-600 bg-amber-500/10"
+                      : "border-border text-muted-foreground hover:bg-primary/5"
+                  }`}
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  {v.lowStockThreshold && v.lowStockThreshold > 0
+                    ? `Порог: ≤ ${v.lowStockThreshold} шт.`
+                    : "Настроить порог предупреждения"}
+                </button>
               </div>
             ))}
           </div>
@@ -450,8 +499,14 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                       <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />Ничего не найдено
                     </td></tr>
                   )}
-                  {filtered.map(v => (
-                    <tr key={v.id} className={`hover:bg-primary/[0.04] transition-colors ${!v.inStock ? "opacity-60" : ""}`}>
+                  {filtered.map(v => {
+                    const belowThreshold =
+                      v.lowStockThreshold !== undefined &&
+                      v.lowStockThreshold > 0 &&
+                      v.stockQty !== null &&
+                      v.stockQty <= v.lowStockThreshold;
+                    return (
+                    <tr key={v.id} className={`hover:bg-primary/[0.04] transition-colors ${!v.inStock ? "opacity-60" : ""} ${belowThreshold ? "bg-amber-500/[0.06]" : ""}`}>
                       <td className="px-4 py-3">
                         <Link href={`/admin/products/${v.product.id}`} className="font-medium hover:text-primary transition-colors line-clamp-1">
                           {v.product.name}
@@ -482,12 +537,29 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                         </td>
                       )}
                       <td className="px-4 py-3 no-print">
-                        <Link href={`/admin/products/${v.product.id}?tab=variants`} className="text-xs text-primary hover:underline whitespace-nowrap">
-                          →
-                        </Link>
+                        <div className="flex items-center gap-1.5 justify-end whitespace-nowrap">
+                          <button
+                            onClick={() => setThresholdModal({ variant: v, value: String(v.lowStockThreshold ?? 0) })}
+                            title={v.lowStockThreshold && v.lowStockThreshold > 0
+                              ? `Порог предупреждения: ${v.lowStockThreshold} шт.`
+                              : "Настроить порог предупреждения"}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-xl border text-xs transition-colors ${
+                              v.lowStockThreshold && v.lowStockThreshold > 0
+                                ? "border-amber-500/40 text-amber-600 bg-amber-500/10 hover:bg-amber-500/15"
+                                : "border-border text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5"
+                            }`}
+                          >
+                            <Bell className="w-3 h-3" />
+                            {v.lowStockThreshold && v.lowStockThreshold > 0 ? `≤ ${v.lowStockThreshold}` : "Порог"}
+                          </button>
+                          <Link href={`/admin/products/${v.product.id}?tab=variants`} className="text-xs text-primary hover:underline">
+                            →
+                          </Link>
+                        </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -499,6 +571,94 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           </div>
         </div>
       </div>
+
+      {/* ── Модал: Порог предупреждения ──────────────────────────── */}
+      {thresholdModal && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => !thresholdSaving && setThresholdModal(null)}
+        >
+          <div
+            className="w-full max-w-md bg-card border border-border rounded-2xl shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <Bell className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-foreground">Порог предупреждения</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Когда остаток упадёт ниже — будет подсветка
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => !thresholdSaving && setThresholdModal(null)}
+                className="p-1.5 rounded-xl hover:bg-primary/5 transition-colors text-muted-foreground hover:text-foreground"
+                aria-label="Закрыть"
+              >
+                <XIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-muted/40 border border-border rounded-xl p-3 text-sm">
+              <p className="font-medium text-foreground line-clamp-1">{thresholdModal.variant.product.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {thresholdModal.variant.product.category.name} · <span className="font-mono">{thresholdModal.variant.size}</span>
+                {thresholdModal.variant.stockQty !== null && (
+                  <> · Сейчас: <span className="font-medium text-foreground">{thresholdModal.variant.stockQty} шт.</span></>
+                )}
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground block mb-2">
+                Порог (шт.)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100000}
+                autoFocus
+                value={thresholdModal.value}
+                onChange={(e) => setThresholdModal(m => m ? { ...m, value: e.target.value } : m)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); saveThreshold(); }
+                  if (e.key === "Escape") { e.preventDefault(); if (!thresholdSaving) setThresholdModal(null); }
+                }}
+                placeholder="Например, 5"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              />
+              <p className="text-xs text-muted-foreground mt-2">
+                0 — отключить предупреждение. При остатке ≤ порога строка подсветится амбером.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={() => setThresholdModal(null)}
+                disabled={thresholdSaving}
+                className="flex-1 min-h-[44px] px-4 rounded-xl border border-border bg-card text-sm font-medium hover:bg-primary/5 transition-colors disabled:opacity-50"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={saveThreshold}
+                disabled={thresholdSaving}
+                className="flex-1 min-h-[44px] px-4 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 inline-flex items-center justify-center gap-2"
+              >
+                {thresholdSaving ? (
+                  <><span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" /> Сохранение</>
+                ) : (
+                  <><Check className="w-4 h-4" /> Сохранить</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
