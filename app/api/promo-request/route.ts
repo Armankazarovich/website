@@ -15,7 +15,7 @@ const promoLimiter = rateLimit("promo-request", 5, 60 * 60 * 1000);
 // Промо-типы (какая акция → какие теги + лейбл)
 const PROMO_LABELS: Record<string, { label: string; tags: string[] }> = {
   "volume-discount": { label: "Скидка за объём", tags: ["Акция", "Объём"] },
-  "free-delivery":   { label: "Бесплатная доставка",  tags: ["Акция", "Доставка"] },
+  "free-delivery":   { label: "Расчёт доставки",  tags: ["Акция", "Доставка"] },
 };
 
 function sanitize(value: unknown, max = 500): string {

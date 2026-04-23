@@ -148,7 +148,7 @@ export default async function CabinetDashboard() {
           <div className="divide-y divide-border">
             {recentOrders.map((order) => {
               const StatusIcon = STATUS_ICONS[order.status] ?? ShoppingBag;
-              const color = ORDER_STATUS_COLORS[order.status] || "bg-gray-100 text-gray-800";
+              const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
               return (
                 <div key={order.id} className="p-4">
                   {/* Order top row */}

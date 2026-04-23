@@ -253,7 +253,7 @@ export function PhotoSearch({ productId, productName, onPhotoAdded, onClose }: P
                             className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full bg-white/90 flex items-center justify-center shadow-lg hover:bg-white"
                             title="Открыть на Pixabay"
                           >
-                            <ExternalLink className="w-4 h-4 text-gray-700" />
+                            <ExternalLink className="w-4 h-4" style={{ color: "hsl(var(--foreground))" }} />
                           </a>
                         </>
                       )}

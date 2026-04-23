@@ -14,17 +14,10 @@ async function main() {
         discount: 30,
         active: true,
       },
-      {
-        title: "Бесплатная доставка от 10 м³",
-        description:
-          "При заказе пиломатериалов от 10 м³ доставка по Москве и Московской области полностью бесплатна. Используем собственный транспорт. Экономия до 8 000 ₽.",
-        discount: null,
-        active: true,
-      },
     ],
   });
 
-  console.log("✅ 2 promotions added successfully!");
+  console.log("✅ 1 promotion added successfully!");
 }
 
 main()

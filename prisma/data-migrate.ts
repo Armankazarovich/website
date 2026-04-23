@@ -180,6 +180,28 @@ async function main() {
     console.log("[data-migrate] ⚠ Tenant seed пропущен:", e.message);
   }
 
+  // ── Шаг 11: Деактивация промо «Бесплатная доставка» (запрос клиента Пилорус, 23.04.2026)
+  try {
+    const result = await prisma.promotion.updateMany({
+      where: {
+        active: true,
+        OR: [
+          { title: { contains: "Бесплатная доставка", mode: "insensitive" } },
+          { title: { contains: "бесплатн", mode: "insensitive" } },
+          { description: { contains: "доставка бесплатна", mode: "insensitive" } },
+        ],
+      },
+      data: { active: false },
+    });
+    if (result.count > 0) {
+      console.log(`[data-migrate] ✓ Деактивировано промо «Бесплатная доставка» (${result.count} записей) — шаг 11`);
+    } else {
+      console.log("[data-migrate] ✓ Промо «Бесплатная доставка» не найдено (уже удалено/деактивировано) — шаг 11");
+    }
+  } catch (e: any) {
+    console.log("[data-migrate] ⚠ Деактивация промо пропущена:", e.message);
+  }
+
   console.log("[data-migrate] Готово.");
   await prisma.$disconnect();
 }
