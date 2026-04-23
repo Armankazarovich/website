@@ -60,6 +60,15 @@ interface Props {
   arayHasNew?: boolean;
 }
 
+// Tiny haptic tick (respects browsers that don't support it)
+function haptic(ms: number = 6) {
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(ms);
+    }
+  } catch {}
+}
+
 export function AdminMobileBottomNav({
   role, onMenuOpen, menuOpen, newOrdersCount = 0,
   onArayOpen, arayListening, arayHasNew,
@@ -70,6 +79,11 @@ export function AdminMobileBottomNav({
   const tabs = ROLE_TABS[group] ?? ROLE_TABS.owner;
   const isClient = role === "USER";
   const [kbOpen, setKbOpen] = useState(false);
+
+  // Long-press state for Arai (short tap = chat, long press = voice)
+  const arayLongPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const arayLongPressFiredRef = useRef(false);
+  const [arayVoiceActive, setArayVoiceActive] = useState(false);
 
   // Notification state
   const [notifOpen, setNotifOpen] = useState(false);
@@ -278,23 +292,68 @@ export function AdminMobileBottomNav({
             <DockTab key={i} tab={tab} pathname={pathname} badge={tab.href === "/admin/orders" ? newOrdersCount : 0} />
           ))}
 
-          {/* ── Центральный слот — Арай ── */}
+          {/* ── Центральный слот — Арай (short tap = chat, long press = voice) ── */}
           <div className="relative flex flex-col items-center justify-center" style={{ width: 72, minWidth: 72 }}>
             <button
-              onClick={onArayOpen}
+              type="button"
+              aria-label="Открыть Арая. Удерживайте для голосового ввода."
+              onPointerDown={() => {
+                arayLongPressFiredRef.current = false;
+                if (arayLongPressRef.current) clearTimeout(arayLongPressRef.current);
+                arayLongPressRef.current = setTimeout(() => {
+                  arayLongPressFiredRef.current = true;
+                  setArayVoiceActive(true);
+                  haptic(12);
+                  try { window.dispatchEvent(new CustomEvent("aray:voice")); } catch {}
+                }, 400);
+              }}
+              onPointerUp={() => {
+                if (arayLongPressRef.current) {
+                  clearTimeout(arayLongPressRef.current);
+                  arayLongPressRef.current = null;
+                }
+                if (arayLongPressFiredRef.current) {
+                  // Долгое — voice уже запущен, дадим сигнал "отпустить"
+                  try { window.dispatchEvent(new CustomEvent("aray:voice:release")); } catch {}
+                  setArayVoiceActive(false);
+                  return;
+                }
+                // Короткое — открыть чат
+                haptic(6);
+                onArayOpen?.();
+              }}
+              onPointerCancel={() => {
+                if (arayLongPressRef.current) {
+                  clearTimeout(arayLongPressRef.current);
+                  arayLongPressRef.current = null;
+                }
+                arayLongPressFiredRef.current = false;
+                setArayVoiceActive(false);
+              }}
+              onContextMenu={(e) => e.preventDefault()}
               className="absolute flex flex-col items-center justify-center focus:outline-none transition-transform duration-150 active:scale-[0.88]"
-              style={{ top: -14, WebkitTapHighlightColor: "transparent" }}
+              style={{ top: -14, WebkitTapHighlightColor: "transparent", touchAction: "manipulation" }}
             >
-              <ArayOrb size={52} id="adm" pulse={arayListening ? "listening" : "idle"} badge={arayHasNew} />
-              <span className="text-[10px] font-semibold mt-0.5 tracking-wide"
-                style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
+              <ArayOrb
+                size={52}
+                id="adm"
+                pulse={arayVoiceActive ? "listening" : arayListening ? "listening" : "idle"}
+                badge={arayHasNew}
+                badgeCount={notifCount > 0 ? notifCount : undefined}
+              />
+              <span
+                className="text-[10px] font-semibold mt-0.5 tracking-wide transition-colors"
+                style={{ color: arayVoiceActive ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))" }}
+              >
+                {arayVoiceActive ? "Слушаю…" : "Арай"}
+              </span>
             </button>
           </div>
 
           {/* ── Колокольчик (staff only) ── */}
           {!isClient && (
             <button
-              onClick={() => notifOpen ? setNotifOpen(false) : openNotifications()}
+              onClick={() => { haptic(6); notifOpen ? setNotifOpen(false) : openNotifications(); }}
               className="flex-1 focus:outline-none"
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
@@ -327,7 +386,7 @@ export function AdminMobileBottomNav({
 
           {/* Кнопка Аккаунт → открывает bottom sheet */}
           <button
-            onClick={onMenuOpen}
+            onClick={() => { haptic(6); onMenuOpen(); }}
             className="flex-1 focus:outline-none"
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
