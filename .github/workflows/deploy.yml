@@ -11,24 +11,80 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
+    name: Build on CI
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      sha_short: ${{ steps.sha.outputs.value }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create deployment archive (no node_modules, no .git, no user uploads)
+      - name: Compute short SHA
+        id: sha
+        run: echo "value=${GITHUB_SHA:0:7}" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH key
         run: |
-          tar \
-            --exclude='./node_modules' \
-            --exclude='./.git' \
-            --exclude='./public/images/products' \
-            --exclude='./public/images/categories' \
-            --exclude='./public/images/production' \
-            --exclude='./public/uploads' \
-            -czf "$RUNNER_TEMP/deploy.tar.gz" .
-          cp "$RUNNER_TEMP/deploy.tar.gz" ./deploy.tar.gz
-          echo "Archive size: $(du -sh deploy.tar.gz | cut -f1)"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Download .env from server (for build-time NEXT_PUBLIC_*)
+        run: |
+          scp -o StrictHostKeyChecking=accept-new \
+              -i ~/.ssh/id_ed25519 \
+              "${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/home/armankmb/pilo-rus/app/.env" \
+              .env.production.local
+          LINES=$(wc -l < .env.production.local)
+          echo "Downloaded $LINES lines"
+          # Sanity: critical keys must be present (без их содержимого в логах)
+          for KEY in DATABASE_URL NEXT_PUBLIC_VAPID_KEY NEXTAUTH_SECRET; do
+            if ! grep -q "^${KEY}=" .env.production.local; then
+              echo "FATAL: $KEY missing in downloaded .env — aborting build"
+              exit 1
+            fi
+          done
+          echo "✅ critical env keys present"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps --prefer-offline
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Build Next.js (no DB mutations)
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build:ci
+
+      - name: Pack artifact (exclude dev caches)
+        run: |
+          echo "Size before pack:"
+          du -sh .next node_modules 2>/dev/null | head -5
+          tar --exclude='node_modules/.cache' \
+              --exclude='.next/cache' \
+              -czf "build-${{ steps.sha.outputs.value }}.tar.gz" \
+              .next \
+              node_modules \
+              prisma \
+              public \
+              lib \
+              package.json \
+              package-lock.json \
+              next.config.js \
+              tsconfig.json \
+              next-env.d.ts
+          echo "Archive size: $(du -sh build-${{ steps.sha.outputs.value }}.tar.gz | cut -f1)"
 
       - name: Upload archive to server
         uses: appleboy/scp-action@v0.1.7
@@ -36,209 +92,114 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deploy.tar.gz"
+          source: "build-${{ steps.sha.outputs.value }}.tar.gz"
           target: "/home/armankmb/pilo-rus/"
+          timeout: 5m
 
-      - name: Extract and build on server
+  deploy:
+    name: Release on server
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Release + health check
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-          GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          command_timeout: 45m
-          envs: ANTHROPIC_API_KEY,ELEVENLABS_API_KEY,GOOGLE_AI_API_KEY
+          command_timeout: 10m
           script: |
             set -eo pipefail
             APP_DIR="/home/armankmb/pilo-rus/app"
             PREV_DIR="/home/armankmb/pilo-rus/app-previous"
-            ARCHIVE="/home/armankmb/pilo-rus/deploy.tar.gz"
+            ARCHIVE="/home/armankmb/pilo-rus/build-${{ needs.build.outputs.sha_short }}.tar.gz"
             BACKUP_DIR="/home/armankmb/pilo-rus/backups"
 
-            # ── 0. Диагностика диска ──
-            echo "💿 Disk usage BEFORE cleanup:"
-            df -h / | tail -1
-            echo "Top-level dirs by size:"
-            du -sh /home/armankmb/pilo-rus/*/ 2>/dev/null | sort -rh | head -10
-            du -sh /home/armankmb/.npm 2>/dev/null || true
-            du -sh /tmp/pilorus-* 2>/dev/null || true
-
-            # ── 0.1 Сохраняем .next для отката ПЕРЕД очисткой ──
-            echo "📦 Saving previous .next for rollback..."
-            rm -rf "$PREV_DIR"
-            if [ -d "$APP_DIR/.next" ]; then
-              mkdir -p "$PREV_DIR"
-              cp -r "$APP_DIR/.next" "$PREV_DIR/.next"
-              echo "✅ Previous .next saved ($(du -sh "$PREV_DIR/.next" | cut -f1))"
-            else
-              echo "⚠️ No previous .next to save"
-            fi
-
-            # ── 0.2 Очистка диска ──
-            echo "🧹 Cleaning up disk space..."
-            npm cache clean --force 2>/dev/null || true
-            rm -rf /tmp/pilorus-uploads-backup /tmp/pilorus-images-backup 2>/dev/null || true
-            # НЕ удаляем .next — инкрементальный билд быстрее (2-3 мин vs 15+)
-            # Только чистим кэш webpack если он раздулся
-            rm -rf "$APP_DIR/.next/cache/webpack" 2>/dev/null || true
-            echo "💿 Disk usage AFTER cleanup:"
+            echo "💿 Disk before:"
             df -h / | tail -1
 
-            # ── 1. Бэкап БД перед деплоем ──
+            # ── 1. DB backup ──
             echo "🗄️ Backing up database..."
             mkdir -p "$BACKUP_DIR"
-            DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
             if [ -f "$APP_DIR/.env" ]; then
               DB_URL=$(grep "^DATABASE_URL=" "$APP_DIR/.env" | cut -d'"' -f2 | cut -d"'" -f2)
               if [ -n "$DB_URL" ]; then
-                pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && echo "✅ DB backup: $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))" || echo "⚠️ DB backup failed (non-critical, continuing)"
+                DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
+                pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && echo "✅ $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))" || echo "⚠️ backup failed (non-critical)"
               fi
             fi
             ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs rm -f 2>/dev/null || true
 
-            echo "📂 Extracting code..."
+            # ── 2. Preserve state (.env, uploads, images) ──
+            echo "💾 Preserving state..."
+            rm -rf /tmp/pilorus-preserve
+            mkdir -p /tmp/pilorus-preserve
+            [ -f "$APP_DIR/.env" ] && cp "$APP_DIR/.env" /tmp/pilorus-preserve/.env
+            [ -d "$APP_DIR/public/uploads" ] && cp -r "$APP_DIR/public/uploads" /tmp/pilorus-preserve/uploads
+            [ -d "$APP_DIR/public/images" ] && cp -r "$APP_DIR/public/images" /tmp/pilorus-preserve/images
+
+            # ── 3. Save previous .next for rollback ──
+            rm -rf "$PREV_DIR"
+            if [ -d "$APP_DIR/.next" ]; then
+              mkdir -p "$PREV_DIR"
+              mv "$APP_DIR/.next" "$PREV_DIR/.next"
+              echo "✅ Previous .next saved"
+            fi
+
+            # ── 4. Extract new build ──
+            echo "📂 Extracting new build..."
             mkdir -p "$APP_DIR"
-
-            # Preserve user uploads
-            if [ -d "$APP_DIR/public/uploads" ]; then
-              echo "💾 Saving uploads..."
-              cp -r "$APP_DIR/public/uploads" /tmp/pilorus-uploads-backup
-            fi
-            if [ -d "$APP_DIR/public/images" ]; then
-              echo "💾 Saving product images..."
-              cp -r "$APP_DIR/public/images" /tmp/pilorus-images-backup
-            fi
-
-            tar -xzf "$ARCHIVE" -C "$APP_DIR"
+            cd "$APP_DIR"
+            tar -xzf "$ARCHIVE"
             rm -f "$ARCHIVE"
 
-            # Restore preserved uploads
-            if [ -d /tmp/pilorus-uploads-backup ]; then
-              echo "♻️ Restoring uploads..."
-              cp -r /tmp/pilorus-uploads-backup "$APP_DIR/public/uploads"
-              rm -rf /tmp/pilorus-uploads-backup
-            fi
-            if [ -d /tmp/pilorus-images-backup ]; then
-              echo "♻️ Restoring product images..."
-              cp -r /tmp/pilorus-images-backup "$APP_DIR/public/images"
-              rm -rf /tmp/pilorus-images-backup
-            fi
+            # ── 5. Restore preserved state (overwrite archive's stubs) ──
+            echo "♻️ Restoring .env / uploads / product images..."
+            [ -f /tmp/pilorus-preserve/.env ] && cp /tmp/pilorus-preserve/.env "$APP_DIR/.env"
+            [ -d /tmp/pilorus-preserve/uploads ] && cp -r /tmp/pilorus-preserve/uploads "$APP_DIR/public/"
+            [ -d /tmp/pilorus-preserve/images ] && rm -rf "$APP_DIR/public/images" && cp -r /tmp/pilorus-preserve/images "$APP_DIR/public/"
+            rm -rf /tmp/pilorus-preserve
 
-            cd "$APP_DIR"
+            # ── 6. Apply schema changes + data migrations ──
+            echo "🗄️ Applying DB schema + data migrations..."
+            npm run db:deploy 2>&1 | tail -20
 
-            echo "🔑 Injecting secrets into .env..."
-            if [ -n "$ANTHROPIC_API_KEY" ]; then
-              if grep -q "^ANTHROPIC_API_KEY=" .env 2>/dev/null; then
-                sed -i "s|^ANTHROPIC_API_KEY=.*|ANTHROPIC_API_KEY=\"$ANTHROPIC_API_KEY\"|" .env
-              else
-                echo "ANTHROPIC_API_KEY=\"$ANTHROPIC_API_KEY\"" >> .env
-              fi
-              echo "✅ ANTHROPIC_API_KEY set"
-            fi
-            if [ -n "$ELEVENLABS_API_KEY" ]; then
-              if grep -q "^ELEVENLABS_API_KEY=" .env 2>/dev/null; then
-                sed -i "s|^ELEVENLABS_API_KEY=.*|ELEVENLABS_API_KEY=\"$ELEVENLABS_API_KEY\"|" .env
-              else
-                echo "ELEVENLABS_API_KEY=\"$ELEVENLABS_API_KEY\"" >> .env
-              fi
-              echo "✅ ELEVENLABS_API_KEY set"
-            fi
-            if [ -n "$GOOGLE_AI_API_KEY" ]; then
-              if grep -q "^GOOGLE_AI_API_KEY=" .env 2>/dev/null; then
-                sed -i "s|^GOOGLE_AI_API_KEY=.*|GOOGLE_AI_API_KEY=\"$GOOGLE_AI_API_KEY\"|" .env
-              else
-                echo "GOOGLE_AI_API_KEY=\"$GOOGLE_AI_API_KEY\"" >> .env
-              fi
-              echo "✅ GOOGLE_AI_API_KEY set"
-            fi
-
-            echo "📦 Installing dependencies..."
-            npm install --legacy-peer-deps --prefer-offline 2>&1 | tail -5
-
-            echo "🗄️ Syncing database schema..."
-            npx prisma db push --skip-generate
-
-            # ── Проверяем что CRM исходники есть ──
-            echo "🔍 Pre-build: checking CRM source files..."
-            ls -la app/admin/crm/automation/page.tsx 2>/dev/null && echo "✅ CRM page source exists" || echo "❌ CRM page source MISSING"
-            ls -la app/api/admin/crm/workflows/route.ts 2>/dev/null && echo "✅ CRM API source exists" || echo "❌ CRM API source MISSING"
-
-            # ── Чистая сборка (удаляем старый .next) ──
-            echo "🔨 Building (incremental — keeps .next cache for speed)..."
-            npm run build 2>&1 | tee /tmp/build.log
-            BUILD_EXIT=$?
-
-            # ── Диагностика билда ──
-            echo "🔍 Build diagnostics..."
-            echo "Build exit code: $BUILD_EXIT"
-            echo "💿 Disk after build:"
-            df -h / | tail -1
-
-            if [ -f ".next/server/app/admin/crm/automation/page.js" ]; then
-              echo "✅ CRM automation page: EXISTS"
-            else
-              echo "❌ CRM automation page: MISSING"
-              echo "--- Last 50 lines of build log ---"
-              tail -50 /tmp/build.log 2>/dev/null || true
-              echo "--- Searching for CRM in build output ---"
-              find .next/server/app/admin/ -maxdepth 3 -type f 2>/dev/null | head -20 || echo "No admin files in build"
-              echo "--- Checking source exists ---"
-              find app/admin/crm/ -type f 2>/dev/null || echo "No CRM source files"
-              find app/api/admin/crm/ -type f 2>/dev/null || echo "No CRM API source files"
-              echo "--- Build errors ---"
-              grep -i "error\|fail\|crm" /tmp/build.log 2>/dev/null | tail -20 || true
-            fi
-
-            if [ -f ".next/server/app/api/admin/crm/workflows/route.js" ]; then
-              echo "✅ CRM workflows API: EXISTS"
-            else
-              echo "❌ CRM workflows API: MISSING"
-            fi
-
-            if [ "$BUILD_EXIT" -ne 0 ]; then
-              echo "❌ Build failed with exit code $BUILD_EXIT"
-              grep -i "error\|fail\|ERR!" /tmp/build.log | tail -20 || true
-              # Откат если есть предыдущий билд
-              if [ -d "$PREV_DIR/.next" ]; then
-                echo "🔄 Rolling back..."
-                cp -r "$PREV_DIR/.next" "$APP_DIR/.next"
-                pm2 restart pilo-rus --update-env
-              fi
-              exit 1
-            fi
-
+            # ── 7. Restart pm2 ──
             echo "🚀 Restarting pm2..."
             pm2 restart pilo-rus --update-env
             pm2 save
 
-            # ── 3. Health check ──
+            # ── 8. Health check with retries ──
             echo "🏥 Health check..."
-            sleep 5
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
-            if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ Health check OK (HTTP $HTTP_CODE)"
-            else
-              echo "❌ Health check FAILED (HTTP $HTTP_CODE)"
+            sleep 8
+            HTTP="000"
+            for i in 1 2 3 4 5; do
+              HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
+              if [ "$HTTP" = "200" ]; then
+                echo "✅ Health OK (HTTP $HTTP) on try $i"
+                break
+              fi
+              echo "⏳ Try $i: HTTP $HTTP, retrying in 6s..."
+              sleep 6
+            done
+
+            if [ "$HTTP" != "200" ]; then
+              echo "❌ Health check FAILED (HTTP $HTTP) — rolling back"
               if [ -d "$PREV_DIR/.next" ]; then
-                echo "🔄 Rolling back to previous version..."
                 rm -rf "$APP_DIR/.next"
-                cp -r "$PREV_DIR/.next" "$APP_DIR/.next"
+                mv "$PREV_DIR/.next" "$APP_DIR/.next"
                 pm2 restart pilo-rus --update-env
-                sleep 3
-                ROLLBACK_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
-                echo "🔄 Rollback result: HTTP $ROLLBACK_CODE"
+                sleep 5
+                ROLLBACK=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://localhost:3000/ 2>/dev/null || echo "000")
+                echo "🔄 Rollback result: HTTP $ROLLBACK"
               fi
               exit 1
             fi
 
-            # ── 4. Финальная очистка ──
-            echo "🧹 Post-deploy cleanup..."
+            # ── 9. Cleanup ──
             rm -rf "$PREV_DIR" 2>/dev/null || true
-            npm cache clean --force 2>/dev/null || true
-            echo "💿 Final disk usage:"
+            echo "💿 Disk after:"
             df -h / | tail -1
 
-            echo "✅ Deployed at $(date)"
+            echo "✅ Deployed ${{ needs.build.outputs.sha_short }} at $(date)"
