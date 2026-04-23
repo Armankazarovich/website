@@ -129,10 +129,10 @@ type TabId = "popups" | "buttons" | "icons" | "cards" | "effects" | "palettes";
 
 const TABS: { id: TabId; label: string; icon: typeof FlaskConical; ready: boolean }[] = [
   { id: "popups", label: "Попапы", icon: Component, ready: true },
-  { id: "buttons", label: "Кнопки", icon: MousePointer2, ready: false },
-  { id: "icons", label: "Иконки", icon: Sparkles, ready: false },
-  { id: "cards", label: "Карточки", icon: Square, ready: false },
-  { id: "effects", label: "Эффекты", icon: LayoutGrid, ready: false },
+  { id: "buttons", label: "Кнопки", icon: MousePointer2, ready: true },
+  { id: "cards", label: "Карточки", icon: Square, ready: true },
+  { id: "icons", label: "Инпуты+меню", icon: Sparkles, ready: true },
+  { id: "effects", label: "Эффекты", icon: LayoutGrid, ready: true },
   { id: "palettes", label: "Палитры", icon: Palette, ready: false },
 ];
 
@@ -394,6 +394,152 @@ function SoonPanel({ label }: { label: string }) {
   );
 }
 
+// ── AG2 Showcase cell — kitchen-sink of new ARAYGLASS 2.0 components ─────────
+function Ag2Cell({
+  palette,
+  theme,
+  kind,
+}: {
+  palette: PaletteKey;
+  theme: ThemeKey;
+  kind: "buttons" | "cards" | "icons" | "effects";
+}) {
+  const vars = PALETTE_VARS[palette][theme];
+  const cssVars = vars as React.CSSProperties;
+  const themeClass = theme === "dark" ? "dark" : "";
+
+  const Inner = () => {
+    if (kind === "buttons") {
+      return (
+        <div className="space-y-3">
+          <div className="ag2-eyebrow mb-2">Primary · бренд-подпись</div>
+          <div className="flex flex-wrap gap-2">
+            <button className="ag2-btn-primary">
+              <ArrowRight className="w-4 h-4" strokeWidth={1.5} />
+              В корзину
+            </button>
+            <button className="ag2-btn-primary" disabled>
+              Неактивна
+            </button>
+          </div>
+          <div className="ag2-eyebrow mt-4 mb-2">Ghost · secondary</div>
+          <div className="flex flex-wrap gap-2">
+            <button className="ag2-btn-ghost">Отмена</button>
+            <button className="ag2-btn-ghost">
+              <Heart className="w-4 h-4" strokeWidth={1.5} />
+              В избранное
+            </button>
+          </div>
+          <div className="ag2-eyebrow mt-4 mb-2">Destructive</div>
+          <div className="flex flex-wrap gap-2">
+            <button className="ag2-btn-destructive">Удалить</button>
+          </div>
+        </div>
+      );
+    }
+    if (kind === "cards") {
+      return (
+        <div className="space-y-3">
+          <div className="ag2-card p-4">
+            <div className="ag2-eyebrow mb-2">Карточка базовая</div>
+            <div className="text-sm">Стеклянная поверхность, тонкая граница primary/8, без always-on glow.</div>
+          </div>
+          <div className="ag2-card ag2-card-interactive p-4">
+            <div className="ag2-eyebrow mb-2">Interactive (hover → lift)</div>
+            <div className="text-sm">При наведении — мягкий shadow + translateY(-1px).</div>
+          </div>
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="ag2-badge">Primary</span>
+            <span className="ag2-badge" data-tone="success">Success</span>
+            <span className="ag2-badge" data-tone="warning">Warning</span>
+            <span className="ag2-badge" data-tone="danger">Danger</span>
+            <span className="ag2-badge" data-tone="muted">Muted</span>
+          </div>
+        </div>
+      );
+    }
+    if (kind === "icons") {
+      return (
+        <div className="space-y-3">
+          <div className="ag2-eyebrow mb-2">Inputs</div>
+          <input className="ag2-input" placeholder="Напиши что-нибудь…" />
+          <input className="ag2-input" defaultValue="С фокусом" />
+          <input className="ag2-input" disabled placeholder="Disabled" />
+          <div className="ag2-eyebrow mt-4 mb-2">Menu items</div>
+          <div className="space-y-1">
+            <div className="ag2-menu-item">
+              <ShoppingBag className="w-4 h-4" strokeWidth={1.5} />
+              <span>Заказы</span>
+              <span className="ag2-badge ml-auto" data-tone="success">3</span>
+            </div>
+            <div className="ag2-menu-item" data-active="true">
+              <Bell className="w-4 h-4" strokeWidth={1.5} />
+              <span>Уведомления · активно</span>
+            </div>
+            <div className="ag2-menu-item">
+              <Heart className="w-4 h-4" strokeWidth={1.5} />
+              <span>Избранное</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // effects
+    return (
+      <div className="space-y-4">
+        <div className="ag2-eyebrow mb-2">Divider + eyebrow typography</div>
+        <div className="ag2-eyebrow">Раздел</div>
+        <div className="ag2-divider" />
+        <div className="text-sm text-muted-foreground">Тонкая линия, primary/8 opacity — шёпот, не стена.</div>
+        <div className="ag2-eyebrow mt-4 mb-2">Focus ring (Tab в инпуте)</div>
+        <input className="ag2-input" placeholder="Tab сюда → увидишь ring" />
+        <div className="ag2-eyebrow mt-4 mb-2">Shadow hierarchy</div>
+        <div className="ag2-card p-3 text-xs text-muted-foreground" style={{ boxShadow: "var(--ag2-shadow-sm)" }}>
+          Shadow SM — карточка overlay
+        </div>
+        <div className="ag2-card p-3 text-xs text-muted-foreground" style={{ boxShadow: "var(--ag2-shadow-md)" }}>
+          Shadow MD — секция attention
+        </div>
+        <div className="ag2-card p-3 text-xs text-muted-foreground" style={{ boxShadow: "var(--ag2-shadow-lg)" }}>
+          Shadow LG — модалка
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className={`${themeClass} rounded-2xl overflow-hidden border`}
+      style={{
+        ...cssVars,
+        background: "hsl(var(--background))",
+        color: "hsl(var(--foreground))",
+        borderColor: "hsl(var(--border))",
+      }}
+    >
+      <div
+        className="px-4 py-2.5 flex items-center justify-between text-xs"
+        style={{ borderBottom: "1px solid hsl(var(--border))", color: "hsl(var(--muted-foreground))" }}
+      >
+        <div className="flex items-center gap-2">
+          <div
+            className="w-2.5 h-2.5 rounded-full"
+            style={{ background: "hsl(var(--primary))" }}
+          />
+          <span className="font-medium" style={{ color: "hsl(var(--foreground))" }}>
+            {PALETTE_LABELS[palette]}
+          </span>
+          <span>·</span>
+          <span>{theme === "dark" ? "тёмная" : "светлая"}</span>
+        </div>
+      </div>
+      <div className="p-5">
+        <Inner />
+      </div>
+    </div>
+  );
+}
+
 // ── Main client ───────────────────────────────────────────────────────────────
 export function ArayLabClient() {
   const [activeTab, setActiveTab] = useState<TabId>("popups");
@@ -509,7 +655,7 @@ export function ArayLabClient() {
       )}
 
       {/* Tab content */}
-      {activeTab === "popups" ? (
+      {activeTab === "popups" && (
         <div className="space-y-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Component className="w-4 h-4" />
@@ -532,9 +678,36 @@ export function ArayLabClient() {
             )}
           </div>
         </div>
-      ) : (
-        <SoonPanel label={currentTab.label} />
       )}
+
+      {(activeTab === "buttons" ||
+        activeTab === "cards" ||
+        activeTab === "icons" ||
+        activeTab === "effects") && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Sparkles className="w-4 h-4" />
+            <span>
+              ARAYGLASS 2.0 · {currentTab.label} · {palettes.length} палитры ×{" "}
+              {themes.length} темы
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {palettes.map((palette) =>
+              themes.map((theme) => (
+                <Ag2Cell
+                  key={`${palette}-${theme}-${activeTab}`}
+                  palette={palette}
+                  theme={theme}
+                  kind={activeTab as "buttons" | "cards" | "icons" | "effects"}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === "palettes" && <SoonPanel label={currentTab.label} />}
     </>
   );
 }
