@@ -185,7 +185,8 @@ export default function AdminProductEditPage() {
         setPipelineProgress("Готово! ✓");
         setTimeout(() => setPipelineProgress(""), 2000);
       }
-      setImages([finalUrl]);
+      // APPEND to existing images, don't replace — fix for "single image bug"
+      setImages(prev => [...prev, finalUrl]);
     } catch {
       alert("Ошибка загрузки фото");
     } finally {
@@ -210,35 +211,91 @@ export default function AdminProductEditPage() {
 
   const handleSave = useCallback(async () => {
     if (saving) return;
+
+    // Client-side validation — do not submit invalid data
+    if (!name?.trim()) {
+      alert("Укажите название товара");
+      return;
+    }
+    if (!categoryId) {
+      alert("Выберите категорию");
+      return;
+    }
+    if (!slug?.trim() || !/^[a-z0-9-]+$/.test(slug)) {
+      alert("URL (slug) обязателен и может содержать только латиницу, цифры и дефис");
+      return;
+    }
+    if (!variants || variants.length === 0) {
+      alert("Добавьте хотя бы один вариант с ценой");
+      return;
+    }
+    for (const v of variants) {
+      if (!v.size || !String(v.size).trim()) {
+        alert("У всех вариантов должен быть указан размер");
+        return;
+      }
+      const hasPrice = (v.pricePerCube != null && v.pricePerCube !== "") ||
+                       (v.pricePerPiece != null && v.pricePerPiece !== "");
+      if (!hasPrice) {
+        alert(`Вариант "${v.size}": укажите хотя бы одну цену (за м³ или за шт)`);
+        return;
+      }
+    }
+
     setSaving(true);
     const payload = { name, slug, description, categoryId, images, saleUnit, active, featured, variants };
-    let res;
-    if (isNew) {
-      res = await fetch("/api/admin/products", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      res = await fetch(`/api/admin/products/${params.id}`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    let res: Response;
+    try {
+      if (isNew) {
+        res = await fetch("/api/admin/products", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        res = await fetch(`/api/admin/products/${params.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+    } catch (err) {
+      setSaving(false);
+      alert("Сервер недоступен. Проверь интернет и попробуй ещё раз.");
+      return;
     }
-    const data = await res.json();
+
+    let data: any = {};
+    try { data = await res.json(); } catch {}
     setSaving(false);
-    if (res.ok) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-      if (isNew && data.id) router.replace(`/admin/products/${data.id}`);
+
+    if (!res.ok) {
+      alert(data?.error || `Ошибка ${res.status}: не удалось сохранить`);
+      return;
     }
+
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+    if (isNew && data.id) router.replace(`/admin/products/${data.id}`);
   }, [saving, name, slug, description, categoryId, images, saleUnit, active, featured, variants, isNew, params.id, router]);
 
   const handleDelete = async () => {
     setDeletingProduct(true);
     try {
-      await fetch(`/api/admin/products/${params.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/products/${params.id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(data?.error || `Ошибка ${res.status}: не удалось удалить`);
+        return;
+      }
+
+      if (data.softDelete) {
+        alert(data.message || "Товар скрыт с сайта. История заказов сохранена.");
+      }
+
       setConfirmDeleteProduct(false);
       router.push("/admin/products");
+    } catch (err) {
+      alert("Сервер недоступен. Проверь интернет.");
     } finally {
       setDeletingProduct(false);
     }

@@ -4,13 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
 
+// SVG intentionally excluded — SVG can contain inline <script> → XSS vector.
+// If SVG support needed, add dedicated sanitizer route.
 const MIME_TYPES: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   png: "image/png",
   gif: "image/gif",
   webp: "image/webp",
-  svg: "image/svg+xml",
   pdf: "application/pdf",
 };
 
