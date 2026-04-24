@@ -38,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (action === "reply") {
       const session = await auth();
       const role = (session?.user as any)?.role;
-      if (!session || !["ADMIN", "MANAGER"].includes(role)) {
+      if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role)) {
         return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
       }
 
@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (action === "approve" || action === "reject") {
       const session = await auth();
       const role = (session?.user as any)?.role;
-      if (!session || !["ADMIN", "MANAGER"].includes(role)) {
+      if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role)) {
         return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 });
       }
 

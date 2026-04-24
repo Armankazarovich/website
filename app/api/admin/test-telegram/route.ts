@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const STAFF_ROLES = ["ADMIN", "MANAGER"];
+const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
 export async function POST() {
   const session = await auth();

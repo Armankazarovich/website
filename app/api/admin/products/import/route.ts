@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 async function checkAuth() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  return session && ["ADMIN", "MANAGER", "WAREHOUSE"].includes(role || "");
+  return session && ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"].includes(role || "");
 }
 
 // Parse CSV text → array of row objects keyed by header

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { normalizePhone } from "@/lib/phone";
 
-const VALID_ROLES = ["ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const VALID_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 const VALID_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"];
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {

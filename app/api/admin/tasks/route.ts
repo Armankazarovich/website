@@ -7,7 +7,7 @@ async function getSession() {
   const session = await auth();
   const role = session?.user?.role;
   const id = session?.user?.id;
-  if (!session || !["ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role as string)) return null;
+  if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role as string)) return null;
   return { role, id };
 }
 
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
 
   // Also get all staff for assignee dropdown
   const staff = await prisma.user.findMany({
-    where: { role: { in: ["ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] } },
+    where: { role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] } },
     select: { id: true, name: true, email: true, role: true },
     orderBy: { name: "asc" },
   });

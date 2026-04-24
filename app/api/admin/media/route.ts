@@ -10,7 +10,7 @@ import { existsSync } from "fs";
 async function checkAdmin() {
   const session = await auth();
   const role = session?.user?.role;
-  return session && ["ADMIN", "MANAGER"].includes(role as string);
+  return session && ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role as string);
 }
 
 const IMAGE_DIRS = ["products", "categories", "watermarks", "banners", "posts"];
