@@ -23,14 +23,20 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await prisma.product.findUnique({
     where: { slug: params.slug },
-    include: { category: true, variants: { where: { inStock: true }, orderBy: { pricePerCube: 'asc' }, take: 1 } },
+    include: { category: true, variants: { where: { inStock: true } } },
   });
 
   if (!product) return { title: "Товар не найден" };
 
-  const minPrice = product.variants[0]?.pricePerCube
-    ? `от ${Number(product.variants[0].pricePerCube).toLocaleString('ru-RU')} ₽/м³`
-    : '';
+  // Выбираем ценник в той же единице что и JSON-LD ниже
+  // (если есть pricePerPiece — показываем ₽/шт, иначе ₽/м³)
+  const pcs = product.variants.filter(v => v.pricePerPiece).map(v => Number(v.pricePerPiece));
+  const cbs = product.variants.filter(v => v.pricePerCube).map(v => Number(v.pricePerCube));
+  const minPrice = pcs.length > 0
+    ? `от ${Math.min(...pcs).toLocaleString('ru-RU')} ₽/шт`
+    : cbs.length > 0
+      ? `от ${Math.min(...cbs).toLocaleString('ru-RU')} ₽/м³`
+      : '';
 
   return {
     title: `${product.name} ${minPrice} — купить в Химках с доставкой`,
@@ -110,16 +116,22 @@ export default async function ProductPage({ params }: Props) {
     : null;
 
   // Build schema.org structured data
+  // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
+  // Яндекс.Маркет / Google Shopping читают их как "цена товара" (за штуку).
+  // Если смешать ₽/м³ и ₽/шт, highPrice = 135000 ₽ → пользователь увидит "от 3000 до 135000"
+  // → кликнет на рекламу → увидит 3000 ₽ за штуку → сочтёт обманом.
+  // Логика: если есть ХОТЯ БЫ ОДИН вариант с pricePerPiece — используем ТОЛЬКО piece-цены.
+  // Иначе — используем cube-цены.
   const inStockVariants = product.variants.filter(v => v.inStock);
-  const allPricesCube = product.variants
-    .filter(v => v.pricePerCube)
-    .map(v => Number(v.pricePerCube));
-  const allPricesPiece = product.variants
+  const pricesPiece = product.variants
     .filter(v => v.pricePerPiece)
     .map(v => Number(v.pricePerPiece));
-  const allPrices = [...allPricesCube, ...allPricesPiece];
-  const lowPrice = allPrices.length > 0 ? Math.min(...allPrices) : undefined;
-  const highPrice = allPrices.length > 0 ? Math.max(...allPrices) : undefined;
+  const pricesCube = product.variants
+    .filter(v => v.pricePerCube)
+    .map(v => Number(v.pricePerCube));
+  const priceSource = pricesPiece.length > 0 ? pricesPiece : pricesCube;
+  const lowPrice = priceSource.length > 0 ? Math.min(...priceSource) : undefined;
+  const highPrice = priceSource.length > 0 ? Math.max(...priceSource) : undefined;
 
   const avgRating =
     reviews.length > 0
