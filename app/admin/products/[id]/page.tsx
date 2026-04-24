@@ -10,6 +10,7 @@ import {
   Save, Trash2, Plus, Upload, ImageIcon,
   Check, Loader2, Wand2, PenTool, Images, ExternalLink,
   ChevronLeft, ChevronRight, ChevronDown, X, GripVertical, Search, Star, Keyboard,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminBack } from "@/components/admin/admin-back";
@@ -61,6 +62,49 @@ type Product = {
 };
 
 type Category = { id: string; name: string; slug: string };
+
+/** Естественная сортировка по строкам: "6мм" < "9мм" < "12мм" (а не "12" < "6"). */
+function naturalCompare(a: string, b: string): number {
+  const re = /(\d+)|(\D+)/g;
+  const ax = a.match(re) ?? [];
+  const bx = b.match(re) ?? [];
+  for (let i = 0; i < Math.max(ax.length, bx.length); i++) {
+    const av = ax[i] ?? "";
+    const bv = bx[i] ?? "";
+    const an = parseInt(av, 10);
+    const bn = parseInt(bv, 10);
+    if (!isNaN(an) && !isNaN(bn)) {
+      if (an !== bn) return an - bn;
+    } else {
+      const cmp = av.localeCompare(bv, "ru");
+      if (cmp !== 0) return cmp;
+    }
+  }
+  return 0;
+}
+
+/** Парсит "25×100×6000" (3 размерных числа в мм) и считает piecesPerCube.
+ *  Возвращает null если формат не похож на "толщина×ширина×длина" — например для
+ *  "6мм · 1/1" (фанера — там нет трёх размерных чисел).
+ *  Правила валидности: все 3 числа ≥ 5, длина (любое из них) ≥ 500 мм. */
+function autoCalcPieces(size: string): number | null {
+  if (!size) return null;
+  // Берём только первые 3 числа ДО первого " · " (чтобы сорт/класс не путался)
+  const cleaned = size.split(/[·•|]/)[0];
+  const nums = cleaned.match(/\d+(?:[.,]\d+)?/g);
+  if (!nums || nums.length < 3) return null;
+  const a = parseFloat(nums[0].replace(",", "."));
+  const b = parseFloat(nums[1].replace(",", "."));
+  const c = parseFloat(nums[2].replace(",", "."));
+  if (!a || !b || !c) return null;
+  // Все 3 значения должны быть ≥ 5мм (не sort-цифры типа "1/1")
+  if (a < 5 || b < 5 || c < 5) return null;
+  // Хотя бы одно ≥ 500мм (длина доски/бруса)
+  if (Math.max(a, b, c) < 500) return null;
+  const vol = (a * b * c) / 1e9;
+  if (vol <= 0) return null;
+  return Math.round(1 / vol);
+}
 
 export default function AdminProductEditPage() {
   const params = useParams();
@@ -118,14 +162,19 @@ export default function AdminProductEditPage() {
           setSaleUnit(p.saleUnit);
           setActive(p.active);
           setFeatured(p.featured);
-          setVariants(p.variants.map((v) => ({
-            id: v.id,
-            size: v.size,
-            pricePerCube: v.pricePerCube ? String(v.pricePerCube) : "",
-            pricePerPiece: v.pricePerPiece ? String(v.pricePerPiece) : "",
-            piecesPerCube: v.piecesPerCube ? String(v.piecesPerCube) : "",
-            inStock: v.inStock,
-          })));
+          setVariants(
+            p.variants
+              .map((v) => ({
+                id: v.id,
+                size: v.size,
+                pricePerCube: v.pricePerCube ? String(v.pricePerCube) : "",
+                pricePerPiece: v.pricePerPiece ? String(v.pricePerPiece) : "",
+                piecesPerCube: v.piecesPerCube ? String(v.piecesPerCube) : "",
+                inStock: v.inStock,
+              }))
+              // естественная сортировка: 6мм → 9мм → 12мм (а не 12→15→6→9)
+              .sort((a, b) => naturalCompare(a.size, b.size))
+          );
           setLoading(false);
         });
     }
@@ -326,7 +375,37 @@ export default function AdminProductEditPage() {
   const removeVariant = (idx: number) => setVariants((prev) => prev.filter((_, i) => i !== idx));
 
   const updateVariant = (idx: number, field: keyof Variant, value: string | boolean) =>
-    setVariants((prev) => prev.map((v, i) => i === idx ? { ...v, [field]: value } : v));
+    setVariants((prev) => prev.map((v, i) => {
+      if (i !== idx) return v;
+      const next = { ...v, [field]: value } as Variant;
+      // Авто-расчёт piecesPerCube при вводе size (только если поле ещё пустое)
+      if (field === "size" && typeof value === "string" && !next.piecesPerCube) {
+        const calc = autoCalcPieces(value);
+        if (calc) next.piecesPerCube = String(calc);
+      }
+      return next;
+    }));
+
+  // Ручной пересчёт piecesPerCube из size (иконка калькулятора)
+  const recalcPieces = (idx: number) => {
+    const v = variants[idx];
+    if (!v) return;
+    const calc = autoCalcPieces(v.size);
+    if (!calc) {
+      setToast(`Не могу посчитать из "${v.size}" — нужен формат 25×150×6000 (мм)`);
+      return;
+    }
+    setVariants((prev) => prev.map((x, i) => i === idx ? { ...x, piecesPerCube: String(calc) } : x));
+    setToast(`Посчитано: ${calc} шт/м³`);
+  };
+
+  // Отсортировать варианты вручную (если менеджер добавил новые в конец)
+  const sortVariantsNow = () => {
+    const sorted = [...variants].sort((a, b) => naturalCompare(a.size, b.size));
+    const changed = sorted.some((v, i) => (v.id || v._tempId) !== (variants[i]?.id || variants[i]?._tempId));
+    setVariants(sorted);
+    setToast(changed ? "Варианты отсортированы по размеру" : "Уже отсортировано по размеру");
+  };
 
   if (loading) {
     return (
@@ -634,13 +713,25 @@ export default function AdminProductEditPage() {
 
           {/* Variants */}
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                 Варианты / Цены ({variants.length})
               </h3>
-              <Button size="sm" variant="outline" onClick={addVariant}>
-                <Plus className="w-3.5 h-3.5 mr-1" /> Добавить
-              </Button>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {variants.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={sortVariantsNow}
+                    title="Отсортировать по размеру (6мм → 9мм → 12мм)"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium border border-border hover:bg-primary/[0.08] text-muted-foreground transition-colors"
+                  >
+                    <GripVertical className="w-3 h-3" /> Сортировать
+                  </button>
+                )}
+                <Button size="sm" variant="outline" onClick={addVariant}>
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Добавить
+                </Button>
+              </div>
             </div>
 
             {variants.length === 0 ? (
@@ -688,13 +779,23 @@ export default function AdminProductEditPage() {
                       placeholder="420"
                       className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
-                    <input
-                      type="number"
-                      value={v.piecesPerCube}
-                      onChange={(e) => updateVariant(idx, "piecesPerCube", e.target.value)}
-                      placeholder="28"
-                      className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
+                    <div className="relative">
+                      <input
+                        type="number"
+                        value={v.piecesPerCube}
+                        onChange={(e) => updateVariant(idx, "piecesPerCube", e.target.value)}
+                        placeholder="28"
+                        className="w-full px-2.5 py-2.5 pr-7 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => recalcPieces(idx)}
+                        title="Авто-расчёт из размера (например 25×100×6000)"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-primary/15 text-primary/60 hover:text-primary transition-colors"
+                      >
+                        <Calculator className="w-3 h-3" />
+                      </button>
+                    </div>
                     <button
                       onClick={() => updateVariant(idx, "inStock", !v.inStock)}
                       className={cn(
