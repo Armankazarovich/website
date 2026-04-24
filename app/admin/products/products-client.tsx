@@ -223,14 +223,10 @@ export function ProductsClient({
     await patch(p.id, { active: val });
   };
 
-  /* ── drawer ── */
+  /* ── клик по карандашу: сразу на страницу редактирования ── */
   const openDrawer = (p: Product, e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation();
-    setDName(p.name); setDCat(p.categoryId);
-    setDActive(p.active); setDFeatured(p.featured);
-    setDDesc(p.description ?? "");
-    setImproveError(null);
-    setDrawer(p);
+    router.push(`/admin/products/${p.id}`);
   };
 
   const saveDrawer = async () => {
@@ -629,7 +625,7 @@ export function ProductsClient({
                     <button
                       onClick={(e) => openDrawer(p, e)}
                       className="p-1.5 rounded-lg hover:bg-accent transition-colors"
-                      title="Быстрое редактирование"
+                      title="Редактировать товар"
                     >
                       <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
