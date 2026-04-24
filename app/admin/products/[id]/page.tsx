@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AdminBack } from "@/components/admin/admin-back";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { ActionToast } from "@/components/admin/action-toast";
 
 // Lazy-load heavy modals — загружаются только при первом открытии
 const PhotoEditor = dynamic(
@@ -83,6 +84,7 @@ export default function AdminProductEditPage() {
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const [photoSearchOpen, setPhotoSearchOpen] = useState(false);
   const [photoToolsOpen, setPhotoToolsOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -192,6 +194,21 @@ export default function AdminProductEditPage() {
     } finally {
       setUploadingPhoto(false);
     }
+  };
+
+  // Сделать фото по индексу главным (перемещаем в начало массива)
+  const setPrimaryImage = (idx: number) => {
+    if (idx <= 0 || idx >= images.length) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [picked] = next.splice(idx, 1);
+      return [picked, ...next];
+    });
+  };
+
+  // Удалить одно фото из галереи по индексу
+  const removeImage = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx));
   };
 
   const handleRemoveBackground = async () => {
@@ -409,12 +426,70 @@ export default function AdminProductEditPage() {
               )}
             </div>
 
+            {/* Gallery — всегда видна если есть хотя бы одно фото. Плитка "+" для добавления. */}
+            {images.length > 0 && (
+              <div className="border-t border-primary/10 p-3">
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-between">
+                  <span>Галерея ({images.length})</span>
+                  <span className="opacity-60 font-normal normal-case">клик — сделать главным</span>
+                </p>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {images.map((img, idx) => (
+                    <div
+                      key={img + idx}
+                      className={cn(
+                        "group relative aspect-square rounded-lg overflow-hidden border cursor-pointer transition-all",
+                        idx === 0 ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/50"
+                      )}
+                      onClick={() => setPrimaryImage(idx)}
+                      title={idx === 0 ? "Главное фото" : "Сделать главным"}
+                    >
+                      <Image src={img} alt="" fill className="object-cover" unoptimized />
+                      {idx === 0 && (
+                        <div className="absolute top-0.5 left-0.5 bg-primary text-primary-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded">
+                          Главное
+                        </div>
+                      )}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                        className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-destructive/90 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                        title="Удалить это фото"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {/* Плитка "+" для добавления новых фото */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPhoto}
+                    className="aspect-square rounded-lg border border-dashed border-border hover:border-primary hover:bg-primary/[0.05] flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    title="Добавить ещё фото (можно выбрать несколько)"
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-[9px] font-medium">Добавить</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Photo actions */}
             <div className="p-3 space-y-2">
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (file) { await uploadPhotoFile(file); if (fileInputRef.current) fileInputRef.current.value = ""; }
-              }} />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  for (const file of files) {
+                    await uploadPhotoFile(file);
+                  }
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
+              />
 
               <div className="flex gap-2">
                 <button
@@ -666,6 +741,9 @@ export default function AdminProductEditPage() {
           </div>
         </div>
       </div>
+
+      {/* Toast (фидбек админских действий: сортировка, авто-расчёт и т.п.) */}
+      <ActionToast message={toast} onDismiss={() => setToast(null)} />
 
       {/* Modals */}
       {photoEditorOpen && images[0] && (
