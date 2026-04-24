@@ -436,6 +436,33 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         </button>
       )}
 
+      {/* Search (в picker-mode всегда видимый для быстрого поиска) */}
+      {pickerMode && (
+        <div className="relative">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по имени файла, ALT или товару…"
+            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-background/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground transition-colors"
+              title="Очистить"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex gap-1 flex-wrap items-center">
         {folders.map((f) => (
@@ -468,7 +495,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
           <p>{search ? "Ничего не найдено" : "Нет файлов"}</p>
         </div>
       ) : (
-        <div className={`grid gap-3 ${pickerMode ? "grid-cols-3 sm:grid-cols-4 md:grid-cols-5" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"}`}>
+        <div className={`grid gap-3 ${pickerMode ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"}`}>
           {filtered.map((file) => (
             <MediaCard
               key={file.url}
