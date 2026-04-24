@@ -10,7 +10,7 @@ import {
   Save, Trash2, Plus, Upload, ImageIcon,
   Check, Loader2, Wand2, PenTool, Images, ExternalLink,
   ChevronLeft, ChevronRight, ChevronDown, X, GripVertical, Search, Star, Keyboard,
-  Calculator,
+  Calculator, Copy, Sparkles, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminBack } from "@/components/admin/admin-back";
@@ -106,6 +106,29 @@ function autoCalcPieces(size: string): number | null {
   return Math.round(1 / vol);
 }
 
+/** Прогресс готовности товара к публикации (для менеджера). */
+function calcReadiness(p: {
+  name: string;
+  categoryId: string;
+  slug: string;
+  images: string[];
+  variants: Array<{ size: string; pricePerCube: string; pricePerPiece: string }>;
+  description: string;
+}): { percent: number; missing: string[] } {
+  const checks: Array<{ ok: boolean; label: string }> = [
+    { ok: !!p.name?.trim() && !!p.categoryId && !!p.slug?.trim(), label: "Название, категория, URL" },
+    { ok: (p.images?.length ?? 0) > 0, label: "Хотя бы одно фото" },
+    { ok: (p.variants?.length ?? 0) > 0 && p.variants.every(v => v.size && (v.pricePerCube || v.pricePerPiece)), label: "Размеры и цены" },
+    { ok: (p.description?.trim().length ?? 0) >= 40, label: "Описание (от 40 символов)" },
+    { ok: p.variants.some(v => !!v.pricePerPiece), label: "Цена за штуку (нужно для Директа)" },
+  ];
+  const done = checks.filter(c => c.ok).length;
+  return {
+    percent: Math.round((done / checks.length) * 100),
+    missing: checks.filter(c => !c.ok).map(c => c.label),
+  };
+}
+
 export default function AdminProductEditPage() {
   const params = useParams();
   const router = useRouter();
@@ -129,6 +152,9 @@ export default function AdminProductEditPage() {
   const [photoSearchOpen, setPhotoSearchOpen] = useState(false);
   const [photoToolsOpen, setPhotoToolsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [improvingDesc, setImprovingDesc] = useState(false);
+  const [improveError, setImproveError] = useState<string | null>(null);
+  const [duplicating, setDuplicating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -407,6 +433,94 @@ export default function AdminProductEditPage() {
     setToast(changed ? "Варианты отсортированы по размеру" : "Уже отсортировано по размеру");
   };
 
+  // Массово изменить цены в % — по колонке (pricePerCube или pricePerPiece)
+  const bulkPriceAdjust = (percent: number, field: "pricePerCube" | "pricePerPiece") => {
+    const label = field === "pricePerCube" ? "цены за м³" : "цены за шт";
+    const sign = percent > 0 ? "+" : "";
+    if (!confirm(`Изменить все ${label} на ${sign}${percent}%? Это применится только локально — сохраните товар чтобы применить.`)) return;
+    setVariants((prev) => prev.map(v => {
+      const old = parseFloat(v[field] || "0");
+      if (!old) return v;
+      const next = Math.round(old * (1 + percent / 100));
+      return { ...v, [field]: String(next) };
+    }));
+    setToast(`Цены ${field === "pricePerCube" ? "за м³" : "за шт"} изменены на ${sign}${percent}%`);
+  };
+
+  // Улучшить описание через AI (тот же endpoint что и в drawer)
+  const improveDescription = async () => {
+    if (isNew || !params.id) {
+      setImproveError("Сохраните товар хотя бы раз, потом AI сможет улучшить описание");
+      return;
+    }
+    setImprovingDesc(true);
+    setImproveError(null);
+    try {
+      const res = await fetch(`/api/admin/products/${params.id}/improve-seo`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setImproveError(data.error || `Ошибка ${res.status}`);
+        return;
+      }
+      if (data.description) {
+        setDescription(data.description);
+        setToast("Описание обновлено ARAY");
+      }
+    } catch {
+      setImproveError("Сервер недоступен, попробуй ещё раз");
+    } finally {
+      setImprovingDesc(false);
+    }
+  };
+
+  // Дублировать товар — создаёт копию с `-copy` slug, перекидывает на редактирование дубля
+  const duplicateProduct = async () => {
+    if (isNew || !params.id) return;
+    if (!confirm(`Дублировать "${name}"? Будет создан новый товар с тем же набором вариантов.`)) return;
+    setDuplicating(true);
+    try {
+      const baseSlug = slug.replace(/-copy(-\d+)?$/, "");
+      const newSlug = `${baseSlug}-copy-${Date.now().toString().slice(-4)}`;
+      const payload = {
+        name: `${name} (копия)`,
+        slug: newSlug,
+        description,
+        categoryId,
+        images: [...images],
+        saleUnit,
+        active: false, // дубликат создаётся в "скрытых" — менеджер проверяет и публикует
+        featured: false,
+        variants: variants.map(v => ({
+          size: v.size,
+          pricePerCube: v.pricePerCube,
+          pricePerPiece: v.pricePerPiece,
+          piecesPerCube: v.piecesPerCube,
+          inStock: v.inStock,
+        })),
+      };
+      const res = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || `Ошибка ${res.status}`);
+        return;
+      }
+      if (data.id) {
+        router.push(`/admin/products/${data.id}`);
+      }
+    } catch {
+      alert("Сервер недоступен");
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  // Прогресс готовности товара
+  const readiness = calcReadiness({ name, categoryId, slug, images, variants, description });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -460,12 +574,55 @@ export default function AdminProductEditPage() {
             </a>
           )}
           {!isNew && (
+            <button
+              type="button"
+              onClick={duplicateProduct}
+              disabled={duplicating}
+              title="Дублировать товар (создать копию с теми же вариантами)"
+              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-border hover:bg-primary/[0.08] transition-colors text-muted-foreground disabled:opacity-50"
+            >
+              {duplicating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Дублировать</span>
+            </button>
+          )}
+          {!isNew && (
             <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteProduct(true)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
         </div>
       </div>
+
+      {/* ── Readiness Bar (тонкая строка прогресса готовности для менеджера) ── */}
+      {!isNew && readiness.percent === 100 && (
+        <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground">
+          <Check className="w-3.5 h-3.5 text-primary" />
+          <span>Товар готов к публикации · SEO и Директ корректны</span>
+        </div>
+      )}
+      {!isNew && readiness.percent < 100 && (
+        <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-border bg-primary/[0.03]">
+          <div className="relative w-8 h-8 shrink-0">
+            <svg className="w-8 h-8 -rotate-90" viewBox="0 0 40 40">
+              <circle cx="20" cy="20" r="16" fill="none" stroke="hsl(var(--primary) / 0.12)" strokeWidth="5" />
+              <circle
+                cx="20" cy="20" r="16" fill="none"
+                stroke="hsl(var(--primary))"
+                strokeWidth="5"
+                strokeDasharray={`${(readiness.percent / 100) * 100.53} 100.53`}
+                strokeLinecap="round"
+                className="transition-all duration-500"
+              />
+            </svg>
+            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground">
+              {readiness.percent}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground min-w-0 truncate">
+            <span className="text-foreground font-medium">Не хватает:</span> {readiness.missing.join(" · ")}
+          </p>
+        </div>
+      )}
 
       {/* ── 2-Column layout ── */}
       <div className="grid lg:grid-cols-[320px_1fr] gap-5">
@@ -676,7 +833,19 @@ export default function AdminProductEditPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5">Описание</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-medium">Описание</label>
+                <button
+                  type="button"
+                  onClick={improveDescription}
+                  disabled={improvingDesc || isNew}
+                  title={isNew ? "Сначала сохраните товар" : "ARAY перепишет описание под SEO"}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {improvingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {improvingDesc ? "ARAY думает…" : "Улучшить"}
+                </button>
+              </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -684,6 +853,9 @@ export default function AdminProductEditPage() {
                 placeholder="Характеристики, особенности, применение..."
                 className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
               />
+              {improveError && (
+                <p className="mt-1.5 text-[11px] text-destructive">{improveError}</p>
+              )}
             </div>
 
             <div>
@@ -733,6 +905,46 @@ export default function AdminProductEditPage() {
                 </Button>
               </div>
             </div>
+
+            {variants.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                <span className="text-muted-foreground">Массово по цене м³:</span>
+                <button
+                  type="button"
+                  onClick={() => bulkPriceAdjust(10, "pricePerCube")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  title="Поднять все цены за м³ на 10%"
+                >
+                  <TrendingUp className="w-3 h-3" /> +10%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bulkPriceAdjust(-10, "pricePerCube")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  title="Снизить все цены за м³ на 10%"
+                >
+                  <TrendingDown className="w-3 h-3" /> −10%
+                </button>
+                <span className="text-muted-foreground/30 mx-1">·</span>
+                <span className="text-muted-foreground">за шт:</span>
+                <button
+                  type="button"
+                  onClick={() => bulkPriceAdjust(10, "pricePerPiece")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  title="Поднять все цены за шт на 10%"
+                >
+                  <TrendingUp className="w-3 h-3" /> +10%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bulkPriceAdjust(-10, "pricePerPiece")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  title="Снизить все цены за шт на 10%"
+                >
+                  <TrendingDown className="w-3 h-3" /> −10%
+                </button>
+              </div>
+            )}
 
             {variants.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground border-2 border-dashed border-border rounded-xl">
