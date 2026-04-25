@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 32 — единое моб меню магазин+админка, AccountDrawer для всех ролей с секцией "Управление" для STAFF, Liquid Glass точечно везде, ArayDock calm UI, расширенная очистка TTS для Арая. 7 деплоев)
+> Последнее обновление: 25.04.2026 (сессия 32 — единое моб меню магазин+админка, AccountDrawer для всех ролей с секцией "Управление" для STAFF, Liquid Glass точечно, ArayDock calm UI, расширенная очистка TTS, **VoiceModeOverlay (fullscreen разговор с Араем как ChatGPT Voice)**. 8 деплоев)
 
 ---
 
@@ -900,6 +900,36 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
    - Применено на: `MobileBottomNav` (магазин), `AdminMobileBottomNav` (админка), `ArayDock` (десктоп)
    - **ArayDock переписан в calm** — удалены классы `arayglass / arayglass-nopad`, заменены на inline Liquid Glass стиль
    - Send-кнопка с glow primary/0.45 оставлена (функциональный glow — появляется когда есть текст). Recording-кнопка с destructive pulse оставлена (индикатор записи).
+
+6. **`2114ca3`** `feat(voice-mode): VoiceModeOverlay — fullscreen разговор с Араем как ChatGPT Voice`
+   - Создан `components/store/voice-mode-overlay.tsx` (~480 строк) — fullscreen voice ассистент
+   - **Stack**: Web Speech API (STT) + Anthropic Claude (LLM) + ElevenLabs (TTS) — все 2 ключа Армана уже подключены
+   - **UX**:
+     - Открывается по `aray:voice` event (long-press на Арая в моб меню или dock)
+     - Большой ArayOrb 120px, breath-пульсация по аудио-уровню микрофона
+     - Wave-анимация на 7 баров реагирует на громкость через Web Audio API AnalyserNode
+     - Subtitle с interim transcript (что Арай слышит) + final text после распознавания
+     - 3 кнопки внизу: Pause/Resume (mic icon) · **Send** (большая primary 64px с glow) · Keyboard (переключиться в чат)
+     - Escape или X → закрыть, остановить mic, audio context, audio stream
+     - Background blur(40px) saturate(180%) — fullscreen затемнение
+   - **Pipeline**:
+     1. Открылся → mic permission → continuous Speech Recognition (ru-RU, interimResults)
+     2. Пользователь говорит → interim subtitle + wave анимация по audioLevel
+     3. Тап Send → POST /api/ai/chat → ответ Claude
+     4. Очищаем ARAY_ACTIONS из текста ответа
+     5. POST /api/ai/tts → audio Blob → autoplay через `new Audio()`
+     6. После окончания audio → автоматически снова listening
+     7. Fallback на browser SpeechSynthesis если ElevenLabs недоступен
+   - **События для синхронизации с историей чата**: `aray:prompt` и `aray:reply` с `mode: "voice"` в detail
+   - Подключено в обоих layout (магазин + админка) через dynamic import (ssr:false), only when arayEnabled
+   - **Известные ограничения (норма для веба 2026)**:
+     - STT работает в Chrome/Edge/Safari iOS. В Firefox нет (нужен Whisper API через backend — будущее расширение)
+     - Задержка ~2-3 сек между "сказал" и "услышал ответ" (без Realtime API)
+   - **Расширения на будущее**:
+     - OpenAI Realtime API → стриминг без задержки (уровень GPT-4o Voice)
+     - Whisper API через backend → лучше распознаёт в шумном офисе
+     - Anthropic Computer Use → Арай управляет компьютером менеджера (открывает Я.Директ)
+     - ElevenLabs Conversational AI → wake word "Эй Арай"
 
 5. **`bb6532f`** `feat(tts): расширенная очистка для ElevenLabs — естественное произношение Арая`
    - Создан **`lib/tts-clean.ts`** (270 строк) с централизованной функцией `cleanForTTS(text)`:
