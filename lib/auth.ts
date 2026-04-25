@@ -94,4 +94,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
+  events: {
+    // Логируем вход клиента для раздела «История» в кабинете
+    async signIn({ user }) {
+      if (!user?.id) return;
+      try {
+        await prisma.activityLog.create({
+          data: {
+            userId: user.id,
+            action: "LOGIN",
+          },
+        });
+      } catch {
+        // ignore — logging is best-effort
+      }
+    },
+  },
 });

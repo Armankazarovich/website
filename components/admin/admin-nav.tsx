@@ -64,8 +64,13 @@ const allNavItems: NavItem[] = [
   { href: "/admin", label: "Дашборд", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: ALL_STAFF, group: "main" },
   { href: "/cabinet", label: "Главная", icon: LayoutDashboard, exact: true, roles: ["USER"], group: "main" },
 
-  // ── Мой кабинет — УБРАН из сайдбара (профиль в шапке, оформление в ARAY Control) ──
-  // Страницы /cabinet/* остаются доступными по прямой ссылке
+  // ── Мой кабинет (USER) ──
+  { href: "/cabinet/orders",        label: "Мои заказы",     icon: ShoppingBag, roles: ["USER"], group: "personal", groupKey: undefined },
+  { href: "/cabinet/profile",       label: "Профиль",        icon: UserCircle,  roles: ["USER"], group: "personal" },
+  { href: "/cabinet/reviews",       label: "Мои отзывы",     icon: Star,        roles: ["USER"], group: "personal" },
+  { href: "/cabinet/media",         label: "Медиа",          icon: Images,      roles: ["USER"], group: "personal" },
+  { href: "/cabinet/subscriptions", label: "Подписки",       icon: Heart,       roles: ["USER"], group: "personal" },
+  { href: "/cabinet/history",       label: "История",        icon: History,     roles: ["USER"], group: "personal" },
 
   // ═══════════════════════════════════════════════════════════════
   // РАБОЧИЕ РАЗДЕЛЫ — по ролям сотрудников

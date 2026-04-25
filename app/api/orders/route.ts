@@ -251,6 +251,23 @@ export async function POST(req: NextRequest) {
       }
     }).catch(console.error);
 
+    // 📜 Activity log — PLACE_ORDER (для раздела «История» в кабинете клиента)
+    if (userId) {
+      prisma.activityLog
+        .create({
+          data: {
+            userId,
+            action: "PLACE_ORDER",
+            targetId: order.id,
+            meta: {
+              orderNumber: order.orderNumber,
+              totalAmount: Number(order.totalAmount),
+            },
+          },
+        })
+        .catch(() => {});
+    }
+
     // 🎯 Авто-создание лида в CRM при новом заказе
     prisma.lead.create({
       data: {

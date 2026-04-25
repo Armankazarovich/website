@@ -6,12 +6,22 @@ import { prisma } from "@/lib/prisma";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import { rateLimit } from "@/lib/rate-limit";
+
+const limiter = rateLimit("cabinet-avatar", 10, 60_000);
 
 // POST — upload avatar
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
+  if (!limiter.check(session.user.id)) {
+    return NextResponse.json(
+      { error: "Слишком часто. Попробуйте через минуту." },
+      { status: 429 }
+    );
   }
 
   try {

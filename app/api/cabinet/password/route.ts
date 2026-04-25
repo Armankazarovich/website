@@ -4,10 +4,20 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { rateLimit } from "@/lib/rate-limit";
+
+const limiter = rateLimit("cabinet-password", 5, 15 * 60_000);
 
 export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (!limiter.check(session.user.id)) {
+    return NextResponse.json(
+      { error: "Слишком много попыток. Попробуйте через 15 минут." },
+      { status: 429 }
+    );
+  }
 
   const { currentPassword, newPassword } = await req.json();
 

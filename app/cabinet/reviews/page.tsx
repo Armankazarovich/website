@@ -69,7 +69,11 @@ export default async function MyReviewsPage() {
                   <span className="text-amber-600">На модерации</span>
                 )}
                 <span>{new Date(r.createdAt).toLocaleDateString("ru-RU")}</span>
-                {(r.likes || 0) > 0 && <span>👍 {r.likes}</span>}
+                {(r.likes || 0) > 0 && (
+                  <span className="inline-flex items-center gap-1">
+                    <ThumbsUp className="w-3 h-3" /> {r.likes}
+                  </span>
+                )}
               </div>
               {r.adminReply && (
                 <div className="mt-2 pl-3 border-l-2 border-primary/30">

@@ -14,6 +14,7 @@ import { Calculator, ArrowRight, Phone, SearchX } from "lucide-react";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { getPublicProductsFilter } from "@/lib/product-seo";
+import { SubscribeButton } from "@/components/store/subscribe-button";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   if (searchParams.category) {
@@ -295,15 +296,22 @@ export default async function CatalogPage({
       />
 
       {/* ── Заголовок ── */}
-      <div className="mb-3">
-        <h1 className="font-display font-bold text-2xl sm:text-3xl">
-          {searchParams.category
-            ? categories.find((c) => c.slug === searchParams.category)?.name ?? "Каталог"
-            : "Каталог"}
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {searchParams.category ? "Показаны товары категории" : "Все пиломатериалы в наличии"}
-        </p>
+      <div className="mb-3 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="font-display font-bold text-2xl sm:text-3xl">
+            {currentCat ? currentCat.name : "Каталог"}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {currentCat ? "Узнавайте первыми о поступлениях и скидках" : "Все пиломатериалы в наличии"}
+          </p>
+        </div>
+        {currentCat && (
+          <SubscribeButton
+            targetType="category"
+            targetId={currentCat.id}
+            targetName={currentCat.name}
+          />
+        )}
       </div>
 
       {/* ── Баннер-калькулятор ── */}

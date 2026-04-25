@@ -48,7 +48,7 @@ export async function GET() {
 
   const orderDocs = orders.map((o) => ({
     type: "order_doc" as const,
-    url: `/api/admin/orders/${o.id}/pdf`,
+    url: `/api/cabinet/orders/${o.id}/pdf`,
     date: o.createdAt.toISOString(),
     orderNumber: o.orderNumber,
     orderId: o.id,

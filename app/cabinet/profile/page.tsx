@@ -1,7 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -10,10 +10,7 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Palette, Sun, Moon, Camera, Trash2, Monitor, Film, ALargeSmall, Globe } from "lucide-react";
-// BackButton removed — AdminShell sidebar handles navigation
-import { useTheme } from "next-themes";
-import { usePalette, PALETTE_GROUPS } from "@/components/palette-provider";
+import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Camera, Trash2, Globe } from "lucide-react";
 import { AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 
 const profileSchema = z.object({
@@ -52,8 +49,6 @@ function formatPhone(raw: string): string {
 export default function ProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
-  const { palette, setPalette, enabledIds } = usePalette();
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -67,32 +62,6 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-
-  // Appearance settings (localStorage-based)
-  const [bgMode, setBgModeState] = useState<"classic" | "video">("classic");
-  const [fontSize, setFontSizeState] = useState("normal");
-
-  useEffect(() => {
-    // Read from localStorage
-    const bg = localStorage.getItem("aray-bg-mode") as "classic" | "video" | null;
-    if (bg) setBgModeState(bg);
-    const fs = localStorage.getItem("aray-font-size");
-    if (fs) setFontSizeState(fs);
-  }, []);
-
-  const setBgMode = (mode: "classic" | "video") => {
-    setBgModeState(mode);
-    localStorage.setItem("aray-bg-mode", mode);
-    localStorage.setItem("aray-classic-mode", mode === "classic" ? "1" : "0");
-    window.dispatchEvent(new Event("aray-classic-change"));
-  };
-
-  const setFontSize = (id: string) => {
-    setFontSizeState(id);
-    const sizes: Record<string, string> = { compact: "0.88", normal: "1", large: "1.14" };
-    document.documentElement.style.setProperty("--aray-font-scale", sizes[id] || "1");
-    localStorage.setItem("aray-font-size", id);
-  };
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),

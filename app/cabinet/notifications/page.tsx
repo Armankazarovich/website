@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, BellOff, CheckCircle, XCircle, Loader2, ShieldAlert, Smartphone } from "lucide-react";
+import { Bell, BellOff, CheckCircle, XCircle, Loader2, ShieldAlert, Smartphone, ShoppingCart, Package, Tag } from "lucide-react";
 import { requestPushPermission } from "@/components/push-subscription";
 
 type PermState = "default" | "granted" | "denied" | "unsupported" | "loading";
@@ -185,14 +185,14 @@ export default function CabinetNotificationsPage() {
         <h2 className="font-semibold mb-3">Что включено в уведомления</h2>
         <div className="space-y-3">
           {[
-            { icon: "🛒", title: "Подтверждение заказа", desc: "Сразу после оформления" },
-            { icon: "📦", title: "Статус доставки", desc: "Обработка, в пути, доставлен" },
-            { icon: "🏷️", title: "Акции и скидки", desc: "Специальные предложения для вас" },
-            { icon: "🔔", title: "Важные новости", desc: "Новые товары, изменения цен" },
+            { Icon: ShoppingCart, title: "Подтверждение заказа", desc: "Сразу после оформления", color: "text-primary" },
+            { Icon: Package, title: "Статус доставки", desc: "Обработка, в пути, доставлен", color: "text-blue-500" },
+            { Icon: Tag, title: "Акции и скидки", desc: "Специальные предложения для вас", color: "text-orange-500" },
+            { Icon: Bell, title: "Важные новости", desc: "Новые товары, изменения цен", color: "text-emerald-500" },
           ].map((item) => (
             <div key={item.title} className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center text-lg shrink-0">
-                {item.icon}
+              <div className={`w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center shrink-0 ${item.color}`}>
+                <item.Icon className="w-4 h-4" />
               </div>
               <div>
                 <p className="text-sm font-medium">{item.title}</p>

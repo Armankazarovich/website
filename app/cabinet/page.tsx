@@ -4,11 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import type { OrderStatus } from "@prisma/client";
 import Link from "next/link";
 import {
   ShoppingBag, ArrowRight, Package, Clock, CheckCircle, Truck,
-  User, Bell, MapPin, Phone, ChevronRight, Star, Repeat2,
-  ReceiptText, HeartHandshake, Calculator,
+  User, Bell, MapPin, Phone, ChevronRight, Star, ReceiptText,
+  HeartHandshake, Calculator,
 } from "lucide-react";
 import { RepeatOrderButton } from "@/components/cabinet/repeat-order-button";
 
@@ -18,6 +19,9 @@ const STATUS_ICONS: Record<string, React.ElementType> = {
   COMPLETED: CheckCircle, CANCELLED: ShoppingBag,
 };
 
+const ACTIVE_STATUSES: OrderStatus[] = ["NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP"];
+const DONE_STATUSES: OrderStatus[] = ["DELIVERED", "COMPLETED"];
+
 export default async function CabinetDashboard() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
@@ -25,25 +29,33 @@ export default async function CabinetDashboard() {
   const settings = await getSiteSettings();
   const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
 
-  const [orders, user] = await Promise.all([
+  // Параллельные запросы — эффективнее чем тянуть ВСЕ заказы клиента
+  const [recentOrders, totalAll, countDone, countActive, firstActive, revenueAgg, user] = await Promise.all([
     prisma.order.findMany({
-      where: { userId: session.user.id },
+      where: { userId: session.user.id, deletedAt: null },
       include: { items: true },
       orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+    prisma.order.count({ where: { userId: session.user.id, deletedAt: null } }),
+    prisma.order.count({ where: { userId: session.user.id, deletedAt: null, status: { in: DONE_STATUSES } } }),
+    prisma.order.count({ where: { userId: session.user.id, deletedAt: null, status: { in: ACTIVE_STATUSES } } }),
+    prisma.order.findFirst({
+      where: { userId: session.user.id, deletedAt: null, status: { in: ACTIVE_STATUSES } },
+      orderBy: { createdAt: "desc" },
+      select: { orderNumber: true, status: true, id: true },
+    }),
+    prisma.order.aggregate({
+      where: { userId: session.user.id, deletedAt: null, status: { not: "CANCELLED" } },
+      _sum: { totalAmount: true },
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { name: true, email: true, phone: true, createdAt: true, address: true },
+      select: { name: true, email: true, phone: true, createdAt: true, address: true, avatarUrl: true },
     }),
   ]);
 
-  const totalSpent = orders
-    .filter(o => o.status !== "CANCELLED")
-    .reduce((s, o) => s + Number(o.totalAmount), 0);
-
-  const activeOrders = orders.filter(o => !["DELIVERED", "COMPLETED", "CANCELLED"].includes(o.status));
-  const completedOrders = orders.filter(o => ["DELIVERED", "COMPLETED"].includes(o.status));
-  const recentOrders = orders.slice(0, 3);
+  const totalSpent = Number(revenueAgg._sum.totalAmount ?? 0);
 
   const now = new Date();
   const hour = now.getHours();
@@ -52,29 +64,37 @@ export default async function CabinetDashboard() {
 
   return (
     <div className="space-y-4 pb-4">
-
       {/* ── ШАПКА ── */}
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-muted-foreground">{greeting},</p>
-          <h1 className="font-display font-bold text-xl leading-tight">{firstName}</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-primary font-bold text-sm">{firstName.slice(0, 2).toUpperCase()}</span>
+            )}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">{greeting},</p>
+            <h1 className="font-display font-bold text-xl leading-tight">{firstName}</h1>
+          </div>
         </div>
-        <Link href="/cabinet/notifications" className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center relative">
+        <Link href="/cabinet/notifications" className="w-11 h-11 rounded-xl bg-muted flex items-center justify-center relative">
           <Bell className="w-4 h-4 text-muted-foreground" />
         </Link>
       </div>
 
       {/* ── АЛЕРТ: активные заказы ── */}
-      {activeOrders.length > 0 && (
-        <Link href="/cabinet" className="flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl">
+      {countActive > 0 && firstActive && (
+        <Link href="/cabinet/orders?status=active" className="flex items-center justify-between px-4 py-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-2xl">
           <div className="flex items-center gap-2.5">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0" />
             <div>
               <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
-                {activeOrders.length === 1 ? "1 заказ в работе" : `${activeOrders.length} заказа в работе`}
+                {countActive === 1 ? "1 заказ в работе" : `${countActive} заказа в работе`}
               </p>
               <p className="text-xs text-orange-600 dark:text-orange-400">
-                {ORDER_STATUS_LABELS[activeOrders[0].status]} · #{activeOrders[0].orderNumber}
+                {ORDER_STATUS_LABELS[firstActive.status]} · #{firstActive.orderNumber}
               </p>
             </div>
           </div>
@@ -84,14 +104,14 @@ export default async function CabinetDashboard() {
 
       {/* ── СТАТИСТИКА ── */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-card border border-border rounded-2xl p-3 text-center">
-          <p className="text-xl font-display font-bold text-primary">{orders.length}</p>
+        <Link href="/cabinet/orders" className="bg-card border border-border rounded-2xl p-3 text-center active:scale-[0.98] transition-transform">
+          <p className="text-xl font-display font-bold text-primary">{totalAll}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Заказов</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-3 text-center">
-          <p className="text-xl font-display font-bold text-emerald-600">{completedOrders.length}</p>
+        </Link>
+        <Link href="/cabinet/orders?status=DELIVERED" className="bg-card border border-border rounded-2xl p-3 text-center active:scale-[0.98] transition-transform">
+          <p className="text-xl font-display font-bold text-emerald-600">{countDone}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Выполнено</p>
-        </div>
+        </Link>
         <div className="bg-card border border-border rounded-2xl p-3 text-center">
           <p className="text-lg font-display font-bold leading-tight">{totalSpent > 0 ? `${Math.round(totalSpent / 1000)}к` : "0"}</p>
           <p className="text-[10px] text-muted-foreground mt-0.5">Потрачено ₽</p>
@@ -103,14 +123,14 @@ export default async function CabinetDashboard() {
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">Быстрый доступ</p>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { href: "/catalog",          label: "Каталог",    icon: Package,       color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-50 dark:bg-white/[0.04]" },
-            { href: "/checkout",         label: "Заказать",   icon: ShoppingBag,   color: "text-primary",    bg: "bg-primary/8" },
-            { href: "/track",            label: "Трекинг",    icon: MapPin,        color: "text-blue-600 dark:text-blue-400",   bg: "bg-blue-50 dark:bg-white/[0.04]" },
-            { href: "/calculator",       label: "Калькулятор",icon: Calculator,    color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-50 dark:bg-white/[0.04]" },
-            { href: "/cabinet/profile",  label: "Профиль",    icon: User,          color: "text-slate-600 dark:text-slate-300",  bg: "bg-slate-50 dark:bg-white/[0.04]" },
-            { href: "/cabinet",          label: "Заказы",     icon: ReceiptText,   color: "text-emerald-600 dark:text-emerald-400",bg: "bg-emerald-50 dark:bg-white/[0.04]" },
-            { href: `tel:${phoneLink}`,  label: "Позвонить",  icon: Phone,         color: "text-green-600 dark:text-green-400",  bg: "bg-green-50 dark:bg-white/[0.04]" },
-            { href: "/reviews",          label: "Отзывы",     icon: Star,          color: "text-yellow-600 dark:text-yellow-400", bg: "bg-yellow-50 dark:bg-white/[0.04]" },
+            { href: "/catalog",                 label: "Каталог",     icon: Package,       color: "text-orange-600 dark:text-orange-400",   bg: "bg-orange-50 dark:bg-white/[0.04]" },
+            { href: "/checkout",                label: "Заказать",    icon: ShoppingBag,   color: "text-primary",                           bg: "bg-primary/8" },
+            { href: "/track",                   label: "Трекинг",     icon: MapPin,        color: "text-blue-600 dark:text-blue-400",       bg: "bg-blue-50 dark:bg-white/[0.04]" },
+            { href: "/calculator",              label: "Калькулятор", icon: Calculator,    color: "text-violet-600 dark:text-violet-400",   bg: "bg-violet-50 dark:bg-white/[0.04]" },
+            { href: "/cabinet/profile",         label: "Профиль",     icon: User,          color: "text-slate-600 dark:text-slate-300",     bg: "bg-slate-50 dark:bg-white/[0.04]" },
+            { href: "/cabinet/orders",          label: "Заказы",      icon: ReceiptText,   color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-white/[0.04]" },
+            { href: `tel:${phoneLink}`,         label: "Позвонить",   icon: Phone,         color: "text-green-600 dark:text-green-400",     bg: "bg-green-50 dark:bg-white/[0.04]" },
+            { href: "/cabinet/reviews",         label: "Отзывы",      icon: Star,          color: "text-yellow-600 dark:text-yellow-400",   bg: "bg-yellow-50 dark:bg-white/[0.04]" },
           ].map((action) => (
             <Link
               key={action.href + action.label}
@@ -130,12 +150,12 @@ export default async function CabinetDashboard() {
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
           <h2 className="font-semibold text-sm">Последние заказы</h2>
-          {orders.length > 3 && (
-            <span className="text-xs text-muted-foreground">{orders.length} всего</span>
+          {totalAll > 3 && (
+            <span className="text-xs text-muted-foreground">{totalAll} всего</span>
           )}
         </div>
 
-        {orders.length === 0 ? (
+        {recentOrders.length === 0 ? (
           <div className="px-5 py-10 text-center">
             <ShoppingBag className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
             <p className="text-sm font-medium mb-1">Заказов пока нет</p>
@@ -151,8 +171,8 @@ export default async function CabinetDashboard() {
               const color = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
               return (
                 <div key={order.id} className="p-4">
-                  {/* Order top row */}
-                  <div className="flex items-center justify-between mb-3">
+                  {/* Order top row — кликабельный */}
+                  <Link href={`/cabinet/orders/${order.id}`} className="flex items-center justify-between mb-3 active:opacity-80 transition-opacity">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                         <StatusIcon className="w-4 h-4 text-primary" />
@@ -168,7 +188,7 @@ export default async function CabinetDashboard() {
                       </span>
                       <span className="font-bold text-sm text-primary">{formatPrice(Number(order.totalAmount))}</span>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Items */}
                   <div className="space-y-1 mb-3">
@@ -187,20 +207,20 @@ export default async function CabinetDashboard() {
                   <div className="flex gap-2">
                     <RepeatOrderButton orderId={order.id} />
                     <Link
-                      href={`/track?order=${order.orderNumber}`}
+                      href={`/cabinet/orders/${order.id}`}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
                     >
-                      <MapPin className="w-3.5 h-3.5" /> Отследить
+                      <MapPin className="w-3.5 h-3.5" /> Подробнее
                     </Link>
                   </div>
                 </div>
               );
             })}
 
-            {orders.length > 3 && (
+            {totalAll > 3 && (
               <div className="px-5 py-3">
-                <Link href="/cabinet" className="flex items-center justify-center gap-2 text-sm text-primary font-medium py-2 rounded-xl hover:bg-primary/5 transition-colors">
-                  Все заказы ({orders.length}) <ChevronRight className="w-4 h-4" />
+                <Link href="/cabinet/orders" className="flex items-center justify-center gap-2 text-sm text-primary font-medium py-2 rounded-xl hover:bg-primary/5 transition-colors">
+                  Все заказы ({totalAll}) <ChevronRight className="w-4 h-4" />
                 </Link>
               </div>
             )}
@@ -211,8 +231,12 @@ export default async function CabinetDashboard() {
       {/* ── ПРОФИЛЬ ── */}
       <Link href="/cabinet/profile" className="flex items-center justify-between bg-card border border-border rounded-2xl p-4 active:scale-[0.98] transition-transform">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <User className="w-5 h-5 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-5 h-5 text-primary" />
+            )}
           </div>
           <div>
             <p className="text-sm font-semibold">{user?.name || "Профиль"}</p>
@@ -231,7 +255,7 @@ export default async function CabinetDashboard() {
           <p className="text-sm font-semibold">Нужна помощь?</p>
           <p className="text-xs text-muted-foreground">Менеджер поможет с выбором и расчётом</p>
         </div>
-        <a href={`tel:${phoneLink}`} className="shrink-0 bg-primary text-white text-xs font-bold px-3 py-2 rounded-xl">
+        <a href={`tel:${phoneLink}`} className="shrink-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-2 rounded-xl">
           Позвонить
         </a>
       </div>

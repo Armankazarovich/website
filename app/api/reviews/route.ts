@@ -167,6 +167,24 @@ export async function POST(req: NextRequest) {
       });
     } catch {}
 
+    // 📜 Activity log — WRITE_REVIEW (для раздела «История» в кабинете)
+    if (userId) {
+      prisma.activityLog
+        .create({
+          data: {
+            userId,
+            action: "WRITE_REVIEW",
+            targetId: review.id,
+            meta: {
+              productId: productId || undefined,
+              productName: product?.name || undefined,
+              rating: numRating,
+            },
+          },
+        })
+        .catch(() => {});
+    }
+
     return NextResponse.json(
       {
         ok: true,
