@@ -784,27 +784,9 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
       {/* ─── Mobile header убран — заменён compact sticky search bar внутри main ── */}
 
-      {/* ─── Mobile menu — Bottom Sheet (portal) ────────────── */}
-      <MobileMenuBottomSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        userName={userName}
-        email={email}
-        role={role}
-        avatarUrl={avatarUrl}
-        sheetDragStartY={sheetDragStartY}
-        isDark={safeTheme === "dark"}
-        palette={palette}
-        setPalette={setPalette}
-        theme={safeTheme}
-        setTheme={setTheme}
-      />
-
-      {/* ─── Mobile bottom nav ───────────────────────────────── */}
+      {/* ─── Mobile bottom nav (использует единый AccountDrawer) ───────────────────────────────── */}
       <AdminMobileBottomNav
         role={role}
-        onMenuOpen={() => setOpen(true)}
-        menuOpen={open}
         onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
       />
 

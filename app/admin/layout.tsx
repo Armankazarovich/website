@@ -3,8 +3,15 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import dynamicImport from "next/dynamic";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { prisma } from "@/lib/prisma";
+
+// AccountDrawer — единый side drawer (тот же что в магазине), открывается из admin-mobile-bottom-nav
+const AccountDrawer = dynamicImport(
+  () => import("@/components/store/account-drawer").then((m) => ({ default: m.AccountDrawer })),
+  { ssr: false }
+);
 
 export const metadata: Metadata = {
   title: {
@@ -62,8 +69,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <AdminShell role={role} email={session.user?.email} userName={userName}>
-      {children}
-    </AdminShell>
+    <>
+      <AdminShell role={role} email={session.user?.email} userName={userName}>
+        {children}
+      </AdminShell>
+      {/* Единый AccountDrawer — тот же что в магазине, открывается из bottom nav */}
+      <AccountDrawer />
+    </>
   );
 }
