@@ -204,12 +204,47 @@ export function VoiceModeOverlay() {
       });
 
       if (!res.ok) throw new Error("Chat error " + res.status);
-      const data = await res.json();
-      const assistantText: string = data.message || data.text || data.response || "";
-      if (!assistantText) throw new Error("Пустой ответ");
+      if (!res.body) throw new Error("No response stream");
 
-      // Очищаем от ARAY_ACTIONS markers для голоса
-      const cleanReply = assistantText.split("ARAY_ACTIONS:")[0].trim();
+      // /api/ai/chat возвращает streaming raw text (не JSON).
+      // Читаем stream через reader/decoder как в ArayWidget.
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let rawText = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        rawText += decoder.decode(value, { stream: true });
+        // Live-update subtitle: показываем то что Арай говорит сейчас
+        const live = rawText
+          .replace(/\n__ARAY_META__[\s\S]*$/, "")
+          .replace(/__ARAY_ERR__[\s\S]*$/, "")
+          .replace(/__ARAY_ADD_CART:.+?__/g, "")
+          .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+          .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
+          .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+          .replace(/__ARAY_REFRESH__/g, "")
+          .split("ARAY_ACTIONS:")[0]
+          .trim();
+        if (live) setReply(live);
+      }
+
+      // Финальная очистка
+      const isError = rawText.includes("__ARAY_ERR__");
+      const errMatch = rawText.match(/__ARAY_ERR__(.+)$/);
+      const cleanReply: string = isError
+        ? (errMatch?.[1] || "Не получилось. Попробуй ещё раз")
+        : rawText
+            .replace(/\n__ARAY_META__[\s\S]*$/, "")
+            .replace(/__ARAY_ADD_CART:.+?__/g, "")
+            .replace(/__ARAY_NAVIGATE:.+?__/g, "")
+            .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
+            .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+            .replace(/__ARAY_REFRESH__/g, "")
+            .split("ARAY_ACTIONS:")[0]
+            .trim();
+
+      if (!cleanReply) throw new Error("Пустой ответ");
       setReply(cleanReply);
 
       // Эмитим ответ для истории
