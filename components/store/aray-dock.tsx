@@ -151,12 +151,17 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Арай — чат-бар"
     >
-      <div className="pointer-events-auto mx-auto px-3 pb-2 pt-2 max-w-3xl">
+      <div className="pointer-events-auto mx-auto px-3 pb-3 pt-2 max-w-3xl">
         <div
-          className="arayglass arayglass-nopad flex items-end gap-2 p-2 border rounded-[22px]"
+          className="flex items-end gap-2 p-2 rounded-[22px]"
           style={{
-            borderColor: "hsl(var(--border))",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+            // Liquid Glass — единый стиль с Header магазина
+            background: "hsl(var(--background) / 0.85)",
+            backdropFilter: "blur(20px) saturate(180%)",
+            WebkitBackdropFilter: "blur(20px) saturate(180%)",
+            border: "1px solid hsl(var(--primary) / 0.15)",
+            boxShadow:
+              "0 8px 32px hsl(var(--foreground) / 0.08), 0 1px 0 hsl(var(--primary) / 0.1) inset",
           }}
         >
           {/* ── Левая часть: лицо Арая (без idle свечения — минимализм) ── */}
