@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { History, ShoppingBag, Star, Eye, Loader2, LogIn, MousePointer } from "lucide-react";
+import { History, ShoppingBag, Star, Eye, LogIn, MousePointer } from "lucide-react";
+import { SkeletonList } from "@/components/cabinet/skeleton";
 
 type ActivityItem = {
   id: string;
@@ -91,9 +92,7 @@ export default function HistoryPage() {
 
       {/* Activity feed */}
       {loading ? (
-        <div className="bg-card border border-border rounded-2xl p-10 flex justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <SkeletonList count={5} />
       ) : !data?.logs.length ? (
         <div className="bg-card border border-border rounded-2xl p-10 text-center">
           <History className="w-12 h-12 text-muted-foreground/15 mx-auto mb-3" />

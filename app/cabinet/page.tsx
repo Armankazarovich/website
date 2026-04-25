@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { formatPhone as fmtPhone } from "@/lib/phone";
 import Link from "next/link";
 import {
   ShoppingBag,
@@ -28,6 +29,21 @@ export default async function CabinetDashboard() {
 
   const settings = await getSiteSettings();
   const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
+  const phoneDisplay = getSetting(settings, "phone") || fmtPhone(phoneLink);
+
+  // Step index для mini-stepper активного заказа
+  const STEP_INDEX: Record<string, number> = {
+    NEW: 0,
+    CONFIRMED: 1,
+    PROCESSING: 2,
+    SHIPPED: 3,
+    IN_DELIVERY: 3,
+    READY_PICKUP: 3,
+    DELIVERED: 4,
+    COMPLETED: 4,
+    CANCELLED: -1,
+  };
+  const STEP_COUNT = 5;
 
   const [recentOrders, totalAll, countDone, countActive, firstActive, revenueAgg, user, subsCount] =
     await Promise.all([
@@ -105,19 +121,22 @@ export default async function CabinetDashboard() {
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
-      {/* ── HERO — приветствие ── */}
-      <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-4">
-        <div className="w-14 h-14 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+      {/* ── HERO — приветствие, кликабельно → Профиль ── */}
+      <Link
+        href="/cabinet/profile"
+        className="bg-card border border-border rounded-2xl p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:border-primary/40 transition-colors active:scale-[0.99]"
+      >
+        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
           {user?.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-primary font-display font-bold text-xl">{initials}</span>
+            <span className="text-primary font-display font-bold text-lg sm:text-xl">{initials}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground">{greeting},</p>
-          <h1 className="font-display font-bold text-xl leading-tight truncate">{firstName}</h1>
+          <h1 className="font-display font-bold text-lg sm:text-xl leading-tight truncate">{firstName}</h1>
           {totalAll > 0 && (
             <p className="text-xs text-muted-foreground mt-1">
               <span className="text-foreground font-medium">{totalAll}</span>{" "}
@@ -131,15 +150,16 @@ export default async function CabinetDashboard() {
             </p>
           )}
         </div>
-      </div>
+        <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+      </Link>
 
-      {/* ── АЛЕРТ: активный заказ ── */}
+      {/* ── АЛЕРТ: активный заказ + mini-stepper прогресса ── */}
       {countActive > 0 && firstActive && (
         <Link
           href={`/cabinet/orders/${firstActive.id}`}
           className="block bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5 text-primary" />
             </div>
@@ -152,6 +172,22 @@ export default async function CabinetDashboard() {
               </p>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
+          </div>
+          {/* Mini-stepper — визуальный прогресс */}
+          <div className="flex items-center gap-1">
+            {Array.from({ length: STEP_COUNT }).map((_, idx) => {
+              const currentIdx = STEP_INDEX[firstActive.status] ?? 0;
+              const isDone = idx < currentIdx;
+              const isCurrent = idx === currentIdx;
+              return (
+                <div
+                  key={idx}
+                  className={`h-1 flex-1 rounded-full transition-colors ${
+                    isDone ? "bg-emerald-500" : isCurrent ? "bg-primary" : "bg-muted"
+                  }`}
+                />
+              );
+            })}
           </div>
         </Link>
       )}
@@ -257,6 +293,7 @@ export default async function CabinetDashboard() {
         </div>
         <a
           href={`tel:${phoneLink}`}
+          aria-label={`Позвонить менеджеру ${phoneDisplay}`}
           className="shrink-0 bg-primary text-primary-foreground text-xs font-semibold px-3 h-10 inline-flex items-center gap-1.5 rounded-xl"
         >
           <Phone className="w-3.5 h-3.5" /> Позвонить

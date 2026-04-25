@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Heart, Users, Bell, Loader2, Trash2, Store, Tag, Package } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Heart, Loader2, Trash2, Store, Tag, Package } from "lucide-react";
+import { SkeletonList, SkeletonStats } from "@/components/cabinet/skeleton";
 
 type Sub = {
   id: string;
@@ -67,9 +67,7 @@ export default function SubscriptionsPage() {
 
       {/* List */}
       {loading ? (
-        <div className="bg-card border border-border rounded-2xl p-10 flex justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <SkeletonList count={4} />
       ) : subs.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-10 text-center">
           <Heart className="w-12 h-12 text-muted-foreground/15 mx-auto mb-3" />

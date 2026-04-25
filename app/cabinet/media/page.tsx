@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Images, FileText, Film, Upload, Loader2, Download, ExternalLink } from "lucide-react";
-import Image from "next/image";
+import { Images, FileText, Download } from "lucide-react";
+import { SkeletonHeader, SkeletonStats, SkeletonGrid } from "@/components/cabinet/skeleton";
 
 type MediaItem = {
   type: "review_photo" | "avatar" | "order_doc";
@@ -77,9 +77,7 @@ export default function MyMediaPage() {
       </div>
 
       {loading ? (
-        <div className="bg-card border border-border rounded-2xl p-10 flex justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <SkeletonGrid count={9} />
       ) : filtered.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-10 text-center">
           <Images className="w-12 h-12 text-muted-foreground/15 mx-auto mb-3" />
