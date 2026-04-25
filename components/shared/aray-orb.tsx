@@ -1,12 +1,24 @@
 "use client";
 
 /**
- * ArayOrb v6 — Living Face Avatar
- * Real ARAY face image with CSS glow animations
+ * ArayOrb v7 — Living Janus Avatar (видео + poster fallback)
  *
- * Two image variants:
- * - Large (>= 64px): /images/aray/face.png (full portrait)
- * - Small (< 64px): /images/aray/face-mob.png (face crop, sharper at small sizes)
+ * Шар-Янус Арая: синяя/оранжевая половины с солнцем и луной.
+ * Смысл (см. memory/project_aray_visual_meaning.md):
+ *  - Солнце+Луна = светлая/тёмная тема сайта (живая фича)
+ *  - Природа: AI как часть природы, не холодный робот
+ *  - Братство: два разума в одной работе (Арман + Claude)
+ *  - Инь-Ян: баланс противоположностей
+ *
+ * Видео-варианты:
+ *  - Desktop (>= 64px): /images/aray/orb-v2.mp4 (576×576, 377 KB)
+ *  - Mobile (< 64px): /images/aray/orb-v2-mobile.mp4 (384×384, 159 KB)
+ *  - Poster (до загрузки видео): /images/aray/orb-v2-poster.jpg (70 KB)
+ *  - Fallback (если video не работает): тот же poster.jpg
+ *
+ * Анимации:
+ *  - Видео уже само "дышит" внутри (Yandex AI генерация)
+ *  - CSS-glow ободка снаружи реагирует на listening/speaking состояния
  */
 
 interface ArayOrbProps {
@@ -43,48 +55,48 @@ export function ArayOrb({
   const isSpeaking = pulse === "speaking";
   const isActive = animate && (isListening || isSpeaking);
 
-  // Pick image based on size
-  const imgSrc = pixelSize >= 64 ? "/images/aray/face.png" : "/images/aray/face-mob.png";
+  // Видео-источники: на мобилке легче, на десктопе качественнее
+  const videoSrc = pixelSize >= 64
+    ? "/images/aray/orb-v2.mp4"
+    : "/images/aray/orb-v2-mobile.mp4";
+  const posterSrc = "/images/aray/orb-v2-poster.jpg";
 
-  // Animation speed based on state
-  const breatheDur = isActive ? "2s" : "4s";
-  const glowDur = isActive ? "1.5s" : "3s";
-
-  // Glow color based on state
+  // Цвет свечения — разный для listening/speaking
+  // primary палитры (оранжевый), но в active состоянии цветной акцент
   const glowColor = isListening
-    ? "rgba(96,165,250,"
+    ? "rgba(96,165,250,"   // синий — слушает
     : isSpeaking
-    ? "rgba(52,211,153,"
-    : "rgba(96,165,250,";
+    ? "rgba(186,117,23,"   // оранжевый — говорит (primary)
+    : "rgba(186,117,23,";  // idle — мягкое primary
 
-  // Border color
   const borderColor = isListening
-    ? "rgba(96,165,250,0.4)"
+    ? "rgba(96,165,250,0.45)"
     : isSpeaking
-    ? "rgba(52,211,153,0.4)"
-    : "rgba(96,165,250,0.3)";
+    ? "rgba(186,117,23,0.5)"
+    : "rgba(186,117,23,0.25)";
 
-  // Intensity
   const opMult = intensity === "subtle" ? 0.6 : intensity === "vivid" ? 1.4 : 1.0;
 
-  // Inner glow intensity
   const innerGlow = `inset 0 0 ${pixelSize * 0.15}px ${glowColor}${0.25 * opMult})`;
-  const outerGlow = `0 0 ${pixelSize * 0.08}px ${glowColor}${0.15 * opMult})`;
-  const innerGlowStrong = `inset 0 0 ${pixelSize * 0.25}px ${glowColor}${0.4 * opMult})`;
-  const outerGlowStrong = `0 0 ${pixelSize * 0.12}px ${glowColor}${0.25 * opMult})`;
+  const outerGlow = `0 0 ${pixelSize * 0.10}px ${glowColor}${0.18 * opMult})`;
+
+  // Активное состояние — больше свечения через CSS animation (см. globals)
+  const pulseAnim = isActive
+    ? `arayOrbPulseActive 1.6s ease-in-out infinite`
+    : `arayOrbPulseIdle 4s ease-in-out infinite`;
 
   return (
     <div
       className={`relative inline-flex items-center justify-center ${className}`}
       role="img"
       aria-label={
-        isListening ? "Aray is listening"
-          : isSpeaking ? "Aray is speaking"
-          : "Aray — AI Assistant"
+        isListening ? "Арай слушает"
+          : isSpeaking ? "Арай говорит"
+          : "Арай — AI ассистент"
       }
       style={{ width: pixelSize, height: pixelSize }}
     >
-      {/* Image container with circle clip and animations */}
+      {/* Контейнер с круглой маской и glow */}
       <div
         style={{
           width: pixelSize,
@@ -94,29 +106,50 @@ export function ArayOrb({
           position: "relative",
           border: `1.5px solid ${borderColor}`,
           boxShadow: `${innerGlow}, ${outerGlow}`,
-          animation: animate ? `arayInnerPulse ${glowDur} ease-in-out infinite` : undefined,
+          animation: animate ? pulseAnim : undefined,
+          background: "#000", // фон если видео не загрузилось
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imgSrc}
-          alt="ARAY"
+        {/* Видео — основной визуал */}
+        <video
+          src={videoSrc}
+          poster={posterSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
           width={pixelSize}
           height={pixelSize}
           style={{
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            objectPosition: pixelSize >= 64 ? "center 15%" : "center center",
-            borderRadius: "50%",
-            filter: `brightness(${isActive ? 1.25 : 1.1}) contrast(1.1) saturate(1.1)`,
-            animation: animate ? `arayBreathe ${breatheDur} ease-in-out infinite` : undefined,
-            imageRendering: pixelSize < 64 ? "-webkit-optimize-contrast" : undefined,
-          } as React.CSSProperties}
-        />
+            objectPosition: "center center",
+            display: "block",
+            // Лёгкое усиление brightness в active state
+            filter: isActive ? "brightness(1.1) saturate(1.15)" : undefined,
+            transition: "filter 0.4s ease",
+          }}
+          aria-hidden="true"
+        >
+          {/* Fallback: показываем poster через img если video не поддержано */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={posterSrc}
+            alt="Арай"
+            width={pixelSize}
+            height={pixelSize}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </video>
       </div>
 
-      {/* Badge notifications */}
+      {/* Badge — точка-индикатор (новые уведомления) */}
       {badge && (
         <span
           className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full animate-pulse"
@@ -127,11 +160,12 @@ export function ArayOrb({
           }}
         />
       )}
+      {/* Badge — счётчик */}
       {!badge && badgeCount != null && badgeCount > 0 && (
         <span
           className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-0.5"
           style={{
-            background: "linear-gradient(135deg,#3b82f6,#60a5fa)",
+            background: "hsl(var(--primary))",
             boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
           }}
         >
@@ -139,22 +173,30 @@ export function ArayOrb({
         </span>
       )}
 
-      {/* Global keyframes (injected once) */}
+      {/* Глобальные keyframes для пульсации glow */}
       <style jsx global>{`
-        @keyframes arayBreathe {
-          0%, 100% { transform: scale(1); filter: brightness(1.0) contrast(1.05) saturate(1.1); }
-          25% { transform: scale(1.04); filter: brightness(1.35) contrast(1.15) saturate(1.3); }
-          50% { transform: scale(1.01); filter: brightness(1.15) contrast(1.1) saturate(1.15); }
-          75% { transform: scale(1.05); filter: brightness(1.4) contrast(1.2) saturate(1.35); }
-        }
-        @keyframes arayInnerPulse {
+        @keyframes arayOrbPulseIdle {
           0%, 100% {
-            box-shadow: inset 0 0 12px rgba(96,165,250,0.3), 0 0 6px rgba(96,165,250,0.15);
-            border-color: rgba(96,165,250,0.3);
+            box-shadow:
+              inset 0 0 ${pixelSize * 0.12}px rgba(186,117,23,0.2),
+              0 0 ${pixelSize * 0.08}px rgba(186,117,23,0.12);
           }
           50% {
-            box-shadow: inset 0 0 24px rgba(96,165,250,0.6), 0 0 14px rgba(96,165,250,0.35);
-            border-color: rgba(96,165,250,0.7);
+            box-shadow:
+              inset 0 0 ${pixelSize * 0.18}px rgba(186,117,23,0.32),
+              0 0 ${pixelSize * 0.14}px rgba(186,117,23,0.22);
+          }
+        }
+        @keyframes arayOrbPulseActive {
+          0%, 100% {
+            box-shadow:
+              inset 0 0 ${pixelSize * 0.18}px ${glowColor}${0.4 * opMult}),
+              0 0 ${pixelSize * 0.12}px ${glowColor}${0.25 * opMult});
+          }
+          50% {
+            box-shadow:
+              inset 0 0 ${pixelSize * 0.30}px ${glowColor}${0.7 * opMult}),
+              0 0 ${pixelSize * 0.22}px ${glowColor}${0.45 * opMult});
           }
         }
       `}</style>
