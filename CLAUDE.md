@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 28 — восстановление функциональных коммитов 24.04 для /admin/products)
+> Последнее обновление: 25.04.2026 (сессия 29 — полный редизайн клиентского кабинета: 4 critical + 5 high + 6 medium фиксов одним деплоем, commit 913c87d)
 
 ---
 
@@ -863,6 +863,92 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 25.04.2026 (сессия 29) — Кабинет клиента полностью отполирован (1 коммит 913c87d, 22 файла, +1143/-228)
+
+**Контекст:** Арман попросил аудит кабинета. Выявил 4 critical + 5 high + 6 medium багов. Дал карт-бланш «газуй, потом Директ». Один мощный деплой закрыл ВСЁ.
+
+**🔴 CRITICAL фиксы:**
+1. **PDF счёта для клиента** — создан `/api/cabinet/orders/[id]/pdf` (auth по userId, не STAFF_ROLES). Ссылка в `/api/cabinet/media` переведена на новый endpoint. Раньше клиент получал 403 Forbidden при попытке скачать свой счёт.
+2. **Страница `/cabinet/orders`** — список всех заказов с пагинацией 20/стр, фильтры по статусу (все / в работе / NEW / CONFIRMED / ... / CANCELLED), поиск по номеру. Раньше на `/cabinet` было только 3 последних + кнопка «Все заказы (N) →» вела на self-link.
+3. **Страница `/cabinet/orders/[id]`** — детальная карточка: stepper статусов (Принят → Подтверждён → В обработке → Доставляется → Доставлен), items с ценами, итого с доставкой, InfoRow (получатель/телефон/email/адрес/оплата/комментарий), кнопки «Скачать счёт» / «Повторить» / «Трекинг» / «Отменить».
+4. **Отмена заказа клиентом** — новый `/api/cabinet/orders/[id]/cancel` POST с rate-limit 5/мин. Разрешено в статусах NEW/CONFIRMED. Причина опциональная (до 500 симв). Удаляет Telegram message сотрудникам, шлёт push об отмене, пишет в ActivityLog action=CANCEL_ORDER. UI — `components/cabinet/cancel-order-button.tsx` (модалка с textarea, mobile-friendly bottom sheet).
+
+**🟠 HIGH фиксы:**
+5. **Навигация USER** — `admin-nav.tsx` добавлены 6 пунктов в группу `personal` «Мой кабинет»: Мои заказы / Профиль / Мои отзывы / Медиа / Подписки / История. Раньше USER видел только 4 пункта (Главная / Каталог / Уведомления / Оформление).
+6. **Quick-actions на дашборде** — «Заказы» → `/cabinet/orders` (было self-link), «Отзывы» → `/cabinet/reviews` (было `/reviews` публичная). «Все заказы (N) →» — туда же.
+7. **Dashboard оптимизирован** — вместо `findMany` всех заказов (тормозил у VIP с 500+ заказами) теперь `Promise.all` с: findMany(take:3) + 3× count + findFirst + aggregate + user. Статистика через SQL — не на клиенте.
+8. **Активный заказ в алерте** — findFirst с orderBy:desc (было [0] из отфильтрованного массива — мог показать самый старый активный).
+9. **Безопасность `/api/cabinet/profile PATCH`** — zod-валидация (name 2-100, phone ≤30, address ≤500) + normalizePhone (фикс багов с форматом) + rate-limit 20/мин на userId. `/password` — rate-limit 5/15мин. `/avatar` — rate-limit 10/мин. `/history POST` — whitelist action + safe meta (max 10 ключей, строки ≤500 симв).
+
+**🟡 MEDIUM фиксы:**
+10. **Activity logging подключено** — `lib/auth.ts` events.signIn → LOGIN; `/api/orders` POST → PLACE_ORDER (с orderNumber+totalAmount); `/api/reviews` POST → WRITE_REVIEW (с productId+rating). Раньше `/cabinet/history` всегда была пуста.
+11. **Подписки — `SubscribeButton` компонент** — `components/store/subscribe-button.tsx`. Toggle Подписаться/Подписаны с Loader, для гостей редирект `/login?callbackUrl=...`. Интегрирован в `/catalog` (заголовок категории). Раньше `/cabinet/subscriptions` был dead end без UI для подписки.
+12. **Repeat order** — переписан `components/cabinet/repeat-order-button.tsx`: 2 варианта (inline для дашборда / button для детальной). Редирект на `/cart` вместо `/` (было — клиент терял контекст).
+13. **Эмодзи → lucide** — в `/cabinet/notifications` 🛒📦🏷️🔔 → ShoppingCart/Package/Tag/Bell. В `/cabinet/reviews` 👍 → ThumbsUp. Соблюдён стоп-лист ARAYGLASS п.10.
+14. **Avatar в dashboard** — теперь показывается в шапке и в блоке «Профиль» (было только в /cabinet/profile).
+15. **Cleanup** — удалён мёртвый `components/cabinet/cabinet-sidebar.tsx` (layout использует AdminShell, не CabinetSidebar). Dead code в `/cabinet/profile` убран: useTheme, usePalette, PALETTE_GROUPS, bgMode, fontSize и 6 неиспользуемых иконок.
+
+**Верификация:**
+- TSC: 0 ошибок (исправлено 5 Prisma-типовых ошибок по ходу: OrderStatus enum cast, Prisma.InputJsonValue для meta, убрали meta:null в events)
+- Production test: **42 PASS / 2 WARN / 0 FAIL** (WARN — динамические телефоны на главной, не регрессия)
+- Все ключевые URLs: `/`, `/catalog`, `/cabinet`, `/cabinet/orders`, `/login`, `/api/health` — HTTP 200/307
+- Средний response time 328ms (с cache — отличный результат)
+
+**Новые файлы:**
+- `app/api/cabinet/orders/[id]/pdf/route.ts` — PDF с auth по userId
+- `app/api/cabinet/orders/[id]/cancel/route.ts` — отмена заказа
+- `app/cabinet/orders/page.tsx` — список
+- `app/cabinet/orders/[id]/page.tsx` — детальная
+- `components/cabinet/cancel-order-button.tsx` — модалка отмены
+- `components/store/subscribe-button.tsx` — toggle подписки
+
+**Удалённые:**
+- `components/cabinet/cabinet-sidebar.tsx` — dead code, никто не импортировал
+
+**Изменённые (16):**
+- `app/(store)/catalog/page.tsx` — SubscribeButton в заголовке категории
+- `app/api/cabinet/media/route.ts` — URL PDF → /cabinet/orders/*/pdf
+- `app/api/cabinet/profile/route.ts` — zod + normalizePhone + rate-limit
+- `app/api/cabinet/password/route.ts` — rate-limit
+- `app/api/cabinet/avatar/route.ts` — rate-limit
+- `app/api/cabinet/history/route.ts` — whitelist action + safe meta
+- `app/api/orders/route.ts` — ActivityLog PLACE_ORDER
+- `app/api/reviews/route.ts` — ActivityLog WRITE_REVIEW
+- `app/cabinet/page.tsx` — переписан полностью (оптимизация + avatar)
+- `app/cabinet/profile/page.tsx` — dead code cleanup
+- `app/cabinet/notifications/page.tsx` — эмодзи → lucide
+- `app/cabinet/reviews/page.tsx` — эмодзи → lucide
+- `components/cabinet/repeat-order-button.tsx` — 2 variant + /cart redirect
+- `components/admin/admin-nav.tsx` — 6 пунктов USER
+- `lib/auth.ts` — events.signIn → ActivityLog
+
+**Что ОСТАЛОСЬ по аудиту (отложено — требуют миграций/большой фичи):**
+- 🟡 Email-уведомления toggle (нужен `User.emailNotifications` Bool + email backend изменения)
+- 🟡 Адресная книга `/cabinet/addresses` (нужна модель Address + миграция)
+- 🟢 Удаление аккаунта (152-ФЗ) — 1 сессия, но не сейчас
+- 🟢 2FA / multi-device sessions — 2-3 сессии, не перед Директом
+- 🟢 Trust score / «Знаток» — уже в ROADMAP ПРИОРИТЕТ 2 (после биржи)
+- 🟢 Referral / бонусы / лояльность — отдельная фича
+
+**Утилиты в `D:\pilorus\` (для переиспользования):**
+- `__sync.js` — список 21 файл кабинета → Latin path (редактируется для каждого деплоя)
+- `__tsc.js` — TSC проверка + фильтр ошибок кабинета
+- `__commit.js` — add + commit -F msg.txt + push (через Node — обходит cmd.exe quote bugs)
+- `__wait-and-verify.js` — wait 150s + retry логика на 6 URL
+- `__verify-retry.js` — быстрая повторная проверка если первая не прошла
+- `__msg.txt` — UTF-8 commit message (для `git commit -F`)
+- `__delete-cabinet-sidebar.js` — удаление файла из обеих путей
+
+**Урок сессии:**
+1. **Zod + normalizePhone обязательны на сервере** — даже если client форматирует. Клиент может обойти JS и отправить мусор. Решение: всегда validate+normalize на backend.
+2. **Prisma + OrderStatus cast** — массив строк надо типизировать `as OrderStatus[]` или импортировать `import type { OrderStatus } from "@prisma/client"`. Иначе TSC падает на `status: { in: [...] }`.
+3. **Prisma ActivityLog.meta** — тип `Record<string, unknown>` не совместим с `InputJsonValue`. Cast `as Prisma.InputJsonValue` или используйте spread `...(meta ? { meta } : {})`.
+4. **PM2 cold-start 3+ минуты для новых routes** — особенно для dynamic routes `/cabinet/orders/[id]`. Retry-логика в verify обязательна.
+5. **Arman's карт-бланш = максимальный объём в один коммит.** Когда Арман говорит «газуй», не дроби на 5 коммитов по задаче — он ждёт готового результата, а не лог работы.
+6. **components/cabinet/repeat-order-button пушил на `/`** — маленький баг, но репрезентативен: после action надо вести в релевантный контекст (`/cart`), а не на главную.
+
+---
 
 ### Сессия 25.04.2026 (сессия 28) — Восстановление функциональных коммитов 24.04 для /admin/products (6 коммитов, 0 дизайна)
 
