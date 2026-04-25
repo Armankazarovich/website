@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
+import { cleanForTTS } from "@/lib/tts-clean";
 
 // Anton Ru — спокойный, разговорный, без акцента (Multilingual v2)
 const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
@@ -101,42 +102,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Нет текста" }, { status: 400 });
     }
 
-    // Очищаем markdown и эмодзи для чистого произношения
-    const cleanText = text
-      // Markdown
-      .replace(/\*\*(.*?)\*\*/g, "$1")
-      .replace(/\*(.*?)\*/g, "$1")
-      .replace(/`(.*?)`/g, "$1")
-      .replace(/#{1,6}\s/g, "")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-      // Эмодзи
-      .replace(/[\u{1F300}-\u{1FFFF}]/gu, "")
-      .replace(/[\u{2600}-\u{27BF}]/gu, "")
-      // Единицы с валютой — СНАЧАЛА составные (₽/м³ → "рублей за кубометр")
-      .replace(/₽\s*\/\s*м[³3]/gi, " рублей за кубометр")
-      .replace(/₽\s*\/\s*шт\.?/gi, " рублей за штуку")
-      .replace(/₽\s*\/\s*м[²2]/gi, " рублей за квадратный метр")
-      .replace(/₽\s*\/\s*п\.?\s*м\.?/gi, " рублей за погонный метр")
-      .replace(/₽\s*\/\s*уп\.?/gi, " рублей за упаковку")
-      // Валюта → слова (оставшиеся одиночные ₽)
-      .replace(/₽/g, " рублей")
-      .replace(/\$/g, " долларов")
-      .replace(/€/g, " евро")
-      // Единицы измерения → слова
-      .replace(/м[³3]/gi, "кубометров")
-      .replace(/м[²2]/gi, "квадратных метров")
-      .replace(/п\.?\s*м\.?/g, "погонных метров")
-      // "1 500" → "1500" (убираем пробелы в числах)
-      .replace(/(\d)\s+(\d)/g, "$1$2")
-      // Числа с дефисом (50x150x6000 → "50 на 150 на 6000")
-      .replace(/(\d+)\s*[xхXХ×]\s*(\d+)/g, "$1 на $2")
-      // Спецсимволы которые TTS читает буквально
-      .replace(/[•·—–]/g, ", ")
-      .replace(/\//g, " ") // слеш → пробел
-      .replace(/[<>{}[\]|\\^~`#@&]/g, " ") // техсимволы
-      .replace(/\s{2,}/g, " ")
-      .trim()
-      .slice(0, 1200);
+    // Очищаем текст для естественного произношения (см. lib/tts-clean.ts)
+    // Расшифровывает аббревиатуры (ГОСТ, ООО, НДС), латиницу (WhatsApp→вотсап),
+    // единицы (₽/м³→"рублей за кубометр"), телефоны (+7-985→плюс 7 985),
+    // скобки→паузы, кавычки→удалить, размеры через ×→"на" и т.д.
+    const cleanText = cleanForTTS(text);
 
     if (!cleanText) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });
