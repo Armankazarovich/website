@@ -139,9 +139,20 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
     if (iframeRef.current) iframeRef.current.src = url;
   };
 
-  // Размеры
-  const panelW = isMobile ? "calc(100vw - 16px)" : maximized ? "min(800px, 90vw)" : "420px";
-  const panelH = isMobile ? "72dvh" : maximized ? "min(700px, 86vh)" : "540px";
+  // Размеры — адаптивные от viewport (не торчат за края, на больших мониторах крупнее)
+  // Default:  min(620, viewport*45%) × min(700, viewport*78%)
+  // Maximized: min(1100, viewport*82%) × min(820, viewport*88%)
+  // Mobile:   почти full-screen
+  const panelW = isMobile
+    ? "calc(100vw - 16px)"
+    : maximized
+      ? "min(1100px, 82vw)"
+      : "min(620px, 45vw)";
+  const panelH = isMobile
+    ? "72dvh"
+    : maximized
+      ? "min(820px, 88vh)"
+      : "min(700px, 78vh)";
 
   const displayUrl = url.replace(/^https?:\/\/[^/]+/, "") || "/";
 

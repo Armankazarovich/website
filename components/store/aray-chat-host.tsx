@@ -573,9 +573,13 @@ export function ArayChatHost() {
     };
     const onClose = () => setOpen(false);
     const onPrompt = (e: Event) => {
-      const ce = e as CustomEvent<{ text: string }>;
+      const ce = e as CustomEvent<{ text: string; mode?: string }>;
       const text = ce.detail?.text;
       if (!text) return;
+      // ВАЖНО: VoiceModeOverlay диспатчит aray:prompt с mode:"voice" для синхронизации
+      // истории — но НЕ для повторной отправки. Если бы мы тут вызвали sendMessage —
+      // получили бы дубль API-запроса и двойной голос (voice mode уже сам отвечает).
+      if (ce.detail?.mode === "voice") return;
       setOpen(true);
       setMinimized(false);
       sendMessage(text);
