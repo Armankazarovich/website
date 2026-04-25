@@ -11,10 +11,14 @@
  *  - Инь-Ян: баланс противоположностей
  *
  * Видео-варианты:
- *  - Desktop (>= 64px): /images/aray/orb-v2.mp4 (576×576, 377 KB)
- *  - Mobile (< 64px): /images/aray/orb-v2-mobile.mp4 (384×384, 159 KB)
- *  - Poster (до загрузки видео): /images/aray/orb-v2-poster.jpg (70 KB)
+ *  - Desktop (>= 64px): /aray/orb-v2.mp4 (576×576, 377 KB)
+ *  - Mobile (< 64px): /aray/orb-v2-mobile.mp4 (384×384, 159 KB)
+ *  - Poster (до загрузки видео): /aray/orb-v2-poster.jpg (70 KB)
  *  - Fallback (если video не работает): тот же poster.jpg
+ *
+ * ВАЖНО: ассеты лежат в public/aray/, НЕ в public/images/aray/.
+ * Это сделано чтобы deploy.yml preserve-логика для public/images/* (user-uploaded фото)
+ * не перезаписывала статичные ассеты Арая старой версией.
  *
  * Анимации:
  *  - Видео уже само "дышит" внутри (Yandex AI генерация)
@@ -56,10 +60,11 @@ export function ArayOrb({
   const isActive = animate && (isListening || isSpeaking);
 
   // Видео-источники: на мобилке легче, на десктопе качественнее
+  // Path: public/aray/* (НЕ public/images/aray/* — deploy preserve-логика)
   const videoSrc = pixelSize >= 64
-    ? "/images/aray/orb-v2.mp4"
-    : "/images/aray/orb-v2-mobile.mp4";
-  const posterSrc = "/images/aray/orb-v2-poster.jpg";
+    ? "/aray/orb-v2.mp4"
+    : "/aray/orb-v2-mobile.mp4";
+  const posterSrc = "/aray/orb-v2-poster.jpg";
 
   // Цвет свечения — разный для listening/speaking
   // primary палитры (оранжевый), но в active состоянии цветной акцент
