@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 30 — единая дизайн-система ПилоРус: cabinet layout = store layout, calm UI rev 1-3, DESIGN_SYSTEM.md, slide-transitions; 7 деплоев)
+> Последнее обновление: 25.04.2026 (сессия 31 — AccountDrawer полная переделка: ARAYGLASS → calm UI, Telegram-style иконки, Tinkoff-style quick actions, Liquid Glass точечно на ARAY-баннере, 1 деплой 78348f8)
 
 ---
 
@@ -863,6 +863,131 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 25.04.2026 (сессия 31) — AccountDrawer полная переделка ARAYGLASS → calm UI (1 деплой `78348f8`)
+
+**Контекст:** Арман увидел старый Account Drawer (попап `Личный кабинет`) ещё в ARAYGLASS-стиле — стеклянные тёмные карточки со свечениями, palette внизу drawer, неоновый бейдж роли, "Лаборатория ARAY" с glow. Сказал «хочу с этого папа начать». Plus попросил иконки в духе Tinkoff/Telegram + точечный Liquid Glass без перебора.
+
+**Что было не так (13 нарушений DESIGN_SYSTEM.md):**
+
+Визуальный шум:
+- `arayglass + arayglass-glow` на user-card (стеклянное свечение, deprecated)
+- `arayglass-shimmer` на 13 разделах + close-button + logout (анимированный блеск, тормозит мобилки)
+- `arayglass-icon` (лишний glow на иконках)
+- `arayglass-badge` на роли "Администратор" (неоновое свечение currentColor)
+- Градиент `bg-gradient-to-br` + `shadow-lg shadow-primary/20` на fallback-аватарке
+- `backdrop-filter: blur(24px) saturate(180%)` на drawer (главный виновник тормозов)
+- `boxShadow: 0 0 24px primary` на ARAY-баннере (старый glow)
+- `border-l border-primary/15` (вместо нейтрального `border-border`)
+
+Логические дубли:
+- `ThemePaletteBar` снизу drawer (палитра живёт в `/cabinet/appearance` И в ARAY Control справа — три места = бардак)
+- `Sun/Moon` переключатель темы (тоже дубль)
+
+Мёртвые "soon" обещания:
+- "Адреса доставки" `soon` (явно отложено окончательно)
+- "Бонусы" `soon` (нет в roadmap)
+- "Отслеживание" `soon` (фича будущего, висит грузом)
+
+**Согласование с Арманом — ARAY Production process:**
+
+1. Прочитал `account-drawer.tsx` (612 строк), составил список «лишнее / не хватает» текстом → отправил
+2. Через `mcp__visualize__show_widget` показал side-by-side **мокап ДО → ПОСЛЕ** в чате
+3. Арман попросил иконки в стиле Tinkoff/Telegram + точечный Liquid Glass
+4. Показал **второй мокап** с двумя вариантами: Tinkoff (круглые amber-50 заливки иконок) vs Telegram (иконки без фона)
+5. Дал профессиональную рекомендацию: Версия 2 (Telegram) — меньше визуального шума, контейнеры повторяются 8 раз слишком репетативно
+6. Арман: «брат по твоей рекомендации газуем»
+
+**Что сделано (commit `78348f8`, 2 файла, +305/-192):**
+
+`app/api/cabinet/profile/route.ts` — расширен GET endpoint:
+- Возвращает `stats: { activeOrders, finishedOrders, totalSpent, reviewsCount }` для всех залогиненных
+- Возвращает `staffStats: { todayNewOrders, pendingReviews }` если роль ∈ STAFF_ROLES
+- Параллельный `Promise.all` с 5 запросами (user findUnique + 4 aggregates)
+- Используется `import type { OrderStatus } from "@prisma/client"` для строгой типизации статусов
+- `prisma.review.count` обёрнут в `.catch(() => 0)` для graceful fallback
+- PATCH endpoint не тронут (rate-limit + zod-validation остались как были)
+
+`components/store/account-drawer.tsx` — полная переписка (612 → ~570 строк):
+
+**Telegram-style иконки** для разделов:
+- Удалены квадратные `bg-primary/10 rounded-xl` контейнеры
+- Иконки lucide-react напрямую — `w-6 h-6 text-primary` + `strokeWidth={1.75}`
+- Чисто, минималистично — как в Telegram
+
+**Tinkoff-style Quick actions** для STAFF (Админка / Новый заказ / Доставка):
+- Карточка `bg-card border-border rounded-2xl`
+- Внутри `w-11 h-11 rounded-full bg-primary text-primary-foreground` круг
+- Белая иконка `w-5 h-5 strokeWidth={2}` внутри
+- Compact label `text-[11px] font-medium`
+
+**Группировка разделов на 3 секции** через компонент `SectionGroup`:
+- **Покупки** — Мои заказы (с count бейджем активных), Избранное
+- **Аккаунт** — Профиль, Мои отзывы (count), Медиабиблиотека, Подписки, История действий
+- **Настройки** — Уведомления, Оформление, Помощь
+
+Каждая секция = `bg-card border-border rounded-2xl overflow-hidden` + `divide-y border-border` между элементами + `hover:bg-muted/40` на каждой строке.
+
+**User-card hero** — кликабельный, ведёт в `/cabinet/profile`:
+- Аватар: `<img>` с `rounded-full object-cover` или fallback `bg-primary text-primary-foreground` с initial
+- Quick-stats для USER: `12 заказов · 340 тыс ₽` (если orders > 0)
+- Role-badge для STAFF: `bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[11px]`
+- ChevronRight справа — клик ведёт в профиль
+
+**ARAY-баннер для STAFF** — с Liquid Glass точечно:
+- `bg-primary text-primary-foreground` основная заливка
+- `backgroundImage: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 35%)` — тонкий highlight на верхнем крае
+- `borderTop: 0.5px solid rgba(255,255,255,0.35)` — добавляет ощущение "стекло на свету"
+- **БЕЗ `backdrop-blur`** — это критично для мобилок
+- `active:scale-[0.99]` для tactile feedback
+- Live-stat в desc: `Сегодня: 3 новых заказа · 2 отзыва` с правильным склонением (`pluralOrders/pluralReviews`)
+- Если staffStats не загрузились — fallback `Дашборд, аналитика, инструменты`
+
+**Logout** — destructive outline (по DESIGN_SYSTEM п.2.5):
+- `border border-destructive/30 text-destructive hover:bg-destructive/5`
+- Touch target 44px (`h-11`)
+
+**Drawer container** — стало по DESIGN_SYSTEM:
+- Без `backdrop-filter` (удалено)
+- `border-l border-border` (нейтральная граница)
+- Overlay `bg-black/50 backdrop-blur-sm` оставлен (РАЗРЕШЕНО на overlay по DESIGN_SYSTEM 1.7)
+- Keep `shadow-2xl` (РАЗРЕШЕНО на drawer/modal)
+
+**Accessibility:**
+- `role="dialog"` + `aria-modal="true"` + `aria-label="Личный кабинет"`
+- `Escape` для закрытия (новый useEffect с keydown listener)
+
+**Login/Register панели** — НЕ тронуты (они уже calm с `<Input>`/`<Button>` из ui/), только мелкие правки:
+- Заменён `arayglass arayglass-glow` на `bg-primary/10` для иконки User в hero
+- Добавлен `style={{ fontSize: 16 }}` на все inputs (iOS no-zoom)
+
+**Удалены полностью:**
+- Компонент `ThemePaletteBar` (~40 строк)
+- Импорты `usePalette`, `PALETTES`, `useTheme`, `Sun`, `Moon`, `Palette` (только `Palette` оставлен как иконка для пункта "Оформление")
+- Раздел "Адреса доставки" из MenuItems
+- Раздел "Бонусы" из MenuItems
+- Раздел "Отслеживание" из MenuItems
+- Поле `external` из типа `MenuItem` (не использовалось)
+
+**Верификация:**
+- TSC: 0 ошибок (`npx tsc --noEmit`)
+- Production test: **42 PASS / 2 WARN / 0 FAIL** (WARN — динамические телефоны, не регрессия)
+- Все 6 ключевых URL — HTTP 200/307: `/`, `/catalog`, `/contacts`, `/login`, `/cabinet`, `/api/health`
+- Среднее response time: 175ms (отличный результат)
+
+**Уроки сессии:**
+1. **Перед UI-задачей — мокап через `mcp__visualize__show_widget`.** Side-by-side ДО/ПОСЛЕ экономит часы и предотвращает «попадание в противоположную картинку» (как с Living Aray, сессия 7-8). Арман не дизайнер — ему лучше один раз увидеть.
+2. **Профессиональная рекомендация важнее «дать выбор».** Когда показал 2 варианта (Tinkoff vs Telegram), Арман сказал «по твоей рекомендации газуем». Если бы я сказал «выбирай сам» — он бы потратил 5 минут на размышление. Я уверен в Telegram-стиле — должен был сразу сказать.
+3. **Liquid Glass БЕЗ backdrop-blur — это работает.** На ARAY-баннере 1px linear-gradient highlight + 0.5px белый borderTop даёт ощущение стекла, не нагружая GPU. На мобилках не тормозит.
+4. **Один fetch вместо двух.** Расширил `/api/cabinet/profile` GET вместо создания нового endpoint `/api/cabinet/drawer-stats`. Один Promise.all с 5 запросами параллельно = быстрее на сети.
+5. **`prisma.review.count.catch(() => 0)` — необходимо для graceful fallback.** Если миграция БД не прошла или модель Review будет переименована — drawer всё равно отрисуется без чисел.
+
+**Что осталось (для следующих сессий перед Директом):**
+- Аудит остальных попапов магазина: search-modal, cart-drawer, mobile-bottom-sheet, contact-widget, partnership-modal, home-review-popup
+- Responsive аудит каждого раздела `/cabinet/*` на 640/768/1024/1280
+- ARAY миграция на calm style (aray-widget, aray-orb, aray-dock, ARAY Control)
+
+---
 
 ### Сессия 25.04.2026 (сессия 30) — Единая дизайн-система ПилоРус (4 деплоя)
 
