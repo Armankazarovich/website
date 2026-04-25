@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 29 — полный редизайн клиентского кабинета: 4 critical + 5 high + 6 medium фиксов одним деплоем, commit 913c87d)
+> Последнее обновление: 25.04.2026 (сессия 30 — единая дизайн-система ПилоРус: cabinet layout = store layout, calm UI rev 1-3, DESIGN_SYSTEM.md, slide-transitions; 7 деплоев)
 
 ---
 
@@ -863,6 +863,91 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 25.04.2026 (сессия 30) — Единая дизайн-система ПилоРус (4 деплоя)
+
+**Контекст:** Арман увидел что кабинет = AdminShell (тяжёлый), мерцание, ARAYGLASS свечения везде, цветовая радуга в карточках стат. Сказал «один стиль на всём сайте, сразу мобилка/планшет/десктоп, как в магазине pilo-rus.ru — там идеально». Карт-бланш.
+
+**Деплой 1 — `317f2cf` (cabinet layout = store layout):**
+- `app/cabinet/layout.tsx` переписан 1-в-1 со `store/layout.tsx` (Header + Footer + SideIconRail + ArayDock + AccountDrawer + Filters/Search/Cart drawers + ScrollToTop + ArayWidget)
+- AdminShell в кабинете удалён. USER теперь видит магазинный layout с auth-guard.
+- Сотрудники в `/admin/*` — по-прежнему AdminShell (рабочее место).
+- Сотрудники в `/cabinet/*` (личные разделы) — store layout как у клиентов.
+
+**Деплой 2 — `8337c54` (calm UI rev 2 — дашборд):**
+- `app/cabinet/page.tsx` полностью переписан: убраны градиент в hero, pulse-анимация на алерте, quick-actions 4×2 grid, arayglass-glow.
+- Hero: простая `bg-card border-border` карточка с avatar + приветствием + 1 строка статистики.
+- 4 крупные карточки разделов вместо мелких quick-actions: Мои заказы / Подписки / Мои отзывы / Профиль.
+- Dashboard оптимизирован: Promise.all с findFirst+aggregate+count вместо findMany всех заказов.
+- subsCount из реального prisma.subscription.count() с safe fallback.
+- Бейджи активных заказов на карточке Мои заказы.
+
+**Деплой 3 — `8f541e2` (DESIGN_SYSTEM + skeleton + улучшения):**
+- **NEW `DESIGN_SYSTEM.md`** в корне репо (рядом с CLAUDE.md) — 8 разделов: манифест, tokens (цвета/типографика/радиусы/spacing/breakpoints/shadows), компоненты, patterns, anti-patterns (ARAYGLASS deprecated), roles & layouts, migration plan, чеклист. Это **закон** для всех будущих сессий.
+- **CLAUDE.md** — ARAYGLASS манифест помечен DEPRECATED, добавлена ссылка на DESIGN_SYSTEM.md в начало раздела дизайна.
+- **NEW `components/cabinet/skeleton.tsx`** — SkeletonRow / List / Grid / Stats / Header. Применено в media/subscriptions/history (заменил Loader2 спиннер на skeleton placeholder'ы).
+- **Hero — Link → /cabinet/profile** (avatar клик ведёт в профиль). Адаптивный: w-12/14, text-lg/xl.
+- **Mini-stepper** в карточке активного заказа: 5 точек прогресса (NEW→CONFIRMED→PROCESSING→IN_DELIVERY→DELIVERED), цвета: emerald (готово) / primary (текущий) / muted (впереди).
+- **Phone tel** — aria-label с formatPhone из lib/phone.
+
+**Деплой 4 — `688844d` (calm UI rev 3 — убрал радугу из 4 страниц):**
+- `/cabinet/subscriptions` — stats без bg-pink/blue/purple, скрываются при subs=0, empty state с CTA «В каталог».
+- `/cabinet/reviews` — stats без text-yellow/emerald/blue, скрываются при reviews=0, empty state с CTA. Star рейтинг amber (семантика). Status badge с точкой-индикатором (emerald/amber).
+- `/cabinet/history` — фильтр-кнопки stats: активная primary, неактивные muted-foreground (было разноцветно). Stats скрываются при empty. Кнопка «Сбросить фильтр».
+- `/cabinet/media` — иконка PDF: bg-red-50 + text-red-500 → bg-primary/10 + text-primary (PDF не «опасный»).
+
+**Деплой 5 — `7d48b3a` (slide-transition между разделами):**
+- **NEW `components/cabinet/slide-transition.tsx`** — slide-from-right (16px → 0) + fade за 180ms cubic-bezier.
+- БЕЗ exit-анимации — старая страница исчезает мгновенно, новая выезжает с slide. Никакой блокировки SSR.
+- Подключено в `app/cabinet/layout.tsx` (динамический импорт ssr:false).
+- `/cabinet → /cabinet/orders → /cabinet/profile` теперь с лёгким drawer-like эффектом.
+
+**Верификация:**
+- TSC: 0 ошибок (5 Prisma-typed ошибок исправлены: Prisma.InputJsonValue для meta, OrderStatus[] cast).
+- Production test после каждого деплоя: 39-42/44 PASS, 0 FAIL.
+- Все ключевые URLs проверены (`/`, `/catalog`, `/cabinet`, `/cabinet/orders`, `/login`, `/api/health`) после каждого деплоя.
+
+**Что осталось (для следующих сессий):**
+
+**🟠 Перед Директом:**
+- Все попапы/модалки в едином стиле (cancel-order-button modal, avatar-crop modal — пройти аудит)
+- Responsive аудит каждого раздела кабинета (виджеты на 640/768/1024/1280 viewport)
+- ARAY (aray-widget, aray-orb, aray-dock, ARAY Control в админке) — миграция на calm style
+
+**🟢 После Директа:**
+- `/admin/*` миграция на единую дизайн-систему (большой рефакторинг, ~5-7 сессий)
+- Удалить `arayglass-*` CSS классы из globals.css когда все usages мигрированы
+- Intercepting Routes (полное SPA с модалками) — мощно но требует 2-3 сессий
+
+**🔵 Отложено окончательно:**
+- Pull-to-refresh — требует библиотеку и тесты на устройствах
+- Email toggle в /cabinet/notifications — требует миграцию User.emailNotifications
+- Адресная книга /cabinet/addresses — новая модель Address + миграция
+- Удаление аккаунта (152-ФЗ)
+- 2FA / multi-device sessions
+- Trust score / «Знаток»
+- Referral / бонусы
+
+**Утилиты в `D:\pilorus\` (создано/обновлено в этой сессии):**
+- `__sync.js` — list файлов для каждого деплоя (редактируется)
+- `__commit.js` — add + commit -F __msg.txt + push
+- `__msg.txt` — UTF-8 commit message (для git commit -F, обходит cmd.exe quote bugs)
+- `__tsc.js` — TSC проверка с фильтром cabinet ошибок
+- `__wait-and-verify.js` — wait 150s + retry на 6-7 URL
+- `__verify-retry.js` — быстрая повторная проверка
+- `__final-check.js` — comprehensive E2E (39 проверок: PUBLIC + CABINET + API + CONTENT + SECURITY)
+- `__delete-cabinet-sidebar.js` — удаление файла из обеих путей
+
+**Уроки сессии:**
+1. **«Один стиль на сайте» — это базовая гигиена, не роскошь.** Если разные разделы выглядят как разные приложения — это плохой UX. ARAYGLASS манифест сделал кабинет «другим сайтом» — Арман это сразу почувствовал.
+2. **Если просят мокап — НЕ показывать варианты «А или Б». Принимать решение и делать.** Арман не дизайнер, он ждёт от меня профессионального мнения.
+3. **DESIGN_SYSTEM.md — закон, не рекомендация.** Без единого документа каждая сессия делает по-своему. Документ кодифицирует то что УЖЕ работает на магазине, не изобретает.
+4. **Радуга = плохо. Один акцент (primary) = хорошо.** Семантические цвета можно: emerald (success), amber (warning), destructive (error), amber для рейтинга. Декоративные счётчики — без цвета.
+5. **Slide-transition без exit-анимации.** Если делать exit, новая страница ждёт пока старая уедет → визуальный лаг. Решение: только enter-анимация, старая исчезает мгновенно.
+6. **Skeleton > Spinner.** Spinner = пустой экран с крутящейся иконкой. Skeleton = форма того что появится → пользователь видит структуру до загрузки данных.
+7. **Не блокироваться long-running командами в MCP.** `__wait-and-verify.js` запускается на 152-180 сек, MCP timeout 60 сек — приходится `read_process_output` повторно.
+
+---
 
 ### Сессия 25.04.2026 (сессия 29) — Кабинет клиента полностью отполирован (1 коммит 913c87d, 22 файла, +1143/-228)
 
