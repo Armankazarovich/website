@@ -28,7 +28,7 @@ import {
   ChevronRight, Minimize2, Copy, Check,
 } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
-import { ArayBrowser } from "@/components/store/aray-browser";
+import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 import { useCartStore } from "@/store/cart";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 
@@ -95,6 +95,7 @@ interface ParsedReply {
   navigateUrl?: string;
   showUrl?: { url: string; title?: string };
   popup?: { url: string; title?: string };
+  spotlight?: { x: number; y: number; hint?: string };
   addToCart?: { variantId: string; quantity: number; unit?: string };
   refresh?: boolean;
   actions: AssistantAction[];
@@ -143,6 +144,18 @@ function parseReply(raw: string): ParsedReply {
     };
   }
   text = text.replace(/__ARAY_ADD_CART:[^_]+?__/g, "");
+
+  // __ARAY_SPOTLIGHT:x:y:hint__ — палец-указатель на координатах в попап-браузере
+  // x, y — проценты (0-100), hint — текст подсказки "Нажми сюда!"
+  const spotMatch = text.match(/__ARAY_SPOTLIGHT:(\d{1,3}(?:\.\d+)?):(\d{1,3}(?:\.\d+)?)(?::([^_]+?))?__/);
+  if (spotMatch) {
+    result.spotlight = {
+      x: parseFloat(spotMatch[1]),
+      y: parseFloat(spotMatch[2]),
+      hint: spotMatch[3]?.trim(),
+    };
+  }
+  text = text.replace(/__ARAY_SPOTLIGHT:[^_]+?__/g, "");
 
   // __ARAY_REFRESH__
   if (text.includes("__ARAY_REFRESH__")) result.refresh = true;
@@ -276,6 +289,15 @@ export function ArayChatHost() {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [showActions, setShowActions] = useState(true);
   const [browserState, setBrowserState] = useState<{ url: string; title?: string } | null>(null);
+  const [browserAction, setBrowserAction] = useState<ArayBrowserAction | null>(null);
+  const [toastInfo, setToastInfo] = useState<string | null>(null);
+
+  // Auto-dismiss тост через 3 сек
+  useEffect(() => {
+    if (!toastInfo) return;
+    const t = setTimeout(() => setToastInfo(null), 3000);
+    return () => clearTimeout(t);
+  }, [toastInfo]);
   const [isMobile, setIsMobile] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -454,10 +476,50 @@ export function ArayChatHost() {
         } catch (e) { console.warn("[Aray] add-to-cart error", e); }
       }
 
-      if (parsed.showUrl) {
-        setBrowserState({ url: parsed.showUrl.url, title: parsed.showUrl.title });
-      } else if (parsed.popup) {
-        setBrowserState({ url: parsed.popup.url, title: parsed.popup.title });
+      // Известно что блокируют iframe (X-Frame-Options/CSP). Для них — новая вкладка.
+      const externalIframeBlockers = [
+        "yandex.ru", "ya.ru", "direct.yandex", "metrika.yandex",
+        "gosuslugi.ru", "nalog.ru", "egrul.nalog",
+        "sberbank.ru", "tinkoff.ru", "alfabank.ru", "vtb.ru",
+        "wildberries.ru", "ozon.ru", "avito.ru",
+      ];
+
+      const isBlockedExternal = (u: string) => {
+        try {
+          if (!u.startsWith("http")) return false;
+          const host = new URL(u).hostname.toLowerCase();
+          return externalIframeBlockers.some(b => host.includes(b));
+        } catch { return false; }
+      };
+
+      const showCandidate = parsed.showUrl || parsed.popup;
+      if (showCandidate) {
+        if (isBlockedExternal(showCandidate.url)) {
+          // Открываем в новой вкладке — попытка iframe бесполезна
+          window.open(showCandidate.url, "_blank", "noopener,noreferrer");
+          setToastInfo(`Открыл ${showCandidate.title || "страницу"} в новой вкладке`);
+        } else {
+          setBrowserState({ url: showCandidate.url, title: showCandidate.title });
+          // Если есть spotlight — ставим через 1.2с (даём странице загрузиться)
+          if (parsed.spotlight) {
+            setTimeout(() => {
+              setBrowserAction({
+                type: "spotlight",
+                spotX: parsed.spotlight!.x,
+                spotY: parsed.spotlight!.y,
+                hint: parsed.spotlight!.hint,
+              });
+            }, 1200);
+          }
+        }
+      } else if (parsed.spotlight && browserState) {
+        // Если попап уже открыт — сразу ставим указатель
+        setBrowserAction({
+          type: "spotlight",
+          spotX: parsed.spotlight.x,
+          spotY: parsed.spotlight.y,
+          hint: parsed.spotlight.hint,
+        });
       }
 
       if (parsed.navigateUrl) {
@@ -882,16 +944,34 @@ export function ArayChatHost() {
         )}
       </AnimatePresence>
 
-      {/* ArayBrowser попап для показа товаров/страниц */}
+      {/* ArayBrowser попап для показа товаров/страниц + spotlight (палец-указатель) */}
       <AnimatePresence>
         {browserState && (
           <ArayBrowser
             key="browser"
             initialUrl={browserState.url}
             title={browserState.title}
-            onClose={() => setBrowserState(null)}
+            onClose={() => { setBrowserState(null); setBrowserAction(null); }}
+            pendingAction={browserAction}
             isMobile={isMobile}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Тост — "открыл в новой вкладке" */}
+      <AnimatePresence>
+        {toastInfo && (
+          <motion.div
+            key="toast"
+            initial={{ opacity: 0, y: -16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 z-[400] flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-lg"
+            style={{ boxShadow: "0 8px 32px hsl(var(--foreground) / 0.12)" }}
+          >
+            <Sparkles className="w-4 h-4 text-primary shrink-0" />
+            <span className="text-[13px] font-medium text-foreground">{toastInfo}</span>
+          </motion.div>
         )}
       </AnimatePresence>
     </>

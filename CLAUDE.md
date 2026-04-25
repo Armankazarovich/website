@@ -1,6 +1,65 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 32 final — Янус-визуал Арая на проде, единая навигация магазин+админка, AccountDrawer + секция "Управление", Liquid Glass точечно, ArayDock calm UI + переключён mic на Voice Mode, расширенная очистка TTS, VoiceModeOverlay (fullscreen ChatGPT Voice), характер дружелюбного Арая. **15+ деплоев за день, 0 FAIL**)
+> Последнее обновление: 25.04.2026 (сессия 33 — **Арай 1.0 ШЕДЕВР**: единый ChatHost (магазин + кабинет + админка), удалён старый ArayWidget из 3 layouts, TTS пунктуация (₽→", рублей," — фикс "Рублей лей"), голосовые эмоции (style 0.42 вместо 0.0), кнопка "Перебить Арая" в Voice Mode, характер брата с блоком "Честность — закон". **1 коммит `229e54c`, 42 PASS / 0 FAIL**)
+
+---
+
+## ✨ АРАЙ 1.0 — АРХИТЕКТУРА (для следующих сессий)
+
+**Единый стек, ОДИН ChatHost на всё приложение:**
+
+- `components/store/aray-chat-host.tsx` (~700 строк) — **главный** глобальный компонент
+- Подключён в: `app/(store)/layout.tsx`, `app/cabinet/layout.tsx`, `components/admin/lazy-components.tsx` (через LazyAdminAray)
+- Слушает события: `aray:open` / `aray:prompt` / `aray:close`
+- Десктоп: окно 420×640 справа снизу, swipe-to-orb (минимизация в FAB)
+- Мобилка: fullscreen
+- Streaming SSE с парсингом маркеров: `__ARAY_NAVIGATE__`, `__ARAY_SHOW_URL__`, `__ARAY_POPUP__`, `__ARAY_ADD_CART__`, `__ARAY_REFRESH__`, `ARAY_ACTIONS:[...]`
+- Markdown в ответах (жирный, курсив, списки, ссылки, код)
+- История в localStorage `aray.chat.history.v1` (max 30)
+- Voice prefs `aray.voice.enabled.v1`
+- Live cart total в header (как было в старом widget — "311 120 ₽")
+- Copy сообщения (hover-кнопка), очистить чат
+
+**Входы (диспатчат события Араю):**
+- `components/store/aray-dock.tsx` — десктопный Telegram-style чат-бар (lg+)
+- `components/store/mobile-bottom-nav.tsx` — центральный таб с орбом (мобилка <640)
+- `components/store/side-icon-rail.tsx` — иконка справа на планшете (640-1023)
+- `components/admin/admin-mobile-bottom-nav.tsx` — центральный таб в админке мобильной
+- `components/admin/admin-aray-floating.tsx` — FAB в админке мобильной (legacy, можно убрать)
+
+**Голос:**
+- `components/store/voice-mode-overlay.tsx` — fullscreen разговор как ChatGPT Voice
+- ОБЯЗАТЕЛЬНО подключён в (store)/layout, cabinet/layout, admin/layout
+- Кнопка "Перебить Арая" (destructive 64px) во время speaking
+- `interruptAray()` — мгновенно останавливает audio + speechSynthesis + возобновляет listening
+
+**TTS (`lib/tts-clean.ts` + `app/api/ai/tts/route.ts`):**
+- `cleanForTTS(text)` — пунктуационные якоря (₽ → ", рублей,") чтобы модель ElevenLabs не заикалась
+- Все валюты/единицы расшифровываются с запятыми/точками
+- `MAX_LENGTH = 1500` с обрезанием по последнему предложению
+- Гарантирует точку в конце фразы
+- VOICE_SETTINGS: stability 0.55 (живой), similarity 0.78, style 0.42 (эмоции), speed 1.0
+- Стратегия: Cloudflare Worker → Direct → Browser fallback
+- FALLBACK_KEY в коде (TODO: ротировать через env var на VPS)
+
+**Промпт характера (`lib/aray-agent.ts`):**
+- 2 версии: `buildCustomerSystemPrompt` (USER) + `buildAdminSystemPrompt` (STAFF/ADMIN)
+- Обе содержат блок "ДУХ ARAY" + "КАК ГОВОРИШЬ"
+- USER: "брат-проводник по дереву, эмодзи редко, на ТЫ"
+- STAFF: "правая рука команды, действуй без спроса, блок ЧЕСТНОСТЬ — ЗАКОН"
+- Голосовой режим (если `context.source === "voice-mode"`): 1-3 предложения, без markdown
+- 30+ tools с фильтрацией по ролям (`getToolsForRole`)
+
+**УДАЛЁН (legacy, НЕ использовать):**
+- `components/store/aray-widget.tsx` — файл остался для безопасности, но НИГДЕ не подключён. Можно удалить в следующей сессии после E2E тестов.
+
+**Что осталось на следующие сессии:**
+- [ ] E2E тест Арая в Chrome: десктоп магазин, мобильный магазин (375px), десктоп админка, мобильная админка
+- [ ] Удалить файл `aray-widget.tsx` после проверки стабильности (через 1-2 недели жизни на проде)
+- [ ] Streaming TTS (играть пока генерируется) — сейчас ждём полный ответ
+- [ ] Wake-word "Эй Арай" — отложено (требует нативный app)
+- [ ] ELEVENLABS_API_KEY вынести в env vars на Beget VPS, удалить FALLBACK_KEY из репо
+- [ ] Полировка под визуал Янус-Арая (если найдём AI-render лица планеты)
 
 ---
 

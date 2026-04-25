@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Send, Keyboard, X, Loader2 } from "lucide-react";
+import { Mic, MicOff, Send, Keyboard, X, Loader2, RotateCw, AlertCircle, Zap, ZapOff } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { useAccountDrawer } from "@/store/account-drawer";
 
@@ -52,6 +52,38 @@ export function VoiceModeOverlay() {
   const audioStreamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const finalAccumRef = useRef("");
+  // VAD: автоотправка после 1.5 сек тишины
+  const vadTimerRef = useRef<number | null>(null);
+  const lastSpeechAtRef = useRef<number>(0);
+  const sendToArayRef = useRef<(() => void) | null>(null);
+  const [autoSend, setAutoSend] = useState(true);
+  const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
+  const [toast, setToast] = useState<string | null>(null);
+
+  // ── Permission API: проверяем статус микрофона ──
+  useEffect(() => {
+    if (!open) return;
+    if (typeof navigator === "undefined" || !navigator.permissions) {
+      setMicPermission("unknown");
+      return;
+    }
+    let cancelled = false;
+    navigator.permissions.query({ name: "microphone" as PermissionName })
+      .then((status) => {
+        if (cancelled) return;
+        setMicPermission(status.state as any);
+        status.onchange = () => setMicPermission(status.state as any);
+      })
+      .catch(() => setMicPermission("unknown"));
+    return () => { cancelled = true; };
+  }, [open]);
+
+  // ── Auto-dismiss тост через 3 сек ──
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   // ── Открытие overlay по event `aray:voice` ──
   useEffect(() => {
@@ -131,14 +163,35 @@ export function VoiceModeOverlay() {
       rec.onresult = (e: any) => {
         let finalText = finalAccumRef.current;
         let interimText = "";
+        let hasNewSpeech = false;
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const r = e.results[i];
-          if (r.isFinal) finalText += r[0].transcript;
-          else interimText += r[0].transcript;
+          if (r.isFinal) {
+            finalText += r[0].transcript;
+            hasNewSpeech = true;
+          } else {
+            interimText += r[0].transcript;
+            hasNewSpeech = true;
+          }
         }
         finalAccumRef.current = finalText;
         setFinal(finalText);
         setInterim(interimText);
+
+        // VAD: пользователь говорит → сбрасываем таймер тишины
+        if (hasNewSpeech) {
+          lastSpeechAtRef.current = Date.now();
+          if (vadTimerRef.current) clearTimeout(vadTimerRef.current);
+          // Если есть готовый final текст — ждём 1500мс тишины и автоотправляем
+          if (autoSend && finalText.trim().length > 2) {
+            vadTimerRef.current = window.setTimeout(() => {
+              const now = Date.now();
+              if (now - lastSpeechAtRef.current >= 1400) {
+                sendToArayRef.current?.();
+              }
+            }, 1500);
+          }
+        }
       };
 
       rec.onerror = (e: any) => {
@@ -183,6 +236,12 @@ export function VoiceModeOverlay() {
   const sendToAray = useCallback(async () => {
     const text = (finalAccumRef.current + " " + interim).trim();
     if (!text) return;
+
+    // Сбрасываем VAD таймер (если был)
+    if (vadTimerRef.current) {
+      clearTimeout(vadTimerRef.current);
+      vadTimerRef.current = null;
+    }
 
     stopListening();
     setState("thinking");
@@ -301,10 +360,20 @@ export function VoiceModeOverlay() {
         speechSynthesis.speak(u);
       }
     } catch (e: any) {
-      setError(e?.message || "Ошибка отправки");
+      // Мягкий тост вместо красного блока в UI
+      setToast(e?.message?.includes("Network") ? "Связь пропала, повтори?" : "Минутку, попробую ещё раз");
       setState("paused");
+      // Через 2 сек снова слушаем — пользователь не должен нажимать ничего
+      setTimeout(() => {
+        if (open) startListening();
+      }, 2000);
     }
   }, [interim, open, startListening, stopListening]);
+
+  // Связываем sendToArayRef с актуальной sendToAray (для VAD onresult)
+  useEffect(() => {
+    sendToArayRef.current = sendToAray;
+  }, [sendToAray]);
 
   // ── Перебить Арая (если он говорит) ──
   const interruptAray = useCallback(() => {
@@ -326,6 +395,7 @@ export function VoiceModeOverlay() {
   // ── Управление ──
   const closeOverlay = useCallback(() => {
     stopListening();
+    if (vadTimerRef.current) { clearTimeout(vadTimerRef.current); vadTimerRef.current = null; }
     if (audioRef.current) {
       try { audioRef.current.pause(); } catch {}
       audioRef.current = null;
@@ -343,6 +413,19 @@ export function VoiceModeOverlay() {
     setOpen(false);
     setState("idle");
   }, [stopListening]);
+
+  // ── Сброс микрофона: останавливаем stream и заново запрашиваем ──
+  const resetMicrophone = useCallback(async () => {
+    haptic(10);
+    stopListening();
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(t => t.stop());
+      audioStreamRef.current = null;
+    }
+    analyserRef.current = null;
+    setToast("Перезапускаю микрофон...");
+    setTimeout(() => startListening(), 500);
+  }, [stopListening, startListening]);
 
   const togglePause = useCallback(() => {
     haptic(6);
@@ -394,19 +477,80 @@ export function VoiceModeOverlay() {
         aria-modal="true"
         aria-label="Голосовой режим Арая"
       >
-        {/* Top: close + status */}
+        {/* Top: статус микрофона + auto-send + close */}
         <div className="w-full flex items-center justify-between max-w-md">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Голосовой режим
-          </span>
-          <button
-            onClick={closeOverlay}
-            className="w-10 h-10 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
-            aria-label="Закрыть"
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Индикатор микрофона */}
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-border text-[11px]"
+              title={micPermission === "granted" ? "Микрофон активен" : micPermission === "denied" ? "Доступ к микрофону закрыт" : "Жду разрешения"}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                state === "listening"
+                  ? "bg-emerald-500 animate-pulse"
+                  : state === "speaking"
+                  ? "bg-primary animate-pulse"
+                  : micPermission === "denied"
+                  ? "bg-destructive"
+                  : "bg-muted-foreground/40"
+              }`} />
+              <span className="text-muted-foreground font-medium">
+                {state === "listening" ? "Слушаю" :
+                 state === "speaking" ? "Говорю" :
+                 state === "thinking" ? "Думаю" :
+                 micPermission === "denied" ? "Нет доступа" :
+                 "Готов"}
+              </span>
+            </div>
+            {/* Авто-отправка toggle */}
+            <button
+              onClick={() => { setAutoSend(v => !v); haptic(6); setToast(autoSend ? "Авто-отправка выключена" : "Авто-отправка включена"); }}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full border text-[11px] transition-colors ${
+                autoSend
+                  ? "border-primary/30 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted/40"
+              }`}
+              title={autoSend ? "Арай отправит сам после 1.5с тишины" : "Отправлять только по нажатию"}
+            >
+              {autoSend ? <Zap className="w-3 h-3" /> : <ZapOff className="w-3 h-3" />}
+              <span className="font-medium">Авто</span>
+            </button>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={resetMicrophone}
+              className="w-10 h-10 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
+              aria-label="Сбросить микрофон"
+              title="Перезапустить микрофон"
+            >
+              <RotateCw className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <button
+              onClick={closeOverlay}
+              className="w-10 h-10 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
+              aria-label="Закрыть"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+          </div>
         </div>
+
+        {/* Тост сверху — мягкое уведомление */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              key="toast"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute top-20 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-lg z-10"
+              style={{ boxShadow: "0 4px 24px hsl(var(--foreground) / 0.08)" }}
+            >
+              <AlertCircle className="w-4 h-4 text-primary shrink-0" />
+              <span className="text-[13px] font-medium text-foreground">{toast}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Center: orb + state */}
         <div className="flex flex-col items-center gap-6 flex-1 justify-center">
@@ -482,8 +626,11 @@ export function VoiceModeOverlay() {
             {reply && (state === "speaking" || state === "thinking") && (
               <p className="text-base text-foreground leading-relaxed">{reply}</p>
             )}
-            {error && (
-              <p className="text-sm text-destructive">{error}</p>
+            {error && micPermission === "denied" && (
+              <p className="text-sm text-muted-foreground">
+                Дай доступ к микрофону в настройках браузера, потом нажми{" "}
+                <RotateCw className="w-3 h-3 inline mx-0.5" />.
+              </p>
             )}
           </div>
         </div>
