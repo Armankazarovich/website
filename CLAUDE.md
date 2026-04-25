@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 31 — AccountDrawer полная переделка: ARAYGLASS → calm UI, Telegram-style иконки, Tinkoff-style quick actions, Liquid Glass точечно на ARAY-баннере, 1 деплой 78348f8)
+> Последнее обновление: 25.04.2026 (сессия 32 — единое моб меню магазин+админка, AccountDrawer для всех ролей с секцией "Управление" для STAFF, Liquid Glass точечно везде, ArayDock calm UI, расширенная очистка TTS для Арая. 7 деплоев)
 
 ---
 
@@ -863,6 +863,99 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 25.04.2026 (сессия 32) — Единая навигация магазин+админка + Liquid Glass + TTS произношение (7 деплоев `980765d` → `bb6532f`)
+
+**Контекст:** Арман попросил по очереди отполировать всю экосистему перед Я.Директом — попапы, моб меню, ARAY миграцию на calm. Сделали огромную работу за одну сессию: единое моб меню магазина и админки, единый AccountDrawer для всех ролей, точечный Liquid Glass везде, расширенная очистка TTS для Арая.
+
+**Деплои этой сессии (7 штук, все 42 PASS / 0 FAIL):**
+
+1. **`980765d`** `feat(mobile-nav): единое нижнее меню магазина с Араем в центре + SideIconRail только на планшете`
+   - Создан `components/store/mobile-bottom-nav.tsx` — calm UI: 5 пунктов (Каталог · Поиск · АРАЙ центр 52px · Корзина · Аккаунт), приподнят -18px, без backdrop-blur 32px
+   - `components/store/side-icon-rail.tsx` — переписан calm + `hidden sm:flex lg:hidden` (только планшет 640-1023px)
+   - `components/store/aray-dock.tsx` — добавлен `hidden lg:block` (только десктоп)
+   - `app/(store)/layout.tsx` — подключён MobileBottomNav, SideIconRail, ArayDock с правильными media queries
+
+2. **`54c3e36`** `feat(admin-mobile-nav): унификация с магазином + единый AccountDrawer`
+   - `components/admin/admin-mobile-bottom-nav.tsx` — переписан в calm UI 1-в-1 как store/MobileBottomNav, использует `useAccountDrawer()` напрямую
+   - `app/admin/layout.tsx` — подключён `<AccountDrawer />` (тот же что в магазине, dynamic import)
+   - `components/admin/admin-shell.tsx` — удалён рендер `MobileMenuBottomSheet` (старый bottom sheet снизу)
+   - Notification popup в админке тоже переписан в calm: `bg-card border-border rounded-2xl divide-y`, без backdrop-blur 50px
+
+3. **`61211f3`** `feat(account-drawer): секция "Управление" для STAFF (админские разделы)`
+   - В `components/store/account-drawer.tsx` для STAFF добавлена секция "Управление" перед "Покупки":
+     - Заказы (badge: today new orders)
+     - Клиенты, Товары, Доставка, Отзывы (badge: pending)
+     - Аналитика, Команда (только ADMIN_ROLES)
+   - Иконки: Users, Package, BarChart3 (lucide-react)
+   - Live-stats берутся из `staffStats { todayNewOrders, pendingReviews }` через `/api/cabinet/profile`
+
+4. **`e853a2a`** `feat(nav): Liquid Glass на моб меню + ArayDock переписан в calm UI`
+   - **Liquid Glass формула** (взято из Header магазина, но легче для мобилок):
+     - `background: hsl(var(--background) / 0.85)` — полупрозрачный фон
+     - `backdrop-filter: blur(20px) saturate(180%)` — легче чем header (32px)
+     - `borderTop: 1px hsl(var(--primary) / 0.12)` — primary граница
+     - `box-shadow: 0 -4px 20px hsl(foreground / 0.06)` — мягкая тень
+     - **Palette glow line** сверху — тонкий primary градиент 0.4-0.6 (как в Header снизу)
+   - Применено на: `MobileBottomNav` (магазин), `AdminMobileBottomNav` (админка), `ArayDock` (десктоп)
+   - **ArayDock переписан в calm** — удалены классы `arayglass / arayglass-nopad`, заменены на inline Liquid Glass стиль
+   - Send-кнопка с glow primary/0.45 оставлена (функциональный glow — появляется когда есть текст). Recording-кнопка с destructive pulse оставлена (индикатор записи).
+
+5. **`bb6532f`** `feat(tts): расширенная очистка для ElevenLabs — естественное произношение Арая`
+   - Создан **`lib/tts-clean.ts`** (270 строк) с централизованной функцией `cleanForTTS(text)`:
+     - **35+ аббревиатур**: ГОСТ→"гост", ООО→"общество с ограниченной ответственностью", НДС→"эн дэ эс", ИНН→"и эн эн", БИК→"бик", РФ→"эр эф", СПб→"санкт-петербург", МКАД→"эм ка а дэ", СНиП, СанПиН, ТУ, ФЗ, ИП, АО, ПАО, КПП, ОГРН, НДФЛ, РЖД, ФНС, МВД, АЗС, API, SEO, SMS, IT, AI, USB, PDF, DHL, СДЭК
+     - **Латиница**: WhatsApp→"вотсап", Telegram→"телеграм", Instagram→"инстаграм", Facebook→"фейсбук", YouTube→"ютьюб", iPhone→"айфон", Android→"андроид", email→"имэйл", USD/EUR/RUB→"доллар/евро/рубль"
+     - **Телефоны**: "+7 (985) 067-08-88" → "плюс 7 985 067 08 88" (тире→пробел, скобки→пробел, +7→"плюс 7")
+     - **Расширенные единицы**: ₽/кг, ₽/т, ₽/уп → словами; "25 мм"→"25 миллиметров", "2 т"→"2 тонн" и т.д.
+     - **Размеры**: "50×100×6000" + "25х100" (русская "х") → "на"
+     - **Скобки** "(...)" → запятые-паузы (раньше TTS читал "скобка")
+     - **Кавычки** «»""„""''' — удаляются
+     - **Эмодзи** Unicode 1F300-1FFFF, 2600-27BF, 1F000-1F02F, 2700-27BF — все удаляются
+     - **Markdown**: `**`, `*`, `` ` ``, `#`, `[link](url)`, `~~strike~~`, `__underline__` — снимаются
+     - **URLs/emails** → "ссылка" / "адрес почты"
+     - **Множественные знаки** нормализуются: `!!!→!`, `...→...`
+     - **Лимит** 1500 символов с обрезанием по последнему предложению
+   - `app/api/ai/tts/route.ts` — заменена inline-цепочка `.replace()` на `cleanForTTS(text)`. Все провайдеры (Cloudflare proxy, ElevenLabs direct, browser fallback) остались без изменений.
+
+**Связанные deploys (`78348f8` и `0086870` были в начале сессии):**
+
+- `78348f8` (сессия 31, продолжение) — AccountDrawer полная переделка ARAYGLASS → calm UI
+- `0086870` — docs обновление CLAUDE.md (запись сессии 31)
+
+**Что НЕ сделано (откладывается, требует ассета):**
+
+- **Визуал орба Арая** — Арман попросил вернуть "первый шар-планету" вместо face.png. Я предложил 5 вариантов CSS/SVG (planet, turbulence plasma, crystal sphere, neural network, lightning storm). Все красивые, но "не то". Арман прислал референсы (огненная планета с лавой/трещинами уровня NASA-render) — для такого качества нужен PNG/MP4 ассет (AI-генерация Midjourney/Sora или stock). Зафиксировал правило в memory: **не пушить визуал Арая без явного "да" Армана**. face.png остаётся на проде, ничего не сломано. Арман будет искать референсы для следующей сессии.
+
+**Что осталось перед Директом (следующие сессии):**
+
+- 🔴 **Подключить ассет орба Арая** — когда Арман пришлёт PNG/MP4 (5 минут работы)
+- 🟠 **Аудит критичных багов админки** (по отчёту Explore agent в этой сессии):
+  - Race condition в `orders-client.tsx` (router.refresh каждые 30с сбрасывает фильтры/поиск)
+  - Нет пагинации в `app/admin/orders/page.tsx` (загружает ВСЕ заказы)
+  - Нет error handling в bulk-delete заказов
+  - Нет toast-уведомлений при смене статуса доставки
+  - Поиск товаров без debounce (тормозит при 10K+ товаров)
+- 🟠 **Аудит chat endpoint** + системный промпт (task #15) — посмотреть `/api/ai/chat`, найти улучшения
+- 🟢 **Адаптация AccountDrawer** для USER при отсутствии заказов (сейчас показывает "0 заказов" — некрасиво)
+- 🟢 **Responsive аудит** /cabinet/* на 640/768/1024/1280
+- 🟢 **ARAYGLASS массовая чистка** в admin/* (rounded-md/sm/lg → rounded-xl/2xl, эмодзи → lucide)
+
+**Уроки сессии:**
+
+1. **Side-by-side мокап через `mcp__visualize__show_widget` ДО кода** — экономит часы. Я показал 5+ мокапов в этой сессии, и каждый раз Арман сразу видел "то / не то". Без мокапов мы бы ушли в неправильную сторону.
+2. **Не торопить Армана с визуалом Арая.** Сохранил memory `feedback_aray_visual.md`. Если нет явного "да" — оставлять как есть. Арман сам соберёт референсы и придёт с готовым видением.
+3. **Не выдумывать таймеры сессий.** Сохранил memory `feedback_session_timing.md`. Я сказал "1.5 часа прошло" не проверив — реально было 25 минут. Это для Армана = "ты меня обманываешь".
+4. **Liquid Glass без тяжёлого backdrop-blur — это работает.** На моб меню и ArayDock использовали `blur(20px)` (легче чем header 32px) + полупрозрачный background + thin primary border. Стеклянный эффект есть, тормозов нет.
+5. **Единый AccountDrawer для всех ролей** — лучше чем 2 разных компонента. STAFF получает Quick actions + секцию "Управление" + клиентские разделы + ARAY-баннер. USER получает только клиентские разделы. Структура адаптируется через role-based logic, не через разные компоненты.
+6. **Унификация моб меню магазин+админка** — сильно упростила mental model для Армана. Один визуальный язык на всём сайте. Админка отличается только пунктами слева (Главная/Заказы вместо Каталог/Поиск).
+
+**Утилиты в `D:\pilorus\` (для переиспользования):**
+- `__sync.js` — sync Cyrillic → Latin (список файлов внутри редактируется)
+- `__commit.js` — git add + commit -F __msg.txt + push (через node — обходит cmd.exe quote bugs)
+- `__msg.txt` — UTF-8 commit message (для `git commit -F`)
+- `__wait-and-verify.js` — wait 150-180s + проверка 6 ключевых URL
+
+---
 
 ### Сессия 25.04.2026 (сессия 31) — AccountDrawer полная переделка ARAYGLASS → calm UI (1 деплой `78348f8`)
 
