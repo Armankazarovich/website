@@ -47,6 +47,7 @@ const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").
 const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
 const CartDrawer = dynamic(() => import("@/components/store/cart-drawer").then(m => ({ default: m.CartDrawer })), { ssr: false });
 const ScrollToTop = dynamic(() => import("@/components/ui/scroll-to-top").then(m => ({ default: m.ScrollToTop })), { ssr: false });
+const CabinetSlideTransition = dynamic(() => import("@/components/cabinet/slide-transition").then(m => ({ default: m.CabinetSlideTransition })), { ssr: false });
 
 export default async function CabinetLayout({ children }: { children: React.ReactNode }) {
   // Auth-guard: только залогиненные
@@ -106,7 +107,9 @@ export default async function CabinetLayout({ children }: { children: React.Reac
           className="flex-1"
           style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}
         >
-          <div className="container py-6">{children}</div>
+          <div className="container py-6">
+            <CabinetSlideTransition>{children}</CabinetSlideTransition>
+          </div>
         </main>
 
         <Footer settings={siteSettings} categories={footerCategories} />
