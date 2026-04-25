@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Mic, Send, Square } from "lucide-react";
+import { Mic, Send } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 
 interface ArayDockProps {
@@ -27,23 +27,13 @@ function haptic(pattern: number | number[] = 8) {
 
 export function ArayDock({ enabled = true }: ArayDockProps) {
   const [input, setInput] = useState("");
-  const [recording, setRecording] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   const taRef = useRef<HTMLTextAreaElement | null>(null);
-  const recognitionRef = useRef<any>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressTriggered = useRef(false);
 
   useEffect(() => setMounted(true), []);
-
-  // Detect Web Speech support
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setSpeechSupported(!!SR);
-  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -64,49 +54,12 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
     window.dispatchEvent(new CustomEvent("aray:prompt", { detail: { text } }));
   }, [input]);
 
-  // ── Голосовой ввод в инпут (локальный, без отправки) ──────────────────────
-  const stopRecording = useCallback(() => {
-    try { recognitionRef.current?.stop(); } catch {}
-    recognitionRef.current = null;
-    setRecording(false);
-  }, []);
-
-  const startRecording = useCallback(() => {
-    if (typeof window === "undefined") return;
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
-      // Fallback: открыть Арая в voice-режиме (он сам управляет mic)
-      window.dispatchEvent(new CustomEvent("aray:voice"));
-      return;
-    }
-    try {
-      const rec = new SR();
-      rec.lang = "ru-RU";
-      rec.continuous = false;
-      rec.interimResults = true;
-      rec.maxAlternatives = 1;
-
-      let finalText = "";
-      rec.onresult = (e: any) => {
-        let interim = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const r = e.results[i];
-          if (r.isFinal) finalText += r[0].transcript;
-          else interim += r[0].transcript;
-        }
-        setInput(finalText + interim);
-      };
-      rec.onerror = () => { setRecording(false); recognitionRef.current = null; };
-      rec.onend = () => { setRecording(false); recognitionRef.current = null; };
-
-      recognitionRef.current = rec;
-      rec.start();
-      setRecording(true);
-      haptic(8);
-    } catch {
-      // Fallback на виджет
-      window.dispatchEvent(new CustomEvent("aray:voice"));
-    }
+  // ── Голосовой режим — открываем VoiceModeOverlay (fullscreen) ───────────────
+  // Раньше mic-кнопка делала локальный Web Speech Recognition в textarea — это было
+  // криво (mic не освобождался, конфликт с VoiceModeOverlay). Теперь mic = открыть Voice Mode.
+  const openVoiceMode = useCallback(() => {
+    haptic(8);
+    window.dispatchEvent(new CustomEvent("aray:voice"));
   }, []);
 
   // ── Тап и long-press по орбу ──────────────────────────────────────────────
@@ -137,13 +90,12 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
   // Cleanup
   useEffect(() => () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
-    try { recognitionRef.current?.stop(); } catch {}
   }, []);
 
   if (!enabled || !mounted) return null;
 
   const hasText = input.trim().length > 0;
-  const showSend = hasText && !recording;
+  const showSend = hasText;
 
   return (
     <div
@@ -187,7 +139,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder={recording ? "Слушаю..." : "Напишите Араю..."}
+              placeholder="Напишите Араю..."
               className="w-full resize-none bg-transparent outline-none text-foreground placeholder:text-muted-foreground/60 leading-5 py-2.5 px-1"
               style={{
                 fontSize: "16px", // anti-iOS-zoom
@@ -198,7 +150,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
             />
           </div>
 
-          {/* ── Правая часть: mic / send (свечение только при send и recording — смысловые акценты) ── */}
+          {/* ── Правая часть: mic / send ── */}
           {showSend ? (
             <button
               type="button"
@@ -214,29 +166,13 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
             >
               <Send className="w-[18px] h-[18px]" strokeWidth={2} />
             </button>
-          ) : recording ? (
-            <button
-              type="button"
-              onClick={stopRecording}
-              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95"
-              aria-label="Остановить запись"
-              title="Остановить"
-              style={{
-                background: "hsl(var(--destructive) / 0.12)",
-                color: "hsl(var(--destructive))",
-                border: "1px solid hsl(var(--destructive) / 0.35)",
-                animation: "arayDockPulse 1.4s ease-in-out infinite",
-              }}
-            >
-              <Square className="w-[14px] h-[14px] fill-current" strokeWidth={0} />
-            </button>
           ) : (
             <button
               type="button"
-              onClick={startRecording}
-              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-foreground/70 hover:text-primary transition-colors"
-              aria-label={speechSupported ? "Голосовой ввод" : "Голосовой режим Арая"}
-              title="Голос"
+              onClick={openVoiceMode}
+              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-foreground/70 hover:text-primary transition-colors active:scale-95"
+              aria-label="Голосовой режим Арая"
+              title="Голосовой режим (fullscreen)"
             >
               <Mic className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>

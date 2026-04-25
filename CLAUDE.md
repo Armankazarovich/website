@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 25.04.2026 (сессия 32 — единое моб меню магазин+админка, AccountDrawer для всех ролей с секцией "Управление" для STAFF, Liquid Glass точечно, ArayDock calm UI, расширенная очистка TTS, **VoiceModeOverlay (fullscreen разговор с Араем как ChatGPT Voice)**. 8 деплоев)
+> Последнее обновление: 25.04.2026 (сессия 32 final — Янус-визуал Арая на проде, единая навигация магазин+админка, AccountDrawer + секция "Управление", Liquid Glass точечно, ArayDock calm UI + переключён mic на Voice Mode, расширенная очистка TTS, VoiceModeOverlay (fullscreen ChatGPT Voice), характер дружелюбного Арая. **15+ деплоев за день, 0 FAIL**)
 
 ---
 
