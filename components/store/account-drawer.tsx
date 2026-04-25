@@ -15,6 +15,7 @@ import {
   Heart, Bell, Image as ImageIcon, Clock, BookmarkPlus,
   Sparkles, LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
   LifeBuoy, Palette,
+  Users, Package, BarChart3,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -418,6 +419,36 @@ function ProfilePanel() {
   const initial = (user?.name?.[0] || user?.email?.[0] || "U").toUpperCase();
 
   // ── Группы разделов (без soon-обещаний) ──
+
+  // Для STAFF — секция "Управление" с админскими разделами
+  const managementItems: RowItem[] = isStaff ? [
+    {
+      href: "/admin/orders",
+      icon: ShoppingBag,
+      label: "Заказы",
+      desc: staffStats?.todayNewOrders
+        ? `${staffStats.todayNewOrders} ${pluralOrders(staffStats.todayNewOrders)} сегодня`
+        : "Все заказы и статусы",
+      badge: staffStats?.todayNewOrders || undefined,
+    },
+    { href: "/admin/clients", icon: Users, label: "Клиенты", desc: "База покупателей" },
+    { href: "/admin/products", icon: Package, label: "Товары", desc: "Каталог и наличие" },
+    { href: "/admin/delivery", icon: Truck, label: "Доставка", desc: "Маршруты и тарифы" },
+    {
+      href: "/admin/reviews",
+      icon: Star,
+      label: "Отзывы",
+      desc: staffStats?.pendingReviews
+        ? `${staffStats.pendingReviews} ожидают модерации`
+        : "Модерация и ответы",
+      badge: staffStats?.pendingReviews || undefined,
+    },
+    ...(isAdmin ? [
+      { href: "/admin/analytics" as const, icon: BarChart3, label: "Аналитика", desc: "Выручка и динамика" },
+      { href: "/admin/staff" as const, icon: Users, label: "Команда", desc: "Сотрудники и роли" },
+    ] : []),
+  ] : [];
+
   const purchasesItems: RowItem[] = [
     {
       href: "/cabinet/orders",
@@ -537,6 +568,9 @@ function ProfilePanel() {
         )}
 
         {/* Группы разделов */}
+        {isStaff && managementItems.length > 0 && (
+          <SectionGroup title="Управление" items={managementItems} onClick={close} />
+        )}
         <SectionGroup title="Покупки" items={purchasesItems} onClick={close} />
         <SectionGroup title="Аккаунт" items={accountItems} onClick={close} />
         <SectionGroup title="Настройки" items={settingsItems} onClick={close} />
