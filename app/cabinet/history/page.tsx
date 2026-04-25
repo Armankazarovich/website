@@ -18,12 +18,13 @@ type HistoryData = {
   stats: Record<string, number>;
 };
 
-const ACTION_CONFIG: Record<string, { label: string; icon: typeof Eye; color: string }> = {
-  VIEW_PRODUCT: { label: "Просмотр товара", icon: Eye, color: "text-blue-500" },
-  PLACE_ORDER: { label: "Заказ", icon: ShoppingBag, color: "text-primary" },
-  WRITE_REVIEW: { label: "Отзыв", icon: Star, color: "text-yellow-500" },
-  LOGIN: { label: "Вход", icon: LogIn, color: "text-emerald-500" },
-  PAGE_VISIT: { label: "Посещение", icon: MousePointer, color: "text-purple-500" },
+const ACTION_CONFIG: Record<string, { label: string; icon: typeof Eye }> = {
+  VIEW_PRODUCT: { label: "Просмотр товара", icon: Eye },
+  PLACE_ORDER: { label: "Заказ", icon: ShoppingBag },
+  WRITE_REVIEW: { label: "Отзыв", icon: Star },
+  LOGIN: { label: "Вход", icon: LogIn },
+  PAGE_VISIT: { label: "Посещение", icon: MousePointer },
+  CANCEL_ORDER: { label: "Отмена заказа", icon: ShoppingBag },
 };
 
 function formatRelative(date: string): string {
@@ -49,68 +50,105 @@ export default function HistoryPage() {
     if (action) params.set("action", action);
     fetch(`/api/cabinet/history?${params}`)
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   };
 
-  useEffect(() => { load(filter); }, [filter]);
+  useEffect(() => {
+    load(filter);
+  }, [filter]);
 
   const statCards = [
-    { key: "VIEW_PRODUCT", label: "Просмотры", icon: Eye, color: "text-blue-500" },
-    { key: "PLACE_ORDER", label: "Заказы", icon: ShoppingBag, color: "text-primary" },
-    { key: "WRITE_REVIEW", label: "Отзывы", icon: Star, color: "text-yellow-500" },
-    { key: "LOGIN", label: "Входы", icon: LogIn, color: "text-emerald-500" },
+    { key: "VIEW_PRODUCT", label: "Просмотры", icon: Eye },
+    { key: "PLACE_ORDER", label: "Заказы", icon: ShoppingBag },
+    { key: "WRITE_REVIEW", label: "Отзывы", icon: Star },
+    { key: "LOGIN", label: "Входы", icon: LogIn },
   ];
 
+  const totalActivity = Object.values(data?.stats || {}).reduce((s, n) => s + n, 0);
+
   return (
-    <div className="space-y-4 pb-4">
+    <div className="space-y-4 pb-4 max-w-2xl mx-auto">
       <div>
         <h1 className="font-display font-bold text-xl">История</h1>
         <p className="text-xs text-muted-foreground mt-1">Ваши действия и посещения</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-2">
-        {statCards.map((s) => {
-          const count = data?.stats[s.key] ?? 0;
-          const isActive = filter === s.key;
-          return (
-            <button
-              key={s.key}
-              onClick={() => setFilter(isActive ? null : s.key)}
-              className={`bg-card border rounded-2xl p-3 text-center transition-all ${
-                isActive ? "border-primary bg-primary/5" : "border-border hover:border-border/80"
-              }`}
-            >
-              <s.icon className={`w-4 h-4 mx-auto mb-1 ${s.color}`} />
-              <p className="text-lg font-display font-bold">{count}</p>
-              <p className="text-[9px] text-muted-foreground">{s.label}</p>
-            </button>
-          );
-        })}
-      </div>
+      {/* Stats — фильтры. Активный — primary, остальные — нейтральные */}
+      {totalActivity > 0 && (
+        <div className="grid grid-cols-4 gap-2">
+          {statCards.map((s) => {
+            const count = data?.stats[s.key] ?? 0;
+            const isActive = filter === s.key;
+            const Icon = s.icon;
+            return (
+              <button
+                key={s.key}
+                onClick={() => setFilter(isActive ? null : s.key)}
+                className={`bg-card border rounded-2xl p-3 text-center transition-colors ${
+                  isActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/30"
+                }`}
+              >
+                <Icon
+                  className={`w-4 h-4 mx-auto mb-1 ${
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  }`}
+                />
+                <p className="text-lg font-display font-bold">{count}</p>
+                <p className="text-[10px] text-muted-foreground">{s.label}</p>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Activity feed */}
       {loading ? (
         <SkeletonList count={5} />
       ) : !data?.logs.length ? (
-        <div className="bg-card border border-border rounded-2xl p-10 text-center">
-          <History className="w-12 h-12 text-muted-foreground/15 mx-auto mb-3" />
-          <p className="font-medium mb-1">История пуста</p>
-          <p className="text-xs text-muted-foreground">
-            Ваши действия будут записываться автоматически: просмотры товаров, заказы, отзывы
+        <div className="bg-card border border-border rounded-2xl p-6 sm:p-8 text-center">
+          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+            <History className="w-7 h-7 text-primary" />
+          </div>
+          <p className="text-sm font-medium mb-1">
+            {filter ? "Здесь пока ничего нет" : "История пуста"}
           </p>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto">
+            {filter
+              ? "Попробуйте другой фильтр или сбросьте"
+              : "Ваши действия будут записываться автоматически: просмотры товаров, заказы, отзывы"}
+          </p>
+          {filter && (
+            <button
+              onClick={() => setFilter(null)}
+              className="mt-4 inline-flex items-center gap-2 px-5 h-11 rounded-xl border border-border text-sm font-medium hover:bg-muted/40 transition-colors"
+            >
+              Сбросить фильтр
+            </button>
+          )}
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-2xl divide-y divide-border">
+        <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
           {data.logs.map((log) => {
-            const config = ACTION_CONFIG[log.action] || { label: log.action, icon: MousePointer, color: "text-muted-foreground" };
+            const config = ACTION_CONFIG[log.action] || {
+              label: log.action,
+              icon: MousePointer,
+            };
             const Icon = config.icon;
-            const name = (log.meta as Record<string, string>)?.name || (log.meta as Record<string, string>)?.url || log.targetId || "";
+            const name =
+              (log.meta as Record<string, string>)?.name ||
+              (log.meta as Record<string, string>)?.url ||
+              log.targetId ||
+              "";
             return (
-              <div key={log.id} className="flex items-center gap-3 px-4 py-3">
-                <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0`}>
-                  <Icon className={`w-4 h-4 ${config.color}`} />
+              <div key={log.id} className="flex items-center gap-3 p-4">
+                <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <Icon className="w-5 h-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{config.label}</p>
@@ -124,7 +162,9 @@ export default function HistoryPage() {
           })}
           {data.total > data.logs.length && (
             <div className="p-3 text-center">
-              <p className="text-xs text-muted-foreground">Показано {data.logs.length} из {data.total}</p>
+              <p className="text-xs text-muted-foreground">
+                Показано {data.logs.length} из {data.total}
+              </p>
             </div>
           )}
         </div>

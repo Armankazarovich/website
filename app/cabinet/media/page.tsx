@@ -130,8 +130,8 @@ export default function MyMediaPage() {
                     rel="noopener noreferrer"
                     className="flex items-center gap-3 bg-card border border-border rounded-xl p-3 hover:bg-muted/50 transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-red-50 dark:bg-red-950/30 flex items-center justify-center shrink-0">
-                      <FileText className="w-5 h-5 text-red-500" />
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">Счёт №{item.orderNumber}</p>
