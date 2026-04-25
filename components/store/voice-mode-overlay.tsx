@@ -306,6 +306,23 @@ export function VoiceModeOverlay() {
     }
   }, [interim, open, startListening, stopListening]);
 
+  // ── Перебить Арая (если он говорит) ──
+  const interruptAray = useCallback(() => {
+    haptic(10);
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+      audioRef.current = null;
+    }
+    try { speechSynthesis.cancel(); } catch {}
+    if (open) {
+      finalAccumRef.current = "";
+      setFinal("");
+      setInterim("");
+      setReply("");
+      startListening();
+    }
+  }, [open, startListening]);
+
   // ── Управление ──
   const closeOverlay = useCallback(() => {
     stopListening();
@@ -471,42 +488,56 @@ export function VoiceModeOverlay() {
           </div>
         </div>
 
-        {/* Bottom: 3 кнопки */}
-        <div className="w-full max-w-md flex items-center justify-around gap-4">
-          {/* Пауза/возобновить */}
-          <button
-            onClick={togglePause}
-            disabled={state === "thinking" || state === "speaking"}
-            className="w-12 h-12 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors disabled:opacity-40"
-            aria-label={state === "paused" ? "Возобновить" : "Пауза"}
-          >
-            {state === "paused" ? (
-              <Mic className="w-5 h-5 text-muted-foreground" />
-            ) : (
-              <MicOff className="w-5 h-5 text-muted-foreground" />
-            )}
-          </button>
+        {/* Bottom: 3 кнопки. Если Арай говорит — крупная кнопка "Перебить". */}
+        {state === "speaking" ? (
+          <div className="w-full max-w-md flex flex-col items-center gap-3">
+            <p className="text-[12px] text-muted-foreground">Тапни чтобы перебить</p>
+            <button
+              onClick={interruptAray}
+              className="w-16 h-16 rounded-full bg-destructive text-destructive-foreground hover:brightness-110 flex items-center justify-center transition-all active:scale-95"
+              style={{ boxShadow: "0 0 24px hsl(var(--destructive) / 0.5)" }}
+              aria-label="Перебить Арая"
+            >
+              <Mic className="w-6 h-6" strokeWidth={2.2} />
+            </button>
+          </div>
+        ) : (
+          <div className="w-full max-w-md flex items-center justify-around gap-4">
+            {/* Пауза/возобновить */}
+            <button
+              onClick={togglePause}
+              disabled={state === "thinking"}
+              className="w-12 h-12 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors disabled:opacity-40"
+              aria-label={state === "paused" ? "Возобновить" : "Пауза"}
+            >
+              {state === "paused" ? (
+                <Mic className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <MicOff className="w-5 h-5 text-muted-foreground" />
+              )}
+            </button>
 
-          {/* Отправить (центральная primary) */}
-          <button
-            onClick={sendToAray}
-            disabled={!final && !interim || state === "thinking" || state === "speaking"}
-            className="w-16 h-16 rounded-full bg-primary text-primary-foreground hover:brightness-110 flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ boxShadow: "0 0 24px hsl(var(--primary) / 0.4)" }}
-            aria-label="Отправить Араю"
-          >
-            <Send className="w-6 h-6" strokeWidth={2.2} />
-          </button>
+            {/* Отправить (центральная primary) */}
+            <button
+              onClick={sendToAray}
+              disabled={(!final && !interim) || state === "thinking"}
+              className="w-16 h-16 rounded-full bg-primary text-primary-foreground hover:brightness-110 flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ boxShadow: "0 0 24px hsl(var(--primary) / 0.4)" }}
+              aria-label="Отправить Араю"
+            >
+              <Send className="w-6 h-6" strokeWidth={2.2} />
+            </button>
 
-          {/* В чат */}
-          <button
-            onClick={switchToChat}
-            className="w-12 h-12 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
-            aria-label="Переключиться в чат"
-          >
-            <Keyboard className="w-5 h-5 text-muted-foreground" />
-          </button>
-        </div>
+            {/* В чат */}
+            <button
+              onClick={switchToChat}
+              className="w-12 h-12 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
+              aria-label="Переключиться в чат"
+            >
+              <Keyboard className="w-5 h-5 text-muted-foreground" />
+            </button>
+          </div>
+        )}
       </motion.div>
     </AnimatePresence>
   );

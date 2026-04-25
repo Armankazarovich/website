@@ -31,7 +31,7 @@ function extractUniqueCrossSections(sizes: string[]): string[] {
 }
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
-const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
+const ArayChatHost = dynamic(() => import("@/components/store/aray-chat-host").then(m => ({ default: m.ArayChatHost })), { ssr: false });
 const ArayDock = dynamic(() => import("@/components/store/aray-dock").then(m => ({ default: m.ArayDock })), { ssr: false });
 const SideIconRail = dynamic(() => import("@/components/store/side-icon-rail").then(m => ({ default: m.SideIconRail })), { ssr: false });
 const MobileBottomNav = dynamic(() => import("@/components/store/mobile-bottom-nav").then(m => ({ default: m.MobileBottomNav })), { ssr: false });
@@ -110,7 +110,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <SearchDrawer />
       <CartDrawer />
       <ScrollToTop />
-      <ArayWidget enabled={arayEnabled} />
+      {arayEnabled && <ArayChatHost />}
       {arayEnabled && <VoiceModeOverlay />}
     </div>
     </StoreSettingsProvider>

@@ -39,8 +39,10 @@ function extractUniqueCrossSections(sizes: string[]): string[] {
 }
 
 // Те же lazy-компоненты что в store/layout — единая система дизайна
-const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
+const ArayChatHost = dynamic(() => import("@/components/store/aray-chat-host").then(m => ({ default: m.ArayChatHost })), { ssr: false });
 const ArayDock = dynamic(() => import("@/components/store/aray-dock").then(m => ({ default: m.ArayDock })), { ssr: false });
+const MobileBottomNav = dynamic(() => import("@/components/store/mobile-bottom-nav").then(m => ({ default: m.MobileBottomNav })), { ssr: false });
+const VoiceModeOverlay = dynamic(() => import("@/components/store/voice-mode-overlay").then(m => ({ default: m.VoiceModeOverlay })), { ssr: false });
 const SideIconRail = dynamic(() => import("@/components/store/side-icon-rail").then(m => ({ default: m.SideIconRail })), { ssr: false });
 const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
 const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
@@ -115,6 +117,7 @@ export default async function CabinetLayout({ children }: { children: React.Reac
         <Footer settings={siteSettings} categories={footerCategories} />
 
         {/* Та же навигация что в магазине — никаких различий */}
+        <MobileBottomNav arayEnabled={arayEnabled} />
         <SideIconRail />
         <ArayDock enabled={arayEnabled} />
         <AccountDrawer />
@@ -122,7 +125,8 @@ export default async function CabinetLayout({ children }: { children: React.Reac
         <SearchDrawer />
         <CartDrawer />
         <ScrollToTop />
-        <ArayWidget enabled={arayEnabled} />
+        {arayEnabled && <ArayChatHost />}
+        {arayEnabled && <VoiceModeOverlay />}
       </div>
     </StoreSettingsProvider>
   );

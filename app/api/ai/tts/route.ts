@@ -6,14 +6,22 @@ import { cleanForTTS } from "@/lib/tts-clean";
 // Anton Ru — спокойный, разговорный, без акцента (Multilingual v2)
 const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
 const MODEL_ID = "eleven_multilingual_v2";
-const HARDCODED_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
 
+// FALLBACK key — используется только если ELEVENLABS_API_KEY не задан в env.
+// TODO: вынести в Beget env vars и убрать после ротации ключа.
+const FALLBACK_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
+
+// Голосовые настройки настроены на "Брат-Арай":
+// stability 0.55  — живой, не монотонный (было 0.82 = робот)
+// similarity 0.78 — узнаваемый Anton Ru
+// style 0.42      — эмоции: тёплый, искренний (было 0.0 = робот)
+// speed 1.0       — естественный темп (было 1.05 — слишком быстрый)
 const VOICE_SETTINGS = {
-  stability: 0.82,
-  similarity_boost: 0.72,
-  style: 0.0,
+  stability: 0.55,
+  similarity_boost: 0.78,
+  style: 0.42,
   use_speaker_boost: true,
-  speed: 1.05,
+  speed: 1.0,
 };
 
 // ── Прямой запрос к ElevenLabs ──────────────────────────────────────────────
@@ -95,7 +103,7 @@ function browserFallback(cleanText: string) {
 // ═════════════════════════════════════════════════════════════════════════════
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.ELEVENLABS_API_KEY || HARDCODED_KEY;
+    const apiKey = process.env.ELEVENLABS_API_KEY || FALLBACK_KEY;
 
     const { text } = await req.json();
     if (!text || typeof text !== "string") {
