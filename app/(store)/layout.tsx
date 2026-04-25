@@ -35,6 +35,7 @@ const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m
 const ArayDock = dynamic(() => import("@/components/store/aray-dock").then(m => ({ default: m.ArayDock })), { ssr: false });
 const SideIconRail = dynamic(() => import("@/components/store/side-icon-rail").then(m => ({ default: m.SideIconRail })), { ssr: false });
 const MobileBottomNav = dynamic(() => import("@/components/store/mobile-bottom-nav").then(m => ({ default: m.MobileBottomNav })), { ssr: false });
+const VoiceModeOverlay = dynamic(() => import("@/components/store/voice-mode-overlay").then(m => ({ default: m.VoiceModeOverlay })), { ssr: false });
 const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
 const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
 const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
@@ -110,6 +111,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <CartDrawer />
       <ScrollToTop />
       <ArayWidget enabled={arayEnabled} />
+      {arayEnabled && <VoiceModeOverlay />}
     </div>
     </StoreSettingsProvider>
   );

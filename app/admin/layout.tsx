@@ -13,6 +13,12 @@ const AccountDrawer = dynamicImport(
   { ssr: false }
 );
 
+// VoiceModeOverlay — fullscreen voice разговор с Араем (тот же что в магазине)
+const VoiceModeOverlay = dynamicImport(
+  () => import("@/components/store/voice-mode-overlay").then((m) => ({ default: m.VoiceModeOverlay })),
+  { ssr: false }
+);
+
 export const metadata: Metadata = {
   title: {
     default: "Панель управления | ПилоРус",
@@ -75,6 +81,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </AdminShell>
       {/* Единый AccountDrawer — тот же что в магазине, открывается из bottom nav */}
       <AccountDrawer />
+      {/* Voice Mode Overlay — fullscreen разговор по long-press на Арая */}
+      <VoiceModeOverlay />
     </>
   );
 }

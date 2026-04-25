@@ -1,0 +1,478 @@
+"use client";
+
+/**
+ * VoiceModeOverlay — fullscreen voice conversation mode (как ChatGPT Voice).
+ *
+ * Открывается по событию `aray:voice`. Использует Web Speech Recognition (STT)
+ * для распознавания речи и /api/ai/tts (ElevenLabs) для голосового ответа.
+ *
+ * UX:
+ *  - Большой пульсирующий орб в центре
+ *  - Wave-анимация во время говорения пользователя
+ *  - Subtitle с тем что Арай слышит (interim transcript)
+ *  - 3 кнопки внизу: ⏸ Пауза / ✓ Отправить / ⌨ В чат
+ *  - Escape или X → закрыть
+ *  - Арай отвечает голосом + субтитрами
+ *  - История сохраняется через события `aray:prompt` и `aray:reply`
+ */
+
+import { useEffect, useRef, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mic, MicOff, Send, Keyboard, X, Loader2 } from "lucide-react";
+import { ArayOrb } from "@/components/shared/aray-orb";
+import { useAccountDrawer } from "@/store/account-drawer";
+
+type VoiceState =
+  | "idle"        // только что открылся
+  | "listening"   // пользователь говорит, идёт распознавание
+  | "thinking"    // отправили в Арая, ждём ответ
+  | "speaking"    // Арай отвечает голосом
+  | "paused";     // микрофон на паузе
+
+function haptic(pattern: number | number[] = 8) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try { navigator.vibrate(pattern); } catch {}
+  }
+}
+
+export function VoiceModeOverlay() {
+  const [open, setOpen] = useState(false);
+  const [state, setState] = useState<VoiceState>("idle");
+  const [interim, setInterim] = useState("");
+  const [final, setFinal] = useState("");
+  const [reply, setReply] = useState("");
+  const [error, setError] = useState("");
+  const [audioLevel, setAudioLevel] = useState(0);
+  const { open: drawerOpen } = useAccountDrawer();
+
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioStreamRef = useRef<MediaStream | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const finalAccumRef = useRef("");
+
+  // ── Открытие overlay по event `aray:voice` ──
+  useEffect(() => {
+    const onVoice = () => {
+      if (drawerOpen) return; // не открываемся если drawer открыт
+      haptic([12, 40, 12]);
+      setOpen(true);
+      setState("idle");
+      setInterim("");
+      setFinal("");
+      setReply("");
+      setError("");
+      finalAccumRef.current = "";
+    };
+    window.addEventListener("aray:voice", onVoice);
+    return () => window.removeEventListener("aray:voice", onVoice);
+  }, [drawerOpen]);
+
+  // ── Закрытие на Escape ──
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeOverlay(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // ── Аудио визуализация (wave анимация) ──
+  const startAudioLevelMonitor = useCallback(async () => {
+    try {
+      if (!audioStreamRef.current) {
+        audioStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioCtx();
+      if (!analyserRef.current) {
+        analyserRef.current = audioCtxRef.current.createAnalyser();
+        analyserRef.current.fftSize = 256;
+        const source = audioCtxRef.current.createMediaStreamSource(audioStreamRef.current);
+        source.connect(analyserRef.current);
+      }
+      const buf = new Uint8Array(analyserRef.current.frequencyBinCount);
+      const tick = () => {
+        if (!analyserRef.current) return;
+        analyserRef.current.getByteFrequencyData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) sum += buf[i];
+        const avg = sum / buf.length / 255;
+        setAudioLevel(avg);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+    } catch (e) {
+      // mic permission denied или нет поддержки
+    }
+  }, []);
+
+  const stopAudioLevelMonitor = useCallback(() => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    setAudioLevel(0);
+  }, []);
+
+  // ── Speech Recognition ──
+  const startListening = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      setError("Голосовой ввод не поддерживается браузером");
+      return;
+    }
+    try {
+      const rec = new SR();
+      rec.lang = "ru-RU";
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 1;
+
+      rec.onresult = (e: any) => {
+        let finalText = finalAccumRef.current;
+        let interimText = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const r = e.results[i];
+          if (r.isFinal) finalText += r[0].transcript;
+          else interimText += r[0].transcript;
+        }
+        finalAccumRef.current = finalText;
+        setFinal(finalText);
+        setInterim(interimText);
+      };
+
+      rec.onerror = (e: any) => {
+        console.warn("[VoiceMode] SR error:", e.error);
+        if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+          setError("Дай доступ к микрофону");
+          setState("paused");
+        }
+      };
+
+      rec.onend = () => {
+        // если мы ещё в listening — перезапустимся (continuous иногда обрывается)
+        if (state === "listening") {
+          try { rec.start(); } catch {}
+        }
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+      setState("listening");
+      startAudioLevelMonitor();
+      haptic(8);
+    } catch (e) {
+      setError("Не удалось включить микрофон");
+    }
+  }, [state, startAudioLevelMonitor]);
+
+  const stopListening = useCallback(() => {
+    try { recognitionRef.current?.stop(); } catch {}
+    recognitionRef.current = null;
+    stopAudioLevelMonitor();
+  }, [stopAudioLevelMonitor]);
+
+  // ── Запуск listening при открытии ──
+  useEffect(() => {
+    if (open && state === "idle") {
+      startListening();
+    }
+  }, [open, state, startListening]);
+
+  // ── Отправка в Арая + воспроизведение ответа голосом ──
+  const sendToAray = useCallback(async () => {
+    const text = (finalAccumRef.current + " " + interim).trim();
+    if (!text) return;
+
+    stopListening();
+    setState("thinking");
+    setReply("");
+
+    // Эмитим как сообщение пользователя в чат (для истории)
+    try {
+      window.dispatchEvent(new CustomEvent("aray:prompt", { detail: { text, mode: "voice" } }));
+    } catch {}
+
+    try {
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: text }],
+          context: { source: "voice-mode" },
+        }),
+      });
+
+      if (!res.ok) throw new Error("Chat error " + res.status);
+      const data = await res.json();
+      const assistantText: string = data.message || data.text || data.response || "";
+      if (!assistantText) throw new Error("Пустой ответ");
+
+      // Очищаем от ARAY_ACTIONS markers для голоса
+      const cleanReply = assistantText.split("ARAY_ACTIONS:")[0].trim();
+      setReply(cleanReply);
+
+      // Эмитим ответ для истории
+      try {
+        window.dispatchEvent(new CustomEvent("aray:reply", { detail: { text: cleanReply, mode: "voice" } }));
+      } catch {}
+
+      // Озвучиваем
+      setState("speaking");
+      const ttsRes = await fetch("/api/ai/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleanReply }),
+      });
+
+      if (ttsRes.ok && ttsRes.headers.get("content-type")?.includes("audio")) {
+        const buf = await ttsRes.arrayBuffer();
+        const blob = new Blob([buf], { type: "audio/mpeg" });
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          // После ответа Арая — снова слушаем
+          if (open) {
+            finalAccumRef.current = "";
+            setFinal("");
+            setInterim("");
+            startListening();
+          }
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          if (open) {
+            finalAccumRef.current = "";
+            setFinal("");
+            setInterim("");
+            startListening();
+          }
+        };
+        await audio.play();
+      } else {
+        // Fallback на browser SpeechSynthesis
+        const u = new SpeechSynthesisUtterance(cleanReply);
+        u.lang = "ru-RU";
+        u.onend = () => {
+          if (open) {
+            finalAccumRef.current = "";
+            setFinal("");
+            setInterim("");
+            startListening();
+          }
+        };
+        speechSynthesis.speak(u);
+      }
+    } catch (e: any) {
+      setError(e?.message || "Ошибка отправки");
+      setState("paused");
+    }
+  }, [interim, open, startListening, stopListening]);
+
+  // ── Управление ──
+  const closeOverlay = useCallback(() => {
+    stopListening();
+    if (audioRef.current) {
+      try { audioRef.current.pause(); } catch {}
+      audioRef.current = null;
+    }
+    if (audioStreamRef.current) {
+      audioStreamRef.current.getTracks().forEach(t => t.stop());
+      audioStreamRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      try { audioCtxRef.current.close(); } catch {}
+      audioCtxRef.current = null;
+    }
+    analyserRef.current = null;
+    speechSynthesis.cancel();
+    setOpen(false);
+    setState("idle");
+  }, [stopListening]);
+
+  const togglePause = useCallback(() => {
+    haptic(6);
+    if (state === "listening") {
+      stopListening();
+      setState("paused");
+    } else if (state === "paused") {
+      startListening();
+    }
+  }, [state, startListening, stopListening]);
+
+  const switchToChat = useCallback(() => {
+    haptic(6);
+    closeOverlay();
+    // Открываем обычный чат
+    try { window.dispatchEvent(new CustomEvent("aray:open")); } catch {}
+  }, [closeOverlay]);
+
+  // Cleanup на unmount
+  useEffect(() => () => {
+    stopListening();
+    if (audioStreamRef.current) audioStreamRef.current.getTracks().forEach(t => t.stop());
+    if (audioCtxRef.current) try { audioCtxRef.current.close(); } catch {}
+  }, [stopListening]);
+
+  if (!open) return null;
+
+  // Wave bar высоты (5-7 баров вокруг audioLevel)
+  const waveHeights = Array.from({ length: 7 }, (_, i) => {
+    const base = audioLevel * 100;
+    const variance = Math.sin((Date.now() / 200) + i) * 15;
+    return Math.max(8, Math.min(80, base + variance));
+  });
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-[300] flex flex-col items-center justify-between p-6"
+        style={{
+          background: "linear-gradient(135deg, hsl(var(--background) / 0.97) 0%, hsl(var(--background) / 0.99) 100%)",
+          backdropFilter: "blur(40px) saturate(180%)",
+          WebkitBackdropFilter: "blur(40px) saturate(180%)",
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Голосовой режим Арая"
+      >
+        {/* Top: close + status */}
+        <div className="w-full flex items-center justify-between max-w-md">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            Голосовой режим
+          </span>
+          <button
+            onClick={closeOverlay}
+            className="w-10 h-10 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
+            aria-label="Закрыть"
+          >
+            <X className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+
+        {/* Center: orb + state */}
+        <div className="flex flex-col items-center gap-6 flex-1 justify-center">
+          {/* Орб */}
+          <motion.div
+            animate={{
+              scale: state === "listening"
+                ? [1, 1 + audioLevel * 0.15, 1]
+                : state === "speaking"
+                ? [1, 1.05, 1]
+                : 1,
+            }}
+            transition={{
+              duration: state === "listening" ? 0.3 : 1.5,
+              repeat: state === "speaking" ? Infinity : 0,
+              ease: "easeInOut",
+            }}
+          >
+            <ArayOrb
+              size={120}
+              pulse={
+                state === "listening" ? "listening"
+                : state === "speaking" ? "speaking"
+                : state === "thinking" ? "listening"
+                : "idle"
+              }
+            />
+          </motion.div>
+
+          {/* Status text */}
+          <div className="text-center">
+            {state === "idle" && (
+              <p className="text-sm text-muted-foreground">Готов слушать</p>
+            )}
+            {state === "listening" && (
+              <p className="text-sm text-primary font-medium">Слушаю...</p>
+            )}
+            {state === "thinking" && (
+              <p className="text-sm text-primary font-medium flex items-center gap-2 justify-center">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Думаю...
+              </p>
+            )}
+            {state === "speaking" && (
+              <p className="text-sm text-primary font-medium">Отвечаю</p>
+            )}
+            {state === "paused" && (
+              <p className="text-sm text-muted-foreground">Микрофон на паузе</p>
+            )}
+          </div>
+
+          {/* Wave анимация (только при listening) */}
+          {state === "listening" && (
+            <div className="flex items-center gap-1 h-12">
+              {waveHeights.map((h, i) => (
+                <div
+                  key={i}
+                  className="w-1 rounded-full bg-primary transition-all duration-150"
+                  style={{ height: `${h}%`, opacity: 0.4 + audioLevel * 0.6 }}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Subtitle: что слышит */}
+          <div className="min-h-[60px] max-w-md text-center px-4">
+            {(final || interim) && state === "listening" && (
+              <p className="text-base text-foreground leading-relaxed">
+                {final}
+                <span className="text-muted-foreground">{interim}</span>
+              </p>
+            )}
+            {reply && (state === "speaking" || state === "thinking") && (
+              <p className="text-base text-foreground leading-relaxed">{reply}</p>
+            )}
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom: 3 кнопки */}
+        <div className="w-full max-w-md flex items-center justify-around gap-4">
+          {/* Пауза/возобновить */}
+          <button
+            onClick={togglePause}
+            disabled={state === "thinking" || state === "speaking"}
+            className="w-12 h-12 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors disabled:opacity-40"
+            aria-label={state === "paused" ? "Возобновить" : "Пауза"}
+          >
+            {state === "paused" ? (
+              <Mic className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <MicOff className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
+
+          {/* Отправить (центральная primary) */}
+          <button
+            onClick={sendToAray}
+            disabled={!final && !interim || state === "thinking" || state === "speaking"}
+            className="w-16 h-16 rounded-full bg-primary text-primary-foreground hover:brightness-110 flex items-center justify-center transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ boxShadow: "0 0 24px hsl(var(--primary) / 0.4)" }}
+            aria-label="Отправить Араю"
+          >
+            <Send className="w-6 h-6" strokeWidth={2.2} />
+          </button>
+
+          {/* В чат */}
+          <button
+            onClick={switchToChat}
+            className="w-12 h-12 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
+            aria-label="Переключиться в чат"
+          >
+            <Keyboard className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
