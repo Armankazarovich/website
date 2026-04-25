@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
+import type { LucideIcon } from "lucide-react";
 import {
   X, User, LogOut, ShoppingBag, Settings, Eye, EyeOff,
   Mail, Lock, Loader2, CheckCircle2, ChevronRight, Phone,
@@ -298,7 +299,7 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
 // ── Section row (Telegram-style: иконка без фона, чистая) ─────────────────────
 type RowItem = {
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   label: string;
   desc?: string;
   badge?: number | string;
@@ -353,7 +354,7 @@ function QuickActionCard({
   href, icon: Icon, label, onClick,
 }: {
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   label: string;
   onClick: () => void;
 }) {

@@ -34,6 +34,7 @@ function extractUniqueCrossSections(sizes: string[]): string[] {
 const ArayWidget = dynamic(() => import("@/components/store/aray-widget").then(m => ({ default: m.ArayWidget })), { ssr: false });
 const ArayDock = dynamic(() => import("@/components/store/aray-dock").then(m => ({ default: m.ArayDock })), { ssr: false });
 const SideIconRail = dynamic(() => import("@/components/store/side-icon-rail").then(m => ({ default: m.SideIconRail })), { ssr: false });
+const MobileBottomNav = dynamic(() => import("@/components/store/mobile-bottom-nav").then(m => ({ default: m.MobileBottomNav })), { ssr: false });
 const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
 const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
 const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
@@ -91,7 +92,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
       <main className="flex-1" style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}>{children}</main>
       <Footer settings={siteSettings} categories={footerCategories} />
 
-      {/* Боковая колонка навигации (мобилка/планшет) + Арай-дока (чат-бар внизу, единый моб+десктоп) */}
+      {/* Навигация для разных размеров экрана:
+          - MobileBottomNav (<640px) — нижнее меню с Араем в центре
+          - SideIconRail (640-1023px) — колонка иконок справа
+          - ArayDock (≥1024px) — Telegram-style чат-бар внизу для десктопа
+          - Header мега-меню (≥1024px) — в шапке */}
+      <MobileBottomNav arayEnabled={arayEnabled} />
       <SideIconRail />
       <ArayDock enabled={arayEnabled} />
 

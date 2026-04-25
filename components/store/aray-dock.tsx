@@ -147,7 +147,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[55] pointer-events-none"
+      className="fixed bottom-0 left-0 right-0 z-[55] pointer-events-none hidden lg:block"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-label="Арай — чат-бар"
     >

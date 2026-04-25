@@ -1,50 +1,115 @@
 "use client";
 
+/**
+ * MobileBottomNav — единое нижнее меню магазина для мобилки (calm UI).
+ *
+ * Структура (5 пунктов): Каталог · Поиск · АРАЙ (центр, приподнят) · Корзина · Аккаунт
+ * Стиль: DESIGN_SYSTEM.md — bg-card border-t border-border, без backdrop-blur, без arayglass.
+ *
+ * Арай в центре:
+ *  - Tap                → "aray:open" (открывает fullscreen чат-панель)
+ *  - Long-press 400ms   → "aray:voice" (push-to-talk fullscreen)
+ *  - Бейдж количества   → подсвечивается при добавлении в корзину
+ *
+ * Скрывается когда клавиатура открыта (visualViewport API).
+ */
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { formatPrice } from "@/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutGrid,
-  ShoppingCart,
-  Search,
-  User,
-} from "lucide-react";
+import { LayoutGrid, ShoppingCart, Search, User } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 import { ArayOrb } from "@/components/shared/aray-orb";
 
+function haptic(pattern: number | number[] = 6) {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try { navigator.vibrate(pattern); } catch {}
+  }
+}
+
+interface NavItemProps {
+  icon: LucideIcon;
+  label: string;
+  isActive: boolean;
+  badge?: number;
+  customLabel?: string; // например, totalPrice вместо "Корзина"
+  onClick?: () => void;
+  href?: string;
+}
+
+function NavItem({ icon: Icon, label, isActive, badge, customLabel, onClick, href }: NavItemProps) {
+  const content = (
+    <motion.div
+      whileTap={{ scale: 0.92 }}
+      transition={{ type: "spring", stiffness: 500, damping: 18 }}
+      className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 ${
+        isActive ? "text-primary" : "text-muted-foreground"
+      }`}
+      style={{ WebkitTapHighlightColor: "transparent" }}
+    >
+      <div className="relative">
+        <Icon
+          className="w-[22px] h-[22px]"
+          strokeWidth={isActive ? 2.2 : 1.75}
+        />
+        {badge !== undefined && badge > 0 && (
+          <span className="absolute -top-1.5 -right-2 bg-primary text-primary-foreground text-[10px] min-w-[18px] h-[18px] px-1 rounded-full inline-flex items-center justify-center font-semibold leading-none">
+            {badge > 9 ? "9+" : badge}
+          </span>
+        )}
+      </div>
+      <span className={`text-[10px] leading-none tabular-nums ${isActive ? "font-semibold" : "font-medium"}`}>
+        {customLabel ?? label}
+      </span>
+    </motion.div>
+  );
+
+  const tapHandler = () => { haptic(); onClick?.(); };
+
+  if (href) {
+    return <Link href={href} onClick={tapHandler} aria-label={label}>{content}</Link>;
+  }
+  return (
+    <button onClick={tapHandler} aria-label={label} type="button">
+      {content}
+    </button>
+  );
+}
+
 export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean }) {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
   const totalPrice = useCartStore((s) => s.totalPrice());
-  const { setCartOpen } = useCartStore();
-  const [mounted, setMounted] = useState(false);
-  const [cartBounce, setCartBounce] = useState(false);
-  const [arayPulse, setArayPulse] = useState(false);
-  const prevItemsRef = useRef(0);
+  const setCartOpen = useCartStore((s) => s.setCartOpen);
   const { toggle: toggleAccount } = useAccountDrawer();
   const { toggle: toggleSearch } = useSearchDrawer();
 
+  const [mounted, setMounted] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
+  const [arayPulse, setArayPulse] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
+  const prevItemsRef = useRef(0);
 
-  useEffect(() => { setMounted(true); }, []);
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggered = useRef(false);
 
-  // Скрываем нав когда клавиатура открыта (все формы на мобилке)
+  useEffect(() => setMounted(true), []);
+
+  // Скрываем при открытой клавиатуре
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
     const vv = window.visualViewport;
-    const onResize = () => {
-      const diff = window.innerHeight - vv.height;
-      setKbOpen(diff > 100); // >100px = клавиатура точно открыта
-    };
+    const onResize = () => setKbOpen(window.innerHeight - vv.height > 100);
     vv.addEventListener("resize", onResize);
     return () => vv.removeEventListener("resize", onResize);
   }, []);
 
-  // Bounce корзины при добавлении
+  // Bounce корзины + Арай pulse при добавлении товара
   useEffect(() => {
     if (!mounted) return;
     if (totalItems !== prevItemsRef.current) {
@@ -58,166 +123,113 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
     }
   }, [totalItems, mounted]);
 
-
-  const haptic = useCallback(() => {
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      navigator.vibrate([6]);
-    }
-  }, []);
-
-  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressTriggered = useRef(false);
-
-  const openAray = useCallback(() => {
-    haptic();
-    if (!longPressTriggered.current) {
-      window.dispatchEvent(new CustomEvent("aray:open"));
-    }
-  }, [haptic]);
-
+  // Арай: tap = чат, long-press = голос
   const onArayPointerDown = useCallback(() => {
     longPressTriggered.current = false;
     longPressRef.current = setTimeout(() => {
       longPressTriggered.current = true;
-      haptic();
-      // Push-to-talk: слушает без открытия чата
+      haptic([12, 40, 12]);
       window.dispatchEvent(new CustomEvent("aray:voice"));
     }, 400);
-  }, [haptic]);
+  }, []);
 
   const onArayPointerUp = useCallback(() => {
     if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
   }, []);
 
-  // Левые пункты
-  const leftItems = [
-    {
-      id: "catalog",
-      icon: LayoutGrid,
-      label: "Каталог",
-      href: "/catalog",
-      action: null,
-    },
-    { id: "search", icon: Search, label: "Поиск", href: null, action: () => toggleSearch() },
-  ];
+  const onArayClick = useCallback(() => {
+    if (longPressTriggered.current) return;
+    haptic(8);
+    window.dispatchEvent(new CustomEvent("aray:open"));
+  }, []);
 
-  // Правые пункты
-  const rightItems = [
-    {
-      id: "cart",
-      icon: ShoppingCart,
-      label: "Корзина",
-      href: null,
-      action: () => setCartOpen(true),
-      badge: totalItems,
-    },
-    {
-      id: "account",
-      icon: User,
-      label: "Кабинет",
-      href: null,
-      action: () => toggleAccount(),
-    },
-  ];
+  // Cleanup
+  useEffect(() => () => {
+    if (longPressRef.current) clearTimeout(longPressRef.current);
+  }, []);
 
-  const renderNavItem = (item: typeof leftItems[0] & { badge?: number }) => {
-    const Icon = item.icon;
-    const isActive = item.href
-      ? pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href))
-      : false;
-    const isCart = item.id === "cart";
-    const hasCartItems = mounted && isCart && item.badge !== undefined && item.badge > 0;
-
-    const content = (
-      <motion.div
-        whileTap={{ scale: 0.72 }}
-        transition={{ type: "spring", stiffness: 500, damping: 18 }}
-        className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5
-          ${isActive ? "text-brand-orange" : "text-muted-foreground"}`}
-        style={{ WebkitTapHighlightColor: "transparent" }}
-      >
-        <motion.div
-          animate={
-            isCart && cartBounce
-              ? { scale: [1, 1.35, 0.9, 1.15, 1] }
-              : isActive ? { scale: 1.1 } : { scale: 1 }
-          }
-          transition={
-            isCart && cartBounce
-              ? { duration: 0.5, times: [0, 0.2, 0.4, 0.6, 1] }
-              : { type: "spring", stiffness: 400, damping: 20 }
-          }
-          className={`relative ${hasCartItems && !isActive ? "text-brand-orange" : ""}`}
-          {...(isCart ? { "data-cart-icon": true } : {})}
-        >
-          <Icon className="w-[22px] h-[22px]" strokeWidth={isActive ? 2.3 : 1.7} />
-          {mounted && item.badge !== undefined && item.badge > 0 && (
-            <span className="absolute -top-2 -right-2.5 bg-brand-orange text-white text-[9px] min-w-[16px] h-4 px-0.5 rounded-full flex items-center justify-center font-bold leading-none shadow-sm shadow-brand-orange/40">
-              {item.badge > 9 ? "9+" : item.badge}
-            </span>
-          )}
-        </motion.div>
-        <span className={`text-[10px] leading-none tabular-nums ${isActive ? "font-bold" : "font-medium"}`}>
-          {isCart && mounted && totalItems > 0
-            ? formatPrice(totalPrice)
-            : item.label}
-        </span>
-      </motion.div>
-    );
-
-    if (item.href) {
-      return <Link key={item.id} href={item.href} onClick={haptic}>{content}</Link>;
-    }
-    return (
-      <button key={item.id} onClick={() => { haptic(); (item as any).action?.(); }}>
-        {content}
-      </button>
-    );
-  };
+  const isActive = (path: string) =>
+    path === "/"
+      ? pathname === "/"
+      : pathname === path || pathname.startsWith(path);
 
   return (
     <nav
-      className="fixed left-0 right-0 z-50 lg:hidden safe-area-inset-bottom transition-all duration-300"
+      className="fixed left-0 right-0 z-50 lg:hidden bg-card border-t border-border transition-all duration-300"
       style={{
         bottom: kbOpen ? "-120px" : "0",
         opacity: kbOpen ? 0 : 1,
         pointerEvents: kbOpen ? "none" : "auto",
-        backdropFilter: "blur(32px) saturate(160%)",
-        WebkitBackdropFilter: "blur(32px) saturate(160%)",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-        background: "var(--mobile-nav-bg)",
-      } as React.CSSProperties}
+      }}
+      aria-label="Нижняя навигация"
     >
-      {/* Блик сверху */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-
-      <div className="flex items-end justify-around px-1 pt-1 relative" style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}>
-
-        {/* Левые пункты */}
+      <div
+        className="flex items-end justify-around px-1 pt-1 relative"
+        style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}
+      >
+        {/* Левые: Каталог + Поиск */}
         <div className="flex items-center justify-around flex-1 pt-1">
-          {leftItems.map(renderNavItem)}
+          <NavItem
+            icon={LayoutGrid}
+            label="Каталог"
+            href="/catalog"
+            isActive={isActive("/catalog")}
+          />
+          <NavItem
+            icon={Search}
+            label="Поиск"
+            onClick={() => toggleSearch()}
+            isActive={false}
+          />
         </div>
 
-        {/* ─── АРАЙ — центральная поднятая кнопка ─── */}
-        {arayEnabled && <div className="flex flex-col items-center" style={{ marginTop: "-18px", minWidth: "72px" }}>
-          <button
-            onClick={openAray}
-            onPointerDown={onArayPointerDown}
-            onPointerUp={onArayPointerUp}
-            onPointerCancel={onArayPointerUp}
-            aria-label="Удерживай для голоса, нажми для чата"
-            className="flex flex-col items-center transition-transform duration-150 active:scale-[0.88] focus:outline-none"
-            style={{ WebkitTapHighlightColor: "transparent" }}
+        {/* Центр: Арай (приподнят на -18px) */}
+        {arayEnabled && (
+          <div
+            className="flex flex-col items-center"
+            style={{ marginTop: "-18px", minWidth: "72px" }}
           >
-            <ArayOrb size={52} id="mob" pulse={arayPulse ? "listening" : "idle"} badgeCount={totalItems > 0 ? totalItems : undefined} />
-            <span className="text-[9px] font-semibold mt-0.5 tracking-wide"
-              style={{ color: "hsl(var(--muted-foreground))" }}>Арай</span>
-          </button>
-        </div>}
+            <button
+              type="button"
+              onClick={onArayClick}
+              onPointerDown={onArayPointerDown}
+              onPointerUp={onArayPointerUp}
+              onPointerCancel={onArayPointerUp}
+              aria-label="Арай — нажми для чата, удерживай для голоса"
+              className={`flex flex-col items-center transition-transform duration-150 active:scale-[0.92] focus:outline-none ${
+                cartBounce ? "animate-cart-bounce" : ""
+              }`}
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              <ArayOrb
+                size={52}
+                id="mob-nav"
+                pulse={arayPulse ? "listening" : "idle"}
+                badgeCount={totalItems > 0 ? totalItems : undefined}
+              />
+              <span className="text-[10px] font-semibold mt-0.5 text-muted-foreground tracking-wide">
+                Арай
+              </span>
+            </button>
+          </div>
+        )}
 
-        {/* Правые пункты */}
+        {/* Правые: Корзина + Аккаунт */}
         <div className="flex items-center justify-around flex-1 pt-1">
-          {rightItems.map(renderNavItem)}
+          <NavItem
+            icon={ShoppingCart}
+            label="Корзина"
+            onClick={() => setCartOpen(true)}
+            isActive={false}
+            badge={mounted ? totalItems : undefined}
+            customLabel={mounted && totalItems > 0 ? formatPrice(totalPrice) : undefined}
+          />
+          <NavItem
+            icon={User}
+            label="Кабинет"
+            onClick={() => toggleAccount()}
+            isActive={false}
+          />
         </div>
       </div>
     </nav>

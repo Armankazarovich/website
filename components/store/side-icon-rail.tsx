@@ -2,10 +2,13 @@
 
 /**
  * SideIconRail — плавающая колонка иконок навигации справа.
- * Работает на мобилке и планшете (до lg). На десктопе скрыта — там header-меню.
+ *
+ * ВАЖНО: показывается ТОЛЬКО на планшете (640px - 1023px).
+ *  - На мобилке (<640px) — нет, там используется MobileBottomNav снизу.
+ *  - На десктопе (≥1024px) — нет, там полное header-меню.
  *
  * Иконки: Каталог, Поиск, Корзина, Избранное, Аккаунт
- * Стиль: ARAYGLASS (стекло + неон в цвете палитры)
+ * Стиль: calm UI (DESIGN_SYSTEM.md) — bg-card border-border rounded-full, без arayglass.
  * Прячется когда клавиатура открыта (visualViewport API).
  */
 
@@ -33,20 +36,16 @@ interface RailIconProps {
 }
 
 function RailIcon({ label, icon, onClick, href, badge }: RailIconProps) {
-  // Минимализм: без shimmer, тонкая обводка, глухой primary на hover
-  const base = "relative w-10 h-10 flex items-center justify-center arayglass arayglass-nopad text-foreground/70 hover:text-primary active:scale-95 transition-all duration-150";
-  const handleClick = () => {
-    haptic();
-    onClick?.();
-  };
+  const base =
+    "relative w-11 h-11 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 active:scale-95 transition-all duration-150";
+
+  const handleClick = () => { haptic(); onClick?.(); };
 
   const content = (
     <>
       <span className="flex items-center justify-center">{icon}</span>
       {typeof badge === "number" && badge > 0 && (
-        <span
-          className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full flex items-center justify-center text-[9px] font-semibold text-primary-foreground bg-primary"
-        >
+        <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full inline-flex items-center justify-center text-[9px] font-semibold text-primary-foreground bg-primary">
           {badge > 99 ? "99+" : badge}
         </span>
       )}
@@ -61,7 +60,6 @@ function RailIcon({ label, icon, onClick, href, badge }: RailIconProps) {
         title={label}
         onClick={handleClick}
         className={base}
-        style={{ borderRadius: "9999px" }}
       >
         {content}
       </Link>
@@ -75,7 +73,6 @@ function RailIcon({ label, icon, onClick, href, badge }: RailIconProps) {
       title={label}
       onClick={handleClick}
       className={base}
-      style={{ borderRadius: "9999px" }}
     >
       {content}
     </button>
@@ -94,7 +91,6 @@ export function SideIconRail() {
 
   useEffect(() => setMounted(true), []);
 
-  // Прячем когда клавиатура открыта (мобилка)
   useEffect(() => {
     if (typeof window === "undefined" || !window.visualViewport) return;
     const vv = window.visualViewport;
@@ -113,12 +109,19 @@ export function SideIconRail() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 24 }}
           transition={{ type: "spring", damping: 26, stiffness: 320 }}
-          className="fixed right-2 top-1/2 -translate-y-1/2 z-[60] lg:hidden flex flex-col gap-2"
-          style={{ paddingBottom: "calc(92px + env(safe-area-inset-bottom, 0px))" }}
+          className="fixed right-3 top-1/2 -translate-y-1/2 z-[60] hidden sm:flex lg:hidden flex-col gap-2"
           aria-label="Быстрая навигация"
         >
-          <RailIcon label="Каталог" icon={<LayoutGrid className="w-[18px] h-[18px]" strokeWidth={1.75} />} href="/catalog" />
-          <RailIcon label="Поиск" icon={<Search className="w-[18px] h-[18px]" strokeWidth={1.75} />} onClick={toggleSearch} />
+          <RailIcon
+            label="Каталог"
+            icon={<LayoutGrid className="w-[18px] h-[18px]" strokeWidth={1.75} />}
+            href="/catalog"
+          />
+          <RailIcon
+            label="Поиск"
+            icon={<Search className="w-[18px] h-[18px]" strokeWidth={1.75} />}
+            onClick={toggleSearch}
+          />
           <RailIcon
             label="Корзина"
             icon={<ShoppingCart className="w-[18px] h-[18px]" strokeWidth={1.75} />}
@@ -131,7 +134,11 @@ export function SideIconRail() {
             href="/wishlist"
             badge={wishCount}
           />
-          <RailIcon label="Аккаунт" icon={<User className="w-[18px] h-[18px]" strokeWidth={1.75} />} onClick={toggleAccount} />
+          <RailIcon
+            label="Аккаунт"
+            icon={<User className="w-[18px] h-[18px]" strokeWidth={1.75} />}
+            onClick={toggleAccount}
+          />
         </motion.aside>
       )}
     </AnimatePresence>
