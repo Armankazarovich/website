@@ -19,6 +19,14 @@ const VoiceModeOverlay = dynamicImport(
   { ssr: false }
 );
 
+// ArayDock — Telegram-style чат-бар Арая на ДЕСКТОПЕ админки (≥1024px).
+// На мобилке/планшете админки используется AdminMobileBottomNav (с центральным орбом).
+// БЕЗ этого dock'а на десктопе админки нет видимой кнопки открытия Арая.
+const ArayDock = dynamicImport(
+  () => import("@/components/store/aray-dock").then((m) => ({ default: m.ArayDock })),
+  { ssr: false }
+);
+
 export const metadata: Metadata = {
   title: {
     default: "Панель управления | ПилоРус",
@@ -83,6 +91,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AccountDrawer />
       {/* Voice Mode Overlay — fullscreen разговор по long-press на Арая */}
       <VoiceModeOverlay />
+      {/* ArayDock — Telegram-style чат-бар на десктопе (lg:block) */}
+      <ArayDock />
     </>
   );
 }
