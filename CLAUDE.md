@@ -1,6 +1,6 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 22.04.2026 (сессия 23 — ARAY Rhythm график 6/1 + 5:00 push автоматизация)
+> Последнее обновление: 25.04.2026 (сессия 28 — восстановление функциональных коммитов 24.04 для /admin/products)
 
 ---
 
@@ -863,6 +863,80 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 25.04.2026 (сессия 28) — Восстановление функциональных коммитов 24.04 для /admin/products (6 коммитов, 0 дизайна)
+
+**Контекст:** Утром 24.04.2026 в чате другого Claude были сделаны 35 коммитов для /admin/products: микс ФУНКЦИЙ (нужны менеджерам — natural sort размеров, auto-calc шт/м³, дублирование товара, bulk price ±10%, progress bar готовности, AI-improve описания, Toast-фидбек, галерея фото, multi-upload, поиск в media picker) и ДИЗАЙНЕРСКИХ ПРАВОК (которые потом всем не понравились). Force-push'ем были откачены ВСЕ 35 коммитов до состояния `fc601df` (вчерашний идеальный). Арман попросил аккуратно вернуть только функции БЕЗ любых изменений цветов/радиусов/плашек/дизайна.
+
+**Деплой:** один batch push (5 коммитов локально + 1 уже в проде) — `7be152b..98ff997`, GitHub Actions OK, PM2 cold-start ~3 мин, **42 PASS / 2 WARN / 0 FAIL** на test-production.js.
+
+**Восстановленные SHA → текущие коммиты (в порядке деплоя):**
+
+1. **`7be152b`** `ux(admin/products): клик по карандашу → страница редактирования (без drawer)` — из `1124093`. Кнопка ✏️ в списке товаров теперь делает `router.push(/admin/products/${id})` вместо открытия drawer'а. State drawer'а оставлен dead code чтобы минимизировать diff (TSC пропускает).
+
+2. **`9a9ea4a`** `polish(admin/products): скрыть нерабочие инструменты фото` — из `59ff175`. Удалён UI «Инструменты фото» (Pixabay поиск, Редактор, Убрать фон, Авто-обработка) — нестабильны, помешают менеджерам. State/handlers (`photoToolsOpen`, `handleRemoveBackground`, `setAutoPipeline`) оставлены — вернём когда API стабилизируются.
+
+3. **`c41cfb7`** `feat(admin/media): поиск в picker-модалке + сетка 4 колонки на десктопе` — из `b817f59` целиком. В picker-mode медиабиблиотеки теперь всегда видимый input поиска (имя файла / ALT / товар) + сетка крупнее (2/3/4 колонки моб/планшет/десктоп вместо 3/4/5).
+
+4. **`c790fcf`** `feat(admin/products): Toast-фидбек + галерея всегда видна + multi-file upload` — из `595aabc` (только функции, без CSS):
+   - **Новый файл `components/admin/action-toast.tsx`** — компонент `ActionToast` (НЕ `Toast`, чтобы не конфликтовать с shadcn `components/ui/toast.tsx`). Floating-pill с auto-dismiss 2s. Использует существующие `.arayglass`/`.arayglass-glow` классы, новых CSS нет.
+   - State `toast` + helper `setToast(msg)` — для фидбека сортировки/авто-расчёта/дублирования.
+   - **Галерея фото** — теперь всегда видна когда `images.length > 0` (было `> 1`). Helpers `setPrimaryImage(idx)` (перемещает в начало массива) и `removeImage(idx)` (фильтрует). Плитка «+» в самой галерее открывает file picker.
+   - **Multi-upload** — `<input type="file" multiple>` + `Array.from(e.target.files)` + for-loop через существующий `uploadPhotoFile`. Менеджер выбирает 5 фото за раз — все загружаются.
+
+5. **`74ca991`** `feat(admin/products): natural-sort размеров + авто-расчёт шт/м³` — из `4a65fa1` (часть 1):
+   - Helper `naturalCompare(a, b)` — естественная сортировка: «6мм» < «9мм» < «12мм» (раньше lex-сорт давал «12» < «6»).
+   - Helper `autoCalcPieces(size: "25×100×6000")` — парсит толщина×ширина×длина в мм, считает piecesPerCube. Возвращает null для форматов «6мм · 1/1» (фанера, листовые).
+   - В `updateVariant`: при вводе `size` авто-заполняется `piecesPerCube` (если пусто).
+   - Кнопка «Сортировать» в header блока Варианты (видна когда variants > 1) → `sortVariantsNow()` + toast.
+   - Иконка калькулятора в колонке «Шт/м³» → `recalcPieces(idx)` + toast.
+   - Автосортировка вариантов при загрузке товара через `naturalCompare`.
+
+6. **`98ff997`** `feat(admin/products): duplicate + bulk-price ±10% + readiness + AI-improve` — из `4a65fa1` (часть 2):
+   - **Duplicate:** handler `duplicateProduct()` — создаёт копию через `POST /api/admin/products` с slug `{base}-copy-{rnd4}`, name `{name} (копия)`, `active: false`. Перебрасывает на редактирование дубля. Кнопка «Дублировать» (Copy icon, label hidden на mobile) в header.
+   - **Bulk price ±10%:** handler `bulkPriceAdjust(percent, field)` с confirm. 4 кнопки (TrendingUp/Down) под заголовком блока Варианты — раздельно для м³ и шт. Применяется только локально, нужен Save.
+   - **Readiness bar:** helper `calcReadiness({...})` — 5 чек-листов (базовые поля, ≥1 фото, размеры+цены, описание ≥40 симв, цена за шт для Директа). Тонкая строка готовности под header — при 100% «Товар готов к публикации · SEO и Директ корректны», при <100% круговой SVG прогресс + список «Не хватает: …».
+   - **AI-improve:** handler `improveDescription()` — `POST /api/admin/products/[id]/improve-seo`. Кнопка «Улучшить» (Sparkles icon) рядом с label «Описание». Ошибки под textarea, успех — toast «Описание обновлено ARAY».
+
+**Стратегия деплоя:**
+- Арман дал карт-бланш «делай как профессионально» → выбрал вариант **Б**: 5 коммитов локально (каждый с TSC проверкой) + один batch push + один verify + один test-production.
+- 6 коммитов в истории git (как Арман просил), но 1 деплой = быстрее (5 мин ожидания вместо 30).
+- TSC: 0 ошибок на каждом локальном коммите. Финальный test-production: 42/44 PASS, 0 FAIL.
+
+**Что НЕ тронуто (как и обещали):**
+- `app/globals.css`, `tailwind.config.ts` — без изменений
+- `components/admin/admin-shell.tsx`, `components/admin/admin-nav.tsx` — без изменений
+- Любые store-файлы (`app/(store)/*`, `components/store/*`, `components/layout/*`) — без изменений
+- Никаких новых CSS классов, никаких замен цветов на существующих элементах
+- Никаких `rounded-md`/`shadow-sm`/grayscale цветов
+- Force push не использовался — обычный fast-forward push
+
+**Изменённые файлы (всего 4 файла + 1 новый):**
+- `app/admin/products/products-client.tsx` (commit 1)
+- `app/admin/products/[id]/page.tsx` (commits 2, 4, 5, 6)
+- `app/admin/media/media-client.tsx` (commit 3)
+- `components/admin/action-toast.tsx` — НОВЫЙ (commit 4)
+
+**Утилиты в `D:\pilorus\` (для переиспользования в следующих сессиях):**
+- `__sync.js` — sync Cyrillic → Latin (список файлов внутри редактируется)
+- `__commit-local.js` — коммит локально без push (для batch стратегии)
+- `__commit.js` — коммит + push (для одиночных деплоев)
+- `__push.js` — только push (без коммита)
+- `__verify-quick.js` — быстрый curl 4 ключевых страниц
+- `__tsc.js` — TSC проверка с фильтром ошибок
+- `__show.js <sha> [file]` — `git show` в файл `D:\pilorus\__diffs\*.diff`
+- `__slice.js <file> <start> <end>` — read N строк из файла
+- `__grep.js <file> <patterns...>` — grep по подстрокам
+- `__msg.txt` — файл commit message (UTF-8) для `__commit-local.js -F`
+
+**Уроки сессии:**
+1. **Toast naming conflict.** В проекте есть shadcn `components/ui/toast.tsx` (Radix-based). Свой компонент Toast создавать там НЕЛЬЗЯ — сломает 9 импортов в toaster.tsx/use-toast.ts/product-card.tsx. Решение: положить в `components/admin/action-toast.tsx` под именем `ActionToast`.
+2. **Кириллица в commit message через Windows cmd.** `git commit -m "русский"` ломается. Решение: писать message в UTF-8 файл (через `mcp__Desktop_Commander__write_file`) и использовать `git commit -F file.txt`. Скрипт `__commit-local.js` берёт msgFile через `argv[2]`.
+3. **MCP timeout 60с.** Любой ожидающий процесс (sleep/wait для PM2 cold-start) дольше 60с упирается в MCP timeout. Решение: разбивать на 30-40 сек куски, или сразу запускать `node D:\pilorus\__verify-quick.js` — он сам делает HTTPS-проверку без блокирования.
+4. **Galery + setPrimaryImage/removeImage helpers** — в текущей base их не было, пришлось добавить с нуля для commit 4 (галерея). В исходных коммитах 24.04 они были в 4a65fa1, но мы решили включить в commit 4 чтобы галерея работала независимо от commits 5/6.
+5. **«Один коммит — одна функция» vs «один деплой — одна задача»** — для retroactive восстановления (когда фичи независимы и хорошо разделены) batch push экономит время Арману, не нарушая правило истории.
+
+---
 
 ### Сессия 23.04.2026 (сессия 24) — Генеральная проверка: Session 1+2 Products/Variants/Upload + Mobile Arai + клиент Пилорус (5 коммитов)
 
