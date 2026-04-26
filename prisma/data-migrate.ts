@@ -202,6 +202,50 @@ async function main() {
     console.log("[data-migrate] ⚠ Деактивация промо пропущена:", e.message);
   }
 
+  // ── 26.04.2026: Сид постоянных подписок на AI / инфраструктуру ────────────
+  // Идемпотентно: проверяем существование по name, не дубль.
+  try {
+    const seedSubs: Array<{
+      provider: string; name: string; costUsd?: number; costRub?: number;
+      billingDay?: number; billingType: string; notes?: string;
+    }> = [
+      {
+        provider: "anthropic", name: "Claude Max plan (личный инструмент Армана)",
+        costUsd: 240, billingDay: 8, billingType: "monthly",
+        notes: "20x usage Pro. Claude.ai чат + Claude Code + Cowork. Это НЕ расход на Арая (pilo-rus.ru), а личный инструмент для работы со мной. Visa-1724.",
+      },
+      {
+        provider: "anthropic", name: "Anthropic API Credits (для Арая на сайте)",
+        costUsd: undefined, billingType: "prepaid",
+        notes: "Prepaid credits, без авто-списания. Auto reload OFF. Реальный расход на Арая (pilo-rus.ru) логируется автоматически по каждому вызову.",
+      },
+      {
+        provider: "elevenlabs", name: "ElevenLabs Creator (TTS Арая)",
+        costUsd: 22, billingDay: 10, billingType: "monthly",
+        notes: "100,000 кредитов/мес. Multilingual v2. Workspace 'Одиннадцатый творческий'. Реальный расход тоже логируется.",
+      },
+      {
+        provider: "google", name: "Google AI Plus 200GB",
+        costUsd: 3.99, billingDay: 10, billingType: "monthly",
+        notes: "Промо $3.99/мес до 10 июня 2026, далее $7.99/мес. Visa-1724.",
+      },
+    ];
+
+    let createdSubs = 0;
+    for (const sub of seedSubs) {
+      const existing = await (prisma as any).apiSubscription.findFirst({ where: { name: sub.name } });
+      if (!existing) {
+        await (prisma as any).apiSubscription.create({
+          data: { ...sub, active: true },
+        });
+        createdSubs++;
+      }
+    }
+    if (createdSubs > 0) console.log(`[data-migrate] ✓ Постоянные подписки засеяны (${createdSubs} новых)`);
+  } catch (e: any) {
+    console.log("[data-migrate] ⚠ Сид подписок пропущен:", e.message);
+  }
+
   console.log("[data-migrate] Готово.");
   await prisma.$disconnect();
 }

@@ -2,6 +2,9 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { cleanForTTS } from "@/lib/tts-clean";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { calculateElevenLabsCost } from "@/lib/api-pricing";
 
 // Anton Ru — спокойный, разговорный, без акцента (Multilingual v2)
 const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
@@ -105,7 +108,8 @@ export async function POST(req: NextRequest) {
   try {
     const apiKey = process.env.ELEVENLABS_API_KEY || FALLBACK_KEY;
 
-    const { text } = await req.json();
+    const body = await req.json();
+    const { text, source } = body as { text?: string; source?: string };
     if (!text || typeof text !== "string") {
       return NextResponse.json({ error: "Нет текста" }, { status: 400 });
     }
@@ -131,11 +135,41 @@ export async function POST(req: NextRequest) {
       audio = await directElevenLabs(cleanText, apiKey);
     }
 
-    // 3. Если ничего не сработало — браузерный fallback
+    // 3. Если ничего не сработало — браузерный fallback (НЕ логируем, не платный)
     if (!audio || audio.byteLength < 100) {
       console.log("[TTS] All providers failed, browser fallback");
       return browserFallback(cleanText);
     }
+
+    // ── Логирование расходов ElevenLabs в фоне ─────────────────────────────
+    // ElevenLabs Multilingual v2: $0.00022 за символ (Creator план $22/100k credits)
+    const characters = cleanText.length;
+    const cost = calculateElevenLabsCost(MODEL_ID, characters);
+
+    // Получаем userId если есть сессия (не блокируем основной ответ)
+    auth().then(async (session) => {
+      try {
+        await (prisma as any).arayTokenLog?.create({
+          data: {
+            userId: session?.user?.id || null,
+            sessionId: null,
+            provider: "elevenlabs",
+            model: MODEL_ID,
+            tier: null,
+            inputTokens: 0,
+            outputTokens: 0,
+            characters,
+            costUsd: cost.usd,
+            costRub: cost.rub,
+            feature: "tts",
+            endpoint: "/api/ai/tts",
+            source: source || null,
+          },
+        });
+      } catch (err) {
+        console.error("[TTS log error]", err);
+      }
+    }).catch(() => {});
 
     return new NextResponse(audio, {
       status: 200,

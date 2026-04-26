@@ -13,7 +13,8 @@ import {
   extractAndUpdateMemory,
   updateCustomerLevel,
 } from "@/lib/aray-memory";
-import { classifyQuery, getModelConfig, getBrevityInstruction, estimateCost } from "@/lib/aray-router";
+import { classifyQuery, getModelConfig, getBrevityInstruction } from "@/lib/aray-router";
+import { calculateAnthropicCost } from "@/lib/api-pricing";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -187,6 +188,9 @@ export async function POST(req: NextRequest) {
         const firstMsg = await firstStream.finalMessage();
         const toolBlocks = firstMsg.content.filter((b: any) => b.type === "tool_use");
 
+        // Для подсчёта реальных токенов (включая followStream если был tool_use)
+        let followMsg: any = null;
+
         // ── Обработка инструментов ───────────────────────────────────────────
         if (toolBlocks.length > 0) {
           const toolResults = await Promise.all(
@@ -214,6 +218,9 @@ export async function POST(req: NextRequest) {
               await writer.write(encoder.encode(event.delta.text));
             }
           }
+
+          // Сохраняем usage второго stream для логирования
+          followMsg = await followStream.finalMessage();
         }
 
         // ── Обновление памяти в фоне ─────────────────────────────────────────
@@ -225,20 +232,28 @@ export async function POST(req: NextRequest) {
           ]).catch(err => console.error("[ArayMemory]", err));
         }
 
-        // ── Логирование токенов в фоне ──────────────────────────────────────
-        const inputTokensEst = Math.ceil(systemPrompt.length / 4) + formattedMessages.reduce((s, m) => s + Math.ceil(m.content.length / 4), 0);
-        const outputTokensEst = Math.ceil(fullText.length / 4);
-        const costEst = estimateCost(tier, inputTokensEst, outputTokensEst);
+        // ── Логирование расходов в фоне (РЕАЛЬНЫЕ токены из Anthropic API) ──
+        // Берём usage из firstMsg + followMsg (если был tool_use)
+        const totalInputTokens = (firstMsg.usage?.input_tokens || 0) + (followMsg?.usage?.input_tokens || 0);
+        const totalOutputTokens = (firstMsg.usage?.output_tokens || 0) + (followMsg?.usage?.output_tokens || 0);
+        const cost = calculateAnthropicCost(modelConfig.model, totalInputTokens, totalOutputTokens);
+        const arayContext = context as { source?: string; page?: string } | undefined;
+        const sourceLabel = arayContext?.source || (isAdminPage ? "admin" : (arayContext?.page?.includes("/cabinet") ? "cabinet" : "store"));
+
         (prisma as any).arayTokenLog?.create({
           data: {
             userId: userId || null,
             sessionId: sessionId || null,
+            provider: "anthropic",
             model: modelConfig.model,
             tier,
-            inputTokens: inputTokensEst,
-            outputTokens: outputTokensEst,
-            costUsd: costEst,
+            inputTokens: totalInputTokens,
+            outputTokens: totalOutputTokens,
+            costUsd: cost.usd,
+            costRub: cost.rub,
             feature: "chat",
+            endpoint: "/api/ai/chat",
+            source: sourceLabel,
           },
         }).catch((err: unknown) => console.error("[ArayTokenLog]", err));
 

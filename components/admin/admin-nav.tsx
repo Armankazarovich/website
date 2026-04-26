@@ -38,6 +38,7 @@ import {
   Heart,
   History,
   UserPlus,
+  Receipt,
 } from "lucide-react";
 
 type NavItem = {
@@ -107,6 +108,7 @@ const allNavItems: NavItem[] = [
   // ── Настройки (система) ──
   { href: "/admin/site",           label: "Сайт",              labelKey: "site_settings", icon: Globe,      roles: [SA, "ADMIN"], group: "settings", groupKey: "settings" },
   { href: "/admin/settings",       label: "Настройки",         labelKey: "settings",      icon: Settings,   roles: [SA, "ADMIN"], group: "settings" },
+  { href: "/admin/aray/costs",     label: "Расходы Арая",      icon: Receipt,             roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/appearance",     label: "Оформление",        labelKey: "appearance",    icon: Palette,    roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/watermark",      label: "Водяной знак",      labelKey: "watermark",     icon: Stamp,      roles: [SA, "ADMIN"], group: "settings" },
   { href: "/admin/staff",          label: "Команда",           labelKey: "staff",         icon: Users,      roles: [SA, "ADMIN"], group: "settings" },

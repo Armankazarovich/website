@@ -639,24 +639,61 @@ enum ArayLevel {
   PARTNER
 }
 
-// ── Учёт токенов ARAY ───────────────────────────────────────────────────────
-// ARAY бесплатен для всех. Мы платим Anthropic из 50% дохода ARAY.
-// Эта таблица — для отслеживания расходов и оптимизации.
+// ── Учёт расходов API (ARAY + все внешние сервисы) ──────────────────────────
+// Универсальный лог для Anthropic, ElevenLabs, Google AI и других AI-провайдеров.
+// Каждый вызов записывает реальные usage данные → дашборд /admin/aray/costs.
 model ArayTokenLog {
   id           String   @id @default(cuid())
   userId       String?  // null = гость
   sessionId    String?  // aray_sid из cookie
-  model        String   // claude-haiku-4-5, claude-sonnet-4-6, claude-opus-4-6
-  tier         String   // haiku, sonnet, opus
+
+  // Провайдер и модель
+  provider     String   @default("anthropic") // anthropic, elevenlabs, google, openai
+  model        String   // claude-sonnet-4-6, claude-opus-4-6, eleven_multilingual_v2
+  tier         String?  // sonnet, opus (только для Anthropic)
+
+  // Метрики использования
   inputTokens  Int      @default(0)
   outputTokens Int      @default(0)
-  costUsd      Float    @default(0) // Расчётная стоимость в $
-  feature      String   @default("chat") // chat, tts, image, search
+  characters   Int?     // для TTS (ElevenLabs считает символы как кредиты)
+
+  // Стоимость
+  costUsd      Float    @default(0)
+  costRub      Float?   // рублёвый эквивалент на момент записи
+
+  // Метаданные
+  feature      String   @default("chat")  // chat, tts, image, search
+  endpoint     String?  // /api/ai/chat, /api/ai/tts
+  source       String?  // voice-mode, store, admin, cabinet
   createdAt    DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([createdAt])
   @@index([tier, createdAt])
+  @@index([provider, createdAt])
+}
+
+// ── Постоянные подписки на AI / инфраструктуру ──────────────────────────────
+// Ручной учёт — Арман или Claude вписывают раз в месяц всё что платится.
+// Используется для полной картины расходов в /admin/aray/costs.
+model ApiSubscription {
+  id          String    @id @default(cuid())
+  tenantId    String    @default("pilorus")
+  provider    String    // anthropic, elevenlabs, google, beget, domain
+  name        String    // "Anthropic Credits", "ElevenLabs Creator", "Google AI Plus 200GB"
+  costUsd     Float?    // если в долларах
+  costRub     Float?    // если в рублях напрямую (Beget, домены)
+  billingDay  Int?      // день месяца списания (1-31)
+  billingType String    @default("monthly") // monthly, yearly, prepaid, on_demand
+  active      Boolean   @default(true)
+  notes       String?
+  startedAt   DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId, active])
+  @@index([provider])
 }
 
 // ─── Единая история чата Арая ───────────────────────────────────────────────
