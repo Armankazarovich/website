@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Send, Keyboard, X, Loader2, RotateCw, AlertCircle, Zap, ZapOff } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { useAccountDrawer } from "@/store/account-drawer";
+import { stopAraySpeech } from "@/lib/aray-audio";
 
 type VoiceState =
   | "idle"        // только что открылся
@@ -321,6 +322,9 @@ export function VoiceModeOverlay() {
 
       if (ttsRes.ok && ttsRes.headers.get("content-type")?.includes("audio")) {
         const buf = await ttsRes.arrayBuffer();
+        // ⚠️ Через singleton — гарантия что играет только ОДИН Арай
+        // (раньше при reopen overlay создавалось несколько Audio параллельно)
+        stopAraySpeech();
         const blob = new Blob([buf], { type: "audio/mpeg" });
         const url = URL.createObjectURL(blob);
         const audio = new Audio(url);
@@ -378,11 +382,9 @@ export function VoiceModeOverlay() {
   // ── Перебить Арая (если он говорит) ──
   const interruptAray = useCallback(() => {
     haptic(10);
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch {}
-      audioRef.current = null;
-    }
-    try { speechSynthesis.cancel(); } catch {}
+    // ⚠️ Глобальный singleton — останавливает АБСОЛЮТНО все Audio + speechSynthesis
+    stopAraySpeech();
+    audioRef.current = null;
     if (open) {
       finalAccumRef.current = "";
       setFinal("");
@@ -396,10 +398,9 @@ export function VoiceModeOverlay() {
   const closeOverlay = useCallback(() => {
     stopListening();
     if (vadTimerRef.current) { clearTimeout(vadTimerRef.current); vadTimerRef.current = null; }
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch {}
-      audioRef.current = null;
-    }
+    // ⚠️ Глобальный singleton — гарантия что после закрытия НИЧЕГО не говорит
+    stopAraySpeech();
+    audioRef.current = null;
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach(t => t.stop());
       audioStreamRef.current = null;
@@ -409,7 +410,6 @@ export function VoiceModeOverlay() {
       audioCtxRef.current = null;
     }
     analyserRef.current = null;
-    speechSynthesis.cancel();
     setOpen(false);
     setState("idle");
   }, [stopListening]);
@@ -444,9 +444,10 @@ export function VoiceModeOverlay() {
     try { window.dispatchEvent(new CustomEvent("aray:open")); } catch {}
   }, [closeOverlay]);
 
-  // Cleanup на unmount
+  // Cleanup на unmount — критично, иначе Арай продолжает говорить после ухода со страницы
   useEffect(() => () => {
     stopListening();
+    stopAraySpeech();
     if (audioStreamRef.current) audioStreamRef.current.getTracks().forEach(t => t.stop());
     if (audioCtxRef.current) try { audioCtxRef.current.close(); } catch {}
   }, [stopListening]);

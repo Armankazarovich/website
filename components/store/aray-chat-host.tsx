@@ -31,6 +31,7 @@ import { ArayOrb } from "@/components/shared/aray-orb";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 import { useCartStore } from "@/store/cart";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
+import { stopAraySpeech } from "@/lib/aray-audio";
 
 // ─── Типы ──────────────────────────────────────────────────────────────────────
 interface AssistantAction {
@@ -347,12 +348,11 @@ export function ArayChatHost() {
       });
       if (res.ok && res.headers.get("content-type")?.includes("audio")) {
         const buf = await res.arrayBuffer();
+        // ⚠️ Глобальный singleton — гарантия что играет только ОДИН Арай.
+        // Раньше при reopen чата создавалось несколько Audio параллельно (2-3 голоса).
+        stopAraySpeech();
         const blob = new Blob([buf], { type: "audio/mpeg" });
         const url = URL.createObjectURL(blob);
-        // Останавливаем предыдущее воспроизведение
-        if (audioRef.current) {
-          try { audioRef.current.pause(); } catch {}
-        }
         const audio = new Audio(url);
         audioRef.current = audio;
         audio.onended = () => URL.revokeObjectURL(url);
@@ -360,9 +360,9 @@ export function ArayChatHost() {
       } else {
         // Browser fallback
         try {
+          stopAraySpeech();
           const u = new SpeechSynthesisUtterance(text);
           u.lang = "ru-RU";
-          speechSynthesis.cancel();
           speechSynthesis.speak(u);
         } catch {}
       }
@@ -571,7 +571,11 @@ export function ArayChatHost() {
       haptic(8);
       setTimeout(() => inputRef.current?.focus(), 250);
     };
-    const onClose = () => setOpen(false);
+    const onClose = () => {
+      setOpen(false);
+      // ⚠️ Останавливаем озвучку при глобальном aray:close event
+      stopAraySpeech();
+    };
     const onPrompt = (e: Event) => {
       const ce = e as CustomEvent<{ text: string; mode?: string }>;
       const text = ce.detail?.text;
@@ -612,13 +616,24 @@ export function ArayChatHost() {
     ta.style.height = Math.min(120, Math.max(44, ta.scrollHeight)) + "px";
   }, [input]);
 
+  // ⚠️ Глобальный cleanup на unmount + page unload — Арай не должен говорить вечно
+  useEffect(() => {
+    const onUnload = () => stopAraySpeech();
+    window.addEventListener("beforeunload", onUnload);
+    window.addEventListener("pagehide", onUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      window.removeEventListener("pagehide", onUnload);
+      stopAraySpeech();
+    };
+  }, []);
+
   const handleClose = useCallback(() => {
     setOpen(false);
     setMinimized(false);
-    if (audioRef.current) {
-      try { audioRef.current.pause(); } catch {}
-    }
-    try { speechSynthesis.cancel(); } catch {}
+    // ⚠️ Глобальный singleton — гарантия полной остановки + speechSynthesis.cancel()
+    stopAraySpeech();
+    audioRef.current = null;
   }, []);
 
   const handleClear = useCallback(() => {
