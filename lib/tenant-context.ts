@@ -18,20 +18,50 @@
  *   все запросы продолжают работать как раньше. Безопасный деплой.
  */
 
-import { AsyncLocalStorage } from "async_hooks";
-
 export const DEFAULT_TENANT_ID = "pilorus";
 
-// AsyncLocalStorage работает в Node.js runtime (API routes, Server Components).
-// В Edge runtime недоступен, но middleware (Edge) и не должен вызывать getCurrentTenantId.
-const tenantStorage = new AsyncLocalStorage<{ tenantId: string }>();
+// AsyncLocalStorage работает только в Node.js runtime (API routes, Server Components).
+// В Edge runtime и client bundle модуль "async_hooks" отсутствует — статический import
+// крашил бы webpack build. Используем lazy require + try/catch.
+// next.config.js + webpack fallback "async_hooks: false" гарантирует что в client bundle
+// require("async_hooks") вернёт пустой модуль (no-op), не падая.
+type StorageLike = {
+  getStore: () => { tenantId: string } | undefined;
+  run: <T>(store: { tenantId: string }, fn: () => T) => T;
+};
+
+let _storage: StorageLike | null = null;
+let _storageProbed = false;
+
+function getStorage(): StorageLike | null {
+  if (_storageProbed) return _storage;
+  _storageProbed = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require("async_hooks");
+    if (mod && typeof mod.AsyncLocalStorage === "function") {
+      _storage = new mod.AsyncLocalStorage() as StorageLike;
+    }
+  } catch {
+    // async_hooks недоступен (Edge runtime / client bundle) — OK,
+    // getCurrentTenantId упадёт на fallback через next/headers.
+  }
+  return _storage;
+}
 
 /**
  * Запустить функцию в контексте конкретного tenant.
  * Используй для фоновых задач и тестов где нет HTTP request.
+ * В client bundle / Edge runtime — fallback на прямой вызов без storage (контекст не сохраняется).
  */
 export function withTenant<T>(tenantId: string, fn: () => T): T {
-  return tenantStorage.run({ tenantId }, fn);
+  const storage = getStorage();
+  if (!storage) {
+    // Без AsyncLocalStorage просто запускаем функцию — контекст не пробрасывается.
+    // Это допустимо в client/edge т.к. там tenant определяется через headers().
+    return fn();
+  }
+  return storage.run({ tenantId }, fn);
 }
 
 /**
@@ -41,8 +71,9 @@ export function withTenant<T>(tenantId: string, fn: () => T): T {
  * Безопасно вызывать из любого места — если контекста нет, вернётся "pilorus".
  */
 export function getCurrentTenantId(): string {
-  // 1. AsyncLocalStorage (фоновые задачи, явный withTenant)
-  const fromStorage = tenantStorage.getStore()?.tenantId;
+  // 1. AsyncLocalStorage (фоновые задачи, явный withTenant) — только server runtime.
+  const storage = getStorage();
+  const fromStorage = storage?.getStore()?.tenantId;
   if (fromStorage) return fromStorage;
 
   // 2. Next.js headers() — работает в Server Components и API routes (Node.js runtime)

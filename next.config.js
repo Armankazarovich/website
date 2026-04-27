@@ -76,7 +76,7 @@ const nextConfig = {
       'bcryptjs',
     ],
   },
-  webpack: (config, { webpack }) => {
+  webpack: (config, { isServer, webpack }) => {
     // Prevent webpack from trying to bundle onnxruntime-web in the browser bundle.
     // Background removal is done server-side via @imgly/background-removal-node.
     config.plugins.push(
@@ -84,6 +84,17 @@ const nextConfig = {
         resourceRegExp: /^onnxruntime-web(\/.*)?$/,
       })
     );
+
+    // Multi-tenancy: lib/tenant-context использует "async_hooks" (Node-only).
+    // Иногда client component тянет цепочку lib/prisma → lib/tenant-context.
+    // На server этот fallback не нужен — async_hooks доступен. На client/edge —
+    // подменяем модуль на false (no-op), чтобы webpack не падал на Module not found.
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        async_hooks: false,
+      };
+    }
     return config;
   },
   // Skip type checking and linting during build (already checked locally)
