@@ -20,14 +20,7 @@ import {
   Zap, BookOpen,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { ArayPinnedRail, type ArayQuickAction } from "@/components/admin/aray-pinned-rail";
-
-const QUICK_ACTIONS: ArayQuickAction[] = [
-  { href: "/admin/aray/costs", label: "Расходы", icon: Wallet },
-  { href: "/admin/aray-lab",   label: "Лаб",      icon: FlaskConical },
-  { href: "#prompts",          label: "Промпты",  icon: BookOpen },
-  { href: "#history",          label: "История",  icon: History },
-];
+import { ArayHomeRail } from "@/components/admin/aray-home-rail";
 
 function formatRub(value: number): string {
   if (!Number.isFinite(value)) return "0 ₽";
@@ -389,12 +382,7 @@ export default async function ArayHomePage() {
       </div>
 
       {/* ── ARAY PINNED RAIL (справа) ─────────────────────────────── */}
-      <ArayPinnedRail
-        page="aray-home"
-        contextLabel="Дом Арая"
-        quickActions={QUICK_ACTIONS}
-        inputHint="Спроси про расход, промпт, модель"
-      />
+      <ArayHomeRail />
     </div>
   );
 }
