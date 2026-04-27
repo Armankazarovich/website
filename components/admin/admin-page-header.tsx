@@ -1,25 +1,27 @@
 "use client";
 
 /**
- * AdminPageHeader — sticky header для разделов админки в новом calm UI.
+ * AdminPageHeader — sticky header для разделов админки.
  *
- * День 2 (27.04.2026): каркас. Search-инпут без логики (placeholder уровня 1
- * "Поиск по разделу или дай команду Араю"). На след. сессиях:
- *   1) Постгрес FTS по товарам/заказам/клиентам — мгновенно, без LLM.
- *   2) Если ничего не нашли — пробрасываем строку Араю (Haiku) как контекст.
+ * Сессия 38 (27.04.2026): Заход A полировки Дома Арая. Убрано:
+ *  - backdrop-filter blur (нарушение DESIGN_SYSTEM п.1.7 — стекло на постоянных
+ *    элементах)
+ *  - disabled-поиск с tooltip «скоро» (магазин имеет рабочий мгновенный поиск,
+ *    нет фичи — нет UI). Настоящий поиск с slide-навигацией — Заход B.
+ *
+ * Добавлено:
+ *  - slot extraActions для кнопок справа (шестерёнка настроек, кастомные действия)
+ *  - кнопка свернуть/развернуть Aray pinned-rail (как было)
  */
 
-import { Search, ChevronLeft, Sparkles } from "lucide-react";
+import { ChevronLeft, Sparkles } from "lucide-react";
+import type { ReactNode } from "react";
 
 type Props = {
-  /** Заголовок раздела (например "Дом Арая"). */
   title: string;
-  /** Подзаголовок — короткая строка под заголовком. */
   subtitle?: string;
-  /** Включить ли search-инпут (по умолчанию true). */
-  showSearch?: boolean;
-  /** Placeholder поиска. */
-  searchPlaceholder?: string;
+  /** Кастомные кнопки справа (например AraySettingsTrigger). */
+  extraActions?: ReactNode;
   /** Скрыть кнопку свернуть Aray (если на странице нет pinned-rail). */
   hideArayToggle?: boolean;
 };
@@ -27,8 +29,7 @@ type Props = {
 export function AdminPageHeader({
   title,
   subtitle,
-  showSearch = true,
-  searchPlaceholder = "Поиск по разделу или дай команду Араю",
+  extraActions,
   hideArayToggle = false,
 }: Props) {
   const toggleAray = () => {
@@ -36,7 +37,7 @@ export function AdminPageHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 -mx-2.5 lg:-mx-6 px-2.5 lg:px-6 py-3 mb-4 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-20 -mx-2.5 lg:-mx-6 px-2.5 lg:px-6 py-3 mb-4 bg-background border-b border-border">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg lg:text-xl font-semibold text-foreground leading-tight truncate">
@@ -49,26 +50,16 @@ export function AdminPageHeader({
           )}
         </div>
 
-        {showSearch && (
-          <div className="hidden md:flex items-center gap-2 flex-1 max-w-md">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-              <input
-                type="search"
-                placeholder={searchPlaceholder}
-                disabled
-                title="Гиперумный поиск — следующая сессия (3 уровня: Postgres FTS → Haiku → Sonnet)"
-                style={{ fontSize: 14 }}
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-muted/40 border border-border text-foreground placeholder:text-muted-foreground/70 focus:outline-none focus:border-primary/40 focus:bg-muted/60 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-            </div>
+        {extraActions && (
+          <div className="flex items-center gap-2 shrink-0">
+            {extraActions}
           </div>
         )}
 
         {!hideArayToggle && (
           <button
             onClick={toggleAray}
-            className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border hover:border-primary/40 hover:bg-muted/40 text-foreground transition-colors text-xs font-medium"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border hover:border-primary/40 hover:bg-muted/40 text-foreground transition-colors text-xs font-medium shrink-0"
             aria-label="Свернуть/развернуть Арая"
             title="Свернуть/развернуть Арая"
             type="button"

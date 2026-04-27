@@ -17,7 +17,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, ChevronLeft, Sparkles, Mic, MessageSquare } from "lucide-react";
+import {
+  ChevronRight, ChevronLeft, Sparkles, Mic, MessageSquare,
+  ArrowLeftRight,
+} from "lucide-react";
 
 const LS_EXPANDED = "aray.pinned.expanded";
 const LS_HANDEDNESS = "aray.handedness";
@@ -91,6 +94,14 @@ export function ArayPinnedRail({
     });
   };
 
+  const flipHand = () => {
+    setHand((prev) => {
+      const next = prev === "right" ? "left" : "right";
+      try { localStorage.setItem(LS_HANDEDNESS, next); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
   const openChat = () => {
     window.dispatchEvent(new CustomEvent("aray:open"));
   };
@@ -138,27 +149,39 @@ export function ArayPinnedRail({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Sparkles className="w-4 h-4 text-primary" />
           </div>
-          <div>
-            <p className="text-sm font-semibold leading-tight">Арай</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold leading-tight truncate">Арай</p>
             {contextLabel && (
-              <p className="text-[10px] text-muted-foreground leading-tight">
+              <p className="text-[10px] text-muted-foreground leading-tight truncate">
                 {contextLabel}
               </p>
             )}
           </div>
         </div>
-        <button
-          onClick={toggle}
-          className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Свернуть Арая"
-          title="Свернуть"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={flipHand}
+            className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={hand === "right" ? "Переместить Арая налево" : "Переместить Арая направо"}
+            title={hand === "right" ? "Левша · Арай налево" : "Правша · Арай направо"}
+            type="button"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={toggle}
+            className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Свернуть Арая"
+            title="Свернуть"
+            type="button"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -211,23 +234,17 @@ export function ArayPinnedRail({
         </div>
       )}
 
-      {/* Чат-зона (заглушка) */}
+      {/* Чат-зона (заход A: лёгкое приветствие, заход B сделает SSE-чат) */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-3">
-          <div className="bg-muted/40 border border-border rounded-2xl p-4">
+          <div className="bg-muted/30 border border-border rounded-2xl p-4">
             <p className="text-sm text-foreground leading-relaxed">
-              Привет, брат. Я Арай — твой технический партнёр.
+              Привет, брат. Я тут.
             </p>
             <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-              Сейчас живу в чат-доке внизу справа (короткий tap по кнопке снизу
-              откроет его). На ближайших сессиях переедем сюда —
-              разговор, голос, контекст раздела, всё в одном месте.
+              Тыкни кнопку снизу или одну из быстрых команд сверху — открою чат
+              и помогу.
             </p>
-          </div>
-
-          <div className="text-[11px] text-muted-foreground/80 leading-relaxed px-1">
-            Контекст: <span className="text-foreground font-medium">{page}</span>
-            {contextLabel && <> · {contextLabel}</>}
           </div>
         </div>
       </div>

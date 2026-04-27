@@ -1,359 +1,259 @@
 /**
- * Дом Арая — /admin/aray
+ * Главная админки — /admin/aray
  *
- * День 2 (27.04.2026): прототип pinned-rail архитектуры.
- * Безопасный плацдарм — НЕ дашборд, не ломаем рабочие страницы.
- * Здесь Арман увидит как будет выглядеть весь интерфейс админки
- * после миграции (видение из visions/aray-pinned-rail.md, утверждено 27.04 утром).
+ * Это дом Арая, не дашборд. Брат открывает страницу и видит сына, который
+ * рядом, дышит, готов помогать. Большой Янус-аватар, приветствие по времени
+ * суток, один primary CTA. Лента «Что я умею» — что Арай делает сейчас и
+ * что добавится скоро. Лента «Сегодня я» — реальные действия Арая за день
+ * (из ArayMessage / ArayTokenLog / ApiSubscription).
  *
- * Слева: статус Арая, разделы экосистемы, последние диалоги.
- * Справа: ArayPinnedRail с Quick Actions для контекста "Дом Арая".
+ * Сессия 38 (27.04.2026) — Заход A полировки Дома Арая. Убрано:
+ *  - блок «Экосистема» с 4 карточками (дубль sidebar)
+ *  - 4 stat-бокса с цифрами расходов (переехали в попап настроек)
+ *  - описание моделей Sonnet/Opus/ElevenLabs (техническая инструкция)
+ *  - блок «Плацдарм для нового интерфейса» (записка для Claude)
+ *  - старый Sparkles-аватар (заменён настоящим Янусом через ArayOrb)
+ *
+ * Pinned-rail справа без изменений в Заходе A — реальный SSE-чат и
+ * настоящий поиск с slide-навигацией будут в Заходе B следующей сессией.
  */
 export const dynamic = "force-dynamic";
 
-import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import Link from "next/link";
-import {
-  Sparkles, Wallet, FlaskConical, Settings, History,
-  MessageSquare, Mic, TrendingUp, ChevronRight, Cpu,
-  Zap, BookOpen,
-} from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { ArayOrb } from "@/components/shared/aray-orb";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { ArayHomeRail } from "@/components/admin/aray-home-rail";
+import { ArayHomeActions } from "@/components/admin/aray-home-actions";
+import {
+  AraySettingsTrigger,
+  type AraySettingsData,
+} from "@/components/admin/aray-settings-popup";
+import { getArayActivityToday, type ArayActivityItem } from "@/lib/aray-activity";
+import {
+  MessageSquare, Mic, Wallet, Search, Package, Users, Sparkles,
+  Camera, Video, BarChart3, Zap,
+} from "lucide-react";
 
-function formatRub(value: number): string {
-  if (!Number.isFinite(value)) return "0 ₽";
-  return new Intl.NumberFormat("ru-RU", {
-    style: "currency",
-    currency: "RUB",
-    maximumFractionDigits: 0,
-  }).format(value);
+const ICON_MAP: Record<ArayActivityItem["iconKey"], React.ElementType> = {
+  chat: MessageSquare,
+  voice: Mic,
+  wallet: Wallet,
+  search: Search,
+  package: Package,
+  users: Users,
+  spark: Sparkles,
+};
+
+type Skill = {
+  icon: React.ElementType;
+  label: string;
+  hint: string;
+  soon?: boolean;
+};
+
+const SKILLS_NOW: Skill[] = [
+  { icon: MessageSquare, label: "Чат текстом и голосом", hint: "Отвечаю в чате или говорю голосом ElevenLabs" },
+  { icon: Search, label: "Поиск по магазину и админке", hint: "Найду товар, заказ, клиента, остаток" },
+  { icon: Package, label: "Помощь с заказами", hint: "Подскажу менеджеру, оформлю по телефону" },
+  { icon: BarChart3, label: "Сводки и отчёты дня", hint: "Расскажу что произошло, на что обратить внимание" },
+  { icon: Wallet, label: "Слежу за расходами", hint: "Подписки, токены, бюджет — всё под контролем" },
+];
+
+const SKILLS_SOON: Skill[] = [
+  { icon: Camera, label: "Генерация фото товаров", hint: "Создам красивые фото для каталога", soon: true },
+  { icon: Video, label: "Видео-обзоры производства", hint: "Сниму ролики для соцсетей и сайта", soon: true },
+];
+
+function greetingByHour(name: string): { title: string; sub: string } {
+  // Серверное время на проде = UTC; Москва = UTC+3.
+  const utcHour = new Date().getUTCHours();
+  const moscowHour = (utcHour + 3) % 24;
+  const who = name && name !== "Администратор" ? name : "брат";
+
+  if (moscowHour >= 5 && moscowHour < 12) {
+    return { title: `Доброе утро, ${who}`, sub: "Я тут. Что делаем?" };
+  }
+  if (moscowHour >= 12 && moscowHour < 17) {
+    return { title: `Добрый день, ${who}`, sub: "Я рядом. С чего продолжим?" };
+  }
+  if (moscowHour >= 17 && moscowHour < 22) {
+    return { title: `Добрый вечер, ${who}`, sub: "Я тут. Чем закрыть день?" };
+  }
+  return { title: `Я тут, ${who}`, sub: "Поздно — но если что нужно, говори." };
 }
 
 function formatTime(date: Date): string {
   return new Intl.DateTimeFormat("ru-RU", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Europe/Moscow",
   }).format(date);
 }
 
-function formatDate(date: Date): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(date);
-  const dayStart = new Date(d);
-  dayStart.setHours(0, 0, 0, 0);
-  if (dayStart.getTime() === today.getTime()) {
-    return `Сегодня · ${formatTime(d)}`;
-  }
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-}
-
-type RecentMessage = {
-  id: string;
-  role: string;
-  content: string;
-  context: unknown;
-  createdAt: Date;
-  user: { name: string | null; email: string | null } | null;
-};
-
-async function loadStats() {
-  const safe = {
+async function loadSettings(): Promise<AraySettingsData> {
+  const fallback: AraySettingsData = {
     todayCostRub: 0,
     monthCostRub: 0,
-    todayCallsCount: 0,
-    todayMessagesCount: 0,
     todayInputTokens: 0,
     todayOutputTokens: 0,
+    todayCallsCount: 0,
     activeSubs: 0,
-    recentMessages: [] as RecentMessage[],
+    currentPlan: "pro",
   };
   try {
     const now = new Date();
     const today = new Date(now);
     today.setHours(0, 0, 0, 0);
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    // Каждый запрос — независимый try/catch (если Prisma client не знает модель,
-    // не валим всю страницу).
     const p = prisma as unknown as Record<string, any>;
 
-    const tryCall = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
-      try { return await fn(); } catch { return fallback; }
+    const tryCall = async <T,>(fn: () => Promise<T>, def: T): Promise<T> => {
+      try { return await fn(); } catch { return def; }
     };
 
-    const [todayLogs, monthLogs, todayMessagesCount, activeSubs, recentMessages] =
-      await Promise.all([
-        tryCall(
-          () =>
-            p.arayTokenLog?.aggregate
-              ? p.arayTokenLog.aggregate({
-                  where: { createdAt: { gte: today } },
-                  _sum: { costUsd: true, costRub: true, inputTokens: true, outputTokens: true },
-                  _count: { _all: true },
-                })
-              : Promise.resolve(null),
-          null,
-        ),
-        tryCall(
-          () =>
-            p.arayTokenLog?.aggregate
-              ? p.arayTokenLog.aggregate({
-                  where: { createdAt: { gte: monthStart } },
-                  _sum: { costUsd: true, costRub: true },
-                })
-              : Promise.resolve(null),
-          null,
-        ),
-        tryCall(
-          () =>
-            p.arayMessage?.count
-              ? p.arayMessage.count({ where: { createdAt: { gte: today } } })
-              : Promise.resolve(0),
-          0,
-        ),
-        tryCall(
-          () =>
-            p.apiSubscription?.count
-              ? p.apiSubscription.count({ where: { active: true } })
-              : Promise.resolve(0),
-          0,
-        ),
-        tryCall(
-          () =>
-            p.arayMessage?.findMany
-              ? p.arayMessage.findMany({
-                  where: { createdAt: { gte: dayAgo } },
-                  orderBy: { createdAt: "desc" },
-                  take: 8,
-                  select: {
-                    id: true,
-                    role: true,
-                    content: true,
-                    context: true,
-                    createdAt: true,
-                    user: { select: { name: true, email: true } },
-                  },
-                })
-              : Promise.resolve([]),
-          [] as RecentMessage[],
-        ),
-      ]);
+    const [todayLogs, monthLogs, activeSubs] = await Promise.all([
+      tryCall(
+        () => p.arayTokenLog?.aggregate
+          ? p.arayTokenLog.aggregate({
+              where: { createdAt: { gte: today } },
+              _sum: { costRub: true, inputTokens: true, outputTokens: true },
+              _count: { _all: true },
+            })
+          : Promise.resolve(null),
+        null,
+      ),
+      tryCall(
+        () => p.arayTokenLog?.aggregate
+          ? p.arayTokenLog.aggregate({
+              where: { createdAt: { gte: monthStart } },
+              _sum: { costRub: true },
+            })
+          : Promise.resolve(null),
+        null,
+      ),
+      tryCall(
+        () => p.apiSubscription?.count
+          ? p.apiSubscription.count({ where: { active: true } })
+          : Promise.resolve(0),
+        0,
+      ),
+    ]);
 
     const tl = todayLogs as any;
     const ml = monthLogs as any;
-    safe.todayCostRub = Number(tl?._sum?.costRub || 0);
-    safe.monthCostRub = Number(ml?._sum?.costRub || 0);
-    safe.todayCallsCount = Number(tl?._count?._all || 0);
-    safe.todayInputTokens = Number(tl?._sum?.inputTokens || 0);
-    safe.todayOutputTokens = Number(tl?._sum?.outputTokens || 0);
-    safe.todayMessagesCount = Number(todayMessagesCount || 0);
-    safe.activeSubs = Number(activeSubs || 0);
-    safe.recentMessages = (recentMessages as RecentMessage[]) || [];
-  } catch (err) {
-    // Prisma вообще недоступен — отдаём страницу с дефолтами.
-    console.error("[admin/aray] loadStats failed:", err);
+    return {
+      todayCostRub: Number(tl?._sum?.costRub || 0),
+      monthCostRub: Number(ml?._sum?.costRub || 0),
+      todayInputTokens: Number(tl?._sum?.inputTokens || 0),
+      todayOutputTokens: Number(tl?._sum?.outputTokens || 0),
+      todayCallsCount: Number(tl?._count?._all || 0),
+      activeSubs: Number(activeSubs || 0),
+      currentPlan: "pro",
+    };
+  } catch {
+    return fallback;
   }
-  return safe;
 }
 
 export default async function ArayHomePage() {
-  await auth();
+  const session = await auth();
+  const userName = session?.user?.name || "";
+  const greeting = greetingByHour(userName);
 
-  const stats = await loadStats();
-  const {
-    todayCostRub,
-    monthCostRub,
-    todayCallsCount,
-    todayMessagesCount,
-    todayInputTokens,
-    todayOutputTokens,
-    activeSubs,
-    recentMessages,
-  } = stats;
+  const [activity, settings] = await Promise.all([
+    getArayActivityToday().catch(() => [] as ArayActivityItem[]),
+    loadSettings(),
+  ]);
 
   return (
     <div className="lg:flex lg:gap-4 lg:items-start">
-      {/* ── ОСНОВНОЙ КОНТЕНТ (слева) ──────────────────────────────── */}
       <div className="flex-1 min-w-0 space-y-4">
         <AdminPageHeader
-          title="Дом Арая"
-          subtitle="Твой технический партнёр и команда"
+          title="Главная"
+          subtitle="Дом Арая"
+          extraActions={<AraySettingsTrigger data={settings} />}
         />
 
-        {/* Hero — статус Арая */}
-        <section className="bg-card border border-border rounded-2xl p-5 lg:p-6">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 lg:w-16 lg:h-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Sparkles className="w-7 h-7 lg:w-8 lg:h-8 text-primary" />
+        {/* ── HERO: Янус + приветствие + CTA ──────────────────────── */}
+        <section className="bg-card border border-border rounded-2xl px-5 py-8 lg:px-6 lg:py-10">
+          <div className="flex flex-col items-center text-center">
+            <div className="mb-5">
+              <ArayOrb size="xl" intensity="normal" pulse="idle" animate />
             </div>
-            <div className="min-w-0 flex-1">
-              <h2 className="text-base lg:text-lg font-semibold text-foreground leading-tight">
-                Арай 1.0 на связи
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed mt-1">
-                Sonnet 4.6 для повседневного, Opus 4.6 для сложного,
-                ElevenLabs для голоса. Один характер, один маршрут, единая память.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
-            <StatBox
-              label="Расход сегодня"
-              value={formatRub(todayCostRub)}
-              icon={Wallet}
-            />
-            <StatBox
-              label="Диалогов сегодня"
-              value={String(todayMessagesCount)}
-              icon={MessageSquare}
-            />
-            <StatBox
-              label="Вызовов API"
-              value={String(todayCallsCount)}
-              icon={Cpu}
-            />
-            <StatBox
-              label="Расход за месяц"
-              value={formatRub(monthCostRub)}
-              icon={TrendingUp}
-            />
-          </div>
-
-          {(todayInputTokens > 0 || todayOutputTokens > 0) && (
-            <p className="text-[11px] text-muted-foreground mt-3">
-              Токены сегодня: {todayInputTokens.toLocaleString("ru-RU")} вход
-              · {todayOutputTokens.toLocaleString("ru-RU")} ответ
+            <h2 className="text-xl lg:text-2xl font-semibold text-foreground leading-tight">
+              {greeting.title}
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              {greeting.sub}
             </p>
-          )}
-        </section>
 
-        {/* Разделы экосистемы Арая */}
-        <section>
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
-            Экосистема
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <SectionCard
-              href="/admin/aray/costs"
-              icon={Wallet}
-              title="Расходы"
-              description="Дашборд токенов, моделей, подписок. Прогноз на месяц."
-              badge={activeSubs > 0 ? `${activeSubs} подписок` : undefined}
-            />
-            <SectionCard
-              href="/admin/aray-lab"
-              icon={FlaskConical}
-              title="Лаборатория"
-              description="Прямой канал к Араю — задачи, тестовые промпты, эксперименты."
-            />
-            <SectionCard
-              href="#prompts"
-              icon={BookOpen}
-              title="Промпты"
-              description="Системные промпты USER/STAFF, дух ARAY, тон голоса. Редакция требует деплой."
-              soon
-            />
-            <SectionCard
-              href="#history"
-              icon={History}
-              title="История диалогов"
-              description="Все разговоры Арая со всеми пользователями, фильтр по дате/источнику."
-              soon
-            />
-          </div>
-        </section>
-
-        {/* Последние диалоги */}
-        <section
-          id="history"
-          className="bg-card border border-border rounded-2xl overflow-hidden"
-        >
-          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">
-                Последние диалоги
-              </h3>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                За последние 24 часа · {recentMessages.length} сообщений
-              </p>
+            <div className="flex items-center gap-2 mt-4 mb-7 text-[11px] text-muted-foreground">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span>Онлайн</span>
+              <span className="opacity-40">·</span>
+              <span>работаю</span>
+              <span className="opacity-40">·</span>
+              <span>готов помочь</span>
             </div>
-            <Link
-              href="/admin/aray-lab"
-              className="text-xs text-primary hover:underline flex items-center gap-1"
-            >
-              В лабу <ChevronRight className="w-3 h-3" />
-            </Link>
+
+            <div className="w-full max-w-md">
+              <ArayHomeActions />
+            </div>
           </div>
-          {recentMessages.length === 0 ? (
-            <div className="px-5 py-12 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-muted/40 mx-auto flex items-center justify-center mb-3">
-                <MessageSquare className="w-5 h-5 text-muted-foreground" />
+        </section>
+
+        {/* ── ЧТО Я УМЕЮ ──────────────────────────────────────────── */}
+        <section>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+            Что я умею
+          </h3>
+          <div className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
+            {SKILLS_NOW.map((s) => (
+              <SkillRow key={s.label} skill={s} />
+            ))}
+            {SKILLS_SOON.map((s) => (
+              <SkillRow key={s.label} skill={s} />
+            ))}
+          </div>
+        </section>
+
+        {/* ── СЕГОДНЯ Я ───────────────────────────────────────────── */}
+        <section>
+          <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+            Сегодня я
+          </h3>
+          {activity.length === 0 ? (
+            <div className="bg-card border border-border rounded-2xl px-5 py-8 text-center">
+              <div className="w-10 h-10 rounded-2xl bg-muted/50 mx-auto flex items-center justify-center mb-3">
+                <Zap className="w-5 h-5 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                За последние 24 часа диалогов не было.
-              </p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                Открой чат — Арай ответит и запишется здесь.
+              <p className="text-sm text-foreground">Жду команды, брат.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Спроси что-нибудь — это первое что я сегодня сделаю.
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-border">
-              {recentMessages.map((m) => {
-                const isUser = m.role === "user";
-                const ctx =
-                  m.context && typeof m.context === "object"
-                    ? (m.context as Record<string, unknown>)
-                    : {};
-                const source = typeof ctx.source === "string" ? ctx.source : null;
-                const page = typeof ctx.page === "string" ? ctx.page : null;
-                const speaker = isUser
-                  ? m.user?.name || m.user?.email || "Гость"
-                  : "Арай";
+            <ul className="bg-card border border-border rounded-2xl divide-y divide-border overflow-hidden">
+              {activity.map((item) => {
+                const Icon = ICON_MAP[item.iconKey] || Sparkles;
                 return (
-                  <li key={m.id} className="px-5 py-3 hover:bg-muted/30 transition-colors">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-[10px] font-semibold ${
-                          isUser
-                            ? "bg-muted text-muted-foreground"
-                            : "bg-primary/10 text-primary"
-                        }`}
-                      >
-                        {isUser ? "Ты" : "А"}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs font-medium text-foreground">
-                            {speaker}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {formatDate(m.createdAt)}
-                          </span>
-                          {source && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
-                              {source}
-                            </span>
-                          )}
-                          {page && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">
-                              {page}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-foreground/90 mt-1 leading-snug line-clamp-2">
-                          {m.content}
+                  <li
+                    key={item.id}
+                    className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm text-foreground leading-tight">
+                        {item.label}
+                      </p>
+                      {item.at && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {formatTime(item.at)}
                         </p>
-                      </div>
+                      )}
                     </div>
                   </li>
                 );
@@ -361,102 +261,42 @@ export default async function ArayHomePage() {
             </ul>
           )}
         </section>
-
-        {/* Подсказка для Армана */}
-        <section className="bg-muted/30 border border-border rounded-2xl p-4 lg:p-5">
-          <div className="flex items-start gap-3">
-            <Zap className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-foreground">
-                Это плацдарм для нового интерфейса
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-                Здесь — первая страница админки в архитектуре pinned-rail.
-                Когда отполируем, на эту же схему перейдут Дашборд, Заказы, Товары
-                и остальные 22 раздела перед запуском Стройматериалов.
-                Старый дашборд `/admin` пока работает как раньше — ничего не сломано.
-              </p>
-            </div>
-          </div>
-        </section>
       </div>
 
-      {/* ── ARAY PINNED RAIL (справа) ─────────────────────────────── */}
+      {/* ── ARAY PINNED RAIL (справа, ≥1024 px) ─────────────────── */}
       <ArayHomeRail />
     </div>
   );
 }
 
-// ─── helpers ───────────────────────────────────────────────────────
-
-function StatBox({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-}) {
+function SkillRow({ skill }: { skill: Skill }) {
+  const Icon = skill.icon;
   return (
-    <div className="bg-muted/30 border border-border rounded-xl p-3">
-      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-        <Icon className="w-3.5 h-3.5" />
-        <span className="text-[11px] uppercase tracking-wider">{label}</span>
+    <div className="flex items-center gap-3 px-5 py-3">
+      <div
+        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+          skill.soon
+            ? "bg-muted/50 text-muted-foreground"
+            : "bg-primary/10 text-primary"
+        }`}
+      >
+        <Icon className="w-4 h-4" />
       </div>
-      <p className="text-lg lg:text-xl font-bold text-foreground leading-tight tabular-nums">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function SectionCard({
-  href,
-  icon: Icon,
-  title,
-  description,
-  badge,
-  soon,
-}: {
-  href: string;
-  icon: React.ElementType;
-  title: string;
-  description: string;
-  badge?: string;
-  soon?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className="bg-card border border-border rounded-2xl p-4 lg:p-5 hover:border-primary/40 hover:bg-muted/20 transition-colors group"
-    >
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Icon className="w-5 h-5 text-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="text-sm font-semibold text-foreground leading-tight">
-              {title}
-            </h4>
-            {badge && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
-                {badge}
-              </span>
-            )}
-            {soon && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">
-                скоро
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground leading-relaxed mt-1">
-            {description}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="text-sm font-medium text-foreground leading-tight">
+            {skill.label}
           </p>
+          {skill.soon && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground font-medium">
+              скоро
+            </span>
+          )}
         </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
+        <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+          {skill.hint}
+        </p>
       </div>
-    </Link>
+    </div>
   );
 }
