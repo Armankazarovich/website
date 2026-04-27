@@ -1,4 +1,6 @@
 import { PrismaClient, Prisma } from "@prisma/client";
+import { tenantExtension } from "./tenant-prisma";
+import { isTenantFilterEnabled } from "./tenant-context";
 
 // ── Connection pool tuning ──────────────────────────────────────────────────
 // Если в DATABASE_URL не заданы параметры пула — добавляем дефолты.
@@ -58,7 +60,8 @@ const globalForPrisma = globalThis as unknown as {
 
 const databaseUrl = buildDatabaseUrl();
 
-export const prisma =
+// Базовый клиент без extensions (всегда нужен — для миграций, сидов, фоновых задач).
+const basePrisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     log: logLevel,
@@ -67,4 +70,18 @@ export const prisma =
       : {}),
   });
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = basePrisma;
+
+// ── Multi-tenancy: условная активация фильтрации ────────────────────────────
+// Если ENABLE_TENANT_FILTER=1 — оборачиваем клиент в tenantExtension, который
+// автоматически добавляет tenantId в where для READ-операций tenant-aware моделей.
+//
+// По умолчанию (ENABLE_TENANT_FILTER не задан) extension становится no-op,
+// клиент работает идентично базовому. Безопасно для деплоя — нет регрессии.
+//
+// Type cast к PrismaClient: $extends возвращает специальный тип расширенного клиента,
+// который функционально совместим с PrismaClient но строго отличается типом.
+// Cast допустим — extension не меняет API, только интерсептит запросы.
+export const prisma = (
+  isTenantFilterEnabled() ? basePrisma.$extends(tenantExtension) : basePrisma
+) as unknown as PrismaClient;

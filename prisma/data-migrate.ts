@@ -180,6 +180,36 @@ async function main() {
     console.log("[data-migrate] ⚠ Tenant seed пропущен:", e.message);
   }
 
+  // ── Шаг 12: Тестовый тенант "stroymaterialy" (multi-tenancy day 1, 27.04.2026)
+  // Используется для тестирования tenant-isolation. БЕЗ домена и логотипа —
+  // настоящие данные клиент Стройматериалы получит при запуске (план 12-18 мая).
+  // Создаём только tenant-запись; данные (товары/заказы) пока не сидируем —
+  // изоляция проверяется на пустом tenant: с ENABLE_TENANT_FILTER=1 stroymaterialy
+  // должен видеть пустоту, pilorus — все существующие данные.
+  try {
+    const existingStroy = await (prisma as any).tenant?.findUnique?.({
+      where: { slug: "stroymaterialy" },
+    });
+    if (existingStroy === null || existingStroy === undefined) {
+      await (prisma as any).tenant?.create?.({
+        data: {
+          slug: "stroymaterialy",
+          name: "Стройматериалы (тест multi-tenancy)",
+          plan: "free",
+          active: true,
+          settings: {
+            note: "Тестовый tenant для проверки изоляции. Создан 27.04.2026 в день 1 multi-tenancy.",
+          },
+        },
+      });
+      console.log("[data-migrate] ✓ Тестовый тенант stroymaterialy создан (шаг 12)");
+    } else {
+      console.log("[data-migrate] ✓ Тестовый тенант stroymaterialy уже существует (шаг 12)");
+    }
+  } catch (e: any) {
+    console.log("[data-migrate] ⚠ stroymaterialy seed пропущен:", e.message);
+  }
+
   // ── Шаг 11: Деактивация промо «Бесплатная доставка» (запрос клиента Пилорус, 23.04.2026)
   try {
     const result = await prisma.promotion.updateMany({
