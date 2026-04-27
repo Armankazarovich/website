@@ -62,61 +62,130 @@ function formatDate(date: Date): string {
   }).format(d);
 }
 
+type RecentMessage = {
+  id: string;
+  role: string;
+  content: string;
+  context: unknown;
+  createdAt: Date;
+  user: { name: string | null; email: string | null } | null;
+};
+
+async function loadStats() {
+  const safe = {
+    todayCostRub: 0,
+    monthCostRub: 0,
+    todayCallsCount: 0,
+    todayMessagesCount: 0,
+    todayInputTokens: 0,
+    todayOutputTokens: 0,
+    activeSubs: 0,
+    recentMessages: [] as RecentMessage[],
+  };
+  try {
+    const now = new Date();
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Каждый запрос — независимый try/catch (если Prisma client не знает модель,
+    // не валим всю страницу).
+    const p = prisma as unknown as Record<string, any>;
+
+    const tryCall = async <T,>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+      try { return await fn(); } catch { return fallback; }
+    };
+
+    const [todayLogs, monthLogs, todayMessagesCount, activeSubs, recentMessages] =
+      await Promise.all([
+        tryCall(
+          () =>
+            p.arayTokenLog?.aggregate
+              ? p.arayTokenLog.aggregate({
+                  where: { createdAt: { gte: today } },
+                  _sum: { costUsd: true, costRub: true, inputTokens: true, outputTokens: true },
+                  _count: { _all: true },
+                })
+              : Promise.resolve(null),
+          null,
+        ),
+        tryCall(
+          () =>
+            p.arayTokenLog?.aggregate
+              ? p.arayTokenLog.aggregate({
+                  where: { createdAt: { gte: monthStart } },
+                  _sum: { costUsd: true, costRub: true },
+                })
+              : Promise.resolve(null),
+          null,
+        ),
+        tryCall(
+          () =>
+            p.arayMessage?.count
+              ? p.arayMessage.count({ where: { createdAt: { gte: today } } })
+              : Promise.resolve(0),
+          0,
+        ),
+        tryCall(
+          () =>
+            p.apiSubscription?.count
+              ? p.apiSubscription.count({ where: { active: true } })
+              : Promise.resolve(0),
+          0,
+        ),
+        tryCall(
+          () =>
+            p.arayMessage?.findMany
+              ? p.arayMessage.findMany({
+                  where: { createdAt: { gte: dayAgo } },
+                  orderBy: { createdAt: "desc" },
+                  take: 8,
+                  select: {
+                    id: true,
+                    role: true,
+                    content: true,
+                    context: true,
+                    createdAt: true,
+                    user: { select: { name: true, email: true } },
+                  },
+                })
+              : Promise.resolve([]),
+          [] as RecentMessage[],
+        ),
+      ]);
+
+    const tl = todayLogs as any;
+    const ml = monthLogs as any;
+    safe.todayCostRub = Number(tl?._sum?.costRub || 0);
+    safe.monthCostRub = Number(ml?._sum?.costRub || 0);
+    safe.todayCallsCount = Number(tl?._count?._all || 0);
+    safe.todayInputTokens = Number(tl?._sum?.inputTokens || 0);
+    safe.todayOutputTokens = Number(tl?._sum?.outputTokens || 0);
+    safe.todayMessagesCount = Number(todayMessagesCount || 0);
+    safe.activeSubs = Number(activeSubs || 0);
+    safe.recentMessages = (recentMessages as RecentMessage[]) || [];
+  } catch (err) {
+    // Prisma вообще недоступен — отдаём страницу с дефолтами.
+    console.error("[admin/aray] loadStats failed:", err);
+  }
+  return safe;
+}
+
 export default async function ArayHomePage() {
   await auth();
 
-  const now = new Date();
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-
-  const [
-    todayLogs,
-    monthLogs,
+  const stats = await loadStats();
+  const {
+    todayCostRub,
+    monthCostRub,
+    todayCallsCount,
     todayMessagesCount,
+    todayInputTokens,
+    todayOutputTokens,
     activeSubs,
     recentMessages,
-  ] = await Promise.all([
-    prisma.arayTokenLog
-      .aggregate({
-        where: { createdAt: { gte: today } },
-        _sum: { costUsd: true, costRub: true, inputTokens: true, outputTokens: true },
-        _count: { _all: true },
-      })
-      .catch(() => null),
-    prisma.arayTokenLog
-      .aggregate({
-        where: {
-          createdAt: {
-            gte: new Date(now.getFullYear(), now.getMonth(), 1),
-          },
-        },
-        _sum: { costUsd: true, costRub: true },
-      })
-      .catch(() => null),
-    prisma.arayMessage.count({ where: { createdAt: { gte: today } } }).catch(() => 0),
-    prisma.apiSubscription.count({ where: { active: true } }).catch(() => 0),
-    prisma.arayMessage
-      .findMany({
-        where: { createdAt: { gte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-        select: {
-          id: true,
-          role: true,
-          content: true,
-          context: true,
-          createdAt: true,
-          user: { select: { name: true, email: true } },
-        },
-      })
-      .catch(() => []),
-  ]);
-
-  const todayCostRub = Number(todayLogs?._sum.costRub || 0);
-  const monthCostRub = Number(monthLogs?._sum.costRub || 0);
-  const todayCallsCount = todayLogs?._count._all || 0;
-  const todayInputTokens = todayLogs?._sum.inputTokens || 0;
-  const todayOutputTokens = todayLogs?._sum.outputTokens || 0;
+  } = stats;
 
   return (
     <div className="lg:flex lg:gap-4 lg:items-start">
