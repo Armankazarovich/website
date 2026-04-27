@@ -1,6 +1,8 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> Последнее обновление: 27.04.2026 (сессия 35 — **Multi-tenancy day 1**: 2 деплоя `f74559d` → `b9b5b9b`). Инфраструктура tenant-isolation перед запуском Стройматериалов (план `D:\pilorus\visions\admin-audit-may.md`, день 1). Коммит `f74559d` упал на CI #912 (webpack: `Module not found: 'async_hooks'` — client component тянул цепочку track-client → site-settings → prisma → tenant-context, top-level `import { AsyncLocalStorage } from "async_hooks"` крашил client bundle). Auto-rollback сохранил прод на старом коде. **Hotfix `b9b5b9b`**: lazy require внутри try/catch + webpack fallback `async_hooks: false` для не-server bundle. Финальный прод **42 PASS / 0 FAIL, x-tenant-id=pilorus header работает на всех URL**. Файлы: NEW `lib/tenant-context.ts`, NEW `lib/tenant-prisma.ts`, CHANGED `lib/prisma.ts`, CHANGED `prisma/data-migrate.ts` (шаг 12: тестовый tenant `stroymaterialy`), CHANGED `next.config.js` (webpack fallback). По умолчанию фильтрация ВЫКЛЮЧЕНА (через `ENABLE_TENANT_FILTER=1`). Активация в день 2-3 после полного аудита.
+> Последнее обновление: 27.04.2026 (сессия 36 — **Дом Арая (день 2 admin-audit-may)**: 1 деплой `ce79e3c`). Безопасный плацдарм нового pinned-rail интерфейса перед миграцией всей админки. По просьбе Армана НЕ трогали дашборд (хотя он был в плане дня 2), а сделали новый раздел `/admin/aray` где Арай живёт в правой панели — quality-gate в действии: если прототип не зайдёт, /admin продолжает работать как был. 4 файла, +756/-5: NEW `components/admin/aray-pinned-rail.tsx` (закреплённая панель справа на ≥1024px, 24-28rem на десктопе, сворачивается в полоску 56px стрелкой, localStorage `aray.pinned.expanded`, заглушка под левша/правша через CSS vars `--aray-side` / `--popup-side`), NEW `components/admin/admin-page-header.tsx` (sticky header с поиск-каркасом — disabled, гиперумный поиск 3 уровня на след. сессиях, кнопка свернуть Арая через event `aray:rail:toggle`), NEW `app/admin/aray/page.tsx` (Дом Арая — server component с реальными данными `ArayTokenLog` / `ArayMessage` / `ApiSubscription`, 4 карточки экосистемы [Расходы / Лаб / Промпты-скоро / История-скоро], лента последних 24ч диалогов), CHANGED `components/admin/admin-nav.tsx` (новая группа `aray` "ARAY AI" между sales и products: Дом Арая, Расходы [перенесено из settings], Лаборатория [впервые в нав]). Quality-gate: TSC 0 ошибок, webpack compiled successfully (0 Module-not-found, async_hooks-проблем нет — урок дня 1 усвоен), prerender-фейлы локально из-за устаревшей local БД (без `tenantId` колонки — её добавил вчерашний `f74559d` на проде), на проде всё чисто. Production: **42 PASS / 0 FAIL**, x-tenant-id=pilorus header работает.
+
+> Предыдущая сессия 27.04.2026 (35 — **Multi-tenancy day 1**: 2 деплоя `f74559d` → `b9b5b9b`). Инфраструктура tenant-isolation перед запуском Стройматериалов. Коммит `f74559d` упал на CI #912 (webpack: `Module not found: 'async_hooks'` — top-level `import { AsyncLocalStorage }` крашил client bundle). Auto-rollback. **Hotfix `b9b5b9b`**: lazy require + webpack fallback `async_hooks: false`. Файлы: NEW `lib/tenant-context.ts`, NEW `lib/tenant-prisma.ts`, CHANGED `lib/prisma.ts` / `prisma/data-migrate.ts` / `next.config.js`. Фильтрация ВЫКЛЮЧЕНА по умолчанию (через `ENABLE_TENANT_FILTER=1`).
 
 > Предыдущая сессия 26.04.2026 (34 — **Дашборд расходов Арая** + экономия 137К₽/год). Создана страница `/admin/aray/costs` для контроля всех AI-расходов: расширена `ArayTokenLog` (provider/characters/costRub), новая модель `ApiSubscription`, реальные usage tokens из Anthropic API, логирование ElevenLabs, плашка "Завтра спишут". Арман даунгрейднул Claude Max 20x → 5x = экономия $100/мес = \~137,000₽/год с 8 мая 2026. **Коммит** `de36bfc`**, 10 файлов, +1556/-17 строк, 42 PASS / 0 FAIL.**
 
@@ -961,6 +963,85 @@ NEXT_PUBLIC_VAPID_KEY=   # тот же что VAPID_PUBLIC_KEY, но для бр
 ---
 
 ## Что сделано — полная история
+
+### Сессия 27.04.2026 (сессия 36) — Дом Арая `/admin/aray` — прототип pinned-rail (1 коммит `ce79e3c`)
+
+**Контекст:** День 2 плана `D:\pilorus\visions\admin-audit-may.md`. Изначально план был «миграция Дашборда на calm UI + ArayPinnedRail каркас + Quick Actions для Дашборда». Я предложил это, но **Арман остановил**: «брат можем начать с арая дома чтоб не рисковать. Давай новый раздел в админке назовём ARAY AI помнишь мы поговорили — она нам нужна». Это правильное применение quality-gate: дашборд работает у живых клиентов каждый день, его нельзя ломать. Поэтому делаем новый раздел `/admin/aray` где можно спокойно прототипировать pinned-rail архитектуру (видение из `aray-pinned-rail.md`, утверждено 101% утром 27.04). Когда отполируем — на эту же схему перейдут Дашборд, Заказы и остальные 22 раздела.
+
+**Архитектурное решение:**
+- AdminShell со своим левым сайдбаром НЕ трогаем (он работает на всех `/admin/*`).
+- Внутри страницы `/admin/aray` рендерится двухколоночный layout: основной контент слева, `<ArayPinnedRail>` справа.
+- На <1024px pinned-rail скрыт (мобильный режим = orb в bottom-nav, как сейчас).
+- На 1024-1279px pinned-rail в свёрнутой полоске 56px (только 3 кнопки-иконки).
+- На ≥1280px развёрнут до 24rem (xl) или 28rem (2xl).
+
+**Что сделано (4 файла, +756/-5):**
+
+`components/admin/aray-pinned-rail.tsx` (NEW, ~280 строк):
+- Calm UI: `bg-card border-border rounded-2xl`, lucide иконки, `text-foreground/muted-foreground/primary`. Никаких arayglass-glow/shimmer.
+- State: `expanded` (localStorage `aray.pinned.expanded`), `hand` (localStorage `aray.handedness`, дефолт right).
+- При `mounted` — устанавливает CSS vars `--aray-side` (right/left) и `--popup-side` (left/right) на `documentElement`. Это заглушка под переключатель левша/правша из видения — компоненты которые позже переедут на этот контракт смогут читать переменные.
+- Слушает событие `aray:rail:toggle` (диспатчит admin-page-header) — разворачивает/сворачивает.
+- Свёрнутая полоска: 3 круглые кнопки — Sparkles (развернуть), MessageSquare (диспатч `aray:open` для существующего ChatHost), Mic (диспатч `aray:voice` для VoiceModeOverlay).
+- Развёрнутая панель: header с аватаром Sparkles + контекст-лейбл, слот Quick Actions (grid 2x2), область заглушки чата с приветствием от Арая, чат-инпут снизу (диспатчит `aray:open`).
+- Принимает props: `page` (string), `contextLabel` (string), `quickActions` (до 4 штук, type `ArayQuickAction = { href?, label, icon, onClick?, external? }`), `inputHint`.
+
+`components/admin/admin-page-header.tsx` (NEW, ~85 строк):
+- Sticky `top-0 z-20`, `bg-background/80 backdrop-blur-md border-b border-border`.
+- Title + опциональный subtitle слева, search-инпут в центре (md+), кнопка свернуть Aray справа (lg+).
+- Search-инпут **disabled** с tooltip-title объясняющим что это каркас уровня 1 — гиперумный поиск (Postgres FTS → Haiku → Sonnet) на следующих сессиях.
+- `style={{ fontSize: 14 }}` чтобы iOS не зумил при фокусе (хотя disabled).
+
+`app/admin/aray/page.tsx` (NEW, ~290 строк, server component):
+- Запросы Prisma в `Promise.all`: `arayTokenLog.aggregate` за сегодня (costRub, costUsd, inputTokens, outputTokens, count) и за месяц, `arayMessage.count` за сегодня, `apiSubscription.count` активных, `arayMessage.findMany` за последние 24ч (take 8).
+- Каждый запрос обёрнут в `.catch(() => null)` или `.catch(() => 0)` / `.catch(() => [])` — graceful degrade если модели не сгенерированы или БД недоступна.
+- Hero-карточка: аватар Sparkles + текст «Арай 1.0 на связи» + 4 StatBox (расход сегодня, диалогов сегодня, вызовов API, расход за месяц) + строка с input/output токенами.
+- Раздел «Экосистема»: 2x2 grid из SectionCard (Расходы → /admin/aray/costs с badge кол-ва подписок, Лаборатория → /admin/aray-lab, Промпты → #prompts с soon-бейджем, История диалогов → #history с soon-бейджем).
+- Лента «Последние диалоги»: divide-y список с аватаром (Ты/А), именем, временем (Сегодня · 14:30 для today, иначе дата), source/page бейджи из `context` JSON, line-clamp-2 контент. Empty state с иконкой если 24ч тишина.
+- Подсказка-баннер внизу для Армана: «Это плацдарм для нового интерфейса» с объяснением.
+- Справа `<ArayPinnedRail>` с Quick Actions: Расходы (/admin/aray/costs), Лаб (/admin/aray-lab), Промпты (#prompts), История (#history).
+
+`components/admin/admin-nav.tsx` (CHANGED):
+- Импорты `Sparkles` и `FlaskConical` из lucide-react.
+- Новая группа `aray` (3 пункта) между `sales` и `products`:
+  - Дом Арая → `/admin/aray`, icon Sparkles, видна `[SA, ADMIN, MANAGER]`, `exact: true`
+  - Расходы → `/admin/aray/costs`, icon Receipt, видна `[SA, ADMIN]`
+  - Лаборатория → `/admin/aray-lab`, icon FlaskConical, видна `[SA, ADMIN]`
+- Удалён старый пункт «Расходы Арая» из группы `settings` (переехал в группу `aray`).
+- `GROUP_LABELS["aray"] = "ARAY AI"`.
+
+**Quality-gate:**
+- TSC `--noEmit`: 0 ошибок
+- Локальный `next build`: webpack `Compiled successfully`, 0 Module-not-found (урок дня 1 усвоен — async_hooks больше не страшен). Prerender фейлит на локали из-за устаревшей БД (нет колонки `tenantId` в `SiteSettings` — её добавил вчерашний `f74559d` на проде), это НЕ блокирует деплой.
+- Sync `D:\ПилоРус\website` → `D:\pilorus\website` через `__sync.js` (4 файла).
+- Commit `ce79e3c` через `__commit.js` (git add + commit -F __msg.txt + push).
+- Wait 150 сек (3×50с — MCP timeout 60с не позволяет один долгий wait).
+- Verify: `/admin/aray` отвечает 307→/login (auth guard работает), `/admin/aray/costs` 307, `/admin/aray-lab` 307. Все public страницы 200, x-tenant=pilorus header работает.
+- Production test: **42 PASS / 2 WARN / 0 FAIL** (WARN — динамические телефоны, не регрессия).
+
+**Уроки сессии:**
+1. **Quality-gate в действии — Арман сам остановил риск.** Я предложил день 2 как «дашборд миграция + pinned-rail + Quick Actions». Арман прервал: «давай новый раздел чтоб не рисковать». Это правильно. Дашборд у клиентов каждый день — нельзя ломать. Прототип на новом разделе = безопасно. **Правило для будущих сессий:** при любой большой архитектурной миграции сначала делать прототип на изолированном маршруте, потом расширять.
+2. **Локальный `next build` — обязательно.** Урок дня 1 усвоен — TSC недостаточно. Webpack фейлы (async_hooks, undefined modules) ловятся только полным билдом. Сегодня компиляция прошла чисто, проблем не было.
+3. **Локальная БД устаревает после миграций на проде.** После `prisma db push` на проде (как `f74559d` со вчера) локальная БД не получает колонки автоматически. Это НЕ блокирует деплой потому что billd падает только на prerender, а на проде prerender работает (БД синхрна). Но для локальной разработки нужно периодически прогонять `npx prisma db push` локально (или поднимать local Postgres со схемой как на проде). Сейчас отложил — не блокирует работу.
+4. **MCP timeout 60s vs PM2 cold-start 3+ мин.** `start_process` не дотягивает один большой sleep. Решение: 3 последовательных вызова по 50 сек = 150 сек ожидания, плюс по необходимости retry verify.
+5. **`bg-card border-border rounded-2xl` — рабочий рецепт calm UI.** Без shadow, без glow, без эмодзи. Достаточно для вкуса. Это работает и в светлой и в тёмной теме автоматически (CSS vars).
+6. **Quick Actions внутри pinned-rail vs внутри страницы — разное.** Pinned-rail Quick Actions — контекстные команды Араю (4 штуки, мелкие, slot сверху). Страничные Quick Actions (как карточки экосистемы) — крупные, 2x2 grid в основном контенте. Это два разных уровня.
+
+**Что осталось перед миграцией Дашборда:**
+- Получить визуальную обратную связь от Армана на `/admin/aray` (зайти живым обходом)
+- Если ОК — на следующей сессии (день 3) расширить pinned-rail на Дашборд (убрав AdminShell-зависимость или встроив layout-wrapper)
+- Параллельно: подготовить переключатель левша/правша в `/admin/appearance` (уже есть CSS-фундамент — vars `--aray-side` / `--popup-side`)
+- Quick Actions для Дашборда: «Новый заказ · Я.Директ · Отчёт дня · В Telegram» (план дня 2)
+
+**Утилиты в `D:\pilorus\` (созданы/обновлены):**
+- `__sync.js` — sync Cyrillic → Latin (4 файла этой сессии)
+- `__msg.txt` — UTF-8 commit message
+- `__commit.js` — git add + commit -F + push
+- `__sleep50.js` — 50-сек wait (для PM2 cold-start через MCP)
+- `__readbuild.js` / `__readbuild2.js` — анализ build лога (последние строки + поиск webpack/TS ошибок)
+- `__verify.js` / `__verify2.js` — curl + проверка x-tenant-id header
+
+---
 
 ### Сессия 27.04.2026 (сессия 35) — Multi-tenancy day 1: инфраструктура tenant-isolation (1 коммит `f74559d`)
 
