@@ -90,7 +90,7 @@ const allNavItems: NavItem[] = [
   { href: "/admin/delivery",  label: "Доставка",      labelKey: "delivery",  icon: Truck,       roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales" },
 
   // ── ARAY AI (отдельная группа — мозг и партнёр) ──
-  { href: "/admin/aray",        label: "Дом Арая",   icon: Sparkles,     roles: [SA, "ADMIN", "MANAGER"], group: "aray", exact: true },
+  { href: "/admin/aray",        label: "ARAY AI",    icon: Sparkles,     roles: [SA, "ADMIN", "MANAGER"], group: "aray", exact: true },
   { href: "/admin/aray/costs",  label: "Расходы",    icon: Receipt,      roles: [SA, "ADMIN"],            group: "aray" },
   { href: "/admin/aray-lab",    label: "Лаборатория", icon: FlaskConical, roles: [SA, "ADMIN"],            group: "aray" },
 

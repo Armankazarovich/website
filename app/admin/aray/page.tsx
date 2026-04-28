@@ -23,7 +23,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { ArayHomeRail } from "@/components/admin/aray-home-rail";
 import { ArayHomeActions } from "@/components/admin/aray-home-actions";
 import {
   AraySettingsTrigger,
@@ -167,13 +166,13 @@ export default async function ArayHomePage() {
   ]);
 
   return (
-    <div className="lg:flex lg:gap-4 lg:items-start">
-      <div className="flex-1 min-w-0 space-y-4">
-        <AdminPageHeader
-          title="Главная"
-          subtitle="Дом Арая"
-          extraActions={<AraySettingsTrigger data={settings} />}
-        />
+    <div className="space-y-4 max-w-3xl mx-auto">
+      <AdminPageHeader
+        title="ARAY AI"
+        subtitle="Главная"
+        extraActions={<AraySettingsTrigger data={settings} />}
+        hideArayToggle
+      />
 
         {/* ── HERO: Янус + приветствие + CTA ──────────────────────── */}
         <section className="bg-card border border-border rounded-2xl px-5 py-8 lg:px-6 lg:py-10">
@@ -260,11 +259,7 @@ export default async function ArayHomePage() {
               })}
             </ul>
           )}
-        </section>
-      </div>
-
-      {/* ── ARAY PINNED RAIL (справа, ≥1024 px) ─────────────────── */}
-      <ArayHomeRail />
+      </section>
     </div>
   );
 }
