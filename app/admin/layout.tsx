@@ -19,13 +19,10 @@ const VoiceModeOverlay = dynamicImport(
   { ssr: false }
 );
 
-// ArayDock — Telegram-style чат-бар Арая на ДЕСКТОПЕ админки (≥1024px).
-// На мобилке/планшете админки используется AdminMobileBottomNav (с центральным орбом).
-// БЕЗ этого dock'а на десктопе админки нет видимой кнопки открытия Арая.
-const ArayDock = dynamicImport(
-  () => import("@/components/store/aray-dock").then((m) => ({ default: m.ArayDock })),
-  { ssr: false }
-);
+// ArayDock — УДАЛЁН с админки (сессия 40 hotfix, 28.04.2026 вечер).
+// Видение Армана: Арай-колонка справа (ArayPinnedRail) уже содержит инпут+голос,
+// floating dock внизу = дубль. Убираем его на /admin/* и /cabinet/* чтобы не было двух
+// инпутов "Напишите Араю" одновременно. На (store) dock остаётся как был.
 
 export const metadata: Metadata = {
   title: {
@@ -89,10 +86,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </AdminShell>
       {/* Единый AccountDrawer — тот же что в магазине, открывается из bottom nav */}
       <AccountDrawer />
-      {/* Voice Mode Overlay — fullscreen разговор по long-press на Арая */}
+      {/* Voice Mode Overlay — fullscreen разговор (открывается из ArayPinnedRail mic-кнопки) */}
       <VoiceModeOverlay />
-      {/* ArayDock — Telegram-style чат-бар на десктопе (lg:block) */}
-      <ArayDock />
+      {/* ArayDock больше не подключаем на админке — pinned-rail справа имеет свой инпут+голос */}
     </>
   );
 }
