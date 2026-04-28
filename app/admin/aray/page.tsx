@@ -20,14 +20,8 @@
 export const dynamic = "force-dynamic";
 
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { ArayOrb } from "@/components/shared/aray-orb";
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { ArayHomeActions } from "@/components/admin/aray-home-actions";
-import {
-  AraySettingsTrigger,
-  type AraySettingsData,
-} from "@/components/admin/aray-settings-popup";
 import { getArayActivityToday, type ArayActivityItem } from "@/lib/aray-activity";
 import {
   MessageSquare, Mic, Wallet, Search, Package, Users, Sparkles,
@@ -90,90 +84,15 @@ function formatTime(date: Date): string {
   }).format(date);
 }
 
-async function loadSettings(): Promise<AraySettingsData> {
-  const fallback: AraySettingsData = {
-    todayCostRub: 0,
-    monthCostRub: 0,
-    todayInputTokens: 0,
-    todayOutputTokens: 0,
-    todayCallsCount: 0,
-    activeSubs: 0,
-    currentPlan: "pro",
-  };
-  try {
-    const now = new Date();
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const p = prisma as unknown as Record<string, any>;
-
-    const tryCall = async <T,>(fn: () => Promise<T>, def: T): Promise<T> => {
-      try { return await fn(); } catch { return def; }
-    };
-
-    const [todayLogs, monthLogs, activeSubs] = await Promise.all([
-      tryCall(
-        () => p.arayTokenLog?.aggregate
-          ? p.arayTokenLog.aggregate({
-              where: { createdAt: { gte: today } },
-              _sum: { costRub: true, inputTokens: true, outputTokens: true },
-              _count: { _all: true },
-            })
-          : Promise.resolve(null),
-        null,
-      ),
-      tryCall(
-        () => p.arayTokenLog?.aggregate
-          ? p.arayTokenLog.aggregate({
-              where: { createdAt: { gte: monthStart } },
-              _sum: { costRub: true },
-            })
-          : Promise.resolve(null),
-        null,
-      ),
-      tryCall(
-        () => p.apiSubscription?.count
-          ? p.apiSubscription.count({ where: { active: true } })
-          : Promise.resolve(0),
-        0,
-      ),
-    ]);
-
-    const tl = todayLogs as any;
-    const ml = monthLogs as any;
-    return {
-      todayCostRub: Number(tl?._sum?.costRub || 0),
-      monthCostRub: Number(ml?._sum?.costRub || 0),
-      todayInputTokens: Number(tl?._sum?.inputTokens || 0),
-      todayOutputTokens: Number(tl?._sum?.outputTokens || 0),
-      todayCallsCount: Number(tl?._count?._all || 0),
-      activeSubs: Number(activeSubs || 0),
-      currentPlan: "pro",
-    };
-  } catch {
-    return fallback;
-  }
-}
-
 export default async function ArayHomePage() {
   const session = await auth();
   const userName = session?.user?.name || "";
   const greeting = greetingByHour(userName);
 
-  const [activity, settings] = await Promise.all([
-    getArayActivityToday().catch(() => [] as ArayActivityItem[]),
-    loadSettings(),
-  ]);
+  const activity = await getArayActivityToday().catch(() => [] as ArayActivityItem[]);
 
   return (
     <div className="space-y-4 max-w-3xl mx-auto">
-      <AdminPageHeader
-        title="ARAY AI"
-        subtitle="Главная"
-        extraActions={<AraySettingsTrigger data={settings} />}
-        hideArayToggle
-      />
-
         {/* ── HERO: Янус + приветствие + CTA ──────────────────────── */}
         <section className="bg-card border border-border rounded-2xl px-5 py-8 lg:px-6 lg:py-10">
           <div className="flex flex-col items-center text-center">

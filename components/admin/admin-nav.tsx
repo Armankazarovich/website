@@ -43,7 +43,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 
-type NavItem = {
+export type NavItem = {
   href: string;
   label: string;
   labelKey?: TranslationKey;
@@ -54,11 +54,11 @@ type NavItem = {
   groupKey?: TranslationKey;
 };
 
-const SA = "SUPER_ADMIN";
-const ALL_STAFF = [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
-const ALL_ROLES = [...ALL_STAFF, "USER"];
+export const SA = "SUPER_ADMIN";
+export const ALL_STAFF = [SA, "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+export const ALL_ROLES = [...ALL_STAFF, "USER"];
 
-const allNavItems: NavItem[] = [
+export const allNavItems: NavItem[] = [
   // ═══════════════════════════════════════════════════════════════
   // ОБЩИЕ РАЗДЕЛЫ — видны ВСЕМ пользователям (от USER до SUPER_ADMIN)
   // ═══════════════════════════════════════════════════════════════
@@ -133,12 +133,16 @@ const allNavItems: NavItem[] = [
 const COLLAPSIBLE_GROUPS = new Set(["settings", "marketing", "personal"]);
 
 // Названия групп для USER (без labelKey)
-const GROUP_LABELS: Record<string, string> = {
+export const GROUP_LABELS: Record<string, string> = {
+  main: "Главная",
   personal: "Мой кабинет",
-  sales: "Покупки",
+  sales: "Продажи",
   aray: "ARAY AI",
-  products: "Магазин",
+  products: "Товары",
+  content: "Контент",
+  marketing: "Маркетинг",
   settings: "Настройки",
+  help: "Помощь",
 };
 
 export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () => void }) {
