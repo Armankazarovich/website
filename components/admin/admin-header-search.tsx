@@ -26,7 +26,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  Search, Loader2, ArrowRight, Package, ChevronRight, Command,
+  Search, Loader2, ArrowRight, Package, ChevronRight, Command, X,
   ShoppingBag, UserCircle,
 } from "lucide-react";
 import { allNavItems, GROUP_LABELS } from "@/components/admin/admin-nav";
@@ -206,6 +206,22 @@ export function AdminHeaderSearch({ role, onOpenFullSearch }: Props) {
           aria-expanded={showDropdown}
         />
         {loadingProducts && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />}
+        {query.length > 0 && !loadingProducts && (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setProducts([]);
+              setActiveIndex(0);
+              inputRef.current?.focus();
+            }}
+            className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 transition-colors"
+            aria-label="Очистить поиск"
+            title="Очистить"
+          >
+            <X className="w-3.5 h-3.5" strokeWidth={2} />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
