@@ -1,5 +1,69 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
+> 🟢 **СЕССИЯ 39 ЗАКРЫТА (28.04.2026 — 8 деплоев `8f6f8ff` → `27694b6` → `cb89f47` → `135c4d4` → `df456c6` → `6002873` → `6156124`).** Полный переезд админки на дизайн-систему магазина. **Архитектура «оболочки» админки готова:** AppHeader (стеклянный sticky из магазина) + узкий рельс 64px слева с hover-popup групп + AdminSearchPanel (side-panel слева в стиле магазина) + PageActions (Назад/Обновить/actions через React Context). Все 25 разделов администрации теперь в едином визуальном языке с pilo-rus.ru.
+>
+> **🔥 КАРТ-БЛАНШ ОТ АРМАНА на админку (28.04.2026):** Арман выгорает от переделок и отдал UX/дизайн/баги/архитектуру под мой контроль. **НЕ показывать мокапы**, **НЕ задавать «А или Б»**, **НЕ дробить на микро-коммиты**. Один раздел = один готовый продукт = деплой = краткое сообщение «Заходи, посмотри». Идти по приоритету самому: Клиенты (первая полировка — Арман явно показал «грустно») → Дашборд → Заказы → Товары → Доставка → Аналитика → ARAY AI → остальные. Подробнее — `feedback_admin_carte_blanche.md` в memory.
+>
+> **СТАРТ СЛЕДУЮЩЕЙ СЕССИИ:**
+> 1. Прочесть этот CLAUDE.md (запись сессии 39)
+> 2. Прочесть memory (особенно `feedback_admin_carte_blanche.md`)
+> 3. Запустить `node D:\pilorus\scripts\test-production.js` — должно быть 42 PASS / 0 FAIL
+> 4. Стартовать с **Клиентов** (`app/admin/clients/page.tsx` + `clients-list.tsx`) — это первый раздел для полировки. Арман показывал именно эту страницу как «грустную» (без цветовых акцентов). Применить общий язык магазина: `bg-card border-border rounded-2xl`, primary-blue для статистики (всего клиентов, с заказами, выручка), цветные иконки в кружках под смысл (blue для клиентов, emerald для выручки, amber для активных), font-display для заголовков. Подключить `useAdminPageActions({ onRefresh: () => router.refresh(), actions: [{ label: "Импорт клиентов", icon: FileDown, onClick: ... }] })`. Удалить дубль h1 «Клиенты». Адаптив 375/768/1024/1280.
+>
+> **АРХИТЕКТУРА ОБОЛОЧКИ (что есть на проде):**
+> - `components/layout/app-header.tsx` — единый стеклянный sticky хедер. Slot-based (leftSlot/centerSlot/rightSlot). Токены 1-в-1 из магазинного `header.tsx`: blur(32px) saturate(200%), background hsl(--background)/0.78→0.94 при scroll, тонкая голубая полоска снизу через linear-gradient. Mounted-гард на transition + isScrolled чтобы не было flicker.
+> - `components/admin/admin-shell.tsx` (270 строк) — обёртка админки. Импортирует AppHeader, AdminNavRail, AdminSearchPanel, AdminPageActionsProvider, AccountDrawer. УБРАНО: старый широкий sidebar 240px (aray-sidebar), LazyNeuralBg/LazyAdminVideoBg/LazyCursorGlow, классы aray-classic-mode/aray-nature-mode на body, MobileMenuBottomSheet, AdminPushPrompt/AdminSidebarWeather/AdminPwaInstall из сайдбара. Сохранены экспорты `useClassicMode` / `playOrderChime` / `LS_FONT` для совместимости.
+> - `components/admin/admin-nav-rail.tsx` — узкий рельс 64px фиксированный слева top:64px height:calc(100vh-64px) z-30. Иконки групп (LayoutDashboard / ShoppingBag / Sparkles / Package / BookOpen / Megaphone / Settings / HelpCircle). Hover на иконке → popup группы выезжает справа от рельса с 150ms delay. Активная группа подсвечивается primary. На мобилке скрыт (lg:flex hidden).
+> - `components/admin/admin-search-panel.tsx` — поиск как side-panel слева. Использует SidePanel магазина (default side="left"). Содержит: search-input + категории 2x2 + найденные разделы + товары через /api/search + chip-кнопки быстрого поиска. Открывается по клику на инпут в хедере или Cmd/Ctrl+K глобально.
+> - `components/admin/admin-page-actions.tsx` — React Context для action-кнопок страниц. Хук `useAdminPageActions({ onRefresh, actions })` для регистрации со страницы (auto-cleanup при unmount). Хук `useAdminPageActionsState()` для AppHeader. Type AdminAction = { id, label, icon, onClick, variant?, disabled?, hideOnMobile? }. Адаптив: md+ все кнопки в ряд, <md primary как иконка + остальные в overflow menu (⋮).
+> - `components/admin/admin-menu-popup.tsx` — УДАЛЁН из импорта, файл остался для будущей чистки.
+> - `components/admin/admin-page-header.tsx` — больше не используется (заголовок в AppHeader).
+> - `components/admin/aray-control-center.tsx` — упрощён, удалена секция "Размер шрифта" (5 уровней, перебивавших 16px на 14px). Cleanup useEffect возвращает font-size к default 16px.
+> - `components/store/side-panel.tsx` — добавлен prop `side: "left" | "right"` (default "left"). Все попапы магазина и админки теперь выезжают слева. Магазинные drawer'ы автоматически переключились (Арман явно сказал «магазине так же мы систему меняем»).
+> - `components/admin/admin-nav.tsx` — экспортирует `allNavItems`, `NavItem`, `SA`, `ALL_STAFF`, `ALL_ROLES`, `GROUP_LABELS` для использования в AdminNavRail и AdminSearchPanel. Старый AdminNav компонент остался для совместимости, но не используется в новом AdminShell. Пункт «Дом Арая» переименован в «ARAY AI».
+> - `app/admin/aray/page.tsx` — упрощён. Убран AdminPageHeader (дубль с AppHeader), AraySettingsTrigger, ArayHomeRail, loadSettings + prisma import. Оставлен hero с Янусом + "Что я умею" + "Сегодня я".
+>
+> **КОМПОЗИЦИЯ ХЕДЕРА:**
+> - LEFT: `[Назад] [Обновить] [Иконка раздела] [Title / Subtitle]` — Назад глобальная (`router.back()`, скрыта на ROOT_ROUTES = /admin /cabinet /admin/aray), Обновить видна если страница зарегистрировала onRefresh
+> - CENTER: большая search-кнопка (max-w-3xl, h-11, rounded-2xl) — открывает AdminSearchPanel слева
+> - RIGHT: `<HeaderActions />` — кнопки registered страниц через PageActions context. Адаптив: md+ все в ряд (primary = solid blue, ghost = outline), <md primary как иконка + остальные в overflow ⋮
+>
+> **ПРАВИЛА АДМИНКИ (закреплены 28.04.2026):**
+> - **Слева** = всё (попапы, рельс, поиск, AccountDrawer)
+> - **Справа** = только Арай (стационарная колонка справа — план следующего захода после полировки разделов; пока только Header rightSlot занят actions)
+> - **Один визуальный язык** — bg-card border-border rounded-2xl, primary-blue для важных чисел, цветные иконки в кружках под смысл (emerald success / amber warning / blue info / purple analytics / pink reviews), font-display для заголовков
+> - **Никаких ARAYGLASS остатков** — заменять на calm UI магазина при встрече
+> - **Mobile-first responsive** — каждый раздел сразу адаптив 375/768/1024/1280
+> - **Шрифт** — браузерный default 16px, без переключателей
+>
+> **СОХРАНЕНО ДЛЯ СОВМЕСТИМОСТИ (но не используется в новом AdminShell):**
+> - useClassicMode (используется ArayControlCenter, admin-mobile-settings)
+> - playOrderChime (push notifications)
+> - LS_FONT (legacy, можно удалить в чистящем коммите)
+> - AdminMobileBottomNav (нижний dock на мобилке — пока остаётся, в следующих заходах будет заменён правой колонкой Арая)
+> - ArayControlCenter (sticky right — пока остаётся, тоже будет вытеснен правой колонкой Арая)
+> - LazyAdminAray (плавающий Арай)
+>
+> 🔵 **ОБРАЗЕЦ КОДА для подключения PageActions на странице:**
+> ```tsx
+> "use client";
+> import { useRouter } from "next/navigation";
+> import { useAdminPageActions } from "@/components/admin/admin-page-actions";
+> import { Plus, Download, RefreshCw } from "lucide-react";
+> 
+> export default function ClientsClient({ ... }) {
+>   const router = useRouter();
+>   useAdminPageActions({
+>     onRefresh: () => router.refresh(),
+>     actions: [
+>       { id: "import", label: "Импорт клиентов", icon: Download,
+>         onClick: () => router.push("/admin/import?type=clients") },
+>     ],
+>   });
+>   return <>...</>;
+> }
+> ```
+
 > 🟡 **ЗАХОД A ЗАКРЫТ (27.04.2026, сессия 38 — коммит `ce008d8`).** Дом Арая отполирован по согласованному видению. Главная больше не ARAYGLASS-плацдарм, а эмоциональный дом Арая: большой Янус через ArayOrb (face video orb-v2.mp4), приветствие по времени суток («Доброе утро, брат / Я тут. Что делаем?»), тонкая строка статуса (зелёная точка · Онлайн · работаю · готов помочь — без цифр), один primary CTA «Спроси Арая · текстом или голосом» + 2 outline (История/Голос), секция «Что я умею» (5 действующих + 2 «скоро» — видео и фото-генерация), секция «Сегодня я» (реальные действия Арая из ArayMessage/ArayTokenLog/ApiSubscription — «Ответил на N вопросов», «Поговорил голосом N раз», «Помог в админке N раз», «Слежу за N подписками»; empty state «Жду команды, брат»). Шестерёнка в шапке открывает первый эталонный ЛЕВЫЙ попап админки — `aray-settings-popup.tsx` с 3 вкладками: Тарифы (Старт/Профи/Бизнес как мировые AI — ChatGPT/Claude/Linear; пока плейсхолдер для будущей монетизации Арая на Стройматериалах и aray.online), Расходы (today/month + токены + ссылка на полный дашборд /admin/aray/costs), Модели (Sonnet 4.6 / Opus 4.6 / ElevenLabs с описанием зачем). Slide-in transform translateX 250ms cubic-bezier, 30% ширины (на мобилке fullscreen 90vw), закрытие Escape/click-outside/X. Handedness toggle UI добавлен в шапке pinned-rail (ArrowLeftRight иконка), при клике flip CSS vars `--aray-side`/`--popup-side` + сохранение в `localStorage.aray.handedness`. Quick Actions в pinned-rail заменены на 4 ключевых из видения Армана: Сводка дня → /admin / Новые заказы → /admin/orders / Мои задачи → /admin/tasks / Остатки → /admin/inventory. Quality gate: TSC 0 ошибок, webpack `Compiled successfully`, prerender фейлы локально из-за устаревшей БД (нет колонки tenantId — норма по уроку сессии 36), test-production **42 PASS / 0 FAIL**. УБРАНО: backdrop-blur в шапке (DESIGN_SYSTEM п.1.7), disabled-поиск с tooltip «скоро» (магазин имеет рабочий — нет фичи нет UI), 4 карточки экосистемы (Расходы/Лаб/Промпты/История — дубль sidebar), 4 stat-бокса с цифрами расходов (переехали в попап), описание моделей в hero, блок «Плацдарм» (записка для Claude), Sparkles иконка в hero (заменён на настоящий ArayOrb size=xl). 7 файлов, +956/-436: NEW `lib/aray-activity.ts`, `components/admin/aray-home-actions.tsx`, `components/admin/aray-settings-popup.tsx`; CHANGED `app/admin/aray/page.tsx` (полная переписка), `components/admin/admin-page-header.tsx` (slot extraActions), `components/admin/aray-pinned-rail.tsx` (handedness UI + чище заглушка), `components/admin/aray-home-rail.tsx` (новые QUICK_ACTIONS + contextLabel «Главная»).
 > 
 > 🔵 **СЛЕДУЮЩАЯ СЕССИЯ — ЗАХОД B** (если Арман пишет «продолжаем Дом Арая» / «Заход B»). Что осталось: (1) **pinned-rail = настоящий SSE-чат** через `/api/ai/chat` вместо текущей заглушки «Привет, брат. Я тут.» — переписать чат-зону и инпут `aray-pinned-rail.tsx` на стриминговый интерфейс на базе того что умеет `aray-chat-host.tsx` (SSE парсинг маркеров, markdown, история). На странице `/admin/aray` старый ChatHost снизу скрыть. (2) **Поиск в шапке через Postgres FTS** — рабочий input «Спроси или найди…» в `admin-page-header.tsx` который через `/api/admin/search` ищет по orders/products/users в БД пилорус БЕЗ LLM. Закон архитектуры: Арай — агрегатор, не генератор (`D:\pilorus\visions\aray-as-listing-terminal.md`). При вводе → debounce 200ms → fetch → результаты в основной зоне через slide. (3) **Slide transitions в контент-зоне** — обернуть основную область /admin/aray в `<SlideTransition>` (есть прототип `components/cabinet/slide-transition.tsx`), смена состояния → анимация slide 180ms cubic-bezier. (4) **Арай в pinned-rail коротко комментирует** — после поиска «Нашёл 5 товаров», после quick action «Открыл новые заказы. 12 штук». (5) **Глобальный handedness flip** — расширить читателей `--popup-side` на `account-drawer.tsx`, `cart-drawer.tsx`, `search-modal.tsx`, фильтры каталога. UI toggle уже работает с сессии 38. **Правила Захода B (зафиксированы в чате 27.04 как 6 правил для каждого нового чата)**: (1) первое действие — молча читать CLAUDE.md+memory+aray-home-handoff.md, (2) мокап через `mcp__visualize__show_widget` ПЕРЕД кодом, (3) один заход = одна готовая фича, не 6 коммитов, (4) Quality gate перед деплоем, (5) не задавать «А или Б» когда Арман не дизайнер — давать профессиональную рекомендацию, (6) test-production 0 FAIL после деплоя. НЕ трогать: дашборд `/admin`, Заказы, прочие админ-разделы — это Этапы 3-4 миграции, далеко после Захода B.
