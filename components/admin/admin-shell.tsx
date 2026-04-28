@@ -24,7 +24,7 @@
  *  - LazyAdminAray (плавающий Арай)
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -34,20 +34,20 @@ import {
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
   Settings, Palette, BarChart2, Stamp, Users, Bell, BellRing, HelpCircle,
   Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
+  Sun, Moon,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
-import { AdminHeaderSearch } from "@/components/admin/admin-header-search";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
-import { ArayPinnedRail } from "@/components/admin/aray-pinned-rail";
+import { ArayPinnedRail, type ArayQuickAction } from "@/components/admin/aray-pinned-rail";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { useAccountDrawer } from "@/store/account-drawer";
 
 // ── Ключи localStorage (сохраняются для других компонентов) ──
@@ -212,7 +212,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
-  const { theme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const { palette } = usePalette();
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
@@ -242,6 +242,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, []);
+
+  // ── Контекстные Quick Actions для Арай-колонки (per-page) ──
+  const arayQuickActions = useMemo<ArayQuickAction[]>(
+    () => getArayQuickActionsForPage(pathname, role),
+    [pathname, role]
+  );
 
   const initial =
     (userName?.charAt(0) || email?.charAt(0) || "A").toUpperCase();
@@ -279,46 +285,121 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               </button>
             )}
 
+            {/* Иконка раздела + заголовок с анимацией влёта при смене страницы */}
             <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-3 group min-w-0">
-              {pageMeta.icon === "aray" ? (
-                <img
-                  src="/images/aray/face-mob.png"
-                  alt="ARAY AI"
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover shrink-0 ring-1 ring-primary/30"
-                />
-              ) : (
-                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                  {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
-                  <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
-                </div>
-              )}
-              <div className="flex flex-col gap-0 min-w-0">
-                <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
-                  {pageMeta.title}
-                </p>
-                {pageMeta.subtitle && (
-                  <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
-                    {pageMeta.subtitle}
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0, x: -8, scale: 0.85 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 8, scale: 0.9 }}
+                  transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+                  className="shrink-0"
+                >
+                  {pageMeta.icon === "aray" ? (
+                    <img
+                      src="/images/aray/face-mob.png"
+                      alt="ARAY AI"
+                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-1 ring-primary/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+                      {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
+                      <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={pathname + "-text"}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+                  className="flex flex-col gap-0 min-w-0"
+                >
+                  <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
+                    {pageMeta.title}
                   </p>
-                )}
-              </div>
+                  {pageMeta.subtitle && (
+                    <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
+                      {pageMeta.subtitle}
+                    </p>
+                  )}
+                </motion.div>
+              </AnimatePresence>
             </Link>
           </div>
         }
-        centerSlot={
-          <AdminHeaderSearch
-            role={role}
-            onOpenFullSearch={() => setSearchOpen(true)}
-          />
-        }
+        centerSlot={undefined}
         rightSlot={
-          actions.length > 0 ? (
-            <HeaderActions
-              actions={actions}
-              menuOpen={actionsMenuOpen}
-              setMenuOpen={setActionsMenuOpen}
-            />
-          ) : undefined
+          <div className="flex items-center gap-1.5">
+            {/* Поиск — компактная иконка → открывает side-panel слева */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              type="button"
+              aria-label="Поиск (Ctrl+K)"
+              title="Поиск (Ctrl+K)"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+            >
+              <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
+            </button>
+
+            {/* Переключатель темы (только когда mounted — избегаем SSR mismatch) */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                type="button"
+                aria-label={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+                title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
+                className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                ) : (
+                  <Moon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                )}
+              </button>
+            )}
+
+            {/* Аккаунт — открывает AccountDrawer */}
+            <button
+              onClick={toggleAccount}
+              type="button"
+              aria-label="Аккаунт"
+              title={userName || email || "Аккаунт"}
+              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-muted/60 transition-colors shrink-0 overflow-hidden"
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-primary/20" />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
+                  {initial}
+                </div>
+              )}
+            </button>
+
+            {/* Page Actions (если страница их зарегистрировала) */}
+            {actions.length > 0 && (
+              <div className="hidden md:flex items-center gap-1.5 ml-1.5 pl-1.5 border-l border-border/60">
+                <HeaderActions
+                  actions={actions}
+                  menuOpen={actionsMenuOpen}
+                  setMenuOpen={setActionsMenuOpen}
+                />
+              </div>
+            )}
+            {actions.length > 0 && (
+              <div className="md:hidden flex items-center gap-1.5">
+                <HeaderActions
+                  actions={actions}
+                  menuOpen={actionsMenuOpen}
+                  setMenuOpen={setActionsMenuOpen}
+                />
+              </div>
+            )}
+          </div>
         }
       />
 
@@ -331,23 +412,27 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
-      {/* Сессия 40 hotfix: контент резиновый, Арай прикреплён fixed справа.
-         lg:ml-16 — оступ под рельс 64px слева.
-         lg:mr-72 / xl:mr-[24rem] / 2xl:mr-[28rem] — оступ под Арай-колонку справа.
-         (на мобилке/планшете Арай скрыт → mr-0). */}
+      {/* lg:ml-16 — оступ под рельс слева.
+         lg:mr-72 / xl:mr-[24rem] / 2xl:mr-[28rem] — оступ под Арай-колонку справа. */}
       <main className="flex-1 min-w-0 relative z-[5] lg:ml-16 lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem]">
-        <div
-          className="w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
-          style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
-        >
-          <AccessGuard role={role}>{children}</AccessGuard>
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+            className="w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
+            style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
+          >
+            <AccessGuard role={role}>{children}</AccessGuard>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* ─── ARAY PINNED RAIL — fixed справа на ВСЕЙ админке ─── */}
-      {/* Видение Армана (28.04.2026): Арай прикреплён справа на каждой
-         странице — для удобства касанием на сенсорных мониторах/телевизорах.
-         Скрыт на мобилке/планшете (<lg) — там работает AdminMobileBottomNav. */}
+      {/* Видение Армана (28.04.2026): Арай всегда справа, без переключателя сторон,
+         без кнопки свернуть. Минимализм, единый интерфейс. */}
       <aside
         className="hidden lg:block fixed right-0 z-30"
         style={{ top: 64, height: "calc(100vh - 64px)" }}
@@ -356,12 +441,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         <ArayPinnedRail
           page={pathname}
           contextLabel={pageMeta.title}
-          quickActions={[
-            { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
-            { href: "/admin/orders?status=NEW", label: "Новые заказы", icon: BellRing },
-            { href: "/admin/finance", label: "Финансы", icon: Wallet },
-            { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
-          ]}
+          quickActions={arayQuickActions}
           inputHint="Спроси Арая по этой странице"
         />
       </aside>
@@ -372,11 +452,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
       />
 
-      {/* ─── ARAY Control sticky right ───────────────── */}
-      <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40">
-        <ArayControlCenter userRole={role} position="right" />
-      </div>
-
       {/* ─── Поиск-панель слева (по кнопке Search или ⌘K) ── */}
       <AdminSearchPanel
         open={searchOpen}
@@ -384,13 +459,138 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         role={role}
       />
 
-      {/* ─── Плавающий Арай ───────────────────────────── */}
+      {/* ─── ChatHost (обработчик aray:open / aray:prompt / aray:voice) ── */}
+      {/* Нужен для работы voice-mode и полного чата, который открывается из ArayPinnedRail.
+         На десктопе появляется как floating panel, на мобилке fullscreen. */}
       <LazyAdminAray
         staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
         userRole={role}
       />
     </div>
   );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// getArayQuickActionsForPage — контекстные быстрые действия для Арай-колонки.
+// Зависят от текущей страницы и роли. До 4 кнопок. Помогают сделать pinned-rail
+// "умной" — на /admin/orders предложит "Новые заказы", на /admin/products —
+// "Без фото", на /admin/clients — "Импорт", и т.д.
+// ──────────────────────────────────────────────────────────────────────────
+
+function getArayQuickActionsForPage(pathname: string, role: string): ArayQuickAction[] {
+  const isStaff = role !== "USER";
+
+  // Дашборд / корневые
+  if (pathname === "/admin" || pathname === "/cabinet") {
+    return isStaff
+      ? [
+          { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
+          { href: "/admin/orders?status=NEW", label: "Новые", icon: BellRing },
+          { href: "/admin/finance", label: "Финансы", icon: Wallet },
+          { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
+        ]
+      : [
+          { href: "/cabinet/orders", label: "Мои заказы", icon: ShoppingBag },
+          { href: "/catalog", label: "Каталог", icon: Package },
+          { href: "/cabinet/profile", label: "Профиль", icon: UserCircle },
+          { href: "/cabinet/reviews", label: "Отзывы", icon: Star },
+        ];
+  }
+
+  // Заказы
+  if (pathname.startsWith("/admin/orders")) {
+    return [
+      { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
+      { href: "/admin/orders?status=NEW", label: "Новые", icon: BellRing },
+      { href: "/admin/delivery", label: "Доставка", icon: Truck },
+      { href: "/admin/clients", label: "Клиенты", icon: UserCircle },
+    ];
+  }
+
+  // Товары
+  if (pathname.startsWith("/admin/products") || pathname.startsWith("/admin/categories")) {
+    return [
+      { href: "/admin/products?new=1", label: "Новый товар", icon: Plus },
+      { href: "/admin/import", label: "Импорт", icon: FileDown },
+      { href: "/admin/inventory", label: "Склад", icon: Warehouse },
+      { href: "/admin/media", label: "Медиа", icon: Images },
+    ];
+  }
+
+  // Клиенты / CRM
+  if (pathname.startsWith("/admin/clients") || pathname.startsWith("/admin/crm")) {
+    return [
+      { href: "/admin/clients", label: "База", icon: UserCircle },
+      { href: "/admin/crm", label: "CRM", icon: Target },
+      { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
+      { href: "/admin/email", label: "Рассылка", icon: Mail },
+    ];
+  }
+
+  // Доставка
+  if (pathname.startsWith("/admin/delivery")) {
+    return [
+      { href: "/admin/delivery", label: "Маршруты", icon: Truck },
+      { href: "/admin/delivery/rates", label: "Тарифы", icon: Wallet },
+      { href: "/admin/orders?status=IN_DELIVERY", label: "В пути", icon: BellRing },
+      { href: "/admin/staff", label: "Курьеры", icon: Users },
+    ];
+  }
+
+  // Аналитика / Финансы
+  if (pathname.startsWith("/admin/analytics") || pathname.startsWith("/admin/finance")) {
+    return [
+      { href: "/admin/analytics", label: "Аналитика", icon: BarChart2 },
+      { href: "/admin/finance", label: "Финансы", icon: Wallet },
+      { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+      { href: "/admin/aray/costs", label: "Расходы Арая", icon: Receipt },
+    ];
+  }
+
+  // ARAY раздел
+  if (pathname.startsWith("/admin/aray")) {
+    return [
+      { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
+      { href: "/admin/aray/costs", label: "Расходы", icon: Receipt },
+      { href: "/admin/aray-lab", label: "Лаб", icon: FlaskConical },
+      { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
+    ];
+  }
+
+  // Контент / Маркетинг
+  if (pathname.startsWith("/admin/posts") || pathname.startsWith("/admin/email") || pathname.startsWith("/admin/promotions")) {
+    return [
+      { href: "/admin/posts", label: "Статьи", icon: BookOpen },
+      { href: "/admin/email", label: "Email", icon: Mail },
+      { href: "/admin/promotions", label: "Акции", icon: Megaphone },
+      { href: "/admin/notifications", label: "Push", icon: Bell },
+    ];
+  }
+
+  // Настройки
+  if (pathname.startsWith("/admin/settings") || pathname.startsWith("/admin/site") || pathname.startsWith("/admin/appearance")) {
+    return [
+      { href: "/admin/settings", label: "Параметры", icon: Settings },
+      { href: "/admin/site", label: "Сайт", icon: Globe },
+      { href: "/admin/appearance", label: "Темы", icon: Palette },
+      { href: "/admin/staff", label: "Команда", icon: Users },
+    ];
+  }
+
+  // Дефолт — переход на главную и ключевые разделы
+  return isStaff
+    ? [
+        { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
+        { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+        { href: "/admin/products", label: "Каталог", icon: Package },
+        { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
+      ]
+    : [
+        { href: "/cabinet", label: "Главная", icon: LayoutDashboard },
+        { href: "/cabinet/orders", label: "Заказы", icon: ShoppingBag },
+        { href: "/catalog", label: "Каталог", icon: Package },
+        { href: "/cabinet/profile", label: "Профиль", icon: UserCircle },
+      ];
 }
 
 export function AdminShell(props: AdminShellProps) {
