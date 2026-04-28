@@ -45,6 +45,7 @@ import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
+import { useAccountDrawer } from "@/store/account-drawer";
 
 // ── Ключи localStorage (сохраняются для других компонентов) ──
 const LS_CLASSIC = "aray-classic-mode";
@@ -202,6 +203,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const { theme } = useTheme();
   const { palette } = usePalette();
+  const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
 
   const [mounted, setMounted] = useState(false);
@@ -237,25 +239,25 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
         leftSlot={
-          <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-2.5 group">
+          <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-3 group">
             {pageMeta.icon === "aray" ? (
               <img
                 src="/images/aray/face-mob.png"
                 alt="ARAY AI"
-                className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-primary/30"
+                className="w-11 h-11 rounded-2xl object-cover shrink-0 ring-1 ring-primary/30"
               />
             ) : (
-              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+              <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
                 {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
-                <HeaderIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
               </div>
             )}
             <div className="flex flex-col gap-0 min-w-0">
-              <p className="font-display font-bold text-sm leading-none text-foreground truncate">
+              <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
                 {pageMeta.title}
               </p>
               {pageMeta.subtitle && (
-                <p className="hidden sm:block text-[10px] text-muted-foreground leading-none mt-1 truncate">
+                <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
                   {pageMeta.subtitle}
                 </p>
               )}
@@ -295,10 +297,11 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             >
               <Menu className="w-[18px] h-[18px] text-muted-foreground" strokeWidth={1.75} />
             </button>
-            <Link
-              href="/cabinet/profile"
+            <button
+              onClick={toggleAccount}
+              type="button"
               className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border hover:ring-primary/40 transition-all shrink-0"
-              aria-label="Профиль"
+              aria-label="Личный кабинет"
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
@@ -310,7 +313,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                   {initial}
                 </div>
               )}
-            </Link>
+            </button>
           </>
         }
       />
@@ -318,7 +321,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Контент ──────────────────────────────────── */}
       <main className="flex-1 min-w-0 relative z-[5]">
         <div
-          className="px-3 sm:px-5 lg:px-8 py-4 lg:py-6"
+          className="container px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
           style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
         >
           <AccessGuard role={role}>{children}</AccessGuard>
