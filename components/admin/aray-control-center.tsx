@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { Palette, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { LS_FONT } from "@/components/admin/admin-shell";
 
 export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
   const [open, setOpen] = useState(false);
@@ -26,33 +25,17 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  // Font sizes — 5 levels
-  const FONT_SIZES_CC = [
-    { id: "xs", label: "Мини",    px: "12px",   scale: "0.857" },
-    { id: "sm", label: "Компакт", px: "13px",   scale: "0.929" },
-    { id: "md", label: "Норм",    px: "14px",   scale: "1"     },
-    { id: "lg", label: "Крупн",   px: "15.5px", scale: "1.107" },
-    { id: "xl", label: "Макс",    px: "17px",   scale: "1.214" },
-  ];
-  const [fontActive, setFontActive] = useState("md");
-
+  // Сбрасываем кастомный font-size установленный старой системой,
+  // чтобы вернуться к браузерному default 16px (как в магазине).
+  // Сессия 39 (28.04.2026): убрали 5 уровней шрифта по просьбе Армана —
+  // лишний переключатель, на магазине нет, читается отлично без них.
   useEffect(() => {
-    const saved = localStorage.getItem(LS_FONT);
-    const id = saved || (window.innerWidth < 768 ? "sm" : "md");
-    setFontActive(id);
-    const size = FONT_SIZES_CC.find(f => f.id === id) || FONT_SIZES_CC[2];
-    document.documentElement.style.setProperty("font-size", size.px);
-    document.documentElement.style.setProperty("--aray-font-scale", size.scale);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    document.documentElement.style.removeProperty("font-size");
+    document.documentElement.style.removeProperty("--aray-font-scale");
+    try {
+      localStorage.removeItem("aray-font-size");
+    } catch {}
   }, []);
-
-  const pickFont = (id: string) => {
-    const s = FONT_SIZES_CC.find(f => f.id === id)!;
-    setFontActive(id);
-    localStorage.setItem(LS_FONT, id);
-    document.documentElement.style.setProperty("font-size", s.px);
-    document.documentElement.style.setProperty("--aray-font-scale", s.scale);
-  };
 
   // ── Liquid Glass palette ─────────────────────────────────────────────────
   const isDark = safeTheme === "dark";
@@ -146,22 +129,6 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                         color: safeTheme === t ? "#fff" : glass.textSecondary,
                       }}>
                       {t === "light" ? "Светлая" : "Тёмная"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Шрифт — только на десктопе */}
-              <div className="hidden lg:block">
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Размер шрифта</p>
-                <div className="flex gap-1.5">
-                  {FONT_SIZES_CC.map((f) => (
-                    <button key={f.id} onClick={() => pickFont(f.id)}
-                      className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold transition-all"
-                      style={{
-                        background: fontActive === f.id ? "hsl(var(--primary))" : glass.hoverBg,
-                        color: fontActive === f.id ? "#fff" : glass.textSecondary,
-                      }}>
-                      {f.label}
                     </button>
                   ))}
                 </div>
