@@ -1,5 +1,76 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
+> 🔴🔴🔴 **СЛЕДУЮЩАЯ СЕССИЯ — ЕДИНСТВЕННЫЙ ПРИОРИТЕТ (договорено 28.04.2026 вечер):**
+>
+> **ЗАХОД B: ПОЛНЫЙ ПЕРЕНОС ChatHost ВНУТРЬ ArayPinnedRail.**
+>
+> Видение Армана: «наш красивый чат с Пилоруса с Араем перенести и поставить тут [внутри pinned-rail]» + «макет бомба, размеры всё как есть, просто чат функции дизайн то что был у нас перенести чтоб вот так он работал» + «там всё готов кнопки лицо чат микрофон всё, нахрена переделывать [с нуля]».
+>
+> **Что нужно сделать:**
+> 1. Прочесть `components/store/aray-chat-host.tsx` целиком (~700 строк). Понять: история сообщений (loadHistory/saveHistory localStorage `aray.chat.history.v1`), SSE streaming через `/api/ai/chat`, парсинг маркеров (`__ARAY_NAVIGATE__`, `__ARAY_SHOW_URL__`, `__ARAY_POPUP__`, `__ARAY_ADD_CART__`, `__ARAY_REFRESH__`, `ARAY_ACTIONS:[...]`), markdown render, voice mode (через aray:voice), TTS через ElevenLabs, ArayBrowser попап, copy-кнопка, очистка истории.
+> 2. Извлечь чат-логику в **reusable hook** `useArayChat(opts)` или компонент `<ArayChatBody embedded />`. Hook возвращает: messages, isLoading, sendMessage, clearHistory, voice state.
+> 3. Внутри `ArayPinnedRail` заменить welcome screen + Quick Actions на полноценный чат:
+>    - При пустой истории: тот же Янус-аватар + «Привет, брат» + 4 кнопки (Сводка дня / Новые заказы / Мои задачи / Остатки) — это мы УЖЕ скопировали в сессии 40
+>    - После первого сообщения: история сообщений (user/assistant pairs), markdown, action chips
+>    - Streaming inline с typing indicator
+>    - Inline voice push-to-talk (УЖЕ работает, оставить)
+>    - Кнопка очистки истории сверху (icon Trash2)
+>    - Кнопка "Открыть в полном окне" — открывает старый ChatHost popup как fallback (для тех кому удобнее большое окно)
+> 4. ChatHost попап на админке: **скрыть** floating-окно. Оставить только VoiceModeOverlay (fullscreen) на admin layout — он нужен для голосового режима.
+> 5. На магазине / cabinet НЕ ТРОГАТЬ — там ChatHost остаётся как floating popup как было.
+> 6. ВАЖНО: проверить что aray:open / aray:prompt / aray:voice события работают одинаково из dispatched источников (header search, mobile bottom-nav центральный орб, AccountDrawer Quick Actions для STAFF, dashboard Quick Actions).
+>
+> **Quality-gate:**
+> - TSC 0 ошибок
+> - Локальный `next build` (урок сессии 35: webpack может упасть на client/edge bundle, async_hooks)
+> - Test-production 42 PASS / 0 FAIL
+> - Visual: pinned-rail на /admin, /admin/orders, /admin/products — везде один и тот же inline чат, один интерфейс
+>
+> **НЕ НАЧИНАТЬ другие задачи** пока заход B не зайдёт. Арман явно сказал «это очень важно нам».
+>
+> **Перед стартом** — прочесть всё что в этом блоке + memory файл `project_aray_chat_to_pinned_rail_session_b.md` (создан в сессии 40).
+>
+> ─────────────────────────────────────────────────────────────────────────
+>
+> 🔥 **СЕССИЯ 40 ЗАКРЫТА (28.04.2026 — деплой `3e4252c`). АРМАН ХОЧЕТ КРИКНУТЬ "БОМБА".**
+>
+> Финал шедевра по видению Армана из чата 28.04 после Заход A. **42 PASS / 0 FAIL** на проде.
+>
+> **ЧТО РЕАЛИЗОВАНО (одним мощным коммитом):**
+> 1. **Хедер: поиск-иконкой вместо большого инпута.** Большой `<AdminHeaderSearch>` удалён из centerSlot. Справа в rightSlot теперь компактные иконки 40×40: Поиск (открывает side-panel слева), Тема Sun/Moon (toggle dark/light), Аватар (открывает AccountDrawer), Page Actions (если страница их зарегистрировала). Cmd+K по-прежнему открывает поиск.
+> 2. **Анимация перехода заголовков (фича магазина).** Иконка раздела влетает с -8px (motion.div + AnimatePresence + framer-motion) при смене pathname, текст заголовка приходит с y +6px, длительность 220ms cubic-bezier (0.32, 0.72, 0.4, 1). Контент main тоже плавно появляется при смене pathname. Это «литает хедер и меняется заголовок» как Арман описал.
+> 3. **ArayPinnedRail — минимализм.** Удалён toggle левша/правша (handedness ArrowLeftRight кнопка), удалена кнопка свернуть (ChevronRight). Арай ВСЕГДА справа, ВСЕГДА видим. По прямому пожеланию Армана: "если есть лишные функции смело убери например левша правша или скрыть арая".
+> 4. **Аватар Арая в шапке колонки** + зелёная точка "Онлайн" (ring-2 ring-card) — как в Telegram/WhatsApp.
+> 5. **Контекстные Quick Actions per-page.** Helper `getArayQuickActionsForPage(pathname, role)` возвращает 4 релевантные кнопки для каждой страницы (на /orders → Новый заказ/Новые/Доставка/Клиенты; на /products → Новый товар/Импорт/Склад/Медиа; и т.д. для всех 9 групп страниц + дефолт).
+> 6. **Voice как Telegram inline.** В инпуте Арая снизу: textarea + кнопка справа — пока пусто показывает Mic (диспатчит aray:voice → откроется VoiceModeOverlay), при наборе текста меняется на primary Send (отправляет через aray:open + aray:prompt в ChatHost). Send-кнопка с глоу-shadow `0 4px 20px hsl(var(--primary)/0.25)`.
+> 7. **Переключатель «Голосом ↔ Печатать».** Ниже инпута маленькая ссылка-toggle (для ТВ / кассы / планшета): нажав «Голосом» убирает клавиатуру → большая primary-кнопка `Mic + "Говори с Араем"`. Состояние сохраняется в `localStorage["aray.pinned.inputMode"]`.
+> 8. **AdminShell — удалены дубли:**
+>    - `<ArayControlCenter sticky right>` УДАЛЁН (был дубль с ArayPinnedRail на той же стороне).
+>    - `<AdminHeaderSearch>` УДАЛЁН (заменён иконкой).
+>    - `<LazyAdminAray>` ОСТАВЛЕН — это ChatHost, обрабатывает aray:open / aray:prompt / aray:voice события из pinned-rail и открывает полный чат / VoiceModeOverlay.
+>
+> **ФАЙЛЫ КОММИТА `3e4252c`:**
+> - `components/admin/aray-pinned-rail.tsx` — полная переписка: убраны handedness/collapse, добавлены аватар+статус-точка, voice/keyboard toggle, inline send.
+> - `components/admin/admin-shell.tsx` — переработка JSX: leftSlot с motion-анимацией, centerSlot=undefined, rightSlot с поиск-иконкой/темой/аккаунтом, удалены ArayControlCenter и AdminHeaderSearch usage, добавлен `getArayQuickActionsForPage()` helper.
+>
+> **СТАРТ СЛЕДУЮЩЕЙ СЕССИИ:**
+> 1. Прочесть CLAUDE.md (запись сессии 40)
+> 2. Прочесть memory
+> 3. `node D:\pilorus\scripts\test-production.js` → должно быть 42 PASS / 0 FAIL
+> 4. Спросить Армана — какой фидбек по сессии 40? Что докрутить, что не зашло?
+>
+> **ЧЕГО НЕ СДЕЛАНО В СЕССИИ 40 (на следующие заходы):**
+> - **Полный inline SSE-чат прямо в pinned-rail** (сейчас инпут открывает ChatHost попап). Когда сделаем — pinned-rail станет самодостаточным разговорным интерфейсом.
+> - **Голос с wave-анимацией прямо в инпуте** (как Telegram press-and-hold) — сейчас Mic кнопка диспатчит aray:voice → открывается VoiceModeOverlay (fullscreen).
+> - **Раскат calm-UI на остальные 24 раздела админки** — пока обновлены /admin (дашборд) и /admin/aray. Остальные ещё в смешанном стиле.
+> - **Полная адаптивность 375/768/1024/1280** проверена визуально на дашборде, но не везде.
+>
+> **НЕ ВОЗВРАЩАТЬ удалённое (без явного "да" Армана):**
+>   - Toggle левша/правша
+>   - Кнопку свернуть Арая
+>   - Большой инпут поиска в центре хедера
+>   - ArayControlCenter sticky right
+>
 > 🟢 **СЕССИЯ 39 ЗАКРЫТА (28.04.2026 — 8 деплоев `8f6f8ff` → `27694b6` → `cb89f47` → `135c4d4` → `df456c6` → `6002873` → `6156124`).** Полный переезд админки на дизайн-систему магазина. **Архитектура «оболочки» админки готова:** AppHeader (стеклянный sticky из магазина) + узкий рельс 64px слева с hover-popup групп + AdminSearchPanel (side-panel слева в стиле магазина) + PageActions (Назад/Обновить/actions через React Context). Все 25 разделов администрации теперь в едином визуальном языке с pilo-rus.ru.
 >
 > **🔥 КАРТ-БЛАНШ ОТ АРМАНА на админку (28.04.2026):** Арман выгорает от переделок и отдал UX/дизайн/баги/архитектуру под мой контроль. **НЕ показывать мокапы**, **НЕ задавать «А или Б»**, **НЕ дробить на микро-коммиты**. Один раздел = один готовый продукт = деплой = краткое сообщение «Заходи, посмотри». Идти по приоритету самому: Клиенты (первая полировка — Арман явно показал «грустно») → Дашборд → Заказы → Товары → Доставка → Аналитика → ARAY AI → остальные. Подробнее — `feedback_admin_carte_blanche.md` в memory.

@@ -278,7 +278,7 @@ export default async function AdminDashboard() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-card border border-border rounded-2xl active:scale-[0.96] transition-all duration-200 hover:border-primary/30 hover:shadow-[0_0_18px_hsl(var(--primary)/0.06)] min-h-[88px]"
+                className="shimmer-trace group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-card border border-border rounded-2xl active:scale-[0.96] transition-all duration-200 hover:border-primary/30 hover:shadow-[0_0_18px_hsl(var(--primary)/0.06)] min-h-[88px]"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div

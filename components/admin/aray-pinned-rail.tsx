@@ -20,6 +20,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Sparkles, Mic, Send, Keyboard, MessageSquare, Square,
+  Calendar, Bell, CheckSquare, Package,
 } from "lucide-react";
 
 const LS_INPUT_MODE = "aray.pinned.inputMode";
@@ -268,24 +269,61 @@ export function ArayPinnedRail({
         </div>
       )}
 
-      {/* ── Чат-зона: открыть полный чат ──────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      {/* ── Чат-зона: welcome screen из нашего ChatHost ─────────────────── */}
+      {/* Тот же интерфейс что в ChatHost при пустой истории: большой Янус
+         + "Привет, брат" + "Я твоя правая рука..." + 4 контекстные кнопки
+         (Сводка дня / Новые заказы / Мои задачи / Остатки). Клики
+         диспатчат aray:open + aray:prompt с подготовленным текстом.
+         Полный SSE inline-чат с историей — заход B следующей сессии. */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 flex flex-col items-center justify-center text-center">
         <button
           onClick={openChat}
           type="button"
-          className="w-full flex items-start gap-3 p-4 rounded-2xl bg-muted/40 border border-border hover:bg-primary/[0.04] hover:border-primary/25 transition-all text-left active:scale-[0.99]"
+          className="group block focus:outline-none"
+          aria-label="Открыть полный чат"
         >
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-            <MessageSquare className="w-4 h-4" strokeWidth={1.75} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-foreground leading-tight">
-              Привет, брат. Я тут.
-            </p>
-            <p className="text-[11px] text-muted-foreground leading-tight mt-1">
-              Тыкни сюда — открою полный чат с историей.
-            </p>
-          </div>
+          <img
+            src="/images/aray/face-mob.png"
+            alt="Арай"
+            className="w-20 h-20 rounded-full object-cover mx-auto ring-2 ring-primary/25 group-hover:ring-primary/45 transition-all"
+          />
+        </button>
+        <h3 className="mt-3 text-lg font-display font-bold text-foreground">
+          Привет, брат
+        </h3>
+        <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed max-w-[260px]">
+          Я твоя правая рука. Спроси про заказы, склад, задачи — отвечу или сделаю.
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-2 w-full max-w-[300px]">
+          {[
+            { label: "Сводка дня",   icon: Calendar,    prompt: "Покажи сводку: заказы, выручка, что важно сегодня" },
+            { label: "Новые заказы", icon: Package,     prompt: "Покажи новые заказы" },
+            { label: "Мои задачи",   icon: CheckSquare, prompt: "Какие у меня задачи?" },
+            { label: "Остатки",      icon: Bell,        prompt: "Что заканчивается на складе?" },
+          ].map((qa) => {
+            const Icon = qa.icon;
+            return (
+              <button
+                key={qa.label}
+                type="button"
+                onClick={() => sendText(qa.prompt)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/40 border border-border hover:bg-primary/[0.06] hover:border-primary/30 active:scale-[0.97] transition-all text-left"
+              >
+                <Icon className="w-4 h-4 text-primary shrink-0" strokeWidth={1.75} />
+                <span className="text-xs font-medium text-foreground truncate">
+                  {qa.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          onClick={openChat}
+          type="button"
+          className="mt-4 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+        >
+          <MessageSquare className="w-3 h-3" strokeWidth={2} />
+          <span>Открыть полный чат с историей</span>
         </button>
       </div>
 

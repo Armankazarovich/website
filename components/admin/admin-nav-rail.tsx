@@ -24,9 +24,9 @@
  * arayglass-glow/shimmer. Палитра-aware через text-primary.
  */
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Sparkles, Package, BookOpen,
   Megaphone, Settings, HelpCircle, UserCircle, ChevronRight,
@@ -36,6 +36,7 @@ import { useAdminLang } from "@/lib/admin-lang-context";
 import {
   allNavItems, GROUP_LABELS, type NavItem,
 } from "@/components/admin/admin-nav";
+import { flyIconToHeader, getIconSvgFromElement } from "@/lib/icon-fly";
 
 // ── Иконка для каждой группы (главная иконка раздела) ──
 const GROUP_ICONS: Record<string, React.ElementType> = {
@@ -267,7 +268,22 @@ function GroupPopup({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
+  const router = useRouter();
   const GroupIcon = group.icon;
+
+  // ── Flying icon при клике на пункт ──
+  const handleItemClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // респект новой вкладке
+    e.preventDefault();
+    const a = e.currentTarget;
+    const iconWrap = a.querySelector("[data-fly-icon]") as HTMLElement | null;
+    const sourceEl = iconWrap || a;
+    const iconSvg = iconWrap ? getIconSvgFromElement(iconWrap) : undefined;
+    flyIconToHeader(sourceEl, {
+      iconSvg,
+      onArrive: () => router.push(href),
+    });
+  }, [router]);
   return (
     <div
       className="absolute left-full top-0 ml-2 w-80 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200"
@@ -302,12 +318,14 @@ function GroupPopup({
             <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => handleItemClick(e, item.href)}
               className={`flex items-center gap-3 px-4 py-3 transition-colors
                 ${isActive
                   ? "bg-primary/8 text-foreground"
                   : "text-foreground hover:bg-muted/50"}`}
             >
               <div
+                data-fly-icon
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors
                   ${isActive
                     ? "bg-primary/15 text-primary"

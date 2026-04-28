@@ -64,7 +64,7 @@ export const allNavItems: NavItem[] = [
   // ═══════════════════════════════════════════════════════════════
 
   // ── Главная ──
-  { href: "/admin", label: "Дашборд", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: ALL_STAFF, group: "main" },
+  { href: "/admin", label: "Рабочий стол", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: ALL_STAFF, group: "main" },
   { href: "/cabinet", label: "Главная", icon: LayoutDashboard, exact: true, roles: ["USER"], group: "main" },
 
   // ── Мой кабинет (USER) ──

@@ -135,7 +135,7 @@ type PageIcon = React.ElementType | "aray";
 type PageMeta = { title: string; subtitle?: string; icon: PageIcon };
 
 const PAGE_TITLES: Record<string, PageMeta> = {
-  "/admin":                  { title: "Дашборд",         subtitle: "Сводка магазина",     icon: LayoutDashboard },
+  "/admin":                  { title: "Рабочий стол",    subtitle: "Сводка магазина",     icon: LayoutDashboard },
   "/admin/orders":           { title: "Заказы",          subtitle: "Активные и архив",    icon: ShoppingBag },
   "/admin/orders/new":       { title: "Новый заказ",     subtitle: "По телефону",         icon: Plus },
   "/admin/crm":              { title: "ARAY CRM",        subtitle: "Лиды и сделки",       icon: Target },
@@ -295,6 +295,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                   exit={{ opacity: 0, x: 8, scale: 0.9 }}
                   transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
                   className="shrink-0"
+                  data-header-icon
                 >
                   {pageMeta.icon === "aray" ? (
                     <img
@@ -415,19 +416,19 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* lg:ml-16 — оступ под рельс слева.
          lg:mr-72 / xl:mr-[24rem] / 2xl:mr-[28rem] — оступ под Арай-колонку справа. */}
       <main className="flex-1 min-w-0 relative z-[5] lg:ml-16 lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem]">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={pathname}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
-            className="w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
-            style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
-          >
-            <AccessGuard role={role}>{children}</AccessGuard>
-          </motion.div>
-        </AnimatePresence>
+        {/* Контент: лёгкий fade-in без AnimatePresence/exit — exit-анимация на main
+           блокировала переход между разделами (брат не мог открыть разделы из popup рельса).
+           Заголовок в leftSlot всё равно анимируется через свой AnimatePresence. */}
+        <motion.div
+          key={pathname}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: [0.32, 0.72, 0.4, 1] }}
+          className="w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
+          style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
+        >
+          <AccessGuard role={role}>{children}</AccessGuard>
+        </motion.div>
       </main>
 
       {/* ─── ARAY PINNED RAIL — fixed справа на ВСЕЙ админке ─── */}
