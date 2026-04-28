@@ -276,7 +276,21 @@ function getQuickActions(productName?: string | null, isStaff?: boolean): QuickA
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── ГЛАВНЫЙ КОМПОНЕНТ ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-export function ArayChatHost() {
+/**
+ * ArayChatHost props.
+ *
+ * @param pinned — если true, чат рендерится зафиксированным справа на
+ * админке (вместо плавающего popup). Width адаптивный
+ * (lg:w-72 / xl:w-96 / 2xl:w-[28rem]), высота — top-16 bottom-0.
+ * Кнопки закрытия и минимизации скрыты, окно ВСЕГДА видно.
+ * Работает только на ≥lg экранах. На <lg остаётся обычный fullscreen popup,
+ * открывающийся по aray:open. (Заход B, 28.04.2026)
+ */
+interface ArayChatHostProps {
+  pinned?: boolean;
+}
+
+export function ArayChatHost({ pinned = false }: ArayChatHostProps = {}) {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const cartItems = useCartStore((s) => s.items);
@@ -564,28 +578,40 @@ export function ArayChatHost() {
   }, [pathname, cartItems, messages, voiceEnabled, speak, router]);
 
   // ── Listen to global events ──────────────────────────────────────────────────
+  // В pinned режиме (на десктопе) окно всегда видимо — aray:open лишь фокусирует
+  // input, aray:close лишь останавливает TTS. На мобилке (<lg) даже в pinned режиме
+  // ChatHost рендерится обычным floating popup, открывается по aray:open как раньше.
   useEffect(() => {
+    const isPinnedDesktop = () => pinned && typeof window !== "undefined" && window.innerWidth >= 1024;
     const onOpen = () => {
+      if (isPinnedDesktop()) {
+        haptic(6);
+        setTimeout(() => inputRef.current?.focus(), 100);
+        return;
+      }
       setOpen(true);
       setMinimized(false);
       haptic(8);
       setTimeout(() => inputRef.current?.focus(), 250);
     };
     const onClose = () => {
+      if (isPinnedDesktop()) {
+        // На pinned не закрываем окно — только останавливаем озвучку
+        stopAraySpeech();
+        return;
+      }
       setOpen(false);
-      // ⚠️ Останавливаем озвучку при глобальном aray:close event
       stopAraySpeech();
     };
     const onPrompt = (e: Event) => {
       const ce = e as CustomEvent<{ text: string; mode?: string }>;
       const text = ce.detail?.text;
       if (!text) return;
-      // ВАЖНО: VoiceModeOverlay диспатчит aray:prompt с mode:"voice" для синхронизации
-      // истории — но НЕ для повторной отправки. Если бы мы тут вызвали sendMessage —
-      // получили бы дубль API-запроса и двойной голос (voice mode уже сам отвечает).
       if (ce.detail?.mode === "voice") return;
-      setOpen(true);
-      setMinimized(false);
+      if (!isPinnedDesktop()) {
+        setOpen(true);
+        setMinimized(false);
+      }
       sendMessage(text);
     };
     window.addEventListener("aray:open", onOpen);
@@ -596,7 +622,7 @@ export function ArayChatHost() {
       window.removeEventListener("aray:close", onClose);
       window.removeEventListener("aray:prompt", onPrompt as EventListener);
     };
-  }, [sendMessage]);
+  }, [sendMessage, pinned]);
 
   // ── Escape → close ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -671,31 +697,60 @@ export function ArayChatHost() {
   const isStaff = pathname.startsWith("/admin");
   const quickActions = useMemo(() => getQuickActions(productName, isStaff), [productName, isStaff]);
 
-  if (!open) return null;
+  // ── Pinned режим работает только на десктопе ≥lg.
+  //    На мобилке (<lg) даже при pinned=true рендерим обычный floating popup. ──
+  const usePinned = pinned && !isMobile;
+  const isVisible = usePinned ? true : open;
 
-  // ─── РЕНДЕР: окно или попап-минимизация ─────────────────────────────────────
+  if (!isVisible && !minimized) return null;
+
+  // ─── РЕНДЕР: окно (pinned/floating) или попап-минимизация ──────────────────
   return (
     <>
       <AnimatePresence>
-        {!minimized && (
+        {isVisible && !minimized && (
           <motion.div
             key="chat"
-            initial={isMobile ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 24 }}
-            animate={isMobile ? { y: 0 } : { opacity: 1, scale: 1, y: 0 }}
-            exit={isMobile ? { y: "100%" } : { opacity: 0, scale: 0.95, y: 24 }}
-            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+            initial={
+              usePinned
+                ? { opacity: 0 }
+                : isMobile
+                  ? { y: "100%" }
+                  : { opacity: 0, scale: 0.95, y: 24 }
+            }
+            animate={
+              usePinned
+                ? { opacity: 1 }
+                : isMobile
+                  ? { y: 0 }
+                  : { opacity: 1, scale: 1, y: 0 }
+            }
+            exit={
+              usePinned
+                ? { opacity: 0 }
+                : isMobile
+                  ? { y: "100%" }
+                  : { opacity: 0, scale: 0.95, y: 24 }
+            }
+            transition={
+              usePinned
+                ? { duration: 0.2 }
+                : { type: "spring", stiffness: 380, damping: 32 }
+            }
             className={`fixed z-[300] flex flex-col bg-card border border-border ${
-              isMobile
-                ? "inset-0 rounded-none"
-                : "bottom-20 right-6 w-[420px] h-[640px] rounded-[24px] shadow-2xl"
+              usePinned
+                ? "right-0 top-16 bottom-0 lg:w-72 xl:w-96 2xl:w-[28rem] rounded-l-3xl border-r-0 shadow-[-8px_0_32px_hsl(var(--foreground)/0.06)]"
+                : isMobile
+                  ? "inset-0 rounded-none"
+                  : "bottom-20 right-6 w-[420px] h-[640px] rounded-[24px] shadow-2xl"
             }`}
             style={{
-              backdropFilter: isMobile ? undefined : "blur(20px) saturate(180%)",
-              WebkitBackdropFilter: isMobile ? undefined : "blur(20px) saturate(180%)",
+              backdropFilter: isMobile || usePinned ? undefined : "blur(20px) saturate(180%)",
+              WebkitBackdropFilter: isMobile || usePinned ? undefined : "blur(20px) saturate(180%)",
             }}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Чат с Араем"
+            role={usePinned ? "complementary" : "dialog"}
+            aria-modal={usePinned ? undefined : "true"}
+            aria-label={usePinned ? "Помощник Арай" : "Чат с Араем"}
           >
             {/* ─── Header ─────────────────────────────────────────────── */}
             <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border"
@@ -743,7 +798,7 @@ export function ArayChatHost() {
                     <RotateCcw className="w-4 h-4 text-muted-foreground" />
                   </button>
                 )}
-                {!isMobile && (
+                {!isMobile && !usePinned && (
                   <button
                     onClick={() => setMinimized(true)}
                     className="p-2 rounded-xl hover:bg-muted transition-colors"
@@ -753,13 +808,15 @@ export function ArayChatHost() {
                     <Minimize2 className="w-4 h-4 text-muted-foreground" />
                   </button>
                 )}
-                <button
-                  onClick={handleClose}
-                  className="p-2 rounded-xl hover:bg-muted transition-colors"
-                  aria-label="Закрыть"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                {!usePinned && (
+                  <button
+                    onClick={handleClose}
+                    className="p-2 rounded-xl hover:bg-muted transition-colors"
+                    aria-label="Закрыть"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -941,9 +998,9 @@ export function ArayChatHost() {
         )}
       </AnimatePresence>
 
-      {/* Минимизация — мини-орб справа снизу */}
+      {/* Минимизация — мини-орб справа снизу. В pinned режиме не нужен. */}
       <AnimatePresence>
-        {minimized && !isMobile && (
+        {minimized && !isMobile && !usePinned && (
           <motion.button
             key="min"
             initial={{ opacity: 0, scale: 0.6, y: 24 }}

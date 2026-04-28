@@ -24,7 +24,7 @@
  *  - LazyAdminAray (плавающий Арай)
  */
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -32,11 +32,11 @@ import {
   LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
   Truck, Package, Tag, Warehouse, FileDown, Images, Megaphone,
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
-  Settings, Palette, BarChart2, Stamp, Users, Bell, BellRing, HelpCircle,
+  Settings, Palette, BarChart2, Stamp, Users, Bell, HelpCircle,
   Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
   Sun, Moon,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { AccessGuard } from "@/components/admin/access-guard";
@@ -44,7 +44,6 @@ import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
-import { ArayPinnedRail, type ArayQuickAction } from "@/components/admin/aray-pinned-rail";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
@@ -243,12 +242,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  // ── Контекстные Quick Actions для Арай-колонки (per-page) ──
-  const arayQuickActions = useMemo<ArayQuickAction[]>(
-    () => getArayQuickActionsForPage(pathname, role),
-    [pathname, role]
-  );
-
   const initial =
     (userName?.charAt(0) || email?.charAt(0) || "A").toUpperCase();
   const HeaderIcon = pageMeta.icon;
@@ -427,22 +420,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         </motion.div>
       </main>
 
-      {/* ─── ARAY PINNED RAIL — fixed справа на ВСЕЙ админке ─── */}
-      {/* Видение Армана (28.04.2026): Арай всегда справа, без переключателя сторон,
-         без кнопки свернуть. Минимализм, единый интерфейс. */}
-      <aside
-        className="hidden lg:block fixed right-0 z-30"
-        style={{ top: 64, height: "calc(100vh - 64px)" }}
-        aria-label="Помощник Арай"
-      >
-        <ArayPinnedRail
-          page={pathname}
-          contextLabel={pageMeta.title}
-          quickActions={arayQuickActions}
-          inputHint="Спроси Арая по этой странице"
-        />
-      </aside>
-
       {/* ─── Mobile bottom nav (с Арай-орбом) ─────────── */}
       <AdminMobileBottomNav
         role={role}
@@ -456,10 +433,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         role={role}
       />
 
-      {/* ─── ChatHost (обработчик aray:open / aray:prompt / aray:voice) ── */}
-      {/* Нужен для работы voice-mode и полного чата, который открывается из ArayPinnedRail.
-         На десктопе появляется как floating panel, на мобилке fullscreen. */}
+      {/* ─── ChatHost — на десктопе зафиксирован справа на месте старого pinned-rail.
+            (Заход B, 28.04.2026 — видение Армана: не нужен дубль с заглушкой,
+            один общий резиновый чат с историей и SSE). На мобилке — обычный
+            fullscreen popup, открывающийся по aray:open из bottom-nav орба. ── */}
       <LazyAdminAray
+        pinned
         staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
         userRole={role}
       />
@@ -467,128 +446,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   );
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// getArayQuickActionsForPage — контекстные быстрые действия для Арай-колонки.
-// Зависят от текущей страницы и роли. До 4 кнопок. Помогают сделать pinned-rail
-// "умной" — на /admin/orders предложит "Новые заказы", на /admin/products —
-// "Без фото", на /admin/clients — "Импорт", и т.д.
-// ──────────────────────────────────────────────────────────────────────────
-
-function getArayQuickActionsForPage(pathname: string, role: string): ArayQuickAction[] {
-  const isStaff = role !== "USER";
-
-  // Дашборд / корневые
-  if (pathname === "/admin" || pathname === "/cabinet") {
-    return isStaff
-      ? [
-          { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
-          { href: "/admin/orders?status=NEW", label: "Новые", icon: BellRing },
-          { href: "/admin/finance", label: "Финансы", icon: Wallet },
-          { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
-        ]
-      : [
-          { href: "/cabinet/orders", label: "Мои заказы", icon: ShoppingBag },
-          { href: "/catalog", label: "Каталог", icon: Package },
-          { href: "/cabinet/profile", label: "Профиль", icon: UserCircle },
-          { href: "/cabinet/reviews", label: "Отзывы", icon: Star },
-        ];
-  }
-
-  // Заказы
-  if (pathname.startsWith("/admin/orders")) {
-    return [
-      { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
-      { href: "/admin/orders?status=NEW", label: "Новые", icon: BellRing },
-      { href: "/admin/delivery", label: "Доставка", icon: Truck },
-      { href: "/admin/clients", label: "Клиенты", icon: UserCircle },
-    ];
-  }
-
-  // Товары
-  if (pathname.startsWith("/admin/products") || pathname.startsWith("/admin/categories")) {
-    return [
-      { href: "/admin/products?new=1", label: "Новый товар", icon: Plus },
-      { href: "/admin/import", label: "Импорт", icon: FileDown },
-      { href: "/admin/inventory", label: "Склад", icon: Warehouse },
-      { href: "/admin/media", label: "Медиа", icon: Images },
-    ];
-  }
-
-  // Клиенты / CRM
-  if (pathname.startsWith("/admin/clients") || pathname.startsWith("/admin/crm")) {
-    return [
-      { href: "/admin/clients", label: "База", icon: UserCircle },
-      { href: "/admin/crm", label: "CRM", icon: Target },
-      { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
-      { href: "/admin/email", label: "Рассылка", icon: Mail },
-    ];
-  }
-
-  // Доставка
-  if (pathname.startsWith("/admin/delivery")) {
-    return [
-      { href: "/admin/delivery", label: "Маршруты", icon: Truck },
-      { href: "/admin/delivery/rates", label: "Тарифы", icon: Wallet },
-      { href: "/admin/orders?status=IN_DELIVERY", label: "В пути", icon: BellRing },
-      { href: "/admin/staff", label: "Курьеры", icon: Users },
-    ];
-  }
-
-  // Аналитика / Финансы
-  if (pathname.startsWith("/admin/analytics") || pathname.startsWith("/admin/finance")) {
-    return [
-      { href: "/admin/analytics", label: "Аналитика", icon: BarChart2 },
-      { href: "/admin/finance", label: "Финансы", icon: Wallet },
-      { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
-      { href: "/admin/aray/costs", label: "Расходы Арая", icon: Receipt },
-    ];
-  }
-
-  // ARAY раздел
-  if (pathname.startsWith("/admin/aray")) {
-    return [
-      { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
-      { href: "/admin/aray/costs", label: "Расходы", icon: Receipt },
-      { href: "/admin/aray-lab", label: "Лаб", icon: FlaskConical },
-      { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
-    ];
-  }
-
-  // Контент / Маркетинг
-  if (pathname.startsWith("/admin/posts") || pathname.startsWith("/admin/email") || pathname.startsWith("/admin/promotions")) {
-    return [
-      { href: "/admin/posts", label: "Статьи", icon: BookOpen },
-      { href: "/admin/email", label: "Email", icon: Mail },
-      { href: "/admin/promotions", label: "Акции", icon: Megaphone },
-      { href: "/admin/notifications", label: "Push", icon: Bell },
-    ];
-  }
-
-  // Настройки
-  if (pathname.startsWith("/admin/settings") || pathname.startsWith("/admin/site") || pathname.startsWith("/admin/appearance")) {
-    return [
-      { href: "/admin/settings", label: "Параметры", icon: Settings },
-      { href: "/admin/site", label: "Сайт", icon: Globe },
-      { href: "/admin/appearance", label: "Темы", icon: Palette },
-      { href: "/admin/staff", label: "Команда", icon: Users },
-    ];
-  }
-
-  // Дефолт — переход на главную и ключевые разделы
-  return isStaff
-    ? [
-        { href: "/admin", label: "Дашборд", icon: LayoutDashboard },
-        { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
-        { href: "/admin/products", label: "Каталог", icon: Package },
-        { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
-      ]
-    : [
-        { href: "/cabinet", label: "Главная", icon: LayoutDashboard },
-        { href: "/cabinet/orders", label: "Заказы", icon: ShoppingBag },
-        { href: "/catalog", label: "Каталог", icon: Package },
-        { href: "/cabinet/profile", label: "Профиль", icon: UserCircle },
-      ];
-}
+// (Заход B, 28.04.2026) — getArayQuickActionsForPage helper удалён вместе с
+// ArayPinnedRail. Контекстные quick-actions теперь живут внутри ChatHost
+// (welcome screen + getQuickActions). Если на следующих сессиях понадобятся
+// per-page умные промпты — сделать helper в lib/aray-quick-actions.ts и
+// передать в ChatHost через prop, а не возвращать href-навигацию (Арман:
+// "кнопка должна не открывать страницу, а отправлять умный промпт Араю").
 
 export function AdminShell(props: AdminShellProps) {
   return (
