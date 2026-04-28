@@ -29,7 +29,7 @@ const ArayDock = dynamicImport(
 
 export const metadata: Metadata = {
   title: {
-    default: "Панель управления | ПилоРус",
+    default: "Панель управления",
     template: "%s | Панель ПилоРус",
   },
   manifest: "/admin-manifest.json",
