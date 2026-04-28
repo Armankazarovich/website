@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Plus, FileCheck, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProductsClient } from "./products-client";
+import { ProductsActions } from "./products-actions";
 
 export default async function AdminProductsPage() {
   const [products, categories] = await Promise.all([
@@ -44,6 +45,7 @@ export default async function AdminProductsPage() {
       </div>
 
       <ProductsClient products={products as any} categories={categories} />
+      <ProductsActions />
     </div>
   );
 }
