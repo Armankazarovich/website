@@ -150,6 +150,7 @@ export function AdminSearchPanel({ open, onClose, role }: Props) {
       icon={<Search className="w-4 h-4" strokeWidth={2} />}
       iconTone="bg-primary/10 text-primary"
       maxWidth="480px"
+      side="left"
     >
       <div className="px-5 py-4 space-y-5">
         {/* Search input */}

@@ -41,6 +41,7 @@ import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
+import { AdminHeaderSearch } from "@/components/admin/admin-header-search";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
@@ -304,19 +305,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
           </div>
         }
         centerSlot={
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-3 w-full max-w-3xl px-5 h-11 rounded-2xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/40 transition-all text-left text-sm text-muted-foreground group"
-            aria-label="Открыть поиск"
-            type="button"
-          >
-            <Search className="w-[18px] h-[18px] shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.75} />
-            <span className="flex-1 truncate">Поиск раздела, товара, заказа, клиента…</span>
-            <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 shrink-0">
-              <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">⌘</kbd>
-              <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">K</kbd>
-            </span>
-          </button>
+          <AdminHeaderSearch
+            role={role}
+            onOpenFullSearch={() => setSearchOpen(true)}
+          />
         }
         rightSlot={
           actions.length > 0 ? (

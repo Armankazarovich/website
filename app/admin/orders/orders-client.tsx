@@ -9,10 +9,11 @@ import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } fro
 import {
   Trash2, Loader2, Download, Phone, MapPin,
   Package, CreditCard, Truck, MessageSquare, ExternalLink,
-  ChevronLeft, ChevronRight, Clock, Radio, X,
+  ChevronLeft, ChevronRight, Clock, Radio, X, Plus,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { classifySource, humanizeSource, type SourceGroup } from "@/lib/utm";
+import { useAdminPageActions } from "@/components/admin/admin-page-actions";
 
 type Order = {
   id: string;
@@ -203,6 +204,27 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
     const timer = setInterval(() => router.refresh(), 30000);
     return () => clearInterval(timer);
   }, [router]);
+
+  // Регистрируем action-кнопки для AppHeader (сессия 40)
+  useAdminPageActions({
+    onRefresh: () => router.refresh(),
+    actions: [
+      {
+        id: "new-order",
+        label: "Новый заказ",
+        icon: Plus,
+        variant: "primary",
+        onClick: () => router.push("/admin/orders/new"),
+      },
+      {
+        id: "trash",
+        label: "Корзина",
+        icon: Trash2,
+        onClick: () => router.push("/admin/orders/trash"),
+        hideOnMobile: true,
+      },
+    ],
+  });
 
   const filtered = useMemo(() => {
     return orders.filter((o) => {

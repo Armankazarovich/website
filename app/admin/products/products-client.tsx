@@ -8,9 +8,10 @@ import {
   Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
-  ImageOff, Stamp, AlertTriangle, Sparkles, Loader2,
+  ImageOff, Stamp, AlertTriangle, Sparkles, Loader2, Plus, Download,
 } from "lucide-react";
 import { checkProductReadiness, readinessIssueLabel, type ProductReadinessIssue } from "@/lib/product-seo";
+import { useAdminPageActions } from "@/components/admin/admin-page-actions";
 
 type Product = {
   id: string;
@@ -74,6 +75,27 @@ export function ProductsClient({
   const [dDesc, setDDesc] = useState("");
   const [improving, setImproving] = useState(false);
   const [improveError, setImproveError] = useState<string | null>(null);
+
+  // Регистрируем action-кнопки для AppHeader (сессия 40)
+  useAdminPageActions({
+    onRefresh: () => router.refresh(),
+    actions: [
+      {
+        id: "new-product",
+        label: "Новый товар",
+        icon: Plus,
+        variant: "primary",
+        onClick: () => router.push("/admin/products/new"),
+      },
+      {
+        id: "import-products",
+        label: "Импорт",
+        icon: Download,
+        onClick: () => router.push("/admin/import"),
+        hideOnMobile: true,
+      },
+    ],
+  });
 
   const minPrice = (p: Product) => {
     const min = p.variants.reduce((m, v) => {

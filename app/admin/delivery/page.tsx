@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive, Store, MessageSquare, Send } from "lucide-react";
 import { DeliveryStatusSelect } from "./delivery-status-select";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
+import { DeliveryActions } from "./delivery-actions";
 
 const ACTIVE_STATUSES = ["CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY"];
 const PICKUP_STATUS = "READY_PICKUP";
@@ -79,6 +80,7 @@ export default async function DeliveryPage({
     <div className="space-y-6 max-w-5xl">
       {/* Автообновление каждые 30 секунд */}
       <AutoRefresh intervalMs={30000} />
+      <DeliveryActions />
 
       {/* Активный фильтр из Smart Bar */}
       {statusFilter && (

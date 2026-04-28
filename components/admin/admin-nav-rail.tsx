@@ -50,6 +50,45 @@ const GROUP_ICONS: Record<string, React.ElementType> = {
   help: HelpCircle,
 };
 
+// ── Подсказки для каждого раздела (subtitle в popup рельса) ──
+// Дублирует PAGE_TITLES из admin-shell.tsx — держим локально,
+// чтобы избежать circular import. Если ключа нет — subtitle не показывается.
+const SUBTITLE_BY_HREF: Record<string, string> = {
+  "/admin": "Сводка магазина",
+  "/admin/orders": "Активные и архив",
+  "/admin/orders/new": "По телефону",
+  "/admin/crm": "Лиды и сделки",
+  "/admin/crm/automation": "Тоннели",
+  "/admin/tasks": "Команда",
+  "/admin/delivery": "Маршруты и тарифы",
+  "/admin/delivery/rates": "Тарифы доставки",
+  "/admin/products": "Товары магазина",
+  "/admin/categories": "Дерево разделов",
+  "/admin/inventory": "Остатки и движение",
+  "/admin/import": "CSV, Excel",
+  "/admin/media": "Фото и документы",
+  "/admin/promotions": "Скидки и предложения",
+  "/admin/reviews": "Модерация",
+  "/admin/email": "Кампании",
+  "/admin/promotion": "SEO и реклама",
+  "/admin/finance": "Доходы и расходы",
+  "/admin/clients": "База покупателей",
+  "/admin/health": "Состояние системы",
+  "/admin/site": "Настройки магазина",
+  "/admin/settings": "Параметры",
+  "/admin/appearance": "Темы и палитры",
+  "/admin/analytics": "Графики и отчёты",
+  "/admin/watermark": "Защита фото",
+  "/admin/staff": "Сотрудники",
+  "/admin/notifications": "Push рассылка",
+  "/admin/help": "Гайды",
+  "/admin/aray": "Главная Арая",
+  "/admin/aray/costs": "Токены и подписки",
+  "/admin/aray-lab": "Эксперименты",
+  "/admin/posts": "Блог и новости",
+  "/admin/services": "Сервисы",
+};
+
 // Порядок групп в рельсе (сверху вниз)
 const GROUP_ORDER = [
   "main", "personal", "sales", "aray", "products",
@@ -228,43 +267,82 @@ function GroupPopup({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
+  const GroupIcon = group.icon;
   return (
     <div
-      className="absolute left-full top-0 ml-2 w-64 bg-card border border-border rounded-2xl shadow-xl py-2 z-40 animate-in fade-in slide-in-from-left-1 duration-150"
+      className="absolute left-full top-0 ml-2 w-80 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="px-4 py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.12em]">
-        {group.label}
+      {/* Шапка попапа: иконка группы + label */}
+      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border bg-muted/30">
+        <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <GroupIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+        </div>
+        <div className="min-w-0">
+          <p className="font-display font-semibold text-sm text-foreground leading-tight truncate">
+            {group.label}
+          </p>
+          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+            {group.items.length} {pluralizeRu(group.items.length, ["раздел", "раздела", "разделов"])}
+          </p>
+        </div>
       </div>
-      <div className="px-1">
+
+      {/* Список пунктов с разделителями */}
+      <div className="divide-y divide-border max-h-[70vh] overflow-y-auto">
         {group.items.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
             : pathname.startsWith(item.href);
           const ItemIcon = item.icon;
           const label = item.labelKey ? t(item.labelKey) : item.label;
+          const subtitle = SUBTITLE_BY_HREF[item.href];
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors
+              className={`flex items-center gap-3 px-4 py-3 transition-colors
                 ${isActive
-                  ? "bg-primary/10 text-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
+                  ? "bg-primary/8 text-foreground"
+                  : "text-foreground hover:bg-muted/50"}`}
             >
-              <ItemIcon
-                className={`w-4 h-4 shrink-0 ${isActive ? "text-primary" : ""}`}
-                strokeWidth={1.75}
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors
+                  ${isActive
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted text-muted-foreground"}`}
+              >
+                <ItemIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm leading-tight truncate ${isActive ? "font-semibold" : "font-medium"}`}>
+                  {label}
+                </p>
+                {subtitle && (
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+              <ChevronRight
+                className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
               />
-              <span className="flex-1 truncate">{label}</span>
-              {isActive && <ChevronRight className="w-3.5 h-3.5 text-primary shrink-0" />}
             </Link>
           );
         })}
       </div>
     </div>
   );
+}
+
+// Plural helper для русского склонения ("1 раздел / 2 раздела / 5 разделов")
+function pluralizeRu(n: number, forms: [string, string, string]): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return forms[0];
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return forms[1];
+  return forms[2];
 }
 
 function ProfilePopup({

@@ -3,9 +3,10 @@
 import { useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle, Mail, AlertTriangle, Search } from "lucide-react";
+import { Pencil, Trash2, Loader2, ChevronDown, ChevronUp, ShoppingBag, X, UserCog, KeyRound, CheckCircle2, AlertCircle, Mail, AlertTriangle, Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useAdminPageActions } from "@/components/admin/admin-page-actions";
 
 const STAFF_ROLES = [
   { value: "MANAGER", label: "Менеджер" },
@@ -72,6 +73,20 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
       return matchSearch && matchHasOrders && matchNew;
     });
   }, [clients, search, urlHasOrders, urlPeriodNew]);
+
+  // Регистрируем action-кнопки для AppHeader (сессия 40)
+  useAdminPageActions({
+    onRefresh: () => router.refresh(),
+    actions: [
+      {
+        id: "import-clients",
+        label: "Импорт",
+        icon: Download,
+        onClick: () => router.push("/admin/import?type=clients"),
+        hideOnMobile: true,
+      },
+    ],
+  });
 
   const handleEdit = (c: Client) => {
     setEditId(c.id);
