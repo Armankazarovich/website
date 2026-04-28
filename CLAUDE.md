@@ -1,8 +1,45 @@
 # ПилоРус — CRM/Сайт — База знаний для Claude
 
-> 🔴🔴🔴 **СЛЕДУЮЩАЯ СЕССИЯ — ЕДИНСТВЕННЫЙ ПРИОРИТЕТ (договорено 28.04.2026 вечер):**
+> 🟢🟢🟢 **СЕССИЯ 41 ЗАКРЫТА (28.04.2026 — деплой `3d8ceba`). ЗАХОД B ЗАШЁЛ.**
 >
-> **ЗАХОД B: ПОЛНЫЙ ПЕРЕНОС ChatHost ВНУТРЬ ArayPinnedRail.**
+> ChatHost теперь pinned справа на админке. ArayPinnedRail удалён из admin-shell как дубль-заглушка. Один резиновый чат с историей/SSE/voice/TTS вместо открытия floating popup поверх pinned-rail. Видение Армана 28.04: «увеличить, делать резиновым адаптивным и зафиксировать», «там всё готов — нахрена переделывать».
+>
+> **Что реализовано:**
+> - `components/store/aray-chat-host.tsx`: добавлен prop `pinned?: boolean`. Когда `pinned=true` и `width >= lg` (≥1024px) — окно зафиксировано `right:0 top:64 bottom:0`, ширина `lg:w-72 xl:w-96 2xl:w-[28rem]`, `rounded-l-3xl border-r-0`, без X/Minimize2 кнопок, всегда видим (не зависит от `open` state). На мобилке (<1024) даже при `pinned=true` рендерится обычный fullscreen popup как раньше — открывается по `aray:open` из bottom-nav орба. Listener `aray:open` в pinned режиме фокусирует input а не открывает окно. `aray:close` останавливает только TTS, не закрывает окно. `aray:prompt` отправляет сообщение прямо в pinned чат (без открытия popup).
+> - `components/admin/admin-shell.tsx`: удалён импорт ArayPinnedRail, `<aside>` блок с ним, useMemo arayQuickActions, функция getArayQuickActionsForPage (160 строк). Подчищены неиспользуемые импорты (useMemo, AnimatePresence, BellRing, type ArayQuickAction). LazyAdminAray получает prop `pinned`. Margins на main остаются те же (`lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem]`) — теперь под ChatHost.
+> - `components/admin/aray-pinned-rail.tsx` оставлен на диске как dead code (не импортируется). Так же `dashboard-aray-rail.tsx` и `aray-home-rail.tsx` — dead code, не используются (можно удалить в чистящем коммите следующей сессии).
+>
+> **Что НЕ тронуто (по правилам Захода B):**
+> - Магазин (`app/(store)/*`, `components/store/*`) — эталон, без изменений
+> - Cabinet — там pinned не передаётся, ChatHost остался обычным popup
+> - VoiceModeOverlay (fullscreen разговор) — без изменений
+> - aray-pinned-rail.tsx файл, dashboard-aray-rail.tsx, aray-home-rail.tsx — оставлены на диске
+>
+> **Quality-gate (всё пройдено):**
+> - TSC `--noEmit`: 0 ошибок
+> - Локальный `next build`: webpack `Compiled successfully` (0 Module-not-found, 0 async_hooks). Prerender падает локально из-за устаревшей local БД — норма (урок сессии 36).
+> - Production test после деплоя: **42 PASS / 2 WARN / 0 FAIL** (WARN — динамические телефоны на главной, не регрессия).
+> - Среднее время 304ms (отличный результат).
+>
+> **СТАРТ СЛЕДУЮЩЕЙ СЕССИИ:**
+> 1. Прочесть CLAUDE.md (запись сессии 41)
+> 2. Прочесть memory
+> 3. `node D:\pilorus\scripts\test-production.js` → должно быть 42 PASS / 0 FAIL
+> 4. Спросить Армана: какой фидбек после Захода B? Что докрутить?
+>
+> **ЧЕГО НЕ СДЕЛАНО В ЗАХОДЕ B (на следующие сессии):**
+> - **Контекстные quick-actions per-page в welcome screen ChatHost** — сейчас 4 хардкод-кнопки (Сводка дня / Новые заказы / Мои задачи / Остатки) для staff. Видение Армана: на /admin/orders → «Покажи новые заказы», на /admin/products → «Сколько товаров без фото», на /admin/clients → «Импорт клиентов». Сделать helper в `lib/aray-quick-actions.ts` с моделью `(pathname, role) → QuickAction[]` где каждая кнопка имеет `prompt: string` (не href!). Передать в ChatHost через prop `pinnedQuickActions?: QuickAction[]`. ChatHost будет использовать их вместо встроенного `getQuickActions()` когда `pinned=true`.
+> - **Удалить dead code:** `aray-pinned-rail.tsx`, `dashboard-aray-rail.tsx`, `aray-home-rail.tsx` — больше нигде не импортируются.
+> - **Раскат calm-UI на остальные 24 раздела админки** — пока обновлены только /admin (дашборд) и /admin/aray. Остальные ещё в смешанном стиле.
+>
+> **НЕ ВОЗВРАЩАТЬ удалённое (без явного "да" Армана):**
+>   - ArayPinnedRail aside в admin-shell
+>   - getArayQuickActionsForPage helper в admin-shell (если делать — отдельный файл `lib/aray-quick-actions.ts`)
+>   - Toggle левша/правша, кнопка свернуть Арая, большой инпут поиска в центре хедера
+>
+> ─────────────────────────────────────────────────────────────────────────
+>
+> ⚪ **ЗАХОД B (выполнен в сессии 41 — см. блок выше). Планировался так:**
 >
 > Видение Армана: «наш красивый чат с Пилоруса с Араем перенести и поставить тут [внутри pinned-rail]» + «макет бомба, размеры всё как есть, просто чат функции дизайн то что был у нас перенести чтоб вот так он работал» + «там всё готов кнопки лицо чат микрофон всё, нахрена переделывать [с нуля]».
 >
