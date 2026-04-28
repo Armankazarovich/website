@@ -330,9 +330,13 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
+      {/* Сессия 40 hotfix: убран container (max-width 1280px ограничивал ширину
+         в зажатую центральную колонку при наличии рельса 64px + Арая 24rem).
+         Теперь w-full + paddings — контент резиновый, растягивается на всё
+         доступное пространство между рельсом слева и Арай-колонкой справа. */}
       <main className="flex-1 min-w-0 relative z-[5] lg:ml-16">
         <div
-          className="container px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
+          className="w-full mx-auto max-w-[1920px] px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
           style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
         >
           <AccessGuard role={role}>{children}</AccessGuard>
