@@ -14,7 +14,8 @@ import { DashboardGreeting } from "@/components/admin/dashboard-greeting";
 import { DashboardMetrics, CourierMetrics } from "@/components/admin/dashboard-metrics";
 import { DashboardChart } from "@/components/admin/dashboard-chart";
 import { DashboardActions } from "@/components/admin/dashboard-actions";
-import { DashboardArayRail } from "@/components/admin/dashboard-aray-rail";
+// DashboardArayRail убран — Арай теперь fixed справа в AdminShell на ВСЕЙ админке
+// (сессия 40 hotfix: видение Армана для сенсорных мониторов/телевизоров)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Сессия 40 (28.04.2026) — Дашборд-шедевр.
@@ -174,8 +175,7 @@ export default async function AdminDashboard() {
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-5 xl:gap-6">
-      <div className="space-y-4 sm:space-y-5 min-w-0">
+    <div className="space-y-4 sm:space-y-5 min-w-0">
         <AutoRefresh intervalMs={60000} />
         <DashboardActions showNewOrder={canCreateOrder} />
 
@@ -374,10 +374,6 @@ export default async function AdminDashboard() {
             <div />
           )}
         </div>
-      </div>
-
-      {/* ── ARAY PINNED RAIL ── скрыта на <lg, переключаемая на lg+ ── */}
-      <DashboardArayRail />
     </div>
   );
 }

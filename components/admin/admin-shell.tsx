@@ -32,7 +32,7 @@ import {
   LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
   Truck, Package, Tag, Warehouse, FileDown, Images, Megaphone,
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
-  Settings, Palette, BarChart2, Stamp, Users, Bell, HelpCircle,
+  Settings, Palette, BarChart2, Stamp, Users, Bell, BellRing, HelpCircle,
   Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -43,6 +43,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminHeaderSearch } from "@/components/admin/admin-header-search";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
+import { ArayPinnedRail } from "@/components/admin/aray-pinned-rail";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
@@ -330,18 +331,40 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
-      {/* Сессия 40 hotfix: убран container (max-width 1280px ограничивал ширину
-         в зажатую центральную колонку при наличии рельса 64px + Арая 24rem).
-         Теперь w-full + paddings — контент резиновый, растягивается на всё
-         доступное пространство между рельсом слева и Арай-колонкой справа. */}
-      <main className="flex-1 min-w-0 relative z-[5] lg:ml-16">
+      {/* Сессия 40 hotfix: контент резиновый, Арай прикреплён fixed справа.
+         lg:ml-16 — оступ под рельс 64px слева.
+         lg:mr-72 / xl:mr-[24rem] / 2xl:mr-[28rem] — оступ под Арай-колонку справа.
+         (на мобилке/планшете Арай скрыт → mr-0). */}
+      <main className="flex-1 min-w-0 relative z-[5] lg:ml-16 lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem]">
         <div
-          className="w-full mx-auto max-w-[1920px] px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
+          className="w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
           style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
         >
           <AccessGuard role={role}>{children}</AccessGuard>
         </div>
       </main>
+
+      {/* ─── ARAY PINNED RAIL — fixed справа на ВСЕЙ админке ─── */}
+      {/* Видение Армана (28.04.2026): Арай прикреплён справа на каждой
+         странице — для удобства касанием на сенсорных мониторах/телевизорах.
+         Скрыт на мобилке/планшете (<lg) — там работает AdminMobileBottomNav. */}
+      <aside
+        className="hidden lg:block fixed right-0 z-30"
+        style={{ top: 64, height: "calc(100vh - 64px)" }}
+        aria-label="Помощник Арай"
+      >
+        <ArayPinnedRail
+          page={pathname}
+          contextLabel={pageMeta.title}
+          quickActions={[
+            { href: "/admin/orders/new", label: "Новый заказ", icon: Plus },
+            { href: "/admin/orders?status=NEW", label: "Новые заказы", icon: BellRing },
+            { href: "/admin/finance", label: "Финансы", icon: Wallet },
+            { href: "/admin/aray", label: "Дом Арая", icon: Sparkles },
+          ]}
+          inputHint="Спроси Арая по этой странице"
+        />
+      </aside>
 
       {/* ─── Mobile bottom nav (с Арай-орбом) ─────────── */}
       <AdminMobileBottomNav
