@@ -27,6 +27,13 @@ interface Props {
   showHeader?: boolean;
   /** Кастомный baseline-хедер (переопределяет стандартный рендер) */
   customHeader?: ReactNode;
+  /**
+   * С какой стороны выезжает панель.
+   * Сессия 39 (28.04.2026): дефолт "left" по решению Армана —
+   * "попапы все с левой стороны мой брат, в магазине так же,
+   * систему меняем". Справа всегда остаётся пустым под Арая.
+   */
+  side?: "left" | "right";
 }
 
 /**
@@ -47,7 +54,9 @@ export function SidePanel({
   zIndex = "z-[200]",
   showHeader = true,
   customHeader,
+  side = "right",
 }: Props) {
+  const isLeft = side === "left";
   // Escape + lock body scroll
   useEffect(() => {
     if (!open) return;
@@ -65,7 +74,7 @@ export function SidePanel({
     <AnimatePresence>
       {open && (
         <div
-          className={`fixed inset-0 ${zIndex} flex justify-end`}
+          className={`fixed inset-0 ${zIndex} flex ${isLeft ? "justify-start" : "justify-end"}`}
           onClick={() => onClose()}
         >
           {/* Backdrop */}
@@ -79,11 +88,11 @@ export function SidePanel({
 
           {/* Panel */}
           <motion.div
-            initial={{ x: "100%" }}
+            initial={{ x: isLeft ? "-100%" : "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: isLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="relative w-[92vw] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            className={`relative w-[92vw] h-full bg-background ${isLeft ? "border-r" : "border-l"} border-border shadow-2xl flex flex-col overflow-hidden`}
             style={{ maxWidth }}
             onClick={(e) => e.stopPropagation()}
           >

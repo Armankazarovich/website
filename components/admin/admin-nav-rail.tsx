@@ -26,7 +26,6 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Sparkles, Package, BookOpen,
@@ -134,58 +133,12 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
     setHoverProfile(false);
   }, [pathname]);
 
-  const initial =
-    (userName?.charAt(0) || email?.charAt(0) || "A").toUpperCase();
-
   return (
     <aside
-      className="hidden lg:flex fixed left-0 top-0 h-screen w-16 z-30 flex-col items-center py-3 gap-1 bg-card border-r border-border"
+      className="hidden lg:flex fixed left-0 w-16 z-30 flex-col items-center py-3 gap-1 bg-card border-r border-border"
+      style={{ top: 64, height: "calc(100vh - 64px)" }}
       onMouseLeave={scheduleClose}
     >
-      {/* ── Профиль (avatar) — hover popup с email + ссылка ── */}
-      <div
-        className="relative shrink-0 mb-2"
-        onMouseEnter={() => { clearCloseTimer(); setHoverProfile(true); setHoverGroup(null); }}
-      >
-        <Link
-          href="/cabinet/profile"
-          className="block w-10 h-10 rounded-2xl overflow-hidden ring-1 ring-border hover:ring-primary/40 transition-all"
-          aria-label="Профиль"
-        >
-          {avatarUrl ? (
-            <Image
-              src={avatarUrl}
-              alt=""
-              width={40}
-              height={40}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center text-sm font-semibold"
-              style={{
-                background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))",
-                color: "hsl(var(--primary-foreground))",
-              }}
-            >
-              {initial}
-            </div>
-          )}
-        </Link>
-
-        {hoverProfile && (
-          <ProfilePopup
-            userName={userName}
-            email={email}
-            onMouseEnter={clearCloseTimer}
-            onMouseLeave={scheduleClose}
-          />
-        )}
-      </div>
-
-      {/* ── Тонкий разделитель ── */}
-      <div className="w-8 h-px bg-border mb-1" />
-
       {/* ── Группы навигации ── */}
       <nav className="flex flex-col items-center gap-1 flex-1 min-h-0">
         {groups.map((g) => {

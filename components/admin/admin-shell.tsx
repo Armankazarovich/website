@@ -28,7 +28,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, Search, Sparkles,
+  Search, Sparkles,
   LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
   Truck, Package, Tag, Warehouse, FileDown, Images, Megaphone,
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
@@ -40,8 +40,8 @@ import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav
 import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
-import { AdminMenuPopup } from "@/components/admin/admin-menu-popup";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
+import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
@@ -199,7 +199,6 @@ interface AdminShellProps {
 }
 
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const { theme } = useTheme();
   const { palette } = usePalette();
@@ -267,59 +266,30 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         centerSlot={
           <button
             onClick={() => setSearchOpen(true)}
-            className="hidden md:flex items-center gap-2.5 max-w-xl w-full px-4 h-10 rounded-xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/30 transition-all text-left text-sm text-muted-foreground group"
+            className="flex items-center gap-3 w-full max-w-3xl px-5 h-11 rounded-2xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/40 transition-all text-left text-sm text-muted-foreground group"
             aria-label="Открыть поиск"
             type="button"
           >
-            <Search className="w-4 h-4 shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.75} />
+            <Search className="w-[18px] h-[18px] shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.75} />
             <span className="flex-1 truncate">Поиск раздела, товара, заказа, клиента…</span>
-            <span className="hidden lg:inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 shrink-0">
+            <span className="hidden md:inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 shrink-0">
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">⌘</kbd>
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">K</kbd>
             </span>
           </button>
         }
-        rightSlot={
-          <>
-            <button
-              onClick={() => setSearchOpen(true)}
-              className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center hover:bg-accent transition-colors"
-              aria-label="Открыть поиск"
-              type="button"
-            >
-              <Search className="w-[18px] h-[18px] text-muted-foreground" strokeWidth={1.75} />
-            </button>
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-accent transition-colors"
-              aria-label="Открыть меню"
-              type="button"
-            >
-              <Menu className="w-[18px] h-[18px] text-muted-foreground" strokeWidth={1.75} />
-            </button>
-            <button
-              onClick={toggleAccount}
-              type="button"
-              className="w-10 h-10 rounded-xl overflow-hidden ring-1 ring-border hover:ring-primary/40 transition-all shrink-0"
-              aria-label="Личный кабинет"
-            >
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center text-sm font-semibold text-primary-foreground"
-                  style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.6))" }}
-                >
-                  {initial}
-                </div>
-              )}
-            </button>
-          </>
-        }
+      />
+
+      {/* ─── Узкий рельс слева (lg+ только) ───────────── */}
+      <AdminNavRail
+        role={role}
+        avatarUrl={avatarUrl}
+        userName={userName}
+        email={email}
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
-      <main className="flex-1 min-w-0 relative z-[5]">
+      <main className="flex-1 min-w-0 relative z-[5] lg:ml-16">
         <div
           className="container px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
           style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
@@ -339,14 +309,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         <ArayControlCenter userRole={role} position="right" />
       </div>
 
-      {/* ─── Меню-попап (по кнопке Menu в хедере) ─────── */}
-      <AdminMenuPopup
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        role={role}
-      />
-
-      {/* ─── Поиск-панель справа (по кнопке Search или ⌘K) ── */}
+      {/* ─── Поиск-панель слева (по кнопке Search или ⌘K) ── */}
       <AdminSearchPanel
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
