@@ -24,11 +24,11 @@
  *  - LazyAdminAray (плавающий Арай)
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  Search, Sparkles,
+  Search, Sparkles, ChevronLeft, RefreshCw, MoreVertical,
   LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
   Truck, Package, Tag, Warehouse, FileDown, Images, Megaphone,
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
@@ -42,6 +42,7 @@ import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
+import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
@@ -198,12 +199,23 @@ interface AdminShellProps {
   children: React.ReactNode;
 }
 
+// ── Маршруты на которых кнопка «Назад» не показывается ──
+// Корневые домашние страницы — назад идти некуда
+const ROOT_ROUTES = new Set([
+  "/admin", "/cabinet", "/admin/aray",
+]);
+
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const { theme } = useTheme();
   const { palette } = usePalette();
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
+  const { onRefresh, actions } = useAdminPageActionsState();
+  const showBack = !ROOT_ROUTES.has(pathname);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -238,30 +250,58 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
         leftSlot={
-          <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-3 group">
-            {pageMeta.icon === "aray" ? (
-              <img
-                src="/images/aray/face-mob.png"
-                alt="ARAY AI"
-                className="w-11 h-11 rounded-2xl object-cover shrink-0 ring-1 ring-primary/30"
-              />
-            ) : (
-              <div className="w-11 h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
-                <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
-              </div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Кнопка «Назад» — глобальная, скрыта на корневых маршрутах */}
+            {showBack && (
+              <button
+                onClick={() => router.back()}
+                type="button"
+                aria-label="Назад"
+                title="Назад"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+              >
+                <ChevronLeft className="w-5 h-5" strokeWidth={2} />
+              </button>
             )}
-            <div className="flex flex-col gap-0 min-w-0">
-              <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
-                {pageMeta.title}
-              </p>
-              {pageMeta.subtitle && (
-                <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
-                  {pageMeta.subtitle}
-                </p>
+
+            {/* Кнопка «Обновить» — видна если страница зарегистрировала onRefresh */}
+            {onRefresh && (
+              <button
+                onClick={() => onRefresh()}
+                type="button"
+                aria-label="Обновить"
+                title="Обновить"
+                className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+              >
+                <RefreshCw className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </button>
+            )}
+
+            <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-3 group min-w-0">
+              {pageMeta.icon === "aray" ? (
+                <img
+                  src="/images/aray/face-mob.png"
+                  alt="ARAY AI"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover shrink-0 ring-1 ring-primary/30"
+                />
+              ) : (
+                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                  {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
+                  <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
+                </div>
               )}
-            </div>
-          </Link>
+              <div className="flex flex-col gap-0 min-w-0">
+                <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
+                  {pageMeta.title}
+                </p>
+                {pageMeta.subtitle && (
+                  <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
+                    {pageMeta.subtitle}
+                  </p>
+                )}
+              </div>
+            </Link>
+          </div>
         }
         centerSlot={
           <button
@@ -277,6 +317,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">K</kbd>
             </span>
           </button>
+        }
+        rightSlot={
+          actions.length > 0 ? (
+            <HeaderActions
+              actions={actions}
+              menuOpen={actionsMenuOpen}
+              setMenuOpen={setActionsMenuOpen}
+            />
+          ) : undefined
         }
       />
 
@@ -328,7 +377,119 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 export function AdminShell(props: AdminShellProps) {
   return (
     <AdminLangProvider>
-      <AdminShellInner {...props} />
+      <AdminPageActionsProvider>
+        <AdminShellInner {...props} />
+      </AdminPageActionsProvider>
     </AdminLangProvider>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// HeaderActions — рендер action-кнопок страницы в правом слоте хедера.
+// Адаптив:
+//   - md+ : до 3 кнопок видны (primary как кнопка, ghost как иконки)
+//   - <md : первая primary видна как кнопка, остальные в overflow menu (⋮)
+// ──────────────────────────────────────────────────────────────────────────
+
+function HeaderActions({
+  actions, menuOpen, setMenuOpen,
+}: {
+  actions: AdminAction[];
+  menuOpen: boolean;
+  setMenuOpen: (v: boolean) => void;
+}) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Закрыть overflow menu по клику вне
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen, setMenuOpen]);
+
+  const visibleOnMobile = actions.filter((a) => !a.hideOnMobile);
+  const primary = actions.find((a) => a.variant === "primary");
+  const others = actions.filter((a) => a !== primary);
+
+  return (
+    <>
+      {/* Desktop md+: все кнопки в ряд */}
+      <div className="hidden md:flex items-center gap-2">
+        {actions.map((a) => {
+          const Icon = a.icon;
+          const isPrimary = a.variant === "primary";
+          return (
+            <button
+              key={a.id}
+              type="button"
+              onClick={a.onClick}
+              disabled={a.disabled}
+              aria-label={a.label}
+              title={a.label}
+              className={
+                isPrimary
+                  ? "inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  : "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-border text-foreground hover:bg-muted/60 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              }
+            >
+              <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isPrimary ? 2 : 1.75} />
+              <span className="hidden lg:inline">{a.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Mobile <md: primary видна, остальные в overflow */}
+      <div className="md:hidden flex items-center gap-1.5">
+        {primary && (
+          <button
+            type="button"
+            onClick={primary.onClick}
+            disabled={primary.disabled}
+            aria-label={primary.label}
+            title={primary.label}
+            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 shrink-0"
+          >
+            <primary.icon className="w-[18px] h-[18px]" strokeWidth={2} />
+          </button>
+        )}
+        {others.length > 0 && visibleOnMobile.length > (primary ? 1 : 0) && (
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              aria-label="Ещё действия"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              <MoreVertical className="w-[18px] h-[18px]" strokeWidth={1.75} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl py-1 z-50">
+                {others.filter(a => !a.hideOnMobile).map((a) => {
+                  const Icon = a.icon;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => { setMenuOpen(false); a.onClick(); }}
+                      disabled={a.disabled}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors text-left disabled:opacity-50"
+                    >
+                      <Icon className="w-4 h-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="flex-1 truncate">{a.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }
