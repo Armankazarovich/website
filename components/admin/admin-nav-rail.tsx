@@ -26,7 +26,7 @@
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Sparkles, Package, BookOpen,
   Megaphone, Settings, HelpCircle, UserCircle, ChevronRight,
@@ -268,22 +268,22 @@ function GroupPopup({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
-  const router = useRouter();
   const GroupIcon = group.icon;
 
   // ── Flying icon при клике на пункт ──
-  const handleItemClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // респект новой вкладке
-    e.preventDefault();
+  // ВАЖНО: НЕ preventDefault — Link навигация работает нативно, а пузырёк летит
+  // параллельно как декоративная анимация. Это гарантирует что раздел всегда
+  // открывается, даже если анимация прервётся (мы только что починили баг
+  // когда раздел не открывался из-за блокированного preventDefault).
+  const handleItemClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // open in new tab
     const a = e.currentTarget;
     const iconWrap = a.querySelector("[data-fly-icon]") as HTMLElement | null;
     const sourceEl = iconWrap || a;
     const iconSvg = iconWrap ? getIconSvgFromElement(iconWrap) : undefined;
-    flyIconToHeader(sourceEl, {
-      iconSvg,
-      onArrive: () => router.push(href),
-    });
-  }, [router]);
+    // Запускаем анимацию параллельно с переходом Link
+    flyIconToHeader(sourceEl, { iconSvg });
+  }, []);
   return (
     <div
       className="absolute left-full top-0 ml-2 w-80 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200"
@@ -318,7 +318,7 @@ function GroupPopup({
             <Link
               key={item.href}
               href={item.href}
-              onClick={(e) => handleItemClick(e, item.href)}
+              onClick={handleItemClick}
               className={`flex items-center gap-3 px-4 py-3 transition-colors
                 ${isActive
                   ? "bg-primary/8 text-foreground"

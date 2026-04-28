@@ -285,51 +285,47 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               </button>
             )}
 
-            {/* Иконка раздела + заголовок с анимацией влёта при смене страницы */}
+            {/* Иконка раздела + заголовок с анимацией влёта при смене страницы.
+               БЕЗ AnimatePresence/exit — это блокировало рендер если переход
+               быстрее анимации. Только enter-анимация по key={pathname}. */}
             <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-3 group min-w-0">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0, x: -8, scale: 0.85 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 8, scale: 0.9 }}
-                  transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
-                  className="shrink-0"
-                  data-header-icon
-                >
-                  {pageMeta.icon === "aray" ? (
-                    <img
-                      src="/images/aray/face-mob.png"
-                      alt="ARAY AI"
-                      className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-1 ring-primary/30"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/15 transition-colors">
-                      {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
-                      <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  key={pathname + "-text"}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
-                  className="flex flex-col gap-0 min-w-0"
-                >
-                  <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
-                    {pageMeta.title}
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, x: -8, scale: 0.85 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+                className="shrink-0"
+                data-header-icon
+              >
+                {pageMeta.icon === "aray" ? (
+                  <img
+                    src="/images/aray/face-mob.png"
+                    alt="ARAY AI"
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-1 ring-primary/30"
+                  />
+                ) : (
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+                    {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
+                    <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
+                  </div>
+                )}
+              </motion.div>
+              <motion.div
+                key={pathname + "-text"}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+                className="flex flex-col gap-0 min-w-0"
+              >
+                <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
+                  {pageMeta.title}
+                </p>
+                {pageMeta.subtitle && (
+                  <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
+                    {pageMeta.subtitle}
                   </p>
-                  {pageMeta.subtitle && (
-                    <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
-                      {pageMeta.subtitle}
-                    </p>
-                  )}
-                </motion.div>
-              </AnimatePresence>
+                )}
+              </motion.div>
             </Link>
           </div>
         }

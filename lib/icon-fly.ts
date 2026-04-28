@@ -53,11 +53,12 @@ export function flyIconToHeader(fromElement: HTMLElement, options: FlyIconOption
 
   if (typeof window === "undefined") return false;
 
-  // Respect prefers-reduced-motion
+  // Respect prefers-reduced-motion — сразу onArrive (для legacy callers, но в новой
+  // версии Link сам делает navigate, onArrive можно не передавать)
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     onArrive?.();
     onComplete?.();
-    return true;
+    return false;
   }
 
   const targetEl = document.querySelector(targetSelector) as HTMLElement | null;
