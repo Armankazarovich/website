@@ -28,7 +28,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Menu, Search, Sparkles, ExternalLink, ChevronRight,
+  Menu, Search, Sparkles,
+  LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
+  Truck, Package, Tag, Warehouse, FileDown, Images, Megaphone,
+  Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
+  Settings, Palette, BarChart2, Stamp, Users, Bell, HelpCircle,
+  Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
@@ -36,6 +41,7 @@ import { AccessGuard } from "@/components/admin/access-guard";
 import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminMenuPopup } from "@/components/admin/admin-menu-popup";
+import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
@@ -121,52 +127,55 @@ export function playOrderChime() {
 // Названия страниц по путям (для шапки)
 // ──────────────────────────────────────────────────────────────────────────
 
-const PAGE_TITLES: Record<string, { title: string; subtitle?: string }> = {
-  "/admin":                  { title: "Дашборд",         subtitle: "Сводка магазина" },
-  "/admin/orders":           { title: "Заказы",          subtitle: "Активные и архив" },
-  "/admin/orders/new":       { title: "Новый заказ",     subtitle: "По телефону" },
-  "/admin/crm":              { title: "ARAY CRM",        subtitle: "Лиды и сделки" },
-  "/admin/crm/automation":   { title: "Автоматизация",   subtitle: "Тоннели" },
-  "/admin/tasks":            { title: "Задачи",          subtitle: "Команда" },
-  "/admin/delivery":         { title: "Доставка",        subtitle: "Маршруты и тарифы" },
-  "/admin/products":         { title: "Каталог товаров", subtitle: "Товары магазина" },
-  "/admin/categories":       { title: "Категории",       subtitle: "Дерево разделов" },
-  "/admin/inventory":        { title: "Склад",           subtitle: "Остатки и движение" },
-  "/admin/import":           { title: "Импорт / Экспорт", subtitle: "CSV, Excel" },
-  "/admin/media":            { title: "Медиабиблиотека", subtitle: "Фото и документы" },
-  "/admin/promotions":       { title: "Акции",           subtitle: "Скидки и предложения" },
-  "/admin/reviews":          { title: "Отзывы",          subtitle: "Модерация" },
-  "/admin/email":            { title: "Email рассылка",  subtitle: "Кампании" },
-  "/admin/promotion":        { title: "Продвижение",     subtitle: "SEO и реклама" },
-  "/admin/finance":          { title: "Финансы",         subtitle: "Доходы и расходы" },
-  "/admin/clients":          { title: "Клиенты",         subtitle: "База покупателей" },
-  "/admin/health":           { title: "Здоровье",        subtitle: "Состояние системы" },
-  "/admin/site":             { title: "Сайт",            subtitle: "Настройки магазина" },
-  "/admin/settings":         { title: "Настройки",       subtitle: "Параметры" },
-  "/admin/appearance":       { title: "Оформление",      subtitle: "Темы и палитры" },
-  "/admin/analytics":        { title: "Аналитика",       subtitle: "Графики и отчёты" },
-  "/admin/watermark":        { title: "Водяной знак",    subtitle: "Защита фото" },
-  "/admin/staff":            { title: "Команда",         subtitle: "Сотрудники" },
-  "/admin/notifications":    { title: "Уведомления",     subtitle: "Push рассылка" },
-  "/admin/help":             { title: "Помощь",          subtitle: "Гайды" },
-  "/admin/aray":             { title: "ARAY AI",         subtitle: "Главная" },
-  "/admin/aray/costs":       { title: "Расходы Арая",    subtitle: "Токены и подписки" },
-  "/admin/aray-lab":         { title: "Лаборатория",     subtitle: "Эксперименты" },
-  "/admin/posts":            { title: "Статьи",          subtitle: "Блог и новости" },
-  "/admin/services":         { title: "Услуги",          subtitle: "Дополнительные сервисы" },
+type PageIcon = React.ElementType | "aray";
+type PageMeta = { title: string; subtitle?: string; icon: PageIcon };
+
+const PAGE_TITLES: Record<string, PageMeta> = {
+  "/admin":                  { title: "Дашборд",         subtitle: "Сводка магазина",     icon: LayoutDashboard },
+  "/admin/orders":           { title: "Заказы",          subtitle: "Активные и архив",    icon: ShoppingBag },
+  "/admin/orders/new":       { title: "Новый заказ",     subtitle: "По телефону",         icon: Plus },
+  "/admin/crm":              { title: "ARAY CRM",        subtitle: "Лиды и сделки",       icon: Target },
+  "/admin/crm/automation":   { title: "Автоматизация",   subtitle: "Тоннели",             icon: Zap },
+  "/admin/tasks":            { title: "Задачи",          subtitle: "Команда",             icon: CheckSquare },
+  "/admin/delivery":         { title: "Доставка",        subtitle: "Маршруты и тарифы",   icon: Truck },
+  "/admin/products":         { title: "Каталог товаров", subtitle: "Товары магазина",     icon: Package },
+  "/admin/categories":       { title: "Категории",       subtitle: "Дерево разделов",     icon: Tag },
+  "/admin/inventory":        { title: "Склад",           subtitle: "Остатки и движение",  icon: Warehouse },
+  "/admin/import":           { title: "Импорт / Экспорт",subtitle: "CSV, Excel",          icon: FileDown },
+  "/admin/media":            { title: "Медиабиблиотека", subtitle: "Фото и документы",    icon: Images },
+  "/admin/promotions":       { title: "Акции",           subtitle: "Скидки и предложения",icon: Megaphone },
+  "/admin/reviews":          { title: "Отзывы",          subtitle: "Модерация",           icon: Star },
+  "/admin/email":            { title: "Email рассылка",  subtitle: "Кампании",            icon: Mail },
+  "/admin/promotion":        { title: "Продвижение",     subtitle: "SEO и реклама",       icon: TrendingUp },
+  "/admin/finance":          { title: "Финансы",         subtitle: "Доходы и расходы",    icon: Wallet },
+  "/admin/clients":          { title: "Клиенты",         subtitle: "База покупателей",    icon: UserCircle },
+  "/admin/health":           { title: "Здоровье",        subtitle: "Состояние системы",   icon: HeartPulse },
+  "/admin/site":             { title: "Сайт",            subtitle: "Настройки магазина",  icon: Globe },
+  "/admin/settings":         { title: "Настройки",       subtitle: "Параметры",           icon: Settings },
+  "/admin/appearance":       { title: "Оформление",      subtitle: "Темы и палитры",      icon: Palette },
+  "/admin/analytics":        { title: "Аналитика",       subtitle: "Графики и отчёты",    icon: BarChart2 },
+  "/admin/watermark":        { title: "Водяной знак",    subtitle: "Защита фото",         icon: Stamp },
+  "/admin/staff":            { title: "Команда",         subtitle: "Сотрудники",          icon: Users },
+  "/admin/notifications":    { title: "Уведомления",     subtitle: "Push рассылка",       icon: Bell },
+  "/admin/help":             { title: "Помощь",          subtitle: "Гайды",               icon: HelpCircle },
+  "/admin/aray":             { title: "ARAY AI",         subtitle: "Главная",             icon: "aray" },
+  "/admin/aray/costs":       { title: "Расходы Арая",    subtitle: "Токены и подписки",   icon: Receipt },
+  "/admin/aray-lab":         { title: "Лаборатория",     subtitle: "Эксперименты",        icon: FlaskConical },
+  "/admin/posts":            { title: "Статьи",          subtitle: "Блог и новости",      icon: BookOpen },
+  "/admin/services":         { title: "Услуги",          subtitle: "Сервисы",             icon: Wrench },
   // Кабинет
-  "/cabinet":                { title: "Главная",         subtitle: "Личный кабинет" },
-  "/cabinet/orders":         { title: "Мои заказы",      subtitle: "Активные и история" },
-  "/cabinet/profile":        { title: "Профиль",         subtitle: "Имя, аватар, тема" },
-  "/cabinet/notifications":  { title: "Уведомления",     subtitle: "Push и email" },
-  "/cabinet/reviews":        { title: "Мои отзывы",      subtitle: "Что я писал" },
-  "/cabinet/media":          { title: "Медиа",           subtitle: "Мои файлы" },
-  "/cabinet/subscriptions":  { title: "Подписки",        subtitle: "Поставщики" },
-  "/cabinet/history":        { title: "История",         subtitle: "Действия" },
-  "/cabinet/appearance":     { title: "Оформление",      subtitle: "Темы и палитры" },
+  "/cabinet":                { title: "Главная",         subtitle: "Личный кабинет",      icon: LayoutDashboard },
+  "/cabinet/orders":         { title: "Мои заказы",      subtitle: "Активные и история",  icon: ShoppingBag },
+  "/cabinet/profile":        { title: "Профиль",         subtitle: "Имя, аватар, тема",   icon: UserCircle },
+  "/cabinet/notifications":  { title: "Уведомления",     subtitle: "Push и email",        icon: Bell },
+  "/cabinet/reviews":        { title: "Мои отзывы",      subtitle: "Что я писал",         icon: Star },
+  "/cabinet/media":          { title: "Медиа",           subtitle: "Мои файлы",           icon: Images },
+  "/cabinet/subscriptions":  { title: "Подписки",        subtitle: "Поставщики",          icon: Heart },
+  "/cabinet/history":        { title: "История",         subtitle: "Действия",            icon: History },
+  "/cabinet/appearance":     { title: "Оформление",      subtitle: "Темы и палитры",      icon: Palette },
 };
 
-function usePageMeta(): { title: string; subtitle?: string } {
+function usePageMeta(): PageMeta {
   const pathname = usePathname();
   const sorted = Object.entries(PAGE_TITLES).sort((a, b) => b[0].length - a[0].length);
   for (const [path, meta] of sorted) {
@@ -174,7 +183,7 @@ function usePageMeta(): { title: string; subtitle?: string } {
       return meta;
     }
   }
-  return { title: "Панель управления" };
+  return { title: "Панель управления", icon: Sparkles };
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -190,6 +199,7 @@ interface AdminShellProps {
 
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const { theme } = useTheme();
   const { palette } = usePalette();
   const pageMeta = usePageMeta();
@@ -206,12 +216,12 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       .catch(() => {});
   }, []);
 
-  // ── Cmd/Ctrl + K — глобальный hotkey ──
+  // ── Cmd/Ctrl + K — открывает поиск (как VS Code, Slack, Linear) ──
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        setMenuOpen((v) => !v);
+        setSearchOpen((v) => !v);
       }
     };
     document.addEventListener("keydown", handler);
@@ -220,22 +230,26 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
   const initial =
     (userName?.charAt(0) || email?.charAt(0) || "A").toUpperCase();
+  const HeaderIcon = pageMeta.icon;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
         leftSlot={
-          <Link href="/admin" className="flex items-center gap-2.5 group">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{
-                background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary)/0.55))",
-                boxShadow: "0 4px 16px hsl(var(--primary)/0.3)",
-              }}
-            >
-              <Sparkles className="w-4 h-4 text-primary-foreground" strokeWidth={2.25} />
-            </div>
+          <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-2.5 group">
+            {pageMeta.icon === "aray" ? (
+              <img
+                src="/images/aray/face-mob.png"
+                alt="ARAY AI"
+                className="w-9 h-9 rounded-xl object-cover shrink-0 ring-1 ring-primary/30"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
+                <HeaderIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </div>
+            )}
             <div className="flex flex-col gap-0 min-w-0">
               <p className="font-display font-bold text-sm leading-none text-foreground truncate">
                 {pageMeta.title}
@@ -250,13 +264,14 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         }
         centerSlot={
           <button
-            onClick={() => setMenuOpen(true)}
-            className="hidden md:flex items-center gap-2 max-w-md w-full px-4 h-9 rounded-xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/30 transition-all text-left text-sm text-muted-foreground group"
-            aria-label="Открыть меню и поиск"
+            onClick={() => setSearchOpen(true)}
+            className="hidden md:flex items-center gap-2.5 max-w-xl w-full px-4 h-10 rounded-xl bg-muted/50 border border-border hover:bg-accent hover:border-primary/30 transition-all text-left text-sm text-muted-foreground group"
+            aria-label="Открыть поиск"
+            type="button"
           >
             <Search className="w-4 h-4 shrink-0 group-hover:text-primary transition-colors" strokeWidth={1.75} />
-            <span className="flex-1 truncate">Поиск раздела, заказа, клиента…</span>
-            <span className="hidden lg:inline-flex items-center gap-1 text-[10px] text-muted-foreground/70">
+            <span className="flex-1 truncate">Поиск раздела, товара, заказа, клиента…</span>
+            <span className="hidden lg:inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 shrink-0">
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">⌘</kbd>
               <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">K</kbd>
             </span>
@@ -265,7 +280,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         rightSlot={
           <>
             <button
-              onClick={() => setMenuOpen(true)}
+              onClick={() => setSearchOpen(true)}
               className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center hover:bg-accent transition-colors"
               aria-label="Открыть поиск"
               type="button"
@@ -321,10 +336,17 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         <ArayControlCenter userRole={role} position="right" />
       </div>
 
-      {/* ─── Меню-попап (управляется menuOpen) ────────── */}
+      {/* ─── Меню-попап (по кнопке Menu в хедере) ─────── */}
       <AdminMenuPopup
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
+        role={role}
+      />
+
+      {/* ─── Поиск-панель справа (по кнопке Search или ⌘K) ── */}
+      <AdminSearchPanel
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
         role={role}
       />
 

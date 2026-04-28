@@ -48,28 +48,37 @@ export function AppHeader({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Сначала проверяем текущую позицию скролла (если страница загружена с прокруткой)
+    setScrolled(window.scrollY > 20);
     setMounted(true);
     const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler, { passive: true });
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  // ── Стиль до mount = базовый (никаких scroll-зависимых вариаций) ──
+  // Это убирает SSR mismatch и мерцание: сервер и клиент рендерят
+  // одинаковое до первого useEffect.
+  const isScrolled = mounted && scrolled;
+
   return (
     <header
       className={cn(
         noSticky ? "relative" : "sticky top-0 z-50",
-        "transition-all duration-500"
+        // Transition включаем только после mount — иначе видно как стиль
+        // плавно "проявляется" в первые 500ms
+        mounted ? "transition-[background,border-color,box-shadow] duration-300" : ""
       )}
       style={{
         backdropFilter: "blur(32px) saturate(200%)",
         WebkitBackdropFilter: "blur(32px) saturate(200%)",
-        background: scrolled
+        background: isScrolled
           ? "hsl(var(--background) / 0.94)"
           : "hsl(var(--background) / 0.78)",
         borderBottom: `1px solid hsl(var(--primary) / ${
-          scrolled ? "0.28" : "0.12"
+          isScrolled ? "0.28" : "0.12"
         })`,
-        boxShadow: scrolled
+        boxShadow: isScrolled
           ? "0 8px 40px hsl(var(--foreground) / 0.08), 0 1px 0 hsl(var(--primary) / 0.15)"
           : "none",
       }}
@@ -89,8 +98,6 @@ export function AppHeader({
           containerClassName,
         )}
         style={{ height }}
-        // suppressHydrationWarning из-за условной заливки на scroll
-        suppressHydrationWarning={!mounted}
       >
         {leftSlot && <div className="flex items-center gap-2 shrink-0">{leftSlot}</div>}
         {centerSlot && <div className="flex-1 min-w-0 flex items-center justify-center">{centerSlot}</div>}
