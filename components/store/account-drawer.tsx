@@ -13,16 +13,15 @@ import {
   X, User, LogOut, ShoppingBag, Settings, Eye, EyeOff,
   Mail, Lock, Loader2, CheckCircle2, ChevronRight, Phone,
   Heart, Bell, Image as ImageIcon, Clock, BookmarkPlus,
-  LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
+  Sparkles, LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
   LifeBuoy, Palette,
-  Users, Package, BarChart3, Sun, Moon,
+  Users, Package, BarChart3,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { UI_LAYERS } from "@/lib/ui-layers";
-import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -309,16 +308,16 @@ type RowItem = {
   badge?: number | string;
 };
 
-function SectionRow({ item, onNavigate, isLast }: { item: RowItem; onNavigate: (href: string) => void; isLast: boolean }) {
+function SectionRow({ item, onClick, isLast }: { item: RowItem; onClick: () => void; isLast: boolean }) {
   const Icon = item.icon;
   return (
-    <button
-      type="button"
-      onClick={() => onNavigate(item.href)}
+    <Link
+      href={item.href}
+      onClick={onClick}
       className={`flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors ${isLast ? "" : "border-b border-border"}`}
     >
       <Icon className="w-6 h-6 text-primary shrink-0" strokeWidth={1.75} />
-      <div className="flex-1 min-w-0 text-left">
+      <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground leading-tight">{item.label}</p>
         {item.desc && <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.desc}</p>}
       </div>
@@ -328,11 +327,11 @@ function SectionRow({ item, onNavigate, isLast }: { item: RowItem; onNavigate: (
         </span>
       )}
       <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-    </button>
+    </Link>
   );
 }
 
-function SectionGroup({ title, items, onNavigate }: { title: string; items: RowItem[]; onNavigate: (href: string) => void }) {
+function SectionGroup({ title, items, onClick }: { title: string; items: RowItem[]; onClick: () => void }) {
   if (items.length === 0) return null;
   return (
     <div>
@@ -344,7 +343,7 @@ function SectionGroup({ title, items, onNavigate }: { title: string; items: RowI
           <SectionRow
             key={item.href}
             item={item}
-            onNavigate={onNavigate}
+            onClick={onClick}
             isLast={idx === items.length - 1}
           />
         ))}
@@ -355,17 +354,17 @@ function SectionGroup({ title, items, onNavigate }: { title: string; items: RowI
 
 // ── Quick action card (Tinkoff-style: круглая primary заливка) ────────────────
 function QuickActionCard({
-  href, icon: Icon, label, onNavigate,
+  href, icon: Icon, label, onClick,
 }: {
   href: string;
   icon: LucideIcon;
   label: string;
-  onNavigate: (href: string) => void;
+  onClick: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={() => onNavigate(href)}
+    <Link
+      href={href}
+      onClick={onClick}
       className="flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
     >
       <div className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
@@ -374,7 +373,7 @@ function QuickActionCard({
       <span className="text-[11px] font-medium text-foreground text-center leading-tight">
         {label}
       </span>
-    </button>
+    </Link>
   );
 }
 
@@ -395,17 +394,11 @@ type ProfileData = {
 function ProfilePanel() {
   const { data: session } = useSession();
   const { setOpen } = useAccountDrawer();
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const [data, setData] = useState<ProfileData | null>(null);
-  const [mounted, setMounted] = useState(false);
   const user = session?.user;
   const role = ((user as { role?: string })?.role) || "USER";
   const isStaff = STAFF_ROLES.includes(role);
   const isAdmin = ADMIN_ROLES.includes(role);
-  const isDark = mounted && theme === "dark";
-
-  useEffect(() => setMounted(true), []);
 
   // Подгружаем профиль + stats (один fetch)
   useEffect(() => {
@@ -421,10 +414,6 @@ function ProfilePanel() {
   }, []);
 
   const close = () => setOpen(false);
-  const navigate = (href: string) => {
-    router.push(href);
-    setOpen(false);
-  };
   const stats = data?.stats;
   const staffStats = data?.staffStats;
   const avatarUrl = data?.avatarUrl ?? null;
@@ -502,9 +491,9 @@ function ProfilePanel() {
     <div className="flex flex-col h-full">
       {/* User card hero — кликабельный, ведёт в профиль */}
       <div className="px-4 pt-4 pb-3">
-        <button
-          type="button"
-          onClick={() => navigate("/cabinet/profile")}
+        <Link
+          href="/cabinet/profile"
+          onClick={close}
           className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
         >
           {avatarUrl ? (
@@ -537,7 +526,7 @@ function ProfilePanel() {
             )}
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
-        </button>
+        </Link>
       </div>
 
       {/* Контент со скроллом */}
@@ -553,28 +542,28 @@ function ProfilePanel() {
                 href="/admin"
                 icon={LayoutDashboard}
                 label="Админка"
-                onNavigate={navigate}
+                onClick={close}
               />
               {isAdmin ? (
                 <QuickActionCard
                   href="/admin/orders/new"
                   icon={PackagePlus}
                   label="Новый заказ"
-                  onNavigate={navigate}
+                  onClick={close}
                 />
               ) : (
                 <QuickActionCard
                   href="/admin/orders"
                   icon={ShoppingBag}
                   label="Заказы"
-                  onNavigate={navigate}
+                  onClick={close}
                 />
               )}
               <QuickActionCard
                 href="/admin/delivery"
                 icon={CalendarCheck}
                 label="Доставка"
-                onNavigate={navigate}
+                onClick={close}
               />
             </div>
           </div>
@@ -582,32 +571,41 @@ function ProfilePanel() {
 
         {/* Группы разделов */}
         {isStaff && managementItems.length > 0 && (
-          <SectionGroup title="Управление" items={managementItems} onNavigate={navigate} />
+          <SectionGroup title="Управление" items={managementItems} onClick={close} />
         )}
-        <SectionGroup title="Покупки" items={purchasesItems} onNavigate={navigate} />
-        <SectionGroup title="Аккаунт" items={accountItems} onNavigate={navigate} />
-        <SectionGroup title="Настройки" items={settingsItems} onNavigate={navigate} />
+        <SectionGroup title="Покупки" items={purchasesItems} onClick={close} />
+        <SectionGroup title="Аккаунт" items={accountItems} onClick={close} />
+        <SectionGroup title="Настройки" items={settingsItems} onClick={close} />
 
-        {mounted && (
-          <button
-            type="button"
-            onClick={() => setTheme(isDark ? "light" : "dark")}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-2xl hover:bg-muted/40 transition-colors"
+        {/* ARAY баннер для staff — primary заливка + Liquid Glass highlight */}
+        {isStaff && (
+          <Link
+            href="/admin"
+            onClick={close}
+            className="block rounded-2xl overflow-hidden"
           >
-            {isDark ? (
-              <Sun className="w-6 h-6 text-primary shrink-0" strokeWidth={1.75} />
-            ) : (
-              <Moon className="w-6 h-6 text-primary shrink-0" strokeWidth={1.75} />
-            )}
-            <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-medium text-foreground leading-tight">
-                {isDark ? "Светлая тема" : "Тёмная тема"}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                Переключить оформление интерфейса
-              </p>
+            <div
+              className="flex items-center gap-3 p-4 bg-primary text-primary-foreground transition-transform active:scale-[0.99]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 35%)",
+                borderTop: "0.5px solid rgba(255,255,255,0.35)",
+              }}
+            >
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5" strokeWidth={2} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-tight">Лаборатория ARAY</p>
+                <p className="text-xs opacity-90 mt-0.5 leading-tight">
+                  {staffStats
+                    ? `Сегодня: ${staffStats.todayNewOrders} ${pluralOrders(staffStats.todayNewOrders)} · ${staffStats.pendingReviews} ${pluralReviews(staffStats.pendingReviews)}`
+                    : "Дашборд, аналитика, инструменты"}
+                </p>
+              </div>
+              <ChevronRight className="w-5 h-5 shrink-0 opacity-90" />
             </div>
-          </button>
+          </Link>
         )}
 
         {/* Logout — destructive outline */}
@@ -627,6 +625,11 @@ function pluralOrders(n: number): string {
   if (n === 1) return "новый заказ";
   if (n >= 2 && n <= 4) return "новых заказа";
   return "новых заказов";
+}
+function pluralReviews(n: number): string {
+  if (n === 1) return "отзыв";
+  if (n >= 2 && n <= 4) return "отзыва";
+  return "отзывов";
 }
 
 // ── Main Drawer ───────────────────────────────────────────────────────────────

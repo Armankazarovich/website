@@ -342,7 +342,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
   const quickOrder = filtered.find(o => o.id === quickViewId);
 
   return (
-    <div className="space-y-5 min-w-0 max-w-full">
+    <div className="space-y-5">
 
       {/* Статистика */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -404,7 +404,7 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
       </div>
 
       {/* Инструменты — CSV + массовые действия */}
-      <div className="flex items-center gap-2 justify-end flex-wrap min-w-0 max-w-full">
+      <div className="flex items-center gap-2 justify-end flex-wrap">
         {statusFilter !== "ALL" && (
           <span className="text-xs text-muted-foreground px-2 py-1 rounded-lg bg-muted/50">
             {filtered.length} из {orders.length}
@@ -475,25 +475,25 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
       </div>
 
       {/* Десктопная таблица (≥ lg) */}
-      <div className="hidden lg:block bg-card rounded-2xl border border-border overflow-hidden min-w-0 max-w-full">
-        <div className="w-full overflow-x-auto overscroll-x-contain">
-          <table className="w-full min-w-[1080px] xl:min-w-0 table-fixed text-sm">
+      <div className="hidden lg:block bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-3 py-3 w-12">
+                <th className="px-3 py-3">
                   <input type="checkbox"
                     checked={selected.size > 0 && selected.size === filtered.length}
                     onChange={toggleAll} className="rounded" />
                 </th>
-                <th className="text-left px-4 py-3 font-semibold w-20">№</th>
-                <th className="text-left px-4 py-3 font-semibold w-[22%]">Клиент</th>
-                <th className="text-left px-4 py-3 font-semibold w-[16%]">Телефон</th>
-                <th className="text-left px-4 py-3 font-semibold hidden md:table-cell w-[18%]">Адрес</th>
-                <th className="text-left px-4 py-3 font-semibold w-28">Дата</th>
-                <th className="text-right px-4 py-3 font-semibold w-28">Сумма</th>
-                <th className="text-center px-4 py-3 font-semibold w-44">Статус</th>
-                <th className="text-left px-4 py-3 font-semibold hidden xl:table-cell w-36">Источник</th>
-                <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell w-16">Поз.</th>
+                <th className="text-left px-4 py-3 font-semibold">№</th>
+                <th className="text-left px-4 py-3 font-semibold">Клиент</th>
+                <th className="text-left px-4 py-3 font-semibold">Телефон</th>
+                <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">Адрес</th>
+                <th className="text-left px-4 py-3 font-semibold">Дата</th>
+                <th className="text-right px-4 py-3 font-semibold">Сумма</th>
+                <th className="text-center px-4 py-3 font-semibold">Статус</th>
+                <th className="text-left px-4 py-3 font-semibold hidden xl:table-cell">Источник</th>
+                <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Поз.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -512,9 +512,9 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
                       className="rounded" />
                   </td>
                   <td className="px-4 py-3 font-medium text-primary">#{order.orderNumber}</td>
-                  <td className="px-4 py-3 font-medium truncate">{order.guestName || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground truncate">{order.guestPhone || "—"}</td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell truncate">
+                  <td className="px-4 py-3 font-medium">{order.guestName || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{order.guestPhone || "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs hidden md:table-cell max-w-[160px] truncate">
                     {order.deliveryAddress || "—"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(order.createdAt)}</td>
