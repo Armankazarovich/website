@@ -54,6 +54,7 @@ import { UI_LAYERS } from "@/lib/ui-layers";
 const LS_CLASSIC = "aray-classic-mode";
 const LS_BG_MODE = "aray-bg-mode";
 export const LS_FONT = "aray-font-size";
+const LS_ADMIN_NAV_EXPANDED = "admin-nav-expanded";
 
 type BgMode = "classic" | "video";
 
@@ -218,6 +219,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const pageMeta = usePageMeta();
   const { onRefresh, actions } = useAdminPageActionsState();
   const showBack = !ROOT_ROUTES.has(pathname);
+  const [navExpanded, setNavExpanded] = useState(true);
   const handleBack = () => {
     const segments = pathname.split("/").filter(Boolean);
     segments.pop();
@@ -242,7 +244,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   };
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem(LS_ADMIN_NAV_EXPANDED);
+    if (saved !== null) setNavExpanded(saved === "1");
+  }, []);
+  const setNavExpandedPersisted = (next: boolean) => {
+    setNavExpanded(next);
+    localStorage.setItem(LS_ADMIN_NAV_EXPANDED, next ? "1" : "0");
+  };
 
   // ── Аватар пользователя ──
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -273,7 +283,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
     <div className="flex flex-col min-h-screen bg-background">
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
-        containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-8"
+        containerClassName={`max-w-none px-3 sm:px-5 lg:pr-8 ${navExpanded ? "lg:pl-72" : "lg:pl-20"}`}
         leftSlot={
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {/* Кнопка «Назад» — глобальная, скрыта на корневых маршрутах */}
@@ -423,6 +433,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         avatarUrl={avatarUrl}
         userName={userName}
         email={email}
+        expanded={navExpanded}
+        onExpandedChange={setNavExpandedPersisted}
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
@@ -434,7 +446,9 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        className={`flex-1 min-w-0 max-w-full overflow-x-clip relative ${UI_LAYERS.content} px-3 sm:px-5 lg:px-8 py-5 lg:py-7 transition-[margin] duration-200 ${
+          navExpanded ? "lg:ml-64" : "lg:ml-16"
+        }`}
         style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
       >
         <AccessGuard role={role}>{children}</AccessGuard>
@@ -510,9 +524,8 @@ function HeaderActions({
     return () => document.removeEventListener("mousedown", handler);
   }, [menuOpen, setMenuOpen]);
 
-  const visibleOnMobile = actions.filter((a) => !a.hideOnMobile);
-  const primary = actions.find((a) => a.variant === "primary");
-  const others = actions.filter((a) => a !== primary);
+  const primary = actions.find((a) => a.variant === "primary" && !a.hideOnMobile);
+  const mobileOthers = actions.filter((a) => !a.hideOnMobile && a !== primary);
 
   return (
     <>
@@ -556,7 +569,7 @@ function HeaderActions({
             <primary.icon className="w-[18px] h-[18px]" strokeWidth={2} />
           </button>
         )}
-        {others.length > 0 && visibleOnMobile.length > (primary ? 1 : 0) && (
+        {mobileOthers.length > 0 && (
           <div ref={menuRef} className="relative">
             <button
               type="button"
@@ -568,7 +581,7 @@ function HeaderActions({
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl py-1 z-50">
-                {others.filter(a => !a.hideOnMobile).map((a) => {
+                {mobileOthers.map((a) => {
                   const Icon = a.icon;
                   return (
                     <button

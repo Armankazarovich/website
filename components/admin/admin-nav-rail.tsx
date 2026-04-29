@@ -30,7 +30,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Sparkles, Package, BookOpen,
   Megaphone, Settings, HelpCircle, UserCircle, ChevronRight,
-  ExternalLink,
+  ExternalLink, ChevronLeft,
 } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import {
@@ -108,9 +108,11 @@ interface Props {
   avatarUrl?: string | null;
   userName?: string | null;
   email?: string | null;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
 }
 
-export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
+export function AdminNavRail({ role, avatarUrl, userName, email, expanded, onExpandedChange }: Props) {
   const pathname = usePathname();
   const { t } = useAdminLang();
   const [hoverGroup, setHoverGroup] = useState<string | null>(null);
@@ -175,17 +177,56 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 
   return (
     <aside
-      className={`hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-3 gap-1 bg-card border-r border-border`}
+      className={`hidden lg:flex fixed left-0 ${expanded ? "w-64" : "w-16"} ${UI_LAYERS.navRail} flex-col ${
+        expanded ? "items-stretch" : "items-center"
+      } py-3 gap-1 bg-card border-r border-border transition-[width] duration-200`}
       style={{ top: 64, height: "calc(100vh - 64px)" }}
       onMouseLeave={scheduleClose}
     >
+      {/* ── Collapse / expand control ── */}
+      <div className={`shrink-0 flex items-center ${expanded ? "justify-between px-3 pb-2" : "justify-center pb-2"}`}>
+        {expanded && (
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground leading-tight truncate">Панель управления</p>
+            <p className="text-[11px] text-muted-foreground leading-tight truncate">ПилоРус</p>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            setHoverGroup(null);
+            setHoverProfile(false);
+            onExpandedChange(!expanded);
+          }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+          aria-label={expanded ? "Свернуть меню" : "Развернуть меню"}
+          title={expanded ? "Свернуть меню" : "Развернуть меню"}
+        >
+          <ChevronLeft
+            className={`w-[18px] h-[18px] transition-transform duration-200 ${expanded ? "" : "rotate-180"}`}
+            strokeWidth={1.75}
+          />
+        </button>
+      </div>
+
       {/* ── Группы навигации ── */}
-      <nav className="flex flex-col items-center gap-1 flex-1 min-h-0">
+      <nav className={`flex flex-col ${expanded ? "items-stretch px-2 overflow-y-auto" : "items-center"} gap-1 flex-1 min-h-0`}>
         {groups.map((g, index) => {
           const isActive = activeGroupKey === g.key;
           const isOpen = hoverGroup === g.key;
           const primaryHref = g.items[0].href;
           const Icon = g.icon;
+
+          if (expanded) {
+            return (
+              <ExpandedGroup
+                key={g.key}
+                group={g}
+                pathname={pathname}
+                t={t}
+              />
+            );
+          }
 
           const railIcon = (
             <div
@@ -237,17 +278,82 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
       </nav>
 
       {/* ── Низ: ссылка на сайт ── */}
-      <div className="shrink-0 pt-2">
+      <div className={`shrink-0 pt-2 ${expanded ? "px-2" : ""}`}>
         <Link
           href="/"
-          className="w-11 h-11 rounded-2xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          className={`rounded-2xl flex items-center ${
+            expanded ? "w-full h-11 px-3 gap-3" : "w-11 h-11 justify-center"
+          } text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all`}
           aria-label="На сайт"
           title="На сайт"
         >
           <ExternalLink className="w-[18px] h-[18px]" strokeWidth={1.75} />
+          {expanded && <span className="text-sm font-medium">На сайт</span>}
         </Link>
       </div>
     </aside>
+  );
+}
+
+function ExpandedGroup({
+  group, pathname, t,
+}: {
+  group: Group;
+  pathname: string;
+  t: (key: any) => string;
+}) {
+  const GroupIcon = group.icon;
+
+  return (
+    <div className="py-1.5">
+      <div className="flex items-center gap-2 px-3 py-1.5">
+        <GroupIcon className="w-3.5 h-3.5 text-muted-foreground/70" strokeWidth={1.75} />
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground truncate">
+          {group.label}
+        </p>
+      </div>
+      <div className="space-y-0.5">
+        {group.items.map((item) => {
+          const isActive = item.exact
+            ? pathname === item.href
+            : pathname.startsWith(item.href);
+          const ItemIcon = item.icon;
+          const label = item.labelKey ? t(item.labelKey) : item.label;
+          const subtitle = SUBTITLE_BY_HREF[item.href];
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+                isActive
+                  ? "bg-primary/12 text-foreground ring-1 ring-primary/20"
+                  : "text-foreground hover:bg-muted/60"
+              }`}
+            >
+              <div
+                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                  isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                <ItemIcon className="w-4 h-4" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm leading-tight truncate ${isActive ? "font-semibold" : "font-medium"}`}>
+                  {label}
+                </p>
+                {subtitle && (
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                    {subtitle}
+                  </p>
+                )}
+              </div>
+              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />}
+            </Link>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -300,9 +406,10 @@ function GroupPopup({
           const label = item.labelKey ? t(item.labelKey) : item.label;
           const subtitle = SUBTITLE_BY_HREF[item.href];
           return (
-            <a
+            <Link
               key={item.href}
               href={item.href}
+              onClick={onMouseLeave}
               className={`flex items-center gap-3 px-4 py-3 transition-colors
                 ${isActive
                   ? "bg-primary/8 text-foreground"
@@ -330,7 +437,7 @@ function GroupPopup({
               <ChevronRight
                 className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
               />
-            </a>
+            </Link>
           );
         })}
       </div>

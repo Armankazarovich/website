@@ -104,6 +104,15 @@ export function useAdminPageActions(config: {
   actions?: AdminAction[];
 }) {
   const ctx = useContext(PageActionsContext);
+  const actionSignature = JSON.stringify(
+    (config.actions ?? []).map((a) => [
+      a.id,
+      a.label,
+      a.variant ?? "ghost",
+      Boolean(a.hideOnMobile),
+      Boolean(a.disabled),
+    ])
+  );
   // Stable refs чтобы избежать infinite loop из-за inline-функций
   const refreshRef = useRef(config.onRefresh);
   const actionsRef = useRef(config.actions);
@@ -119,5 +128,5 @@ export function useAdminPageActions(config: {
       ctx.setActions([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, JSON.stringify((config.actions ?? []).map((a) => a.id)), Boolean(config.onRefresh)]);
+  }, [ctx, actionSignature, Boolean(config.onRefresh)]);
 }
