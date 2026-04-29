@@ -99,7 +99,16 @@ export function AppHeader({
         )}
         style={{ height }}
       >
-        {leftSlot && <div className="flex items-center gap-2 shrink-0">{leftSlot}</div>}
+        {leftSlot && (
+          <div
+            className={cn(
+              "flex items-center gap-2 min-w-0",
+              centerSlot ? "shrink-0" : "flex-1"
+            )}
+          >
+            {leftSlot}
+          </div>
+        )}
         {centerSlot && <div className="flex-1 min-w-0 flex items-center justify-center">{centerSlot}</div>}
         {rightSlot && <div className="flex items-center gap-2 shrink-0 ml-auto">{rightSlot}</div>}
       </div>

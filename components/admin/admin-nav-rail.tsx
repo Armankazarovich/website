@@ -181,27 +181,24 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
     >
       {/* ── Группы навигации ── */}
       <nav className="flex flex-col items-center gap-1 flex-1 min-h-0">
-        {groups.map((g) => {
+        {groups.map((g, index) => {
           const isActive = activeGroupKey === g.key;
           const isOpen = hoverGroup === g.key;
           const primaryHref = g.items[0].href;
           const Icon = g.icon;
 
-          const button = (
-            <button
-              type="button"
+          const railIcon = (
+            <div
               className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
                 ${isActive
                   ? "bg-primary/12 text-primary ring-1 ring-primary/30"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
-              aria-label={g.label}
-              title={g.label}
             >
               <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
               {isActive && (
                 <span className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-primary" />
               )}
-            </button>
+            </div>
           );
 
           return (
@@ -214,19 +211,22 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                 setHoverProfile(false);
               }}
             >
-                <a
+                <Link
                   href={primaryHref}
                   aria-label={g.label}
+                  title={g.label}
                   className="block"
+                  onClick={() => setHoverGroup(null)}
                 >
-                  {button}
-                </a>
+                  {railIcon}
+                </Link>
 
               {isOpen && g.items.length > 1 && (
                 <GroupPopup
                   group={g}
                   pathname={pathname}
                   t={t}
+                  align={index >= groups.length - 3 ? "bottom" : "top"}
                   onMouseEnter={clearCloseTimer}
                   onMouseLeave={scheduleClose}
                 />
@@ -256,11 +256,12 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function GroupPopup({
-  group, pathname, t, onMouseEnter, onMouseLeave,
+  group, pathname, t, align, onMouseEnter, onMouseLeave,
 }: {
   group: Group;
   pathname: string;
   t: (key: any) => string;
+  align: "top" | "bottom";
   onMouseEnter: () => void;
   onMouseLeave: () => void;
 }) {
@@ -268,7 +269,9 @@ function GroupPopup({
 
   return (
     <div
-      className="absolute left-full top-0 ml-2 w-80 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200"
+      className={`absolute left-full ml-2 w-80 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200 ${
+        align === "bottom" ? "bottom-0" : "top-0"
+      }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

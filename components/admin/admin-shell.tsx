@@ -218,6 +218,28 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const pageMeta = usePageMeta();
   const { onRefresh, actions } = useAdminPageActionsState();
   const showBack = !ROOT_ROUTES.has(pathname);
+  const handleBack = () => {
+    const segments = pathname.split("/").filter(Boolean);
+    segments.pop();
+    const fallback =
+      segments.length > 0
+        ? `/${segments.join("/")}`
+        : role === "USER"
+          ? "/cabinet"
+          : "/admin";
+
+    try {
+      const ref = document.referrer ? new URL(document.referrer) : null;
+      const sameOrigin = ref?.origin === window.location.origin;
+      const fromWorkspace = !!ref && (ref.pathname.startsWith("/admin") || ref.pathname.startsWith("/cabinet"));
+      if (sameOrigin && fromWorkspace && window.history.length > 1) {
+        router.back();
+        return;
+      }
+    } catch {}
+
+    router.push(fallback);
+  };
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -251,12 +273,13 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
     <div className="flex flex-col min-h-screen bg-background">
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
+        containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-8"
         leftSlot={
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {/* Кнопка «Назад» — глобальная, скрыта на корневых маршрутах */}
             {showBack && (
               <button
-                onClick={() => router.back()}
+                onClick={handleBack}
                 type="button"
                 aria-label="Назад"
                 title="Назад"
@@ -282,7 +305,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             {/* Иконка раздела + заголовок с анимацией влёта при смене страницы.
                БЕЗ AnimatePresence/exit — это блокировало рендер если переход
                быстрее анимации. Только enter-анимация по key={pathname}. */}
-            <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-3 group min-w-0">
+            <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-2.5 sm:gap-3 group min-w-0 flex-1">
               <motion.div
                 key={pathname}
                 initial={{ opacity: 0, x: -8, scale: 0.85 }}
@@ -309,7 +332,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
-                className="flex flex-col gap-0 min-w-0"
+                className="flex flex-col gap-0 min-w-0 flex-1"
               >
                 <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
                   {pageMeta.title}
