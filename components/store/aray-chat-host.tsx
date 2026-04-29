@@ -289,9 +289,10 @@ function getQuickActions(productName?: string | null, isStaff?: boolean): QuickA
  */
 interface ArayChatHostProps {
   pinned?: boolean;
+  placement?: "left" | "right";
 }
 
-export function ArayChatHost({ pinned = false }: ArayChatHostProps = {}) {
+export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHostProps = {}) {
   const pathname = usePathname() || "/";
   const router = useRouter();
   const cartItems = useCartStore((s) => s.items);
@@ -743,7 +744,7 @@ export function ArayChatHost({ pinned = false }: ArayChatHostProps = {}) {
                 ? "right-0 top-16 bottom-0 lg:w-72 xl:w-96 2xl:w-[28rem] rounded-l-3xl border-r-0 shadow-[-8px_0_32px_hsl(var(--foreground)/0.06)]"
                 : isMobile
                   ? "inset-0 rounded-none"
-                  : "bottom-20 right-6 w-[420px] h-[640px] rounded-[24px] shadow-2xl"
+                  : `bottom-20 ${placement === "left" ? "left-24" : "right-6"} w-[420px] h-[640px] rounded-[24px] shadow-2xl`
             }`}
             style={{
               backdropFilter: isMobile || usePinned ? undefined : "blur(20px) saturate(180%)",

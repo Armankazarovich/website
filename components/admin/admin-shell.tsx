@@ -434,6 +434,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             постоянной правой колонки. Открывается по aray:open и не забирает
             рабочее пространство админки. ── */}
       <LazyAdminAray
+        placement="left"
         staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
         userRole={role}
       />
