@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut, signIn } from "next-auth/react";
 import { useAccountDrawer } from "@/store/account-drawer";
@@ -308,12 +308,11 @@ type RowItem = {
   badge?: number | string;
 };
 
-function SectionRow({ item, onClick, isLast }: { item: RowItem; onClick: () => void; isLast: boolean }) {
+function SectionRow({ item, isLast }: { item: RowItem; isLast: boolean }) {
   const Icon = item.icon;
   return (
     <Link
       href={item.href}
-      onClick={onClick}
       className={`flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors ${isLast ? "" : "border-b border-border"}`}
     >
       <Icon className="w-6 h-6 text-primary shrink-0" strokeWidth={1.75} />
@@ -331,7 +330,7 @@ function SectionRow({ item, onClick, isLast }: { item: RowItem; onClick: () => v
   );
 }
 
-function SectionGroup({ title, items, onClick }: { title: string; items: RowItem[]; onClick: () => void }) {
+function SectionGroup({ title, items }: { title: string; items: RowItem[] }) {
   if (items.length === 0) return null;
   return (
     <div>
@@ -343,7 +342,6 @@ function SectionGroup({ title, items, onClick }: { title: string; items: RowItem
           <SectionRow
             key={item.href}
             item={item}
-            onClick={onClick}
             isLast={idx === items.length - 1}
           />
         ))}
@@ -354,17 +352,15 @@ function SectionGroup({ title, items, onClick }: { title: string; items: RowItem
 
 // ── Quick action card (Tinkoff-style: круглая primary заливка) ────────────────
 function QuickActionCard({
-  href, icon: Icon, label, onClick,
+  href, icon: Icon, label,
 }: {
   href: string;
   icon: LucideIcon;
   label: string;
-  onClick: () => void;
 }) {
   return (
     <Link
       href={href}
-      onClick={onClick}
       className="flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
     >
       <div className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
@@ -493,7 +489,6 @@ function ProfilePanel() {
       <div className="px-4 pt-4 pb-3">
         <Link
           href="/cabinet/profile"
-          onClick={close}
           className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
         >
           {avatarUrl ? (
@@ -542,28 +537,24 @@ function ProfilePanel() {
                 href="/admin"
                 icon={LayoutDashboard}
                 label="Админка"
-                onClick={close}
               />
               {isAdmin ? (
                 <QuickActionCard
                   href="/admin/orders/new"
                   icon={PackagePlus}
                   label="Новый заказ"
-                  onClick={close}
                 />
               ) : (
                 <QuickActionCard
                   href="/admin/orders"
                   icon={ShoppingBag}
                   label="Заказы"
-                  onClick={close}
                 />
               )}
               <QuickActionCard
                 href="/admin/delivery"
                 icon={CalendarCheck}
                 label="Доставка"
-                onClick={close}
               />
             </div>
           </div>
@@ -571,17 +562,16 @@ function ProfilePanel() {
 
         {/* Группы разделов */}
         {isStaff && managementItems.length > 0 && (
-          <SectionGroup title="Управление" items={managementItems} onClick={close} />
+          <SectionGroup title="Управление" items={managementItems} />
         )}
-        <SectionGroup title="Покупки" items={purchasesItems} onClick={close} />
-        <SectionGroup title="Аккаунт" items={accountItems} onClick={close} />
-        <SectionGroup title="Настройки" items={settingsItems} onClick={close} />
+        <SectionGroup title="Покупки" items={purchasesItems} />
+        <SectionGroup title="Аккаунт" items={accountItems} />
+        <SectionGroup title="Настройки" items={settingsItems} />
 
         {/* ARAY баннер для staff — primary заливка + Liquid Glass highlight */}
         {isStaff && (
           <Link
             href="/admin"
-            onClick={close}
             className="block rounded-2xl overflow-hidden"
           >
             <div
@@ -638,7 +628,14 @@ export function AccountDrawer() {
   const { status } = useSession();
   const pathname = usePathname();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const lastPathRef = useRef(pathname);
   const opensFromLeft = pathname?.startsWith("/admin");
+
+  useEffect(() => {
+    if (lastPathRef.current === pathname) return;
+    lastPathRef.current = pathname;
+    setOpen(false);
+  }, [pathname, setOpen]);
 
   // Escape + body scroll lock
   useEffect(() => {
