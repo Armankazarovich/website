@@ -217,6 +217,11 @@ export function AdminMobileBottomNav({
     return () => window.removeEventListener("keydown", onKey);
   }, [notifOpen]);
 
+  // Уведомления не должны зависать поверх нового маршрута, аккаунта или клавиатуры.
+  useEffect(() => {
+    setNotifOpen(false);
+  }, [pathname, accountOpen, kbOpen]);
+
   const openNotifications = useCallback(async () => {
     setNotifOpen(true);
     setLoadingNotif(true);
@@ -249,7 +254,7 @@ export function AdminMobileBottomNav({
           ref={notifRef}
           className="lg:hidden fixed z-[60] bg-card border border-border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200 shadow-2xl"
           style={{
-            bottom: "calc(72px + env(safe-area-inset-bottom, 0px))",
+            bottom: "calc(78px + env(safe-area-inset-bottom, 0px))",
             left: 12,
             right: 12,
             maxHeight: "60vh",

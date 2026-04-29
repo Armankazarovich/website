@@ -20,6 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { UI_LAYERS } from "@/lib/ui-layers";
+import { usePathname } from "next/navigation";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -634,21 +636,28 @@ function pluralReviews(n: number): string {
 export function AccountDrawer() {
   const { open, setOpen } = useAccountDrawer();
   const { status } = useSession();
+  const pathname = usePathname();
   const [mode, setMode] = useState<"login" | "register">("login");
+  const opensFromLeft = pathname?.startsWith("/admin");
 
-  // Escape для закрытия
+  // Escape + body scroll lock
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open, setOpen]);
 
   return (
     <AnimatePresence>
       {open && (
         <div
-          className="fixed inset-0 z-[200] flex justify-end"
+          className={`fixed inset-0 ${UI_LAYERS.overlay} flex ${opensFromLeft ? "justify-start" : "justify-end"}`}
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
@@ -665,11 +674,11 @@ export function AccountDrawer() {
 
           {/* Drawer */}
           <motion.div
-            initial={{ x: "100%" }}
+            initial={{ x: opensFromLeft ? "-100%" : "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: opensFromLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="relative w-[92vw] max-w-[380px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            className={`relative w-full sm:w-[420px] max-w-full h-full bg-background ${opensFromLeft ? "border-r" : "border-l"} border-border shadow-2xl flex flex-col overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

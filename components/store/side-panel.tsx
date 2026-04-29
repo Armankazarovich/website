@@ -38,7 +38,8 @@ interface Props {
 }
 
 /**
- * Универсальный боковой попап — правая колонка, full-height, анимация spring-in.
+ * Универсальный боковой попап — full-height рабочая панель.
+ * На телефоне занимает всю ширину, на планшете/desktop остается боковым drawer.
  * Одна семантика для корзины, форм заявок, фильтров и т.д.
  * Закрывается по клику на подложку, Escape и крестик.
  */
@@ -93,7 +94,7 @@ export function SidePanel({
             animate={{ x: 0 }}
             exit={{ x: isLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={`relative w-[92vw] h-full bg-background ${isLeft ? "border-r" : "border-l"} border-border shadow-2xl flex flex-col overflow-hidden`}
+            className={`relative w-full sm:w-[92vw] h-full bg-background ${isLeft ? "border-r" : "border-l"} border-border shadow-2xl flex flex-col overflow-hidden`}
             style={{ maxWidth }}
             onClick={(e) => e.stopPropagation()}
           >
