@@ -185,7 +185,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
         {groups.map((g) => {
           const isActive = activeGroupKey === g.key;
           const isOpen = hoverGroup === g.key;
-          const single = g.items.length === 1;
+          const primaryHref = g.items[0].href;
           const Icon = g.icon;
 
           const button = (
@@ -196,7 +196,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                   ? "bg-primary/12 text-primary ring-1 ring-primary/30"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
               aria-label={g.label}
-              title={single ? g.label : undefined}
+              title={g.label}
             >
               <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
               {isActive && (
@@ -215,19 +215,15 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                 setHoverProfile(false);
               }}
             >
-              {single ? (
-                <Link
-                  href={g.items[0].href}
-                  aria-label={g.label}
-                  className="block"
-                >
-                  {button}
-                </Link>
-              ) : (
-                button
-              )}
+              <Link
+                href={primaryHref}
+                aria-label={g.label}
+                className="block"
+              >
+                {button}
+              </Link>
 
-              {isOpen && !single && (
+              {isOpen && g.items.length > 1 && (
                 <GroupPopup
                   group={g}
                   pathname={pathname}
