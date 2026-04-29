@@ -423,8 +423,8 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         )}
       </div>
 
-      {/* Мобильные карточки (< md) */}
-      <div className="md:hidden space-y-1.5">
+      {/* Мобильные/планшетные карточки (< lg) */}
+      <div className="lg:hidden space-y-1.5">
         {filtered.map((order) => (
           <div
             key={order.id}
@@ -474,8 +474,8 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         )}
       </div>
 
-      {/* Десктопная таблица (≥ md) */}
-      <div className="hidden md:block bg-card rounded-2xl border border-border overflow-hidden">
+      {/* Десктопная таблица (≥ lg) */}
+      <div className="hidden lg:block bg-card rounded-2xl border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">

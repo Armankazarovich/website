@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  const { name, slug, description, categoryId, images, saleUnit, active, featured } = body as {
+  const { name, slug, description, categoryId, images, saleUnit, active, featured, variants } = body as {
     name?: string;
     slug?: string;
     description?: string;
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
     saleUnit?: string;
     active?: boolean;
     featured?: boolean;
+    variants?: unknown;
   };
 
   // ── Валидация ────────────────────────────────────────────────────────────
@@ -75,6 +76,83 @@ export async function POST(req: Request) {
   if (images !== undefined && !Array.isArray(images)) {
     return NextResponse.json({ error: "images должно быть массивом URL" }, { status: 400 });
   }
+  if (variants !== undefined && !Array.isArray(variants)) {
+    return NextResponse.json({ error: "variants должно быть массивом" }, { status: 400 });
+  }
+
+  type InVariant = {
+    size?: unknown;
+    pricePerCube?: unknown;
+    pricePerPiece?: unknown;
+    piecesPerCube?: unknown;
+    inStock?: unknown;
+  };
+
+  let normalizedVariants: Array<{
+    size: string;
+    pricePerCube: number | null;
+    pricePerPiece: number | null;
+    piecesPerCube: number | null;
+    inStock: boolean;
+  }> = [];
+
+  try {
+    normalizedVariants = Array.isArray(variants)
+      ? (variants as InVariant[]).map((v, i) => {
+          const size = String(v.size ?? "")
+            .trim()
+            .replace(/[хx*]/gi, "×");
+          const pricePerCube =
+            v.pricePerCube !== undefined && v.pricePerCube !== null && v.pricePerCube !== ""
+              ? Number(v.pricePerCube)
+              : null;
+          const pricePerPiece =
+            v.pricePerPiece !== undefined && v.pricePerPiece !== null && v.pricePerPiece !== ""
+              ? Number(v.pricePerPiece)
+              : null;
+          const piecesPerCube =
+            v.piecesPerCube !== undefined && v.piecesPerCube !== null && v.piecesPerCube !== ""
+              ? Number(v.piecesPerCube)
+              : null;
+
+          if (!size) throw new Error(`Вариант #${i + 1}: укажите размер`);
+          if (pricePerCube === null && pricePerPiece === null) {
+            throw new Error(`Вариант ${size}: укажите хотя бы одну цену (за м³ или за шт)`);
+          }
+          if (pricePerCube !== null && (Number.isNaN(pricePerCube) || pricePerCube < 0)) {
+            throw new Error(`Вариант ${size}: цена за м³ должна быть числом ≥ 0`);
+          }
+          if (pricePerPiece !== null && (Number.isNaN(pricePerPiece) || pricePerPiece < 0)) {
+            throw new Error(`Вариант ${size}: цена за шт должна быть числом ≥ 0`);
+          }
+          if (piecesPerCube !== null && (Number.isNaN(piecesPerCube) || piecesPerCube < 0)) {
+            throw new Error(`Вариант ${size}: количество в м³ должно быть числом ≥ 0`);
+          }
+
+          return {
+            size,
+            pricePerCube,
+            pricePerPiece,
+            piecesPerCube,
+            inStock: v.inStock === false ? false : true,
+          };
+        })
+      : [];
+
+    const seenSizes = new Set<string>();
+    for (const variant of normalizedVariants) {
+      const key = variant.size.toLowerCase();
+      if (seenSizes.has(key)) {
+        throw new Error(`Дубликат размера "${variant.size}" — размеры должны быть уникальны в товаре`);
+      }
+      seenSizes.add(key);
+    }
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Некорректные варианты товара" },
+      { status: 400 }
+    );
+  }
 
   // Проверка существования категории
   const categoryExists = await prisma.category.findUnique({
@@ -96,7 +174,7 @@ export async function POST(req: Request) {
           name: name.trim(),
           description: description ?? null,
           category: { name: categoryExists.name },
-          variants: [], // при создании вариантов ещё нет
+          variants: normalizedVariants,
         },
         settings
       );
@@ -117,6 +195,18 @@ export async function POST(req: Request) {
         saleUnit: (saleUnit ?? "BOTH") as never,
         active: active ?? true,
         featured: featured ?? false,
+        variants: normalizedVariants.length > 0
+          ? {
+              create: normalizedVariants.map((v, index) => ({
+                size: v.size,
+                pricePerCube: v.pricePerCube,
+                pricePerPiece: v.pricePerPiece,
+                piecesPerCube: v.piecesPerCube,
+                inStock: v.inStock,
+                sortOrder: index,
+              })),
+            }
+          : undefined,
       },
       include: { category: true, variants: true },
     });

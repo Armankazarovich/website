@@ -530,7 +530,7 @@ export default function AdminProductEditPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-5xl pb-24">
+    <div className="space-y-5 max-w-5xl pb-40">
 
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -807,7 +807,7 @@ export default function AdminProductEditPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-1.5">Категория *</label>
                 <select
@@ -860,7 +860,7 @@ export default function AdminProductEditPage() {
 
             <div>
               <label className="block text-sm font-medium mb-2">Единица продажи</label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 {[
                   { value: "BOTH", label: "м³ и штуки" },
                   { value: "CUBE", label: "Только м³" },
@@ -1033,8 +1033,8 @@ export default function AdminProductEditPage() {
       </div>
 
       {/* ── Sticky Save Bar ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 lg:left-64">
-        <div className="bg-background/95 backdrop-blur border-t border-border px-6 pt-3 flex items-center justify-between gap-4 max-w-5xl" style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}>
+      <div className="fixed left-0 right-0 z-[60] lg:left-16" style={{ bottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="bg-background/95 backdrop-blur border-t border-border px-4 sm:px-6 pt-3 flex items-center justify-between gap-4 max-w-5xl" style={{ paddingBottom: "12px" }}>
           <p className="text-xs text-muted-foreground hidden sm:block">
             {saved ? <><Check className="w-3 h-3 inline mr-1" /> Сохранено</> : <><Keyboard className="w-3 h-3 inline mr-1" /> Ctrl+S для быстрого сохранения</>}
           </p>
