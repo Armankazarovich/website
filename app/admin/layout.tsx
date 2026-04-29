@@ -19,10 +19,10 @@ const VoiceModeOverlay = dynamicImport(
   { ssr: false }
 );
 
-// ArayDock — УДАЛЁН с админки (сессия 40 hotfix, 28.04.2026 вечер).
-// Видение Армана: Арай-колонка справа (ArayPinnedRail) уже содержит инпут+голос,
-// floating dock внизу = дубль. Убираем его на /admin/* и /cabinet/* чтобы не было двух
-// инпутов "Напишите Араю" одновременно. На (store) dock остаётся как был.
+const ArayDock = dynamicImport(
+  () => import("@/components/store/aray-dock").then((m) => ({ default: m.ArayDock })),
+  { ssr: false }
+);
 
 export const metadata: Metadata = {
   title: {
@@ -88,7 +88,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AccountDrawer />
       {/* Voice Mode Overlay — fullscreen разговор (открывается из ArayPinnedRail mic-кнопки) */}
       <VoiceModeOverlay />
-      {/* ArayDock больше не подключаем на админке — pinned-rail справа имеет свой инпут+голос */}
+      <ArayDock enabled />
     </>
   );
 }

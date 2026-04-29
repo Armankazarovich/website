@@ -214,13 +214,13 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                 setHoverProfile(false);
               }}
             >
-              <Link
-                href={primaryHref}
-                aria-label={g.label}
-                className="block"
-              >
-                {button}
-              </Link>
+                <a
+                  href={primaryHref}
+                  aria-label={g.label}
+                  className="block"
+                >
+                  {button}
+                </a>
 
               {isOpen && g.items.length > 1 && (
                 <GroupPopup
@@ -297,7 +297,7 @@ function GroupPopup({
           const label = item.labelKey ? t(item.labelKey) : item.label;
           const subtitle = SUBTITLE_BY_HREF[item.href];
           return (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 transition-colors
@@ -327,7 +327,7 @@ function GroupPopup({
               <ChevronRight
                 className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
               />
-            </Link>
+            </a>
           );
         })}
       </div>
