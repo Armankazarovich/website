@@ -403,15 +403,15 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
-      {/* lg:ml-16 — оступ под рельс слева.
-         lg:mr-72 / xl:mr-[24rem] / 2xl:mr-[28rem] — оступ под Арай-колонку справа. */}
+      {/* lg:ml-16 — отступ под рельс слева. Арай работает как обычный store widget,
+         поэтому справа контент больше не резервирует fixed-колонку. */}
       {/* (Сессия 41, Заход B fix): убран motion.div с key={pathname}, который
          re-mounted при каждом переходе и потенциально конфликтовал с Next.js
          client-navigation (новая страница рендерится поверх старого размонтирующегося
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem] w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
         style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
       >
         <AccessGuard role={role}>{children}</AccessGuard>
@@ -430,12 +430,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         role={role}
       />
 
-      {/* ─── ChatHost — на десктопе зафиксирован справа на месте старого pinned-rail.
-            (Заход B, 28.04.2026 — видение Армана: не нужен дубль с заглушкой,
-            один общий резиновый чат с историей и SSE). На мобилке — обычный
-            fullscreen popup, открывающийся по aray:open из bottom-nav орба. ── */}
+      {/* ─── Арай — тот же режим, что на сайте: обычный store widget без
+            постоянной правой колонки. Открывается по aray:open и не забирает
+            рабочее пространство админки. ── */}
       <LazyAdminAray
-        pinned
         staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
         userRole={role}
       />
