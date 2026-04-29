@@ -32,6 +32,7 @@ import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-bro
 import { useCartStore } from "@/store/cart";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 import { stopAraySpeech } from "@/lib/aray-audio";
+import { UI_LAYERS } from "@/lib/ui-layers";
 
 // ─── Типы ──────────────────────────────────────────────────────────────────────
 interface AssistantAction {
@@ -737,7 +738,7 @@ export function ArayChatHost({ pinned = false }: ArayChatHostProps = {}) {
                 ? { duration: 0.2 }
                 : { type: "spring", stiffness: 380, damping: 32 }
             }
-            className={`fixed z-[300] flex flex-col bg-card border border-border ${
+            className={`fixed ${UI_LAYERS.assistant} flex flex-col bg-card border border-border ${
               usePinned
                 ? "right-0 top-16 bottom-0 lg:w-72 xl:w-96 2xl:w-[28rem] rounded-l-3xl border-r-0 shadow-[-8px_0_32px_hsl(var(--foreground)/0.06)]"
                 : isMobile
@@ -1008,7 +1009,7 @@ export function ArayChatHost({ pinned = false }: ArayChatHostProps = {}) {
             exit={{ opacity: 0, scale: 0.6, y: 24 }}
             transition={{ type: "spring", stiffness: 420, damping: 26 }}
             onClick={() => { setMinimized(false); haptic(8); }}
-            className="fixed z-[300] bottom-24 right-6 w-14 h-14 rounded-full bg-card border border-primary/30 shadow-2xl flex items-center justify-center hover:scale-110 transition-transform"
+            className={`fixed ${UI_LAYERS.assistant} bottom-24 right-6 w-14 h-14 rounded-full bg-card border border-primary/30 shadow-2xl flex items-center justify-center hover:scale-110 transition-transform`}
             style={{ boxShadow: "0 8px 32px hsl(var(--primary) / 0.25)" }}
             aria-label="Развернуть чат с Араем"
           >
@@ -1042,7 +1043,7 @@ export function ArayChatHost({ pinned = false }: ArayChatHostProps = {}) {
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            className="fixed top-6 left-1/2 -translate-x-1/2 z-[400] flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-lg"
+            className={`fixed top-6 left-1/2 -translate-x-1/2 ${UI_LAYERS.toast} flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border shadow-lg`}
             style={{ boxShadow: "0 8px 32px hsl(var(--foreground) / 0.12)" }}
           >
             <Sparkles className="w-4 h-4 text-primary shrink-0" />

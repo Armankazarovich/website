@@ -48,6 +48,7 @@ import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } 
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
 import { useAccountDrawer } from "@/store/account-drawer";
+import { UI_LAYERS } from "@/lib/ui-layers";
 
 // ── Ключи localStorage (сохраняются для других компонентов) ──
 const LS_CLASSIC = "aray-classic-mode";
@@ -404,20 +405,16 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Контент ──────────────────────────────────── */}
       {/* lg:ml-16 — оступ под рельс слева.
          lg:mr-72 / xl:mr-[24rem] / 2xl:mr-[28rem] — оступ под Арай-колонку справа. */}
-      <main className="flex-1 min-w-0 relative z-[5] lg:ml-16 lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem]">
-        {/* Контент: лёгкий fade-in без AnimatePresence/exit — exit-анимация на main
-           блокировала переход между разделами (брат не мог открыть разделы из popup рельса).
-           Заголовок в leftSlot всё равно анимируется через свой AnimatePresence. */}
-        <motion.div
-          key={pathname}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.18, ease: [0.32, 0.72, 0.4, 1] }}
-          className="w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7"
-          style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
-        >
-          <AccessGuard role={role}>{children}</AccessGuard>
-        </motion.div>
+      {/* (Сессия 41, Заход B fix): убран motion.div с key={pathname}, который
+         re-mounted при каждом переходе и потенциально конфликтовал с Next.js
+         client-navigation (новая страница рендерится поверх старого размонтирующегося
+         элемента → клики могли проваливаться в старый слой). Анимация при смене
+         страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
+      <main
+        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 lg:mr-72 xl:mr-[24rem] 2xl:mr-[28rem] w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
+      >
+        <AccessGuard role={role}>{children}</AccessGuard>
       </main>
 
       {/* ─── Mobile bottom nav (с Арай-орбом) ─────────── */}

@@ -3,6 +3,7 @@
 import { useEffect, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { UI_LAYERS } from "@/lib/ui-layers";
 
 interface Props {
   open: boolean;
@@ -51,7 +52,7 @@ export function SidePanel({
   children,
   footer,
   maxWidth = "480px",
-  zIndex = "z-[200]",
+  zIndex = UI_LAYERS.overlay,
   showHeader = true,
   customHeader,
   side = "right",

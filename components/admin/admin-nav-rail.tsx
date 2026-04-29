@@ -37,6 +37,7 @@ import {
   allNavItems, GROUP_LABELS, type NavItem,
 } from "@/components/admin/admin-nav";
 import { flyIconToHeader, getIconSvgFromElement } from "@/lib/icon-fly";
+import { UI_LAYERS } from "@/lib/ui-layers";
 
 // ── Иконка для каждой группы (главная иконка раздела) ──
 const GROUP_ICONS: Record<string, React.ElementType> = {
@@ -175,7 +176,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 
   return (
     <aside
-      className="hidden lg:flex fixed left-0 w-16 z-30 flex-col items-center py-3 gap-1 bg-card border-r border-border"
+      className={`hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-3 gap-1 bg-card border-r border-border`}
       style={{ top: 64, height: "calc(100vh - 64px)" }}
       onMouseLeave={scheduleClose}
     >

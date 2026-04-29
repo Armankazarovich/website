@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, useDragControls, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, RotateCcw, Maximize2, Minimize2, ExternalLink } from "lucide-react";
+import { UI_LAYERS } from "@/lib/ui-layers";
 
 export interface ArayBrowserAction {
   type: "navigate" | "spotlight" | "highlight";
@@ -162,7 +163,7 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
       dragControls={dragControls}
       dragMomentum={false}
       dragElastic={0}
-      className="fixed z-[150] overflow-hidden"
+      className={`fixed ${UI_LAYERS.assistantBrowser} overflow-hidden`}
       style={{
         width: panelW,
         height: panelH,
