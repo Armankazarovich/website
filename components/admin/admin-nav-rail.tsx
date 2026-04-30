@@ -266,14 +266,13 @@ function GroupPopup({
 
   return (
     <div
-      className={`admin-popup-liquid admin-nav-panel admin-nav-drawer absolute left-full ml-1 border rounded-[24px] overflow-hidden z-[70] ${
-        align === "bottom" ? "bottom-0" : "top-0"
-      }`}
+      className="admin-popup-liquid admin-nav-panel admin-nav-drawer fixed left-[5.25rem] top-[76px] bottom-4 border rounded-[24px] overflow-hidden z-[70] flex flex-col"
+      data-align={align}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Шапка попапа: иконка группы + label */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70 shrink-0">
         <div className="w-10 h-10 rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0 shadow-[0_10px_28px_hsl(var(--primary)/0.12)]">
           <GroupIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
@@ -288,7 +287,7 @@ function GroupPopup({
       </div>
 
       {/* Список пунктов с разделителями */}
-      <div className="max-h-[70vh] overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
         {group.items.map((item) => {
           const isActive = item.exact
             ? pathname === item.href

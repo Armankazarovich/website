@@ -971,7 +971,7 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .admin-nav-panel {
-  width: min(364px, calc(100vw - 88px));
+  width: min(364px, calc(100vw - 104px));
   border-left-color: hsl(var(--primary) / 0.18);
 }
 
@@ -1012,10 +1012,29 @@ button, a, [role="button"], input, select, textarea {
     0 18px 46px hsl(20 30% 8% / 0.12);
 }
 
+.admin-nav-drawer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.18), transparent 18%),
+    radial-gradient(circle at 10% 10%, hsl(var(--primary) / 0.08), transparent 16rem);
+  opacity: 0.42;
+}
+
 .dark .admin-nav-drawer {
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.08) inset,
     0 18px 54px hsl(0 0% 0% / 0.34);
+}
+
+.dark .admin-nav-drawer::after {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.06), transparent 18%),
+    radial-gradient(circle at 10% 10%, hsl(var(--primary) / 0.12), transparent 18rem);
+  opacity: 0.6;
 }
 
 @media (hover: hover) and (pointer: fine) {
