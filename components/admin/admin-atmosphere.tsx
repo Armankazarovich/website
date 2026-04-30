@@ -6,18 +6,17 @@ import { useTheme } from "next-themes";
 export type AdminBgMode = "clean" | "photo";
 
 const DARK_NATURE_PHOTOS = [
-  "https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
-  "https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
-  "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
-  "https://images.pexels.com/photos/1287145/pexels-photo-1287145.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
-  "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
+  "/images/admin-atmosphere/source-water-intelligence.webp",
+  "/images/admin-atmosphere/source-horizon.webp",
+  "/images/admin-atmosphere/future-city.webp",
+  "/images/admin-atmosphere/future-blue-corridor.webp",
+  "/images/admin-atmosphere/cosmic-data.webp",
 ];
 
 const LIGHT_WINTER_PHOTOS = [
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1800&q=72",
-  "https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=1800&q=72",
-  "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1800&q=72",
-  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1800&q=72",
+  "/images/admin-atmosphere/northern-light.webp",
+  "/images/admin-atmosphere/source-horizon.webp",
+  "/images/admin-atmosphere/source-water-intelligence.webp",
 ];
 
 const PHOTO_MS = 28_000;
