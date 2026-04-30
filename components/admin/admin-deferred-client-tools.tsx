@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import { AdminPwaInstallBridge } from "@/components/admin/admin-pwa-install";
 
 const AccountDrawer = dynamic(
   () => import("@/components/store/account-drawer").then((m) => ({ default: m.AccountDrawer })),
@@ -55,10 +56,11 @@ export function AdminDeferredClientTools() {
     };
   }, [mounted, pendingArayEvent]);
 
-  if (!mounted) return null;
+  if (!mounted) return <AdminPwaInstallBridge />;
 
   return (
     <>
+      <AdminPwaInstallBridge />
       <AccountDrawer />
       <VoiceModeOverlay />
       <ArayDock enabled />

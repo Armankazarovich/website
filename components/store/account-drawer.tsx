@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { usePathname } from "next/navigation";
+import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -567,6 +568,8 @@ function ProfilePanel() {
             </div>
           </div>
         )}
+
+        {isStaff && <AdminPwaInstall />}
 
         {/* Группы разделов */}
         {isStaff && managementItems.length > 0 && (

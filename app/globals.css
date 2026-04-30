@@ -859,28 +859,32 @@ button:focus-visible > .admin-rail-icon {
 }
 
 .admin-mobile-dock {
+  max-width: min(720px, calc(100vw - 1rem));
+  margin-inline: auto;
+  border: 1px solid hsl(var(--border) / 0.68);
+  border-radius: 1.65rem;
+  overflow: visible;
   background:
     linear-gradient(180deg, hsl(var(--card) / 0.92), hsl(var(--secondary) / 0.88)),
     hsl(var(--background) / 0.92);
-  border-top: 1px solid hsl(var(--border) / 0.68);
   box-shadow:
     0 -1px 0 hsl(0 0% 100% / 0.26) inset,
-    0 -14px 34px hsl(20 30% 8% / 0.07);
+    0 18px 54px hsl(20 30% 8% / 0.10);
 }
 
 .dark .admin-mobile-dock {
   background: hsl(var(--background) / 0.88);
-  border-top-color: hsl(var(--primary) / 0.18);
+  border-color: hsl(var(--primary) / 0.18);
   box-shadow:
     0 -1px 0 hsl(0 0% 100% / 0.08) inset,
-    0 -22px 58px hsl(0 0% 0% / 0.42);
+    0 24px 70px hsl(0 0% 0% / 0.48);
 }
 
 .admin-mobile-dock::before {
   content: "";
   position: absolute;
-  inset-inline: 12px;
-  top: 0;
+  inset-inline: 18px;
+  top: 0.2rem;
   height: 1px;
   pointer-events: none;
   background: linear-gradient(
@@ -891,6 +895,66 @@ button:focus-visible > .admin-rail-icon {
     hsl(var(--primary) / 0.30),
     transparent
   );
+}
+
+.admin-mobile-dock-inner {
+  min-height: 4.25rem;
+}
+
+.admin-mobile-nav-item {
+  border-radius: 1.15rem;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-mobile-nav-icon {
+  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-mobile-nav-item.is-active .admin-mobile-nav-icon,
+.admin-mobile-nav-icon.is-active {
+  background:
+    radial-gradient(circle at 50% 16%, hsl(var(--primary) / 0.18), transparent 64%),
+    hsl(var(--card) / 0.64);
+  border-color: hsl(var(--primary) / 0.18);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.20) inset,
+    0 10px 24px hsl(var(--primary) / 0.12);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-mobile-nav-item:hover .admin-mobile-nav-icon {
+    color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.10);
+    border-color: hsl(var(--primary) / 0.16);
+  }
+}
+
+.admin-mobile-sheet {
+  max-width: min(28rem, calc(100vw - 1.5rem));
+  margin-inline: auto;
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 18px 54px hsl(20 30% 8% / 0.16);
+}
+
+.dark .admin-mobile-sheet {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 22px 66px hsl(0 0% 0% / 0.46);
 }
 
 .account-drawer-panel.admin-popup-liquid {

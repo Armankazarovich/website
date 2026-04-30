@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import { Bell, CheckCircle2, X } from "lucide-react";
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -51,17 +53,11 @@ export function PushSubscription() {
   useEffect(() => {
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
     if (!vapidKey) return;
+    if (!("Notification" in window)) return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     if (Notification.permission === "denied") return;
 
     async function init() {
-      // Залогиненный пользователь = подписчик по умолчанию:
-      // если разрешение ещё не запрашивалось — автоматически спрашиваем через 3s
-      if (session?.user?.id && Notification.permission === "default") {
-        await new Promise((r) => setTimeout(r, 3000));
-        await Notification.requestPermission();
-      }
-
       if (Notification.permission === "denied") return;
 
       const reg = await navigator.serviceWorker.ready;
@@ -94,9 +90,11 @@ export function PushSubscription() {
 const BANNER_KEY = "push_prompt_dismissed_at";
 
 export function PushPromptBanner() {
+  const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const isAdmin = pathname?.startsWith("/admin");
 
   useEffect(() => {
     if (!("Notification" in window) || !("PushManager" in window) || !("serviceWorker" in navigator)) return;
@@ -122,18 +120,25 @@ export function PushPromptBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-20 lg:bottom-6 left-4 right-4 lg:left-auto lg:right-6 lg:w-[360px] z-50" style={{animation:"slideUp .3s ease"}}>
+    <div className="fixed bottom-28 lg:bottom-6 left-3 right-3 sm:left-4 sm:right-4 lg:left-auto lg:right-6 lg:w-[360px] z-[70]" style={{animation:"slideUp .3s ease"}}>
       <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <div className="bg-card border border-border rounded-2xl shadow-2xl p-4 relative">
+      <div className={`${isAdmin ? "admin-popup-liquid" : "bg-card"} border border-border rounded-2xl shadow-2xl p-4 relative`}>
         {done ? (
-          <p className="text-sm font-medium text-emerald-600 py-1">✓ Уведомления включены!</p>
+          <p className="flex items-center gap-2 text-sm font-medium text-emerald-600 py-1">
+            <CheckCircle2 className="w-4 h-4" />
+            Уведомления включены
+          </p>
         ) : (
           <>
-            <button onClick={dismiss} className="absolute top-3 right-3 w-6 h-6 text-muted-foreground hover:text-foreground text-lg leading-none">×</button>
+            <button onClick={dismiss} className="absolute top-3 right-3 w-7 h-7 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center transition-colors" aria-label="Закрыть">
+              <X className="w-3.5 h-3.5" />
+            </button>
             <div className="flex items-start gap-3 pr-6">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 text-primary text-lg">🔔</div>
-              <div><p className="font-semibold text-sm">Включите уведомления</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Статус заказов и акции — первыми</p></div>
+              <div className="w-9 h-9 rounded-xl bg-primary/10 ring-1 ring-primary/15 flex items-center justify-center shrink-0 text-primary">
+                <Bell className="w-4 h-4" />
+              </div>
+              <div><p className="font-semibold text-sm text-foreground">Включите уведомления</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Новые заказы и важные события без лишнего шума</p></div>
             </div>
             <div className="flex gap-2 mt-3">
               <button onClick={handleSubscribe} disabled={busy}
@@ -153,6 +158,7 @@ export function PushPromptBanner() {
 export async function requestPushPermission(): Promise<boolean> {
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
   if (!vapidKey) { console.error("[Push] NEXT_PUBLIC_VAPID_KEY not set"); return false; }
+  if (!("Notification" in window)) return false;
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
 
   const permission = await Notification.requestPermission();

@@ -90,12 +90,14 @@ function NavItem({ icon: Icon, label, isActive, badge, onClick, href }: NavItemP
     <motion.div
       whileTap={{ scale: 0.92 }}
       transition={{ type: "spring", stiffness: 500, damping: 18 }}
-      className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 ${
+      className={`admin-mobile-nav-item relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 ${
+        isActive ? "is-active " : ""
+      }${
         isActive ? "text-primary" : "text-muted-foreground"
       }`}
       style={{ WebkitTapHighlightColor: "transparent" }}
     >
-      <div className="relative">
+      <div className={`admin-mobile-nav-icon relative ${isActive ? "is-active" : ""}`}>
         <Icon
           className="w-[22px] h-[22px]"
           strokeWidth={isActive ? 2.2 : 1.75}
@@ -252,9 +254,9 @@ export function AdminMobileBottomNav({
       {notifOpen && (
         <div
           ref={notifRef}
-          className="admin-popup-liquid lg:hidden fixed z-[60] border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
+          className="admin-popup-liquid admin-mobile-sheet lg:hidden fixed z-[60] border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
           style={{
-            bottom: "calc(78px + env(safe-area-inset-bottom, 0px))",
+            bottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
             left: 12,
             right: 12,
             maxHeight: "60vh",
@@ -367,17 +369,16 @@ export function AdminMobileBottomNav({
 
       {/* ── Bottom dock (calm UI + Liquid Glass, идентично магазину) ── */}
       <nav
-        className="admin-mobile-dock fixed left-0 right-0 z-50 lg:hidden transition-all duration-300"
+        className="admin-mobile-dock fixed inset-x-2 sm:inset-x-4 z-50 lg:hidden transition-all duration-300"
         style={{
-          bottom: (accountOpen || kbOpen) ? "-120px" : "0",
+          bottom: (accountOpen || kbOpen) ? "calc(-140px - env(safe-area-inset-bottom, 0px))" : "max(10px, env(safe-area-inset-bottom, 10px))",
           opacity: (accountOpen || kbOpen) ? 0 : 1,
           pointerEvents: (accountOpen || kbOpen) ? "none" : "auto",
         }}
         aria-label="Нижняя навигация админки"
       >
         <div
-          className="flex items-end justify-around px-1 pt-1 relative"
-          style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}
+          className="admin-mobile-dock-inner flex items-end justify-around px-1.5 py-1.5 relative"
         >
           {/* Левые табы (по роли) */}
           <div className="flex items-center justify-around flex-1 pt-1">
