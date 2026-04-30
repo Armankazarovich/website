@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
@@ -31,10 +31,19 @@ type Product = {
 
 type Category = { id: string; name: string };
 
+function adminPreviewSrc(src: string) {
+  if (!src.startsWith("/")) return src;
+  return `${src}${src.includes("?") ? "&" : "?"}adminPreview=1`;
+}
+
 function ProductThumb({ p, compact = false }: { p: Product; compact?: boolean }) {
   const [failed, setFailed] = useState(false);
   const src = p.images[0];
   const canShowImage = Boolean(src) && !failed;
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   return (
     <Link
@@ -44,7 +53,7 @@ function ProductThumb({ p, compact = false }: { p: Product; compact?: boolean })
     >
       {canShowImage ? (
         <img
-          src={src}
+          src={adminPreviewSrc(src)}
           alt={p.name}
           className="w-full h-full object-cover transition-transform duration-300 group-hover/thumb:scale-105"
           loading="lazy"

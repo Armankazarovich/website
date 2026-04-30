@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +61,48 @@ type Product = {
 };
 
 type Category = { id: string; name: string; slug: string };
+
+function adminPreviewSrc(src: string) {
+  if (!src.startsWith("/")) return src;
+  return `${src}${src.includes("?") ? "&" : "?"}adminPreview=1`;
+}
+
+function AdminImagePreview({
+  src,
+  alt,
+  className,
+  fallbackLabel = "Фото не загрузилось",
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  fallbackLabel?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (failed) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-muted/40 text-muted-foreground">
+        <ImageIcon className="h-8 w-8 opacity-45" />
+        <span className="px-3 text-center text-xs font-medium leading-tight">{fallbackLabel}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={adminPreviewSrc(src)}
+      alt={alt}
+      className={cn("h-full w-full object-cover", className)}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 /** Естественная сортировка по строкам: "6мм" < "9мм" < "12мм" (а не "12" < "6"). */
 function naturalCompare(a: string, b: string): number {
@@ -646,7 +687,7 @@ export default function AdminProductEditPage() {
               }}
             >
               {images[0] ? (
-                <Image src={images[0]} alt={name} fill className="object-cover" unoptimized />
+                <AdminImagePreview src={images[0]} alt={name} fallbackLabel="Фото есть в базе, но превью не загрузилось" />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground bg-muted/30">
                   <Upload className="w-10 h-10 opacity-40" />
@@ -680,7 +721,7 @@ export default function AdminProductEditPage() {
                       onClick={() => setPrimaryImage(idx)}
                       title={idx === 0 ? "Главное фото" : "Сделать главным"}
                     >
-                      <Image src={img} alt="" fill className="object-cover" unoptimized />
+                      <AdminImagePreview src={img} alt="" fallbackLabel="Не загрузилось" />
                       {idx === 0 && (
                         <div className="absolute top-0.5 left-0.5 bg-primary text-primary-foreground text-[9px] font-semibold px-1.5 py-0.5 rounded">
                           Главное
