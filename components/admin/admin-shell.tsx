@@ -44,6 +44,7 @@ import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
+import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
@@ -207,11 +208,31 @@ const ROOT_ROUTES = new Set([
   "/admin", "/cabinet", "/admin/aray",
 ]);
 
+function scheduleIdleTask(callback: () => void, delay = 1500) {
+  let cancelIdle: (() => void) | null = null;
+  const timer = globalThis.setTimeout(() => {
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = (window as any).requestIdleCallback(callback, { timeout: 1000 });
+      cancelIdle = () => (window as any).cancelIdleCallback?.(idleId);
+      return;
+    }
+
+    callback();
+  }, delay);
+
+  return () => {
+    globalThis.clearTimeout(timer);
+    cancelIdle?.();
+  };
+}
+
 function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
+  const [arayMounted, setArayMounted] = useState(false);
+  const [pendingArayOpen, setPendingArayOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { palette } = usePalette();
   const { toggle: toggleAccount } = useAccountDrawer();
@@ -321,11 +342,48 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   // ── Аватар пользователя ──
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => {
-    fetch("/api/cabinet/profile")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d?.avatarUrl) setAvatarUrl(d.avatarUrl); })
-      .catch(() => {});
+    let cancelled = false;
+    const cancel = scheduleIdleTask(() => {
+      fetch("/api/cabinet/profile")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (!cancelled && d?.avatarUrl) setAvatarUrl(d.avatarUrl); })
+        .catch(() => {});
+    }, 1800);
+    return () => {
+      cancelled = true;
+      cancel();
+    };
   }, []);
+
+  useEffect(() => {
+    return scheduleIdleTask(() => setArayMounted(true), 2200);
+  }, []);
+
+  useEffect(() => {
+    const openAray = () => {
+      setArayMounted(true);
+      setPendingArayOpen(true);
+    };
+    window.addEventListener("aray:open", openAray);
+    return () => window.removeEventListener("aray:open", openAray);
+  }, []);
+
+  useEffect(() => {
+    if (!arayMounted || !pendingArayOpen) return;
+    const timers = [180, 520, 1000].map((delay) =>
+      window.setTimeout(() => window.dispatchEvent(new Event("aray:open")), delay)
+    );
+    const done = window.setTimeout(() => setPendingArayOpen(false), 1200);
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+      window.clearTimeout(done);
+    };
+  }, [arayMounted, pendingArayOpen]);
+
+  const requestArayOpen = () => {
+    setArayMounted(true);
+    setPendingArayOpen(true);
+  };
 
   // ── Cmd/Ctrl + K — открывает поиск (как VS Code, Slack, Linear) ──
   useEffect(() => {
@@ -508,7 +566,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       {/* ─── Mobile bottom nav (с Арай-орбом) ─────────── */}
       <AdminMobileBottomNav
         role={role}
-        onArayOpen={() => window.dispatchEvent(new Event("aray:open"))}
+        onArayOpen={requestArayOpen}
       />
 
       {/* ─── Поиск-панель слева (по кнопке Search или ⌘K) ── */}
@@ -518,14 +576,20 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         role={role}
       />
 
+      <div className="hidden lg:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
+        <ArayControlCenter userRole={role} position="right" />
+      </div>
+
       {/* ─── Арай — тот же режим, что на сайте: обычный store widget без
             постоянной правой колонки. Открывается по aray:open и не забирает
             рабочее пространство админки. ── */}
-      <LazyAdminAray
-        placement="left"
-        staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
-        userRole={role}
-      />
+      {arayMounted && (
+        <LazyAdminAray
+          placement="left"
+          staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
+          userRole={role}
+        />
+      )}
     </div>
   );
 }

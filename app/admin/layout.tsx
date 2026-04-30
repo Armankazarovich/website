@@ -3,26 +3,9 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import dynamicImport from "next/dynamic";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { AdminDeferredClientTools } from "@/components/admin/admin-deferred-client-tools";
 import { prisma } from "@/lib/prisma";
-
-// AccountDrawer — единый side drawer (тот же что в магазине), открывается из admin-mobile-bottom-nav
-const AccountDrawer = dynamicImport(
-  () => import("@/components/store/account-drawer").then((m) => ({ default: m.AccountDrawer })),
-  { ssr: false }
-);
-
-// VoiceModeOverlay — fullscreen voice разговор с Араем (тот же что в магазине)
-const VoiceModeOverlay = dynamicImport(
-  () => import("@/components/store/voice-mode-overlay").then((m) => ({ default: m.VoiceModeOverlay })),
-  { ssr: false }
-);
-
-const ArayDock = dynamicImport(
-  () => import("@/components/store/aray-dock").then((m) => ({ default: m.ArayDock })),
-  { ssr: false }
-);
 
 export const metadata: Metadata = {
   title: {
@@ -84,11 +67,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminShell role={role} email={session.user?.email} userName={userName}>
         {children}
       </AdminShell>
-      {/* Единый AccountDrawer — тот же что в магазине, открывается из bottom nav */}
-      <AccountDrawer />
-      {/* Voice Mode Overlay — fullscreen разговор (открывается из ArayPinnedRail mic-кнопки) */}
-      <VoiceModeOverlay />
-      <ArayDock enabled />
+      <AdminDeferredClientTools />
     </>
   );
 }
