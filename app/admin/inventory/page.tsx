@@ -8,7 +8,7 @@ export const metadata = { title: "Склад / Остатки" };
 
 export default async function InventoryPage() {
   const session = await auth();
-  if (!session) redirect("/admin/login");
+  if (!session) redirect("/login");
 
   const variants = await prisma.productVariant.findMany({
     select: {

@@ -7,7 +7,7 @@ export const metadata = { title: "Медиабиблиотека" };
 
 export default async function MediaPage() {
   const session = await auth();
-  if (!session) redirect("/admin/login");
+  if (!session) redirect("/login");
   const role = (session.user as { role?: string })?.role;
   if (!["ADMIN", "MANAGER"].includes(role || "")) redirect("/admin");
 

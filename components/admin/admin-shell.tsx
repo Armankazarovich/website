@@ -434,7 +434,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 w-full px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 lg:w-[calc(100%-4rem)] px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
         style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
       >
         <AccessGuard role={role}>{children}</AccessGuard>

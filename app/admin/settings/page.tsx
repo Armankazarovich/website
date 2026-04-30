@@ -209,7 +209,7 @@ export default function AdminSettingsPage() {
       icon: <Monitor className="w-5 h-5" />,
       title: "Продвижение и реклама",
       description: "Яндекс Директ, Google Ads, Avito, Яндекс Маркет, 2GIS",
-      href: "/admin/advertising",
+      href: "/admin/promotion",
       tags: ["реклама", "директ", "google ads", "avito", "яндекс маркет", "продвижение"],
     },
     // ── КОМАНДА ──

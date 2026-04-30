@@ -7,7 +7,7 @@ export const metadata = { title: "Импорт / Экспорт товаров" 
 
 export default async function ImportPage() {
   const session = await auth();
-  if (!session) redirect("/admin/login");
+  if (!session) redirect("/login");
   const role = (session.user as { role?: string })?.role;
   if (!["ADMIN", "MANAGER", "WAREHOUSE"].includes(role || "")) redirect("/admin");
 

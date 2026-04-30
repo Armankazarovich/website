@@ -10,7 +10,7 @@ export default async function TasksPage() {
   const session = await auth();
   const role = (session?.user as any)?.role;
   if (!session || !["ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role)) {
-    redirect("/admin/login");
+    redirect("/login");
   }
 
   const [tasks, staff] = await Promise.all([
