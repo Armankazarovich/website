@@ -30,7 +30,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Sparkles, Package, BookOpen,
   Megaphone, Settings, HelpCircle, UserCircle, ChevronRight,
-  ExternalLink,
+  ExternalLink, X,
 } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import {
@@ -115,6 +115,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
   const pathname = usePathname();
   const { t } = useAdminLang();
   const [hoverGroup, setHoverGroup] = useState<string | null>(null);
+  const [pinnedGroup, setPinnedGroup] = useState<string | null>(null);
   const [hoverProfile, setHoverProfile] = useState(false);
   const closeTimer = useRef<number | null>(null);
 
@@ -161,6 +162,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
   }
   function scheduleClose() {
     clearCloseTimer();
+    if (pinnedGroup) return;
     closeTimer.current = window.setTimeout(() => {
       setHoverGroup(null);
       setHoverProfile(false);
@@ -171,11 +173,41 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
   // ── Закрыть popup при смене страницы ──
   useEffect(() => {
     setHoverGroup(null);
+    setPinnedGroup(null);
     setHoverProfile(false);
   }, [pathname]);
 
+  const closePanels = useCallback(() => {
+    clearCloseTimer();
+    setHoverGroup(null);
+    setPinnedGroup(null);
+    setHoverProfile(false);
+  }, []);
+
+  useEffect(() => {
+    if (!pinnedGroup) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Element | null;
+      if (target?.closest("[data-admin-nav-rail]")) return;
+      closePanels();
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closePanels();
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closePanels, pinnedGroup]);
+
   return (
     <aside
+      data-admin-nav-rail
       className={`admin-rail-liquid admin-rail-shell hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-4 px-2.5 gap-2`}
       style={{ top: 76, height: "calc(100vh - 92px)" }}
       onMouseLeave={scheduleClose}
@@ -184,7 +216,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
       <nav className="admin-rail-list flex flex-col items-center gap-2 flex-1 min-h-0">
         {groups.map((g, index) => {
           const isActive = activeGroupKey === g.key;
-          const isOpen = hoverGroup === g.key;
+          const isOpen = (pinnedGroup || hoverGroup) === g.key;
           const primaryHref = g.items[0].href;
           const Icon = g.icon;
 
@@ -203,19 +235,38 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
               className="relative"
               onMouseEnter={() => {
                 clearCloseTimer();
-                setHoverGroup(g.key);
+                if (!pinnedGroup) setHoverGroup(g.key);
                 setHoverProfile(false);
               }}
             >
+              {g.items.length > 1 ? (
+                <button
+                  type="button"
+                  aria-label={g.label}
+                  aria-expanded={isOpen}
+                  title={g.label}
+                  className="block appearance-none border-0 bg-transparent p-0"
+                  onClick={() => {
+                    clearCloseTimer();
+                    const nextPinned = pinnedGroup === g.key ? null : g.key;
+                    setPinnedGroup(nextPinned);
+                    setHoverGroup(nextPinned ? g.key : null);
+                    setHoverProfile(false);
+                  }}
+                >
+                  {railIcon}
+                </button>
+              ) : (
                 <Link
                   href={primaryHref}
                   aria-label={g.label}
                   title={g.label}
                   className="block"
-                  onClick={() => setHoverGroup(null)}
+                  onClick={closePanels}
                 >
                   {railIcon}
                 </Link>
+              )}
 
               {isOpen && g.items.length > 1 && (
                 <GroupPopup
@@ -225,6 +276,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                   align={index >= groups.length - 3 ? "bottom" : "top"}
                   onMouseEnter={clearCloseTimer}
                   onMouseLeave={scheduleClose}
+                  onClose={closePanels}
                 />
               )}
             </div>
@@ -253,7 +305,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function GroupPopup({
-  group, pathname, t, align, onMouseEnter, onMouseLeave,
+  group, pathname, t, align, onMouseEnter, onMouseLeave, onClose,
 }: {
   group: Group;
   pathname: string;
@@ -261,6 +313,7 @@ function GroupPopup({
   align: "top" | "bottom";
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onClose: () => void;
 }) {
   const GroupIcon = group.icon;
 
@@ -276,7 +329,7 @@ function GroupPopup({
         <div className="admin-nav-panel-head-icon w-10 h-10 rounded-2xl flex items-center justify-center shrink-0">
           <GroupIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="font-display font-semibold text-[15px] text-foreground leading-tight truncate">
             {group.label}
           </p>
@@ -284,6 +337,14 @@ function GroupPopup({
             {group.items.length} {pluralizeRu(group.items.length, ["раздел", "раздела", "разделов"])}
           </p>
         </div>
+        <button
+          type="button"
+          className="admin-nav-panel-close"
+          aria-label="Close menu"
+          onClick={onClose}
+        >
+          <X className="w-4 h-4" strokeWidth={1.75} />
+        </button>
       </div>
 
       {/* Список пунктов с разделителями */}
@@ -301,6 +362,7 @@ function GroupPopup({
               href={item.href}
               className={`admin-nav-panel-item flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150
                 ${isActive ? "is-active" : ""}`}
+              onClick={onClose}
             >
               <div
                 data-fly-icon

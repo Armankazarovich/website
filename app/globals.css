@@ -621,6 +621,8 @@ button, a, [role="button"], input, select, textarea {
   position: relative;
   isolation: isolate;
   overflow: hidden;
+  contain: paint;
+  background-clip: padding-box;
   background:
     linear-gradient(135deg, hsl(var(--card) / 0.93), hsl(var(--secondary) / 0.76)),
     hsl(var(--background) / 0.84);
@@ -838,6 +840,15 @@ button, a, [role="button"], input, select, textarea {
   display: none;
 }
 
+a:focus-visible > .admin-rail-icon,
+button:focus-visible > .admin-rail-icon {
+  outline: none;
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 0 4px hsl(var(--primary) / 0.34),
+    0 14px 34px hsl(var(--primary) / 0.12);
+}
+
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .admin-chrome-liquid,
   .admin-rail-liquid,
@@ -935,19 +946,23 @@ button, a, [role="button"], input, select, textarea {
   padding: 0.24rem 0.62rem 0.24rem 0.3rem;
   border: 1px solid hsl(var(--border) / 0.66);
   border-radius: 999px;
-  background: hsl(var(--card) / 0.78);
+  background:
+    linear-gradient(90deg, hsl(var(--card) / 0.92), hsl(var(--secondary) / 0.74)),
+    hsl(var(--background) / 0.86);
   color: hsl(var(--foreground));
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.46) inset,
-    0 8px 22px hsl(20 30% 8% / 0.055);
+    0 1px 0 hsl(0 0% 100% / 0.62) inset,
+    0 10px 24px hsl(20 30% 8% / 0.045);
 }
 
 .dark .admin-section-kicker {
-  background: hsl(var(--card) / 0.76);
-  border-color: hsl(var(--primary) / 0.18);
+  background:
+    linear-gradient(90deg, hsl(var(--primary) / 0.10), hsl(0 0% 100% / 0.035)),
+    hsl(var(--card) / 0.84);
+  border-color: hsl(var(--primary) / 0.20);
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.08) inset,
-    0 16px 42px hsl(0 0% 0% / 0.28);
+    0 12px 32px hsl(0 0% 0% / 0.20);
 }
 
 .admin-section-kicker-icon {
@@ -1037,11 +1052,44 @@ button, a, [role="button"], input, select, textarea {
     0 14px 34px hsl(var(--primary) / 0.12);
 }
 
+.admin-nav-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 1px solid hsl(var(--border) / 0.42);
+  border-radius: 999px;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--card) / 0.34);
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.admin-nav-panel-close:hover,
+.admin-nav-panel-close:focus-visible {
+  color: hsl(var(--foreground));
+  background: hsl(var(--primary) / 0.10);
+  border-color: hsl(var(--primary) / 0.20);
+  transform: scale(1.03);
+  outline: none;
+}
+
 .admin-nav-panel-item {
   color: hsl(var(--foreground));
   border: 1px solid transparent;
   background: transparent;
   outline: none;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .admin-nav-panel-item-icon {
@@ -1114,20 +1162,24 @@ button, a, [role="button"], input, select, textarea {
 
 @media (hover: hover) and (pointer: fine) {
   .admin-nav-panel-item:hover {
+    transform: translateX(1px);
     background:
-      linear-gradient(90deg, hsl(var(--primary) / 0.085), hsl(var(--primary) / 0.028)),
-      hsl(var(--card) / 0.18);
+      linear-gradient(90deg, hsl(var(--primary) / 0.075), hsl(var(--primary) / 0.022)),
+      hsl(var(--card) / 0.12);
     border-color: hsl(var(--primary) / 0.14);
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.14) inset,
-      0 10px 24px hsl(var(--primary) / 0.055);
+      0 1px 0 hsl(0 0% 100% / 0.18) inset,
+      0 10px 22px hsl(var(--primary) / 0.04);
   }
 
   .dark .admin-nav-panel-item:hover {
     background:
-      linear-gradient(90deg, hsl(var(--primary) / 0.11), hsl(0 0% 100% / 0.035)),
-      hsl(0 0% 100% / 0.028);
-    border-color: hsl(var(--primary) / 0.17);
+      linear-gradient(90deg, hsl(var(--primary) / 0.13), hsl(0 0% 100% / 0.045)),
+      hsl(0 0% 100% / 0.04);
+    border-color: hsl(var(--primary) / 0.18);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.10) inset,
+      0 12px 26px hsl(var(--primary) / 0.055);
   }
 
   .admin-nav-panel-item:hover .admin-nav-panel-item-icon {
@@ -1137,12 +1189,12 @@ button, a, [role="button"], input, select, textarea {
   }
 
   .admin-liquid-interactive:hover {
-    transform: translateY(-1px);
-    border-color: hsl(var(--primary) / 0.30);
+    transform: translateY(-0.5px);
+    border-color: hsl(var(--primary) / 0.28);
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.20) inset,
-      0 0 0 1px hsl(var(--primary) / 0.07),
-      0 12px 30px hsl(var(--primary) / 0.07);
+      0 1px 0 hsl(0 0% 100% / 0.18) inset,
+      0 0 0 1px hsl(var(--primary) / 0.075),
+      0 8px 20px hsl(var(--primary) / 0.045);
   }
 
   .admin-liquid-interactive:hover::before {
