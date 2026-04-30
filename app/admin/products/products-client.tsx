@@ -10,7 +10,7 @@ import {
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
   ImageOff, Stamp, AlertTriangle, Sparkles, Loader2,
 } from "lucide-react";
-import { checkProductReadiness, readinessIssueLabel, type ProductReadinessIssue } from "@/lib/product-seo";
+import { checkProductReadiness, readinessIssueLabel, type ProductReadinessIssue } from "@/lib/product-readiness";
 
 type Product = {
   id: string;

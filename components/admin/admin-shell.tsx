@@ -45,6 +45,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
+import { AdminWeatherChip } from "@/components/admin/admin-weather";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette, PALETTES } from "@/components/palette-provider";
@@ -540,6 +541,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         }
       />
 
+      <div className="lg:hidden px-3 pt-3 -mb-2">
+        <AdminWeatherChip variant="mobile" />
+      </div>
+
       {/* ─── Узкий рельс слева (lg+ только) ───────────── */}
       <AdminNavRail
         role={role}
@@ -577,6 +582,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
       />
 
       <div className="hidden lg:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
+        <ArayControlCenter userRole={role} position="right" />
+      </div>
+
+      <div className="lg:hidden fixed right-0 z-[45]" style={{ bottom: "max(calc(104px + env(safe-area-inset-bottom, 0px)), 104px)" }}>
         <ArayControlCenter userRole={role} position="right" />
       </div>
 

@@ -37,6 +37,7 @@ import {
   allNavItems, GROUP_LABELS, type NavItem,
 } from "@/components/admin/admin-nav";
 import { UI_LAYERS } from "@/lib/ui-layers";
+import { AdminWeatherChip } from "@/components/admin/admin-weather";
 
 // ── Иконка для каждой группы (главная иконка раздела) ──
 const GROUP_ICONS: Record<string, React.ElementType> = {
@@ -237,7 +238,8 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
       </nav>
 
       {/* ── Низ: ссылка на сайт ── */}
-      <div className="shrink-0 pt-2">
+      <div className="shrink-0 pt-2 flex flex-col items-center gap-2">
+        <AdminWeatherChip variant="rail" />
         <Link
           href="/"
           className="w-11 h-11 rounded-2xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
