@@ -412,7 +412,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const HeaderIcon = pageMeta.icon;
 
   return (
-    <div className="relative flex flex-col min-h-screen bg-background overflow-x-hidden">
+    <div className="admin-shell-root relative flex flex-col min-h-screen bg-background overflow-x-hidden">
       <AdminAtmosphere mode={bgMode} />
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader

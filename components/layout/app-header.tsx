@@ -74,13 +74,13 @@ export function AppHeader({
         backdropFilter: "blur(18px) saturate(108%)",
         WebkitBackdropFilter: "blur(18px) saturate(108%)",
         background: isScrolled
-          ? "linear-gradient(180deg, hsl(var(--background) / 0.99), hsl(var(--background) / 0.96))"
-          : "linear-gradient(180deg, hsl(var(--background) / 0.98), hsl(var(--background) / 0.95))",
+          ? "linear-gradient(180deg, hsl(var(--background) / 0.96), hsl(var(--secondary) / 0.82))"
+          : "linear-gradient(180deg, hsl(var(--background) / 0.94), hsl(var(--secondary) / 0.76))",
         borderBottom: `1px solid hsl(var(--primary) / ${
-          isScrolled ? "0.28" : "0.12"
+          isScrolled ? "0.20" : "0.09"
         })`,
         boxShadow: isScrolled
-          ? "0 8px 40px hsl(var(--foreground) / 0.08), 0 1px 0 hsl(var(--primary) / 0.15)"
+          ? "0 8px 32px hsl(var(--foreground) / 0.055), 0 1px 0 hsl(var(--primary) / 0.10)"
           : "none",
       }}
     >
@@ -89,7 +89,7 @@ export function AppHeader({
         className="absolute inset-x-0 bottom-0 h-px pointer-events-none"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, hsl(var(--primary)/0.5) 30%, hsl(var(--primary)/0.8) 50%, hsl(var(--primary)/0.5) 70%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, hsl(var(--primary)/0.28) 30%, hsl(var(--primary)/0.48) 50%, hsl(var(--primary)/0.28) 70%, transparent 100%)",
         }}
       />
 
