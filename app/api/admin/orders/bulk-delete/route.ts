@@ -6,7 +6,8 @@ import { auth } from "@/lib/auth";
 
 export async function DELETE(req: NextRequest) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  const role = session?.user?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const { ids } = await req.json();

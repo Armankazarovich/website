@@ -6,7 +6,8 @@ import { auth } from "@/lib/auth";
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  const role = session?.user?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
@@ -45,7 +46,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  const role = session?.user?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

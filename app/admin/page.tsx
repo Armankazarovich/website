@@ -42,13 +42,13 @@ interface QuickAction {
 }
 
 const TONE_BG: Record<QuickTone, string> = {
-  primary: "bg-primary/10 text-primary",
-  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
-  rose: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-  blue: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  slate: "bg-slate-500/10 text-slate-600 dark:text-slate-400",
+  primary: "bg-background/70 text-primary ring-1 ring-border/70 dark:bg-background/35 dark:ring-white/10",
+  emerald: "bg-background/70 text-emerald-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-emerald-400 dark:ring-white/10",
+  amber: "bg-background/70 text-amber-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-amber-400 dark:ring-white/10",
+  violet: "bg-background/70 text-violet-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-violet-400 dark:ring-white/10",
+  rose: "bg-background/70 text-rose-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-rose-400 dark:ring-white/10",
+  blue: "bg-background/70 text-blue-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-blue-400 dark:ring-white/10",
+  slate: "bg-background/70 text-slate-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-slate-300 dark:ring-white/10",
 };
 
 const QUICK_ACTIONS: Record<string, QuickAction[]> = {
@@ -265,10 +265,10 @@ export default async function AdminDashboard() {
 
         {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
         <div>
-          <div className="flex items-center gap-2 mb-3 px-1">
-            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+          <div className="admin-section-kicker mb-3">
+            <span className="admin-section-kicker-icon">
               <Zap className="w-4 h-4" strokeWidth={1.75} />
-            </div>
+            </span>
             <p className="font-display font-semibold text-sm text-foreground">
               Быстрый доступ
             </p>
@@ -278,7 +278,7 @@ export default async function AdminDashboard() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="shimmer-trace admin-liquid-surface admin-liquid-interactive group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 rounded-2xl active:scale-[0.96] min-h-[88px] min-w-0"
+                className="admin-liquid-surface admin-liquid-interactive group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 rounded-2xl active:scale-[0.96] min-h-[88px] min-w-0"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div

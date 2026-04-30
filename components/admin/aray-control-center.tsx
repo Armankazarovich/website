@@ -1,24 +1,26 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ImageIcon, Layers3, Palette, Video, X } from "lucide-react";
+import { ImageIcon, Layers3, Palette, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePalette, PALETTES } from "@/components/palette-provider";
-import { AdminBgPicker } from "@/components/admin/admin-bg-picker";
 import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
 
 const BG_MODE_KEY = "aray-bg-mode";
 
 const BG_MODES: { id: AdminBgMode; label: string; icon: React.ElementType }[] = [
   { id: "clean", label: "Чистый", icon: Layers3 },
-  { id: "photo", label: "Фото", icon: ImageIcon },
-  { id: "video", label: "Кино", icon: Video },
+  { id: "photo", label: "Атмосфера", icon: ImageIcon },
 ];
 
 function readBgMode(): AdminBgMode {
   if (typeof window === "undefined") return "clean";
   const stored = localStorage.getItem(BG_MODE_KEY);
-  if (stored === "photo" || stored === "video" || stored === "clean") return stored;
+  if (stored === "photo" || stored === "clean") return stored;
+  if (stored === "video") {
+    localStorage.setItem(BG_MODE_KEY, "photo");
+    return "photo";
+  }
   if (stored === "classic") return "clean";
   return "clean";
 }
@@ -169,7 +171,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
               {/* Фон */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Фон</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   {BG_MODES.map((mode) => {
                     const Icon = mode.icon;
                     const active = bgMode === mode.id;
@@ -189,9 +191,6 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                       </button>
                     );
                   })}
-                </div>
-                <div className="mt-2 flex justify-end">
-                  <AdminBgPicker />
                 </div>
               </div>
             </div>

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 async function checkAdmin() {
   const session = await auth();
   const role = session?.user?.role;
-  return role === "ADMIN" || role === "MANAGER";
+  return role === "SUPER_ADMIN" || role === "ADMIN" || role === "MANAGER";
 }
 
 export async function PATCH(req: Request) {

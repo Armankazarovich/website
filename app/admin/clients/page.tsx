@@ -7,7 +7,8 @@ import { ClientsList } from "./clients-list";
 
 export default async function ClientsPage() {
   const session = await auth();
-  if ((session?.user as any)?.role !== "ADMIN") redirect("/admin");
+  const role = (session?.user as any)?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN" && role !== "MANAGER") redirect("/admin");
 
   const clients = await prisma.user.findMany({
     where: { role: "USER" },

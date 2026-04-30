@@ -10,7 +10,8 @@ const VALID_STATUSES = ["PENDING", "ACTIVE", "SUSPENDED"];
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  const sessionRole = session?.user?.role;
+  if (sessionRole !== "SUPER_ADMIN" && sessionRole !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -51,7 +52,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  const sessionRole = session?.user?.role;
+  if (sessionRole !== "SUPER_ADMIN" && sessionRole !== "ADMIN") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

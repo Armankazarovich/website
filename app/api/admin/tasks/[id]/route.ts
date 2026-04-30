@@ -65,7 +65,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 // DELETE — delete task
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const s = await getSession();
-  if (!s || s.role !== "ADMIN") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!s || (s.role !== "SUPER_ADMIN" && s.role !== "ADMIN")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   await prisma.task.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

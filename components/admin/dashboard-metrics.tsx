@@ -26,10 +26,10 @@ import { TrendingUp, BarChart3, Clock, ArrowUpRight, Truck } from "lucide-react"
 type Tone = "emerald" | "primary" | "amber" | "violet";
 
 const TONE_ICON: Record<Tone, string> = {
-  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-  primary: "bg-primary/12 text-primary",
-  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-  violet: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
+  emerald: "bg-background/70 text-emerald-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-emerald-400 dark:ring-white/8",
+  primary: "bg-background/70 text-primary ring-1 ring-border/70 dark:bg-background/35 dark:ring-white/8",
+  amber: "bg-background/70 text-amber-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-amber-400 dark:ring-white/8",
+  violet: "bg-background/70 text-violet-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-violet-400 dark:ring-white/8",
 };
 
 interface MetricCardProps {

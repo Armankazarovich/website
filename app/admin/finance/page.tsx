@@ -58,6 +58,7 @@ export default function FinancePage() {
   const classic = useClassicMode();
   const [data, setData] = useState<FinanceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [monthOffset, setMonthOffset] = useState(0);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -75,10 +76,18 @@ export default function FinancePage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetch(`/api/admin/finance?from=${from}&to=${to}`);
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload?.error || "Не удалось загрузить финансы");
+      }
       const json = await res.json();
       setData(json);
+    } catch (e: any) {
+      setData(null);
+      setError(e?.message || "Не удалось загрузить финансы");
     } finally {
       setLoading(false);
     }
@@ -90,7 +99,7 @@ export default function FinancePage() {
     if (!newAmount || isNaN(Number(newAmount)) || Number(newAmount) <= 0) return;
     setSaving(true);
     try {
-      await fetch("/api/admin/finance/expenses", {
+      const res = await fetch("/api/admin/finance/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -100,9 +109,12 @@ export default function FinancePage() {
           date: newDate,
         }),
       });
+      if (!res.ok) throw new Error("Не удалось сохранить расход");
       setNewAmount(""); setNewDesc(""); setNewDate(new Date().toISOString().slice(0, 10));
       setShowAddExpense(false);
       await load();
+    } catch (e: any) {
+      setError(e?.message || "Не удалось сохранить расход");
     } finally {
       setSaving(false);
     }
@@ -112,9 +124,12 @@ export default function FinancePage() {
     if (!confirmDeleteId) return;
     setDeleting(confirmDeleteId);
     try {
-      await fetch(`/api/admin/finance/expenses?id=${confirmDeleteId}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/finance/expenses?id=${confirmDeleteId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Не удалось удалить расход");
       setConfirmDeleteId(null);
       await load();
+    } catch (e: any) {
+      setError(e?.message || "Не удалось удалить расход");
     } finally {
       setDeleting(null);
     }
@@ -144,6 +159,12 @@ export default function FinancePage() {
           </Button>
         </div>
       </div>
+
+      {error && (
+        <div className="admin-liquid-surface rounded-2xl border border-destructive/30 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

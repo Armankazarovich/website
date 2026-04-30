@@ -9,7 +9,8 @@ import { existsSync } from "fs";
 
 export async function POST(req: Request) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  const role = session?.user?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -13,7 +13,7 @@ import {
   X, User, LogOut, ShoppingBag, Settings, Eye, EyeOff,
   Mail, Lock, Loader2, CheckCircle2, ChevronRight, Phone,
   Heart, Bell, Image as ImageIcon, Clock, BookmarkPlus,
-  Sparkles, LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
+  LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
   LifeBuoy, Palette,
   Users, Package, BarChart3,
 } from "lucide-react";
@@ -310,9 +310,11 @@ type RowItem = {
 
 function SectionRow({ item, isLast }: { item: RowItem; isLast: boolean }) {
   const Icon = item.icon;
+  const { setOpen } = useAccountDrawer();
   return (
     <Link
       href={item.href}
+      onClick={() => setOpen(false)}
       className={`flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors ${isLast ? "" : "border-b border-border"}`}
     >
       <Icon className="w-6 h-6 text-primary shrink-0" strokeWidth={1.75} />
@@ -337,7 +339,7 @@ function SectionGroup({ title, items }: { title: string; items: RowItem[] }) {
       <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1 mb-2">
         {title}
       </p>
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="admin-drawer-group bg-card border border-border rounded-2xl overflow-hidden">
         {items.map((item, idx) => (
           <SectionRow
             key={item.href}
@@ -358,12 +360,14 @@ function QuickActionCard({
   icon: LucideIcon;
   label: string;
 }) {
+  const { setOpen } = useAccountDrawer();
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
+      onClick={() => setOpen(false)}
+      className="admin-drawer-quick flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
     >
-      <div className="w-11 h-11 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+      <div className="w-11 h-11 rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0">
         <Icon className="w-5 h-5" strokeWidth={2} />
       </div>
       <span className="text-[11px] font-medium text-foreground text-center leading-tight">
@@ -492,7 +496,8 @@ function ProfilePanel() {
       <div className="px-4 pt-4 pb-3">
         <Link
           href="/cabinet/profile"
-          className="flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
+          onClick={close}
+          className="admin-drawer-profile flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
         >
           {avatarUrl ? (
             <img
@@ -502,7 +507,7 @@ function ProfilePanel() {
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 font-semibold text-lg">
+            <div className="w-12 h-12 rounded-full bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0 font-semibold text-lg">
               {initial}
             </div>
           )}
@@ -571,36 +576,6 @@ function ProfilePanel() {
         <SectionGroup title="Аккаунт" items={accountItems} />
         <SectionGroup title="Настройки" items={settingsItems} />
 
-        {/* ARAY баннер для staff — primary заливка + Liquid Glass highlight */}
-        {isStaff && (
-          <Link
-            href="/admin"
-            className="block rounded-2xl overflow-hidden"
-          >
-            <div
-              className="flex items-center gap-3 p-4 bg-primary text-primary-foreground transition-transform active:scale-[0.99]"
-              style={{
-                backgroundImage:
-                  "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 35%)",
-                borderTop: "0.5px solid rgba(255,255,255,0.35)",
-              }}
-            >
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                <Sparkles className="w-5 h-5" strokeWidth={2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight">Лаборатория ARAY</p>
-                <p className="text-xs opacity-90 mt-0.5 leading-tight">
-                  {staffStats
-                    ? `Сегодня: ${staffStats.todayNewOrders} ${pluralOrders(staffStats.todayNewOrders)} · ${staffStats.pendingReviews} ${pluralReviews(staffStats.pendingReviews)}`
-                    : "Дашборд, аналитика, инструменты"}
-                </p>
-              </div>
-              <ChevronRight className="w-5 h-5 shrink-0 opacity-90" />
-            </div>
-          </Link>
-        )}
-
         {/* Logout — destructive outline */}
         <button
           onClick={() => { signOut({ redirect: false }); close(); }}
@@ -618,11 +593,6 @@ function pluralOrders(n: number): string {
   if (n === 1) return "новый заказ";
   if (n >= 2 && n <= 4) return "новых заказа";
   return "новых заказов";
-}
-function pluralReviews(n: number): string {
-  if (n === 1) return "отзыв";
-  if (n >= 2 && n <= 4) return "отзыва";
-  return "отзывов";
 }
 
 // ── Main Drawer ───────────────────────────────────────────────────────────────
@@ -678,7 +648,7 @@ export function AccountDrawer() {
             animate={{ x: 0 }}
             exit={{ x: opensFromLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={`relative w-full sm:w-[420px] max-w-full h-full bg-background ${opensFromLeft ? "border-r" : "border-l"} border-border shadow-2xl flex flex-col overflow-hidden`}
+            className={`account-drawer-panel ${opensFromLeft ? "admin-popup-liquid border-r" : "border-l"} relative w-full sm:w-[420px] max-w-full h-full bg-background border-border shadow-2xl flex flex-col overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

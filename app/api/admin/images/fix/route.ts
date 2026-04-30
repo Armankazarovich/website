@@ -8,7 +8,8 @@ import { join } from "path";
 
 async function checkAdmin() {
   const session = await auth();
-  return session && session.user.role === "ADMIN";
+  const role = session?.user?.role;
+  return role === "SUPER_ADMIN" || role === "ADMIN";
 }
 
 const PRODUCT_IMAGE_EXTENSIONS = ["webp", "jpg", "jpeg", "png", "gif"] as const;

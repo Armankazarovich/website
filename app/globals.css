@@ -621,54 +621,68 @@ button, a, [role="button"], input, select, textarea {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background:
-    linear-gradient(145deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.76)),
-    linear-gradient(180deg, hsl(var(--primary) / 0.045), transparent 60%);
-  border: 1px solid hsl(var(--border) / 0.84);
+  background: hsl(var(--card) / 0.94);
+  border: 1px solid hsl(var(--border) / 0.88);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.22) inset,
-    0 18px 48px hsl(20 30% 8% / 0.07);
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 18px 48px hsl(20 30% 8% / 0.08);
   transform: translateZ(0);
 }
 
-.dark .admin-liquid-surface {
-  background:
-    linear-gradient(145deg, hsl(var(--card) / 0.82), hsl(var(--card) / 0.58)),
-    linear-gradient(180deg, hsl(var(--primary) / 0.07), transparent 62%);
-  border-color: hsl(var(--primary) / 0.16);
-  box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.07) inset,
-    0 22px 64px hsl(0 0% 0% / 0.22);
-}
-
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .admin-liquid-surface {
-    backdrop-filter: blur(22px) saturate(135%);
-    -webkit-backdrop-filter: blur(22px) saturate(135%);
-  }
-}
-
-.admin-liquid-surface::after {
+.admin-liquid-surface::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background:
-    linear-gradient(118deg, hsl(0 0% 100% / 0.22) 0%, transparent 30%),
-    linear-gradient(302deg, hsl(var(--primary) / 0.10) 0%, transparent 38%);
-  opacity: 0.36;
-  transform: translateX(-8%);
-  transition: opacity 260ms ease, transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--admin-liquid-border-angle, 0deg),
+    transparent 0deg,
+    transparent 76deg,
+    hsl(var(--primary) / 0.16) 112deg,
+    hsl(var(--primary) / 0.58) 146deg,
+    hsl(0 0% 100% / 0.42) 178deg,
+    hsl(var(--primary) / 0.42) 212deg,
+    transparent 252deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.dark .admin-liquid-surface {
+  background: hsl(var(--card) / 0.90);
+  border-color: hsl(var(--primary) / 0.18);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 22px 64px hsl(0 0% 0% / 0.28);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .admin-liquid-surface {
+    backdrop-filter: blur(30px) saturate(128%);
+    -webkit-backdrop-filter: blur(30px) saturate(128%);
+  }
+}
+
+.admin-liquid-surface::after {
+  content: none;
 }
 
 .dark .admin-liquid-surface::after {
-  opacity: 0.24;
+  opacity: 0;
 }
 
 .admin-liquid-surface > * {
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 .admin-liquid-interactive {
@@ -681,12 +695,12 @@ button, a, [role="button"], input, select, textarea {
 
 .admin-liquid-hero {
   background:
-    linear-gradient(112deg, hsl(var(--card) / 0.95) 0%, hsl(var(--card) / 0.82) 48%, hsl(var(--primary) / 0.12) 100%);
+    linear-gradient(112deg, hsl(var(--card) / 0.98) 0%, hsl(var(--card) / 0.95) 72%, hsl(var(--card) / 0.90) 100%);
 }
 
 .dark .admin-liquid-hero {
   background:
-    linear-gradient(112deg, hsl(var(--card) / 0.88) 0%, hsl(var(--card) / 0.64) 50%, hsl(var(--primary) / 0.15) 100%);
+    linear-gradient(112deg, hsl(var(--card) / 0.92) 0%, hsl(var(--card) / 0.88) 64%, hsl(var(--primary) / 0.08) 100%);
 }
 
 .admin-dashboard-standard {
@@ -704,47 +718,270 @@ button, a, [role="button"], input, select, textarea {
 
 .admin-rail-liquid,
 .admin-popup-liquid {
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.86), hsl(var(--card) / 0.68)),
-    linear-gradient(120deg, hsl(var(--primary) / 0.055), transparent 42%);
-  border-color: hsl(var(--border) / 0.78);
+  background: hsl(var(--card) / 0.96);
+  border-color: hsl(var(--border) / 0.90);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.16) inset,
-    0 24px 70px hsl(20 30% 8% / 0.12);
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 24px 70px hsl(20 30% 8% / 0.16);
 }
 
 .dark .admin-rail-liquid,
 .dark .admin-popup-liquid {
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.76), hsl(var(--card) / 0.54)),
-    linear-gradient(120deg, hsl(var(--primary) / 0.08), transparent 44%);
-  border-color: hsl(var(--primary) / 0.14);
+  background: hsl(var(--card) / 0.94);
+  border-color: hsl(var(--primary) / 0.20);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.07) inset,
-    0 28px 80px hsl(0 0% 0% / 0.26);
+    0 1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 28px 80px hsl(0 0% 0% / 0.40);
+}
+
+.admin-rail-shell {
+  left: 0.55rem;
+  border: 1px solid hsl(var(--border) / 0.72);
+  border-radius: 999px;
+  overflow: visible;
+}
+
+.dark .admin-rail-shell {
+  border-color: hsl(var(--primary) / 0.20);
+}
+
+.admin-rail-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0.35rem;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.22), transparent 18%, transparent 82%, hsl(0 0% 100% / 0.10)),
+    linear-gradient(180deg, hsl(var(--primary) / 0.08), transparent 36%, hsl(var(--primary) / 0.06));
+  opacity: 0.72;
+}
+
+.dark .admin-rail-shell::before {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.08), transparent 18%, transparent 82%, hsl(0 0% 100% / 0.05)),
+    linear-gradient(180deg, hsl(var(--primary) / 0.12), transparent 38%, hsl(var(--primary) / 0.08));
+  opacity: 0.9;
+}
+
+.admin-rail-list,
+.admin-rail-shell > .shrink-0 {
+  position: relative;
+  z-index: 2;
+}
+
+.admin-rail-icon {
+  position: relative;
+  display: flex;
+  width: 2.65rem;
+  height: 2.65rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.1rem;
+  color: hsl(var(--muted-foreground));
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-rail-icon:hover,
+.admin-rail-icon.is-open {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted) / 0.58);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.16) inset;
+}
+
+.admin-rail-icon.is-active {
+  color: hsl(var(--primary));
+  background:
+    radial-gradient(circle at 50% 18%, hsl(var(--primary) / 0.18), transparent 58%),
+    hsl(var(--card) / 0.72);
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.24) inset,
+    0 14px 34px hsl(var(--primary) / 0.14);
+}
+
+.admin-rail-icon.is-active::before {
+  content: "";
+  position: absolute;
+  left: -0.78rem;
+  top: 50%;
+  width: 0.2rem;
+  height: 1.45rem;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: hsl(var(--primary));
+  box-shadow: 0 0 18px hsl(var(--primary) / 0.55);
+}
+
+.admin-rail-icon.is-active > span {
+  display: none;
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .admin-chrome-liquid,
   .admin-rail-liquid,
   .admin-popup-liquid {
-    backdrop-filter: blur(28px) saturate(155%);
-    -webkit-backdrop-filter: blur(28px) saturate(155%);
+    backdrop-filter: blur(34px) saturate(128%);
+    -webkit-backdrop-filter: blur(34px) saturate(128%);
   }
+}
+
+.admin-mobile-dock {
+  background: hsl(var(--background) / 0.94);
+  border-top: 1px solid hsl(var(--border) / 0.82);
+  box-shadow:
+    0 -1px 0 hsl(0 0% 100% / 0.14) inset,
+    0 -18px 42px hsl(20 30% 8% / 0.10);
+}
+
+.dark .admin-mobile-dock {
+  background: hsl(var(--background) / 0.88);
+  border-top-color: hsl(var(--primary) / 0.18);
+  box-shadow:
+    0 -1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 -22px 58px hsl(0 0% 0% / 0.42);
+}
+
+.admin-mobile-dock::before {
+  content: "";
+  position: absolute;
+  inset-inline: 12px;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 0.30),
+    hsl(var(--primary) / 0.48),
+    hsl(var(--primary) / 0.30),
+    transparent
+  );
+}
+
+.account-drawer-panel.admin-popup-liquid {
+  background: hsl(var(--background) / 0.92);
+}
+
+.account-drawer-panel .admin-drawer-profile,
+.account-drawer-panel .admin-drawer-group,
+.account-drawer-panel .admin-drawer-quick {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.14) inset,
+    0 14px 36px hsl(20 30% 8% / 0.08);
+}
+
+.account-drawer-panel.admin-popup-liquid .admin-drawer-profile,
+.account-drawer-panel.admin-popup-liquid .admin-drawer-group,
+.account-drawer-panel.admin-popup-liquid .admin-drawer-quick {
+  background: hsl(var(--card) / 0.74);
+  border-color: hsl(var(--primary) / 0.16);
+}
+
+.account-drawer-panel .admin-drawer-quick {
+  min-height: 6rem;
+  justify-content: center;
+}
+
+.account-drawer-panel .admin-drawer-quick:hover,
+.account-drawer-panel .admin-drawer-profile:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.16) inset,
+    0 16px 42px hsl(var(--primary) / 0.10);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .account-drawer-panel.admin-popup-liquid .admin-drawer-profile,
+  .account-drawer-panel.admin-popup-liquid .admin-drawer-group,
+  .account-drawer-panel.admin-popup-liquid .admin-drawer-quick {
+    backdrop-filter: blur(24px) saturate(124%);
+    -webkit-backdrop-filter: blur(24px) saturate(124%);
+  }
+}
+
+.admin-section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: max-content;
+  max-width: 100%;
+  min-height: 2rem;
+  padding: 0.25rem 0.68rem 0.25rem 0.32rem;
+  border: 1px solid hsl(var(--border) / 0.78);
+  border-radius: 999px;
+  background: hsl(var(--card) / 0.88);
+  color: hsl(var(--foreground));
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 12px 30px hsl(20 30% 8% / 0.08);
+}
+
+.dark .admin-section-kicker {
+  background: hsl(var(--card) / 0.76);
+  border-color: hsl(var(--primary) / 0.18);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 16px 42px hsl(0 0% 0% / 0.28);
+}
+
+.admin-section-kicker-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 999px;
+  background: hsl(var(--primary) / 0.11);
+  color: hsl(var(--primary));
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.12) inset;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .admin-mobile-dock,
+  .admin-section-kicker {
+    backdrop-filter: blur(28px) saturate(124%);
+    -webkit-backdrop-filter: blur(28px) saturate(124%);
+  }
+}
+
+.admin-nav-panel {
+  width: min(360px, calc(100vw - 96px));
+}
+
+.admin-nav-panel::before {
+  content: none;
+}
+
+.dark .admin-nav-panel::before {
+  opacity: 0.28;
+}
+
+.admin-nav-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .admin-liquid-interactive:hover {
-    transform: translateY(-2px);
-    border-color: hsl(var(--primary) / 0.34);
+    transform: translateY(-1px);
+    border-color: hsl(var(--primary) / 0.30);
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.24) inset,
-      0 24px 70px hsl(var(--primary) / 0.10);
+      0 1px 0 hsl(0 0% 100% / 0.20) inset,
+      0 20px 56px hsl(var(--primary) / 0.08);
+  }
+
+  .admin-liquid-interactive:hover::before {
+    opacity: 1;
+    animation: adminLiquidBorderOrbit 1200ms linear infinite;
   }
 
   .admin-liquid-interactive:hover::after {
-    opacity: 0.7;
-    transform: translateX(8%);
+    opacity: 0;
+    transform: none;
   }
 }
 
@@ -756,9 +993,11 @@ button, a, [role="button"], input, select, textarea {
 
 @media (prefers-reduced-motion: reduce) {
   .admin-liquid-surface,
+  .admin-liquid-surface::before,
   .admin-liquid-surface::after,
   .admin-liquid-interactive {
     transition: none !important;
+    animation: none !important;
   }
 
   .admin-liquid-interactive:hover {
@@ -774,6 +1013,18 @@ button, a, [role="button"], input, select, textarea {
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@property --admin-liquid-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes adminLiquidBorderOrbit {
+  to {
+    --admin-liquid-border-angle: 360deg;
   }
 }
 
@@ -2196,8 +2447,6 @@ a:focus-visible {
    Применяется ко всем SVG внутри интерактивных элементов.
    Исключения: spinner (animate-spin), disabled, checkbox/radio, range.
    ─────────────────────────────────────────────────────────────────────────── */
-.aray-admin-bg button:not([disabled]):not([class*="animate-spin"]) svg,
-.aray-admin-bg a svg,
 .aray-classic-mode button:not([disabled]):not([class*="animate-spin"]) svg,
 .aray-classic-mode a svg {
   transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2211,19 +2460,28 @@ a:focus-visible {
   transition: none !important;
 }
 /* Hover — лёгкий поворот + увеличение */
-.aray-admin-bg button:not([disabled]):hover svg,
-.aray-admin-bg a:hover svg,
 .aray-classic-mode button:not([disabled]):hover svg,
 .aray-classic-mode a:hover svg {
   transform: rotate(8deg) scale(1.14);
 }
 /* Active — пружинный отскок назад */
-.aray-admin-bg button:not([disabled]):active svg,
-.aray-admin-bg a:active svg,
 .aray-classic-mode button:not([disabled]):active svg,
 .aray-classic-mode a:active svg {
   transform: rotate(0deg) scale(0.88);
   transition-duration: 0.12s;
+}
+
+.aray-admin-bg button:not([disabled]) svg,
+.aray-admin-bg a svg {
+  transition: color 160ms ease, opacity 160ms ease;
+  will-change: auto;
+}
+
+.aray-admin-bg button:not([disabled]):hover svg,
+.aray-admin-bg a:hover svg,
+.aray-admin-bg button:not([disabled]):active svg,
+.aray-admin-bg a:active svg {
+  transform: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

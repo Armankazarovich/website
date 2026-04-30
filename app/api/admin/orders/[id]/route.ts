@@ -242,7 +242,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  const role = session?.user?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   const { searchParams } = new URL(req.url);
@@ -262,7 +263,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 // Restore soft-deleted order
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  const role = session?.user?.role;
+  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
   await prisma.order.update({

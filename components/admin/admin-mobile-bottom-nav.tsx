@@ -252,7 +252,7 @@ export function AdminMobileBottomNav({
       {notifOpen && (
         <div
           ref={notifRef}
-          className="lg:hidden fixed z-[60] bg-card border border-border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200 shadow-2xl"
+          className="admin-popup-liquid lg:hidden fixed z-[60] border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
           style={{
             bottom: "calc(78px + env(safe-area-inset-bottom, 0px))",
             left: 12,
@@ -367,29 +367,14 @@ export function AdminMobileBottomNav({
 
       {/* ── Bottom dock (calm UI + Liquid Glass, идентично магазину) ── */}
       <nav
-        className="fixed left-0 right-0 z-50 lg:hidden transition-all duration-300"
+        className="admin-mobile-dock fixed left-0 right-0 z-50 lg:hidden transition-all duration-300"
         style={{
           bottom: (accountOpen || kbOpen) ? "-120px" : "0",
           opacity: (accountOpen || kbOpen) ? 0 : 1,
           pointerEvents: (accountOpen || kbOpen) ? "none" : "auto",
-          // Liquid Glass — единый стиль с Header магазина и MobileBottomNav
-          background: "hsl(var(--background) / 0.85)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
-          borderTop: "1px solid hsl(var(--primary) / 0.12)",
-          boxShadow: "0 -4px 20px hsl(var(--foreground) / 0.06)",
         }}
         aria-label="Нижняя навигация админки"
       >
-        {/* Palette glow line — тонкая primary полоса сверху */}
-        <div
-          className="absolute inset-x-0 top-0 h-px pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent 0%, hsl(var(--primary)/0.4) 30%, hsl(var(--primary)/0.6) 50%, hsl(var(--primary)/0.4) 70%, transparent 100%)",
-          }}
-        />
-
         <div
           className="flex items-end justify-around px-1 pt-1 relative"
           style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}

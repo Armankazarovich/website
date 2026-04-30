@@ -9,7 +9,7 @@ export default async function ImportPage() {
   const session = await auth();
   if (!session) redirect("/login");
   const role = (session.user as { role?: string })?.role;
-  if (!["ADMIN", "MANAGER", "WAREHOUSE"].includes(role || "")) redirect("/admin");
+  if (!["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"].includes(role || "")) redirect("/admin");
 
   return <ImportClient />;
 }

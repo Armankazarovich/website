@@ -9,6 +9,7 @@ import { getSiteSettings, DEFAULT_SETTINGS, getSetting } from "@/lib/site-settin
 import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
 import { UtmTracker } from "@/components/utm-tracker";
+import { ThemeChromeSync } from "@/components/layout/theme-chrome-sync";
 import "./globals.css";
 
 // Шрифты локальные (vendored в public/fonts/) — не зависим от fonts.gstatic.com при билде
@@ -81,13 +82,16 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "ПилоРус",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#E8700A",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F6F2EC" },
+    { media: "(prefers-color-scheme: dark)", color: "#100B08" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -214,6 +218,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           enableSystem
           disableTransitionOnChange
         >
+          <ThemeChromeSync />
           <PaletteProvider enabledIds={enabledIds} defaultPalette={defaultPalette}>
             {children}
             <Toaster />

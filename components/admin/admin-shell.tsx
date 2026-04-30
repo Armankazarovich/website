@@ -69,9 +69,12 @@ export function useClassicMode() {
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
     const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
-    const stored = localStorage.getItem(LS_BG_MODE) as BgMode | null;
-    if (stored && ["clean", "photo", "video"].includes(stored)) {
-      setBgMode(stored as AdminBgMode);
+    const stored = localStorage.getItem(LS_BG_MODE);
+    if (stored === "clean" || stored === "photo") {
+      setBgMode(stored);
+    } else if (stored === "video") {
+      setBgMode("photo");
+      localStorage.setItem(LS_BG_MODE, "photo");
     } else if (stored === "classic") {
       setBgMode("clean");
       localStorage.setItem(LS_BG_MODE, "clean");
@@ -93,8 +96,9 @@ export function useClassicMode() {
     const obs = new MutationObserver(checkLight);
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
     const handler = () => {
-      const m = localStorage.getItem(LS_BG_MODE) as BgMode | null;
-      if (m === "clean" || m === "photo" || m === "video") setBgMode(m);
+      const m = localStorage.getItem(LS_BG_MODE);
+      if (m === "clean" || m === "photo") setBgMode(m);
+      if (m === "video") setBgMode("photo");
       if (m === "classic") setBgMode("clean");
     };
     window.addEventListener("aray-classic-change", handler);
@@ -568,7 +572,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-16 lg:w-[calc(100%-4rem)] px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 lg:w-[calc(100%-5rem)] px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
         style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
       >
         <AccessGuard role={role}>{children}</AccessGuard>

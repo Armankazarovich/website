@@ -9,7 +9,7 @@ export const metadata = { title: "Задачи — Канбан | ПилоРус
 export default async function TasksPage() {
   const session = await auth();
   const role = (session?.user as any)?.role;
-  if (!session || !["ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role)) {
+  if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role)) {
     redirect("/login");
   }
 
@@ -27,7 +27,7 @@ export default async function TasksPage() {
       orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
     }),
     prisma.user.findMany({
-      where: { role: { in: ["ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] } },
+      where: { role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] } },
       select: { id: true, name: true, email: true, role: true },
       orderBy: { name: "asc" },
     }),

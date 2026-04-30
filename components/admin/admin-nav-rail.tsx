@@ -176,12 +176,12 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 
   return (
     <aside
-      className={`admin-rail-liquid hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-3 gap-1 border-r`}
-      style={{ top: 64, height: "calc(100vh - 64px)" }}
+      className={`admin-rail-liquid admin-rail-shell hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-4 px-2.5 gap-2`}
+      style={{ top: 76, height: "calc(100vh - 92px)" }}
       onMouseLeave={scheduleClose}
     >
       {/* ── Группы навигации ── */}
-      <nav className="flex flex-col items-center gap-1 flex-1 min-h-0">
+      <nav className="admin-rail-list flex flex-col items-center gap-2 flex-1 min-h-0">
         {groups.map((g, index) => {
           const isActive = activeGroupKey === g.key;
           const isOpen = hoverGroup === g.key;
@@ -189,15 +189,10 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
           const Icon = g.icon;
 
           const railIcon = (
-            <div
-              className={`relative w-11 h-11 rounded-2xl flex items-center justify-center transition-all
-                ${isActive
-                  ? "bg-primary/12 text-primary ring-1 ring-primary/30"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}
-            >
+            <div className={`admin-rail-icon ${isActive ? "is-active" : ""} ${isOpen ? "is-open" : ""}`}>
               <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
               {isActive && (
-                <span className="absolute -left-0.5 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-primary" />
+                <span className="absolute -left-2 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-full bg-primary" />
               )}
             </div>
           );
@@ -242,7 +237,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
         <AdminWeatherChip variant="rail" />
         <Link
           href="/"
-          className="w-11 h-11 rounded-2xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+          className="admin-rail-icon"
           aria-label="На сайт"
           title="На сайт"
         >
@@ -271,19 +266,19 @@ function GroupPopup({
 
   return (
     <div
-      className={`admin-popup-liquid absolute left-full ml-2 w-80 border rounded-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200 ${
+      className={`admin-popup-liquid admin-nav-panel absolute left-full ml-3 border rounded-[22px] overflow-hidden z-[70] animate-in fade-in slide-in-from-left-1 duration-150 ${
         align === "bottom" ? "bottom-0" : "top-0"
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Шапка попапа: иконка группы + label */}
-      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/70 bg-muted/20">
-        <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70">
+        <div className="w-10 h-10 rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0 shadow-[0_10px_28px_hsl(var(--primary)/0.12)]">
           <GroupIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
         <div className="min-w-0">
-          <p className="font-display font-semibold text-sm text-foreground leading-tight truncate">
+          <p className="font-display font-semibold text-[15px] text-foreground leading-tight truncate">
             {group.label}
           </p>
           <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
@@ -293,7 +288,7 @@ function GroupPopup({
       </div>
 
       {/* Список пунктов с разделителями */}
-      <div className="divide-y divide-border max-h-[70vh] overflow-y-auto">
+      <div className="max-h-[70vh] overflow-y-auto p-2 space-y-1">
         {group.items.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
@@ -302,20 +297,20 @@ function GroupPopup({
           const label = item.labelKey ? t(item.labelKey) : item.label;
           const subtitle = SUBTITLE_BY_HREF[item.href];
           return (
-            <a
+            <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 transition-colors
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150
                 ${isActive
-                  ? "bg-primary/8 text-foreground"
-                  : "text-foreground hover:bg-muted/50"}`}
+                  ? "bg-primary/12 text-foreground ring-1 ring-primary/18"
+                  : "text-foreground hover:bg-muted/55"}`}
             >
               <div
                 data-fly-icon
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors
                   ${isActive
                     ? "bg-primary/15 text-primary"
-                    : "bg-muted text-muted-foreground"}`}
+                    : "bg-muted/70 text-muted-foreground"}`}
               >
                 <ItemIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </div>
@@ -332,7 +327,7 @@ function GroupPopup({
               <ChevronRight
                 className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
               />
-            </a>
+            </Link>
           );
         })}
       </div>
