@@ -621,11 +621,13 @@ button, a, [role="button"], input, select, textarea {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: hsl(var(--card) / 0.94);
-  border: 1px solid hsl(var(--border) / 0.88);
+  background:
+    linear-gradient(135deg, hsl(var(--card) / 0.96), hsl(var(--card) / 0.88)),
+    hsl(var(--background) / 0.72);
+  border: 1px solid hsl(var(--border) / 0.74);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.18) inset,
-    0 18px 48px hsl(20 30% 8% / 0.08);
+    0 1px 0 hsl(0 0% 100% / 0.62) inset,
+    0 14px 36px hsl(20 30% 8% / 0.045);
   transform: translateZ(0);
 }
 
@@ -695,7 +697,7 @@ button, a, [role="button"], input, select, textarea {
 
 .admin-liquid-hero {
   background:
-    linear-gradient(112deg, hsl(var(--card) / 0.98) 0%, hsl(var(--card) / 0.95) 72%, hsl(var(--card) / 0.90) 100%);
+    linear-gradient(112deg, hsl(var(--card) / 0.98) 0%, hsl(var(--background) / 0.90) 60%, hsl(var(--primary) / 0.045) 100%);
 }
 
 .dark .admin-liquid-hero {
@@ -718,11 +720,12 @@ button, a, [role="button"], input, select, textarea {
 
 .admin-rail-liquid,
 .admin-popup-liquid {
-  background: hsl(var(--card) / 0.96);
-  border-color: hsl(var(--border) / 0.90);
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.98), hsl(var(--background) / 0.88));
+  border-color: hsl(var(--border) / 0.72);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.18) inset,
-    0 24px 70px hsl(20 30% 8% / 0.16);
+    0 1px 0 hsl(0 0% 100% / 0.58) inset,
+    0 20px 56px hsl(20 30% 8% / 0.10);
 }
 
 .dark .admin-rail-liquid,
@@ -910,14 +913,14 @@ button, a, [role="button"], input, select, textarea {
   width: max-content;
   max-width: 100%;
   min-height: 2rem;
-  padding: 0.25rem 0.68rem 0.25rem 0.32rem;
-  border: 1px solid hsl(var(--border) / 0.78);
+  padding: 0.24rem 0.62rem 0.24rem 0.3rem;
+  border: 1px solid hsl(var(--border) / 0.66);
   border-radius: 999px;
-  background: hsl(var(--card) / 0.88);
+  background: hsl(var(--card) / 0.78);
   color: hsl(var(--foreground));
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.18) inset,
-    0 12px 30px hsl(20 30% 8% / 0.08);
+    0 1px 0 hsl(0 0% 100% / 0.46) inset,
+    0 8px 22px hsl(20 30% 8% / 0.055);
 }
 
 .dark .admin-section-kicker {
@@ -953,16 +956,46 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .admin-nav-panel::before {
-  content: none;
+  content: "";
+  position: absolute;
+  left: -0.9rem;
+  top: 1.15rem;
+  width: 1rem;
+  height: 3.15rem;
+  pointer-events: none;
+  border-radius: 999px 0 0 999px;
+  background:
+    linear-gradient(90deg, hsl(var(--card) / 0.02), hsl(var(--card) / 0.82)),
+    linear-gradient(180deg, transparent, hsl(var(--primary) / 0.16), transparent);
+  border-left: 1px solid hsl(var(--primary) / 0.16);
+  border-top: 1px solid hsl(var(--border) / 0.18);
+  border-bottom: 1px solid hsl(var(--border) / 0.18);
 }
 
 .dark .admin-nav-panel::before {
-  opacity: 0.28;
+  background:
+    linear-gradient(90deg, hsl(var(--card) / 0.02), hsl(var(--card) / 0.88)),
+    linear-gradient(180deg, transparent, hsl(var(--primary) / 0.22), transparent);
+  opacity: 0.9;
 }
 
 .admin-nav-panel > * {
   position: relative;
   z-index: 1;
+}
+
+.admin-nav-drawer {
+  transform-origin: left center;
+  animation: adminNavDrawerOpen 190ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 16px 44px hsl(20 30% 8% / 0.16);
+}
+
+.dark .admin-nav-drawer {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 18px 54px hsl(0 0% 0% / 0.34);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -971,7 +1004,8 @@ button, a, [role="button"], input, select, textarea {
     border-color: hsl(var(--primary) / 0.30);
     box-shadow:
       0 1px 0 hsl(0 0% 100% / 0.20) inset,
-      0 20px 56px hsl(var(--primary) / 0.08);
+      0 0 0 1px hsl(var(--primary) / 0.07),
+      0 12px 30px hsl(var(--primary) / 0.07);
   }
 
   .admin-liquid-interactive:hover::before {
@@ -1025,6 +1059,19 @@ button, a, [role="button"], input, select, textarea {
 @keyframes adminLiquidBorderOrbit {
   to {
     --admin-liquid-border-angle: 360deg;
+  }
+}
+
+@keyframes adminNavDrawerOpen {
+  from {
+    opacity: 0;
+    transform: translateX(-0.65rem) scaleX(0.982);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+    filter: blur(0);
   }
 }
 

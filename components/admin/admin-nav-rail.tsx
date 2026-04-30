@@ -266,7 +266,7 @@ function GroupPopup({
 
   return (
     <div
-      className={`admin-popup-liquid admin-nav-panel absolute left-full ml-3 border rounded-[22px] overflow-hidden z-[70] animate-in fade-in slide-in-from-left-1 duration-150 ${
+      className={`admin-popup-liquid admin-nav-panel admin-nav-drawer absolute left-full ml-2 border rounded-[22px] overflow-hidden z-[70] ${
         align === "bottom" ? "bottom-0" : "top-0"
       }`}
       onMouseEnter={onMouseEnter}
