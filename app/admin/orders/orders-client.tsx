@@ -21,9 +21,9 @@ type Order = {
   guestName: string | null;
   guestPhone: string | null;
   deliveryAddress: string | null;
-  createdAt: Date;
-  totalAmount: any;
-  deliveryCost: any;
+  createdAt: string;
+  totalAmount: number | string;
+  deliveryCost: number | string | null;
   status: string;
   items: { id: string }[];
   utmSource?: string | null;
@@ -214,12 +214,14 @@ export function OrdersClient({ orders: initialOrders, stats: initialStats }: { o
         label: "Новый заказ",
         icon: Plus,
         variant: "primary",
+        href: "/admin/orders/new",
         onClick: () => router.push("/admin/orders/new"),
       },
       {
         id: "trash",
         label: "Корзина",
         icon: Trash2,
+        href: "/admin/orders/trash",
         onClick: () => router.push("/admin/orders/trash"),
         hideOnMobile: true,
       },

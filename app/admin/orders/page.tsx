@@ -1,14 +1,29 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { Phone, Trash2 } from "lucide-react";
 import { OrdersClient } from "./orders-client";
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
     where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
-    include: { items: { select: { id: true } } },
+    select: {
+      id: true,
+      orderNumber: true,
+      guestName: true,
+      guestPhone: true,
+      deliveryAddress: true,
+      createdAt: true,
+      totalAmount: true,
+      deliveryCost: true,
+      status: true,
+      utmSource: true,
+      utmMedium: true,
+      utmCampaign: true,
+      gclid: true,
+      yclid: true,
+      referrer: true,
+      items: { select: { id: true } },
+    },
   });
 
   const today = new Date();
@@ -22,29 +37,28 @@ export default async function AdminOrdersPage() {
       .reduce((sum, o) => sum + Number(o.totalAmount) + Number(o.deliveryCost ?? 0), 0),
     newCount: orders.filter((o) => o.status === "NEW").length,
   };
+  const clientOrders = orders.map((order) => ({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    guestName: order.guestName,
+    guestPhone: order.guestPhone,
+    deliveryAddress: order.deliveryAddress,
+    createdAt: order.createdAt.toISOString(),
+    totalAmount: order.totalAmount.toString(),
+    deliveryCost: order.deliveryCost?.toString() ?? null,
+    status: order.status,
+    utmSource: order.utmSource,
+    utmMedium: order.utmMedium,
+    utmCampaign: order.utmCampaign,
+    gclid: order.gclid,
+    yclid: order.yclid,
+    referrer: order.referrer,
+    items: order.items,
+  }));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h1 className="font-display font-bold text-2xl">Заказы</h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/orders/trash"
-            className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted-foreground border border-border rounded-xl hover:bg-primary/[0.07] transition-colors"
-          >
-            <Trash2 className="w-4 h-4" />
-            Корзина
-          </Link>
-          <Link
-            href="/admin/orders/new"
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors text-sm font-semibold"
-          >
-            <Phone className="w-4 h-4" />
-            Заказ по телефону
-          </Link>
-        </div>
-      </div>
-      <OrdersClient orders={orders as any} stats={stats} />
+      <OrdersClient orders={clientOrders} stats={stats} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import {
-  Pencil, X, Star, Eye, EyeOff,
+  Search, Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
   ImageOff, Stamp, AlertTriangle, Sparkles, Loader2,
@@ -100,9 +100,12 @@ export function ProductsClient({
 
   /* filtered + sorted */
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     const list = products.filter(p => {
       const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
-      const matchS = !search || p.name.toLowerCase().includes(search.toLowerCase());
+      const matchS = !q || [p.name, p.slug, p.category.name].some((value) =>
+        value.toLowerCase().includes(q)
+      );
       const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
       const matchNophoto = !noPhotoOnly || p.images.length === 0;
       const matchFeatured = !urlFeatured || p.featured;
@@ -200,7 +203,10 @@ export function ProductsClient({
           body: JSON.stringify({ categoryId }),
         })
       ));
-    } finally { setBulkSaving(false); }
+    } finally {
+      setBulkCat("");
+      setBulkSaving(false);
+    }
   };
 
   const bulkWatermark = async () => {
@@ -363,12 +369,32 @@ export function ProductsClient({
   return (
     <>
       {/* ── Filters ── */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-start sm:items-center">
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Поиск по названию, ссылке или категории"
+            className="w-full py-2 pl-9 pr-9 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              aria-label="Очистить поиск"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+        <div className="relative w-full sm:w-auto">
           <select
             value={catFilter}
             onChange={e => setCatFilter(e.target.value)}
-            className="appearance-none py-2 pl-3 pr-8 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full sm:w-auto appearance-none py-2 pl-3 pr-8 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="ALL">Все категории</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -545,7 +571,7 @@ export function ProductsClient({
                     {minPrice(p) !== null && <span className="font-medium text-foreground">{formatPrice(minPrice(p)!)}</span>}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <ReadinessBadge p={p} />
+                    <ReadinessBadge p={p} compact />
                     <StatusBadge p={p} />
                   </div>
                 </div>

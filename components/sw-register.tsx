@@ -6,6 +6,8 @@ import { useEffect } from "react";
 export function SwRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
+    if (process.env.NODE_ENV !== "production") return;
+    if (["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)) return;
 
     // Чуть откладываем — не блокируем первый рендер
     const timer = setTimeout(async () => {

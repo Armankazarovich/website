@@ -32,7 +32,8 @@ export type AdminAction = {
   id: string;
   label: string;
   icon: React.ElementType;
-  onClick: () => void;
+  href?: string;
+  onClick?: () => void;
   /** primary | ghost — primary рисуется синей кнопкой, ghost — outline */
   variant?: "primary" | "ghost";
   /** Скрыть на мобилке (например для редко используемых) */
@@ -104,6 +105,8 @@ export function useAdminPageActions(config: {
   actions?: AdminAction[];
 }) {
   const ctx = useContext(PageActionsContext);
+  const setOnRefresh = ctx?.setOnRefresh;
+  const setActions = ctx?.setActions;
   // Stable refs чтобы избежать infinite loop из-за inline-функций
   const refreshRef = useRef(config.onRefresh);
   const actionsRef = useRef(config.actions);
@@ -111,13 +114,13 @@ export function useAdminPageActions(config: {
   actionsRef.current = config.actions;
 
   useEffect(() => {
-    if (!ctx) return;
-    ctx.setOnRefresh(refreshRef.current ? () => refreshRef.current?.() : null);
-    ctx.setActions(actionsRef.current ?? []);
+    if (!setOnRefresh || !setActions) return;
+    setOnRefresh(refreshRef.current ? () => refreshRef.current?.() : null);
+    setActions(actionsRef.current ?? []);
     return () => {
-      ctx.setOnRefresh(null);
-      ctx.setActions([]);
+      setOnRefresh(null);
+      setActions([]);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, JSON.stringify((config.actions ?? []).map((a) => a.id)), Boolean(config.onRefresh)]);
+  }, [setOnRefresh, setActions, JSON.stringify((config.actions ?? []).map((a) => a.id)), Boolean(config.onRefresh)]);
 }

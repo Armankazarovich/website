@@ -24,15 +24,15 @@
  *  - LazyAdminAray (плавающий Арай)
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Search, Sparkles, ChevronLeft, RefreshCw, MoreVertical,
+  Search, Sparkles, ChevronLeft, RefreshCw, MoreVertical, Trash2,
   LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
-  Truck, Package, Tag, Warehouse, FileDown, Images, Megaphone,
+  Truck, Package, Tag, Warehouse, FileDown, FileCheck, Images, Megaphone,
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
-  Settings, Palette, BarChart2, Stamp, Users, Bell, HelpCircle,
+  Settings, Palette, BarChart2, Stamp, Stethoscope, Users, Bell, HelpCircle,
   Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
   Sun, Moon,
 } from "lucide-react";
@@ -217,6 +217,80 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
   const { onRefresh, actions } = useAdminPageActionsState();
+  const fallbackActions = useMemo<AdminAction[]>(() => {
+    if (pathname === "/admin") {
+      return [
+        {
+          id: "dashboard-new-order",
+          label: "Новый заказ",
+          icon: Plus,
+          variant: "primary",
+          href: "/admin/orders/new",
+          onClick: () => router.push("/admin/orders/new"),
+        },
+        {
+          id: "dashboard-analytics",
+          label: "Аналитика",
+          icon: BarChart2,
+          href: "/admin/analytics",
+          onClick: () => router.push("/admin/analytics"),
+        },
+      ];
+    }
+
+    if (pathname === "/admin/orders") {
+      return [
+        {
+          id: "orders-new",
+          label: "Новый заказ",
+          icon: Plus,
+          variant: "primary",
+          href: "/admin/orders/new",
+          onClick: () => router.push("/admin/orders/new"),
+        },
+        {
+          id: "orders-trash",
+          label: "Корзина",
+          icon: Trash2,
+          href: "/admin/orders/trash",
+          onClick: () => router.push("/admin/orders/trash"),
+          hideOnMobile: true,
+        },
+      ];
+    }
+
+    if (pathname === "/admin/products") {
+      return [
+        {
+          id: "products-new",
+          label: "Новый товар",
+          icon: Plus,
+          variant: "primary",
+          href: "/admin/products/new",
+          onClick: () => router.push("/admin/products/new"),
+        },
+        {
+          id: "products-audit",
+          label: "Аудит",
+          icon: Stethoscope,
+          href: "/admin/products/audit",
+          onClick: () => router.push("/admin/products/audit"),
+          hideOnMobile: true,
+        },
+        {
+          id: "products-import-prices",
+          label: "Импорт цен",
+          icon: FileCheck,
+          href: "/admin/products/import-prices",
+          onClick: () => router.push("/admin/products/import-prices"),
+          hideOnMobile: true,
+        },
+      ];
+    }
+
+    return [];
+  }, [pathname, router]);
+  const headerActions = actions.length > 0 ? actions : fallbackActions;
   const showBack = !ROOT_ROUTES.has(pathname);
   const handleBack = () => {
     const segments = pathname.split("/").filter(Boolean);
@@ -395,19 +469,10 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             </button>
 
             {/* Page Actions (если страница их зарегистрировала) */}
-            {actions.length > 0 && (
-              <div className="hidden md:flex items-center gap-1.5 ml-1.5 pl-1.5 border-l border-border/60">
+            {headerActions.length > 0 && (
+              <div className="flex items-center gap-1.5 md:ml-1.5 md:pl-1.5 md:border-l md:border-border/60">
                 <HeaderActions
-                  actions={actions}
-                  menuOpen={actionsMenuOpen}
-                  setMenuOpen={setActionsMenuOpen}
-                />
-              </div>
-            )}
-            {actions.length > 0 && (
-              <div className="md:hidden flex items-center gap-1.5">
-                <HeaderActions
-                  actions={actions}
+                  actions={headerActions}
                   menuOpen={actionsMenuOpen}
                   setMenuOpen={setActionsMenuOpen}
                 />
@@ -513,6 +578,10 @@ function HeaderActions({
   const visibleOnMobile = actions.filter((a) => !a.hideOnMobile);
   const primary = actions.find((a) => a.variant === "primary");
   const others = actions.filter((a) => a !== primary);
+  const actionClassName = (isPrimary: boolean) =>
+    isPrimary
+      ? "inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      : "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-border text-foreground hover:bg-muted/60 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed";
 
   return (
     <>
@@ -521,6 +590,30 @@ function HeaderActions({
         {actions.map((a) => {
           const Icon = a.icon;
           const isPrimary = a.variant === "primary";
+          const content = (
+            <>
+              <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isPrimary ? 2 : 1.75} />
+              <span className="hidden lg:inline">{a.label}</span>
+            </>
+          );
+          if (a.href) {
+            return (
+              <Link
+                key={a.id}
+                href={a.disabled ? "#" : a.href}
+                aria-disabled={a.disabled}
+                tabIndex={a.disabled ? -1 : undefined}
+                aria-label={a.label}
+                title={a.label}
+                className={actionClassName(isPrimary)}
+                onClick={(event) => {
+                  if (a.disabled) event.preventDefault();
+                }}
+              >
+                {content}
+              </Link>
+            );
+          }
           return (
             <button
               key={a.id}
@@ -529,14 +622,9 @@ function HeaderActions({
               disabled={a.disabled}
               aria-label={a.label}
               title={a.label}
-              className={
-                isPrimary
-                  ? "inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  : "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-border text-foreground hover:bg-muted/60 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              }
+              className={actionClassName(isPrimary)}
             >
-              <Icon className="w-[18px] h-[18px] shrink-0" strokeWidth={isPrimary ? 2 : 1.75} />
-              <span className="hidden lg:inline">{a.label}</span>
+              {content}
             </button>
           );
         })}
@@ -544,18 +632,39 @@ function HeaderActions({
 
       {/* Mobile <md: primary видна, остальные в overflow */}
       <div className="md:hidden flex items-center gap-1.5">
-        {primary && (
-          <button
-            type="button"
-            onClick={primary.onClick}
-            disabled={primary.disabled}
-            aria-label={primary.label}
-            title={primary.label}
-            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 shrink-0"
-          >
-            <primary.icon className="w-[18px] h-[18px]" strokeWidth={2} />
-          </button>
-        )}
+        {primary && (() => {
+          const PrimaryIcon = primary.icon;
+          const primaryClassName = "w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 shrink-0";
+          if (primary.href) {
+            return (
+              <Link
+                href={primary.disabled ? "#" : primary.href}
+                aria-disabled={primary.disabled}
+                tabIndex={primary.disabled ? -1 : undefined}
+                aria-label={primary.label}
+                title={primary.label}
+                className={primaryClassName}
+                onClick={(event) => {
+                  if (primary.disabled) event.preventDefault();
+                }}
+              >
+                <PrimaryIcon className="w-[18px] h-[18px]" strokeWidth={2} />
+              </Link>
+            );
+          }
+          return (
+            <button
+              type="button"
+              onClick={primary.onClick}
+              disabled={primary.disabled}
+              aria-label={primary.label}
+              title={primary.label}
+              className={primaryClassName}
+            >
+              <PrimaryIcon className="w-[18px] h-[18px]" strokeWidth={2} />
+            </button>
+          );
+        })()}
         {others.length > 0 && visibleOnMobile.length > (primary ? 1 : 0) && (
           <div ref={menuRef} className="relative">
             <button
@@ -570,16 +679,39 @@ function HeaderActions({
               <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl py-1 z-50">
                 {others.filter(a => !a.hideOnMobile).map((a) => {
                   const Icon = a.icon;
+                  const itemClassName = "w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors text-left disabled:opacity-50";
+                  const itemContent = (
+                    <>
+                      <Icon className="w-4 h-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                      <span className="flex-1 truncate">{a.label}</span>
+                    </>
+                  );
+                  if (a.href) {
+                    return (
+                      <Link
+                        key={a.id}
+                        href={a.disabled ? "#" : a.href}
+                        aria-disabled={a.disabled}
+                        tabIndex={a.disabled ? -1 : undefined}
+                        className={itemClassName}
+                        onClick={(event) => {
+                          setMenuOpen(false);
+                          if (a.disabled) event.preventDefault();
+                        }}
+                      >
+                        {itemContent}
+                      </Link>
+                    );
+                  }
                   return (
                     <button
                       key={a.id}
                       type="button"
-                      onClick={() => { setMenuOpen(false); a.onClick(); }}
+                      onClick={() => { setMenuOpen(false); a.onClick?.(); }}
                       disabled={a.disabled}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors text-left disabled:opacity-50"
+                      className={itemClassName}
                     >
-                      <Icon className="w-4 h-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
-                      <span className="flex-1 truncate">{a.label}</span>
+                      {itemContent}
                     </button>
                   );
                 })}

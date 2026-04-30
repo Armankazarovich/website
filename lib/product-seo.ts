@@ -18,7 +18,15 @@
  */
 
 import type { Prisma } from "@prisma/client";
-import { getSetting, type DEFAULT_SETTINGS } from "@/lib/site-settings";
+
+const PRODUCT_SEO_DEFAULT_SETTINGS: Record<string, string> = {
+  company_city: "Химки",
+  delivery_region: "Москва и Московская область",
+};
+
+function getProductSeoSetting(settings: Record<string, string>, key: string): string {
+  return settings[key] ?? PRODUCT_SEO_DEFAULT_SETTINGS[key] ?? "";
+}
 
 // ────────────────────────────────────────────────────────────
 // Типы для генерации (минимальный контракт — не трогаем Prisma схему)
@@ -97,8 +105,8 @@ export function generateProductDescription(
   product: ProductForSeo,
   settings: Record<string, string>
 ): string {
-  const city = getSetting(settings, "company_city") || "Химках";
-  const region = getSetting(settings, "delivery_region") || "Москве и Московской области";
+  const city = getProductSeoSetting(settings, "company_city") || "Химках";
+  const region = getProductSeoSetting(settings, "delivery_region") || "Москве и Московской области";
   const variants = product.variants ?? [];
 
   const parts: string[] = [];
@@ -329,8 +337,8 @@ export async function generateProductDescriptionAI(
     throw new Error("ANTHROPIC_API_KEY не настроен");
   }
 
-  const city = getSetting(settings, "company_city") || "Химки";
-  const region = getSetting(settings, "delivery_region") || "Москва и Московская область";
+  const city = getProductSeoSetting(settings, "company_city") || "Химки";
+  const region = getProductSeoSetting(settings, "delivery_region") || "Москва и Московская область";
   const variants = product.variants ?? [];
   const sizes = uniqueSizes(variants).slice(0, 8);
   const minPrice = getMinPrice(variants);

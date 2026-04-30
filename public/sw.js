@@ -2,7 +2,7 @@
 // Стратегии: CacheFirst для статики, NetworkFirst для HTML/API
 // Версия: меняй CACHE_VERSION при каждом деплое для сброса кэша
 
-var CACHE_VERSION = 'aray-v4';
+var CACHE_VERSION = 'aray-v5';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var IMAGE_CACHE   = CACHE_VERSION + '-images';
 var PAGE_CACHE    = CACHE_VERSION + '-pages';
@@ -55,6 +55,18 @@ self.addEventListener('fetch', function(event) {
 
   // API запросы — пропускаем (всегда свежие данные)
   if (url.pathname.startsWith('/api/')) return;
+
+  // Админка и кабинет должны всегда брать свежий HTML/JS.
+  // Иначе после деплоя менеджер может остаться на старом client-bundle и получить "мертвые" кнопки.
+  if (
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/cabinet') ||
+    url.pathname.startsWith('/login') ||
+    url.pathname.indexOf('/_next/static/chunks/app/admin/') !== -1 ||
+    url.pathname.indexOf('/_next/static/chunks/app/cabinet/') !== -1
+  ) {
+    return;
+  }
 
   // ── _next/static — CacheFirst (immutable, 1 год) ──
   if (url.pathname.startsWith('/_next/static/')) {
