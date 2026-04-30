@@ -1,0 +1,330 @@
+{
+  "checkedAt": "2026-04-30T19:38:22.453Z",
+  "total": 35,
+  "missing": 0,
+  "routes": [
+    {
+      "href": "/admin/analytics",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/admin/dashboard-actions.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/appearance",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/aray",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/aray-lab",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/aray/costs",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/categories",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/clients",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/crm",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/crm/automation",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/delivery",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/email",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/finance",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/health",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/help",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/import",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/inventory",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/media",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/notifications",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/orders",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/orders/new",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/admin/dashboard-actions.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/orders/trash",
+      "exists": true,
+      "files": [
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/posts",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/products",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/products/audit",
+      "exists": true,
+      "files": [
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/products/import-prices",
+      "exists": true,
+      "files": [
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/products/new",
+      "exists": true,
+      "files": [
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/promotion",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/promotions",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/reviews",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/services",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/settings",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/site",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/staff",
+      "exists": true,
+      "files": [
+        "components/admin/admin-menu-popup.tsx",
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    },
+    {
+      "href": "/admin/tasks",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-search.tsx",
+        "components/admin/admin-shell.tsx"
+      ]
+    },
+    {
+      "href": "/admin/watermark",
+      "exists": true,
+      "files": [
+        "components/admin/admin-nav.tsx",
+        "components/admin/admin-shell.tsx",
+        "components/store/account-drawer.tsx"
+      ]
+    }
+  ]
+}
