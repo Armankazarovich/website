@@ -17,6 +17,22 @@ async function upsertSetting(key: string, value: string) {
   }
 }
 
+const PRODUCT_IMAGE_EXTENSIONS = ["webp", "jpg", "jpeg", "png", "gif"] as const;
+
+function findStableProductImage(slug: string): string | null {
+  const dir = join(process.cwd(), "public", "images", "products");
+  if (!existsSync(dir)) return null;
+
+  for (const ext of PRODUCT_IMAGE_EXTENSIONS) {
+    const filename = `${slug}.${ext}`;
+    if (existsSync(join(dir, filename))) {
+      return `/images/products/${filename}`;
+    }
+  }
+
+  return null;
+}
+
 async function main() {
   console.log("[data-migrate] Запуск миграций данных...");
 
@@ -140,6 +156,26 @@ async function main() {
     }
   }
   console.log("[data-migrate] ✓ Флаги навигации категорий обновлены");
+
+  // 8.1. Product photos: restore exact slug-based stable images for products that have no photos.
+  // Conservative by design: manager-selected photos are never overwritten.
+  const productsForImages = await prisma.product.findMany({
+    select: { id: true, slug: true, images: true },
+  });
+  let restoredProductImages = 0;
+  for (const product of productsForImages) {
+    if (product.images.length > 0) continue;
+    const stableImage = findStableProductImage(product.slug);
+    if (!stableImage) continue;
+    await prisma.product.update({
+      where: { id: product.id },
+      data: { images: [stableImage] },
+    });
+    restoredProductImages++;
+  }
+  if (restoredProductImages > 0) {
+    console.log(`[data-migrate] restored product images by exact slug: ${restoredProductImages}`);
+  }
 
   // 9. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
   const knownRedirects = [

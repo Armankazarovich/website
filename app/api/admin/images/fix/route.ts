@@ -11,6 +11,20 @@ async function checkAdmin() {
   return session && session.user.role === "ADMIN";
 }
 
+const PRODUCT_IMAGE_EXTENSIONS = ["webp", "jpg", "jpeg", "png", "gif"] as const;
+
+function findExactProductImage(slug: string): string | null {
+  const dir = join(process.cwd(), "public", "images", "products");
+  if (!existsSync(dir)) return null;
+
+  for (const ext of PRODUCT_IMAGE_EXTENSIONS) {
+    const filename = `${slug}.${ext}`;
+    if (existsSync(join(dir, filename))) return `/images/products/${filename}`;
+  }
+
+  return null;
+}
+
 // ── GET: diagnose all product images ─────────────────────────────────────────
 export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -52,6 +66,8 @@ export async function GET() {
 
     const uniqueImages = p.images.filter((img, idx, arr) => arr.indexOf(img) === idx);
 
+    const suggestedImage = p.images.length === 0 ? findExactProductImage(p.slug) : null;
+
     return {
       id: p.id,
       name: p.name,
@@ -65,6 +81,7 @@ export async function GET() {
       hasBroken: broken.length > 0,
       duplicates,
       broken,
+      suggestedImage,
     };
   });
 
@@ -73,6 +90,7 @@ export async function GET() {
     withDuplicates: report.filter((r) => r.hasDuplicates).length,
     withBroken: report.filter((r) => r.hasBroken).length,
     withNoImages: report.filter((r) => r.total === 0).length,
+    withRestorableNoImages: report.filter((r) => r.total === 0 && r.suggestedImage).length,
     totalDuplicateEntries: report.reduce((s, r) => s + r.duplicatesCount, 0),
     totalBrokenRefs: report.reduce((s, r) => s + r.brokenCount, 0),
   };
@@ -140,6 +158,27 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, fixed, totalRemoved });
+  }
+
+  // ── Fill missing product images by exact slug filename ──
+  if (action === "fill_missing_by_slug") {
+    const products = await prisma.product.findMany({
+      select: { id: true, slug: true, images: true },
+    });
+
+    let fixed = 0;
+    for (const product of products) {
+      if (product.images.length > 0) continue;
+      const image = findExactProductImage(product.slug);
+      if (!image) continue;
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { images: [image] },
+      });
+      fixed++;
+    }
+
+    return NextResponse.json({ ok: true, fixed, totalRemoved: 0 });
   }
 
   // ── Remove wm- watermark duplicates (keep originals, remove wm- versions) ──

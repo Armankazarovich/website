@@ -22,6 +22,7 @@ type ProductReport = {
   hasBroken: boolean;
   duplicates: string[];
   broken: string[];
+  suggestedImage?: string | null;
 };
 
 type Summary = {
@@ -29,6 +30,7 @@ type Summary = {
   withDuplicates: number;
   withBroken: number;
   withNoImages: number;
+  withRestorableNoImages?: number;
   totalDuplicateEntries: number;
   totalBrokenRefs: number;
 };
@@ -162,7 +164,7 @@ export default function ImageFixPage() {
       )}
 
       {/* Fix actions */}
-      {s && (s.withDuplicates > 0 || s.withBroken > 0) && (
+      {s && (s.withDuplicates > 0 || s.withBroken > 0 || (s.withRestorableNoImages ?? 0) > 0) && (
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h2 className="font-semibold flex items-center gap-2">
             <Wrench className="w-4 h-4 text-primary" />
@@ -208,6 +210,28 @@ export default function ImageFixPage() {
                   <p className="font-semibold text-sm">Убрать битые ссылки</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {s.totalBrokenRefs} файлов не найдено на сервере
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {(s.withRestorableNoImages ?? 0) > 0 && (
+              <button
+                onClick={() => fixAction("fill_missing_by_slug", `Заполнить фото у ${s.withRestorableNoImages} товаров по точному имени файла`)}
+                disabled={!!fixing}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 hover:border-emerald-400 transition-colors disabled:opacity-50 text-left"
+              >
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
+                  {fixing === "fill_missing_by_slug" ? (
+                    <RefreshCw className="w-5 h-5 text-emerald-500 animate-spin" />
+                  ) : (
+                    <ImageOff className="w-5 h-5 text-emerald-500" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Заполнить пустые фото</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {s.withRestorableNoImages} точных совпадений по slug
                   </p>
                 </div>
               </button>
@@ -303,7 +327,7 @@ export default function ImageFixPage() {
                 {p.total === 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-medium">
                     <ImageOff className="w-3 h-3" />
-                    Нет фото
+                    {p.suggestedImage ? "Есть файл" : "Нет фото"}
                   </span>
                 )}
                 {p.hasDuplicates && (

@@ -1,18 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   Upload, Trash2, Copy, CheckCircle2, Loader2,
   Wand2, X, ExternalLink, FolderOpen, ScanSearch,
-  CheckSquare, Square, Smartphone,
+  CheckSquare, Square, Smartphone, Video, FileText,
 } from "lucide-react";
 import { InfoCard } from "@/components/admin/info-popup";
 import { useClassicMode } from "@/lib/use-classic-mode";
 
+type MediaKind = "image" | "video" | "document";
+
 type MediaFile = {
-  url: string; folder: string; filename: string;
+  url: string; folder: string; filename: string; kind: MediaKind;
   size: number; mtime: number; alt: string;
   usedIn: { type: "product" | "category"; id: string; name: string; slug: string }[];
 };
@@ -44,6 +45,7 @@ function MediaCard({
   const [altSaved, setAltSaved] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
 
   const saveAlt = async () => {
     setSaving(true);
@@ -52,7 +54,8 @@ function MediaCard({
   };
 
   const ext = file.filename.split(".").pop()?.toUpperCase() ?? "";
-  const isImage = ["JPG", "JPEG", "PNG", "WEBP", "SVG", "GIF"].includes(ext);
+  const isImage = file.kind === "image";
+  const isVideo = file.kind === "video";
 
   return (
     <div
@@ -67,10 +70,28 @@ function MediaCard({
     >
       {/* Thumbnail */}
       <div className="relative aspect-square bg-muted">
-        {isImage ? (
-          <Image src={file.url} alt={file.alt || file.filename} fill className="object-cover" sizes="200px" />
+        {isImage && !previewFailed ? (
+          <img
+            src={file.url}
+            alt={file.alt || file.filename}
+            loading="lazy"
+            className="h-full w-full object-cover"
+            onError={() => setPreviewFailed(true)}
+          />
+        ) : isVideo && !previewFailed ? (
+          <video
+            src={file.url}
+            className="h-full w-full object-cover"
+            muted
+            preload="metadata"
+            playsInline
+            onError={() => setPreviewFailed(true)}
+          />
         ) : (
-          <div className="flex items-center justify-center h-full text-2xl font-bold text-muted-foreground">{ext}</div>
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+            {isVideo ? <Video className="h-8 w-8 opacity-45" /> : <FileText className="h-8 w-8 opacity-45" />}
+            <span className="text-xs font-bold">{ext || "FILE"}</span>
+          </div>
         )}
 
         {/* Bulk mode checkbox */}
@@ -205,6 +226,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [search, setSearch] = useState("");
   const [folder, setFolder] = useState<string>("all");
   const [selected, setSelected] = useState<string | null>(null);
@@ -232,6 +254,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   // Filter
   const filtered = files.filter((f) => {
+    if (pickerMode && f.kind !== "image") return false;
     const matchFolder = folder === "all" || f.folder === folder;
     const matchSearch = !search || f.filename.toLowerCase().includes(search.toLowerCase()) ||
       f.alt.toLowerCase().includes(search.toLowerCase()) ||
@@ -251,12 +274,28 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   async function upload(file: File) {
     setUploading(true);
+    setUploadError("");
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("folder", folder === "all" ? "products" : folder);
-    await fetch("/api/admin/upload", { method: "POST", body: fd });
-    await loadFiles();
-    setUploading(false);
+    const targetFolder = folder === "all"
+      ? file.type.startsWith("video/")
+        ? "videos"
+        : "products"
+      : folder;
+    fd.append("folder", targetFolder);
+
+    try {
+      const response = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "Не удалось загрузить файл");
+      }
+      await loadFiles();
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Не удалось загрузить файл");
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function handleFiles(fileList: FileList | null) {
@@ -409,7 +448,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
           dragOver ? "border-primary bg-primary/15" : "border-border hover:border-primary/40 hover:bg-primary/[0.05]"
         }`}
       >
-        <input ref={fileRef} type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+        <input ref={fileRef} type="file" multiple accept="image/*,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         {/* Camera input for mobile */}
         <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -419,11 +458,17 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
             <Upload className="w-8 h-8 opacity-50" />
           )}
           <p className="text-sm font-medium">
-            {uploading ? "Загружаем..." : "Перетащите фото или нажмите для выбора"}
+            {uploading ? "Загружаем..." : "Перетащите фото или видео, либо нажмите для выбора"}
           </p>
-          <p className="text-xs">JPG, PNG, WebP, SVG · с компьютера или телефона</p>
+          <p className="text-xs">JPG, PNG, WebP, GIF, MP4, WebM · с компьютера или телефона</p>
         </div>
       </div>
+
+      {uploadError && (
+        <div className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {uploadError}
+        </div>
+      )}
 
       {/* Mobile camera upload button */}
       {!pickerMode && (

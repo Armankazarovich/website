@@ -14,10 +14,26 @@ const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: nu
 };
 
 // Whitelists
-const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const ALLOWED_EXT = ["jpg", "jpeg", "png", "webp", "gif"];
-const ALLOWED_FOLDERS = ["categories", "products", "production", "brand", "default"];
-const MAX_SIZE = 10 * 1024 * 1024; // 10MB for admin
+const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"];
+const IMAGE_EXT = ["jpg", "jpeg", "png", "webp", "gif"];
+const VIDEO_EXT = ["mp4", "webm", "mov"];
+const ALLOWED_MIME = [...IMAGE_MIME, ...VIDEO_MIME];
+const ALLOWED_EXT = [...IMAGE_EXT, ...VIDEO_EXT];
+const ALLOWED_FOLDERS = [
+  "categories",
+  "products",
+  "production",
+  "aray",
+  "brand",
+  "watermarks",
+  "banners",
+  "posts",
+  "videos",
+  "default",
+];
+const IMAGE_MAX_SIZE = 10 * 1024 * 1024; // 10MB for admin images
+const VIDEO_MAX_SIZE = 80 * 1024 * 1024; // 80MB for admin videos
 
 // Magic number validation
 function validateImageMagic(buffer: Buffer, mime: string): boolean {
@@ -37,8 +53,20 @@ function validateImageMagic(buffer: Buffer, mime: string): boolean {
       buffer[0] === 0x52 &&
       buffer[1] === 0x49 &&
       buffer[2] === 0x46 &&
-      buffer[3] === 0x46
+      buffer[3] === 0x46 &&
+      buffer.toString("ascii", 8, 12) === "WEBP"
     );
+  return false;
+}
+
+function validateVideoMagic(buffer: Buffer, mime: string, ext: string): boolean {
+  if (buffer.length < 12) return false;
+  if (mime === "video/webm" || ext === "webm") {
+    return buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
+  }
+  if (mime === "video/mp4" || mime === "video/quicktime" || ext === "mp4" || ext === "mov") {
+    return buffer.toString("ascii", 4, 8) === "ftyp";
+  }
   return false;
 }
 
@@ -57,19 +85,22 @@ export async function POST(req: Request) {
 
   // Whitelist folder (prevents path traversal like "../../secrets")
   const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "default";
+  const isImage = IMAGE_MIME.includes(file.type);
+  const isVideo = VIDEO_MIME.includes(file.type);
 
   // MIME whitelist
   if (!ALLOWED_MIME.includes(file.type)) {
     return NextResponse.json(
-      { error: "Допустимы только JPG/PNG/WebP/GIF" },
+      { error: "Допустимы JPG/PNG/WebP/GIF и MP4/WebM/MOV" },
       { status: 400 }
     );
   }
 
   // Size limit
-  if (file.size > MAX_SIZE) {
+  const maxSize = isVideo ? VIDEO_MAX_SIZE : IMAGE_MAX_SIZE;
+  if (file.size > maxSize) {
     return NextResponse.json(
-      { error: "Максимальный размер 10MB" },
+      { error: `Максимальный размер ${isVideo ? "80MB" : "10MB"}` },
       { status: 400 }
     );
   }
@@ -87,9 +118,15 @@ export async function POST(req: Request) {
   const inputBuffer = Buffer.from(bytes);
 
   // Magic number validation (anti-spoof)
-  if (!validateImageMagic(inputBuffer, file.type)) {
+  if (isImage && !validateImageMagic(inputBuffer, file.type)) {
     return NextResponse.json(
       { error: "Файл не является валидным изображением" },
+      { status: 400 }
+    );
+  }
+  if (isVideo && !validateVideoMagic(inputBuffer, file.type, extRaw)) {
+    return NextResponse.json(
+      { error: "Файл не является валидным видео" },
       { status: 400 }
     );
   }
@@ -99,6 +136,12 @@ export async function POST(req: Request) {
   const dir = join(process.cwd(), "public", "images", folder);
 
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+
+  if (isVideo) {
+    const filename = `upload-${timestamp}.${extRaw}`;
+    await writeFile(join(dir, filename), inputBuffer);
+    return NextResponse.json({ url: `/images/${folder}/${filename}` });
+  }
 
   // Sharp → WebP
   try {

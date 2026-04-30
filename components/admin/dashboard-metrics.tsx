@@ -16,8 +16,10 @@
  *  - Trend hint снизу (опционально)
  *  - Анимация появления + counter
  */
-import { useEffect, useState } from "react";
+import type { MouseEvent } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AnimatedCounter } from "./animated-counter";
 import { TrendingUp, BarChart3, Clock, ArrowUpRight, Truck } from "lucide-react";
 
@@ -43,14 +45,37 @@ interface MetricCardProps {
 
 function MetricCard({ href, icon: Icon, value, label, suffix = "", tone, hint, delay = 0 }: MetricCardProps) {
   const [visible, setVisible] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(t);
   }, [delay]);
 
+  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    startTransition(() => {
+      router.push(href);
+    });
+  }
+
   return (
     <Link
       href={href}
+      prefetch
+      onClick={handleClick}
+      aria-busy={isPending}
       className="group relative bg-card border border-border rounded-2xl p-4 sm:p-5 active:scale-[0.98] transition-all duration-200 hover:border-primary/30 hover:shadow-[0_0_20px_hsl(var(--primary)/0.08)]"
       style={{
         opacity: visible ? 1 : 0,
@@ -63,7 +88,7 @@ function MetricCard({ href, icon: Icon, value, label, suffix = "", tone, hint, d
         <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">
           {label}
         </p>
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${TONE_ICON[tone]}`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${isPending ? "animate-pulse" : ""} ${TONE_ICON[tone]}`}>
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
       </div>

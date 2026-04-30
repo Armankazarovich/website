@@ -13,7 +13,27 @@ async function checkAdmin() {
   return session && ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role as string);
 }
 
-const IMAGE_DIRS = ["products", "categories", "watermarks", "banners", "posts"];
+const MEDIA_DIRS = [
+  "products",
+  "categories",
+  "production",
+  "aray",
+  "watermarks",
+  "banners",
+  "posts",
+  "videos",
+  "brand",
+  "default",
+];
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "svg", "gif"]);
+const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
+
+function getMediaKind(filename: string): "image" | "video" | "document" {
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXTENSIONS.has(ext)) return "image";
+  if (VIDEO_EXTENSIONS.has(ext)) return "video";
+  return "document";
+}
 
 // ── GET: list all media files ─────────────────────────────────────────────────
 export async function GET() {
@@ -44,12 +64,12 @@ export async function GET() {
 
   // Scan directories
   const files: {
-    url: string; folder: string; filename: string;
+    url: string; folder: string; filename: string; kind: "image" | "video" | "document";
     size: number; mtime: number; alt: string;
     usedIn: { type: "product" | "category"; id: string; name: string; slug: string }[];
   }[] = [];
 
-  for (const folder of IMAGE_DIRS) {
+  for (const folder of MEDIA_DIRS) {
     const dir = join(process.cwd(), "public", "images", folder);
     if (!existsSync(dir)) continue;
     const entries = await readdir(dir);
@@ -60,6 +80,7 @@ export async function GET() {
         const url = `/images/${folder}/${filename}`;
         files.push({
           url, folder, filename,
+          kind: getMediaKind(filename),
           size: s.size,
           mtime: s.mtimeMs,
           alt: altMap[url] ?? "",
