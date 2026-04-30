@@ -177,7 +177,7 @@ export function AdminMenuPopup({ open, onClose, role }: Props) {
       aria-label="Меню админки"
     >
       <div
-        className="w-full max-w-2xl bg-card rounded-2xl border border-border shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+        className="admin-popup-liquid w-full max-w-2xl rounded-2xl border overflow-hidden flex flex-col max-h-[80vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Поиск ── */}

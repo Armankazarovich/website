@@ -65,6 +65,7 @@ export function AppHeader({
     <header
       className={cn(
         noSticky ? "relative" : "sticky top-0 z-50",
+        "admin-chrome-liquid",
         // Transition включаем только после mount — иначе видно как стиль
         // плавно "проявляется" в первые 500ms
         mounted ? "transition-[background,border-color,box-shadow] duration-300" : ""
@@ -73,8 +74,8 @@ export function AppHeader({
         backdropFilter: "blur(32px) saturate(200%)",
         WebkitBackdropFilter: "blur(32px) saturate(200%)",
         background: isScrolled
-          ? "hsl(var(--background) / 0.94)"
-          : "hsl(var(--background) / 0.78)",
+          ? "linear-gradient(180deg, hsl(var(--background) / 0.92), hsl(var(--background) / 0.82))"
+          : "linear-gradient(180deg, hsl(var(--background) / 0.78), hsl(var(--background) / 0.64))",
         borderBottom: `1px solid hsl(var(--primary) / ${
           isScrolled ? "0.28" : "0.12"
         })`,

@@ -46,9 +46,9 @@ import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { AdminWeatherChip } from "@/components/admin/admin-weather";
+import { AdminAtmosphere, type AdminBgMode } from "@/components/admin/admin-atmosphere";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
-import { usePalette, PALETTES } from "@/components/palette-provider";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { UI_LAYERS } from "@/lib/ui-layers";
 
@@ -57,7 +57,7 @@ const LS_CLASSIC = "aray-classic-mode";
 const LS_BG_MODE = "aray-bg-mode";
 export const LS_FONT = "aray-font-size";
 
-type BgMode = "classic" | "video";
+type BgMode = AdminBgMode | "classic";
 
 /**
  * useClassicMode — экспортируется для других компонентов (aray-control-center,
@@ -65,18 +65,21 @@ type BgMode = "classic" | "video";
  * теперь чистый bg-background.
  */
 export function useClassicMode() {
-  const [bgMode, setBgMode] = useState<BgMode>("classic");
+  const [bgMode, setBgMode] = useState<AdminBgMode>("clean");
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
     const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
     const stored = localStorage.getItem(LS_BG_MODE) as BgMode | null;
-    if (stored && ["classic", "video"].includes(stored)) {
-      setBgMode(stored);
+    if (stored && ["clean", "photo", "video"].includes(stored)) {
+      setBgMode(stored as AdminBgMode);
+    } else if (stored === "classic") {
+      setBgMode("clean");
+      localStorage.setItem(LS_BG_MODE, "clean");
     } else if (legacyClassic) {
-      setBgMode("classic");
-      localStorage.setItem(LS_BG_MODE, "classic");
+      setBgMode("clean");
+      localStorage.setItem(LS_BG_MODE, "clean");
     } else {
-      setBgMode("classic");
+      setBgMode("clean");
     }
     const checkLight = () => {
       const html = document.documentElement;
@@ -91,19 +94,21 @@ export function useClassicMode() {
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
     const handler = () => {
       const m = localStorage.getItem(LS_BG_MODE) as BgMode | null;
-      if (m) setBgMode(m);
+      if (m === "clean" || m === "photo" || m === "video") setBgMode(m);
+      if (m === "classic") setBgMode("clean");
     };
     window.addEventListener("aray-classic-change", handler);
     return () => { window.removeEventListener("aray-classic-change", handler); obs.disconnect(); };
   }, []);
   const setBg = (mode: BgMode) => {
-    localStorage.setItem(LS_BG_MODE, mode);
-    localStorage.setItem(LS_CLASSIC, mode === "classic" ? "1" : "0");
+    const normalized: AdminBgMode = mode === "classic" ? "clean" : mode;
+    localStorage.setItem(LS_BG_MODE, normalized);
+    localStorage.setItem(LS_CLASSIC, normalized === "clean" ? "1" : "0");
     window.dispatchEvent(new Event("aray-classic-change"));
   };
-  const toggle = () => setBg(bgMode === "classic" ? "video" : "classic");
-  const classic = isLight || bgMode === "classic";
-  return { classic, rawClassic: bgMode === "classic", bgMode: isLight ? "classic" as BgMode : bgMode, setBg, toggle };
+  const toggle = () => setBg(bgMode === "clean" ? "photo" : "clean");
+  const classic = isLight || bgMode === "clean";
+  return { classic, rawClassic: bgMode === "clean", bgMode, setBg, toggle };
 }
 
 /**
@@ -235,7 +240,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [arayMounted, setArayMounted] = useState(false);
   const [pendingArayOpen, setPendingArayOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  const { palette } = usePalette();
+  const { bgMode } = useClassicMode();
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
   const { onRefresh, actions } = useAdminPageActionsState();
@@ -403,7 +408,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const HeaderIcon = pageMeta.icon;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="relative flex flex-col min-h-screen bg-background overflow-x-hidden">
+      <AdminAtmosphere mode={bgMode} />
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
         containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-8"
@@ -541,7 +547,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         }
       />
 
-      <div className="lg:hidden px-3 pt-3 -mb-2">
+      <div className="relative z-[5] lg:hidden px-3 pt-3 -mb-2">
         <AdminWeatherChip variant="mobile" />
       </div>
 

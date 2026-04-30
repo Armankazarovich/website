@@ -36,15 +36,15 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
   return (
     <Link
       href="/admin/analytics"
-      className="group block bg-card border border-border rounded-2xl p-5 active:scale-[0.99] transition-all duration-200 hover:border-primary/30"
+      className="admin-liquid-surface admin-liquid-interactive group block rounded-2xl p-4 sm:p-5 active:scale-[0.99] min-w-0"
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
+      <div className="flex items-start sm:items-center justify-between gap-3 mb-5 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
             <BarChart3 className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="font-display font-semibold text-sm text-foreground leading-tight">
               Выручка за 7 дней
             </p>
@@ -53,13 +53,13 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
             </p>
           </div>
         </div>
-        <span className="text-xs text-primary flex items-center gap-1 group-hover:gap-1.5 transition-all">
+        <span className="text-xs text-primary flex items-center gap-1 group-hover:gap-1.5 transition-all shrink-0">
           Аналитика <ChevronRight className="w-3.5 h-3.5" />
         </span>
       </div>
 
       {/* Chart */}
-      <div className="flex items-end gap-2 h-32 sm:h-40">
+      <div className="flex items-end gap-1.5 sm:gap-2 h-32 sm:h-40 min-w-0">
         {days.map((d, i) => {
           const pct = Math.max((d.amount / maxAmount) * 100, d.amount > 0 ? 5 : 0);
           const isToday = i === days.length - 1;
@@ -102,7 +102,7 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
       </div>
 
       {/* Footer summary */}
-      <div className="mt-4 pt-4 border-t border-border flex justify-between text-xs">
+      <div className="mt-4 pt-4 border-t border-border flex flex-col xs:flex-row xs:justify-between gap-1.5 text-xs">
         <span className="text-muted-foreground">
           7 дней:{" "}
           <strong className="text-foreground font-semibold">{revenue7}</strong>

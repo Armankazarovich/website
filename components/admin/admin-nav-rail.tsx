@@ -176,7 +176,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 
   return (
     <aside
-      className={`hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-3 gap-1 bg-card border-r border-border`}
+      className={`admin-rail-liquid hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-3 gap-1 border-r`}
       style={{ top: 64, height: "calc(100vh - 64px)" }}
       onMouseLeave={scheduleClose}
     >
@@ -271,14 +271,14 @@ function GroupPopup({
 
   return (
     <div
-      className={`absolute left-full ml-2 w-80 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200 ${
+      className={`admin-popup-liquid absolute left-full ml-2 w-80 border rounded-2xl overflow-hidden z-40 animate-in fade-in slide-in-from-left-2 duration-200 ${
         align === "bottom" ? "bottom-0" : "top-0"
       }`}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
       {/* Шапка попапа: иконка группы + label */}
-      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border bg-muted/30">
+      <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border/70 bg-muted/20">
         <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
           <GroupIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
@@ -359,7 +359,7 @@ function ProfilePopup({
 }) {
   return (
     <div
-      className="absolute left-full top-0 ml-2 w-60 bg-card border border-border rounded-2xl shadow-xl py-3 px-4 z-40 animate-in fade-in slide-in-from-left-1 duration-150"
+      className="admin-popup-liquid absolute left-full top-0 ml-2 w-60 border rounded-2xl py-3 px-4 z-40 animate-in fade-in slide-in-from-left-1 duration-150"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >

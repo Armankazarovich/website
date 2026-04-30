@@ -24,6 +24,8 @@ interface Props {
   maxWidth?: string;
   /** z-index (по умолчанию z-[200]) */
   zIndex?: string;
+  /** Дополнительный стиль контейнера панели */
+  panelClassName?: string;
   /** Показывать ли кастомную шапку (по умолчанию да) */
   showHeader?: boolean;
   /** Кастомный baseline-хедер (переопределяет стандартный рендер) */
@@ -54,6 +56,7 @@ export function SidePanel({
   footer,
   maxWidth = "480px",
   zIndex = UI_LAYERS.overlay,
+  panelClassName,
   showHeader = true,
   customHeader,
   side = "right",
@@ -94,7 +97,7 @@ export function SidePanel({
             animate={{ x: 0 }}
             exit={{ x: isLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={`relative w-full sm:w-[92vw] h-full bg-background ${isLeft ? "border-r" : "border-l"} border-border shadow-2xl flex flex-col overflow-hidden`}
+            className={`relative w-full sm:w-[92vw] h-full ${isLeft ? "border-r" : "border-l"} flex flex-col overflow-hidden ${panelClassName ?? "bg-background border-border shadow-2xl"}`}
             style={{ maxWidth }}
             onClick={(e) => e.stopPropagation()}
           >

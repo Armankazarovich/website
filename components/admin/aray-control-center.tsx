@@ -1,12 +1,31 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Palette, X } from "lucide-react";
+import { ImageIcon, Layers3, Palette, Video, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { usePalette, PALETTES } from "@/components/palette-provider";
+import { AdminBgPicker } from "@/components/admin/admin-bg-picker";
+import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
+
+const BG_MODE_KEY = "aray-bg-mode";
+
+const BG_MODES: { id: AdminBgMode; label: string; icon: React.ElementType }[] = [
+  { id: "clean", label: "Чистый", icon: Layers3 },
+  { id: "photo", label: "Фото", icon: ImageIcon },
+  { id: "video", label: "Кино", icon: Video },
+];
+
+function readBgMode(): AdminBgMode {
+  if (typeof window === "undefined") return "clean";
+  const stored = localStorage.getItem(BG_MODE_KEY);
+  if (stored === "photo" || stored === "video" || stored === "clean") return stored;
+  if (stored === "classic") return "clean";
+  return "clean";
+}
 
 export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
   const [open, setOpen] = useState(false);
+  const [bgMode, setBgModeState] = useState<AdminBgMode>("clean");
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const ref = useRef<HTMLDivElement>(null);
@@ -15,6 +34,20 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
   const [ccMounted, setCcMounted] = useState(false);
   useEffect(() => setCcMounted(true), []);
   const safeTheme = ccMounted ? theme : "dark";
+
+  useEffect(() => {
+    const sync = () => setBgModeState(readBgMode());
+    sync();
+    window.addEventListener("aray-classic-change", sync);
+    return () => window.removeEventListener("aray-classic-change", sync);
+  }, []);
+
+  function setBgMode(mode: AdminBgMode) {
+    setBgModeState(mode);
+    localStorage.setItem(BG_MODE_KEY, mode);
+    localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
+    window.dispatchEvent(new Event("aray-classic-change"));
+  }
 
   // Закрытие по клику снаружи
   useEffect(() => {
@@ -131,6 +164,34 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                       {t === "light" ? "Светлая" : "Тёмная"}
                     </button>
                   ))}
+                </div>
+              </div>
+              {/* Фон */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Фон</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {BG_MODES.map((mode) => {
+                    const Icon = mode.icon;
+                    const active = bgMode === mode.id;
+                    return (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setBgMode(mode.id)}
+                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 transition-all"
+                        style={{
+                          background: active ? "hsl(var(--primary))" : glass.hoverBg,
+                          color: active ? "#fff" : glass.textSecondary,
+                        }}
+                      >
+                        <Icon className="w-4 h-4" strokeWidth={1.75} />
+                        <span className="text-[10px] font-semibold leading-none">{mode.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-2 flex justify-end">
+                  <AdminBgPicker />
                 </div>
               </div>
             </div>

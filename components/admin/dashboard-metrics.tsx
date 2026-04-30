@@ -76,7 +76,7 @@ function MetricCard({ href, icon: Icon, value, label, suffix = "", tone, hint, d
       prefetch
       onClick={handleClick}
       aria-busy={isPending}
-      className="group relative bg-card border border-border rounded-2xl p-4 sm:p-5 active:scale-[0.98] transition-all duration-200 hover:border-primary/30 hover:shadow-[0_0_20px_hsl(var(--primary)/0.08)]"
+      className="admin-liquid-surface admin-liquid-interactive group rounded-2xl p-4 sm:p-5 active:scale-[0.98] min-w-0"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(12px)",
@@ -118,7 +118,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
   const avg = Math.round(avgOrder);
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+    <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3 min-w-0">
       <MetricCard
         href="/admin/finance"
         icon={TrendingUp}
@@ -164,7 +164,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
 
 export function CourierMetrics({ newOrders, todayOrders }: { newOrders: number; todayOrders: number }) {
   return (
-    <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+    <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 sm:gap-3 min-w-0">
       <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" tone="amber" delay={0} />
       <MetricCard href="/admin/delivery" icon={Truck} value={todayOrders} label="Доставок сегодня" tone="primary" delay={80} />
     </div>

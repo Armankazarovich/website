@@ -54,18 +54,12 @@ export function DashboardGreeting({ userName, roleLabel }: DashboardGreetingProp
 
   return (
     <div
-      className="relative overflow-hidden bg-card border border-border rounded-2xl px-5 py-5 sm:px-6 sm:py-6 transition-all duration-500"
+      className="admin-liquid-surface admin-liquid-hero rounded-2xl px-5 py-5 sm:px-6 sm:py-6 transition-all duration-500"
       style={{
         opacity: mounted ? 1 : 0,
         transform: mounted ? "translateY(0)" : "translateY(8px)",
       }}
     >
-      {/* Тонкое свечение primary (декорация) */}
-      <div
-        className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-[0.08] blur-3xl pointer-events-none"
-        style={{ background: "hsl(var(--primary))" }}
-      />
-
       <div className="relative flex flex-col gap-1.5">
         <p className="font-display font-bold text-xl sm:text-2xl leading-tight text-foreground">
           {greeting},{" "}

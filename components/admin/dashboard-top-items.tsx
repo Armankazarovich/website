@@ -44,10 +44,8 @@ export function DashboardTopItems() {
     return () => clearInterval(interval);
   }, [fetchItems]);
 
-  if (!loading && items.length === 0) return null;
-
   return (
-    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+    <div className="admin-liquid-surface rounded-2xl overflow-hidden min-w-0">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
@@ -80,7 +78,7 @@ export function DashboardTopItems() {
           </button>
           <Link
             href="/admin/analytics"
-            className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all"
+            className="hidden xs:flex text-xs text-primary items-center gap-0.5 hover:gap-1 transition-all"
           >
             Подробнее <ChevronRight className="w-3.5 h-3.5" />
           </Link>
@@ -111,6 +109,14 @@ export function DashboardTopItems() {
                 </p>
               </div>
             ))}
+        {!loading && items.length === 0 && (
+          <div className="px-5 py-8 text-center">
+            <p className="text-sm font-medium text-foreground">Продаж пока нет</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Топ появится автоматически после первых заказов.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

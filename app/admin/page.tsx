@@ -175,7 +175,7 @@ export default async function AdminDashboard() {
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
 
   return (
-    <div className="space-y-4 sm:space-y-5 min-w-0">
+    <div className="admin-dashboard-standard space-y-4 sm:space-y-5 min-w-0">
         <AutoRefresh intervalMs={60000} />
         <DashboardActions showNewOrder={canCreateOrder} />
 
@@ -191,7 +191,7 @@ export default async function AdminDashboard() {
             {newOrders > 0 && (
               <Link
                 href="/admin/orders?status=NEW"
-                className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-2xl hover:border-amber-500/40 hover:shadow-[0_0_18px_hsl(var(--primary)/0.06)] transition-all group"
+                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
                   <Clock className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -210,7 +210,7 @@ export default async function AdminDashboard() {
             {pendingReviews > 0 && isOwner && (
               <Link
                 href="/admin/reviews"
-                className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-2xl hover:border-rose-500/40 transition-all group"
+                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
                 <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
                   <Star className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -229,7 +229,7 @@ export default async function AdminDashboard() {
             {pendingStaff > 0 && isOwner && (
               <Link
                 href="/admin/staff"
-                className="flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-2xl hover:border-blue-500/40 transition-all group"
+                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
                 <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <Users className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -273,12 +273,12 @@ export default async function AdminDashboard() {
               Быстрый доступ
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 min-w-0">
             {quickActions.map((action) => (
               <Link
                 key={action.href}
                 href={action.href}
-                className="shimmer-trace group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 bg-card border border-border rounded-2xl active:scale-[0.96] transition-all duration-200 hover:border-primary/30 hover:shadow-[0_0_18px_hsl(var(--primary)/0.06)] min-h-[88px]"
+                className="shimmer-trace admin-liquid-surface admin-liquid-interactive group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 rounded-2xl active:scale-[0.96] min-h-[88px] min-w-0"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div
@@ -304,9 +304,9 @@ export default async function AdminDashboard() {
         )}
 
         {/* ── ПОСЛЕДНИЕ ЗАКАЗЫ + ТОП ТОВАРОВ ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 sm:gap-4 min-w-0">
           {/* Recent orders */}
-          <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="admin-liquid-surface rounded-2xl overflow-hidden min-w-0">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
