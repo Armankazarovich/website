@@ -77,6 +77,18 @@ const nextConfig = {
     ],
   },
   webpack: (config, { isServer, webpack }) => {
+    config.watchOptions = {
+      ...(config.watchOptions || {}),
+      ignored: [
+        '**/node_modules/**',
+        '**/.git/**',
+        '**/.next/**',
+        'D:/pagefile.sys',
+        'D:/DumpStack.log.tmp',
+        'D:/System Volume Information/**',
+      ],
+    };
+
     // Prevent webpack from trying to bundle onnxruntime-web in the browser bundle.
     // Background removal is done server-side via @imgly/background-removal-node.
     config.plugins.push(

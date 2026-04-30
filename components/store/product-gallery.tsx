@@ -28,7 +28,7 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
     setTimeout(() => {
       setDir(null);
       setAnimating(false);
-    }, 280);
+    }, 300);
   }, [active, animating, images.length]);
 
   const prev = useCallback(() => go(active - 1), [go, active]);
@@ -66,7 +66,7 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
             {animating && (
               <div
                 className={cn(
-                  "absolute inset-0 transition-transform duration-[280ms] ease-in-out",
+                  "absolute inset-0 transition-transform duration-300 ease-in-out",
                   slideOut
                 )}
               >
@@ -84,7 +84,7 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
             {/* Приходящее / текущее фото */}
             <div
               className={cn(
-                "absolute inset-0 transition-transform duration-[280ms] ease-in-out",
+                "absolute inset-0 transition-transform duration-300 ease-in-out",
                 animating ? slideIn : "translate-x-0"
               )}
               style={{ transitionProperty: "transform" }}
