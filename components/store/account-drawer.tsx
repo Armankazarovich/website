@@ -14,7 +14,7 @@ import {
   Mail, Lock, Loader2, CheckCircle2, ChevronRight, Phone,
   Heart, Bell, Image as ImageIcon, Clock, BookmarkPlus,
   LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
-  LifeBuoy, Palette,
+  LifeBuoy, Palette, Globe2, ShieldCheck,
   Users, Package, BarChart3,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -309,16 +309,20 @@ type RowItem = {
   badge?: number | string;
 };
 
-function SectionRow({ item, isLast }: { item: RowItem; isLast: boolean }) {
+function SectionRow({ item }: { item: RowItem }) {
   const Icon = item.icon;
   const { setOpen } = useAccountDrawer();
+  const pathname = usePathname();
+  const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
   return (
     <Link
       href={item.href}
       onClick={() => setOpen(false)}
-      className={`flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors ${isLast ? "" : "border-b border-border"}`}
+      className={`admin-drawer-row admin-nav-panel-item flex items-center gap-3 rounded-xl px-3 py-3 ${active ? "is-active" : ""}`}
     >
-      <Icon className="w-6 h-6 text-primary shrink-0" strokeWidth={1.75} />
+      <span className="admin-drawer-row-icon admin-nav-panel-item-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+        <Icon className="h-5 w-5" strokeWidth={1.85} />
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground leading-tight">{item.label}</p>
         {item.desc && <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.desc}</p>}
@@ -337,15 +341,14 @@ function SectionGroup({ title, items }: { title: string; items: RowItem[] }) {
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1 mb-2">
+      <p className="admin-drawer-section-title text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1 mb-2">
         {title}
       </p>
-      <div className="admin-drawer-group bg-card border border-border rounded-2xl overflow-hidden">
-        {items.map((item, idx) => (
+      <div className="admin-drawer-group space-y-1 rounded-2xl border border-border bg-card p-2">
+        {items.map((item) => (
           <SectionRow
             key={item.href}
             item={item}
-            isLast={idx === items.length - 1}
           />
         ))}
       </div>
@@ -366,7 +369,7 @@ function QuickActionCard({
     <Link
       href={href}
       onClick={() => setOpen(false)}
-      className="admin-drawer-quick flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
+      className="admin-drawer-quick admin-liquid-interactive flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
     >
       <div className="w-11 h-11 rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0">
         <Icon className="w-5 h-5" strokeWidth={2} />
@@ -485,7 +488,18 @@ function ProfilePanel() {
     { href: "/cabinet/history", icon: Clock, label: "История действий", desc: "Просмотры и заказы" },
   ];
 
-  const settingsItems: RowItem[] = [
+  const staffSystemItems: RowItem[] = isStaff ? [
+    ...(isAdmin ? [
+      { href: "/admin/site" as const, icon: Globe2, label: "Сайт", desc: "Контакты, SEO, виджет" },
+      { href: "/admin/settings" as const, icon: Settings, label: "Параметры", desc: "Базовые настройки" },
+      { href: "/admin/appearance" as const, icon: Palette, label: "Оформление", desc: "Темы и палитры" },
+      { href: "/admin/watermark" as const, icon: ImageIcon, label: "Водяной знак", desc: "Защита фото" },
+      { href: "/admin/notifications" as const, icon: Bell, label: "Уведомления", desc: "Push рассылка" },
+    ] : []),
+    { href: "/admin/health", icon: ShieldCheck, label: "Здоровье системы", desc: "Состояние сервисов" },
+  ] : [];
+
+  const settingsItems: RowItem[] = isStaff ? staffSystemItems : [
     { href: "/cabinet/notifications", icon: Bell, label: "Уведомления", desc: "Push и email" },
     { href: "/cabinet/appearance", icon: Palette, label: "Оформление", desc: "Палитра, тема, шрифт" },
     { href: "/contacts", icon: LifeBuoy, label: "Помощь", desc: "Связь с магазином" },
@@ -496,9 +510,9 @@ function ProfilePanel() {
       {/* User card hero — кликабельный, ведёт в профиль */}
       <div className="px-4 pt-4 pb-3">
         <Link
-          href="/cabinet/profile"
+          href={isStaff ? "/admin/staff" : "/cabinet/profile"}
           onClick={close}
-          className="admin-drawer-profile flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
+          className="admin-drawer-profile admin-liquid-interactive flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
         >
           {avatarUrl ? (
             <img
@@ -575,8 +589,8 @@ function ProfilePanel() {
         {isStaff && managementItems.length > 0 && (
           <SectionGroup title="Управление" items={managementItems} />
         )}
-        <SectionGroup title="Покупки" items={purchasesItems} />
-        <SectionGroup title="Аккаунт" items={accountItems} />
+        {!isStaff && <SectionGroup title="Покупки" items={purchasesItems} />}
+        {!isStaff && <SectionGroup title="Аккаунт" items={accountItems} />}
         <SectionGroup title="Настройки" items={settingsItems} />
 
         {/* Logout — destructive outline */}
@@ -651,7 +665,7 @@ export function AccountDrawer() {
             animate={{ x: 0 }}
             exit={{ x: opensFromLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={`account-drawer-panel ${opensFromLeft ? "admin-popup-liquid border-r" : "border-l"} relative w-full sm:w-[420px] max-w-full h-full bg-background border-border shadow-2xl flex flex-col overflow-hidden`}
+            className={`account-drawer-panel ${opensFromLeft ? "admin-popup-liquid admin-account-drawer border-r" : "border-l"} relative w-full sm:w-[420px] max-w-full h-full bg-background border-border shadow-2xl flex flex-col overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

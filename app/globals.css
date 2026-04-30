@@ -963,6 +963,47 @@ button:focus-visible > .admin-rail-icon {
     hsl(var(--background) / 0.94);
 }
 
+.account-drawer-panel.admin-account-drawer {
+  width: min(29rem, calc(100vw - 0.75rem));
+  border-right-color: hsl(var(--primary) / 0.18);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    24px 0 78px hsl(var(--background) / 0.46);
+}
+
+.account-drawer-panel.admin-account-drawer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.12), transparent 18%),
+    radial-gradient(circle at 6% 12%, hsl(var(--primary) / 0.12), transparent 18rem);
+  opacity: 0.52;
+}
+
+.dark .account-drawer-panel.admin-account-drawer::before {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.055), transparent 18%),
+    radial-gradient(circle at 7% 12%, hsl(var(--primary) / 0.15), transparent 18rem);
+  opacity: 0.7;
+}
+
+.account-drawer-panel.admin-account-drawer > * {
+  position: relative;
+  z-index: 1;
+}
+
+.account-drawer-panel.admin-account-drawer > .flex.items-center {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.10), transparent),
+    hsl(var(--card) / 0.16);
+}
+
+.account-drawer-panel .admin-drawer-section-title {
+  color: hsl(var(--muted-foreground) / 0.82);
+}
+
 .account-drawer-panel .admin-drawer-profile,
 .account-drawer-panel .admin-drawer-group,
 .account-drawer-panel .admin-drawer-quick {
@@ -976,6 +1017,19 @@ button:focus-visible > .admin-rail-icon {
 .account-drawer-panel.admin-popup-liquid .admin-drawer-quick {
   background: hsl(var(--card) / 0.74);
   border-color: hsl(var(--primary) / 0.16);
+}
+
+.account-drawer-panel.admin-popup-liquid .admin-drawer-row {
+  min-height: 4.25rem;
+  border-color: transparent;
+}
+
+.account-drawer-panel.admin-popup-liquid .admin-drawer-row.is-active {
+  border-color: hsl(var(--primary) / 0.22);
+}
+
+.account-drawer-panel.admin-popup-liquid .admin-drawer-row-icon {
+  color: hsl(var(--muted-foreground));
 }
 
 .account-drawer-panel .admin-drawer-quick {
