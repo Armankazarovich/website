@@ -6,18 +6,18 @@ import { useTheme } from "next-themes";
 export type AdminBgMode = "clean" | "photo";
 
 const DARK_NATURE_PHOTOS = [
-  "/images/production/hero-main.jpg",
-  "/images/production/hero-about.jpg",
-  "/images/production/hero-cta.jpg",
-  "/images/production/sklad-1.jpg",
-  "/images/production/sklad-2.jpg",
+  "https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
+  "https://images.pexels.com/photos/346529/pexels-photo-346529.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
+  "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
+  "https://images.pexels.com/photos/1287145/pexels-photo-1287145.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
+  "https://images.pexels.com/photos/933054/pexels-photo-933054.jpeg?auto=compress&cs=tinysrgb&w=1800&q=72",
 ];
 
 const LIGHT_WINTER_PHOTOS = [
-  "/images/production/sklad-2.jpg",
-  "/images/production/sklad-4.jpg",
-  "/images/production/hero-about.jpg",
-  "/images/production/prod-15.jpg",
+  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1800&q=72",
+  "https://images.unsplash.com/photo-1483664852095-d6cc6870702d?auto=format&fit=crop&w=1800&q=72",
+  "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1800&q=72",
+  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1800&q=72",
 ];
 
 const PHOTO_MS = 28_000;
