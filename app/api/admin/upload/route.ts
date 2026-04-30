@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { canUploadGlobalMedia } from "@/lib/media-permissions";
 
 // Максимальные размеры и качество для разных папок
 const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: number }> = {
@@ -73,7 +74,7 @@ function validateVideoMagic(buffer: Buffer, mime: string, ext: string): boolean 
 export async function POST(req: Request) {
   const session = await auth();
   const role = session?.user?.role;
-  if (!session || !["SUPER_ADMIN", "ADMIN", "SUPER_ADMIN", "MANAGER"].includes(role as string)) {
+  if (!session || !canUploadGlobalMedia(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

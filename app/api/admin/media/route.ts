@@ -6,11 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { readdir, stat, unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { canManageGlobalMedia, canViewGlobalMedia } from "@/lib/media-permissions";
 
-async function checkAdmin() {
+async function getRole() {
   const session = await auth();
-  const role = session?.user?.role;
-  return session && ["SUPER_ADMIN", "ADMIN", "MANAGER"].includes(role as string);
+  return session?.user?.role;
 }
 
 const MEDIA_DIRS = [
@@ -37,7 +37,8 @@ function getMediaKind(filename: string): "image" | "video" | "document" {
 
 // ── GET: list all media files ─────────────────────────────────────────────────
 export async function GET() {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const role = await getRole();
+  if (!canViewGlobalMedia(role)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Load ALT map from SiteSettings
   const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
@@ -98,13 +99,15 @@ export async function GET() {
 
 // ── POST: save ALT or delete file ─────────────────────────────────────────────
 export async function POST(req: Request) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const role = await getRole();
+  if (!canViewGlobalMedia(role)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const { action } = body;
 
   // ── Save ALT text for one or many images ──
   if (action === "save_alt") {
+    if (!canManageGlobalMedia(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { url, alt } = body as { url: string; alt: string };
     if (!url || !url.startsWith("/images/") || url.includes("..")) return NextResponse.json({ error: "Invalid url" }, { status: 400 });
 
@@ -123,6 +126,7 @@ export async function POST(req: Request) {
 
   // ── Auto-generate ALT from product names ──
   if (action === "auto_generate_alt") {
+    if (!canManageGlobalMedia(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const products = await prisma.product.findMany({ select: { name: true, images: true } });
     const categories = await prisma.category.findMany({ select: { name: true, image: true } });
 
@@ -155,6 +159,7 @@ export async function POST(req: Request) {
 
   // ── Delete file ──
   if (action === "delete") {
+    if (!canManageGlobalMedia(role)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const { url } = body as { url: string };
     if (!url || !url.startsWith("/images/")) return NextResponse.json({ error: "Invalid url" }, { status: 400 });
 

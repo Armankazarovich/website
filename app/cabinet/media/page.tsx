@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Images, FileText, Download } from "lucide-react";
 import { SkeletonHeader, SkeletonStats, SkeletonGrid } from "@/components/cabinet/skeleton";
 
@@ -19,9 +20,11 @@ type MediaData = {
   avatar: MediaItem[];
   docs: MediaItem[];
   total: number;
+  redirectTo?: string;
 };
 
 export default function MyMediaPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<"all" | "photos" | "docs">("all");
   const [data, setData] = useState<MediaData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,9 +33,16 @@ export default function MyMediaPage() {
   useEffect(() => {
     fetch("/api/cabinet/media")
       .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); })
+      .then((d) => {
+        if (d?.redirectTo) {
+          router.replace(d.redirectTo);
+          return;
+        }
+        setData(d);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const tabs = [
     { id: "all" as const, label: "Все", icon: Images },

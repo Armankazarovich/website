@@ -27,6 +27,7 @@ export type Section =
   | "appearance"
   | "help"
   | "health"
+  | "media"
   // Cabinet sections (all authenticated users)
   | "cabinet"
   | "cabinet:profile"
@@ -62,6 +63,7 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   appearance: [], // ADMIN only
   help: ["MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
   health: [], // ADMIN only
+  media: ["MANAGER", "WAREHOUSE", "SELLER"],
   // Cabinet — all authenticated
   cabinet: ["USER", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
   "cabinet:profile": ["USER", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
@@ -117,6 +119,7 @@ export function pathToSection(path: string): Section | null {
     "/admin/appearance": "appearance",
     "/admin/help": "help",
     "/admin/health": "health",
+    "/admin/media": "media",
     "/cabinet": "cabinet",
     "/cabinet/profile": "cabinet:profile",
     "/cabinet/media": "cabinet:media",

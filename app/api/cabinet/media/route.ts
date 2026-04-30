@@ -3,12 +3,24 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isStaffRole } from "@/lib/media-permissions";
 
 // GET — aggregate all user media (review photos, avatar, order docs)
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const role = (session.user as { role?: string })?.role;
+
+  if (isStaffRole(role)) {
+    return NextResponse.json({
+      redirectTo: "/admin/media",
+      photos: [],
+      avatar: [],
+      docs: [],
+      total: 0,
+    });
   }
 
   // 1. Review photos

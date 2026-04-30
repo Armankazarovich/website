@@ -42,6 +42,7 @@ import {
   Sparkles,
   FlaskConical,
 } from "lucide-react";
+import { GLOBAL_MEDIA_ROLES } from "@/lib/media-permissions";
 
 export type NavItem = {
   href: string;
@@ -100,7 +101,7 @@ export const allNavItems: NavItem[] = [
   { href: "/admin/categories", label: "Категории",        labelKey: "categories",    icon: Tag,       roles: [SA, "ADMIN"], group: "products" },
   { href: "/admin/inventory",  label: "Склад / Остатки",  labelKey: "inventory",     icon: Warehouse, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
   { href: "/admin/import",     label: "Импорт / Экспорт", labelKey: "import_export", icon: FileDown,  roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products" },
-  { href: "/admin/media",      label: "Медиабиблиотека",  labelKey: "media",         icon: Images,    roles: [SA, "ADMIN", "MANAGER"], group: "products" },
+  { href: "/admin/media",      label: "Медиабиблиотека",  labelKey: "media",         icon: Images,    roles: [...GLOBAL_MEDIA_ROLES], group: "products" },
 
   // ── Контент ──
   { href: "/admin/posts",    label: "Статьи / Новости", icon: BookOpen, roles: [SA, "ADMIN", "MANAGER"], group: "content", groupKey: undefined },

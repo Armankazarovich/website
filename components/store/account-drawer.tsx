@@ -431,6 +431,7 @@ function ProfilePanel() {
     },
     { href: "/admin/clients", icon: Users, label: "Клиенты", desc: "База покупателей" },
     { href: "/admin/products", icon: Package, label: "Товары", desc: "Каталог и наличие" },
+    { href: "/admin/media", icon: ImageIcon, label: "Медиабиблиотека", desc: "Фото товаров и сайта" },
     { href: "/admin/delivery", icon: Truck, label: "Доставка", desc: "Маршруты и тарифы" },
     {
       href: "/admin/reviews",
@@ -472,7 +473,9 @@ function ProfilePanel() {
         ? `${stats.reviewsCount} ${stats.reviewsCount === 1 ? "отзыв" : "отзывов"}`
         : "Оценки и ответы",
     },
-    { href: "/cabinet/media", icon: ImageIcon, label: "Медиабиблиотека", desc: "Фото и документы" },
+    ...(!isStaff ? [
+      { href: "/cabinet/media" as const, icon: ImageIcon, label: "Медиабиблиотека", desc: "Фото и документы" },
+    ] : []),
     { href: "/cabinet/subscriptions", icon: BookmarkPlus, label: "Подписки", desc: "Магазины и категории" },
     { href: "/cabinet/history", icon: Clock, label: "История действий", desc: "Просмотры и заказы" },
   ];
