@@ -272,8 +272,8 @@ function GroupPopup({
       onMouseLeave={onMouseLeave}
     >
       {/* Шапка попапа: иконка группы + label */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-border/70 shrink-0">
-        <div className="w-10 h-10 rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0 shadow-[0_10px_28px_hsl(var(--primary)/0.12)]">
+      <div className="admin-nav-panel-head flex items-center gap-3 px-4 py-4 border-b border-border/70 shrink-0">
+        <div className="admin-nav-panel-head-icon w-10 h-10 rounded-2xl flex items-center justify-center shrink-0">
           <GroupIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
         <div className="min-w-0">
@@ -299,17 +299,12 @@ function GroupPopup({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150
-                ${isActive
-                  ? "bg-primary/12 text-foreground ring-1 ring-primary/18"
-                  : "text-foreground hover:bg-muted/55"}`}
+              className={`admin-nav-panel-item flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150
+                ${isActive ? "is-active" : ""}`}
             >
               <div
                 data-fly-icon
-                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors
-                  ${isActive
-                    ? "bg-primary/15 text-primary"
-                    : "bg-muted/70 text-muted-foreground"}`}
+                className="admin-nav-panel-item-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors"
               >
                 <ItemIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </div>

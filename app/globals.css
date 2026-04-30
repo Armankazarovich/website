@@ -1004,6 +1004,81 @@ button, a, [role="button"], input, select, textarea {
   z-index: 1;
 }
 
+.admin-nav-panel-head {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.12), transparent),
+    hsl(var(--card) / 0.20);
+}
+
+.dark .admin-nav-panel-head {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.055), transparent),
+    hsl(var(--primary) / 0.035);
+}
+
+.admin-nav-panel-head-icon {
+  color: hsl(var(--primary));
+  background:
+    radial-gradient(circle at 50% 18%, hsl(var(--primary) / 0.16), transparent 66%),
+    hsl(var(--primary) / 0.085);
+  border: 1px solid hsl(var(--primary) / 0.16);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.24) inset,
+    0 12px 30px hsl(var(--primary) / 0.10);
+}
+
+.dark .admin-nav-panel-head-icon {
+  background:
+    radial-gradient(circle at 50% 18%, hsl(var(--primary) / 0.18), transparent 64%),
+    hsl(0 0% 100% / 0.045);
+  border-color: hsl(var(--primary) / 0.18);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.10) inset,
+    0 14px 34px hsl(var(--primary) / 0.12);
+}
+
+.admin-nav-panel-item {
+  color: hsl(var(--foreground));
+  border: 1px solid transparent;
+  background: transparent;
+  outline: none;
+}
+
+.admin-nav-panel-item-icon {
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted) / 0.38);
+  border: 1px solid hsl(var(--border) / 0.32);
+}
+
+.dark .admin-nav-panel-item-icon {
+  background: hsl(0 0% 100% / 0.052);
+  border-color: hsl(0 0% 100% / 0.065);
+}
+
+.admin-nav-panel-item.is-active {
+  color: hsl(var(--foreground));
+  background:
+    linear-gradient(90deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.045)),
+    hsl(var(--card) / 0.18);
+  border-color: hsl(var(--primary) / 0.22);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 10px 24px hsl(var(--primary) / 0.07);
+}
+
+.admin-nav-panel-item.is-active .admin-nav-panel-item-icon {
+  color: hsl(var(--primary));
+  background: hsl(var(--primary) / 0.12);
+  border-color: hsl(var(--primary) / 0.16);
+}
+
+.admin-nav-panel-item:focus-visible {
+  outline: none !important;
+  box-shadow:
+    0 0 0 2px hsl(var(--primary) / 0.22),
+    0 1px 0 hsl(0 0% 100% / 0.18) inset !important;
+}
+
 .admin-nav-drawer {
   transform-origin: left center;
   animation: adminNavDrawerOpen 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -1038,6 +1113,29 @@ button, a, [role="button"], input, select, textarea {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .admin-nav-panel-item:hover {
+    background:
+      linear-gradient(90deg, hsl(var(--primary) / 0.085), hsl(var(--primary) / 0.028)),
+      hsl(var(--card) / 0.18);
+    border-color: hsl(var(--primary) / 0.14);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.14) inset,
+      0 10px 24px hsl(var(--primary) / 0.055);
+  }
+
+  .dark .admin-nav-panel-item:hover {
+    background:
+      linear-gradient(90deg, hsl(var(--primary) / 0.11), hsl(0 0% 100% / 0.035)),
+      hsl(0 0% 100% / 0.028);
+    border-color: hsl(var(--primary) / 0.17);
+  }
+
+  .admin-nav-panel-item:hover .admin-nav-panel-item-icon {
+    color: hsl(var(--primary));
+    background: hsl(var(--primary) / 0.11);
+    border-color: hsl(var(--primary) / 0.15);
+  }
+
   .admin-liquid-interactive:hover {
     transform: translateY(-1px);
     border-color: hsl(var(--primary) / 0.30);
