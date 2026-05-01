@@ -8,3 +8,8 @@ export const ARAY_PROGRESS_TONE = "bg-primary/70";
 
 export const ARAY_FOCUS_RING = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 export const ARAY_TOUCH_TARGET = "min-h-11 min-w-11";
+
+export const ARAY_LIQUID_SURFACE = "admin-liquid-surface";
+export const ARAY_LIQUID_INTERACTIVE = "admin-liquid-interactive";
+export const ARAY_SHIMMER_TRACE = "shimmer-trace";
+export const ARAY_ICON_HOVER_LIFT = "transition-transform group-hover:scale-110";
