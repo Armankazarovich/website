@@ -5,7 +5,7 @@ import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/uti
 import {
   ShoppingBag, Package, Star, Clock, Users, Truck, Warehouse, Target,
   Mail, Bell, Settings, Wallet, BarChart2, CheckSquare, HeartPulse,
-  UserCircle, FileDown, ChevronRight, Zap,
+  UserCircle, FileDown, ChevronRight, Zap, Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
@@ -108,6 +108,16 @@ const ROLE_GREETINGS: Record<string, string> = {
   SELLER: "Продавец",
 };
 
+const ORDER_FLOW = [
+  { status: "NEW", href: "/admin/orders?status=NEW", tone: "bg-blue-500", iconTone: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
+  { status: "CONFIRMED", href: "/admin/orders?status=CONFIRMED", tone: "bg-purple-500", iconTone: "bg-purple-500/10 text-purple-700 dark:text-purple-400" },
+  { status: "PROCESSING", href: "/admin/orders?status=PROCESSING", tone: "bg-amber-500", iconTone: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
+  { status: "IN_DELIVERY", href: "/admin/orders?status=IN_DELIVERY", tone: "bg-sky-500", iconTone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
+  { status: "READY_PICKUP", href: "/admin/orders?status=READY_PICKUP", tone: "bg-violet-500", iconTone: "bg-violet-500/10 text-violet-700 dark:text-violet-400" },
+  { status: "DELIVERED", href: "/admin/orders?status=DELIVERED", tone: "bg-green-500", iconTone: "bg-green-500/10 text-green-700 dark:text-green-400" },
+  { status: "COMPLETED", href: "/admin/orders?status=COMPLETED", tone: "bg-teal-500", iconTone: "bg-teal-500/10 text-teal-700 dark:text-teal-400" },
+] as const;
+
 function getRoleGroup(role: string): string {
   if (role === "SUPER_ADMIN" || role === "ADMIN") return "owner";
   if (role === "MANAGER") return "manager";
@@ -121,11 +131,20 @@ function getRoleGroup(role: string): string {
 export default async function AdminDashboard() {
   const session = await auth();
   const role = (session?.user as any)?.role || "MANAGER";
-  const userName = session?.user?.name || "Добро пожаловать";
+  const userId = (session?.user as any)?.id;
+  let userName = session?.user?.name || "Коллега";
   const roleGroup = getRoleGroup(role);
   const isOwner = roleGroup === "owner";
   const canCreateOrder = isOwner || roleGroup === "manager" || roleGroup === "seller";
   const quickActions = QUICK_ACTIONS[roleGroup] || QUICK_ACTIONS.manager;
+
+  if ((!session?.user?.name || session.user.name.trim().length === 0) && userId) {
+    const freshUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    }).catch(() => null);
+    if (freshUser?.name) userName = freshUser.name;
+  }
 
   const now = new Date();
   const today = new Date(now); today.setHours(0, 0, 0, 0);
@@ -173,6 +192,51 @@ export default async function AdminDashboard() {
   const revenue7total = Number(revenue7._sum.totalAmount || 0) + Number(revenue7._sum.deliveryCost || 0);
   const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0) + Number(revenueToday._sum.deliveryCost || 0);
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
+  const statusCountMap = new Map(statusCounts.map((item) => [item.status, item._count._all]));
+  const orderFlow = ORDER_FLOW.map((item) => ({
+    ...item,
+    label: ORDER_STATUS_LABELS[item.status] || item.status,
+    count: statusCountMap.get(item.status) || 0,
+  }));
+  const liveOrderCount = orderFlow.reduce((sum, item) => sum + item.count, 0);
+  const readinessCards = [
+    {
+      href: "/admin/orders",
+      label: "Сегодня",
+      value: todayOrders.toLocaleString("ru-RU"),
+      helper: "заказов с полуночи",
+      icon: Clock,
+      tone: "bg-primary/10 text-primary",
+      show: true,
+    },
+    {
+      href: "/admin/products",
+      label: "Каталог",
+      value: totalProducts.toLocaleString("ru-RU"),
+      helper: "активных товаров",
+      icon: Package,
+      tone: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+      show: isOwner || ["manager", "warehouse", "seller"].includes(roleGroup),
+    },
+    {
+      href: "/admin/reviews",
+      label: "Отзывы",
+      value: pendingReviews.toLocaleString("ru-RU"),
+      helper: "ждут модерации",
+      icon: Star,
+      tone: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+      show: isOwner || roleGroup === "manager",
+    },
+    {
+      href: "/admin/staff",
+      label: "Команда",
+      value: pendingStaff.toLocaleString("ru-RU"),
+      helper: "заявок на доступ",
+      icon: Users,
+      tone: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+      show: isOwner,
+    },
+  ].filter((card) => card.show);
 
   return (
     <div className="admin-dashboard-standard space-y-4 sm:space-y-5 min-w-0">
@@ -262,6 +326,110 @@ export default async function AdminDashboard() {
         {roleGroup === "courier" && (
           <CourierMetrics newOrders={newOrders} todayOrders={todayOrders} />
         )}
+
+        {/* ── ОПЕРАЦИОННЫЙ ПУЛЬС ── */}
+        <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-3 sm:gap-4 min-w-0">
+          <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
+            <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Activity className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-display font-semibold text-sm text-foreground leading-tight">
+                    Пульс заказов
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                    {liveOrderCount.toLocaleString("ru-RU")} в рабочем контуре · {totalOrders.toLocaleString("ru-RU")} всего
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/admin/orders"
+                className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all shrink-0"
+              >
+                Заказы <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-2.5 min-w-0">
+              {orderFlow.map((item) => {
+                const pct = liveOrderCount > 0 ? Math.round((item.count / liveOrderCount) * 100) : 0;
+                return (
+                  <Link
+                    key={item.status}
+                    href={item.href}
+                    className="group rounded-2xl border border-border/70 bg-background/45 p-3 min-w-0 hover:border-primary/30 hover:bg-background/65 transition-colors"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${item.iconTone}`}>
+                        <ShoppingBag className="w-4 h-4" strokeWidth={1.75} />
+                      </span>
+                      <span className="text-lg font-display font-bold leading-none text-foreground tabular-nums">
+                        {item.count}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-foreground leading-tight truncate">
+                      {item.label}
+                    </p>
+                    <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${item.tone}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
+            <div className="flex items-center gap-3 mb-4 min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckSquare className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              </div>
+              <div className="min-w-0">
+                <p className="font-display font-semibold text-sm text-foreground leading-tight">
+                  Контроль готовности
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                  Короткие входы в важные зоны
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 xs:grid-cols-2 2xl:grid-cols-1 gap-2.5">
+              {readinessCards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <Link
+                    key={card.href}
+                    href={card.href}
+                    className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/45 p-3 min-w-0 hover:border-primary/30 hover:bg-background/65 transition-colors"
+                    style={{ WebkitTapHighlightColor: "transparent" }}
+                  >
+                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.tone}`}>
+                      <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm font-semibold text-foreground leading-tight truncate">
+                        {card.label}
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                        {card.helper}
+                      </span>
+                    </span>
+                    <span className="text-base font-display font-bold text-foreground tabular-nums shrink-0">
+                      {card.value}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
 
         {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
         <div>

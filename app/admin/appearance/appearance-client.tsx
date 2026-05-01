@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { PALETTE_GROUPS } from "@/components/palette-provider";
+import { PALETTE_GROUPS } from "@/lib/palettes";
+import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
 import { useToast } from "@/components/ui/use-toast";
 import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft, Eye } from "lucide-react";
 
@@ -189,12 +190,16 @@ export function AppearanceClient({
 
   const toggle = (id: string) => {
     if (id === "timber") return;
+    const isCurrentlyEnabled = enabled.has(id);
     setEnabled((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+    if (isCurrentlyEnabled && defaultPalette === id) {
+      setDefaultPalette("timber");
+    }
   };
 
   const save = async () => {
@@ -430,74 +435,99 @@ export function AppearanceClient({
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               {group.label}
             </p>
-            <div className="space-y-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {group.palettes.map((p) => {
                 const isOn = enabled.has(p.id);
                 const isDefault = defaultPalette === p.id;
                 const isPreviewing = previewId === p.id;
+                const atmosphere = getPaletteAtmosphere(p.id);
                 return (
                   <div
                     key={p.id}
                     onMouseEnter={() => handlePaletteHover(p.id)}
                     onMouseLeave={handlePaletteLeave}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all cursor-default ${
+                    className={`overflow-hidden rounded-2xl border transition-all cursor-default ${
                       isPreviewing
-                        ? "border-primary/60 bg-primary/8 scale-[1.01] shadow-sm"
+                        ? "border-primary/60 bg-primary/[0.08] scale-[1.01] shadow-sm"
                         : isOn
                         ? "border-primary/40 bg-primary/15"
                         : "border-border bg-muted/30 opacity-50"
                     }`}
                   >
-                    {/* Цветовой круг — клик для включения/выключения */}
-                    <span
-                      className="w-9 h-9 rounded-full shrink-0 border-2 border-white/20 shadow cursor-pointer ring-offset-1 transition-all"
-                      style={{
-                        background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                        boxShadow: isPreviewing ? `0 0 0 2px ${p.accent}55, 0 2px 8px ${p.accent}40` : undefined,
-                      }}
+                    <button
+                      type="button"
                       onClick={() => toggle(p.id)}
-                    />
-                    <span
-                      className="flex-1 font-medium text-sm"
-                      onClick={() => toggle(p.id)}
-                      style={{ cursor: isOn || p.id === "timber" ? "default" : "pointer" }}
+                      className="group relative block h-28 w-full overflow-hidden text-left"
+                      aria-label={`Переключить тему ${p.name}`}
                     >
-                      {p.name}
-                    </span>
-
-                    {/* Превью-индикатор */}
-                    {isPreviewing && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground animate-in fade-in duration-150 shrink-0">
-                        <Eye className="w-3 h-3" />
-                        предпросмотр
+                      {atmosphere && (
+                        <img
+                          src={atmosphere.src}
+                          alt=""
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      )}
+                      <span
+                        className="absolute inset-0"
+                        style={{
+                          background: `linear-gradient(180deg, rgba(0,0,0,0.03), rgba(0,0,0,0.68)), linear-gradient(135deg, ${p.sidebar}33, ${p.accent}4d)`,
+                        }}
+                      />
+                      <span
+                        className="absolute left-3 top-3 h-9 w-9 rounded-full border-2 border-white/35 shadow-lg"
+                        style={{
+                          background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
+                          boxShadow: isPreviewing ? `0 0 0 2px ${p.accent}55, 0 8px 18px ${p.accent}40` : undefined,
+                        }}
+                      />
+                      {isPreviewing && (
+                        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur animate-in fade-in duration-150">
+                          <Eye className="w-3 h-3" />
+                          предпросмотр
+                        </span>
+                      )}
+                      <span className="absolute bottom-3 left-3 right-3 min-w-0">
+                        <span className="block truncate text-sm font-bold text-white drop-shadow">
+                          {p.name}
+                        </span>
+                        <span className="block truncate text-[11px] font-medium text-white/75">
+                          {atmosphere?.name ?? "ARAY стиль"}
+                        </span>
                       </span>
-                    )}
+                    </button>
 
-                    {/* Default badge / button */}
-                    {isDefault ? (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg shrink-0">
-                        <Lock className="w-3 h-3" />
-                        По умолчанию
+                    <div className="flex items-center gap-2 p-3">
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{p.name}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{atmosphere?.shortName ?? "ARAY"}</span>
                       </span>
-                    ) : isOn ? (
-                      <button
-                        onClick={() => setDefaultPalette(p.id)}
-                        className="text-xs text-muted-foreground hover:text-primary hover:bg-primary/15 px-2 py-1 rounded-lg transition-colors shrink-0"
-                      >
-                        Сделать по умолчанию
-                      </button>
-                    ) : null}
 
-                    {/* Toggle */}
-                    {p.id !== "timber" && (
-                      <button
-                        onClick={() => toggle(p.id)}
-                        data-state={isOn ? "on" : "off"}
-                        className={`aray-toggle aray-toggle-md ${isOn ? "bg-primary" : "bg-muted-foreground/30"}`}
-                      >
-                        <span className="aray-toggle-thumb" />
-                      </button>
-                    )}
+                      {isDefault ? (
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-primary bg-primary/10 px-2 py-1 rounded-lg shrink-0">
+                          <Lock className="w-3 h-3" />
+                          по ум.
+                        </span>
+                      ) : isOn ? (
+                        <button
+                          onClick={() => setDefaultPalette(p.id)}
+                          className="text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/15 px-2 py-1 rounded-lg transition-colors shrink-0"
+                        >
+                          по ум.
+                        </button>
+                      ) : null}
+
+                      {p.id !== "timber" && (
+                        <button
+                          onClick={() => toggle(p.id)}
+                          data-state={isOn ? "on" : "off"}
+                          className={`aray-toggle aray-toggle-md ${isOn ? "bg-primary" : "bg-muted-foreground/30"}`}
+                          aria-label={`${isOn ? "Выключить" : "Включить"} тему ${p.name}`}
+                        >
+                          <span className="aray-toggle-thumb" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

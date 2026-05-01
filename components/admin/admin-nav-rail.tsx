@@ -104,6 +104,11 @@ type Group = {
   items: NavItem[];
 };
 
+function isNavItemMatch(item: NavItem, pathname: string): boolean {
+  if (item.exact) return pathname === item.href;
+  return pathname === item.href || pathname.startsWith(`${item.href}/`);
+}
+
 interface Props {
   role: string;
   avatarUrl?: string | null;
@@ -142,16 +147,15 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
     return result;
   }, [role]);
 
-  // ── Какая группа активна (содержит pathname) ──
-  const activeGroupKey = useMemo(() => {
-    for (const g of groups) {
-      const hit = g.items.find(i =>
-        i.exact ? pathname === i.href : pathname.startsWith(i.href)
-      );
-      if (hit) return g.key;
-    }
-    return null;
+  // ── Активный пункт: берём самый специфичный матч, чтобы вложенные маршруты
+  // не подсвечивали родителя и дочерний пункт одновременно.
+  const activeItem = useMemo(() => {
+    return groups
+      .flatMap((group) => group.items)
+      .filter((item) => isNavItemMatch(item, pathname))
+      .sort((a, b) => b.href.length - a.href.length)[0] || null;
   }, [groups, pathname]);
+  const activeGroupKey = activeItem?.group || null;
 
   // ── Hover delay (150мс) для плавного перехода иконка → popup ──
   function clearCloseTimer() {
@@ -233,7 +237,8 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
             <div
               key={g.key}
               className="relative"
-              onMouseEnter={() => {
+              onPointerEnter={(event) => {
+                if (event.pointerType === "touch") return;
                 clearCloseTimer();
                 if (!pinnedGroup) setHoverGroup(g.key);
                 setHoverProfile(false);
@@ -277,6 +282,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                   onMouseEnter={clearCloseTimer}
                   onMouseLeave={scheduleClose}
                   onClose={closePanels}
+                  activeHref={activeItem?.href}
                 />
               )}
             </div>
@@ -305,7 +311,7 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function GroupPopup({
-  group, pathname, t, align, onMouseEnter, onMouseLeave, onClose,
+  group, pathname, t, align, onMouseEnter, onMouseLeave, onClose, activeHref,
 }: {
   group: Group;
   pathname: string;
@@ -314,6 +320,7 @@ function GroupPopup({
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onClose: () => void;
+  activeHref?: string;
 }) {
   const GroupIcon = group.icon;
 
@@ -340,7 +347,7 @@ function GroupPopup({
         <button
           type="button"
           className="admin-nav-panel-close"
-          aria-label="Close menu"
+          aria-label="Закрыть меню"
           onClick={onClose}
         >
           <X className="w-4 h-4" strokeWidth={1.75} />
@@ -352,7 +359,7 @@ function GroupPopup({
         {group.items.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
-            : pathname.startsWith(item.href);
+            : activeHref === item.href;
           const ItemIcon = item.icon;
           const label = item.labelKey ? t(item.labelKey) : item.label;
           const subtitle = SUBTITLE_BY_HREF[item.href];

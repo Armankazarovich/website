@@ -1,9 +1,10 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { usePalette, PALETTES } from "@/components/palette-provider";
+import { usePalette } from "@/components/palette-provider";
 import { useState, useEffect } from "react";
 import { Sun, Moon, Check } from "lucide-react";
+import { PALETTES } from "@/lib/palettes";
 
 export default function AppearancePage() {
   const { theme, setTheme } = useTheme();
@@ -54,34 +55,51 @@ export default function AppearancePage() {
         <p className="text-sm font-semibold mb-1">Цветовая тема</p>
         <p className="text-xs text-muted-foreground mb-4">Выберите палитру интерфейса</p>
 
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3">
-          {PALETTES.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPalette(p.id)}
-              className={`flex flex-col items-center gap-2 py-3 px-2 rounded-2xl border-2 transition-all ${
-                palette === p.id
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/30"
-              }`}
-            >
-              <div
-                className="w-10 h-10 rounded-full shrink-0 relative"
-                style={{
-                  background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                }}
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+          {PALETTES.map((p) => {
+            const active = palette === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => setPalette(p.id)}
+                className={`group flex flex-col gap-2 rounded-2xl border-2 p-2 transition-all ${
+                  active
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/30"
+                }`}
               >
-                {palette === p.id && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-white drop-shadow-md" />
-                  </div>
-                )}
-              </div>
-              <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">
-                {p.name}
-              </span>
-            </button>
-          ))}
+                <span
+                  className="relative block h-16 w-full overflow-hidden rounded-xl border border-white/10 bg-muted"
+                  style={{ background: `linear-gradient(135deg, ${p.sidebar}, ${p.accent})` }}
+                >
+                  <span
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.22), rgba(0,0,0,0.24)), radial-gradient(circle at 78% 22%, rgba(255,255,255,0.34), transparent 34%)",
+                    }}
+                  />
+                  <span
+                    className="absolute left-2 top-2 h-5 w-5 rounded-full border border-white/50 shadow"
+                    style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                  />
+                  {active && (
+                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </span>
+                <span className="min-w-0 text-center">
+                  <span className={`block truncate text-[11px] font-semibold leading-tight ${active ? "text-primary" : "text-foreground"}`}>
+                    {p.name}
+                  </span>
+                  <span className="block truncate text-[9px] font-medium leading-tight text-muted-foreground">
+                    Интерфейс
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

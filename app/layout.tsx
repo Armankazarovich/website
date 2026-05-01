@@ -10,6 +10,7 @@ import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
 import { UtmTracker } from "@/components/utm-tracker";
 import { ThemeChromeSync } from "@/components/layout/theme-chrome-sync";
+import { ALL_PALETTE_IDS, normalizePaletteId, normalizePaletteIds } from "@/lib/palettes";
 import "./globals.css";
 
 // Шрифты локальные (vendored в public/fonts/) — не зависим от fonts.gstatic.com при билде
@@ -173,11 +174,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const googleAnalyticsId = getSetting(settings, "google_analytics_id");
   const yandexVerification = getSetting(settings, "yandex_verification");
   const googleVerification = getSetting(settings, "google_verification");
-  const enabledIds = (settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled)
-    .split(",")
-    .map((s: string) => s.trim())
-    .filter(Boolean);
-  const defaultPalette = getSetting(settings, "default_palette") || "timber";
+  const enabledIds = normalizePaletteIds(settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled);
+  const normalizedDefaultPalette = normalizePaletteId(getSetting(settings, "default_palette"), "timber");
+  const defaultPalette = enabledIds.includes(normalizedDefaultPalette)
+    ? normalizedDefaultPalette
+    : "timber";
 
   return (
     <html lang="ru" suppressHydrationWarning>
@@ -200,8 +201,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <script dangerouslySetInnerHTML={{ __html: `
 (function(){try{
   var def=${JSON.stringify(defaultPalette)};
+  var valid=${JSON.stringify(ALL_PALETTE_IDS)};
   var stored=localStorage.getItem('color-palette');
-  var p=stored||def;
+  var p=valid.indexOf(stored)!==-1?stored:def;
+  if(stored&&valid.indexOf(stored)===-1)localStorage.removeItem('color-palette');
   if(p&&p!=='timber')document.documentElement.setAttribute('data-palette',p);
   else document.documentElement.removeAttribute('data-palette');
 }catch(e){}}());

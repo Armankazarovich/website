@@ -1,33 +1,18 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-
-export type PaletteItem = {
-  id: string;
-  name: string;
-  sidebar: string;
-  accent: string;
-};
-
-export const PALETTE_GROUPS: { label: string; palettes: PaletteItem[] }[] = [
-  {
-    label: "ARAY Palettes",
-    palettes: [
-      { id: "timber",    name: "Timber",    sidebar: "#5C3317", accent: "#E8700A" },
-      { id: "forest",    name: "Forest",    sidebar: "#1A4D3D", accent: "#2BA88F" },
-      { id: "ocean",     name: "Ocean",     sidebar: "#1B3A5C", accent: "#3B82F6" },
-      { id: "midnight",  name: "Midnight",  sidebar: "#1A1033", accent: "#8B5CF6" },
-      { id: "crimson",   name: "Crimson",   sidebar: "#3D0C11", accent: "#E8472A" },
-    ],
-  },
-];
-
-export const PALETTES: PaletteItem[] = PALETTE_GROUPS.flatMap((g) => g.palettes);
+import {
+  ALL_PALETTE_IDS,
+  isPaletteId,
+  normalizePaletteId,
+  normalizePaletteIds,
+} from "@/lib/palettes";
 
 export type PaletteId = string;
+export type { PaletteItem } from "@/lib/palettes";
+export { PALETTE_GROUPS, PALETTES } from "@/lib/palettes";
 
 const STORAGE_KEY = "color-palette";
-const ALL_IDS = PALETTES.map((p) => p.id);
 
 type PaletteContextType = {
   palette: PaletteId;
@@ -38,7 +23,7 @@ type PaletteContextType = {
 const PaletteContext = createContext<PaletteContextType>({
   palette: "timber",
   setPalette: () => {},
-  enabledIds: ALL_IDS,
+  enabledIds: ALL_PALETTE_IDS,
 });
 
 function applyPalette(id: PaletteId) {
@@ -59,28 +44,22 @@ export function PaletteProvider({
   enabledIds?: string[];
   defaultPalette?: string;
 }) {
-  const allowed = enabledIds && enabledIds.length > 0 ? enabledIds : ALL_IDS;
-  const [palette, setPaletteState] = useState<PaletteId>(defaultPalette || "timber");
+  const allowed = normalizePaletteIds(enabledIds);
+  const safeDefaultPalette = normalizePaletteId(defaultPalette, "timber");
+  const [palette, setPaletteState] = useState<PaletteId>(safeDefaultPalette);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    // Если есть сохранённая палитра (любая валидная) — всегда применяем
-    // Ограничение по allowed действует только в UI выбора (для клиентов),
-    // а не при восстановлении предпочтения пользователя
-    if (stored && PALETTES.find((p) => p.id === stored)) {
-      setPaletteState(stored);
-      applyPalette(stored);
-    } else {
-      // Нет сохранённого — применяем дефолт из настроек админки
-      const def = defaultPalette || "timber";
-      setPaletteState(def);
-      applyPalette(def);
+    const next = stored && isPaletteId(stored) ? stored : safeDefaultPalette;
+    if (stored && !isPaletteId(stored)) {
+      localStorage.removeItem(STORAGE_KEY);
     }
-  }, []);
+    setPaletteState(next);
+    applyPalette(next);
+  }, [safeDefaultPalette]);
 
   const setPalette = (id: PaletteId) => {
-    // Allow any valid palette (allowed restriction is for customer picker UI only)
-    if (!PALETTES.find((p) => p.id === id)) return;
+    if (!isPaletteId(id)) return;
     setPaletteState(id);
     localStorage.setItem(STORAGE_KEY, id);
     applyPalette(id);

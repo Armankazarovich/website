@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ImageIcon, Layers3, Palette, X } from "lucide-react";
+import { Check, ImageIcon, Layers3, Palette, X } from "lucide-react";
 import { useTheme } from "next-themes";
-import { usePalette, PALETTES } from "@/components/palette-provider";
+import { usePalette } from "@/components/palette-provider";
 import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
+import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
+import { PALETTES } from "@/lib/palettes";
 
 const BG_MODE_KEY = "aray-bg-mode";
 
@@ -49,6 +51,13 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
     localStorage.setItem(BG_MODE_KEY, mode);
     localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
     window.dispatchEvent(new Event("aray-classic-change"));
+  }
+
+  function choosePalette(id: string) {
+    setPalette(id);
+    if (bgMode === "photo") {
+      window.dispatchEvent(new Event("aray-classic-change"));
+    }
   }
 
   // Закрытие по клику снаружи
@@ -103,8 +112,9 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
               background: glass.bg,
               backdropFilter: glass.blur,
               WebkitBackdropFilter: glass.blur,
-              border: `1px solid ${glass.border}`,
-              borderRight: "none",
+              borderTop: `1px solid ${glass.border}`,
+              borderBottom: `1px solid ${glass.border}`,
+              borderLeft: `1px solid ${glass.border}`,
               boxShadow: glass.shadow,
             }}>
             <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
@@ -117,13 +127,14 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
           </div>
         ) : (
           /* Expanded: style panel with Liquid Glass */
-          <div className="w-[260px] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200 relative"
+          <div className="w-[340px] max-w-[calc(100vw-72px)] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200 relative"
             style={{
               background: glass.bg,
               backdropFilter: glass.blur,
               WebkitBackdropFilter: glass.blur,
-              border: `1px solid ${glass.border}`,
-              borderRight: "none",
+              borderTop: `1px solid ${glass.border}`,
+              borderBottom: `1px solid ${glass.border}`,
+              borderLeft: `1px solid ${glass.border}`,
               boxShadow: glass.shadow,
             }}>
             <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
@@ -143,13 +154,61 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
             <div className="relative p-4 space-y-4">
               {/* Палитры */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Палитра</p>
-                <div className="flex flex-wrap gap-2">
-                  {PALETTES.map((p) => (
-                    <button key={p.id} onClick={() => setPalette(p.id)} title={p.name}
-                      className={`w-8 h-8 rounded-full shrink-0 transition-all ${palette === p.id ? "ring-2 ring-offset-1 ring-offset-transparent scale-110" : "opacity-60 hover:opacity-100 hover:scale-105"}`}
-                      style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }} />
-                  ))}
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Стиль и атмосфера</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {PALETTES.map((p) => {
+                    const atmosphere = getPaletteAtmosphere(p.id);
+                    const active = palette === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => choosePalette(p.id)}
+                        title={atmosphere ? `${p.name}: ${atmosphere.name}` : p.name}
+                        className="group rounded-xl p-1.5 text-left transition-all"
+                        style={{
+                          background: active ? "hsl(var(--primary) / 0.16)" : glass.hoverBg,
+                          border: `1px solid ${active ? p.accent : glass.borderInner}`,
+                          boxShadow: active ? `0 10px 26px ${p.accent}22` : "none",
+                        }}
+                      >
+                        <span className="relative block h-16 overflow-hidden rounded-lg bg-black/20">
+                          {atmosphere && (
+                            <img
+                              src={atmosphere.src}
+                              alt=""
+                              loading="lazy"
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              style={{ opacity: isDark ? 0.72 : 0.88 }}
+                            />
+                          )}
+                          <span
+                            className="absolute inset-0"
+                            style={{
+                              background: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.54)), linear-gradient(135deg, ${p.sidebar}44, ${p.accent}55)`,
+                            }}
+                          />
+                          <span
+                            className="absolute left-1.5 top-1.5 h-4 w-4 rounded-full border border-white/40 shadow"
+                            style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
+                          />
+                          {active && (
+                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-black shadow">
+                              <Check className="h-3 w-3" strokeWidth={2.4} />
+                            </span>
+                          )}
+                        </span>
+                        <span className="mt-1.5 block min-w-0">
+                          <span className="block truncate text-[11px] font-semibold leading-tight" style={{ color: active ? p.accent : glass.textPrimary }}>
+                            {p.name}
+                          </span>
+                          <span className="block truncate text-[9px] font-medium leading-tight" style={{ color: glass.textSecondary }}>
+                            {atmosphere?.shortName ?? "ARAY"}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               {/* Тема */}

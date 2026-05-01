@@ -1,4 +1,5 @@
 import { getSiteSettings, DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { normalizePaletteId, normalizePaletteIds } from "@/lib/palettes";
 import { AppearanceClient } from "./appearance-client";
 
 export const metadata = { title: "Оформление" };
@@ -6,10 +7,14 @@ export const metadata = { title: "Оформление" };
 export default async function AppearancePage() {
   const settings = await getSiteSettings();
   const enabledRaw = settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled;
-  const enabledIds = enabledRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  const enabledIds = normalizePaletteIds(enabledRaw);
   const photoAspect = settings.photo_aspect_ratio ?? DEFAULT_SETTINGS.photo_aspect_ratio;
   const cardStyle = settings.card_style ?? DEFAULT_SETTINGS.card_style;
-  const defaultPalette = settings.default_palette ?? DEFAULT_SETTINGS.default_palette;
+  const rawDefaultPalette = settings.default_palette ?? DEFAULT_SETTINGS.default_palette;
+  const normalizedDefaultPalette = normalizePaletteId(rawDefaultPalette, DEFAULT_SETTINGS.default_palette);
+  const defaultPalette = enabledIds.includes(normalizedDefaultPalette)
+    ? normalizedDefaultPalette
+    : "timber";
   const arayEnabled = (settings.aray_enabled ?? DEFAULT_SETTINGS.aray_enabled) !== "false";
 
   return (

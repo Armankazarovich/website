@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { isPaletteId } from "@/lib/palettes";
 
 async function checkAdmin() {
   const session = await auth();
@@ -26,7 +27,7 @@ export async function PATCH(req: Request) {
 
   // Palettes
   if (typeof body.palettes_enabled === "string") {
-    const ids = body.palettes_enabled.split(",").map((s: string) => s.trim()).filter(Boolean);
+    const ids = body.palettes_enabled.split(",").map((s: string) => s.trim()).filter(isPaletteId);
     if (!ids.includes("timber")) ids.unshift("timber");
     updates.palettes_enabled = ids.join(",");
   }
@@ -44,8 +45,7 @@ export async function PATCH(req: Request) {
   }
 
   // Default palette
-  const allPaletteIds = ["timber","forest","ocean","midnight","slate","crimson","wildberries","ozon","yandex","aliexpress","amazon","avito","sber"];
-  if (typeof body.default_palette === "string" && allPaletteIds.includes(body.default_palette)) {
+  if (typeof body.default_palette === "string" && isPaletteId(body.default_palette)) {
     updates.default_palette = body.default_palette;
   }
 

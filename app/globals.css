@@ -1357,6 +1357,19 @@ button:focus-visible > .admin-rail-icon {
   }
 }
 
+@keyframes adminAtmosphereSlideFade {
+  from {
+    opacity: 0;
+    transform: translateX(1.4rem) scale(1.018);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
 @property --admin-liquid-border-angle {
   syntax: "<angle>";
   inherits: false;
