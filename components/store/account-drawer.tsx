@@ -371,7 +371,7 @@ function QuickActionCard({
       onClick={() => setOpen(false)}
       className="admin-drawer-quick admin-liquid-interactive flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
     >
-      <div className="w-11 h-11 rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0">
+      <div className="admin-drawer-quick-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-primary">
         <Icon className="w-5 h-5" strokeWidth={2} />
       </div>
       <span className="text-[11px] font-medium text-foreground text-center leading-tight">
@@ -522,7 +522,7 @@ function ProfilePanel() {
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-primary/12 text-primary ring-1 ring-primary/18 flex items-center justify-center shrink-0 font-semibold text-lg">
+            <div className="admin-drawer-profile-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-primary">
               {initial}
             </div>
           )}

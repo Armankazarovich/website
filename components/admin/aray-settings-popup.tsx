@@ -23,6 +23,7 @@ import { useEffect, useState } from "react";
 import {
   Settings, X, Wallet, Cpu, Sparkles, Check, Volume2,
 } from "lucide-react";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 
 export type AraySettingsData = {
   todayCostRub: number;
@@ -144,7 +145,7 @@ function AraySettingsPopup({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}>
             <Settings className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -347,7 +348,7 @@ function CostsTab({ data }: { data: AraySettingsData }) {
         className="block bg-card border border-border rounded-2xl p-4 hover:border-primary/40 hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}>
             <Wallet className="w-4 h-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -408,7 +409,7 @@ function ModelCard({
   return (
     <div className="bg-card border border-border rounded-2xl p-4">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+        <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}>
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1">

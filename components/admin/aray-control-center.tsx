@@ -1,51 +1,92 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ImageIcon, Layers3, Palette, X } from "lucide-react";
+import { useEffect, useRef, useState, type ElementType } from "react";
+import { Check, ImageIcon, Layers3, Monitor, Moon, Palette, Sun, X } from "lucide-react";
 import { useTheme } from "next-themes";
 import { AdminPaletteCard } from "@/components/admin/admin-palette-card";
 import { usePalette } from "@/components/palette-provider";
 import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
-import { ARAY_FOCUS_RING, ARAY_TOUCH_TARGET } from "@/lib/aray-design-tokens";
+import { ARAY_FOCUS_RING } from "@/lib/aray-design-tokens";
 import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
 import { PALETTES } from "@/lib/palettes";
 
 const BG_MODE_KEY = "aray-bg-mode";
 
-const BG_MODES: { id: AdminBgMode; label: string; icon: React.ElementType }[] = [
-  { id: "clean", label: "Чистый", icon: Layers3 },
-  { id: "photo", label: "Атмосфера", icon: ImageIcon },
+const BG_MODES: { id: AdminBgMode; label: string; hint: string; icon: ElementType }[] = [
+  { id: "photo", label: "Атмосфера", hint: "Фирменный фон ARAY", icon: ImageIcon },
+  { id: "clean", label: "Чистый", hint: "Без фото, только интерфейс", icon: Layers3 },
 ];
 
+const THEME_OPTIONS = [
+  { id: "dark", label: "Темная", icon: Moon },
+  { id: "light", label: "Светлая", icon: Sun },
+  { id: "system", label: "Система", icon: Monitor },
+] as const;
+
 function readBgMode(): AdminBgMode {
-  if (typeof window === "undefined") return "clean";
+  if (typeof window === "undefined") return "photo";
   const stored = localStorage.getItem(BG_MODE_KEY);
   if (stored === "photo" || stored === "clean") return stored;
   if (stored === "video") {
     localStorage.setItem(BG_MODE_KEY, "photo");
     return "photo";
   }
-  if (stored === "classic") return "clean";
-  return "clean";
+  if (stored === "classic") {
+    localStorage.setItem(BG_MODE_KEY, "clean");
+    return "clean";
+  }
+  return "photo";
 }
 
-export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?: string; position?: "bottom" | "right" }) {
+export function ArayControlCenter({
+  position = "header",
+}: {
+  userRole?: string;
+  position?: "header" | "bottom" | "right";
+}) {
   const [open, setOpen] = useState(false);
-  const [bgMode, setBgModeState] = useState<AdminBgMode>("clean");
-  const { theme, setTheme } = useTheme();
+  const [bgMode, setBgModeState] = useState<AdminBgMode>("photo");
+  const [mounted, setMounted] = useState(false);
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const ref = useRef<HTMLDivElement>(null);
+  const safeTheme = mounted ? resolvedTheme || theme || "dark" : "dark";
+  const isDark = safeTheme === "dark";
 
-  // Mounted guard for hydration safety
-  const [ccMounted, setCcMounted] = useState(false);
-  useEffect(() => setCcMounted(true), []);
-  const safeTheme = ccMounted ? theme : "dark";
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const sync = () => setBgModeState(readBgMode());
     sync();
     window.addEventListener("aray-classic-change", sync);
     return () => window.removeEventListener("aray-classic-change", sync);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const close = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+
+    const closeByEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", closeByEscape);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("keydown", closeByEscape);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    document.documentElement.style.removeProperty("font-size");
+    document.documentElement.style.removeProperty("--aray-font-scale");
+    try {
+      localStorage.removeItem("aray-font-size");
+    } catch {}
   }, []);
 
   function setBgMode(mode: AdminBgMode) {
@@ -57,171 +98,155 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
 
   function choosePalette(id: string) {
     setPalette(id);
-    if (bgMode === "photo") {
-      window.dispatchEvent(new Event("aray-classic-change"));
+    if (bgMode !== "photo") {
+      setBgMode("photo");
+      return;
     }
+    window.dispatchEvent(new Event("aray-classic-change"));
   }
 
-  // Закрытие по клику снаружи
-  useEffect(() => {
-    const close = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+  if (position === "bottom") return null;
 
-  // Сбрасываем кастомный font-size установленный старой системой,
-  // чтобы вернуться к браузерному default 16px (как в магазине).
-  // Сессия 39 (28.04.2026): убрали 5 уровней шрифта по просьбе Армана —
-  // лишний переключатель, на магазине нет, читается отлично без них.
-  useEffect(() => {
-    document.documentElement.style.removeProperty("font-size");
-    document.documentElement.style.removeProperty("--aray-font-scale");
-    try {
-      localStorage.removeItem("aray-font-size");
-    } catch {}
-  }, []);
+  const panelClassName =
+    position === "right"
+      ? "fixed right-3 top-[4.5rem] z-[80] w-[23.5rem] max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-5.5rem)]"
+      : "absolute right-0 top-[calc(100%+0.55rem)] z-[80] w-[23.5rem] max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-5.5rem)]";
 
-  // ── Liquid Glass palette ─────────────────────────────────────────────────
-  const isDark = safeTheme === "dark";
-  const glass = {
-    bg: isDark
-      ? `linear-gradient(180deg, rgba(10,10,18,0.72), rgba(10,10,18,0.65))`
-      : `linear-gradient(180deg, rgba(240,242,248,0.78), rgba(240,242,248,0.72))`,
-    refraction: isDark
-      ? `linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%)`
-      : `linear-gradient(180deg, rgba(255,255,255,0.45) 0%, transparent 40%)`,
-    border: isDark ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.35)",
-    borderInner: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-    blur: "blur(50px) saturate(200%) brightness(1.05)",
-    textPrimary: isDark ? "rgba(255,255,255,0.92)" : "rgba(0,0,0,0.88)",
-    textSecondary: isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)",
-    hoverBg: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-    shadow: isDark
-      ? "0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1)"
-      : "0 8px 32px rgba(0,0,0,0.12), 0 0 1px rgba(0,0,0,0.05)",
-  };
+  return (
+    <div ref={ref} className={position === "right" ? "relative" : "relative shrink-0"}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="Оформление"
+        title="Оформление"
+        aria-expanded={open}
+        className={`relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground ${open ? "bg-primary/10 text-primary" : ""} ${ARAY_FOCUS_RING}`}
+      >
+        <Palette className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary)/0.65)]" />
+      </button>
 
-  // ═══ RIGHT SIDE sticky layout (desktop + mobile) ═══════════════════════
-  if (position === "right") {
-    return (
-      <div ref={ref} className="flex flex-col items-center gap-1">
-        {/* Collapsed: single palette button */}
-        {!open ? (
-          <div className="flex flex-col items-center gap-1 px-1.5 py-3 rounded-l-2xl relative overflow-hidden"
-            style={{
-              background: glass.bg,
-              backdropFilter: glass.blur,
-              WebkitBackdropFilter: glass.blur,
-              borderTop: `1px solid ${glass.border}`,
-              borderBottom: `1px solid ${glass.border}`,
-              borderLeft: `1px solid ${glass.border}`,
-              boxShadow: glass.shadow,
-            }}>
-            <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
-            <button onClick={() => setOpen(true)} title="Оформление" aria-label="Оформление"
-              className={`relative flex items-center justify-center rounded-xl transition-colors ${ARAY_TOUCH_TARGET} ${ARAY_FOCUS_RING}`}
-              onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-              <Palette className="w-4 h-4" style={{ color: glass.textSecondary }} />
+      {open && (
+        <div
+          className={`${panelClassName} animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden rounded-2xl border admin-popup-liquid shadow-2xl`}
+          role="dialog"
+          aria-label="Оформление интерфейса"
+        >
+          <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/12 text-primary ring-1 ring-primary/18">
+                <Palette className="h-4 w-4" strokeWidth={1.75} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-bold leading-tight text-foreground">Оформление</p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">Фон, тема и атмосфера</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Закрыть"
+              className={`flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground ${ARAY_FOCUS_RING}`}
+            >
+              <X className="h-4 w-4" strokeWidth={1.75} />
             </button>
           </div>
-        ) : (
-          /* Expanded: style panel with Liquid Glass */
-          <div className="w-[360px] max-w-[calc(100vw-64px)] max-h-[calc(100vh-112px)] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200 relative"
-            style={{
-              background: glass.bg,
-              backdropFilter: glass.blur,
-              WebkitBackdropFilter: glass.blur,
-              borderTop: `1px solid ${glass.border}`,
-              borderBottom: `1px solid ${glass.border}`,
-              borderLeft: `1px solid ${glass.border}`,
-              boxShadow: glass.shadow,
-            }}>
-            <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
-            {/* Header */}
-            <div className="relative flex items-center justify-between px-4 py-3" style={{ borderBottom: `1px solid ${glass.borderInner}` }}>
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-primary" />
-                <span className="text-sm font-bold" style={{ color: glass.textPrimary }}>Оформление</span>
-              </div>
-              <button onClick={() => setOpen(false)} className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${ARAY_FOCUS_RING}`} aria-label="Закрыть"
-                onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                <X className="w-4 h-4" style={{ color: glass.textSecondary }} />
-              </button>
-            </div>
-            {/* Content */}
-            <div className="relative max-h-[calc(100vh-168px)] overflow-y-auto p-4 space-y-4">
-              {/* Палитры */}
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Стиль и атмосфера</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {PALETTES.map((item) => {
-                    const atmosphere = getPaletteAtmosphere(item.id);
-                    const active = palette === item.id;
-                    return (
-                      <AdminPaletteCard
-                        key={item.id}
-                        palette={item}
-                        atmosphere={atmosphere}
-                        active={active}
-                        onClick={() => choosePalette(item.id)}
-                        title={atmosphere ? `${item.name}: ${atmosphere.name}` : item.name}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Тема */}
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Тема</p>
-                <div className="flex gap-2">
-                  {["light", "dark"].map((t) => (
-                    <button key={t} onClick={() => setTheme(t)}
-                      className={`flex-1 min-h-11 rounded-xl px-3 text-[12px] font-semibold transition-all ${ARAY_FOCUS_RING}`}
-                      style={{
-                        background: safeTheme === t ? "hsl(var(--primary))" : glass.hoverBg,
-                        color: safeTheme === t ? "#fff" : glass.textSecondary,
-                      }}>
-                      {t === "light" ? "Светлая" : "Тёмная"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Фон */}
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Фон</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {BG_MODES.map((mode) => {
-                    const Icon = mode.icon;
-                    const active = bgMode === mode.id;
-                    return (
-                      <button
-                        key={mode.id}
-                        type="button"
-                        onClick={() => setBgMode(mode.id)}
-                        className={`flex min-h-12 flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 transition-all ${ARAY_FOCUS_RING}`}
-                        style={{
-                          background: active ? "hsl(var(--primary))" : glass.hoverBg,
-                          color: active ? "#fff" : glass.textSecondary,
-                        }}
-                      >
-                        <Icon className="w-4 h-4" strokeWidth={1.75} />
-                        <span className="text-[10px] font-semibold leading-none">{mode.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
 
-  // ═══ BOTTOM layout (fallback, not actively used) ═══════════════════════
-  return null;
+          <div className="max-h-[calc(100dvh-10.5rem)] space-y-4 overflow-y-auto p-4">
+            <section>
+              <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Фон админки
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {BG_MODES.map((mode) => {
+                  const Icon = mode.icon;
+                  const active = bgMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setBgMode(mode.id)}
+                      className={`group flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-3 text-left transition-all ${ARAY_FOCUS_RING} ${
+                        active
+                          ? "border-primary/35 bg-primary/12 text-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.10)]"
+                          : "border-border bg-card/55 text-foreground hover:border-primary/24 hover:bg-primary/8"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : isDark
+                              ? "bg-white/[0.055] text-muted-foreground"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" strokeWidth={1.75} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-semibold leading-tight">{mode.label}</span>
+                        <span className="mt-0.5 block text-[10px] leading-tight text-muted-foreground">{mode.hint}</span>
+                      </span>
+                      {active && <Check className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.2} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Тема
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {THEME_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const active = theme === option.id || (!theme && option.id === "system");
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setTheme(option.id)}
+                      className={`flex min-h-12 flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2 transition-all ${ARAY_FOCUS_RING} ${
+                        active
+                          ? "border-primary/35 bg-primary/12 text-primary"
+                          : "border-border bg-card/50 text-muted-foreground hover:border-primary/24 hover:bg-primary/8 hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={1.75} />
+                      <span className="text-[10px] font-semibold leading-none">{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Стиль и атмосфера
+              </p>
+              <p className="mb-3 px-1 text-[11px] leading-relaxed text-muted-foreground">
+                Каждая атмосфера хранит пару света: основу интерфейса, рабочий акцент и тихий блик.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {PALETTES.map((item) => {
+                  const atmosphere = getPaletteAtmosphere(item.id);
+                  return (
+                    <AdminPaletteCard
+                      key={item.id}
+                      palette={item}
+                      atmosphere={atmosphere}
+                      active={palette === item.id}
+                      onClick={() => choosePalette(item.id)}
+                      title={atmosphere ? `${item.name}: ${atmosphere.name}` : item.name}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

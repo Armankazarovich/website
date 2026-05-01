@@ -3,6 +3,7 @@
 import { useEffect, ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { UI_LAYERS } from "@/lib/ui-layers";
 
 interface Props {
@@ -51,7 +52,7 @@ export function SidePanel({
   title,
   subtitle,
   icon,
-  iconTone = "bg-primary/10 text-primary",
+  iconTone = ARAY_ICON_TONE,
   children,
   footer,
   maxWidth = "480px",

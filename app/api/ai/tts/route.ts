@@ -10,10 +10,6 @@ import { calculateElevenLabsCost } from "@/lib/api-pricing";
 const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
 const MODEL_ID = "eleven_multilingual_v2";
 
-// FALLBACK key — используется только если ELEVENLABS_API_KEY не задан в env.
-// TODO: вынести в Beget env vars и убрать после ротации ключа.
-const FALLBACK_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-
 // Голосовые настройки настроены на "Брат-Арай":
 // stability 0.55  — живой, не монотонный (было 0.82 = робот)
 // similarity 0.78 — узнаваемый Anton Ru
@@ -106,7 +102,7 @@ function browserFallback(cleanText: string) {
 // ═════════════════════════════════════════════════════════════════════════════
 export async function POST(req: NextRequest) {
   try {
-    const apiKey = process.env.ELEVENLABS_API_KEY || FALLBACK_KEY;
+    const apiKey = process.env.ELEVENLABS_API_KEY;
 
     const body = await req.json();
     const { text, source } = body as { text?: string; source?: string };
@@ -122,6 +118,11 @@ export async function POST(req: NextRequest) {
 
     if (!cleanText) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });
+    }
+
+    if (!apiKey) {
+      console.warn("[TTS] ELEVENLABS_API_KEY is not configured, using browser fallback");
+      return browserFallback(cleanText);
     }
 
     // Стратегия: Cloudflare Worker → Direct → Browser fallback

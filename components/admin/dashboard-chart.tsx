@@ -12,6 +12,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BarChart3, ChevronRight } from "lucide-react";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 
 interface ChartDay {
   label: string;
@@ -41,7 +42,7 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
       {/* Header */}
       <div className="flex items-start sm:items-center justify-between gap-3 mb-5 min-w-0">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}>
             <BarChart3 className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </div>
           <div className="min-w-0">

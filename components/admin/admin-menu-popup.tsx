@@ -225,11 +225,7 @@ export function AdminMenuPopup({ open, onClose, role }: Props) {
                           : "bg-muted/50 border-border hover:bg-accent"
                       }`}
                     >
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                          isActive ? "bg-primary/20 text-primary" : "bg-background text-muted-foreground"
-                        }`}
-                      >
+                      <div className="w-10 h-10 rounded-xl aray-icon-tone flex items-center justify-center shrink-0">
                         <Icon className="w-5 h-5" strokeWidth={1.75} />
                       </div>
                       <div className="min-w-0 flex-1">

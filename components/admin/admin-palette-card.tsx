@@ -39,6 +39,10 @@ export function AdminPaletteCard({
   onMouseLeave,
 }: AdminPaletteCardProps) {
   const isLarge = variant === "large";
+  const isAray = palette.id === "sber";
+  const previewBackground = isAray
+    ? "linear-gradient(135deg, #070B12 0%, #111A25 45%, #0C2B37 72%, #D6AE5F 100%)"
+    : `radial-gradient(circle at 20% 18%, ${palette.glow}55, transparent 42%), linear-gradient(135deg, ${palette.sidebar} 0%, ${palette.sidebar} 42%, ${palette.accent} 78%, ${palette.glow} 100%)`;
 
   return (
     <button
@@ -66,7 +70,7 @@ export function AdminPaletteCard({
           isLarge ? "h-28" : "h-16",
         )}
         style={{
-          background: `linear-gradient(135deg, ${palette.sidebar}, ${palette.accent})`,
+          background: previewBackground,
         }}
       >
         {atmosphere?.src && (
@@ -84,12 +88,25 @@ export function AdminPaletteCard({
         <span
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.58)), linear-gradient(135deg, ${palette.sidebar}44, ${palette.accent}55)`,
+            background: isAray
+              ? "radial-gradient(circle at 20% 20%, rgba(39, 173, 190, 0.24), transparent 42%), radial-gradient(circle at 86% 78%, rgba(214, 174, 95, 0.32), transparent 38%), linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.58))"
+              : `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.58)), linear-gradient(135deg, ${palette.sidebar}44, ${palette.accent}55)`,
           }}
         />
         <span className="absolute inset-x-0 bottom-0 flex h-1.5">
-          <span className="flex-1" style={{ background: palette.sidebar }} />
-          <span className="flex-1" style={{ background: palette.accent }} />
+          {isAray ? (
+            <>
+              <span className="flex-1" style={{ background: "#070B12" }} />
+              <span className="flex-1" style={{ background: "#0C6C7E" }} />
+              <span className="flex-1" style={{ background: "#D6AE5F" }} />
+            </>
+          ) : (
+            <>
+              <span className="flex-1" style={{ background: palette.sidebar }} />
+              <span className="flex-1" style={{ background: palette.accent }} />
+              <span className="flex-1" style={{ background: palette.glow }} />
+            </>
+          )}
         </span>
         {active && (
           <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow-lg ring-1 ring-black/10">

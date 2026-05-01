@@ -29,6 +29,7 @@ import {
 import { SidePanel } from "@/components/store/side-panel";
 import { useAdminLang } from "@/lib/admin-lang-context";
 import { allNavItems, GROUP_LABELS, type NavItem } from "@/components/admin/admin-nav";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { formatPrice } from "@/lib/utils";
 
 interface ProductResult {
@@ -148,7 +149,7 @@ export function AdminSearchPanel({ open, onClose, role }: Props) {
       onClose={onClose}
       title="Поиск"
       icon={<Search className="w-4 h-4" strokeWidth={2} />}
-      iconTone="bg-primary/10 text-primary"
+      iconTone={ARAY_ICON_TONE}
       maxWidth="480px"
       panelClassName="admin-popup-liquid border-border"
       side="left"
@@ -185,7 +186,7 @@ export function AdminSearchPanel({ open, onClose, role }: Props) {
                     onClick={onClose}
                     className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border hover:bg-accent hover:border-primary/30 transition-all group"
                   >
-                    <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
+                    <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors`}>
                       <Icon className="w-4 h-4" strokeWidth={1.75} />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -222,7 +223,7 @@ export function AdminSearchPanel({ open, onClose, role }: Props) {
                     onClick={onClose}
                     className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <div className={`${ARAY_ICON_TONE} w-8 h-8 rounded-lg flex items-center justify-center shrink-0`}>
                       <ItemIcon className="w-4 h-4" strokeWidth={1.75} />
                     </div>
                     <div className="min-w-0 flex-1">

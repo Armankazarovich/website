@@ -28,6 +28,7 @@ import {
   ChevronRight, Minimize2, Copy, Check,
 } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 import { useCartStore } from "@/store/cart";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
@@ -854,7 +855,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                       onClick={() => sendMessage(action.prompt)}
                       className="flex items-center gap-2.5 p-3 rounded-2xl border border-border bg-muted/30 hover:bg-muted/60 hover:border-primary/30 transition-all text-left"
                     >
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                      <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0`}>
                         {action.icon}
                       </div>
                       <div className="min-w-0 flex-1">

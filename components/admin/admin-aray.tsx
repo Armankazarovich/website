@@ -182,12 +182,6 @@ function useMic() {
   return { active, supported, listen, cancel };
 }
 
-// ─── TTS: Streaming ElevenLabs (Leonid, Flash) → Browser Speech ─────────────
-const ELEVEN_VOICE = "UIaC9QMb6UP5hfzy6uOD"; // Leonid — тёплый, естественный русский
-const ELEVEN_MODEL = "eleven_flash_v2_5";       // Flash — быстрый, мультиязычный
-const ELEVEN_KEY = "sk_012bb7d94cc7ef02a9e11422d9dc6a4a56c7ace7a9ff5eb1";
-const ELEVEN_SPEED = 1.08; // чуть быстрее нормы — живой, без артефактов
-
 function cleanTTSText(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")

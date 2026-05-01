@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Plus, Share, X } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 
 type Platform =
   | "ios-safari"
@@ -152,7 +153,7 @@ export function AdminPwaInstall() {
                 : "Открывать как отдельное приложение"}
             </p>
           </div>
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/18 bg-primary/10 text-primary">
+          <div className={`${ARAY_ICON_TONE} flex h-9 w-9 shrink-0 items-center justify-center rounded-xl`}>
             {isIOS ? <Share className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
           </div>
         </button>
@@ -165,7 +166,7 @@ export function AdminPwaInstall() {
               { icon: CheckCircle2, text: "Нажми Добавить" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-2.5 text-xs text-muted-foreground">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary ring-1 ring-primary/12">
+                <span className={`${ARAY_ICON_TONE} flex h-7 w-7 shrink-0 items-center justify-center rounded-lg`}>
                   <Icon className="h-3.5 w-3.5" />
                 </span>
                 <span>{text}</span>

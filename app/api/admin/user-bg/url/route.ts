@@ -1,15 +1,11 @@
 export const dynamic = "force-dynamic";
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 
-function getUserBgKey(userId: string) {
-  return `user_bg_${userId}`;
-}
+const DISABLED_MESSAGE = "Фоны админки закреплены за фирменными атмосферами ARAY.";
 
-// POST /api/admin/user-bg/url — добавить URL (например Unsplash) без загрузки файла
-export async function POST(req: NextRequest) {
+export async function POST() {
   const session = await auth();
   const role = session?.user?.role as string;
   const userId = session?.user?.id as string;
@@ -18,29 +14,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { url } = await req.json();
-  if (!url || typeof url !== "string") {
-    return NextResponse.json({ error: "Нет URL" }, { status: 400 });
-  }
-
-  const key = getUserBgKey(userId);
-  const row = await prisma.siteSettings.findUnique({ where: { key } }).catch(() => null);
-  const existing: string[] = row ? JSON.parse(row.value) : [];
-
-  if (existing.length >= 5) {
-    return NextResponse.json({ error: "Максимум 5 фото. Удали старое." }, { status: 400 });
-  }
-
-  if (existing.includes(url)) {
-    return NextResponse.json({ photos: existing }); // уже есть
-  }
-
-  const updated = [...existing, url];
-  await prisma.siteSettings.upsert({
-    where: { key },
-    create: { key, value: JSON.stringify(updated) },
-    update: { value: JSON.stringify(updated) },
-  });
-
-  return NextResponse.json({ photos: updated });
+  return NextResponse.json(
+    { error: DISABLED_MESSAGE, photos: [], locked: true },
+    { status: 403 },
+  );
 }

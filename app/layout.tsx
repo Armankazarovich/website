@@ -10,6 +10,7 @@ import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
 import { UtmTracker } from "@/components/utm-tracker";
 import { ThemeChromeSync } from "@/components/layout/theme-chrome-sync";
+import { UserPreferencesSync } from "@/components/user-preferences-sync";
 import { ALL_PALETTE_IDS, normalizePaletteId, normalizePaletteIds } from "@/lib/palettes";
 import "./globals.css";
 
@@ -175,10 +176,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const yandexVerification = getSetting(settings, "yandex_verification");
   const googleVerification = getSetting(settings, "google_verification");
   const enabledIds = normalizePaletteIds(settings.palettes_enabled ?? DEFAULT_SETTINGS.palettes_enabled);
-  const normalizedDefaultPalette = normalizePaletteId(getSetting(settings, "default_palette"), "timber");
+  const rawDefaultPalette = getSetting(settings, "default_palette");
+  const preferredDefaultPalette = rawDefaultPalette === "timber" ? "sber" : rawDefaultPalette;
+  const normalizedDefaultPalette = normalizePaletteId(preferredDefaultPalette, "sber");
   const defaultPalette = enabledIds.includes(normalizedDefaultPalette)
     ? normalizedDefaultPalette
-    : "timber";
+    : "sber";
 
   return (
     <html lang="ru" suppressHydrationWarning>
@@ -223,6 +226,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         >
           <ThemeChromeSync />
           <PaletteProvider enabledIds={enabledIds} defaultPalette={defaultPalette}>
+            <UserPreferencesSync />
             {children}
             <Toaster />
             <HapticInit />

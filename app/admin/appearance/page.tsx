@@ -11,10 +11,11 @@ export default async function AppearancePage() {
   const photoAspect = settings.photo_aspect_ratio ?? DEFAULT_SETTINGS.photo_aspect_ratio;
   const cardStyle = settings.card_style ?? DEFAULT_SETTINGS.card_style;
   const rawDefaultPalette = settings.default_palette ?? DEFAULT_SETTINGS.default_palette;
-  const normalizedDefaultPalette = normalizePaletteId(rawDefaultPalette, DEFAULT_SETTINGS.default_palette);
+  const preferredDefaultPalette = rawDefaultPalette === "timber" ? "sber" : rawDefaultPalette;
+  const normalizedDefaultPalette = normalizePaletteId(preferredDefaultPalette, "sber");
   const defaultPalette = enabledIds.includes(normalizedDefaultPalette)
     ? normalizedDefaultPalette
-    : "timber";
+    : "sber";
   const arayEnabled = (settings.aray_enabled ?? DEFAULT_SETTINGS.aray_enabled) !== "false";
 
   return (

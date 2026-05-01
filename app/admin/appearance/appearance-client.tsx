@@ -156,7 +156,7 @@ export function AppearanceClient({
   const [enabled, setEnabled] = useState<Set<string>>(new Set(initialEnabledIds));
   const [photoAspect, setPhotoAspect] = useState(initialPhotoAspect || "1/1");
   const [cardStyle, setCardStyle] = useState(initialCardStyle || "classic");
-  const [defaultPalette, setDefaultPalette] = useState(initialDefaultPalette || "timber");
+  const [defaultPalette, setDefaultPalette] = useState(initialDefaultPalette || "sber");
   const [arayEnabled, setArayEnabled] = useState(initialArayEnabled);
   const [productPage, setProductPage] = useState<ProductPageSettings>(initialProductPage ?? {
     showReviews: true,
@@ -190,7 +190,7 @@ export function AppearanceClient({
   }, [defaultPalette]);
 
   const toggle = (id: string) => {
-    if (id === "timber") return;
+    if (id === "sber") return;
     const isCurrentlyEnabled = enabled.has(id);
     setEnabled((prev) => {
       const next = new Set(prev);
@@ -199,7 +199,7 @@ export function AppearanceClient({
       return next;
     });
     if (isCurrentlyEnabled && defaultPalette === id) {
-      setDefaultPalette("timber");
+      setDefaultPalette("sber");
     }
   };
 
@@ -489,7 +489,7 @@ export function AppearanceClient({
                         </button>
                       ) : null}
 
-                      {p.id !== "timber" && (
+                      {p.id !== "sber" && (
                         <button
                           onClick={() => toggle(p.id)}
                           data-state={isOn ? "on" : "off"}

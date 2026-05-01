@@ -3,26 +3,29 @@ export type PaletteItem = {
   name: string;
   sidebar: string;
   accent: string;
+  glow: string;
+  mood: string;
+  pairing: string;
 };
 
 export const PALETTE_GROUPS: { label: string; palettes: PaletteItem[] }[] = [
   {
     label: "ARAY Core",
     palettes: [
-      { id: "timber", name: "Timber", sidebar: "#5C3317", accent: "#E8700A" },
-      { id: "forest", name: "Forest", sidebar: "#1A4D3D", accent: "#2BA88F" },
-      { id: "ocean", name: "Ocean", sidebar: "#1B3A5C", accent: "#3B82F6" },
-      { id: "midnight", name: "Midnight", sidebar: "#1A1033", accent: "#8B5CF6" },
-      { id: "slate", name: "Slate", sidebar: "#243142", accent: "#0EA5E9" },
-      { id: "crimson", name: "Crimson", sidebar: "#3D0C11", accent: "#E8472A" },
+      { id: "timber", name: "Timber", sidebar: "#4A2A17", accent: "#D86F22", glow: "#E2B86A", mood: "Earth", pairing: "Soil + copper + warm gold" },
+      { id: "forest", name: "Forest", sidebar: "#10372D", accent: "#24A58B", glow: "#B6D97A", mood: "Forest", pairing: "Pine + mist + young light" },
+      { id: "ocean", name: "Ocean", sidebar: "#112C4D", accent: "#3C8CFF", glow: "#7DE2F2", mood: "Water", pairing: "Deep sea + sky + foam" },
+      { id: "midnight", name: "Midnight", sidebar: "#171026", accent: "#8D6BFF", glow: "#D2B7FF", mood: "Focus", pairing: "Night ink + violet + moon glass" },
+      { id: "slate", name: "Slate", sidebar: "#1B2530", accent: "#4CA6D9", glow: "#B9D2DF", mood: "North", pairing: "Graphite + ice + steel light" },
+      { id: "crimson", name: "Crimson", sidebar: "#321116", accent: "#E65E4A", glow: "#F2A093", mood: "Impulse", pairing: "Wine + ember + rose metal" },
     ],
   },
   {
     label: "Business Moods",
     palettes: [
-      { id: "sber", name: "ARAY", sidebar: "#101827", accent: "#D8A84E" },
-      { id: "avito", name: "Market", sidebar: "#123B63", accent: "#00AAFF" },
-      { id: "amazon", name: "Commerce", sidebar: "#263545", accent: "#FFB000" },
+      { id: "sber", name: "ARAY", sidebar: "#070C13", accent: "#22A7B7", glow: "#D6AE5F", mood: "ARAY", pairing: "Graphite + water intelligence + gold" },
+      { id: "avito", name: "Market", sidebar: "#102B48", accent: "#19AFFF", glow: "#5BE6C8", mood: "City", pairing: "City blue + electric cyan + fresh signal" },
+      { id: "amazon", name: "Commerce", sidebar: "#172333", accent: "#F2B233", glow: "#5D8CFF", mood: "Cosmos", pairing: "Space navy + commerce gold + data blue" },
     ],
   },
 ];
@@ -36,7 +39,7 @@ export function isPaletteId(id: string): boolean {
   return PALETTE_ID_SET.has(id);
 }
 
-export function normalizePaletteId(id: string | null | undefined, fallback = "timber"): string {
+export function normalizePaletteId(id: string | null | undefined, fallback = "sber"): string {
   return id && isPaletteId(id) ? id : fallback;
 }
 
@@ -45,5 +48,6 @@ export function normalizePaletteIds(raw: string | string[] | null | undefined): 
     ? raw
     : (raw || "").split(",");
   const normalized = ids.map((id) => id.trim()).filter(isPaletteId);
-  return normalized.length > 0 ? normalized : ALL_PALETTE_IDS;
+  const result = normalized.length > 0 ? normalized : ALL_PALETTE_IDS;
+  return result.includes("sber") ? result : ["sber", ...result];
 }

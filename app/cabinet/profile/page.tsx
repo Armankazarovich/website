@@ -2,16 +2,57 @@
 export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff, CheckCircle2, Camera, Trash2, Globe } from "lucide-react";
+import {
+  Check,
+  CheckCircle2,
+  Camera,
+  Bell,
+  BookmarkPlus,
+  BriefcaseBusiness,
+  ChevronRight,
+  Heart,
+  Globe,
+  History,
+  ImageIcon,
+  Layers3,
+  Link2,
+  Loader2,
+  Lock,
+  Mail,
+  MapPin,
+  Monitor,
+  Moon,
+  Newspaper,
+  Palette,
+  Phone,
+  Star,
+  Sun,
+  Trash2,
+  Trophy,
+  User,
+  UserRoundCog,
+  Users,
+  Video,
+  Wallet,
+  Eye,
+  EyeOff,
+  Rss,
+} from "lucide-react";
 import { AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
+import { AdminLangProvider } from "@/lib/admin-lang-context";
+import { usePalette } from "@/components/palette-provider";
+import { PALETTES } from "@/lib/palettes";
+import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -30,6 +71,29 @@ const passwordSchema = z.object({
 
 type ProfileForm = z.infer<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
+type ThemeMode = "light" | "dark" | "system";
+
+const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const BG_MODE_KEY = "aray-bg-mode";
+
+const THEME_OPTIONS: { id: ThemeMode; label: string; icon: React.ElementType }[] = [
+  { id: "dark", label: "Темная", icon: Moon },
+  { id: "light", label: "Светлая", icon: Sun },
+  { id: "system", label: "Система", icon: Monitor },
+];
+
+const ADMIN_BG_OPTIONS: { id: AdminBgMode; label: string; hint: string; icon: React.ElementType }[] = [
+  { id: "photo", label: "Атмосфера", hint: "Фирменный фон ARAY", icon: ImageIcon },
+  { id: "clean", label: "Чистый", hint: "Без фото", icon: Layers3 },
+];
+
+type ProfileHubItem = {
+  title: string;
+  desc: string;
+  icon: React.ElementType;
+  href?: string;
+  disabled?: boolean;
+};
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
@@ -49,6 +113,9 @@ function formatPhone(raw: string): string {
 export default function ProfilePage() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
+  const { palette, setPalette } = usePalette();
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -62,6 +129,39 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [bgMode, setBgModeState] = useState<AdminBgMode>("photo");
+  const role = ((session?.user as { role?: string } | undefined)?.role) || "USER";
+  const isStaff = STAFF_ROLES.includes(role);
+  const safeTheme = (theme || "system") as ThemeMode;
+  const hubItems: ProfileHubItem[] = [
+    { title: "Личные данные", desc: "Имя, телефон, адрес", icon: UserRoundCog, href: "#profile-data" },
+    { title: "Интерфейс", desc: "Тема, цвета, фон", icon: Palette, href: "#interface" },
+    { title: "Язык", desc: "Перевод и регион", icon: Globe, href: "#language" },
+    { title: "Уведомления", desc: "Push, email, важность", icon: Bell, href: "/cabinet/notifications" },
+    { title: "История", desc: "Действия и просмотры", icon: History, href: "/cabinet/history" },
+    { title: "Медиа", desc: "Фото и документы", icon: ImageIcon, href: "/cabinet/media" },
+    { title: "Подписки", desc: "Магазины и категории", icon: BookmarkPlus, href: "/cabinet/subscriptions" },
+    { title: "Безопасность", desc: "Пароль и вход", icon: Lock, href: "#security" },
+    ...(isStaff
+      ? [{ title: "Рабочая роль", desc: "Команда и доступ", icon: BriefcaseBusiness, href: "/admin/staff" } satisfies ProfileHubItem]
+      : []),
+  ];
+  const futureHubItems: ProfileHubItem[] = [
+    { title: "Публичный профиль", desc: "Статус, био, ссылки", icon: Link2, disabled: true },
+    { title: "Аватар-альбом", desc: "Фото и видео профиля", icon: Camera, disabled: true },
+    { title: "Сторис", desc: "Короткие публикации", icon: Video, disabled: true },
+    { title: "Лента", desc: "Контент и интересы", icon: Rss, disabled: true },
+    { title: "Блог", desc: "Статьи и заметки", icon: Newspaper, disabled: true },
+    { title: "Влог", desc: "Видео и эфиры", icon: Video, disabled: true },
+    { title: "Услуги", desc: "Что человек продает", icon: BriefcaseBusiness, disabled: true },
+    { title: "Портфолио", desc: "Работы и кейсы", icon: ImageIcon, disabled: true },
+    { title: "Отзывы", desc: "Репутация и доверие", icon: Star, disabled: true },
+    { title: "Рейтинг", desc: "Уровень и качество", icon: Trophy, disabled: true },
+    { title: "Подписчики", desc: "Люди и связи", icon: Users, disabled: true },
+    { title: "Донаты", desc: "Поддержка автора", icon: Heart, disabled: true },
+    { title: "Монетизация", desc: "Доход и выплаты", icon: Wallet, disabled: true },
+    { title: "Устройства", desc: "PWA и сессии", icon: Monitor, disabled: true },
+  ];
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -70,6 +170,20 @@ export default function ProfilePage() {
   const { register: regPw, handleSubmit: handlePw, reset: resetPw, formState: { errors: pwErrors } } = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
   });
+
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem(BG_MODE_KEY);
+    setBgModeState(stored === "clean" ? "clean" : "photo");
+
+    const syncBg = () => {
+      const next = localStorage.getItem(BG_MODE_KEY);
+      setBgModeState(next === "clean" ? "clean" : "photo");
+    };
+
+    window.addEventListener("aray-classic-change", syncBg);
+    return () => window.removeEventListener("aray-classic-change", syncBg);
+  }, []);
 
   // Load profile data
   useEffect(() => {
@@ -164,6 +278,13 @@ export default function ProfilePage() {
     setUploadingAvatar(false);
   };
 
+  const setAdminBgMode = (mode: AdminBgMode) => {
+    setBgModeState(mode);
+    localStorage.setItem(BG_MODE_KEY, mode);
+    localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
+    window.dispatchEvent(new Event("aray-classic-change"));
+  };
+
   if (!session) {
     router.push("/login");
     return null;
@@ -215,8 +336,41 @@ export default function ProfilePage() {
         />
       )}
 
+      <div className="bg-card rounded-2xl border border-border p-4 sm:p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display font-semibold text-lg">Центр профиля</h2>
+            <p className="text-xs text-muted-foreground mt-1">Аккаунт, интерфейс, язык и личные настройки</p>
+          </div>
+          <span className="hidden sm:inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
+            ARAY ID
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5">
+          {hubItems.map((item) => (
+            <ProfileHubCard key={item.title} item={item} />
+          ))}
+        </div>
+
+        <div className="border-t border-border/70 pt-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">Публичность и заработок</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Социальные и бизнес-возможности профиля ARAY</p>
+            </div>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">Этап 2</span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+          {futureHubItems.map((item) => (
+            <ProfileHubCard key={item.title} item={item} />
+          ))}
+          </div>
+        </div>
+      </div>
+
       {/* Profile form */}
-      <form onSubmit={handleSubmit(onSaveProfile)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
+      <form id="profile-data" onSubmit={handleSubmit(onSaveProfile)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <User className="w-5 h-5 text-primary" />
           Личные данные
@@ -309,8 +463,126 @@ export default function ProfilePage() {
         </Button>
       </form>
 
+      {/* Interface */}
+      <div id="interface" className="bg-card rounded-2xl border border-border p-6 space-y-5">
+        <h2 className="font-display font-semibold text-lg flex items-center gap-2">
+          <Palette className="w-5 h-5 text-primary" />
+          Интерфейс
+        </h2>
+
+        {mounted && (
+          <>
+            <div>
+              <p className="text-sm font-semibold mb-3">Тема</p>
+              <div className="grid grid-cols-3 gap-2">
+                {THEME_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const active = safeTheme === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setTheme(option.id)}
+                      className={`min-h-[4.5rem] rounded-2xl border px-2 py-3 transition-all ${
+                        active
+                          ? "border-primary/45 bg-primary/10 text-primary"
+                          : "border-border bg-background/45 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="mx-auto h-5 w-5" strokeWidth={1.75} />
+                      <span className="mt-2 block text-xs font-semibold">{option.label}</span>
+                      {active && <Check className="mx-auto mt-1 h-3.5 w-3.5" strokeWidth={2.4} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold mb-3">Цветовая атмосфера</p>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2.5">
+                {PALETTES.map((item) => {
+                  const active = palette === item.id;
+                  const isAray = item.id === "sber";
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setPalette(item.id)}
+                      className={`group rounded-2xl border p-2 text-left transition-all ${
+                        active
+                          ? "border-primary/55 bg-primary/10 shadow-[0_14px_34px_hsl(var(--primary)/0.12)]"
+                          : "border-border bg-background/45 hover:border-primary/28 hover:bg-primary/5"
+                      }`}
+                    >
+                      <span
+                        className="relative block h-14 overflow-hidden rounded-xl border border-border/50"
+                        style={{
+                          background: isAray
+                            ? "linear-gradient(135deg, #070B12 0%, #111A25 45%, #0C2B37 72%, #D6AE5F 100%)"
+                            : `linear-gradient(135deg, ${item.sidebar}, ${item.accent})`,
+                        }}
+                      >
+                        <span
+                          className="absolute inset-0"
+                          style={{
+                            background: isAray
+                              ? "radial-gradient(circle at 18% 20%, rgba(39,173,190,0.25), transparent 42%), radial-gradient(circle at 84% 78%, rgba(214,174,95,0.32), transparent 40%), linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.34))"
+                              : "linear-gradient(180deg, rgba(255,255,255,0.18), rgba(0,0,0,0.28))",
+                          }}
+                        />
+                        {active && (
+                          <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow">
+                            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                          </span>
+                        )}
+                      </span>
+                      <span className={`mt-1.5 block truncate text-[11px] font-semibold ${active ? "text-primary" : "text-foreground"}`}>
+                        {item.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {isStaff && (
+              <div>
+                <p className="text-sm font-semibold mb-3">Фон админки</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ADMIN_BG_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    const active = bgMode === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setAdminBgMode(option.id)}
+                        className={`flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-3 text-left transition-all ${
+                          active
+                            ? "border-primary/45 bg-primary/10 text-foreground"
+                            : "border-border bg-background/45 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
+                        }`}
+                      >
+                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                          <Icon className="h-4 w-4" strokeWidth={1.75} />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-xs font-semibold">{option.label}</span>
+                          <span className="block truncate text-[10px] text-muted-foreground">{option.hint}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Password form */}
-      <form onSubmit={handlePw(onChangePassword)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
+      <form id="security" onSubmit={handlePw(onChangePassword)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Lock className="w-5 h-5 text-primary" />
           Изменить пароль
@@ -395,15 +667,53 @@ export default function ProfilePage() {
       </form>
 
       {/* Язык интерфейса */}
-      <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+      <div id="language" className="bg-card rounded-2xl border border-border p-6 space-y-4">
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Globe className="w-5 h-5 text-primary" />
           Язык интерфейса
         </h2>
-        <AdminLangPickerInline />
+        <AdminLangProvider>
+          <AdminLangPickerInline />
+        </AdminLangProvider>
       </div>
     </div>
   );
+}
+
+function ProfileHubCard({ item }: { item: ProfileHubItem }) {
+  const Icon = item.icon;
+  const content = (
+    <>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold leading-tight text-foreground">{item.title}</span>
+        <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">{item.desc}</span>
+      </span>
+      {item.disabled ? (
+        <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">Скоро</span>
+      ) : (
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/55" strokeWidth={1.75} />
+      )}
+    </>
+  );
+
+  const className = `flex min-h-[4.75rem] items-center gap-3 rounded-2xl border p-3 text-left transition-all ${
+    item.disabled
+      ? "cursor-default border-border/70 bg-muted/25 opacity-75"
+      : "border-border bg-background/45 hover:border-primary/28 hover:bg-primary/5"
+  }`;
+
+  if (item.href && !item.disabled) {
+    return (
+      <Link href={item.href} className={className}>
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
 }
 
 /** Crop modal — simple circular crop with drag & zoom */

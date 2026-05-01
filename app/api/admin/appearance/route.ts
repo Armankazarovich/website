@@ -28,7 +28,7 @@ export async function PATCH(req: Request) {
   // Palettes
   if (typeof body.palettes_enabled === "string") {
     const ids = body.palettes_enabled.split(",").map((s: string) => s.trim()).filter(isPaletteId);
-    if (!ids.includes("timber")) ids.unshift("timber");
+    if (!ids.includes("sber")) ids.unshift("sber");
     updates.palettes_enabled = ids.join(",");
   }
 

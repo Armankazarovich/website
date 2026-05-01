@@ -6,6 +6,7 @@ import {
   ShoppingBag, Package, Star, Clock, Users, Truck, Warehouse, Target,
   Mail, Bell, Settings, Wallet, BarChart2, CheckSquare, HeartPulse,
   UserCircle, FileDown, ChevronRight, Zap, Activity,
+  ClipboardCheck, Loader2, Navigation, Hand, CircleCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
@@ -323,7 +324,7 @@ export default async function AdminDashboard() {
           <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
             <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl aray-icon-tone flex items-center justify-center shrink-0">
                   <Activity className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>
                 <div className="min-w-0">
@@ -346,6 +347,14 @@ export default async function AdminDashboard() {
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-2.5 min-w-0">
               {orderFlow.map((item) => {
                 const pct = liveOrderCount > 0 ? Math.round((item.count / liveOrderCount) * 100) : 0;
+                const StatusIcon =
+                  item.status === "NEW" ? ShoppingBag :
+                  item.status === "CONFIRMED" ? ClipboardCheck :
+                  item.status === "PROCESSING" ? Loader2 :
+                  item.status === "IN_DELIVERY" ? Navigation :
+                  item.status === "READY_PICKUP" ? Hand :
+                  item.status === "DELIVERED" ? Package :
+                  CircleCheck;
                 return (
                   <Link
                     key={item.status}
@@ -355,7 +364,7 @@ export default async function AdminDashboard() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ARAY_ICON_TONE}`}>
-                        <ShoppingBag className="w-4 h-4" strokeWidth={1.75} />
+                        <StatusIcon className="w-4 h-4" strokeWidth={1.75} />
                       </span>
                       <span className="text-lg font-display font-bold leading-none text-foreground tabular-nums">
                         {item.count}
@@ -468,7 +477,7 @@ export default async function AdminDashboard() {
           <div className="admin-liquid-surface rounded-2xl overflow-hidden min-w-0">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 rounded-xl aray-icon-tone flex items-center justify-center shrink-0">
                   <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>
                 <div className="min-w-0">

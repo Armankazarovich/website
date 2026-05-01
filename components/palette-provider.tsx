@@ -21,7 +21,7 @@ type PaletteContextType = {
 };
 
 const PaletteContext = createContext<PaletteContextType>({
-  palette: "timber",
+  palette: "sber",
   setPalette: () => {},
   enabledIds: ALL_PALETTE_IDS,
 });
@@ -38,14 +38,14 @@ function applyPalette(id: PaletteId) {
 export function PaletteProvider({
   children,
   enabledIds,
-  defaultPalette = "timber",
+  defaultPalette = "sber",
 }: {
   children: React.ReactNode;
   enabledIds?: string[];
   defaultPalette?: string;
 }) {
   const allowed = normalizePaletteIds(enabledIds);
-  const safeDefaultPalette = normalizePaletteId(defaultPalette, "timber");
+  const safeDefaultPalette = normalizePaletteId(defaultPalette, "sber");
   const [palette, setPaletteState] = useState<PaletteId>(safeDefaultPalette);
 
   useEffect(() => {

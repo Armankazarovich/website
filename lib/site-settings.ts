@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   palettes_enabled: "timber,forest,ocean,midnight,slate,crimson,sber,avito,amazon",
   photo_aspect_ratio: "3/4",
   card_style: "classic",
-  default_palette: "timber",
+  default_palette: "sber",
   aray_enabled: "true",
 };
 

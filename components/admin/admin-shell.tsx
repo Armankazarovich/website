@@ -65,7 +65,7 @@ type BgMode = AdminBgMode | "classic";
  * теперь чистый bg-background.
  */
 export function useClassicMode() {
-  const [bgMode, setBgMode] = useState<AdminBgMode>("clean");
+  const [bgMode, setBgMode] = useState<AdminBgMode>("photo");
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
     const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
@@ -82,7 +82,7 @@ export function useClassicMode() {
       setBgMode("clean");
       localStorage.setItem(LS_BG_MODE, "clean");
     } else {
-      setBgMode("clean");
+      setBgMode("photo");
     }
     const checkLight = () => {
       const html = document.documentElement;
@@ -349,6 +349,13 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  useEffect(() => {
+    if (!mounted) return;
+    try {
+      if (!localStorage.getItem("theme")) setTheme("dark");
+    } catch {}
+  }, [mounted, setTheme]);
+
   // ── Аватар пользователя ──
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -464,7 +471,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                     className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-1 ring-primary/30"
                   />
                 ) : (
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl aray-icon-tone flex items-center justify-center transition-colors">
                     {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
                     <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
                   </div>
@@ -502,6 +509,8 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             >
               <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>
+
+            <ArayControlCenter userRole={role} position="header" />
 
             {/* Переключатель темы (только когда mounted — избегаем SSR mismatch) */}
             {mounted && (
@@ -590,14 +599,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         onClose={() => setSearchOpen(false)}
         role={role}
       />
-
-      <div className="hidden lg:block fixed right-0 top-1/2 -translate-y-1/2 z-40">
-        <ArayControlCenter userRole={role} position="right" />
-      </div>
-
-      <div className="lg:hidden fixed right-0 z-[45]" style={{ bottom: "max(calc(104px + env(safe-area-inset-bottom, 0px)), 104px)" }}>
-        <ArayControlCenter userRole={role} position="right" />
-      </div>
 
       {/* ─── Арай — тот же режим, что на сайте: обычный store widget без
             постоянной правой колонки. Открывается по aray:open и не забирает

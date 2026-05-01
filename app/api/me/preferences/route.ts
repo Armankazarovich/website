@@ -1,0 +1,115 @@
+export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { isPaletteId } from "@/lib/palettes";
+import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
+
+const THEMES = new Set(["light", "dark", "system"]);
+const BG_MODES = new Set(["photo", "clean"]);
+const LANG_CODES = new Set(ADMIN_LANGUAGES.map((lang) => lang.code));
+
+type UserPreferences = {
+  palette?: string;
+  theme?: "light" | "dark" | "system";
+  adminBgMode?: "photo" | "clean";
+  lang?: LangCode;
+  updatedAt?: string;
+};
+
+function preferenceKey(userId: string) {
+  return `user_ui_preferences_${userId}`;
+}
+
+function parsePreferences(value: string | null | undefined): UserPreferences {
+  if (!value) return {};
+
+  try {
+    const raw = JSON.parse(value) as Record<string, unknown>;
+    const preferences: UserPreferences = {};
+
+    if (typeof raw.palette === "string" && isPaletteId(raw.palette)) {
+      preferences.palette = raw.palette;
+    }
+
+    if (typeof raw.theme === "string" && THEMES.has(raw.theme)) {
+      preferences.theme = raw.theme as UserPreferences["theme"];
+    }
+
+    if (typeof raw.adminBgMode === "string" && BG_MODES.has(raw.adminBgMode)) {
+      preferences.adminBgMode = raw.adminBgMode as UserPreferences["adminBgMode"];
+    }
+
+    if (typeof raw.lang === "string" && LANG_CODES.has(raw.lang as LangCode)) {
+      preferences.lang = raw.lang as LangCode;
+    }
+
+    if (typeof raw.updatedAt === "string") {
+      preferences.updatedAt = raw.updatedAt;
+    }
+
+    return preferences;
+  } catch {
+    return {};
+  }
+}
+
+function sanitizePreferences(body: Record<string, unknown>, existing: UserPreferences): UserPreferences {
+  const next: UserPreferences = { ...existing };
+
+  if (typeof body.palette === "string" && isPaletteId(body.palette)) {
+    next.palette = body.palette;
+  }
+
+  if (typeof body.theme === "string" && THEMES.has(body.theme)) {
+    next.theme = body.theme as UserPreferences["theme"];
+  }
+
+  if (typeof body.adminBgMode === "string" && BG_MODES.has(body.adminBgMode)) {
+    next.adminBgMode = body.adminBgMode as UserPreferences["adminBgMode"];
+  }
+
+  if (typeof body.lang === "string" && LANG_CODES.has(body.lang as LangCode)) {
+    next.lang = body.lang as LangCode;
+  }
+
+  next.updatedAt = new Date().toISOString();
+  return next;
+}
+
+export async function GET() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const row = await prisma.siteSettings.findUnique({
+    where: { key: preferenceKey(session.user.id) },
+  }).catch(() => null);
+
+  return NextResponse.json({
+    preferences: parsePreferences(row?.value),
+  });
+}
+
+export async function PATCH(req: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const key = preferenceKey(session.user.id);
+  const row = await prisma.siteSettings.findUnique({ where: { key } }).catch(() => null);
+  const preferences = sanitizePreferences(body, parsePreferences(row?.value));
+  const value = JSON.stringify(preferences);
+
+  await prisma.siteSettings.upsert({
+    where: { key },
+    create: { id: key, key, value },
+    update: { value },
+  });
+
+  return NextResponse.json({ ok: true, preferences });
+}

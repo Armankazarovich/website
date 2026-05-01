@@ -17,7 +17,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "postinstall": "prisma generate",
-    "test:prod": "node D:/pilorus/scripts/test-production.js"
+    "test:prod": "node D:/pilorus/scripts/test-production.js",
+    "quality": "node scripts/aray-quality-gate.js",
+    "quality:full": "node scripts/aray-quality-gate.js --full"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

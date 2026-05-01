@@ -13,7 +13,7 @@ const FADE_MS = 2_400;
 function normalizeMode(mode: string | null | undefined): AdminBgMode {
   if (mode === "photo" || mode === "video") return "photo";
   if (mode === "clean") return "clean";
-  return mode === "classic" ? "clean" : "clean";
+  return mode === "classic" ? "clean" : "photo";
 }
 
 function preloadPhotos(srcs: string[]) {
@@ -33,7 +33,6 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
   const isDark = mounted ? resolvedTheme !== "light" : true;
   const palettePhotos = useMemo(() => getPalettePhotos(palette), [palette]);
   const [photos, setPhotos] = useState<string[]>(palettePhotos);
-  const [userPhotos, setUserPhotos] = useState<string[] | null>(null);
   const [index, setIndex] = useState(0);
   const [visibleIndex, setVisibleIndex] = useState(0);
   const [tabHidden, setTabHidden] = useState(false);
@@ -56,30 +55,11 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
 
   useEffect(() => {
     if (bgMode === "clean") return;
-    let alive = true;
-    fetch("/api/admin/user-bg", { cache: "no-store" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!alive) return;
-        const nextUserPhotos = Array.isArray(data?.photos) ? data.photos.filter(Boolean) : [];
-        setUserPhotos(nextUserPhotos.length > 0 ? nextUserPhotos : null);
-      })
-      .catch(() => {
-        if (alive) setUserPhotos(null);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [bgMode]);
-
-  useEffect(() => {
-    if (bgMode === "clean") return;
-    const nextPhotos = userPhotos?.length ? userPhotos : palettePhotos;
-    setPhotos(nextPhotos);
+    setPhotos(palettePhotos);
     setIndex(0);
     setVisibleIndex(0);
-    preloadPhotos(nextPhotos);
-  }, [bgMode, palettePhotos, userPhotos]);
+    preloadPhotos(palettePhotos);
+  }, [bgMode, palettePhotos]);
 
   useEffect(() => {
     if (bgMode === "clean" || tabHidden || photos.length <= 1) return;
@@ -95,9 +75,20 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
     return () => window.clearTimeout(timer);
   }, [bgMode, index]);
 
-  const currentPhoto = photos[visibleIndex % photos.length] || palettePhotos[0];
+  const fallbackPhoto = palettePhotos[0];
+  const currentPhoto = photos[visibleIndex % photos.length] || fallbackPhoto;
   const nextPhoto = photos[index % photos.length] || currentPhoto;
   const duration = PHOTO_MS;
+  const solidOverlay = isDark
+    ? isMobile ? "rgba(7,6,5,0.68)" : "rgba(7,6,5,0.78)"
+    : isMobile ? "rgba(248,247,244,0.58)" : "rgba(248,247,244,0.70)";
+  const depthOverlay = isDark
+    ? isMobile
+      ? "linear-gradient(to bottom, rgba(8,6,5,0.58) 0%, rgba(8,6,5,0.18) 38%, rgba(8,6,5,0.72) 100%)"
+      : "linear-gradient(to bottom, rgba(8,6,5,0.68) 0%, rgba(8,6,5,0.28) 38%, rgba(8,6,5,0.78) 100%)"
+    : isMobile
+      ? "linear-gradient(to bottom, rgba(252,250,247,0.70) 0%, rgba(252,250,247,0.48) 38%, rgba(252,250,247,0.78) 100%)"
+      : "linear-gradient(to bottom, rgba(252,250,247,0.82) 0%, rgba(252,250,247,0.60) 38%, rgba(252,250,247,0.86) 100%)";
 
   if (bgMode === "clean") return null;
 
@@ -117,6 +108,8 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
         duration={duration}
         disabled={tabHidden || isMobile}
         isDark={isDark}
+        isMobile={isMobile}
+        fallbackPhoto={fallbackPhoto}
       />
       {nextPhoto !== currentPhoto && !isMobile && (
         <AtmosphereFrame
@@ -125,22 +118,19 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
           duration={duration}
           disabled={tabHidden}
           isDark={isDark}
+          isMobile={isMobile}
+          fallbackPhoto={fallbackPhoto}
           entering
         />
       )}
 
       <div
         className="absolute inset-0"
-        style={{ background: isDark ? "rgba(7,6,5,0.84)" : "rgba(248,247,244,0.76)" }}
+        style={{ background: solidOverlay }}
       />
       <div
         className="absolute inset-0"
-        style={{
-          background:
-            isDark
-              ? "linear-gradient(to bottom, rgba(8,6,5,0.74) 0%, rgba(8,6,5,0.34) 38%, rgba(8,6,5,0.82) 100%)"
-              : "linear-gradient(to bottom, rgba(252,250,247,0.86) 0%, rgba(252,250,247,0.66) 38%, rgba(252,250,247,0.88) 100%)",
-        }}
+        style={{ background: depthOverlay }}
       />
       <div
         className="absolute inset-0"
@@ -161,6 +151,8 @@ function AtmosphereFrame({
   duration,
   disabled,
   isDark,
+  isMobile,
+  fallbackPhoto,
   entering = false,
 }: {
   photo: string;
@@ -168,6 +160,8 @@ function AtmosphereFrame({
   duration: number;
   disabled: boolean;
   isDark: boolean;
+  isMobile: boolean;
+  fallbackPhoto: string;
   entering?: boolean;
 }) {
   const kenburns = ["kenburns-in", "kenburns-2", "kenburns-3"][motionIndex % 3];
@@ -187,12 +181,23 @@ function AtmosphereFrame({
         src={photo}
         alt=""
         className="h-full w-full object-cover"
+        onError={(event) => {
+          if (fallbackPhoto && event.currentTarget.src !== new URL(fallbackPhoto, window.location.origin).href) {
+            event.currentTarget.src = fallbackPhoto;
+            return;
+          }
+          event.currentTarget.style.display = "none";
+        }}
         style={{
           animation: disabled ? "none" : `${kenburns} ${duration}ms ease-in-out forwards`,
-          opacity: isDark ? 0.66 : 0.24,
+          opacity: isDark ? (isMobile ? 0.82 : 0.72) : (isMobile ? 0.34 : 0.26),
           filter: isDark
-            ? "blur(11px) saturate(0.82) contrast(0.9) brightness(0.66)"
-            : "blur(16px) saturate(0.48) contrast(0.84) brightness(1.14)",
+            ? isMobile
+              ? "blur(7px) saturate(0.94) contrast(0.98) brightness(0.82)"
+              : "blur(10px) saturate(0.9) contrast(0.94) brightness(0.74)"
+            : isMobile
+              ? "blur(12px) saturate(0.62) contrast(0.88) brightness(1.08)"
+              : "blur(15px) saturate(0.52) contrast(0.84) brightness(1.12)",
         }}
       />
     </div>

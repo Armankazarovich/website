@@ -6,6 +6,9 @@ import {
   getTranslations, detectBrowserLang, LANG_LS_KEY, ADMIN_LANGUAGES,
 } from "@/lib/admin-i18n";
 
+const UI_PREF_TIME_KEY = "aray-ui-preferences-updated-at";
+const LANG_CODE_SET = new Set(ADMIN_LANGUAGES.map((lang) => lang.code));
+
 // ── Маппинг наших кодов → Google Translate коды ──────────────────────────────
 const GTRANSLATE_MAP: Record<LangCode, string> = {
   ru: "ru", en: "en", kk: "kk", uk: "uk", uz: "uz", az: "az", hy: "hy",
@@ -140,11 +143,32 @@ export function AdminLangProvider({ children }: { children: React.ReactNode }) {
       // Небольшая задержка чтобы DOM загрузился
       setTimeout(() => triggerGoogleTranslate(initial), 1000);
     }
+
+    fetch("/api/me/preferences", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { preferences?: { lang?: LangCode; updatedAt?: string } } | null) => {
+        const serverLang = data?.preferences?.lang;
+        if (!serverLang || !LANG_CODE_SET.has(serverLang)) return;
+
+        const serverTimestamp = Date.parse(data?.preferences?.updatedAt || "") || 0;
+        const localTimestamp = Number(localStorage.getItem(UI_PREF_TIME_KEY) || "0") || 0;
+        if (localTimestamp > serverTimestamp) {
+          void saveLanguagePreference(initial);
+          return;
+        }
+
+        setLangState(serverLang);
+        localStorage.setItem(LANG_LS_KEY, serverLang);
+        if (serverLang !== "ru") triggerGoogleTranslate(serverLang);
+      })
+      .catch(() => {});
   }, []);
 
   const setLang = useCallback((l: LangCode) => {
     setLangState(l);
     localStorage.setItem(LANG_LS_KEY, l);
+    localStorage.setItem(UI_PREF_TIME_KEY, String(Date.now()));
+    void saveLanguagePreference(l);
     // Активируем Google Translate для всей страницы
     triggerGoogleTranslate(l);
   }, []);
@@ -162,4 +186,12 @@ export function AdminLangProvider({ children }: { children: React.ReactNode }) {
 
 export function useAdminLang() {
   return useContext(Ctx);
+}
+
+async function saveLanguagePreference(lang: LangCode) {
+  await fetch("/api/me/preferences", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lang }),
+  }).catch(() => null);
 }
