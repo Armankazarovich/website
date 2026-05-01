@@ -13,8 +13,8 @@ import { PALETTES } from "@/lib/palettes";
 const BG_MODE_KEY = "aray-bg-mode";
 
 const BG_MODES: { id: AdminBgMode; label: string; hint: string; icon: ElementType }[] = [
-  { id: "photo", label: "Атмосфера", hint: "Фирменный фон ARAY", icon: ImageIcon },
-  { id: "clean", label: "Чистый", hint: "Без фото, только интерфейс", icon: Layers3 },
+  { id: "clean", label: "Чистый", hint: "Рабочий интерфейс", icon: Layers3 },
+  { id: "photo", label: "Фото-фон", hint: "Опция для настроения", icon: ImageIcon },
 ];
 
 const THEME_OPTIONS = [
@@ -24,18 +24,18 @@ const THEME_OPTIONS = [
 ] as const;
 
 function readBgMode(): AdminBgMode {
-  if (typeof window === "undefined") return "photo";
+  if (typeof window === "undefined") return "clean";
   const stored = localStorage.getItem(BG_MODE_KEY);
   if (stored === "photo" || stored === "clean") return stored;
   if (stored === "video") {
-    localStorage.setItem(BG_MODE_KEY, "photo");
-    return "photo";
+    localStorage.setItem(BG_MODE_KEY, "clean");
+    return "clean";
   }
   if (stored === "classic") {
     localStorage.setItem(BG_MODE_KEY, "clean");
     return "clean";
   }
-  return "photo";
+  return "clean";
 }
 
 export function ArayControlCenter({
@@ -45,7 +45,7 @@ export function ArayControlCenter({
   position?: "header" | "bottom" | "right";
 }) {
   const [open, setOpen] = useState(false);
-  const [bgMode, setBgModeState] = useState<AdminBgMode>("photo");
+  const [bgMode, setBgModeState] = useState<AdminBgMode>("clean");
   const [mounted, setMounted] = useState(false);
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
@@ -98,10 +98,6 @@ export function ArayControlCenter({
 
   function choosePalette(id: string) {
     setPalette(id);
-    if (bgMode !== "photo") {
-      setBgMode("photo");
-      return;
-    }
     window.dispatchEvent(new Event("aray-classic-change"));
   }
 
@@ -120,12 +116,12 @@ export function ArayControlCenter({
         className={`relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground ${open ? "bg-primary/10 text-primary" : ""} ${ARAY_FOCUS_RING}`}
       >
         <Palette className="h-[18px] w-[18px]" strokeWidth={1.75} />
-        <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_10px_hsl(var(--primary)/0.65)]" />
+        <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
       </button>
 
       {open && (
         <div
-          className={`${panelClassName} animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden rounded-2xl border admin-popup-liquid shadow-2xl`}
+          className={`${panelClassName} animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden rounded-2xl border admin-popup-liquid`}
           data-placement={position}
           role="dialog"
           aria-label="Оформление интерфейса"
@@ -137,7 +133,7 @@ export function ArayControlCenter({
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-bold leading-tight text-foreground">Оформление</p>
-                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">Фон, тема и атмосфера</p>
+                <p className="mt-0.5 truncate text-[11px] text-muted-foreground">Тема, палитра и фон</p>
               </div>
             </div>
             <button
@@ -166,7 +162,7 @@ export function ArayControlCenter({
                       onClick={() => setBgMode(mode.id)}
                       className={`group flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-3 text-left transition-all ${ARAY_FOCUS_RING} ${
                         active
-                          ? "border-primary/35 bg-primary/12 text-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.10)]"
+                          ? "border-primary/35 bg-primary/12 text-foreground"
                           : "border-border bg-card/55 text-foreground hover:border-primary/24 hover:bg-primary/8"
                       }`}
                     >
@@ -221,10 +217,10 @@ export function ArayControlCenter({
 
             <section>
               <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Стиль и атмосфера
+                Палитра
               </p>
               <p className="mb-3 px-1 text-[11px] leading-relaxed text-muted-foreground">
-                Каждая атмосфера хранит пару света: основу интерфейса, рабочий акцент и тихий блик.
+                Палитра меняет акцент и базовые цвета. Фото-фон можно включить отдельно.
               </p>
               <div className="grid grid-cols-3 gap-2">
                 {PALETTES.map((item) => {

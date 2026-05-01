@@ -71,16 +71,16 @@ export function AppHeader({
         mounted ? "transition-[background,border-color,box-shadow] duration-300" : ""
       )}
       style={{
-        backdropFilter: "blur(18px) saturate(108%)",
-        WebkitBackdropFilter: "blur(18px) saturate(108%)",
+        backdropFilter: "none",
+        WebkitBackdropFilter: "none",
         background: isScrolled
-          ? "linear-gradient(180deg, hsl(var(--background) / 0.96), hsl(var(--secondary) / 0.82))"
-          : "linear-gradient(180deg, hsl(var(--background) / 0.94), hsl(var(--secondary) / 0.76))",
+          ? "hsl(var(--background) / 0.98)"
+          : "hsl(var(--background) / 0.96)",
         borderBottom: `1px solid hsl(var(--primary) / ${
-          isScrolled ? "0.20" : "0.09"
+          isScrolled ? "0.18" : "0.08"
         })`,
         boxShadow: isScrolled
-          ? "0 8px 32px hsl(var(--foreground) / 0.055), 0 1px 0 hsl(var(--primary) / 0.10)"
+          ? "0 1px 0 hsl(var(--foreground) / 0.035)"
           : "none",
       }}
     >

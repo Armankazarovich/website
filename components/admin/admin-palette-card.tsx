@@ -58,7 +58,7 @@ export function AdminPaletteCard({
         ARAY_FOCUS_RING,
         isLarge ? "rounded-2xl p-2" : "rounded-xl p-1.5",
         active
-          ? "border border-primary/65 bg-primary/[0.12] shadow-[0_14px_34px_hsl(var(--primary)/0.16)]"
+          ? "border border-primary/55 bg-primary/[0.12]"
           : "border border-border/70 bg-background/45 hover:border-primary/35 hover:bg-background/70",
         !enabled && "opacity-55",
         disabled && "cursor-not-allowed opacity-45",
@@ -74,7 +74,7 @@ export function AdminPaletteCard({
           background: previewBackground,
         }}
       >
-        {atmosphere?.src && (
+        {isLarge && atmosphere?.src && (
           <img
             src={atmosphere.src}
             alt=""
@@ -110,7 +110,7 @@ export function AdminPaletteCard({
           )}
         </span>
         {active && (
-          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow-lg ring-1 ring-black/10">
+          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black ring-1 ring-black/10">
             <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
           </span>
         )}

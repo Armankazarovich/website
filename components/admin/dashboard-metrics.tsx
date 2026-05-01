@@ -91,7 +91,7 @@ function MetricCard({ href, icon: Icon, value, label, suffix = "", tone, hint, d
         <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">
           {label}
         </p>
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${isPending ? "animate-pulse" : ""} ${TONE_ICON[tone]}`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isPending ? "animate-pulse" : ""} ${TONE_ICON[tone]}`}>
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
       </div>
@@ -119,6 +119,9 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
   const r30 = Math.round(revenue30);
   const rToday = Math.round(revenueToday);
   const avg = Math.round(avgOrder);
+  const hasRevenue30 = r30 > 0;
+  const hasRevenueToday = rToday > 0;
+  const hasAvgOrder = avg > 0;
 
   return (
     <div className="grid grid-cols-1 xs:grid-cols-2 xl:grid-cols-4 gap-2.5 sm:gap-3 min-w-0">
@@ -129,7 +132,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Выручка 30 дней"
         suffix=" ₽"
         tone="primary"
-        hint="Все продажи без отменённых"
+        hint={hasRevenue30 ? "Все продажи без отмененных" : "Продажи появятся после первых заказов"}
         delay={0}
       />
       <MetricCard
@@ -139,7 +142,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Сегодня"
         suffix=" ₽"
         tone="primary"
-        hint="С полуночи"
+        hint={hasRevenueToday ? "С полуночи" : "Сегодня пока спокойно"}
         delay={80}
       />
       <MetricCard
@@ -148,7 +151,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         value={newOrders}
         label="Новых заказов"
         tone={newOrders > 0 ? "warning" : "primary"}
-        hint="Ожидают подтверждения"
+        hint={newOrders > 0 ? "Ожидают подтверждения" : "Очередь свободна"}
         delay={160}
       />
       <MetricCard
@@ -158,7 +161,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Средний чек"
         suffix=" ₽"
         tone="primary"
-        hint="За 30 дней"
+        hint={hasAvgOrder ? "За 30 дней" : "Появится после продаж"}
         delay={240}
       />
     </div>

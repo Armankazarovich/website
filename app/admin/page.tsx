@@ -6,7 +6,6 @@ import {
   ShoppingBag, Package, Star, Clock, Users, Truck, Warehouse, Target,
   Mail, Bell, Settings, Wallet, BarChart2, CheckSquare, HeartPulse,
   UserCircle, FileDown, ChevronRight, Zap, Activity,
-  ClipboardCheck, Loader2, Navigation, Hand, CircleCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
@@ -320,7 +319,7 @@ export default async function AdminDashboard() {
         )}
 
         {/* ── ОПЕРАЦИОННЫЙ ПУЛЬС ── */}
-        <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-3 sm:gap-4 min-w-0">
+        <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-3 sm:gap-4 min-w-0 items-start">
           <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
             <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
               <div className="flex items-center gap-3 min-w-0">
@@ -344,45 +343,46 @@ export default async function AdminDashboard() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-2.5 min-w-0">
-              {orderFlow.map((item) => {
-                const pct = liveOrderCount > 0 ? Math.round((item.count / liveOrderCount) * 100) : 0;
-                const StatusIcon =
-                  item.status === "NEW" ? ShoppingBag :
-                  item.status === "CONFIRMED" ? ClipboardCheck :
-                  item.status === "PROCESSING" ? Loader2 :
-                  item.status === "IN_DELIVERY" ? Navigation :
-                  item.status === "READY_PICKUP" ? Hand :
-                  item.status === "DELIVERED" ? Package :
-                  CircleCheck;
-                return (
-                  <Link
-                    key={item.status}
-                    href={item.href}
-                    className="group rounded-2xl border border-border/70 bg-background/45 p-3 min-w-0 hover:border-primary/30 hover:bg-background/65 transition-colors"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ARAY_ICON_TONE}`}>
-                        <StatusIcon className="w-4 h-4" strokeWidth={1.75} />
-                      </span>
-                      <span className="text-lg font-display font-bold leading-none text-foreground tabular-nums">
-                        {item.count}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs font-medium text-foreground leading-tight truncate">
-                      {item.label}
-                    </p>
-                    <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${ARAY_PROGRESS_TONE}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+            {liveOrderCount > 0 ? (
+              <div className="admin-order-flow-grid grid gap-2 min-w-0">
+                {orderFlow.map((item) => {
+                  const pct = Math.round((item.count / liveOrderCount) * 100);
+                  return (
+                    <Link
+                      key={item.status}
+                      href={item.href}
+                      className="group rounded-xl border border-border/70 bg-background/36 px-3 py-2.5 min-w-0 hover:border-primary/24 hover:bg-muted/30 transition-colors"
+                      style={{ WebkitTapHighlightColor: "transparent" }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-primary/70" />
+                        <span className="min-w-0 flex-1 text-xs font-medium text-foreground leading-tight truncate">
+                          {item.label}
+                        </span>
+                        <span className="text-sm font-display font-bold leading-none text-foreground tabular-nums">
+                          {item.count}
+                        </span>
+                      </div>
+                      <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${ARAY_PROGRESS_TONE}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border/70 bg-background/36 px-4 py-5 min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  Активных заказов нет
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  Рабочий контур чистый. Новые заказы появятся здесь, когда начнется движение.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
@@ -441,20 +441,20 @@ export default async function AdminDashboard() {
               Быстрый доступ
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 min-w-0">
+          <div className="admin-quick-actions-grid grid gap-2.5 sm:gap-3 min-w-0">
             {quickActions.map((action) => (
               <Link
                 key={action.href}
                 href={action.href}
-                className="admin-liquid-surface admin-liquid-interactive group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 rounded-2xl active:scale-[0.96] min-h-[88px] min-w-0"
+                className="admin-liquid-surface admin-liquid-interactive group flex items-center justify-start gap-3 px-3 py-2.5 sm:px-4 rounded-2xl active:scale-[0.98] min-h-[64px] min-w-0"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${ARAY_ICON_TONE}`}
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${ARAY_ICON_TONE}`}
                 >
                   <action.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>
-                <span className="text-xs sm:text-[13px] font-medium text-center leading-tight text-foreground">
+                <span className="min-w-0 flex-1 text-xs sm:text-[13px] font-medium text-left leading-tight text-foreground">
                   {action.label}
                 </span>
               </Link>
@@ -528,9 +528,14 @@ export default async function AdminDashboard() {
                 );
               })}
               {recentOrders.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8 px-4">
-                  Заказов ещё нет
-                </p>
+                <div className="px-5 py-8 text-center">
+                  <p className="text-sm font-semibold text-foreground">
+                    Заказов пока нет
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Когда клиент оформит заказ, он появится здесь первым.
+                  </p>
+                </div>
               )}
             </div>
           </div>

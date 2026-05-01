@@ -8,6 +8,7 @@ import { isPaletteId } from "@/lib/palettes";
 
 const PALETTE_KEY = "color-palette";
 const BG_MODE_KEY = "aray-bg-mode";
+const BG_MODE_MIGRATION_KEY = "aray-bg-clean-default-v2";
 const SYNC_TIME_KEY = "aray-ui-preferences-updated-at";
 const VALID_THEMES = new Set(["light", "dark", "system"]);
 
@@ -25,15 +26,25 @@ function normalizeTheme(value: unknown): ThemeMode {
 }
 
 function readBgMode(): AdminBgMode {
-  if (typeof window === "undefined") return "photo";
+  if (typeof window === "undefined") return "clean";
   const stored = localStorage.getItem(BG_MODE_KEY);
-  return stored === "clean" ? "clean" : "photo";
+  return stored === "photo" ? "photo" : "clean";
 }
 
 function writeBgMode(mode: AdminBgMode) {
   localStorage.setItem(BG_MODE_KEY, mode);
   localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
   window.dispatchEvent(new Event("aray-classic-change"));
+}
+
+function migrateAdminBgDefault() {
+  if (typeof window === "undefined") return;
+  if (localStorage.getItem(BG_MODE_MIGRATION_KEY) === "1") return;
+  if (localStorage.getItem(BG_MODE_KEY) !== "clean") {
+    writeBgMode("clean");
+    touchLocalPreferences();
+  }
+  localStorage.setItem(BG_MODE_MIGRATION_KEY, "1");
 }
 
 function readLocalTimestamp() {
@@ -51,7 +62,7 @@ export function UserPreferencesSync() {
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
   const [canSync, setCanSync] = useState(false);
-  const [bgMode, setBgMode] = useState<AdminBgMode>("photo");
+  const [bgMode, setBgMode] = useState<AdminBgMode>("clean");
   const applyingServerRef = useRef(false);
   const lastSavedRef = useRef("");
   const initialStateCapturedRef = useRef(false);
@@ -59,6 +70,7 @@ export function UserPreferencesSync() {
 
   useEffect(() => {
     setMounted(true);
+    migrateAdminBgDefault();
     setBgMode(readBgMode());
 
     const syncBg = () => setBgMode(readBgMode());

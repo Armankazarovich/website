@@ -129,7 +129,7 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const [bgMode, setBgModeState] = useState<AdminBgMode>("photo");
+  const [bgMode, setBgModeState] = useState<AdminBgMode>("clean");
   const role = ((session?.user as { role?: string } | undefined)?.role) || "USER";
   const isStaff = STAFF_ROLES.includes(role);
   const safeTheme = (theme || "system") as ThemeMode;
@@ -174,11 +174,11 @@ export default function ProfilePage() {
   useEffect(() => {
     setMounted(true);
     const stored = localStorage.getItem(BG_MODE_KEY);
-    setBgModeState(stored === "clean" ? "clean" : "photo");
+    setBgModeState(stored === "photo" ? "photo" : "clean");
 
     const syncBg = () => {
       const next = localStorage.getItem(BG_MODE_KEY);
-      setBgModeState(next === "clean" ? "clean" : "photo");
+      setBgModeState(next === "photo" ? "photo" : "clean");
     };
 
     window.addEventListener("aray-classic-change", syncBg);

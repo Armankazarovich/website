@@ -13,7 +13,7 @@ const FADE_MS = 2_400;
 function normalizeMode(mode: string | null | undefined): AdminBgMode {
   if (mode === "photo" || mode === "video") return "photo";
   if (mode === "clean") return "clean";
-  return mode === "classic" ? "clean" : "photo";
+  return "clean";
 }
 
 function preloadPhotos(srcs: string[]) {

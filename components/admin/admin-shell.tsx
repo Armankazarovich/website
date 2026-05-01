@@ -55,6 +55,7 @@ import { UI_LAYERS } from "@/lib/ui-layers";
 // ── Ключи localStorage (сохраняются для других компонентов) ──
 const LS_CLASSIC = "aray-classic-mode";
 const LS_BG_MODE = "aray-bg-mode";
+const LS_BG_MODE_MIGRATION = "aray-bg-clean-default-v2";
 export const LS_FONT = "aray-font-size";
 
 type BgMode = AdminBgMode | "classic";
@@ -65,16 +66,24 @@ type BgMode = AdminBgMode | "classic";
  * теперь чистый bg-background.
  */
 export function useClassicMode() {
-  const [bgMode, setBgMode] = useState<AdminBgMode>("photo");
+  const [bgMode, setBgMode] = useState<AdminBgMode>("clean");
   const [isLight, setIsLight] = useState(false);
   useEffect(() => {
     const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
-    const stored = localStorage.getItem(LS_BG_MODE);
+    let stored = localStorage.getItem(LS_BG_MODE);
+    if (localStorage.getItem(LS_BG_MODE_MIGRATION) !== "1") {
+      if (stored !== "clean") {
+        stored = "clean";
+        localStorage.setItem(LS_BG_MODE, "clean");
+        localStorage.setItem(LS_CLASSIC, "1");
+      }
+      localStorage.setItem(LS_BG_MODE_MIGRATION, "1");
+    }
     if (stored === "clean" || stored === "photo") {
       setBgMode(stored);
     } else if (stored === "video") {
-      setBgMode("photo");
-      localStorage.setItem(LS_BG_MODE, "photo");
+      setBgMode("clean");
+      localStorage.setItem(LS_BG_MODE, "clean");
     } else if (stored === "classic") {
       setBgMode("clean");
       localStorage.setItem(LS_BG_MODE, "clean");
@@ -82,7 +91,7 @@ export function useClassicMode() {
       setBgMode("clean");
       localStorage.setItem(LS_BG_MODE, "clean");
     } else {
-      setBgMode("photo");
+      setBgMode("clean");
     }
     const checkLight = () => {
       const html = document.documentElement;
@@ -98,7 +107,7 @@ export function useClassicMode() {
     const handler = () => {
       const m = localStorage.getItem(LS_BG_MODE);
       if (m === "clean" || m === "photo") setBgMode(m);
-      if (m === "video") setBgMode("photo");
+      if (m === "video") setBgMode("clean");
       if (m === "classic") setBgMode("clean");
     };
     window.addEventListener("aray-classic-change", handler);
@@ -486,7 +495,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
                 className="flex flex-col gap-0 min-w-0 flex-1"
               >
-                <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate tracking-wide">
+                <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate">
                   {pageMeta.title}
                 </p>
                 {pageMeta.subtitle && (
@@ -583,7 +592,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 lg:w-[calc(100%-5rem)] px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
         style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
       >
         <AccessGuard role={role}>{children}</AccessGuard>
@@ -762,7 +771,7 @@ function HeaderActions({
               <MoreVertical className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-2xl py-1 z-50">
+        <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-lg py-1 z-50">
                 {others.filter(a => !a.hideOnMobile).map((a) => {
                   const Icon = a.icon;
                   const itemClassName = "w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors text-left disabled:opacity-50";

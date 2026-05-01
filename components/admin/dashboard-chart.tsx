@@ -80,7 +80,7 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
                 <div
                   className={`w-full rounded-t-lg transition-all duration-700 ease-out ${
                     isToday
-                      ? "bg-primary shadow-[0_0_14px_hsl(var(--primary)/0.35)]"
+                      ? "bg-primary"
                       : "bg-primary/20 group-hover:bg-primary/35"
                   }`}
                   style={{
