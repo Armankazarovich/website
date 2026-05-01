@@ -73,16 +73,14 @@ export const ARAY_ATMOSPHERES: AdminAtmosphereItem[] = [
 ];
 
 export const FALLBACK_ADMIN_PHOTOS = ARAY_ATMOSPHERES.map((item) => item.src);
+export const ADMIN_ATMOSPHERE_PHOTOS = ARAY_ATMOSPHERES
+  .filter((item) => item.id !== "night-focus")
+  .map((item) => item.src);
 
 export function getPaletteAtmosphere(palette: string): AdminAtmosphereItem | null {
   return ARAY_ATMOSPHERES.find((item) => item.palettes.includes(palette)) || null;
 }
 
 export function getPalettePhotos(palette: string): string[] {
-  const selected = getPaletteAtmosphere(palette);
-  if (!selected) return FALLBACK_ADMIN_PHOTOS;
-  return [
-    selected.src,
-    ...FALLBACK_ADMIN_PHOTOS.filter((src) => src !== selected.src),
-  ];
+  return ADMIN_ATMOSPHERE_PHOTOS;
 }

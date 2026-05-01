@@ -41,6 +41,7 @@ import {
   Receipt,
   Sparkles,
   FlaskConical,
+  Network,
 } from "lucide-react";
 import { GLOBAL_MEDIA_ROLES } from "@/lib/media-permissions";
 
@@ -92,6 +93,7 @@ export const allNavItems: NavItem[] = [
 
   // ── ARAY AI (отдельная группа — мозг и партнёр) ──
   { href: "/admin/aray",        label: "ARAY AI",    icon: Sparkles,     roles: [SA, "ADMIN", "MANAGER"], group: "aray", exact: true },
+  { href: "/admin/aray/agents", label: "Агенты",     icon: Network,      roles: [SA, "ADMIN"],            group: "aray" },
   { href: "/admin/aray/costs",  label: "Расходы",    icon: Receipt,      roles: [SA, "ADMIN"],            group: "aray" },
   { href: "/admin/aray-lab",    label: "Лаборатория", icon: FlaskConical, roles: [SA, "ADMIN"],            group: "aray" },
 

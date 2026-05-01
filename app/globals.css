@@ -724,15 +724,16 @@ button, a, [role="button"], input, select, textarea {
   contain: paint;
   background-clip: padding-box;
   background:
-    radial-gradient(circle at 12% -12%, hsl(var(--atmo-glow) / 0.12), transparent 34%),
-    radial-gradient(circle at 94% 0%, hsl(var(--atmo-cool) / 0.085), transparent 32%),
-    linear-gradient(135deg, hsl(var(--card) / 0.92), hsl(var(--secondary) / 0.66)),
-    hsl(var(--background) / 0.84);
-  border: 1px solid hsl(var(--border) / 0.66);
+    radial-gradient(circle at 12% -12%, hsl(var(--atmo-glow) / 0.115), transparent 34%),
+    radial-gradient(circle at 94% 0%, hsl(var(--atmo-cool) / 0.090), transparent 32%),
+    linear-gradient(135deg, hsl(0 0% 100% / 0.72), hsl(var(--secondary) / 0.42) 62%, hsl(var(--background) / 0.70)),
+    hsl(var(--background) / 0.74);
+  border: 1px solid hsl(var(--primary) / 0.10);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.50) inset,
-    0 12px 30px hsl(var(--atmo-depth) / 0.045),
-    0 0 0 1px hsl(var(--atmo-glow) / 0.018);
+    0 1px 0 hsl(0 0% 100% / 0.62) inset,
+    0 0 0 1px hsl(var(--atmo-glow) / 0.025) inset,
+    0 12px 34px hsl(var(--atmo-cool) / 0.045),
+    0 0 28px hsl(var(--atmo-glow) / 0.022);
   transform: translateZ(0);
 }
 
@@ -748,10 +749,10 @@ button, a, [role="button"], input, select, textarea {
     from var(--admin-liquid-border-angle, 0deg),
     transparent 0deg,
     transparent 76deg,
-    hsl(var(--primary) / 0.16) 112deg,
-    hsl(var(--primary) / 0.58) 146deg,
-    hsl(0 0% 100% / 0.42) 178deg,
-    hsl(var(--primary) / 0.42) 212deg,
+    hsl(var(--atmo-accent) / 0.12) 112deg,
+    hsl(var(--atmo-glow) / 0.38) 146deg,
+    hsl(0 0% 100% / 0.24) 178deg,
+    hsl(var(--primary) / 0.28) 212deg,
     transparent 252deg,
     transparent 360deg
   );
@@ -766,21 +767,21 @@ button, a, [role="button"], input, select, textarea {
 
 .dark .admin-liquid-surface {
   background:
-    radial-gradient(circle at 12% -12%, hsl(var(--atmo-glow) / 0.075), transparent 34%),
-    radial-gradient(circle at 94% 0%, hsl(var(--atmo-accent) / 0.060), transparent 34%),
-    linear-gradient(135deg, hsl(var(--card) / 0.92), hsl(var(--secondary) / 0.68)),
-    hsl(var(--background) / 0.90);
-  border-color: hsl(var(--primary) / 0.18);
+    radial-gradient(circle at 12% -12%, hsl(var(--atmo-glow) / 0.045), transparent 34%),
+    radial-gradient(circle at 94% 0%, hsl(var(--atmo-accent) / 0.032), transparent 34%),
+    linear-gradient(135deg, hsl(var(--card) / 0.84), hsl(var(--secondary) / 0.52)),
+    hsl(var(--background) / 0.78);
+  border-color: hsl(var(--primary) / 0.12);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.08) inset,
-    0 22px 64px hsl(0 0% 0% / 0.30),
-    0 0 42px hsl(var(--atmo-glow) / 0.028);
+    0 1px 0 hsl(0 0% 100% / 0.055) inset,
+    0 16px 48px hsl(0 0% 0% / 0.22),
+    0 0 26px hsl(var(--atmo-glow) / 0.014);
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .admin-liquid-surface {
-    backdrop-filter: blur(30px) saturate(128%);
-    -webkit-backdrop-filter: blur(30px) saturate(128%);
+    backdrop-filter: blur(24px) saturate(118%);
+    -webkit-backdrop-filter: blur(24px) saturate(118%);
   }
 }
 
@@ -792,18 +793,64 @@ button, a, [role="button"], input, select, textarea {
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(180deg, hsl(0 0% 100% / 0.18), transparent 34%),
+    linear-gradient(180deg, hsl(0 0% 100% / 0.24), transparent 36%),
     radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.105), transparent 36%),
+    linear-gradient(118deg, transparent 16%, hsl(var(--atmo-cool) / 0.070) 43%, transparent 70%);
+  opacity: 0.66;
+}
+
+.admin-liquid-surface[data-neon-edge="true"]::before {
+  opacity: 0.38;
+}
+
+.admin-energy-edge.admin-liquid-surface::before {
+  opacity: 0.16;
+  background: conic-gradient(
+    from var(--admin-liquid-border-angle, 0deg),
+    transparent 0deg,
+    hsl(0 0% 100% / 0.26) 28deg,
+    transparent 62deg,
+    transparent 108deg,
+    hsl(var(--atmo-glow) / 0.18) 136deg,
+    hsl(var(--primary) / 0.20) 154deg,
+    transparent 188deg,
+    transparent 246deg,
+    hsl(var(--atmo-cool) / 0.16) 278deg,
+    transparent 318deg,
+    transparent 360deg
+  );
+}
+
+.admin-energy-edge.admin-liquid-surface::after {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.20), transparent 35%),
+    radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.095), transparent 36%),
+    radial-gradient(circle at 96% 100%, hsl(var(--atmo-cool) / 0.050), transparent 32%),
+    radial-gradient(ellipse at 8% 50%, hsl(var(--atmo-glow) / 0.055), transparent 42%),
+    radial-gradient(ellipse at 100% 52%, hsl(var(--atmo-cool) / 0.040), transparent 42%),
     linear-gradient(118deg, transparent 16%, hsl(var(--atmo-cool) / 0.052) 43%, transparent 70%);
-  opacity: 0.82;
+}
+
+.dark .admin-energy-edge.admin-liquid-surface::before {
+  opacity: 0.20;
+}
+
+.dark .admin-energy-edge.admin-liquid-surface::after {
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.052), transparent 35%),
+    radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.070), transparent 36%),
+    radial-gradient(circle at 96% 100%, hsl(var(--atmo-cool) / 0.035), transparent 32%),
+    radial-gradient(ellipse at 8% 50%, hsl(var(--atmo-glow) / 0.050), transparent 42%),
+    radial-gradient(ellipse at 100% 52%, hsl(var(--atmo-cool) / 0.030), transparent 42%),
+    linear-gradient(118deg, transparent 16%, hsl(var(--atmo-accent) / 0.040) 43%, transparent 70%);
 }
 
 .dark .admin-liquid-surface::after {
   background:
-    linear-gradient(180deg, hsl(0 0% 100% / 0.070), transparent 34%),
-    radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.095), transparent 36%),
-    linear-gradient(118deg, transparent 18%, hsl(var(--atmo-accent) / 0.052) 44%, transparent 72%);
-  opacity: 0.74;
+    linear-gradient(180deg, hsl(0 0% 100% / 0.045), transparent 34%),
+    radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.052), transparent 36%),
+    linear-gradient(118deg, transparent 18%, hsl(var(--atmo-accent) / 0.030) 44%, transparent 72%);
+  opacity: 0.44;
 }
 
 .admin-liquid-surface > * {
@@ -820,25 +867,26 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .aray-icon-tone {
-  color: hsl(var(--atmo-accent));
+  color: hsl(var(--primary));
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.26), transparent 48%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.145), hsl(var(--atmo-cool) / 0.095) 58%, hsl(var(--background) / 0.58));
-  border: 1px solid hsl(var(--atmo-accent) / 0.20);
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.18), transparent 50%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.095), hsl(var(--atmo-cool) / 0.070) 58%, hsl(0 0% 100% / 0.50));
+  border: 1px solid hsl(var(--atmo-glow) / 0.16);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.45) inset,
-    0 0 0 1px hsl(var(--atmo-glow) / 0.045);
+    0 1px 0 hsl(0 0% 100% / 0.52) inset,
+    0 0 0 1px hsl(var(--atmo-cool) / 0.040),
+    0 0 18px hsl(var(--atmo-glow) / 0.070);
 }
 
 .dark .aray-icon-tone {
-  color: hsl(var(--atmo-glow));
+  color: hsl(var(--atmo-glow) / 0.88);
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.16), transparent 50%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.16), hsl(var(--atmo-depth) / 0.48) 64%, hsl(0 0% 100% / 0.035));
-  border-color: hsl(var(--atmo-glow) / 0.20);
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.060), transparent 50%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.075), hsl(var(--atmo-depth) / 0.30) 64%, hsl(0 0% 100% / 0.022));
+  border-color: hsl(var(--atmo-glow) / 0.11);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.08) inset,
-    0 0 0 1px hsl(var(--atmo-accent) / 0.05);
+    0 1px 0 hsl(0 0% 100% / 0.055) inset,
+    0 0 0 1px hsl(var(--atmo-accent) / 0.022);
 }
 
 .group:hover .aray-icon-tone,
@@ -846,16 +894,23 @@ button, a, [role="button"], input, select, textarea {
   color: hsl(var(--atmo-glow));
   border-color: hsl(var(--atmo-glow) / 0.26);
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.34), transparent 50%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.18), hsl(var(--atmo-cool) / 0.12) 58%, hsl(var(--background) / 0.60));
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.24), transparent 50%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.13), hsl(var(--atmo-cool) / 0.10) 58%, hsl(0 0% 100% / 0.58));
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.56) inset,
+    0 0 0 1px hsl(var(--primary) / 0.055),
+    0 0 20px hsl(var(--atmo-glow) / 0.12);
 }
 
 .dark .group:hover .aray-icon-tone,
 .dark .admin-liquid-interactive:hover .aray-icon-tone {
   color: hsl(var(--atmo-glow));
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.22), transparent 52%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.20), hsl(var(--atmo-depth) / 0.54) 64%, hsl(0 0% 100% / 0.045));
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.11), transparent 52%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.11), hsl(var(--atmo-depth) / 0.36) 64%, hsl(0 0% 100% / 0.030));
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.070) inset,
+    0 0 15px hsl(var(--atmo-glow) / 0.075);
 }
 
 .aray-progress-tone {
@@ -865,28 +920,52 @@ button, a, [role="button"], input, select, textarea {
 
 .admin-atmo-title {
   color: hsl(var(--primary));
-  text-shadow: 0 0 28px hsl(var(--atmo-glow) / 0.12);
+  text-shadow: 0 0 18px hsl(var(--atmo-glow) / 0.10);
 }
 
 .dark .admin-atmo-title {
   color: hsl(var(--atmo-glow));
   text-shadow:
-    0 0 18px hsl(var(--atmo-glow) / 0.12),
-    0 0 34px hsl(var(--atmo-accent) / 0.09);
+    0 0 14px hsl(var(--atmo-glow) / 0.10),
+    0 0 28px hsl(var(--atmo-accent) / 0.075);
+}
+
+.admin-living-gradient-text {
+  display: inline-block;
+  color: hsl(var(--primary));
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .admin-living-gradient-text {
+    background:
+      linear-gradient(
+        105deg,
+        hsl(var(--primary)) 0%,
+        hsl(var(--atmo-glow)) 28%,
+        hsl(var(--atmo-cool)) 50%,
+        hsl(var(--atmo-accent)) 72%,
+        hsl(var(--primary)) 100%
+      );
+    background-size: 240% 100%;
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: adminLivingGradientText 12s ease-in-out infinite;
+  }
 }
 
 .admin-liquid-hero {
   background:
     radial-gradient(circle at 10% 0%, hsl(var(--atmo-glow) / 0.16), transparent 28rem),
-    radial-gradient(circle at 92% 14%, hsl(var(--atmo-cool) / 0.11), transparent 32rem),
-    linear-gradient(112deg, hsl(var(--card) / 0.94) 0%, hsl(var(--secondary) / 0.70) 68%, hsl(var(--background) / 0.84) 100%);
+    radial-gradient(circle at 92% 14%, hsl(var(--atmo-cool) / 0.12), transparent 32rem),
+    linear-gradient(112deg, hsl(0 0% 100% / 0.72) 0%, hsl(var(--secondary) / 0.46) 68%, hsl(var(--background) / 0.72) 100%);
 }
 
 .dark .admin-liquid-hero {
   background:
-    radial-gradient(circle at 10% 0%, hsl(var(--atmo-glow) / 0.14), transparent 30rem),
-    radial-gradient(circle at 92% 12%, hsl(var(--atmo-accent) / 0.13), transparent 34rem),
-    linear-gradient(112deg, hsl(var(--card) / 0.94) 0%, hsl(var(--card) / 0.84) 62%, hsl(var(--atmo-depth) / 0.62) 100%);
+    radial-gradient(circle at 10% 0%, hsl(var(--atmo-glow) / 0.075), transparent 30rem),
+    radial-gradient(circle at 92% 12%, hsl(var(--atmo-accent) / 0.070), transparent 34rem),
+    linear-gradient(112deg, hsl(var(--card) / 0.82) 0%, hsl(var(--card) / 0.72) 62%, hsl(var(--atmo-depth) / 0.50) 100%);
 }
 
 .admin-dashboard-standard {
@@ -905,8 +984,8 @@ button, a, [role="button"], input, select, textarea {
 
 .dark .admin-shell-root {
   background:
-    radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.105), transparent 34rem),
-    radial-gradient(circle at 80% 8%, hsl(var(--atmo-accent) / 0.070), transparent 36rem),
+    radial-gradient(circle at 12% 0%, hsl(var(--atmo-glow) / 0.065), transparent 34rem),
+    radial-gradient(circle at 80% 8%, hsl(var(--atmo-accent) / 0.040), transparent 36rem),
     linear-gradient(180deg, hsl(var(--atmo-depth)), hsl(var(--background)) 54%, hsl(var(--card) / 0.74));
 }
 
@@ -922,29 +1001,29 @@ button, a, [role="button"], input, select, textarea {
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(circle at 16% 0%, hsl(var(--atmo-glow) / 0.115), transparent 32%),
-    radial-gradient(circle at 92% 8%, hsl(var(--atmo-cool) / 0.070), transparent 34%),
-    linear-gradient(180deg, hsl(var(--card) / 0.965), hsl(var(--secondary) / 0.86)),
-    hsl(var(--background) / 0.94);
-  border-color: hsl(var(--border) / 0.68);
+    radial-gradient(circle at 16% 0%, hsl(var(--atmo-glow) / 0.070), transparent 32%),
+    radial-gradient(circle at 92% 8%, hsl(var(--atmo-cool) / 0.040), transparent 34%),
+    linear-gradient(180deg, hsl(var(--card) / 0.92), hsl(var(--secondary) / 0.78)),
+    hsl(var(--background) / 0.90);
+  border-color: hsl(var(--border) / 0.58);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.50) inset,
-    0 18px 48px hsl(var(--atmo-depth) / 0.085),
-    0 0 0 1px hsl(var(--atmo-glow) / 0.025) inset;
+    0 1px 0 hsl(0 0% 100% / 0.38) inset,
+    0 14px 42px hsl(var(--atmo-depth) / 0.070),
+    0 0 0 1px hsl(var(--atmo-glow) / 0.014) inset;
 }
 
 .dark .admin-rail-liquid,
 .dark .admin-popup-liquid {
   background:
-    radial-gradient(circle at 16% 0%, hsl(var(--atmo-glow) / 0.080), transparent 32%),
-    radial-gradient(circle at 92% 8%, hsl(var(--atmo-accent) / 0.070), transparent 34%),
-    linear-gradient(180deg, hsl(var(--card) / 0.88), hsl(var(--atmo-depth) / 0.76)),
-    hsl(var(--background) / 0.86);
-  border-color: hsl(var(--primary) / 0.20);
+    radial-gradient(circle at 16% 0%, hsl(var(--atmo-glow) / 0.045), transparent 32%),
+    radial-gradient(circle at 92% 8%, hsl(var(--atmo-accent) / 0.040), transparent 34%),
+    linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--atmo-depth) / 0.62)),
+    hsl(var(--background) / 0.78);
+  border-color: hsl(var(--primary) / 0.14);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.08) inset,
-    0 28px 80px hsl(0 0% 0% / 0.38),
-    0 0 0 1px hsl(var(--atmo-glow) / 0.035) inset;
+    0 1px 0 hsl(0 0% 100% / 0.055) inset,
+    0 24px 70px hsl(0 0% 0% / 0.30),
+    0 0 0 1px hsl(var(--atmo-glow) / 0.020) inset;
 }
 
 .admin-popup-liquid::before {
@@ -955,16 +1034,16 @@ button, a, [role="button"], input, select, textarea {
   pointer-events: none;
   border-radius: inherit;
   background:
-    linear-gradient(180deg, hsl(0 0% 100% / 0.16), transparent 28%),
-    linear-gradient(115deg, transparent 0%, hsl(var(--atmo-cool) / 0.040) 44%, transparent 72%);
-  opacity: 0.72;
+    linear-gradient(180deg, hsl(0 0% 100% / 0.10), transparent 28%),
+    linear-gradient(115deg, transparent 0%, hsl(var(--atmo-cool) / 0.026) 44%, transparent 72%);
+  opacity: 0.48;
 }
 
 .dark .admin-popup-liquid::before {
   background:
-    linear-gradient(180deg, hsl(0 0% 100% / 0.075), transparent 28%),
-    linear-gradient(115deg, transparent 0%, hsl(var(--atmo-accent) / 0.045) 44%, transparent 72%);
-  opacity: 0.74;
+    linear-gradient(180deg, hsl(0 0% 100% / 0.045), transparent 28%),
+    linear-gradient(115deg, transparent 0%, hsl(var(--atmo-accent) / 0.026) 44%, transparent 72%);
+  opacity: 0.46;
 }
 
 .admin-popup-liquid > * {
@@ -992,6 +1071,27 @@ button, a, [role="button"], input, select, textarea {
   background:
     linear-gradient(180deg, hsl(0 0% 100% / 0.18), transparent 18%, transparent 82%, hsl(0 0% 100% / 0.08)),
     linear-gradient(180deg, hsl(var(--primary) / 0.05), transparent 36%, hsl(var(--primary) / 0.04));
+  opacity: 0.62;
+}
+
+.admin-rail-shell::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 1rem;
+  bottom: 1rem;
+  width: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      hsl(var(--atmo-glow) / 0.26) 18%,
+      hsl(var(--primary) / 0.34) 50%,
+      hsl(var(--atmo-accent) / 0.20) 82%,
+      transparent 100%
+    );
+  filter: drop-shadow(0 0 10px hsl(var(--primary) / 0.28));
   opacity: 0.62;
 }
 
@@ -1027,20 +1127,23 @@ button, a, [role="button"], input, select, textarea {
 .admin-rail-icon:hover,
 .admin-rail-icon.is-open {
   color: hsl(var(--foreground));
-  background: hsl(var(--muted) / 0.46);
+  background:
+    radial-gradient(circle at 50% 12%, hsl(var(--primary) / 0.10), transparent 62%),
+    hsl(var(--muted) / 0.34);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.26) inset,
-    0 8px 20px hsl(var(--primary) / 0.045);
+    0 1px 0 hsl(0 0% 100% / 0.18) inset,
+    0 0 0 1px hsl(var(--primary) / 0.13) inset,
+    0 8px 18px hsl(var(--primary) / 0.030);
 }
 
 .admin-rail-icon.is-active {
   color: hsl(var(--primary));
   background:
-    radial-gradient(circle at 50% 18%, hsl(var(--primary) / 0.18), transparent 58%),
-    hsl(var(--card) / 0.72);
+    radial-gradient(circle at 50% 18%, hsl(var(--atmo-glow) / 0.14), transparent 58%),
+    hsl(var(--card) / 0.62);
   box-shadow:
-    0 0 0 1px hsl(var(--primary) / 0.24) inset,
-    0 14px 34px hsl(var(--primary) / 0.14);
+    0 0 0 1px hsl(var(--primary) / 0.20) inset,
+    0 12px 28px hsl(var(--primary) / 0.090);
 }
 
 .admin-rail-icon.is-active::before {
@@ -1052,8 +1155,14 @@ button, a, [role="button"], input, select, textarea {
   height: 1.45rem;
   transform: translateY(-50%);
   border-radius: 999px;
-  background: hsl(var(--primary));
-  box-shadow: 0 0 18px hsl(var(--primary) / 0.55);
+  background:
+    linear-gradient(
+      180deg,
+      hsl(var(--atmo-glow)),
+      hsl(var(--primary)) 54%,
+      hsl(var(--atmo-accent))
+    );
+  box-shadow: 0 0 16px hsl(var(--primary) / 0.46);
 }
 
 .admin-rail-icon.is-active > span {
@@ -1073,8 +1182,8 @@ button:focus-visible > .admin-rail-icon {
   .admin-chrome-liquid,
   .admin-rail-liquid,
   .admin-popup-liquid {
-    backdrop-filter: blur(34px) saturate(128%);
-    -webkit-backdrop-filter: blur(34px) saturate(128%);
+    backdrop-filter: blur(26px) saturate(118%);
+    -webkit-backdrop-filter: blur(26px) saturate(118%);
   }
 }
 
@@ -1179,16 +1288,16 @@ button:focus-visible > .admin-rail-icon {
 
 .account-drawer-panel.admin-popup-liquid {
   background:
-    linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(var(--secondary) / 0.88)),
-    hsl(var(--background) / 0.94);
+    linear-gradient(180deg, hsl(var(--card) / 0.90), hsl(var(--secondary) / 0.76)),
+    hsl(var(--background) / 0.88);
 }
 
 .account-drawer-panel.admin-account-drawer {
   width: min(29rem, calc(100vw - 0.75rem));
-  border-right-color: hsl(var(--primary) / 0.18);
+  border-right-color: hsl(var(--primary) / 0.13);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.18) inset,
-    24px 0 78px hsl(var(--background) / 0.46);
+    0 1px 0 hsl(0 0% 100% / 0.12) inset,
+    22px 0 72px hsl(var(--background) / 0.38);
 }
 
 .account-drawer-panel.admin-account-drawer::before {
@@ -1197,16 +1306,16 @@ button:focus-visible > .admin-rail-icon {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(180deg, hsl(0 0% 100% / 0.12), transparent 18%),
-    radial-gradient(circle at 6% 12%, hsl(var(--primary) / 0.12), transparent 18rem);
-  opacity: 0.52;
+    linear-gradient(180deg, hsl(0 0% 100% / 0.075), transparent 18%),
+    radial-gradient(circle at 6% 12%, hsl(var(--primary) / 0.075), transparent 18rem);
+  opacity: 0.38;
 }
 
 .dark .account-drawer-panel.admin-account-drawer::before {
   background:
-    linear-gradient(180deg, hsl(0 0% 100% / 0.055), transparent 18%),
-    radial-gradient(circle at 7% 12%, hsl(var(--primary) / 0.15), transparent 18rem);
-  opacity: 0.7;
+    linear-gradient(180deg, hsl(0 0% 100% / 0.036), transparent 18%),
+    radial-gradient(circle at 7% 12%, hsl(var(--primary) / 0.090), transparent 18rem);
+  opacity: 0.54;
 }
 
 .account-drawer-panel.admin-account-drawer > * {
@@ -1215,9 +1324,185 @@ button:focus-visible > .admin-rail-icon {
 }
 
 .account-drawer-panel.admin-account-drawer > .flex.items-center {
+  position: relative;
   background:
     linear-gradient(180deg, hsl(0 0% 100% / 0.10), transparent),
     hsl(var(--card) / 0.16);
+}
+
+.account-drawer-panel.admin-account-drawer > .flex.items-center::after,
+.admin-nav-panel-head::after {
+  content: "";
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: -1px;
+  height: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--atmo-glow) / 0.38),
+      hsl(var(--primary) / 0.30),
+      hsl(var(--atmo-accent) / 0.20),
+      transparent
+    );
+  filter: drop-shadow(0 0 8px hsl(var(--primary) / 0.20));
+  opacity: 0.62;
+}
+
+.admin-energy-edge {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.admin-energy-edge:not(.admin-liquid-surface)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--admin-liquid-border-angle, 0deg),
+    transparent 0deg,
+    transparent 82deg,
+    hsl(var(--atmo-accent) / 0.12) 116deg,
+    hsl(var(--atmo-glow) / 0.42) 150deg,
+    hsl(0 0% 100% / 0.24) 178deg,
+    hsl(var(--primary) / 0.25) 212deg,
+    transparent 252deg,
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0.13;
+  transition: opacity 220ms ease;
+}
+
+.admin-energy-edge:not(.admin-liquid-surface)::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 16% 0%, hsl(var(--atmo-glow) / 0.075), transparent 36%),
+    radial-gradient(circle at 100% 100%, hsl(var(--atmo-cool) / 0.040), transparent 34%),
+    linear-gradient(118deg, transparent 18%, hsl(var(--atmo-cool) / 0.044) 44%, transparent 72%);
+  opacity: 0.24;
+  transition: opacity 220ms ease;
+}
+
+.admin-energy-edge:not(.admin-liquid-surface) > * {
+  position: relative;
+  z-index: 3;
+}
+
+.admin-palette-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-palette-button::before {
+  content: "";
+  position: absolute;
+  inset: 0.35rem;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    linear-gradient(110deg, transparent 14%, var(--palette-accent), var(--palette-glow), transparent 82%);
+  filter: blur(16px);
+  transition: opacity 180ms ease, transform 220ms ease;
+  transform: translate3d(-10%, 0, 0);
+}
+
+.admin-palette-button:hover::before,
+.admin-palette-button:focus-visible::before {
+  opacity: 0.34;
+  transform: translate3d(0, 0, 0);
+}
+
+.admin-palette-light::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    linear-gradient(92deg, transparent 0%, rgb(255 255 255 / 0.16) 48%, transparent 72%);
+  transform: translateX(-72%);
+  transition: transform 320ms ease, opacity 180ms ease;
+}
+
+.admin-palette-button:hover .admin-palette-light::before,
+.admin-palette-button:focus-visible .admin-palette-light::before {
+  opacity: 0.82;
+  transform: translateX(62%);
+}
+
+.aray-action-button,
+.aray-danger-button {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid hsl(var(--primary) / 0.18);
+  background:
+    radial-gradient(circle at 18% 0%, hsl(var(--atmo-glow) / 0.24), transparent 38%),
+    linear-gradient(110deg, hsl(var(--primary)), hsl(var(--atmo-accent)) 58%, hsl(var(--atmo-cool)) 132%);
+  background-size: 160% 100%;
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.30) inset,
+    0 8px 20px hsl(var(--primary) / 0.10),
+    0 0 18px hsl(var(--atmo-glow) / 0.080);
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-position 360ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.aray-action-button::before,
+.aray-danger-button::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, hsl(0 0% 100% / 0.24), transparent 42%),
+    radial-gradient(circle at 22% 0%, hsl(0 0% 100% / 0.28), transparent 34%);
+  opacity: 0.72;
+}
+
+.dark .aray-action-button,
+.dark .aray-danger-button {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.14) inset,
+    0 10px 26px hsl(var(--primary) / 0.13),
+    0 0 20px hsl(var(--atmo-glow) / 0.10);
+}
+
+.aray-danger-button {
+  border-color: hsl(var(--destructive) / 0.22);
+  background:
+    radial-gradient(circle at 18% 0%, hsl(0 84% 74% / 0.30), transparent 38%),
+    linear-gradient(110deg, hsl(var(--destructive)), hsl(8 90% 58%) 58%, hsl(345 82% 62%) 132%);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.26) inset,
+    0 8px 20px hsl(var(--destructive) / 0.10),
+    0 0 18px hsl(var(--destructive) / 0.090);
 }
 
 .account-drawer-panel .admin-drawer-section-title {
@@ -1226,17 +1511,19 @@ button:focus-visible > .admin-rail-icon {
 
 .account-drawer-panel .admin-drawer-profile,
 .account-drawer-panel .admin-drawer-group,
-.account-drawer-panel .admin-drawer-quick {
+.account-drawer-panel .admin-drawer-quick,
+.account-drawer-panel .admin-drawer-appearance {
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.14) inset,
-    0 14px 36px hsl(20 30% 8% / 0.08);
+    0 1px 0 hsl(0 0% 100% / 0.10) inset,
+    0 12px 32px hsl(20 30% 8% / 0.055);
 }
 
 .account-drawer-panel.admin-popup-liquid .admin-drawer-profile,
 .account-drawer-panel.admin-popup-liquid .admin-drawer-group,
-.account-drawer-panel.admin-popup-liquid .admin-drawer-quick {
-  background: hsl(var(--card) / 0.74);
-  border-color: hsl(var(--primary) / 0.16);
+.account-drawer-panel.admin-popup-liquid .admin-drawer-quick,
+.account-drawer-panel.admin-popup-liquid .admin-drawer-appearance {
+  background: hsl(var(--card) / 0.58);
+  border-color: hsl(var(--primary) / 0.11);
 }
 
 .account-drawer-panel.admin-popup-liquid .admin-drawer-row {
@@ -1245,35 +1532,35 @@ button:focus-visible > .admin-rail-icon {
 }
 
 .account-drawer-panel.admin-popup-liquid .admin-drawer-row.is-active {
-  border-color: hsl(var(--primary) / 0.22);
+  border-color: hsl(var(--primary) / 0.16);
 }
 
 .account-drawer-panel.admin-popup-liquid .admin-drawer-row-icon {
   color: hsl(var(--muted-foreground));
   background:
-    linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--muted) / 0.22)),
-    hsl(var(--background) / 0.28);
-  border-color: hsl(var(--foreground) / 0.10);
-  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.08) inset;
+    linear-gradient(180deg, hsl(var(--card) / 0.54), hsl(var(--muted) / 0.16)),
+    hsl(var(--background) / 0.18);
+  border-color: hsl(var(--foreground) / 0.075);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.045) inset;
 }
 
 .account-drawer-panel .admin-drawer-quick-icon,
 .account-drawer-panel .admin-drawer-profile-icon {
   background:
-    radial-gradient(circle at 50% 12%, hsl(var(--primary) / 0.12), transparent 64%),
-    linear-gradient(180deg, hsl(var(--card) / 0.78), hsl(var(--muted) / 0.24));
-  border: 1px solid hsl(var(--foreground) / 0.10);
+    radial-gradient(circle at 50% 12%, hsl(var(--primary) / 0.075), transparent 64%),
+    linear-gradient(180deg, hsl(var(--card) / 0.64), hsl(var(--muted) / 0.18));
+  border: 1px solid hsl(var(--foreground) / 0.075);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.12) inset,
-    0 10px 24px hsl(var(--primary) / 0.045);
+    0 1px 0 hsl(0 0% 100% / 0.08) inset,
+    0 8px 20px hsl(var(--primary) / 0.030);
 }
 
 .dark .account-drawer-panel .admin-drawer-quick-icon,
 .dark .account-drawer-panel .admin-drawer-profile-icon {
   background:
-    radial-gradient(circle at 50% 12%, hsl(var(--primary) / 0.13), transparent 64%),
-    hsl(0 0% 100% / 0.045);
-  border-color: hsl(var(--foreground) / 0.11);
+    radial-gradient(circle at 50% 12%, hsl(var(--primary) / 0.075), transparent 64%),
+    hsl(0 0% 100% / 0.035);
+  border-color: hsl(var(--foreground) / 0.085);
 }
 
 .account-drawer-panel .admin-drawer-quick {
@@ -1285,16 +1572,17 @@ button:focus-visible > .admin-rail-icon {
 .account-drawer-panel .admin-drawer-profile:hover {
   transform: translateY(-1px);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.16) inset,
-    0 16px 42px hsl(var(--primary) / 0.10);
+    0 1px 0 hsl(0 0% 100% / 0.11) inset,
+    0 14px 34px hsl(var(--primary) / 0.055);
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .account-drawer-panel.admin-popup-liquid .admin-drawer-profile,
   .account-drawer-panel.admin-popup-liquid .admin-drawer-group,
-  .account-drawer-panel.admin-popup-liquid .admin-drawer-quick {
-    backdrop-filter: blur(24px) saturate(124%);
-    -webkit-backdrop-filter: blur(24px) saturate(124%);
+  .account-drawer-panel.admin-popup-liquid .admin-drawer-quick,
+  .account-drawer-panel.admin-popup-liquid .admin-drawer-appearance {
+    backdrop-filter: blur(20px) saturate(116%);
+    -webkit-backdrop-filter: blur(20px) saturate(116%);
   }
 }
 
@@ -1382,6 +1670,7 @@ button:focus-visible > .admin-rail-icon {
 }
 
 .admin-nav-panel-head {
+  position: relative;
   background:
     linear-gradient(180deg, hsl(0 0% 100% / 0.12), transparent),
     hsl(var(--card) / 0.20);
@@ -1396,23 +1685,23 @@ button:focus-visible > .admin-rail-icon {
 .admin-nav-panel-head-icon {
   color: hsl(var(--atmo-accent));
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.26), transparent 48%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.145), hsl(var(--atmo-cool) / 0.095) 58%, hsl(var(--background) / 0.58));
-  border: 1px solid hsl(var(--atmo-accent) / 0.20);
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.12), transparent 48%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.085), hsl(var(--atmo-cool) / 0.055) 58%, hsl(var(--background) / 0.50));
+  border: 1px solid hsl(var(--atmo-accent) / 0.14);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.45) inset,
-    0 0 0 1px hsl(var(--atmo-glow) / 0.045);
+    0 1px 0 hsl(0 0% 100% / 0.30) inset,
+    0 0 0 1px hsl(var(--atmo-glow) / 0.022);
 }
 
 .dark .admin-nav-panel-head-icon {
   color: hsl(var(--atmo-glow));
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.16), transparent 50%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.16), hsl(var(--atmo-depth) / 0.48) 64%, hsl(0 0% 100% / 0.035));
-  border-color: hsl(var(--atmo-glow) / 0.20);
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.085), transparent 50%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.095), hsl(var(--atmo-depth) / 0.34) 64%, hsl(0 0% 100% / 0.026));
+  border-color: hsl(var(--atmo-glow) / 0.14);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.08) inset,
-    0 0 0 1px hsl(var(--atmo-accent) / 0.05);
+    0 1px 0 hsl(0 0% 100% / 0.050) inset,
+    0 0 0 1px hsl(var(--atmo-accent) / 0.030);
 }
 
 .admin-nav-panel-close {
@@ -1458,34 +1747,51 @@ button:focus-visible > .admin-rail-icon {
 .admin-nav-panel-item-icon {
   color: hsl(var(--muted-foreground));
   background:
-    linear-gradient(180deg, hsl(var(--card) / 0.72), hsl(var(--muted) / 0.22)),
-    hsl(var(--background) / 0.28);
-  border: 1px solid hsl(var(--foreground) / 0.10);
-  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.08) inset;
+    linear-gradient(180deg, hsl(var(--card) / 0.52), hsl(var(--muted) / 0.14)),
+    hsl(var(--background) / 0.16);
+  border: 1px solid hsl(var(--foreground) / 0.075);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.045) inset;
 }
 
 .dark .admin-nav-panel-item-icon {
-  background: hsl(0 0% 100% / 0.045);
-  border-color: hsl(var(--foreground) / 0.11);
+  background: hsl(0 0% 100% / 0.032);
+  border-color: hsl(var(--foreground) / 0.085);
 }
 
 .admin-nav-panel-item.is-active {
   color: hsl(var(--foreground));
   background:
-    linear-gradient(90deg, hsl(var(--primary) / 0.12), hsl(var(--primary) / 0.045)),
-    hsl(var(--card) / 0.18);
-  border-color: hsl(var(--primary) / 0.22);
+    linear-gradient(90deg, hsl(var(--primary) / 0.075), hsl(var(--primary) / 0.026)),
+    hsl(var(--card) / 0.14);
+  border-color: hsl(var(--primary) / 0.16);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.18) inset,
-    0 10px 24px hsl(var(--primary) / 0.07);
+    0 1px 0 hsl(0 0% 100% / 0.12) inset,
+    0 8px 20px hsl(var(--primary) / 0.040);
+}
+
+.admin-nav-panel-item.is-active::before {
+  content: "";
+  width: 2px;
+  align-self: stretch;
+  min-height: 1.65rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      hsl(var(--atmo-glow)),
+      hsl(var(--primary)) 56%,
+      hsl(var(--atmo-accent))
+    );
+  box-shadow: 0 0 12px hsl(var(--primary) / 0.38);
+  opacity: 0.86;
 }
 
 .admin-nav-panel-item.is-active .admin-nav-panel-item-icon {
   color: hsl(var(--atmo-glow));
   background:
-    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.20), transparent 48%),
-    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.14), hsl(var(--background) / 0.40));
-  border-color: hsl(var(--atmo-glow) / 0.22);
+    radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.11), transparent 48%),
+    linear-gradient(145deg, hsl(var(--atmo-accent) / 0.09), hsl(var(--background) / 0.34));
+  border-color: hsl(var(--atmo-glow) / 0.16);
 }
 
 .admin-nav-panel-item:focus-visible {
@@ -1532,49 +1838,76 @@ button:focus-visible > .admin-rail-icon {
   .admin-nav-panel-item:hover {
     transform: translateX(1px);
     background:
-      linear-gradient(90deg, hsl(var(--primary) / 0.075), hsl(var(--primary) / 0.022)),
-      hsl(var(--card) / 0.12);
-    border-color: hsl(var(--primary) / 0.14);
+      linear-gradient(90deg, hsl(var(--primary) / 0.050), hsl(var(--primary) / 0.016)),
+      hsl(var(--card) / 0.10);
+    border-color: hsl(var(--primary) / 0.11);
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.18) inset,
-      0 10px 22px hsl(var(--primary) / 0.04);
+      0 1px 0 hsl(0 0% 100% / 0.12) inset,
+      0 8px 18px hsl(var(--primary) / 0.026);
   }
 
   .dark .admin-nav-panel-item:hover {
     background:
-      linear-gradient(90deg, hsl(var(--primary) / 0.13), hsl(0 0% 100% / 0.045)),
-      hsl(0 0% 100% / 0.04);
-    border-color: hsl(var(--primary) / 0.18);
+      linear-gradient(90deg, hsl(var(--primary) / 0.075), hsl(0 0% 100% / 0.030)),
+      hsl(0 0% 100% / 0.030);
+    border-color: hsl(var(--primary) / 0.13);
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.10) inset,
-      0 12px 26px hsl(var(--primary) / 0.055);
+      0 1px 0 hsl(0 0% 100% / 0.075) inset,
+      0 10px 22px hsl(var(--primary) / 0.035);
   }
 
   .admin-nav-panel-item:hover .admin-nav-panel-item-icon {
     color: hsl(var(--atmo-glow));
     background:
-      radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.22), transparent 48%),
-      linear-gradient(145deg, hsl(var(--atmo-accent) / 0.14), hsl(var(--background) / 0.42));
-    border-color: hsl(var(--atmo-glow) / 0.22);
+      radial-gradient(circle at 30% 18%, hsl(var(--atmo-glow) / 0.13), transparent 48%),
+      linear-gradient(145deg, hsl(var(--atmo-accent) / 0.10), hsl(var(--background) / 0.36));
+    border-color: hsl(var(--atmo-glow) / 0.16);
   }
 
   .admin-liquid-interactive:hover {
     transform: translateY(-0.5px);
-    border-color: hsl(var(--primary) / 0.28);
+    border-color: hsl(var(--primary) / 0.16);
     box-shadow:
-      0 1px 0 hsl(0 0% 100% / 0.18) inset,
-      0 0 0 1px hsl(var(--primary) / 0.075),
-      0 8px 20px hsl(var(--primary) / 0.045);
+      0 1px 0 hsl(0 0% 100% / 0.12) inset,
+      0 0 0 1px hsl(var(--primary) / 0.034),
+      0 8px 18px hsl(var(--primary) / 0.026);
   }
 
-  .admin-liquid-interactive:hover::before {
-    opacity: 1;
+  .admin-liquid-interactive.admin-energy-edge:hover::before {
+    opacity: 0.72;
     animation: adminLiquidBorderOrbit 1200ms linear infinite;
   }
 
-  .admin-liquid-interactive:hover::after {
-    opacity: 0;
+  .admin-liquid-interactive.admin-energy-edge:hover::after {
+    opacity: 0.68;
     transform: none;
+  }
+
+  .dark .admin-liquid-interactive.admin-energy-edge:hover::after {
+    opacity: 0.56;
+  }
+
+  .aray-action-button:hover,
+  .aray-danger-button:hover {
+    transform: translateY(-0.5px);
+    background-position: 100% 50%;
+    filter: saturate(1.06) brightness(1.02);
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.34) inset,
+      0 10px 24px hsl(var(--primary) / 0.13),
+      0 0 24px hsl(var(--atmo-glow) / 0.13);
+  }
+
+  .aray-danger-button:hover {
+    box-shadow:
+      0 1px 0 hsl(0 0% 100% / 0.30) inset,
+      0 10px 24px hsl(var(--destructive) / 0.14),
+      0 0 24px hsl(var(--destructive) / 0.15);
+  }
+
+  .aray-action-button:active,
+  .aray-danger-button:active {
+    transform: translateY(0) scale(0.985);
   }
 }
 
@@ -1588,7 +1921,14 @@ button:focus-visible > .admin-rail-icon {
   .admin-liquid-surface,
   .admin-liquid-surface::before,
   .admin-liquid-surface::after,
-  .admin-liquid-interactive {
+  .admin-liquid-interactive,
+  .admin-energy-edge::before,
+  .admin-energy-edge::after,
+  .aray-action-button,
+  .aray-danger-button,
+  .aray-action-button::before,
+  .aray-danger-button::before,
+  .admin-living-gradient-text {
     transition: none !important;
     animation: none !important;
   }
@@ -1631,6 +1971,16 @@ button:focus-visible > .admin-rail-icon {
 @keyframes adminLiquidBorderOrbit {
   to {
     --admin-liquid-border-angle: 360deg;
+  }
+}
+
+@keyframes adminLivingGradientText {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
   }
 }
 

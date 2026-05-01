@@ -20,7 +20,7 @@
  * Сохранено:
  *  - useClassicMode / playOrderChime / LS_FONT экспорты (используются другими)
  *  - AdminMobileBottomNav (нижний dock на мобилке с Арай-орбом)
- *  - ArayControlCenter (sticky справа — пока не трогаем)
+ *  - настройки интерфейса живут в AccountDrawer, чтобы шапка оставалась спокойной
  *  - LazyAdminAray (плавающий Арай)
  */
 
@@ -34,7 +34,7 @@ import {
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
   Settings, Palette, BarChart2, Stamp, Stethoscope, Users, Bell, HelpCircle,
   Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
-  Sun, Moon,
+  Network,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -44,7 +44,6 @@ import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
-import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { AdminWeatherChip } from "@/components/admin/admin-weather";
 import { AdminAtmosphere, type AdminBgMode } from "@/components/admin/admin-atmosphere";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
@@ -174,6 +173,7 @@ const PAGE_TITLES: Record<string, PageMeta> = {
   "/admin/notifications":    { title: "Уведомления",     subtitle: "Push рассылка",       icon: Bell },
   "/admin/help":             { title: "Помощь",          subtitle: "Гайды",               icon: HelpCircle },
   "/admin/aray":             { title: "ARAY AI",         subtitle: "Главная",             icon: "aray" },
+  "/admin/aray/agents":      { title: "Agent Control",   subtitle: "Отделы и качество",   icon: Network },
   "/admin/aray/costs":       { title: "Расходы Арая",    subtitle: "Токены и подписки",   icon: Receipt },
   "/admin/aray-lab":         { title: "Лаборатория",     subtitle: "Эксперименты",        icon: FlaskConical },
   "/admin/posts":            { title: "Статьи",          subtitle: "Блог и новости",      icon: BookOpen },
@@ -243,7 +243,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [arayMounted, setArayMounted] = useState(false);
   const [pendingArayOpen, setPendingArayOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const { bgMode } = useClassicMode();
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
@@ -509,25 +509,6 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             >
               <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>
-
-            <ArayControlCenter userRole={role} position="header" />
-
-            {/* Переключатель темы (только когда mounted — избегаем SSR mismatch) */}
-            {mounted && (
-              <button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                type="button"
-                aria-label={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-                title={theme === "dark" ? "Светлая тема" : "Тёмная тема"}
-                className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
-              >
-                {theme === "dark" ? (
-                  <Sun className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                ) : (
-                  <Moon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                )}
-              </button>
-            )}
 
             {/* Аккаунт — открывает AccountDrawer */}
             <button

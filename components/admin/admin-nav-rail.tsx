@@ -85,6 +85,7 @@ const SUBTITLE_BY_HREF: Record<string, string> = {
   "/admin/notifications": "Push рассылка",
   "/admin/help": "Гайды",
   "/admin/aray": "Главная Арая",
+  "/admin/aray/agents": "Отделы и качество",
   "/admin/aray/costs": "Токены и подписки",
   "/admin/aray-lab": "Эксперименты",
   "/admin/posts": "Блог и новости",

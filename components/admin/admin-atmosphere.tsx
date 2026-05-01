@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
-import { usePalette } from "@/components/palette-provider";
-import { getPalettePhotos } from "@/lib/admin-atmospheres";
+import { ADMIN_ATMOSPHERE_PHOTOS } from "@/lib/admin-atmospheres";
 
 export type AdminBgMode = "clean" | "photo";
 
@@ -28,11 +27,10 @@ function preloadPhotos(srcs: string[]) {
 export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
   const bgMode = normalizeMode(mode);
   const { resolvedTheme } = useTheme();
-  const { palette } = usePalette();
   const [mounted, setMounted] = useState(false);
   const isDark = mounted ? resolvedTheme !== "light" : true;
-  const palettePhotos = useMemo(() => getPalettePhotos(palette), [palette]);
-  const [photos, setPhotos] = useState<string[]>(palettePhotos);
+  const atmospherePhotos = useMemo(() => ADMIN_ATMOSPHERE_PHOTOS, []);
+  const [photos, setPhotos] = useState<string[]>(atmospherePhotos);
   const [index, setIndex] = useState(0);
   const [visibleIndex, setVisibleIndex] = useState(0);
   const [tabHidden, setTabHidden] = useState(false);
@@ -55,11 +53,11 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
 
   useEffect(() => {
     if (bgMode === "clean") return;
-    setPhotos(palettePhotos);
+    setPhotos(atmospherePhotos);
     setIndex(0);
     setVisibleIndex(0);
-    preloadPhotos(palettePhotos);
-  }, [bgMode, palettePhotos]);
+    preloadPhotos(atmospherePhotos);
+  }, [atmospherePhotos, bgMode]);
 
   useEffect(() => {
     if (bgMode === "clean" || tabHidden || photos.length <= 1) return;
@@ -75,22 +73,22 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
     return () => window.clearTimeout(timer);
   }, [bgMode, index]);
 
-  const fallbackPhoto = palettePhotos[0];
+  const fallbackPhoto = atmospherePhotos[0];
   const currentPhoto = photos[visibleIndex % photos.length] || fallbackPhoto;
   const nextPhoto = photos[index % photos.length] || currentPhoto;
   const duration = PHOTO_MS;
   const solidOverlay = isDark
-    ? isMobile ? "rgba(7,6,5,0.68)" : "rgba(7,6,5,0.78)"
-    : isMobile ? "rgba(248,247,244,0.58)" : "rgba(248,247,244,0.70)";
+    ? isMobile ? "rgba(5,6,7,0.76)" : "rgba(5,6,7,0.82)"
+    : isMobile ? "rgba(250,249,246,0.56)" : "rgba(250,249,246,0.64)";
   const depthOverlay = isDark
     ? isMobile
-      ? "linear-gradient(to bottom, rgba(8,6,5,0.58) 0%, rgba(8,6,5,0.18) 38%, rgba(8,6,5,0.72) 100%)"
-      : "linear-gradient(to bottom, rgba(8,6,5,0.68) 0%, rgba(8,6,5,0.28) 38%, rgba(8,6,5,0.78) 100%)"
+      ? "linear-gradient(to bottom, rgba(5,6,7,0.62) 0%, rgba(5,6,7,0.20) 38%, rgba(5,6,7,0.76) 100%)"
+      : "linear-gradient(to bottom, rgba(5,6,7,0.72) 0%, rgba(5,6,7,0.24) 38%, rgba(5,6,7,0.82) 100%)"
     : isMobile
-      ? "linear-gradient(to bottom, rgba(252,250,247,0.70) 0%, rgba(252,250,247,0.48) 38%, rgba(252,250,247,0.78) 100%)"
-      : "linear-gradient(to bottom, rgba(252,250,247,0.82) 0%, rgba(252,250,247,0.60) 38%, rgba(252,250,247,0.86) 100%)";
+      ? "linear-gradient(to bottom, rgba(252,251,248,0.68) 0%, rgba(252,251,248,0.44) 38%, rgba(252,251,248,0.78) 100%)"
+      : "linear-gradient(to bottom, rgba(252,251,248,0.74) 0%, rgba(252,251,248,0.50) 38%, rgba(252,251,248,0.82) 100%)";
 
-  if (bgMode === "clean") return null;
+  if (bgMode === "clean" || !fallbackPhoto) return null;
 
   return (
     <div
@@ -99,7 +97,7 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
     >
       <div
         className="absolute inset-0"
-        style={{ background: isDark ? "#090705" : "#f5f1eb" }}
+        style={{ background: isDark ? "#050607" : "#f7f5f1" }}
       />
 
       <AtmosphereFrame
@@ -136,9 +134,9 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(115deg, hsl(var(--primary) / 0.12) 0%, transparent 34%, rgba(0,0,0,0.10) 100%)",
+            "linear-gradient(115deg, hsl(var(--primary) / 0.08) 0%, transparent 34%, rgba(0,0,0,0.08) 100%)",
           mixBlendMode: isDark ? "screen" : "multiply",
-          opacity: isDark ? 0.20 : 0.12,
+          opacity: isDark ? 0.10 : 0.08,
         }}
       />
     </div>
@@ -190,14 +188,14 @@ function AtmosphereFrame({
         }}
         style={{
           animation: disabled ? "none" : `${kenburns} ${duration}ms ease-in-out forwards`,
-          opacity: isDark ? (isMobile ? 0.82 : 0.72) : (isMobile ? 0.34 : 0.26),
+          opacity: isDark ? (isMobile ? 0.36 : 0.42) : (isMobile ? 0.30 : 0.28),
           filter: isDark
             ? isMobile
-              ? "blur(7px) saturate(0.94) contrast(0.98) brightness(0.82)"
-              : "blur(10px) saturate(0.9) contrast(0.94) brightness(0.74)"
+              ? "blur(8px) saturate(0.82) contrast(0.94) brightness(0.76)"
+              : "blur(11px) saturate(0.78) contrast(0.90) brightness(0.70)"
             : isMobile
-              ? "blur(12px) saturate(0.62) contrast(0.88) brightness(1.08)"
-              : "blur(15px) saturate(0.52) contrast(0.84) brightness(1.12)",
+              ? "blur(13px) saturate(0.68) contrast(0.88) brightness(1.08)"
+              : "blur(16px) saturate(0.62) contrast(0.86) brightness(1.10)",
         }}
       />
     </div>

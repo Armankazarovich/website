@@ -63,7 +63,7 @@ export function DashboardGreeting({ userName, roleLabel }: DashboardGreetingProp
       <div className="relative flex flex-col gap-1.5">
         <p className="font-display font-bold text-xl sm:text-2xl leading-tight text-foreground">
           {greeting},{" "}
-          <span className="admin-atmo-title">{firstName}</span>
+          <span className="admin-atmo-title admin-living-gradient-text">{firstName}</span>
         </p>
         <p className="text-xs sm:text-sm text-muted-foreground leading-tight">
           {roleLabel}

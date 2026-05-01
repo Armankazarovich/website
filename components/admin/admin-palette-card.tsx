@@ -1,15 +1,13 @@
 "use client";
 
-import type { MouseEventHandler } from "react";
+import type { CSSProperties, MouseEventHandler } from "react";
 import { Check, Eye } from "lucide-react";
-import type { AdminAtmosphereItem } from "@/lib/admin-atmospheres";
 import { ARAY_FOCUS_RING } from "@/lib/aray-design-tokens";
 import type { PaletteItem } from "@/lib/palettes";
 import { cn } from "@/lib/utils";
 
 type AdminPaletteCardProps = {
   palette: PaletteItem;
-  atmosphere?: AdminAtmosphereItem | null;
   active?: boolean;
   enabled?: boolean;
   previewing?: boolean;
@@ -25,7 +23,6 @@ type AdminPaletteCardProps = {
 
 export function AdminPaletteCard({
   palette,
-  atmosphere,
   active = false,
   enabled = true,
   previewing = false,
@@ -40,9 +37,10 @@ export function AdminPaletteCard({
 }: AdminPaletteCardProps) {
   const isLarge = variant === "large";
   const isAray = palette.id === "sber";
-  const previewBackground = isAray
-    ? "linear-gradient(135deg, #070B12 0%, #111A25 45%, #0C2B37 72%, #D6AE5F 100%)"
-    : `radial-gradient(circle at 20% 18%, ${palette.glow}55, transparent 42%), linear-gradient(135deg, ${palette.sidebar} 0%, ${palette.sidebar} 42%, ${palette.accent} 78%, ${palette.glow} 100%)`;
+  const base = isAray ? "#070B12" : palette.sidebar;
+  const accent = isAray ? "#0C6C7E" : palette.accent;
+  const glow = isAray ? "#D6AE5F" : palette.glow;
+  const previewBackground = `radial-gradient(circle at 16% 14%, ${glow}33, transparent 34%), radial-gradient(circle at 88% 78%, ${accent}34, transparent 42%), linear-gradient(135deg, ${base} 0%, ${base} 52%, ${accent} 104%)`;
 
   return (
     <button
@@ -53,45 +51,48 @@ export function AdminPaletteCard({
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
-        "group min-w-0 text-left transition-[background-color,border-color,box-shadow,opacity,transform] duration-200",
+        "admin-palette-button group min-w-0 text-left transition-[background-color,border-color,box-shadow,opacity,transform] duration-200",
         ARAY_FOCUS_RING,
         isLarge ? "rounded-2xl p-2" : "rounded-xl p-1.5",
         active
-          ? "border border-primary/65 bg-primary/[0.12] shadow-[0_14px_34px_hsl(var(--primary)/0.16)]"
-          : "border border-border/70 bg-background/45 hover:border-primary/35 hover:bg-background/70",
+          ? "border border-primary/42 bg-primary/[0.08] shadow-[0_10px_24px_hsl(var(--primary)/0.10)]"
+          : "border border-border/65 bg-background/38 hover:border-primary/26 hover:bg-background/62",
         !enabled && "opacity-55",
         disabled && "cursor-not-allowed opacity-45",
         className,
       )}
+      style={{
+        "--palette-base": base,
+        "--palette-accent": accent,
+        "--palette-glow": glow,
+      } as CSSProperties}
     >
       <span
         className={cn(
-          "relative block overflow-hidden rounded-xl bg-muted ring-1 ring-border/55",
-          isLarge ? "h-28" : "h-16",
+          "admin-palette-light relative block overflow-hidden rounded-xl bg-muted ring-1 ring-border/55",
+          active && "ring-primary/30",
+          isLarge ? "h-20" : "h-12",
         )}
         style={{
           background: previewBackground,
         }}
       >
-        {atmosphere?.src && (
-          <img
-            src={atmosphere.src}
-            alt=""
-            loading={active ? "eager" : "lazy"}
-            decoding="async"
-            className="h-full w-full object-cover"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-            }}
-          />
-        )}
         <span
-          className="absolute inset-0"
+          className="absolute inset-0 opacity-90"
           style={{
             background: isAray
-              ? "radial-gradient(circle at 20% 20%, rgba(39, 173, 190, 0.24), transparent 42%), radial-gradient(circle at 86% 78%, rgba(214, 174, 95, 0.32), transparent 38%), linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.58))"
-              : `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.58)), linear-gradient(135deg, ${palette.sidebar}44, ${palette.accent}55)`,
+              ? "radial-gradient(circle at 28% 18%, rgba(39, 173, 190, 0.24), transparent 42%), radial-gradient(circle at 86% 78%, rgba(214, 174, 95, 0.30), transparent 38%), linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.28))"
+              : `linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.30)), linear-gradient(135deg, ${base}44, ${accent}55)`,
           }}
+        />
+        <span className="absolute left-2 top-2 h-1.5 w-8 rounded-full bg-white/18" />
+        <span
+          className="absolute left-2 top-5 h-px w-14 rounded-full opacity-80"
+          style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
+        />
+        <span
+          className="absolute right-2 bottom-3 h-px w-16 rounded-full opacity-80"
+          style={{ background: `linear-gradient(90deg, transparent, ${glow})` }}
         />
         <span className="absolute inset-x-0 bottom-0 flex h-1.5">
           {isAray ? (
@@ -109,7 +110,7 @@ export function AdminPaletteCard({
           )}
         </span>
         {active && (
-          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow-lg ring-1 ring-black/10">
+          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-background/86 text-primary shadow-sm ring-1 ring-primary/22 backdrop-blur">
             <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
           </span>
         )}
@@ -126,7 +127,7 @@ export function AdminPaletteCard({
             {palette.name}
           </span>
           <span className={cn("block truncate font-medium leading-tight text-muted-foreground", isLarge ? "text-[11px]" : "text-[9px]")}>
-            {atmosphere?.shortName ?? "ARAY"}
+            {palette.mood}
           </span>
         </span>
       )}

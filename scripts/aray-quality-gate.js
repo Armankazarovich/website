@@ -117,6 +117,8 @@ function scanSecrets() {
 }
 
 run("Diff whitespace check", "git", ["diff", "--check"]);
+run("Agent registry validation", "node", ["scripts/validate-aray-agent-registry.js"]);
+run("Admin atmosphere assets", "node", ["scripts/validate-admin-atmospheres.js"]);
 run("TypeScript check", "npx", ["tsc", "--noEmit"]);
 scanSecrets();
 

@@ -247,7 +247,7 @@ export default async function AdminDashboard() {
             {newOrders > 0 && (
               <Link
                 href="/admin/orders?status=NEW"
-                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
+                className="admin-liquid-surface admin-liquid-interactive admin-energy-edge flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
                 <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
                   <Clock className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -266,7 +266,7 @@ export default async function AdminDashboard() {
             {pendingReviews > 0 && isOwner && (
               <Link
                 href="/admin/reviews"
-                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
+                className="admin-liquid-surface admin-liquid-interactive admin-energy-edge flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
                 <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
                   <Star className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -285,7 +285,7 @@ export default async function AdminDashboard() {
             {pendingStaff > 0 && isOwner && (
               <Link
                 href="/admin/staff"
-                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
+                className="admin-liquid-surface admin-liquid-interactive admin-energy-edge flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
                 <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
                   <Users className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -446,7 +446,7 @@ export default async function AdminDashboard() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="admin-liquid-surface admin-liquid-interactive group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 rounded-2xl active:scale-[0.96] min-h-[88px] min-w-0"
+                className="admin-liquid-surface admin-liquid-interactive admin-energy-edge group flex flex-col items-center justify-center gap-2.5 p-3 sm:p-4 rounded-2xl active:scale-[0.96] min-h-[88px] min-w-0"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div
