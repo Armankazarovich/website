@@ -78,19 +78,22 @@ export async function GET() {
   checks.disk = { ok: true, details: "проверь вручную на VPS" };
 
   // ── Итог ──────────────────────────────────────────────────────────────────
-  // Critical checks: database, orders, telegram, email, push
-  // Optional checks: aray_api, google_ai, disk (don't affect overall status)
-  const CRITICAL_KEYS = ["database", "orders", "telegram", "email", "push"];
+  // In local development external integrations are often intentionally empty.
+  // The public health endpoint should then show "degraded", not make dev look down.
+  const isProduction = process.env.NODE_ENV === "production";
+  const CRITICAL_KEYS = isProduction
+    ? ["database", "orders", "telegram", "email", "push"]
+    : ["database", "orders"];
   const criticalOk = CRITICAL_KEYS.every(k => checks[k]?.ok !== false);
   const allOk = Object.values(checks).every(c => c.ok);
   const totalMs = Date.now() - start;
 
   return NextResponse.json({
-    status: allOk ? "healthy" : criticalOk ? "healthy" : "degraded",
+    status: allOk ? "healthy" : criticalOk ? "degraded" : "unhealthy",
     timestamp: new Date().toISOString(),
     responseMs: totalMs,
     checks,
-    ...((!allOk && criticalOk) ? { note: "Некритичные сервисы не настроены (API ключи)" } : {}),
+    ...((!allOk && criticalOk) ? { note: "Некритичные сервисы не настроены или недоступны" } : {}),
   }, {
     status: criticalOk ? 200 : 503,
     headers: { "Cache-Control": "no-store" },

@@ -79,14 +79,7 @@ const nextConfig = {
   webpack: (config, { isServer, webpack }) => {
     config.watchOptions = {
       ...(config.watchOptions || {}),
-      ignored: [
-        '**/node_modules/**',
-        '**/.git/**',
-        '**/.next/**',
-        'D:/pagefile.sys',
-        'D:/DumpStack.log.tmp',
-        'D:/System Volume Information/**',
-      ],
+      ignored: /(^|[\\/])(?:node_modules|\.git|\.next|System Volume Information)([\\/]|$)|(^|[\\/])(?:pagefile\.sys|DumpStack\.log\.tmp)$/,
     };
 
     // Prevent webpack from trying to bundle onnxruntime-web in the browser bundle.

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { AdminPaletteCard } from "@/components/admin/admin-palette-card";
 import { PALETTE_GROUPS } from "@/lib/palettes";
+import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
 import { useToast } from "@/components/ui/use-toast";
 import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft } from "lucide-react";
 
@@ -440,6 +441,7 @@ export function AppearanceClient({
                 const isOn = enabled.has(p.id);
                 const isDefault = defaultPalette === p.id;
                 const isPreviewing = previewId === p.id;
+                const atmosphere = getPaletteAtmosphere(p.id);
                 return (
                   <div
                     key={p.id}
@@ -455,6 +457,7 @@ export function AppearanceClient({
                   >
                     <AdminPaletteCard
                       palette={p}
+                      atmosphere={atmosphere}
                       active={isDefault}
                       enabled={isOn}
                       previewing={isPreviewing}
@@ -469,7 +472,7 @@ export function AppearanceClient({
                     <div className="flex items-center gap-2 p-3">
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold">{p.name}</span>
-                        <span className="block truncate text-xs text-muted-foreground">{p.mood}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{atmosphere?.shortName ?? "ARAY"}</span>
                       </span>
 
                       {isDefault ? (

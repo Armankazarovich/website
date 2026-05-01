@@ -638,6 +638,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const zone = isAdmin ? "admin" : pathname.startsWith("/cabinet") ? "cabinet" : "store";
   const { speaking, speak, stop: stopTTS } = useTTS();
   const { active: micActive, supported: micOk, listen: micListen, cancel: micCancel } = useMic();
+  const { resolvedTheme } = useTheme();
 
   // ── State ──────────────────────────────────────────────────────────────────
   const [chatPanelOpen, setChatPanelOpen] = useState(false);
@@ -1051,7 +1052,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   if (!enabled || !visible) return null;
 
   // ── Тема ──────────────────────────────────────────────────────────────────
-  const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme !== "light";
 
   // Цвета

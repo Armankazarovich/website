@@ -20,7 +20,7 @@
  * Сохранено:
  *  - useClassicMode / playOrderChime / LS_FONT экспорты (используются другими)
  *  - AdminMobileBottomNav (нижний dock на мобилке с Арай-орбом)
- *  - настройки интерфейса живут в AccountDrawer, чтобы шапка оставалась спокойной
+ *  - ArayControlCenter (sticky справа — пока не трогаем)
  *  - LazyAdminAray (плавающий Арай)
  */
 
@@ -34,7 +34,7 @@ import {
   Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
   Settings, Palette, BarChart2, Stamp, Stethoscope, Users, Bell, HelpCircle,
   Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
-  Network,
+  Network, Sun, Moon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
@@ -44,6 +44,7 @@ import { LazyAdminAray } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
+import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { AdminWeatherChip } from "@/components/admin/admin-weather";
 import { AdminAtmosphere, type AdminBgMode } from "@/components/admin/admin-atmosphere";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
@@ -243,7 +244,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
   const [arayMounted, setArayMounted] = useState(false);
   const [pendingArayOpen, setPendingArayOpen] = useState(false);
-  const { setTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const { bgMode } = useClassicMode();
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
@@ -417,6 +418,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   const initial =
     (userName?.charAt(0) || email?.charAt(0) || "A").toUpperCase();
   const HeaderIcon = pageMeta.icon;
+  const isDarkTheme = (resolvedTheme || theme) === "dark";
 
   return (
     <div className="admin-shell-root relative flex flex-col min-h-screen bg-background overflow-x-hidden">
@@ -509,6 +511,25 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
             >
               <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>
+
+            <ArayControlCenter userRole={role} position="header" />
+
+            {/* Переключатель темы (только когда mounted — избегаем SSR mismatch) */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(isDarkTheme ? "light" : "dark")}
+                type="button"
+                aria-label={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
+                title={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
+                className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+              >
+                {isDarkTheme ? (
+                  <Sun className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                ) : (
+                  <Moon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+                )}
+              </button>
+            )}
 
             {/* Аккаунт — открывает AccountDrawer */}
             <button

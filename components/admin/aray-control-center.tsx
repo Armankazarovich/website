@@ -7,6 +7,7 @@ import { AdminPaletteCard } from "@/components/admin/admin-palette-card";
 import { usePalette } from "@/components/palette-provider";
 import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
 import { ARAY_FOCUS_RING } from "@/lib/aray-design-tokens";
+import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
 import { PALETTES } from "@/lib/palettes";
 
 const BG_MODE_KEY = "aray-bg-mode";
@@ -37,19 +38,18 @@ function readBgMode(): AdminBgMode {
   return "photo";
 }
 
-export function ArayAppearancePanel({
-  className = "",
-  dense = false,
-  showBackgroundControls = true,
+export function ArayControlCenter({
+  position = "header",
 }: {
-  className?: string;
-  dense?: boolean;
-  showBackgroundControls?: boolean;
+  userRole?: string;
+  position?: "header" | "bottom" | "right";
 }) {
+  const [open, setOpen] = useState(false);
   const [bgMode, setBgModeState] = useState<AdminBgMode>("photo");
   const [mounted, setMounted] = useState(false);
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
+  const ref = useRef<HTMLDivElement>(null);
   const safeTheme = mounted ? resolvedTheme || theme || "dark" : "dark";
   const isDark = safeTheme === "dark";
 
@@ -61,133 +61,6 @@ export function ArayAppearancePanel({
     window.addEventListener("aray-classic-change", sync);
     return () => window.removeEventListener("aray-classic-change", sync);
   }, []);
-
-  useEffect(() => {
-    document.documentElement.style.removeProperty("font-size");
-    document.documentElement.style.removeProperty("--aray-font-scale");
-    try {
-      localStorage.removeItem("aray-font-size");
-    } catch {}
-  }, []);
-
-  function setBgMode(mode: AdminBgMode) {
-    setBgModeState(mode);
-    localStorage.setItem(BG_MODE_KEY, mode);
-    localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
-    window.dispatchEvent(new Event("aray-classic-change"));
-  }
-
-  function choosePalette(id: string) {
-    setPalette(id);
-    window.dispatchEvent(new Event("aray-classic-change"));
-  }
-
-  const sectionTitleClass = dense
-    ? "mb-2 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
-    : "mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground";
-
-  return (
-    <div className={`${dense ? "space-y-3" : "space-y-4"} ${className}`}>
-      {showBackgroundControls && (
-        <section>
-          <p className={sectionTitleClass}>Фон админки</p>
-          <div className={`grid grid-cols-2 ${dense ? "gap-1.5" : "gap-2"}`}>
-            {BG_MODES.map((mode) => {
-              const Icon = mode.icon;
-              const active = bgMode === mode.id;
-              return (
-                <button
-                  key={mode.id}
-                  type="button"
-                  onClick={() => setBgMode(mode.id)}
-                  aria-pressed={active}
-                  className={`group flex items-center border text-left transition-all ${ARAY_FOCUS_RING} ${
-                    dense ? "min-h-[3.25rem] gap-2.5 rounded-xl px-2.5" : "min-h-[3.75rem] gap-3 rounded-2xl px-3"
-                  } ${
-                    active
-                      ? "border-primary/30 bg-primary/[0.09] text-foreground shadow-[0_10px_24px_hsl(var(--primary)/0.07)]"
-                      : "border-border/70 bg-card/40 text-foreground hover:border-primary/20 hover:bg-card/64"
-                  }`}
-                >
-                  <span
-                    className={`flex shrink-0 items-center justify-center ${dense ? "h-8 w-8 rounded-lg" : "h-9 w-9 rounded-xl"} ${
-                      active
-                        ? "bg-primary/14 text-primary ring-1 ring-primary/18"
-                        : isDark
-                          ? "bg-white/[0.04] text-muted-foreground"
-                          : "bg-muted/70 text-muted-foreground"
-                    }`}
-                  >
-                    <Icon className="h-4 w-4" strokeWidth={1.75} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-xs font-semibold leading-tight">{mode.label}</span>
-                    <span className="mt-0.5 block text-[10px] leading-tight text-muted-foreground">{mode.hint}</span>
-                  </span>
-                  {active && <Check className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.2} />}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      <section>
-        <p className={sectionTitleClass}>Тема</p>
-        <div className={`grid grid-cols-3 ${dense ? "gap-1.5" : "gap-2"}`}>
-          {THEME_OPTIONS.map((option) => {
-            const Icon = option.icon;
-            const active = theme === option.id || (!theme && option.id === "system");
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => setTheme(option.id)}
-                aria-pressed={active}
-                className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2 transition-all ${ARAY_FOCUS_RING} ${
-                  dense ? "min-h-10" : "min-h-11"
-                } ${
-                  active
-                    ? "border-primary/30 bg-primary/[0.09] text-primary"
-                    : "border-border/70 bg-card/36 text-muted-foreground hover:border-primary/20 hover:bg-card/64 hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4" strokeWidth={1.75} />
-                <span className="text-[10px] font-semibold leading-none">{option.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      <section>
-        <p className={sectionTitleClass}>Цвет интерфейса</p>
-        <div className={`grid grid-cols-3 ${dense ? "gap-1.5" : "gap-2"}`}>
-          {PALETTES.map((item) => {
-            return (
-              <AdminPaletteCard
-                key={item.id}
-                palette={item}
-                active={palette === item.id}
-                onClick={() => choosePalette(item.id)}
-                title={`${item.name}: ${item.pairing}`}
-              />
-            );
-          })}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-export function ArayControlCenter({
-  position = "header",
-}: {
-  userRole?: string;
-  position?: "header" | "bottom" | "right";
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -208,12 +81,33 @@ export function ArayControlCenter({
     };
   }, [open]);
 
+  useEffect(() => {
+    document.documentElement.style.removeProperty("font-size");
+    document.documentElement.style.removeProperty("--aray-font-scale");
+    try {
+      localStorage.removeItem("aray-font-size");
+    } catch {}
+  }, []);
+
+  function setBgMode(mode: AdminBgMode) {
+    setBgModeState(mode);
+    localStorage.setItem(BG_MODE_KEY, mode);
+    localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
+    window.dispatchEvent(new Event("aray-classic-change"));
+  }
+
+  function choosePalette(id: string) {
+    setPalette(id);
+    if (bgMode !== "photo") {
+      setBgMode("photo");
+      return;
+    }
+    window.dispatchEvent(new Event("aray-classic-change"));
+  }
+
   if (position === "bottom") return null;
 
-  const panelClassName =
-    position === "right"
-      ? "fixed right-3 top-[4.5rem] z-[80] w-[23.5rem] max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-5.5rem)]"
-      : "absolute right-0 top-[calc(100%+0.55rem)] z-[80] w-[23.5rem] max-w-[calc(100vw-1.5rem)] max-h-[calc(100dvh-5.5rem)]";
+  const panelClassName = "admin-control-popover";
 
   return (
     <div ref={ref} className={position === "right" ? "relative" : "relative shrink-0"}>
@@ -232,6 +126,7 @@ export function ArayControlCenter({
       {open && (
         <div
           className={`${panelClassName} animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden rounded-2xl border admin-popup-liquid shadow-2xl`}
+          data-placement={position}
           role="dialog"
           aria-label="Оформление интерфейса"
         >
@@ -255,7 +150,99 @@ export function ArayControlCenter({
             </button>
           </div>
 
-          <ArayAppearancePanel className="max-h-[calc(100dvh-10.5rem)] overflow-y-auto p-4" />
+          <div className="max-h-[calc(100dvh-10.5rem)] space-y-4 overflow-y-auto p-4">
+            <section>
+              <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Фон админки
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {BG_MODES.map((mode) => {
+                  const Icon = mode.icon;
+                  const active = bgMode === mode.id;
+                  return (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setBgMode(mode.id)}
+                      className={`group flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-3 text-left transition-all ${ARAY_FOCUS_RING} ${
+                        active
+                          ? "border-primary/35 bg-primary/12 text-foreground shadow-[0_14px_34px_hsl(var(--primary)/0.10)]"
+                          : "border-border bg-card/55 text-foreground hover:border-primary/24 hover:bg-primary/8"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                          active
+                            ? "bg-primary text-primary-foreground"
+                            : isDark
+                              ? "bg-white/[0.055] text-muted-foreground"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" strokeWidth={1.75} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-xs font-semibold leading-tight">{mode.label}</span>
+                        <span className="mt-0.5 block text-[10px] leading-tight text-muted-foreground">{mode.hint}</span>
+                      </span>
+                      {active && <Check className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.2} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Тема
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {THEME_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const active = theme === option.id || (!theme && option.id === "system");
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setTheme(option.id)}
+                      className={`flex min-h-12 flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2 transition-all ${ARAY_FOCUS_RING} ${
+                        active
+                          ? "border-primary/35 bg-primary/12 text-primary"
+                          : "border-border bg-card/50 text-muted-foreground hover:border-primary/24 hover:bg-primary/8 hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={1.75} />
+                      <span className="text-[10px] font-semibold leading-none">{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-2.5 px-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Стиль и атмосфера
+              </p>
+              <p className="mb-3 px-1 text-[11px] leading-relaxed text-muted-foreground">
+                Каждая атмосфера хранит пару света: основу интерфейса, рабочий акцент и тихий блик.
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {PALETTES.map((item) => {
+                  const atmosphere = getPaletteAtmosphere(item.id);
+                  return (
+                    <AdminPaletteCard
+                      key={item.id}
+                      palette={item}
+                      atmosphere={atmosphere}
+                      active={palette === item.id}
+                      onClick={() => choosePalette(item.id)}
+                      title={atmosphere ? `${item.name}: ${atmosphere.name}` : item.name}
+                    />
+                  );
+                })}
+              </div>
+            </section>
+          </div>
         </div>
       )}
     </div>

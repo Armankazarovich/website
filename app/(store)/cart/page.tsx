@@ -96,7 +96,6 @@ function ShareBanner() {
         .then((data) => {
           if (data.items) {
             // Map API response to CartItem format and load
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const cartItems = data.items.map((i: any) => ({
               id: `${i.variantId}-${i.unitType}`,
               variantId: i.variantId,

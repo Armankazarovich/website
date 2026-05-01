@@ -23,7 +23,6 @@ import { Button } from "@/components/ui/button";
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { usePathname } from "next/navigation";
 import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
-import { ArayAppearancePanel } from "@/components/admin/aray-control-center";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -370,7 +369,7 @@ function QuickActionCard({
     <Link
       href={href}
       onClick={() => setOpen(false)}
-      className="admin-drawer-quick admin-liquid-interactive admin-energy-edge flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
+      className="admin-drawer-quick admin-liquid-interactive flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
     >
       <div className="admin-drawer-quick-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-primary">
         <Icon className="w-5 h-5" strokeWidth={2} />
@@ -399,13 +398,11 @@ type ProfileData = {
 function ProfilePanel() {
   const { data: session } = useSession();
   const { setOpen } = useAccountDrawer();
-  const pathname = usePathname();
   const [data, setData] = useState<ProfileData | null>(null);
   const user = session?.user;
   const role = ((user as { role?: string })?.role) || "USER";
   const isStaff = STAFF_ROLES.includes(role);
   const isAdmin = ADMIN_ROLES.includes(role);
-  const isAdminSurface = pathname?.startsWith("/admin");
 
   // Подгружаем профиль + stats (один fetch)
   useEffect(() => {
@@ -495,7 +492,7 @@ function ProfilePanel() {
     ...(isAdmin ? [
       { href: "/admin/site" as const, icon: Globe2, label: "Сайт", desc: "Контакты, SEO, виджет" },
       { href: "/admin/settings" as const, icon: Settings, label: "Параметры", desc: "Базовые настройки" },
-      { href: "/admin/aray/agents" as const, icon: ShieldCheck, label: "Контроль качества", desc: "Агенты и зоны" },
+      { href: "/admin/appearance" as const, icon: Palette, label: "Оформление", desc: "Темы и палитры" },
       { href: "/admin/watermark" as const, icon: ImageIcon, label: "Водяной знак", desc: "Защита фото" },
       { href: "/admin/notifications" as const, icon: Bell, label: "Уведомления", desc: "Push рассылка" },
     ] : []),
@@ -515,7 +512,7 @@ function ProfilePanel() {
         <Link
           href={isStaff ? "/admin/staff" : "/cabinet/profile"}
           onClick={close}
-          className="admin-drawer-profile admin-liquid-interactive admin-energy-edge flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
+          className="admin-drawer-profile admin-liquid-interactive flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
         >
           {avatarUrl ? (
             <img
@@ -587,17 +584,6 @@ function ProfilePanel() {
         )}
 
         {isStaff && <AdminPwaInstall />}
-
-        {isStaff && isAdminSurface && (
-          <div>
-            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1 mb-2">
-              Интерфейс
-            </p>
-            <div className="admin-drawer-appearance rounded-2xl border border-border bg-card p-3">
-              <ArayAppearancePanel dense />
-            </div>
-          </div>
-        )}
 
         {/* Группы разделов */}
         {isStaff && managementItems.length > 0 && (

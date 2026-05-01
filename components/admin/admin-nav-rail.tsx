@@ -117,12 +117,11 @@ interface Props {
   email?: string | null;
 }
 
-export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
+export function AdminNavRail({ role }: Props) {
   const pathname = usePathname();
   const { t } = useAdminLang();
   const [hoverGroup, setHoverGroup] = useState<string | null>(null);
   const [pinnedGroup, setPinnedGroup] = useState<string | null>(null);
-  const [hoverProfile, setHoverProfile] = useState(false);
   const closeTimer = useRef<number | null>(null);
 
   // ── Фильтрация по роли + группировка ──
@@ -170,7 +169,6 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
     if (pinnedGroup) return;
     closeTimer.current = window.setTimeout(() => {
       setHoverGroup(null);
-      setHoverProfile(false);
     }, 150);
   }
   useEffect(() => () => clearCloseTimer(), []);
@@ -179,14 +177,12 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
   useEffect(() => {
     setHoverGroup(null);
     setPinnedGroup(null);
-    setHoverProfile(false);
   }, [pathname]);
 
   const closePanels = useCallback(() => {
     clearCloseTimer();
     setHoverGroup(null);
     setPinnedGroup(null);
-    setHoverProfile(false);
   }, []);
 
   useEffect(() => {
@@ -213,13 +209,12 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
   return (
     <aside
       data-admin-nav-rail
-      className={`admin-rail-liquid admin-rail-shell hidden lg:flex fixed left-0 w-16 ${UI_LAYERS.navRail} flex-col items-center py-4 px-2.5 gap-2`}
-      style={{ top: 76, height: "calc(100vh - 92px)" }}
+      className={`admin-rail-liquid admin-rail-shell hidden lg:flex ${UI_LAYERS.navRail} flex-col items-center py-4 px-2.5 gap-2`}
       onMouseLeave={scheduleClose}
     >
       {/* ── Группы навигации ── */}
       <nav className="admin-rail-list flex flex-col items-center gap-2 flex-1 min-h-0">
-        {groups.map((g, index) => {
+        {groups.map((g) => {
           const isActive = activeGroupKey === g.key;
           const isOpen = (pinnedGroup || hoverGroup) === g.key;
           const primaryHref = g.items[0].href;
@@ -242,7 +237,6 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                 if (event.pointerType === "touch") return;
                 clearCloseTimer();
                 if (!pinnedGroup) setHoverGroup(g.key);
-                setHoverProfile(false);
               }}
             >
               {g.items.length > 1 ? (
@@ -257,8 +251,8 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                     const nextPinned = pinnedGroup === g.key ? null : g.key;
                     setPinnedGroup(nextPinned);
                     setHoverGroup(nextPinned ? g.key : null);
-                    setHoverProfile(false);
                   }}
+                  aria-controls={isOpen ? `admin-nav-panel-${g.key}` : undefined}
                 >
                   {railIcon}
                 </button>
@@ -279,7 +273,6 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
                   group={g}
                   pathname={pathname}
                   t={t}
-                  align={index >= groups.length - 3 ? "bottom" : "top"}
                   onMouseEnter={clearCloseTimer}
                   onMouseLeave={scheduleClose}
                   onClose={closePanels}
@@ -312,12 +305,11 @@ export function AdminNavRail({ role, avatarUrl, userName, email }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function GroupPopup({
-  group, pathname, t, align, onMouseEnter, onMouseLeave, onClose, activeHref,
+  group, pathname, t, onMouseEnter, onMouseLeave, onClose, activeHref,
 }: {
   group: Group;
   pathname: string;
   t: (key: any) => string;
-  align: "top" | "bottom";
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onClose: () => void;
@@ -327,8 +319,8 @@ function GroupPopup({
 
   return (
     <div
-      className="admin-popup-liquid admin-nav-panel admin-nav-drawer fixed left-[5.25rem] top-[76px] bottom-4 border rounded-[24px] overflow-hidden z-[70] flex flex-col"
-      data-align={align}
+      id={`admin-nav-panel-${group.key}`}
+      className="admin-popup-liquid admin-nav-panel admin-nav-drawer border rounded-[24px] overflow-hidden flex flex-col"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
@@ -406,35 +398,4 @@ function pluralizeRu(n: number, forms: [string, string, string]): string {
   if (mod10 === 1 && mod100 !== 11) return forms[0];
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return forms[1];
   return forms[2];
-}
-
-function ProfilePopup({
-  userName, email, onMouseEnter, onMouseLeave,
-}: {
-  userName?: string | null;
-  email?: string | null;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
-}) {
-  return (
-    <div
-      className="admin-popup-liquid absolute left-full top-0 ml-2 w-60 border rounded-2xl py-3 px-4 z-40 animate-in fade-in slide-in-from-left-1 duration-150"
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <p className="text-sm font-semibold text-foreground leading-tight truncate">
-        {userName || (email ? email.split("@")[0] : "Пользователь")}
-      </p>
-      {email && (
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">{email}</p>
-      )}
-      <Link
-        href="/cabinet/profile"
-        className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
-      >
-        Открыть профиль
-        <ChevronRight className="w-3 h-3" />
-      </Link>
-    </div>
-  );
 }

@@ -254,7 +254,7 @@ export function AdminMobileBottomNav({
       {notifOpen && (
         <div
           ref={notifRef}
-          className="admin-popup-liquid admin-mobile-sheet lg:hidden fixed z-[60] border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
+          className="admin-popup-liquid admin-mobile-sheet lg:hidden z-[60] border rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-200"
           style={{
             bottom: "calc(96px + env(safe-area-inset-bottom, 0px))",
             left: 12,

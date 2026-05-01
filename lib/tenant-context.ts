@@ -37,7 +37,6 @@ function getStorage(): StorageLike | null {
   if (_storageProbed) return _storage;
   _storageProbed = true;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require("async_hooks");
     if (mod && typeof mod.AsyncLocalStorage === "function") {
       _storage = new mod.AsyncLocalStorage() as StorageLike;
@@ -79,7 +78,6 @@ export function getCurrentTenantId(): string {
   // 2. Next.js headers() — работает в Server Components и API routes (Node.js runtime)
   // Динамический require чтобы lib не падал в Edge runtime контексте.
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { headers } = require("next/headers");
     const h = headers();
     const fromHeader = h.get("x-tenant-id");
