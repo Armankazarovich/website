@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Check, ImageIcon, Layers3, Palette, X } from "lucide-react";
+import { ImageIcon, Layers3, Palette, X } from "lucide-react";
 import { useTheme } from "next-themes";
+import { AdminPaletteCard } from "@/components/admin/admin-palette-card";
 import { usePalette } from "@/components/palette-provider";
 import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
+import { ARAY_FOCUS_RING, ARAY_TOUCH_TARGET } from "@/lib/aray-design-tokens";
 import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
 import { PALETTES } from "@/lib/palettes";
 
@@ -119,7 +121,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
             }}>
             <div className="absolute inset-0 pointer-events-none rounded-l-2xl" style={{ background: glass.refraction }} />
             <button onClick={() => setOpen(true)} title="Оформление" aria-label="Оформление"
-              className="relative p-2.5 rounded-xl transition-colors"
+              className={`relative flex items-center justify-center rounded-xl transition-colors ${ARAY_TOUCH_TARGET} ${ARAY_FOCUS_RING}`}
               onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
               onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
               <Palette className="w-4 h-4" style={{ color: glass.textSecondary }} />
@@ -127,7 +129,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
           </div>
         ) : (
           /* Expanded: style panel with Liquid Glass */
-          <div className="w-[340px] max-w-[calc(100vw-72px)] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200 relative"
+          <div className="w-[360px] max-w-[calc(100vw-64px)] max-h-[calc(100vh-112px)] rounded-l-2xl overflow-hidden animate-in slide-in-from-right-2 fade-in duration-200 relative"
             style={{
               background: glass.bg,
               backdropFilter: glass.blur,
@@ -144,69 +146,30 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 <Palette className="w-4 h-4 text-primary" />
                 <span className="text-sm font-bold" style={{ color: glass.textPrimary }}>Оформление</span>
               </div>
-              <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg transition-colors" aria-label="Закрыть"
+              <button onClick={() => setOpen(false)} className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${ARAY_FOCUS_RING}`} aria-label="Закрыть"
                 onMouseEnter={e => (e.currentTarget.style.background = glass.hoverBg)}
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
                 <X className="w-4 h-4" style={{ color: glass.textSecondary }} />
               </button>
             </div>
             {/* Content */}
-            <div className="relative p-4 space-y-4">
+            <div className="relative max-h-[calc(100vh-168px)] overflow-y-auto p-4 space-y-4">
               {/* Палитры */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest mb-2.5" style={{ color: glass.textSecondary }}>Стиль и атмосфера</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {PALETTES.map((p) => {
-                    const atmosphere = getPaletteAtmosphere(p.id);
-                    const active = palette === p.id;
+                  {PALETTES.map((item) => {
+                    const atmosphere = getPaletteAtmosphere(item.id);
+                    const active = palette === item.id;
                     return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => choosePalette(p.id)}
-                        title={atmosphere ? `${p.name}: ${atmosphere.name}` : p.name}
-                        className="group rounded-xl p-1.5 text-left transition-all"
-                        style={{
-                          background: active ? "hsl(var(--primary) / 0.16)" : glass.hoverBg,
-                          border: `1px solid ${active ? p.accent : glass.borderInner}`,
-                          boxShadow: active ? `0 10px 26px ${p.accent}22` : "none",
-                        }}
-                      >
-                        <span className="relative block h-16 overflow-hidden rounded-lg bg-black/20">
-                          {atmosphere && (
-                            <img
-                              src={atmosphere.src}
-                              alt=""
-                              loading="lazy"
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              style={{ opacity: isDark ? 0.72 : 0.88 }}
-                            />
-                          )}
-                          <span
-                            className="absolute inset-0"
-                            style={{
-                              background: `linear-gradient(180deg, rgba(0,0,0,0.04), rgba(0,0,0,0.54)), linear-gradient(135deg, ${p.sidebar}44, ${p.accent}55)`,
-                            }}
-                          />
-                          <span
-                            className="absolute left-1.5 top-1.5 h-4 w-4 rounded-full border border-white/40 shadow"
-                            style={{ background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)` }}
-                          />
-                          {active && (
-                            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-white text-black shadow">
-                              <Check className="h-3 w-3" strokeWidth={2.4} />
-                            </span>
-                          )}
-                        </span>
-                        <span className="mt-1.5 block min-w-0">
-                          <span className="block truncate text-[11px] font-semibold leading-tight" style={{ color: active ? p.accent : glass.textPrimary }}>
-                            {p.name}
-                          </span>
-                          <span className="block truncate text-[9px] font-medium leading-tight" style={{ color: glass.textSecondary }}>
-                            {atmosphere?.shortName ?? "ARAY"}
-                          </span>
-                        </span>
-                      </button>
+                      <AdminPaletteCard
+                        key={item.id}
+                        palette={item}
+                        atmosphere={atmosphere}
+                        active={active}
+                        onClick={() => choosePalette(item.id)}
+                        title={atmosphere ? `${item.name}: ${atmosphere.name}` : item.name}
+                      />
                     );
                   })}
                 </div>
@@ -217,7 +180,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                 <div className="flex gap-2">
                   {["light", "dark"].map((t) => (
                     <button key={t} onClick={() => setTheme(t)}
-                      className="flex-1 py-2.5 rounded-xl text-[12px] font-semibold transition-all"
+                      className={`flex-1 min-h-11 rounded-xl px-3 text-[12px] font-semibold transition-all ${ARAY_FOCUS_RING}`}
                       style={{
                         background: safeTheme === t ? "hsl(var(--primary))" : glass.hoverBg,
                         color: safeTheme === t ? "#fff" : glass.textSecondary,
@@ -239,7 +202,7 @@ export function ArayControlCenter({ userRole, position = "bottom" }: { userRole?
                         key={mode.id}
                         type="button"
                         onClick={() => setBgMode(mode.id)}
-                        className="flex flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 transition-all"
+                        className={`flex min-h-12 flex-col items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 transition-all ${ARAY_FOCUS_RING}`}
                         style={{
                           background: active ? "hsl(var(--primary))" : glass.hoverBg,
                           color: active ? "#fff" : glass.textSecondary,

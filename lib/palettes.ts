@@ -20,7 +20,7 @@ export const PALETTE_GROUPS: { label: string; palettes: PaletteItem[] }[] = [
   {
     label: "Business Moods",
     palettes: [
-      { id: "sber", name: "Growth", sidebar: "#073B2A", accent: "#21A038" },
+      { id: "sber", name: "ARAY", sidebar: "#101827", accent: "#D8A84E" },
       { id: "avito", name: "Market", sidebar: "#123B63", accent: "#00AAFF" },
       { id: "amazon", name: "Commerce", sidebar: "#263545", accent: "#FFB000" },
     ],

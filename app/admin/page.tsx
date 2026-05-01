@@ -14,6 +14,11 @@ import { DashboardGreeting } from "@/components/admin/dashboard-greeting";
 import { DashboardMetrics, CourierMetrics } from "@/components/admin/dashboard-metrics";
 import { DashboardChart } from "@/components/admin/dashboard-chart";
 import { DashboardActions } from "@/components/admin/dashboard-actions";
+import {
+  ARAY_ICON_TONE,
+  ARAY_ICON_TONE_WARNING,
+  ARAY_PROGRESS_TONE,
+} from "@/lib/aray-design-tokens";
 // DashboardArayRail убран — Арай теперь fixed справа в AdminShell на ВСЕЙ админке
 // (сессия 40 hotfix: видение Армана для сенсорных мониторов/телевизоров)
 
@@ -22,79 +27,65 @@ import { DashboardActions } from "@/components/admin/dashboard-actions";
 // Полная переписка под calm UI магазина:
 //  - Все aray-stat-card / arayglass-grid-* убраны.
 //  - bg-card border-border rounded-2xl на каждом блоке.
-//  - Цветные иконки в кружках semantic (emerald revenue / amber orders /
-//    primary blue / violet analytics / pink reviews).
+//  - Palette-aware иконки: один акцент выбранной атмосферы, warning/success/danger только по смыслу.
 //  - font-display для крупных значений, primary акцент на имени и сумме.
-//  - Quick Actions grid 2/3/4 col с цветными лейблами + иконкой в круге.
+//  - Quick Actions grid 2/3/4 col с палитро-зависимой иконкой в круге.
 //  - Чистый адаптив 375 / 640 / 1024 / 1280.
 //  - DashboardActions (client) регистрирует "Новый заказ" в хедер AppHeader.
 //  - DashboardArayRail справа на ≥lg как превью архитектуры pinned-rail.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Тон-карточки для Quick Actions (palette-aware semantic) ──
-type QuickTone = "primary" | "emerald" | "amber" | "violet" | "rose" | "blue" | "slate";
-
 interface QuickAction {
   href: string;
   label: string;
   icon: React.ElementType;
-  tone: QuickTone;
 }
 
-const TONE_BG: Record<QuickTone, string> = {
-  primary: "bg-background/70 text-primary ring-1 ring-border/70 dark:bg-background/35 dark:ring-white/10",
-  emerald: "bg-background/70 text-emerald-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-emerald-400 dark:ring-white/10",
-  amber: "bg-background/70 text-amber-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-amber-400 dark:ring-white/10",
-  violet: "bg-background/70 text-violet-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-violet-400 dark:ring-white/10",
-  rose: "bg-background/70 text-rose-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-rose-400 dark:ring-white/10",
-  blue: "bg-background/70 text-blue-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-blue-400 dark:ring-white/10",
-  slate: "bg-background/70 text-slate-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-slate-300 dark:ring-white/10",
-};
 
 const QUICK_ACTIONS: Record<string, QuickAction[]> = {
   owner: [
-    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, tone: "primary" },
-    { href: "/admin/clients", label: "Клиенты", icon: UserCircle, tone: "blue" },
-    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2, tone: "violet" },
-    { href: "/admin/finance", label: "Финансы", icon: Wallet, tone: "emerald" },
-    { href: "/admin/products", label: "Каталог", icon: Package, tone: "amber" },
-    { href: "/admin/email", label: "Email", icon: Mail, tone: "rose" },
-    { href: "/admin/notifications", label: "Push", icon: Bell, tone: "blue" },
-    { href: "/admin/settings", label: "Настройки", icon: Settings, tone: "slate" },
+    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+    { href: "/admin/clients", label: "Клиенты", icon: UserCircle },
+    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2 },
+    { href: "/admin/finance", label: "Финансы", icon: Wallet },
+    { href: "/admin/products", label: "Каталог", icon: Package },
+    { href: "/admin/email", label: "Email", icon: Mail },
+    { href: "/admin/notifications", label: "Push", icon: Bell },
+    { href: "/admin/settings", label: "Настройки", icon: Settings },
   ],
   manager: [
-    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, tone: "primary" },
-    { href: "/admin/clients", label: "Клиенты", icon: UserCircle, tone: "blue" },
-    { href: "/admin/crm", label: "CRM", icon: Target, tone: "violet" },
-    { href: "/admin/delivery", label: "Доставка", icon: Truck, tone: "emerald" },
-    { href: "/admin/products", label: "Каталог", icon: Package, tone: "amber" },
-    { href: "/admin/reviews", label: "Отзывы", icon: Star, tone: "rose" },
-    { href: "/admin/tasks", label: "Задачи", icon: CheckSquare, tone: "blue" },
-    { href: "/admin/inventory", label: "Склад", icon: Warehouse, tone: "slate" },
+    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+    { href: "/admin/clients", label: "Клиенты", icon: UserCircle },
+    { href: "/admin/crm", label: "CRM", icon: Target },
+    { href: "/admin/delivery", label: "Доставка", icon: Truck },
+    { href: "/admin/products", label: "Каталог", icon: Package },
+    { href: "/admin/reviews", label: "Отзывы", icon: Star },
+    { href: "/admin/tasks", label: "Задачи", icon: CheckSquare },
+    { href: "/admin/inventory", label: "Склад", icon: Warehouse },
   ],
   courier: [
-    { href: "/admin/delivery", label: "Доставки", icon: Truck, tone: "emerald" },
-    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, tone: "primary" },
-    { href: "/admin/tasks", label: "Задачи", icon: CheckSquare, tone: "blue" },
-    { href: "/admin/help", label: "Помощь", icon: HeartPulse, tone: "rose" },
+    { href: "/admin/delivery", label: "Доставки", icon: Truck },
+    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+    { href: "/admin/tasks", label: "Задачи", icon: CheckSquare },
+    { href: "/admin/help", label: "Помощь", icon: HeartPulse },
   ],
   accountant: [
-    { href: "/admin/finance", label: "Финансы", icon: Wallet, tone: "emerald" },
-    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, tone: "primary" },
-    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2, tone: "violet" },
-    { href: "/admin/clients", label: "Клиенты", icon: UserCircle, tone: "blue" },
+    { href: "/admin/finance", label: "Финансы", icon: Wallet },
+    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+    { href: "/admin/analytics", label: "Аналитика", icon: BarChart2 },
+    { href: "/admin/clients", label: "Клиенты", icon: UserCircle },
   ],
   warehouse: [
-    { href: "/admin/inventory", label: "Склад", icon: Warehouse, tone: "primary" },
-    { href: "/admin/products", label: "Каталог", icon: Package, tone: "amber" },
-    { href: "/admin/import", label: "Импорт", icon: FileDown, tone: "blue" },
-    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, tone: "emerald" },
+    { href: "/admin/inventory", label: "Склад", icon: Warehouse },
+    { href: "/admin/products", label: "Каталог", icon: Package },
+    { href: "/admin/import", label: "Импорт", icon: FileDown },
+    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
   ],
   seller: [
-    { href: "/admin/products", label: "Каталог", icon: Package, tone: "amber" },
-    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag, tone: "primary" },
-    { href: "/admin/clients", label: "Клиенты", icon: UserCircle, tone: "blue" },
-    { href: "/admin/reviews", label: "Отзывы", icon: Star, tone: "rose" },
+    { href: "/admin/products", label: "Каталог", icon: Package },
+    { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
+    { href: "/admin/clients", label: "Клиенты", icon: UserCircle },
+    { href: "/admin/reviews", label: "Отзывы", icon: Star },
   ],
 };
 
@@ -109,13 +100,13 @@ const ROLE_GREETINGS: Record<string, string> = {
 };
 
 const ORDER_FLOW = [
-  { status: "NEW", href: "/admin/orders?status=NEW", tone: "bg-blue-500", iconTone: "bg-blue-500/10 text-blue-700 dark:text-blue-400" },
-  { status: "CONFIRMED", href: "/admin/orders?status=CONFIRMED", tone: "bg-purple-500", iconTone: "bg-purple-500/10 text-purple-700 dark:text-purple-400" },
-  { status: "PROCESSING", href: "/admin/orders?status=PROCESSING", tone: "bg-amber-500", iconTone: "bg-amber-500/10 text-amber-700 dark:text-amber-400" },
-  { status: "IN_DELIVERY", href: "/admin/orders?status=IN_DELIVERY", tone: "bg-sky-500", iconTone: "bg-sky-500/10 text-sky-700 dark:text-sky-400" },
-  { status: "READY_PICKUP", href: "/admin/orders?status=READY_PICKUP", tone: "bg-violet-500", iconTone: "bg-violet-500/10 text-violet-700 dark:text-violet-400" },
-  { status: "DELIVERED", href: "/admin/orders?status=DELIVERED", tone: "bg-green-500", iconTone: "bg-green-500/10 text-green-700 dark:text-green-400" },
-  { status: "COMPLETED", href: "/admin/orders?status=COMPLETED", tone: "bg-teal-500", iconTone: "bg-teal-500/10 text-teal-700 dark:text-teal-400" },
+  { status: "NEW", href: "/admin/orders?status=NEW" },
+  { status: "CONFIRMED", href: "/admin/orders?status=CONFIRMED" },
+  { status: "PROCESSING", href: "/admin/orders?status=PROCESSING" },
+  { status: "IN_DELIVERY", href: "/admin/orders?status=IN_DELIVERY" },
+  { status: "READY_PICKUP", href: "/admin/orders?status=READY_PICKUP" },
+  { status: "DELIVERED", href: "/admin/orders?status=DELIVERED" },
+  { status: "COMPLETED", href: "/admin/orders?status=COMPLETED" },
 ] as const;
 
 function getRoleGroup(role: string): string {
@@ -206,7 +197,7 @@ export default async function AdminDashboard() {
       value: todayOrders.toLocaleString("ru-RU"),
       helper: "заказов с полуночи",
       icon: Clock,
-      tone: "bg-primary/10 text-primary",
+      tone: ARAY_ICON_TONE,
       show: true,
     },
     {
@@ -215,7 +206,7 @@ export default async function AdminDashboard() {
       value: totalProducts.toLocaleString("ru-RU"),
       helper: "активных товаров",
       icon: Package,
-      tone: "bg-amber-500/10 text-amber-700 dark:text-amber-400",
+      tone: ARAY_ICON_TONE,
       show: isOwner || ["manager", "warehouse", "seller"].includes(roleGroup),
     },
     {
@@ -224,7 +215,7 @@ export default async function AdminDashboard() {
       value: pendingReviews.toLocaleString("ru-RU"),
       helper: "ждут модерации",
       icon: Star,
-      tone: "bg-rose-500/10 text-rose-700 dark:text-rose-400",
+      tone: pendingReviews > 0 ? ARAY_ICON_TONE_WARNING : ARAY_ICON_TONE,
       show: isOwner || roleGroup === "manager",
     },
     {
@@ -233,7 +224,7 @@ export default async function AdminDashboard() {
       value: pendingStaff.toLocaleString("ru-RU"),
       helper: "заявок на доступ",
       icon: Users,
-      tone: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
+      tone: pendingStaff > 0 ? ARAY_ICON_TONE_WARNING : ARAY_ICON_TONE,
       show: isOwner,
     },
   ].filter((card) => card.show);
@@ -257,7 +248,7 @@ export default async function AdminDashboard() {
                 href="/admin/orders?status=NEW"
                 className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
                   <Clock className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -276,7 +267,7 @@ export default async function AdminDashboard() {
                 href="/admin/reviews"
                 className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
-                <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+                <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
                   <Star className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -295,7 +286,7 @@ export default async function AdminDashboard() {
                 href="/admin/staff"
                 className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
                   <Users className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -363,7 +354,7 @@ export default async function AdminDashboard() {
                     style={{ WebkitTapHighlightColor: "transparent" }}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${item.iconTone}`}>
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ARAY_ICON_TONE}`}>
                         <ShoppingBag className="w-4 h-4" strokeWidth={1.75} />
                       </span>
                       <span className="text-lg font-display font-bold leading-none text-foreground tabular-nums">
@@ -375,7 +366,7 @@ export default async function AdminDashboard() {
                     </p>
                     <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${item.tone}`}
+                        className={`h-full rounded-full ${ARAY_PROGRESS_TONE}`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -387,7 +378,7 @@ export default async function AdminDashboard() {
 
           <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
             <div className="flex items-center gap-3 mb-4 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <div className={`w-9 h-9 rounded-xl ${ARAY_ICON_TONE} flex items-center justify-center shrink-0`}>
                 <CheckSquare className="w-[18px] h-[18px]" strokeWidth={1.75} />
               </div>
               <div className="min-w-0">
@@ -450,7 +441,7 @@ export default async function AdminDashboard() {
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${TONE_BG[action.tone]}`}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110 ${ARAY_ICON_TONE}`}
                 >
                   <action.icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
                 </div>

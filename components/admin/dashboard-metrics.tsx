@@ -3,15 +3,14 @@
 /**
  * DashboardMetrics — главные KPI-карточки дашборда.
  *
- * Сессия 40 (28.04.2026): полная переписка под calm UI магазина.
- * Удалено:
- *  - aray-stat-card / arayglass-grid-metrics (старый ARAYGLASS)
- *  - color="bg-emerald-500" с белой иконкой (тёмные плашки на светлой теме = радуга)
+ * Сессия 40+ (2026-05-01): calm UI и единый закон ARAY.
+ *  - карточки держат общий bg-card / border / rounded-2xl ритм;
+ *  - обычные KPI берут цвет выбранной атмосферы;
+ *  - warning/success/danger цвета оставляем только для реальных статусов;
+ *  - декоративную радугу не возвращаем.
  *
  * Добавлено:
- *  - bg-card border-border rounded-2xl, hover:border-primary/30 + glow
- *  - Цветные иконки в кружках semantic: emerald (revenue), primary (today),
- *    amber (warning/orders), violet (analytics)
+ *  - hover:border-primary/30 + glow
  *  - Крупные числа font-display, primary акцент при необходимости
  *  - Trend hint снизу (опционально)
  *  - Анимация появления + counter
@@ -20,16 +19,20 @@ import type { MouseEvent } from "react";
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  ARAY_ICON_TONE,
+  ARAY_ICON_TONE_MUTED,
+  ARAY_ICON_TONE_WARNING,
+} from "@/lib/aray-design-tokens";
 import { AnimatedCounter } from "./animated-counter";
 import { TrendingUp, BarChart3, Clock, ArrowUpRight, Truck } from "lucide-react";
 
-type Tone = "emerald" | "primary" | "amber" | "violet";
+type Tone = "primary" | "muted" | "warning";
 
 const TONE_ICON: Record<Tone, string> = {
-  emerald: "bg-background/70 text-emerald-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-emerald-400 dark:ring-white/8",
-  primary: "bg-background/70 text-primary ring-1 ring-border/70 dark:bg-background/35 dark:ring-white/8",
-  amber: "bg-background/70 text-amber-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-amber-400 dark:ring-white/8",
-  violet: "bg-background/70 text-violet-600 ring-1 ring-border/70 dark:bg-background/35 dark:text-violet-400 dark:ring-white/8",
+  primary: ARAY_ICON_TONE,
+  muted: ARAY_ICON_TONE_MUTED,
+  warning: ARAY_ICON_TONE_WARNING,
 };
 
 interface MetricCardProps {
@@ -125,7 +128,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         value={r30}
         label="Выручка 30 дней"
         suffix=" ₽"
-        tone="emerald"
+        tone="primary"
         hint="Все продажи без отменённых"
         delay={0}
       />
@@ -144,7 +147,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         icon={Clock}
         value={newOrders}
         label="Новых заказов"
-        tone="amber"
+        tone={newOrders > 0 ? "warning" : "primary"}
         hint="Ожидают подтверждения"
         delay={160}
       />
@@ -154,7 +157,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         value={avg}
         label="Средний чек"
         suffix=" ₽"
-        tone="violet"
+        tone="primary"
         hint="За 30 дней"
         delay={240}
       />
@@ -165,7 +168,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
 export function CourierMetrics({ newOrders, todayOrders }: { newOrders: number; todayOrders: number }) {
   return (
     <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 sm:gap-3 min-w-0">
-      <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" tone="amber" delay={0} />
+      <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" tone={newOrders > 0 ? "warning" : "primary"} delay={0} />
       <MetricCard href="/admin/delivery" icon={Truck} value={todayOrders} label="Доставок сегодня" tone="primary" delay={80} />
     </div>
   );

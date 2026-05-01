@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { usePalette } from "@/components/palette-provider";
 import { getPalettePhotos } from "@/lib/admin-atmospheres";
@@ -16,14 +16,24 @@ function normalizeMode(mode: string | null | undefined): AdminBgMode {
   return mode === "classic" ? "clean" : "clean";
 }
 
+function preloadPhotos(srcs: string[]) {
+  if (typeof window === "undefined") return;
+  for (const src of srcs.slice(0, 3)) {
+    const img = new Image();
+    img.decoding = "async";
+    img.src = src;
+  }
+}
+
 export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
   const bgMode = normalizeMode(mode);
   const { resolvedTheme } = useTheme();
   const { palette } = usePalette();
   const [mounted, setMounted] = useState(false);
   const isDark = mounted ? resolvedTheme !== "light" : true;
-  const palettePhotos = getPalettePhotos(palette);
+  const palettePhotos = useMemo(() => getPalettePhotos(palette), [palette]);
   const [photos, setPhotos] = useState<string[]>(palettePhotos);
+  const [userPhotos, setUserPhotos] = useState<string[] | null>(null);
   const [index, setIndex] = useState(0);
   const [visibleIndex, setVisibleIndex] = useState(0);
   const [tabHidden, setTabHidden] = useState(false);
@@ -51,18 +61,25 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!alive) return;
-        const userPhotos = Array.isArray(data?.photos) ? data.photos.filter(Boolean) : [];
-        setPhotos(userPhotos.length > 0 ? userPhotos : palettePhotos);
-        setIndex(0);
-        setVisibleIndex(0);
+        const nextUserPhotos = Array.isArray(data?.photos) ? data.photos.filter(Boolean) : [];
+        setUserPhotos(nextUserPhotos.length > 0 ? nextUserPhotos : null);
       })
       .catch(() => {
-        if (alive) setPhotos(palettePhotos);
+        if (alive) setUserPhotos(null);
       });
     return () => {
       alive = false;
     };
-  }, [bgMode, palette]);
+  }, [bgMode]);
+
+  useEffect(() => {
+    if (bgMode === "clean") return;
+    const nextPhotos = userPhotos?.length ? userPhotos : palettePhotos;
+    setPhotos(nextPhotos);
+    setIndex(0);
+    setVisibleIndex(0);
+    preloadPhotos(nextPhotos);
+  }, [bgMode, palettePhotos, userPhotos]);
 
   useEffect(() => {
     if (bgMode === "clean" || tabHidden || photos.length <= 1) return;

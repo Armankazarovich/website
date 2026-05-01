@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
+import { AdminPaletteCard } from "@/components/admin/admin-palette-card";
 import { PALETTE_GROUPS } from "@/lib/palettes";
 import { getPaletteAtmosphere } from "@/lib/admin-atmospheres";
 import { useToast } from "@/components/ui/use-toast";
-import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft, Eye } from "lucide-react";
+import { Lock, Image as ImageIcon, LayoutGrid, Bot, ShoppingBag, ShoppingCart, Star, Calculator, Tag, Truck, MapPin, MessageSquare, AlignLeft } from "lucide-react";
 
 function applyPalettePreview(id: string) {
   const root = document.documentElement;
@@ -454,48 +455,19 @@ export function AppearanceClient({
                         : "border-border bg-muted/30 opacity-50"
                     }`}
                   >
-                    <button
-                      type="button"
+                    <AdminPaletteCard
+                      palette={p}
+                      atmosphere={atmosphere}
+                      active={isDefault}
+                      enabled={isOn}
+                      previewing={isPreviewing}
+                      variant="large"
+                      showLabel={false}
                       onClick={() => toggle(p.id)}
-                      className="group relative block h-28 w-full overflow-hidden text-left"
-                      aria-label={`Переключить тему ${p.name}`}
-                    >
-                      {atmosphere && (
-                        <img
-                          src={atmosphere.src}
-                          alt=""
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                      )}
-                      <span
-                        className="absolute inset-0"
-                        style={{
-                          background: `linear-gradient(180deg, rgba(0,0,0,0.03), rgba(0,0,0,0.68)), linear-gradient(135deg, ${p.sidebar}33, ${p.accent}4d)`,
-                        }}
-                      />
-                      <span
-                        className="absolute left-3 top-3 h-9 w-9 rounded-full border-2 border-white/35 shadow-lg"
-                        style={{
-                          background: `linear-gradient(135deg, ${p.sidebar} 50%, ${p.accent} 50%)`,
-                          boxShadow: isPreviewing ? `0 0 0 2px ${p.accent}55, 0 8px 18px ${p.accent}40` : undefined,
-                        }}
-                      />
-                      {isPreviewing && (
-                        <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[10px] font-medium text-white backdrop-blur animate-in fade-in duration-150">
-                          <Eye className="w-3 h-3" />
-                          предпросмотр
-                        </span>
-                      )}
-                      <span className="absolute bottom-3 left-3 right-3 min-w-0">
-                        <span className="block truncate text-sm font-bold text-white drop-shadow">
-                          {p.name}
-                        </span>
-                        <span className="block truncate text-[11px] font-medium text-white/75">
-                          {atmosphere?.name ?? "ARAY стиль"}
-                        </span>
-                      </span>
-                    </button>
+                      onMouseEnter={() => handlePaletteHover(p.id)}
+                      onMouseLeave={handlePaletteLeave}
+                      className="block w-full rounded-none border-0 bg-transparent p-2 shadow-none hover:bg-transparent"
+                    />
 
                     <div className="flex items-center gap-2 p-3">
                       <span className="min-w-0 flex-1">

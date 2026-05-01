@@ -192,11 +192,11 @@ jobs:
             tar -xzf "$ARCHIVE"
             rm -f "$ARCHIVE"
 
-            # ── 5. Restore preserved state (overwrite archive's stubs) ──
+            # ── 5. Restore preserved mutable state without deleting shipped static assets ──
             echo "♻️ Restoring .env / uploads / product images..."
             [ -f /tmp/pilorus-preserve/.env ] && cp /tmp/pilorus-preserve/.env "$APP_DIR/.env"
-            [ -d /tmp/pilorus-preserve/uploads ] && cp -r /tmp/pilorus-preserve/uploads "$APP_DIR/public/"
-            [ -d /tmp/pilorus-preserve/images ] && rm -rf "$APP_DIR/public/images" && cp -r /tmp/pilorus-preserve/images "$APP_DIR/public/"
+            [ -d /tmp/pilorus-preserve/uploads ] && mkdir -p "$APP_DIR/public/uploads" && cp -a /tmp/pilorus-preserve/uploads/. "$APP_DIR/public/uploads/"
+            [ -d /tmp/pilorus-preserve/images ] && mkdir -p "$APP_DIR/public/images" && cp -a /tmp/pilorus-preserve/images/. "$APP_DIR/public/images/"
             rm -rf /tmp/pilorus-preserve
 
             # ── 6. Apply schema changes + data migrations ──

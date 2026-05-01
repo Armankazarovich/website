@@ -64,9 +64,9 @@ export const ARAY_ATMOSPHERES: AdminAtmosphereItem[] = [
     palettes: ["amazon"],
   },
   {
-    id: "quiet-luxury",
-    name: "Тихая роскошь",
-    shortName: "Роскошь",
+    id: "aray-signature",
+    name: "ARAY: вода, золото и интеллект",
+    shortName: "ARAY",
     src: "/images/admin-atmosphere/aray-09-quiet-luxury.webp",
     palettes: ["sber"],
   },
