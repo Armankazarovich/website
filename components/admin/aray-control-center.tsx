@@ -91,7 +91,7 @@ export function ArayAppearancePanel({
       {showBackgroundControls && (
         <section>
           <p className={sectionTitleClass}>Фон админки</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={`grid grid-cols-2 ${dense ? "gap-1.5" : "gap-2"}`}>
             {BG_MODES.map((mode) => {
               const Icon = mode.icon;
               const active = bgMode === mode.id;
@@ -101,14 +101,16 @@ export function ArayAppearancePanel({
                   type="button"
                   onClick={() => setBgMode(mode.id)}
                   aria-pressed={active}
-                  className={`group flex min-h-[3.75rem] items-center gap-3 rounded-2xl border px-3 text-left transition-all ${ARAY_FOCUS_RING} ${
+                  className={`group flex items-center border text-left transition-all ${ARAY_FOCUS_RING} ${
+                    dense ? "min-h-[3.25rem] gap-2.5 rounded-xl px-2.5" : "min-h-[3.75rem] gap-3 rounded-2xl px-3"
+                  } ${
                     active
                       ? "border-primary/30 bg-primary/[0.09] text-foreground shadow-[0_10px_24px_hsl(var(--primary)/0.07)]"
                       : "border-border/70 bg-card/40 text-foreground hover:border-primary/20 hover:bg-card/64"
                   }`}
                 >
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                    className={`flex shrink-0 items-center justify-center ${dense ? "h-8 w-8 rounded-lg" : "h-9 w-9 rounded-xl"} ${
                       active
                         ? "bg-primary/14 text-primary ring-1 ring-primary/18"
                         : isDark
@@ -132,7 +134,7 @@ export function ArayAppearancePanel({
 
       <section>
         <p className={sectionTitleClass}>Тема</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid grid-cols-3 ${dense ? "gap-1.5" : "gap-2"}`}>
           {THEME_OPTIONS.map((option) => {
             const Icon = option.icon;
             const active = theme === option.id || (!theme && option.id === "system");
@@ -142,7 +144,9 @@ export function ArayAppearancePanel({
                 type="button"
                 onClick={() => setTheme(option.id)}
                 aria-pressed={active}
-                className={`flex min-h-11 flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2 transition-all ${ARAY_FOCUS_RING} ${
+                className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-2 transition-all ${ARAY_FOCUS_RING} ${
+                  dense ? "min-h-10" : "min-h-11"
+                } ${
                   active
                     ? "border-primary/30 bg-primary/[0.09] text-primary"
                     : "border-border/70 bg-card/36 text-muted-foreground hover:border-primary/20 hover:bg-card/64 hover:text-foreground"
@@ -158,7 +162,7 @@ export function ArayAppearancePanel({
 
       <section>
         <p className={sectionTitleClass}>Цвет интерфейса</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className={`grid grid-cols-3 ${dense ? "gap-1.5" : "gap-2"}`}>
           {PALETTES.map((item) => {
             return (
               <AdminPaletteCard

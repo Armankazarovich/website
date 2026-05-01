@@ -47,16 +47,17 @@ export function AdminPaletteCard({
       type="button"
       title={title}
       disabled={disabled}
+      aria-pressed={active}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       className={cn(
         "admin-palette-button group min-w-0 text-left transition-[background-color,border-color,box-shadow,opacity,transform] duration-200",
         ARAY_FOCUS_RING,
-        isLarge ? "rounded-2xl p-2" : "rounded-xl p-1.5",
+        isLarge ? "rounded-2xl p-2" : "rounded-xl p-1",
         active
-          ? "border border-primary/42 bg-primary/[0.08] shadow-[0_10px_24px_hsl(var(--primary)/0.10)]"
-          : "border border-border/65 bg-background/38 hover:border-primary/26 hover:bg-background/62",
+          ? "border border-primary/34 bg-primary/[0.055] shadow-[0_8px_18px_hsl(var(--primary)/0.075)]"
+          : "border border-border/58 bg-background/30 hover:border-primary/24 hover:bg-background/48",
         !enabled && "opacity-55",
         disabled && "cursor-not-allowed opacity-45",
         className,
@@ -71,7 +72,7 @@ export function AdminPaletteCard({
         className={cn(
           "admin-palette-light relative block overflow-hidden rounded-xl bg-muted ring-1 ring-border/55",
           active && "ring-primary/30",
-          isLarge ? "h-20" : "h-12",
+          isLarge ? "h-20" : "h-10",
         )}
         style={{
           background: previewBackground,
@@ -85,16 +86,16 @@ export function AdminPaletteCard({
               : `linear-gradient(180deg, rgba(255,255,255,0.10), rgba(0,0,0,0.30)), linear-gradient(135deg, ${base}44, ${accent}55)`,
           }}
         />
-        <span className="absolute left-2 top-2 h-1.5 w-8 rounded-full bg-white/18" />
+        <span className="absolute left-2 top-2 h-1 w-7 rounded-full bg-white/16" />
         <span
-          className="absolute left-2 top-5 h-px w-14 rounded-full opacity-80"
+          className="absolute left-2 top-4 h-px w-12 rounded-full opacity-70"
           style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
         />
         <span
-          className="absolute right-2 bottom-3 h-px w-16 rounded-full opacity-80"
+          className="absolute right-2 bottom-2.5 h-px w-14 rounded-full opacity-70"
           style={{ background: `linear-gradient(90deg, transparent, ${glow})` }}
         />
-        <span className="absolute inset-x-0 bottom-0 flex h-1.5">
+        <span className="absolute inset-x-0 bottom-0 flex h-1">
           {isAray ? (
             <>
               <span className="flex-1" style={{ background: "#070B12" }} />
@@ -110,7 +111,7 @@ export function AdminPaletteCard({
           )}
         </span>
         {active && (
-          <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-background/86 text-primary shadow-sm ring-1 ring-primary/22 backdrop-blur">
+          <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-background/86 text-primary shadow-sm ring-1 ring-primary/22 backdrop-blur">
             <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
           </span>
         )}
@@ -122,7 +123,7 @@ export function AdminPaletteCard({
       </span>
 
       {showLabel && (
-        <span className={cn("block min-w-0", isLarge ? "mt-2 px-1 pb-0.5" : "mt-1.5")}>
+        <span className={cn("block min-w-0", isLarge ? "mt-2 px-1 pb-0.5" : "mt-1")}>
           <span className={cn("block truncate font-semibold leading-tight", isLarge ? "text-sm" : "text-[11px]", active && "text-primary")}>
             {palette.name}
           </span>

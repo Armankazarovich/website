@@ -8,74 +8,72 @@ export type AdminAtmosphereItem = {
 
 export const ARAY_ATMOSPHERES: AdminAtmosphereItem[] = [
   {
-    id: "water-intelligence",
-    name: "Источник воды и интеллекта",
-    shortName: "Вода",
-    src: "/images/admin-atmosphere/aray-01-water-intelligence.webp",
+    id: "meadow-sky",
+    name: "Чистое небо и поле",
+    shortName: "Небо",
+    src: "/images/admin-atmosphere/admin-nature-01-meadow-sky.webp",
     palettes: ["ocean"],
   },
   {
-    id: "earth-gold",
-    name: "Золото земли и ценность",
-    shortName: "Земля",
-    src: "/images/admin-atmosphere/aray-02-earth-gold.webp",
+    id: "calm-beach",
+    name: "Спокойная береговая линия",
+    shortName: "Берег",
+    src: "/images/admin-atmosphere/admin-nature-02-calm-beach.webp",
     palettes: ["timber"],
   },
   {
-    id: "night-focus",
-    name: "Ночной фокус",
-    shortName: "Фокус",
-    src: "/images/admin-atmosphere/aray-03-night-focus.webp",
+    id: "alpine-lake",
+    name: "Горное озеро",
+    shortName: "Озеро",
+    src: "/images/admin-atmosphere/admin-nature-03-alpine-lake.webp",
     palettes: ["midnight"],
   },
   {
-    id: "northern-light",
-    name: "Северный свет",
+    id: "northern-lake",
+    name: "Северная вода",
     shortName: "Север",
-    src: "/images/admin-atmosphere/aray-04-northern-light.webp",
+    src: "/images/admin-atmosphere/admin-nature-04-northern-lake.webp",
     palettes: ["slate"],
   },
   {
-    id: "forest-balance",
-    name: "Лесной баланс",
-    shortName: "Лес",
-    src: "/images/admin-atmosphere/aray-05-forest-balance.webp",
+    id: "green-island",
+    name: "Зеленый остров",
+    shortName: "Остров",
+    src: "/images/admin-atmosphere/admin-nature-05-green-island.webp",
     palettes: ["forest"],
   },
   {
-    id: "future-city",
-    name: "Город будущего",
-    shortName: "Город",
-    src: "/images/admin-atmosphere/aray-06-future-city.webp",
+    id: "sunset-water",
+    name: "Мягкий закат на воде",
+    shortName: "Закат",
+    src: "/images/admin-atmosphere/admin-nature-06-sunset-water.webp",
     palettes: ["avito"],
   },
   {
-    id: "solar-impulse",
-    name: "Солнечный импульс",
-    shortName: "Импульс",
-    src: "/images/admin-atmosphere/aray-07-solar-impulse.webp",
+    id: "clear-mountain-water",
+    name: "Прозрачная горная вода",
+    shortName: "Вода",
+    src: "/images/admin-atmosphere/admin-nature-07-clear-mountain-water.webp",
     palettes: ["crimson"],
   },
   {
-    id: "cosmic-data",
-    name: "Космос данных",
-    shortName: "Космос",
-    src: "/images/admin-atmosphere/aray-08-cosmic-data.webp",
+    id: "snow-peak",
+    name: "Светлая снежная вершина",
+    shortName: "Снег",
+    src: "/images/admin-atmosphere/admin-nature-08-snow-peak.webp",
     palettes: ["amazon"],
   },
   {
-    id: "aray-signature",
-    name: "ARAY: вода, золото и интеллект",
-    shortName: "ARAY",
-    src: "/images/admin-atmosphere/aray-09-quiet-luxury.webp",
+    id: "ocean-surf",
+    name: "Океанский свет",
+    shortName: "Океан",
+    src: "/images/admin-atmosphere/admin-nature-09-ocean-surf.webp",
     palettes: ["sber"],
   },
 ];
 
 export const FALLBACK_ADMIN_PHOTOS = ARAY_ATMOSPHERES.map((item) => item.src);
-export const ADMIN_ATMOSPHERE_PHOTOS = ARAY_ATMOSPHERES
-  .filter((item) => item.id !== "night-focus")
-  .map((item) => item.src);
+export const ADMIN_ATMOSPHERE_PHOTOS = ARAY_ATMOSPHERES.map((item) => item.src);
 
 export function getPaletteAtmosphere(palette: string): AdminAtmosphereItem | null {
   return ARAY_ATMOSPHERES.find((item) => item.palettes.includes(palette)) || null;

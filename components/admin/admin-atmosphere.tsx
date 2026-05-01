@@ -78,12 +78,12 @@ export function AdminAtmosphere({ mode }: { mode: string | null | undefined }) {
   const nextPhoto = photos[index % photos.length] || currentPhoto;
   const duration = PHOTO_MS;
   const solidOverlay = isDark
-    ? isMobile ? "rgba(5,6,7,0.76)" : "rgba(5,6,7,0.82)"
-    : isMobile ? "rgba(250,249,246,0.56)" : "rgba(250,249,246,0.64)";
+    ? isMobile ? "rgba(5,6,7,0.68)" : "rgba(5,6,7,0.72)"
+    : isMobile ? "rgba(250,249,246,0.58)" : "rgba(250,249,246,0.66)";
   const depthOverlay = isDark
     ? isMobile
-      ? "linear-gradient(to bottom, rgba(5,6,7,0.62) 0%, rgba(5,6,7,0.20) 38%, rgba(5,6,7,0.76) 100%)"
-      : "linear-gradient(to bottom, rgba(5,6,7,0.72) 0%, rgba(5,6,7,0.24) 38%, rgba(5,6,7,0.82) 100%)"
+      ? "linear-gradient(to bottom, rgba(5,6,7,0.50) 0%, rgba(5,6,7,0.16) 38%, rgba(5,6,7,0.70) 100%)"
+      : "linear-gradient(to bottom, rgba(5,6,7,0.58) 0%, rgba(5,6,7,0.18) 38%, rgba(5,6,7,0.74) 100%)"
     : isMobile
       ? "linear-gradient(to bottom, rgba(252,251,248,0.68) 0%, rgba(252,251,248,0.44) 38%, rgba(252,251,248,0.78) 100%)"
       : "linear-gradient(to bottom, rgba(252,251,248,0.74) 0%, rgba(252,251,248,0.50) 38%, rgba(252,251,248,0.82) 100%)";
@@ -188,11 +188,11 @@ function AtmosphereFrame({
         }}
         style={{
           animation: disabled ? "none" : `${kenburns} ${duration}ms ease-in-out forwards`,
-          opacity: isDark ? (isMobile ? 0.36 : 0.42) : (isMobile ? 0.30 : 0.28),
+          opacity: isDark ? (isMobile ? 0.46 : 0.50) : (isMobile ? 0.30 : 0.28),
           filter: isDark
             ? isMobile
-              ? "blur(8px) saturate(0.82) contrast(0.94) brightness(0.76)"
-              : "blur(11px) saturate(0.78) contrast(0.90) brightness(0.70)"
+              ? "blur(8px) saturate(0.84) contrast(0.94) brightness(0.82)"
+              : "blur(11px) saturate(0.82) contrast(0.90) brightness(0.78)"
             : isMobile
               ? "blur(13px) saturate(0.68) contrast(0.88) brightness(1.08)"
               : "blur(16px) saturate(0.62) contrast(0.86) brightness(1.10)",
