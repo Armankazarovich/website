@@ -7,17 +7,7 @@ import { X, SlidersHorizontal, Filter, ChevronDown, LayoutGrid, Ruler, ArrowLeft
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useFiltersDrawer } from "@/store/filters-drawer";
 
-const PRODUCT_TYPES = [
-  { label: "Доска обрезная", value: "доска" },
-  { label: "Брус / Брусок", value: "брус" },
-  { label: "Вагонка", value: "вагонка" },
-  { label: "Планкен", value: "планкен" },
-  { label: "Блок-хаус", value: "блок-хаус" },
-  { label: "Погонаж / Плинтус", value: "плинтус" },
-  { label: "Строганная", value: "строганная" },
-  { label: "Фанера", value: "фанера" },
-  { label: "ДСП / МДФ / ОСБ", value: "дсп" },
-];
+type ProductTypeOption = { label: string; keyword: string };
 
 function FiltersContent({ onClose }: { onClose: () => void }) {
   const searchParams = useSearchParams();
@@ -30,7 +20,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
 
   const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [sizes, setSizes] = useState<string[]>([]);
-  const [availableTypes, setAvailableTypes] = useState<string[] | undefined>(undefined);
+  const [availableTypes, setAvailableTypes] = useState<ProductTypeOption[]>([]);
 
   // All accordions open by default on mobile
   const [catOpen, setCatOpen] = useState(true);
@@ -46,7 +36,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
     const url = currentCategory
       ? `/api/catalog/available-types?category=${encodeURIComponent(currentCategory)}`
       : "/api/catalog/available-types";
-    fetch(url).then(r => r.json()).then(d => setAvailableTypes(d.types ?? undefined)).catch(() => {});
+    fetch(url).then(r => r.json()).then(d => setAvailableTypes(d.types ?? [])).catch(() => {});
   }, [currentCategory]);
 
   const createUrl = useCallback(
@@ -167,15 +157,12 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
               </button>
             )}
             <div className={`flex flex-wrap gap-2 ${currentType ? "" : "mt-3"}`}>
-              {(availableTypes
-                ? PRODUCT_TYPES.filter(t => availableTypes.includes(t.value))
-                : PRODUCT_TYPES
-              ).map(t => (
+              {availableTypes.map(t => (
                 <button
-                  key={t.value}
-                  onClick={() => navigate(createUrl({ type: currentType === t.value ? null : t.value }))}
+                  key={t.keyword}
+                  onClick={() => navigate(createUrl({ type: currentType === t.keyword ? null : t.keyword }))}
                   className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
-                    currentType === t.value
+                    currentType === t.keyword
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border bg-background hover:border-primary/50 hover:bg-accent text-muted-foreground hover:text-foreground"
                   }`}

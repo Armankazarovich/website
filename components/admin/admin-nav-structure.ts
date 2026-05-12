@@ -33,7 +33,7 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
     { label: "Задачи", hrefs: ["/admin/tasks"] },
   ],
   products: [
-    { label: "Каталог", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit", "/admin/categories", "/catalog"] },
+    { label: "Каталог", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit", "/admin/categories", "/admin/product-types", "/catalog"] },
     { label: "Склад / остатки", hrefs: ["/admin/inventory"] },
     { label: "Медиа и защита", hrefs: ["/admin/media", "/admin/watermark"] },
     { label: "Импорт", hrefs: ["/admin/import"] },

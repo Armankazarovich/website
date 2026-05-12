@@ -1,8 +1,17 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+const CATEGORY_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
+
+async function checkCategoryWrite() {
+  const session = await auth();
+  const role = session?.user?.role as string | undefined;
+  return session && role && CATEGORY_WRITE_ROLES.includes(role);
+}
 
 async function checkAdmin() {
   const session = await auth();
@@ -30,7 +39,7 @@ async function wouldCreateCycle(categoryId: string, candidateParentId: string): 
 }
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  if (!(await checkAdmin()))
+  if (!(await checkCategoryWrite()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   let body: Record<string, unknown>;
@@ -89,6 +98,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
       include: { _count: { select: { products: true } } },
     });
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/sitemap.xml");
     return NextResponse.json(category);
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;
@@ -139,6 +151,9 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 
   try {
     await prisma.category.delete({ where: { id: params.id } });
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/sitemap.xml");
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;

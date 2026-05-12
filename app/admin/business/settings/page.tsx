@@ -10,6 +10,7 @@ import {
   Package,
   Search,
   ShoppingCart,
+  Tags,
   Truck,
   Wand2,
 } from "lucide-react";
@@ -31,6 +32,7 @@ const settingGroups = [
     items: [
       { title: "Каталог товаров", href: "/admin/products", icon: Package, text: "Товары, цены, фото, варианты и публикация." },
       { title: "Категории", href: "/admin/categories", icon: Boxes, text: "Разделы, меню, футер, подкатегории и SEO." },
+      { title: "Типы товаров", href: "/admin/product-types", icon: Tags, text: "Фильтры каталога, тексты разделов, SEO и индексация." },
       { title: "Склад / Остатки", href: "/admin/inventory", icon: Search, text: "Остатки, пороги, наличие и быстрые правки." },
       { title: "Импорт / Экспорт", href: "/admin/import", icon: Wand2, text: "Excel, CSV, Google Таблицы и будущий перенос сайта." },
     ],

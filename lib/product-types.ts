@@ -10,6 +10,11 @@
 export interface ProductTypeInfo {
   label: string;    // Что видит пользователь: "Доска обрезная"
   keyword: string;  // Для Prisma name.contains(): "обрезная"
+  active?: boolean;
+  sortOrder?: number;
+  description?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
 }
 
 // ⚠️ JS \b НЕ работает с кириллицей! Используем lookbehind/lookahead
@@ -22,6 +27,7 @@ const CYR_END   = "(?![а-яёА-ЯЁ])";
 // Каждый паттерн — regex для проверки названия товара
 const TYPE_RULES: { pattern: RegExp; label: string; keyword: string }[] = [
   // Доска — подтипы
+  { pattern: /сух.*строганн.*доск|доск.*сух.*строганн/i, label: "Сухая строганная доска", keyword: "сухая-строганная-доска" },
   { pattern: /террасная\s*доска/i,                   label: "Террасная доска",   keyword: "террасная" },
   { pattern: /доска\s*пола|европол/i,                label: "Доска пола",        keyword: "доска пола" },
   { pattern: /доска.*(строганн|антисепт.*строганн)|строганн.*доска/i,  label: "Доска строганная", keyword: "строганн" },
@@ -31,6 +37,7 @@ const TYPE_RULES: { pattern: RegExp; label: string; keyword: string }[] = [
   { pattern: /имитаци[яюи]\s*бруса/i,               label: "Имитация бруса",    keyword: "имитаци" },
   { pattern: /брус.*клеен|клеен.*брус/i,             label: "Брус клееный",      keyword: "клеен" },
   { pattern: /брусок/i,                              label: "Брусок",            keyword: "брусок" },
+  { pattern: /сух.*строган.*брус|брус.*сух.*строган/i, label: "Сухой строганный брус", keyword: "сухой-строганный-брус" },
   { pattern: /брус.*(строган|антисепт.*строган)|строган.*брус/i,  label: "Брус строганный", keyword: "строган" },
   { pattern: /брус.*(обрезн|антисепт)|обрезн.*брус/i,            label: "Брус обрезной",   keyword: "брус" },
 
@@ -50,14 +57,88 @@ const TYPE_RULES: { pattern: RegExp; label: string; keyword: string }[] = [
   { pattern: new RegExp(`${CYR_START}цсп${CYR_END}`, "i"),                           label: "ЦСП",     keyword: "цсп" },
 ];
 
+const TYPE_DEFAULT_CONTENT: Record<string, Partial<ProductTypeInfo>> = {
+  "сухая-строганная-доска": {
+    seoTitle: "Сухая строганная доска — купить в Химках с доставкой",
+    seoDescription: "Сухая строганная доска камерной сушки от производителя в Химках. Ровная геометрия, гладкая поверхность, доставка по Москве и МО.",
+    description:
+      "Сухая строганная доска — пиломатериал камерной сушки, прошедший механическую обработку для правильной геометрии и гладкой поверхности. После сушки заготовку строгают с одной или нескольких сторон, поэтому доска меньше подвержена деформации и подходит для внутренней отделки, каркасного строительства, лестниц, мебели и столярных работ.",
+  },
+  "сухой-строганный-брус": {
+    seoTitle: "Сухой строганный брус — купить в Химках с доставкой",
+    seoDescription: "Сухой строганный брус камерной сушки из хвои и лиственницы. Точная геометрия, гладкая поверхность, доставка по Москве и МО.",
+    description:
+      "Сухой строганный брус проходит камерную сушку и обработку на станках, поэтому держит геометрию и меньше растрескивается. Материал используют в строительстве, отделке, несущих и декоративных конструкциях, где важны стабильность размеров и аккуратная поверхность.",
+  },
+  "террасная": {
+    seoTitle: "Террасная доска — купить в Химках с доставкой",
+    seoDescription: "Террасная доска из лиственницы и хвои для открытых площадок, веранд и настилов. Цены, размеры и доставка по Москве и МО.",
+    description:
+      "Террасная доска подходит для открытых площадок, веранд, крылец и настилов. Лиственница ценится за прочность, плотность и стойкость к влаге, а рифленая поверхность помогает уменьшить скольжение на мокрой доске.",
+  },
+  "имитаци": {
+    seoTitle: "Имитация бруса — купить в Химках с доставкой",
+    seoDescription: "Имитация бруса из хвои и лиственницы для фасада и интерьера. Размеры, цены и доставка по Москве и МО.",
+    description:
+      "Имитация бруса, или фальшбрус, используется для внешней и внутренней обшивки стен. Профиль с фаской и соединением шип-паз дает плотное примыкание, а вентиляционные борозды на обратной стороне помогают отводить конденсат и снижать внутреннее напряжение древесины.",
+  },
+  "блок-хаус": {
+    seoTitle: "Блок-хаус — купить в Химках с доставкой",
+    seoDescription: "Блок-хаус для отделки фасадов и внутренних стен. Хвоя, размеры, цены и доставка по Москве и МО.",
+    description:
+      "Блок-хаус — отделочная доска с внешней поверхностью под оцилиндрованное бревно или брус. Материал используют для стен, мансард, веранд, балконов и неагрессивных фасадов с защитным покрытием.",
+  },
+  "вагонка": {
+    seoTitle: "Вагонка — купить в Химках с доставкой",
+    seoDescription: "Вагонка из липы, осины, хвои и лиственницы для бань, саун, стен и потолков. Доставка по Москве и МО.",
+    description:
+      "Вагонка применяется для внутренней отделки стен, потолков, бань и саун. Липа не выделяет смолу и комфортна в парной, осина стойко переносит сырость, а лиственница подходит для влажных зон, фасадов и интерьеров с выразительной текстурой.",
+  },
+  "евровагонка": {
+    seoTitle: "Евровагонка — купить в Химках с доставкой",
+    seoDescription: "Евровагонка для внутренней отделки, фасадов и влажных зон. Цены, размеры и доставка по Москве и МО.",
+    description:
+      "Евровагонка подходит для аккуратной отделки стен и потолков. Профиль создает ровный рисунок, помогает скрыть стыки и используется в комнатах отдыха, прихожих, кухнях, влажных зонах и фасадных решениях.",
+  },
+  "планкен": {
+    seoTitle: "Планкен — купить в Химках с доставкой",
+    seoDescription: "Планкен из лиственницы и хвои для фасадов, террас и интерьеров. Прямой и скошенный профиль, доставка по Москве и МО.",
+    description:
+      "Планкен — строганая фасадная доска без шип-паза для современного архитектурного монтажа с зазором. Зазор обеспечивает вентиляцию фасада, компенсирует расширение древесины и создает четкий ритм горизонтальных или вертикальных линий.",
+  },
+  "доска пола": {
+    seoTitle: "Доска пола — купить в Химках с доставкой",
+    seoDescription: "Доска пола из хвои и лиственницы. Размеры, цены и доставка по Москве и МО.",
+    description:
+      "Доска пола используется для устройства деревянных полов в доме, бане, на даче и в хозяйственных помещениях. Профиль помогает собрать ровное покрытие, а выбор породы и размера подбирается под нагрузку и условия эксплуатации.",
+  },
+  "дсп": { active: false },
+  "двп": { active: false },
+  "мдф": { active: false },
+  "цсп": { active: false },
+};
+
+export function getDefaultProductTypes(): ProductTypeInfo[] {
+  return TYPE_RULES.map((rule, index) => ({
+    label: rule.label,
+    keyword: rule.keyword,
+    active: TYPE_DEFAULT_CONTENT[rule.keyword]?.active ?? true,
+    sortOrder: index,
+    description: TYPE_DEFAULT_CONTENT[rule.keyword]?.description ?? null,
+    seoTitle: TYPE_DEFAULT_CONTENT[rule.keyword]?.seoTitle ?? null,
+    seoDescription: TYPE_DEFAULT_CONTENT[rule.keyword]?.seoDescription ?? null,
+  }));
+}
+
 /**
  * Определяет тип товара по названию.
  * Возвращает null если тип не определён.
  */
 export function extractProductType(name: string): ProductTypeInfo | null {
+  const defaultsByKeyword = new Map(getDefaultProductTypes().map((type) => [type.keyword, type]));
   for (const rule of TYPE_RULES) {
     if (rule.pattern.test(name)) {
-      return { label: rule.label, keyword: rule.keyword };
+      return defaultsByKeyword.get(rule.keyword) ?? { label: rule.label, keyword: rule.keyword };
     }
   }
   return null;
@@ -80,9 +161,9 @@ export function getAvailableTypes(productNames: string[]): ProductTypeInfo[] {
 
   // Сохраняем порядок из TYPE_RULES
   const ordered: ProductTypeInfo[] = [];
-  for (const rule of TYPE_RULES) {
-    if (found.has(rule.label)) {
-      ordered.push(found.get(rule.label)!);
+  for (const type of getDefaultProductTypes()) {
+    if (found.has(type.label)) {
+      ordered.push(found.get(type.label)!);
     }
   }
 
@@ -96,7 +177,7 @@ export function getAvailableTypes(productNames: string[]): ProductTypeInfo[] {
 const TYPE_GROUPS: Record<string, { label: string; keywords: string[] }> = {
   "доска": {
     label: "Доска",
-    keywords: ["террасная", "доска пола", "строганн", "обрезн"],
+    keywords: ["сухая-строганная-доска", "террасная", "доска пола", "строганн", "обрезн"],
   },
 };
 
@@ -108,8 +189,7 @@ export function findTypeByKeyword(keyword: string): ProductTypeInfo | null {
   if (TYPE_GROUPS[keyword]) {
     return { label: TYPE_GROUPS[keyword].label, keyword };
   }
-  const rule = TYPE_RULES.find(r => r.keyword === keyword);
-  return rule ? { label: rule.label, keyword: rule.keyword } : null;
+  return getDefaultProductTypes().find((type) => type.keyword === keyword) ?? null;
 }
 
 /**

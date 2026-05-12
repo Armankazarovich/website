@@ -167,7 +167,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["каталог", "товар", "товары", "склад", "категория"],
     placeholder: "Товар, категория, slug, склад или импорт...",
     nextStep: "Проверить готовность товара",
-    quickHrefs: ["/admin/products/new", "/admin/categories", "/admin/inventory", "/admin/import", "/admin/media"],
+    quickHrefs: ["/admin/products/new", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import", "/admin/media"],
     mobilePriority: 30,
   },
   "/admin/products/new": {
@@ -189,6 +189,15 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     subtitle: "Дерево разделов",
     searchHint: "Дерево каталога",
     keywords: ["категории", "разделы", "каталог"],
+  },
+  "/admin/product-types": {
+    title: "Типы товаров",
+    subtitle: "Фильтры, описания и SEO",
+    searchHint: "Типы товаров и SEO каталога",
+    keywords: ["типы товаров", "фильтры", "seo", "описания", "индексация", "каталог"],
+    placeholder: "Тип товара, SEO, описание, фильтр или категория...",
+    nextStep: "Проверить фильтры каталога, видимость и SEO для посадочных страниц",
+    quickHrefs: ["/admin/products", "/admin/categories", "/admin/products/audit", "/admin/promotion"],
   },
   "/admin/inventory": {
     title: "Склад",
@@ -414,7 +423,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
 const GROUP_QUICK_HREFS: Record<string, string[]> = {
   main: ["/admin", "/admin/orders/new", "/admin/orders", "/admin/products", "/admin/aray"],
   sales: ["/admin/orders/new", "/admin/orders", "/admin/clients", "/admin/tasks"],
-  products: ["/admin/products", "/admin/products/new", "/admin/categories", "/admin/inventory", "/admin/import"],
+  products: ["/admin/products", "/admin/products/new", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import"],
   marketing: ["/admin/promotion", "/admin/promotions", "/admin/reviews", "/admin/email", "/admin/analytics"],
   finance: ["/admin/finance", "/admin/orders", "/admin/analytics"],
   settings: ["/admin/settings", "/admin/aray", "/admin/business/settings", "/admin/site", "/admin/appearance", "/admin/terminals", "/admin/staff", "/admin/health"],

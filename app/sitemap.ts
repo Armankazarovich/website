@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getPublicProductsFilter } from "@/lib/product-seo";
+import { getManagedProductTypes, getProductTypeSettings } from "@/lib/product-type-settings";
 
 const BASE = "https://pilo-rus.ru";
 
@@ -21,14 +22,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/terms`,         priority: 0.3, changeFrequency: "yearly"  },
   ];
 
-  const [categories, products, posts, services] = await Promise.all([
+  const [categories, products, posts, services, productTypeSettings] = await Promise.all([
     prisma.category.findMany({
       where: { showInMenu: true },
       select: { slug: true, updatedAt: true },
     }),
     prisma.product.findMany({
       where: { ...getPublicProductsFilter(), category: { showInMenu: true } },
-      select: { slug: true, updatedAt: true },
+      select: {
+        slug: true,
+        name: true,
+        updatedAt: true,
+        category: { select: { slug: true, updatedAt: true } },
+      },
     }),
     prisma.post.findMany({
       where: { published: true },
@@ -38,6 +44,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       where: { active: true },
       select: { slug: true, updatedAt: true },
     }),
+    getProductTypeSettings(),
   ]);
 
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((c) => ({
@@ -54,6 +61,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "weekly" as const,
   }));
 
+  const productTypeRoutes: MetadataRoute.Sitemap = getManagedProductTypes(
+    products.map((p) => p.name),
+    productTypeSettings,
+  ).map((type) => ({
+    url: `${BASE}/catalog?type=${encodeURIComponent(type.keyword)}`,
+    priority: 0.82,
+    changeFrequency: "weekly" as const,
+  }));
+
+  const categoryProducts = new Map<string, { names: string[]; updatedAt: Date }>();
+  for (const product of products) {
+    const current = categoryProducts.get(product.category.slug) ?? {
+      names: [],
+      updatedAt: product.category.updatedAt,
+    };
+    current.names.push(product.name);
+    if (product.updatedAt > current.updatedAt) current.updatedAt = product.updatedAt;
+    categoryProducts.set(product.category.slug, current);
+  }
+
+  const categoryTypeRoutes: MetadataRoute.Sitemap = Array.from(categoryProducts.entries()).flatMap(
+    ([slug, data]) =>
+      getManagedProductTypes(data.names, productTypeSettings).map((type) => ({
+        url: `${BASE}/catalog?category=${encodeURIComponent(slug)}&amp;type=${encodeURIComponent(type.keyword)}`,
+        lastModified: data.updatedAt,
+        priority: 0.78,
+        changeFrequency: "weekly" as const,
+      })),
+  );
+
   const postRoutes: MetadataRoute.Sitemap = posts.map((p) => ({
     url: `${BASE}/news/${p.slug}`,
     lastModified: p.updatedAt,
@@ -66,5 +103,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ? [{ url: `${BASE}/services`, priority: 0.8, changeFrequency: "monthly" as const }]
     : [];
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...postRoutes, ...uniqueServiceRoutes];
+  return [
+    ...staticRoutes,
+    ...categoryRoutes,
+    ...productTypeRoutes,
+    ...categoryTypeRoutes,
+    ...productRoutes,
+    ...postRoutes,
+    ...uniqueServiceRoutes,
+  ];
 }

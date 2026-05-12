@@ -6,6 +6,11 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { getAvailableTypes, findTypeByKeyword, extractProductType, getTypeGroupKeywords } from "@/lib/product-types";
+import {
+  applyProductTypeSettings,
+  getConfiguredProductType,
+  getProductTypeSettings,
+} from "@/lib/product-type-settings";
 import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
@@ -25,6 +30,37 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
       description: `Результаты поиска по каталогу ПилоРус: ${query}. Пиломатериалы от производителя в Химках с доставкой по Москве и МО.`,
       alternates: { canonical: `https://pilo-rus.ru/catalog?search=${encodeURIComponent(query)}` },
     };
+  }
+  if (searchParams.type) {
+    const [settings, cat] = await Promise.all([
+      getProductTypeSettings(),
+      searchParams.category
+        ? prisma.category.findUnique({
+            where: { slug: searchParams.category },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    const type = getConfiguredProductType(searchParams.type, settings) ?? findTypeByKeyword(searchParams.type);
+    if (type && type.active !== false) {
+      const label = cat ? `${type.label} ${cat.name}` : type.label;
+      return {
+        title: cat
+          ? `${label} — купить в Химках с доставкой`
+          : type.seoTitle || `${type.label} — купить в Химках с доставкой`,
+        description:
+          (cat
+            ? `${label} от производителя в Химках. Актуальные размеры, цены, наличие и доставка по Москве и Московской области.`
+            : type.seoDescription) ||
+          `${type.label} от производителя в Химках. Цены, размеры, наличие и доставка по Москве и МО.`,
+        alternates: {
+          canonical: `https://pilo-rus.ru/catalog?${new URLSearchParams({
+            ...(searchParams.category ? { category: searchParams.category } : {}),
+            type: searchParams.type,
+          }).toString()}`,
+        },
+      };
+    }
   }
   if (searchParams.category) {
     const cat = await prisma.category.findUnique({
@@ -159,7 +195,10 @@ export default async function CatalogPage({
     variants: { some: combinedTypesVariantSome },
   };
 
-  const settings = await getSiteSettings();
+  const [settings, productTypeSettings] = await Promise.all([
+    getSiteSettings(),
+    getProductTypeSettings(),
+  ]);
   const phones = getPhones(settings);
 
   let categories: any[] = [], productsRaw: any[] = [], totalCount = 0, allVariantSizes: any[] = [], productsForTypes: any[] = [];
@@ -227,10 +266,30 @@ export default async function CatalogPage({
 
   // Доступные типы — ДИНАМИЧЕСКИ из реальных названий товаров
   const productNames = productsForTypes.map((p) => p.name);
-  const dynamicTypes = getAvailableTypes(productNames);
+  const dynamicTypes = applyProductTypeSettings(getAvailableTypes(productNames), productTypeSettings);
 
   // Находим текущий тип по keyword для отображения label
-  const currentTypeInfo = currentType ? findTypeByKeyword(currentType) : null;
+  const currentTypeInfo = currentType
+    ? getConfiguredProductType(currentType, productTypeSettings) ?? findTypeByKeyword(currentType)
+    : null;
+
+  const currentTypeIsAvailable =
+    !currentType ||
+    dynamicTypes.some((type) => type.keyword === currentType) ||
+    Boolean(getTypeGroupKeywords(currentType)?.some((keyword) => dynamicTypes.some((type) => type.keyword === keyword)));
+
+  if (currentType && !currentTypeIsAvailable) {
+    const params = new URLSearchParams();
+    if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.search) params.set("search", searchParams.search);
+    if (searchParams.sort) params.set("sort", searchParams.sort);
+    if (searchParams.size) params.set("size", searchParams.size);
+    if (searchParams.instock) params.set("instock", searchParams.instock);
+    if (searchParams.minprice) params.set("minprice", searchParams.minprice);
+    if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
+    const q = params.toString();
+    redirect(`/catalog${q ? `?${q}` : ""}`);
+  }
 
   const totalPages = Math.ceil(totalCount / perPage);
 
@@ -301,6 +360,17 @@ export default async function CatalogPage({
   const currentCat = searchParams.category
     ? categories.find((c) => c.slug === searchParams.category)
     : null;
+  const pageTitle = currentTypeInfo
+    ? currentCat
+      ? `${currentTypeInfo.label} — ${currentCat.name}`
+      : currentTypeInfo.label
+    : currentCat
+      ? currentCat.name
+      : "Каталог";
+  const pageDescription =
+    currentTypeInfo?.description ||
+    currentCat?.seoDescription ||
+    (currentCat ? "Узнавайте первыми о поступлениях и скидках" : "Все пиломатериалы в наличии");
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -326,10 +396,10 @@ export default async function CatalogPage({
       <div className="mb-3 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display font-bold text-2xl sm:text-3xl">
-            {currentCat ? currentCat.name : "Каталог"}
+            {pageTitle}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {currentCat ? "Узнавайте первыми о поступлениях и скидках" : "Все пиломатериалы в наличии"}
+          <p className="mt-1 max-w-4xl text-sm leading-6 text-muted-foreground">
+            {pageDescription}
           </p>
         </div>
         {currentCat && (

@@ -1,10 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+const CATEGORY_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
 async function checkCategoryRead() {
   const session = await auth();
@@ -12,10 +14,10 @@ async function checkCategoryRead() {
   return session && role && PRODUCTS_ROLES.includes(role);
 }
 
-async function checkAdmin() {
+async function checkCategoryWrite() {
   const session = await auth();
   const role = session?.user?.role as string | undefined;
-  return session && (role === "ADMIN" || role === "SUPER_ADMIN");
+  return session && role && CATEGORY_WRITE_ROLES.includes(role);
 }
 
 export async function GET() {
@@ -28,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkCategoryWrite())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { name, slug, image, sortOrder, parentId, seoTitle, seoDescription, showInMenu, showInFooter } = await req.json();
   const category = await prisma.category.create({
     data: {
@@ -44,5 +46,8 @@ export async function POST(req: Request) {
     },
     include: { _count: { select: { products: true } } },
   });
+  revalidateTag("store-shell-data");
+  revalidatePath("/catalog");
+  revalidatePath("/sitemap.xml");
   return NextResponse.json(category);
 }

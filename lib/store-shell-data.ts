@@ -3,6 +3,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getAvailableTypes, type ProductTypeInfo } from "@/lib/product-types";
+import { applyProductTypeSettings, getProductTypeSettings } from "@/lib/product-type-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getPhones, getSetting, getSiteSettings } from "@/lib/site-settings";
 
@@ -67,6 +68,7 @@ export const getStoreShellData = unstable_cache(
       categories,
       footerCategories,
       siteSettings,
+      productTypeSettings,
       productNames,
       variantSizes,
     ] = await Promise.all([
@@ -87,6 +89,7 @@ export const getStoreShellData = unstable_cache(
         select: { id: true, name: true, slug: true },
       }),
       getSiteSettings(),
+      getProductTypeSettings(),
       prisma.product.findMany({
         where: { ...publicProductFilter, category: { showInMenu: true } },
         select: { name: true },
@@ -107,8 +110,9 @@ export const getStoreShellData = unstable_cache(
       siteSettings,
       phones: getPhones(siteSettings),
       workingHours: getSetting(siteSettings, "working_hours") || undefined,
-      megaMenuTypes: getAvailableTypes(
-        productNames.map((product) => product.name),
+      megaMenuTypes: applyProductTypeSettings(
+        getAvailableTypes(productNames.map((product) => product.name)),
+        productTypeSettings,
       ),
       megaMenuSizes: extractUniqueCrossSections(
         variantSizes.map((variant) => variant.size),
