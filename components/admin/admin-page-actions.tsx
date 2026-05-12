@@ -42,11 +42,25 @@ export type AdminAction = {
   disabled?: boolean;
 };
 
+export type AdminHeaderMeta = {
+  title?: string;
+  subtitle?: string;
+  badge?: string;
+  backLabel?: string;
+  backHref?: string;
+  logoSrc?: string;
+  logoAlt?: string;
+  context?: ReactNode;
+  contextKey?: string;
+};
+
 type Ctx = {
   onRefresh: (() => void) | null;
   actions: AdminAction[];
+  headerMeta: AdminHeaderMeta | null;
   setOnRefresh: (handler: (() => void) | null) => void;
   setActions: (actions: AdminAction[]) => void;
+  setHeaderMeta: (meta: AdminHeaderMeta | null) => void;
 };
 
 const PageActionsContext = createContext<Ctx | null>(null);
@@ -54,6 +68,7 @@ const PageActionsContext = createContext<Ctx | null>(null);
 export function AdminPageActionsProvider({ children }: { children: ReactNode }) {
   const [onRefresh, setOnRefreshState] = useState<(() => void) | null>(null);
   const [actions, setActionsState] = useState<AdminAction[]>([]);
+  const [headerMeta, setHeaderMetaState] = useState<AdminHeaderMeta | null>(null);
 
   const setOnRefresh = useCallback((handler: (() => void) | null) => {
     setOnRefreshState(() => handler);
@@ -63,9 +78,13 @@ export function AdminPageActionsProvider({ children }: { children: ReactNode }) 
     setActionsState(next);
   }, []);
 
+  const setHeaderMeta = useCallback((next: AdminHeaderMeta | null) => {
+    setHeaderMetaState(next);
+  }, []);
+
   const value = useMemo(
-    () => ({ onRefresh, actions, setOnRefresh, setActions }),
-    [onRefresh, actions, setOnRefresh, setActions]
+    () => ({ onRefresh, actions, headerMeta, setOnRefresh, setActions, setHeaderMeta }),
+    [onRefresh, actions, headerMeta, setOnRefresh, setActions, setHeaderMeta]
   );
 
   return (
@@ -84,6 +103,7 @@ export function useAdminPageActionsState() {
   return {
     onRefresh: ctx?.onRefresh ?? null,
     actions: ctx?.actions ?? [],
+    headerMeta: ctx?.headerMeta ?? null,
   };
 }
 
@@ -123,4 +143,25 @@ export function useAdminPageActions(config: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setOnRefresh, setActions, JSON.stringify((config.actions ?? []).map((a) => a.id)), Boolean(config.onRefresh)]);
+}
+
+export function useAdminPageHeader(config: AdminHeaderMeta | null) {
+  const ctx = useContext(PageActionsContext);
+  const setHeaderMeta = ctx?.setHeaderMeta;
+
+  useEffect(() => {
+    if (!setHeaderMeta) return;
+    setHeaderMeta(config);
+    return () => setHeaderMeta(null);
+  }, [
+    setHeaderMeta,
+    config?.title,
+    config?.subtitle,
+    config?.badge,
+    config?.backLabel,
+    config?.backHref,
+    config?.logoSrc,
+    config?.logoAlt,
+    config?.contextKey,
+  ]);
 }

@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +23,6 @@ import {
   Globe,
   History,
   ImageIcon,
-  Layers3,
   Link2,
   Loader2,
   Lock,
@@ -52,7 +50,6 @@ import { AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette } from "@/components/palette-provider";
 import { PALETTES } from "@/lib/palettes";
-import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -60,31 +57,39 @@ const profileSchema = z.object({
   address: z.string().optional(),
 });
 
-const passwordSchema = z.object({
-  currentPassword: z.string().min(6, "Минимум 6 символов"),
-  newPassword: z.string().min(6, "Минимум 6 символов"),
-  confirmPassword: z.string(),
-}).refine((d) => d.newPassword === d.confirmPassword, {
-  message: "Пароли не совпадают",
-  path: ["confirmPassword"],
-});
+const passwordSchema = z
+  .object({
+    currentPassword: z.string().min(6, "Минимум 6 символов"),
+    newPassword: z.string().min(6, "Минимум 6 символов"),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "Пароли не совпадают",
+    path: ["confirmPassword"],
+  });
 
 type ProfileForm = z.infer<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 type ThemeMode = "light" | "dark" | "system";
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
-const BG_MODE_KEY = "aray-bg-mode";
+const STAFF_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "MANAGER",
+  "COURIER",
+  "ACCOUNTANT",
+  "WAREHOUSE",
+  "SELLER",
+];
 
-const THEME_OPTIONS: { id: ThemeMode; label: string; icon: React.ElementType }[] = [
+const THEME_OPTIONS: {
+  id: ThemeMode;
+  label: string;
+  icon: React.ElementType;
+}[] = [
   { id: "dark", label: "Темная", icon: Moon },
   { id: "light", label: "Светлая", icon: Sun },
   { id: "system", label: "Система", icon: Monitor },
-];
-
-const ADMIN_BG_OPTIONS: { id: AdminBgMode; label: string; hint: string; icon: React.ElementType }[] = [
-  { id: "photo", label: "Атмосфера", hint: "Фирменный фон ARAY", icon: ImageIcon },
-  { id: "clean", label: "Чистый", hint: "Без фото", icon: Layers3 },
 ];
 
 type ProfileHubItem = {
@@ -112,7 +117,6 @@ function formatPhone(raw: string): string {
 
 export default function ProfilePage() {
   const { data: session } = useSession();
-  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
   const [mounted, setMounted] = useState(false);
@@ -129,60 +133,151 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [showCropModal, setShowCropModal] = useState(false);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
-  const [bgMode, setBgModeState] = useState<AdminBgMode>("clean");
-  const role = ((session?.user as { role?: string } | undefined)?.role) || "USER";
+  const role = (session?.user as { role?: string } | undefined)?.role || "USER";
   const isStaff = STAFF_ROLES.includes(role);
   const safeTheme = (theme || "system") as ThemeMode;
   const hubItems: ProfileHubItem[] = [
-    { title: "Личные данные", desc: "Имя, телефон, адрес", icon: UserRoundCog, href: "#profile-data" },
-    { title: "Интерфейс", desc: "Тема, цвета, фон", icon: Palette, href: "#interface" },
+    {
+      title: "Личные данные",
+      desc: "Имя, телефон, адрес",
+      icon: UserRoundCog,
+      href: "#profile-data",
+    },
+    {
+      title: "Интерфейс",
+      desc: "Тема, цвета, фон",
+      icon: Palette,
+      href: "#interface",
+    },
     { title: "Язык", desc: "Перевод и регион", icon: Globe, href: "#language" },
-    { title: "Уведомления", desc: "Push, email, важность", icon: Bell, href: "/cabinet/notifications" },
-    { title: "История", desc: "Действия и просмотры", icon: History, href: "/cabinet/history" },
-    { title: "Медиа", desc: "Фото и документы", icon: ImageIcon, href: "/cabinet/media" },
-    { title: "Подписки", desc: "Магазины и категории", icon: BookmarkPlus, href: "/cabinet/subscriptions" },
-    { title: "Безопасность", desc: "Пароль и вход", icon: Lock, href: "#security" },
+    {
+      title: "Уведомления",
+      desc: "Push, email, важность",
+      icon: Bell,
+      href: "/cabinet/notifications",
+    },
+    {
+      title: "История",
+      desc: "Действия и просмотры",
+      icon: History,
+      href: "/cabinet/history",
+    },
+    {
+      title: "Медиа",
+      desc: "Фото и документы",
+      icon: ImageIcon,
+      href: "/cabinet/media",
+    },
+    {
+      title: "Подписки",
+      desc: "Магазины и категории",
+      icon: BookmarkPlus,
+      href: "/cabinet/subscriptions",
+    },
+    {
+      title: "Безопасность",
+      desc: "Пароль и вход",
+      icon: Lock,
+      href: "#security",
+    },
     ...(isStaff
-      ? [{ title: "Рабочая роль", desc: "Команда и доступ", icon: BriefcaseBusiness, href: "/admin/staff" } satisfies ProfileHubItem]
+      ? [
+          {
+            title: "Рабочая роль",
+            desc: "Команда и доступ",
+            icon: BriefcaseBusiness,
+            href: "/admin/staff",
+          } satisfies ProfileHubItem,
+        ]
       : []),
   ];
   const futureHubItems: ProfileHubItem[] = [
-    { title: "Публичный профиль", desc: "Статус, био, ссылки", icon: Link2, disabled: true },
-    { title: "Аватар-альбом", desc: "Фото и видео профиля", icon: Camera, disabled: true },
-    { title: "Сторис", desc: "Короткие публикации", icon: Video, disabled: true },
+    {
+      title: "Публичный профиль",
+      desc: "Статус, био, ссылки",
+      icon: Link2,
+      disabled: true,
+    },
+    {
+      title: "Аватар-альбом",
+      desc: "Фото и видео профиля",
+      icon: Camera,
+      disabled: true,
+    },
+    {
+      title: "Сторис",
+      desc: "Короткие публикации",
+      icon: Video,
+      disabled: true,
+    },
     { title: "Лента", desc: "Контент и интересы", icon: Rss, disabled: true },
-    { title: "Блог", desc: "Статьи и заметки", icon: Newspaper, disabled: true },
+    {
+      title: "Блог",
+      desc: "Статьи и заметки",
+      icon: Newspaper,
+      disabled: true,
+    },
     { title: "Влог", desc: "Видео и эфиры", icon: Video, disabled: true },
-    { title: "Услуги", desc: "Что человек продает", icon: BriefcaseBusiness, disabled: true },
-    { title: "Портфолио", desc: "Работы и кейсы", icon: ImageIcon, disabled: true },
-    { title: "Отзывы", desc: "Репутация и доверие", icon: Star, disabled: true },
-    { title: "Рейтинг", desc: "Уровень и качество", icon: Trophy, disabled: true },
+    {
+      title: "Услуги",
+      desc: "Что человек продает",
+      icon: BriefcaseBusiness,
+      disabled: true,
+    },
+    {
+      title: "Портфолио",
+      desc: "Работы и кейсы",
+      icon: ImageIcon,
+      disabled: true,
+    },
+    {
+      title: "Отзывы",
+      desc: "Репутация и доверие",
+      icon: Star,
+      disabled: true,
+    },
+    {
+      title: "Рейтинг",
+      desc: "Уровень и качество",
+      icon: Trophy,
+      disabled: true,
+    },
     { title: "Подписчики", desc: "Люди и связи", icon: Users, disabled: true },
     { title: "Донаты", desc: "Поддержка автора", icon: Heart, disabled: true },
-    { title: "Монетизация", desc: "Доход и выплаты", icon: Wallet, disabled: true },
-    { title: "Устройства", desc: "PWA и сессии", icon: Monitor, disabled: true },
+    {
+      title: "Монетизация",
+      desc: "Доход и выплаты",
+      icon: Wallet,
+      disabled: true,
+    },
+    {
+      title: "Устройства",
+      desc: "PWA и сессии",
+      icon: Monitor,
+      disabled: true,
+    },
   ];
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<ProfileForm>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
   });
 
-  const { register: regPw, handleSubmit: handlePw, reset: resetPw, formState: { errors: pwErrors } } = useForm<PasswordForm>({
+  const {
+    register: regPw,
+    handleSubmit: handlePw,
+    reset: resetPw,
+    formState: { errors: pwErrors },
+  } = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
   });
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem(BG_MODE_KEY);
-    setBgModeState(stored === "photo" ? "photo" : "clean");
-
-    const syncBg = () => {
-      const next = localStorage.getItem(BG_MODE_KEY);
-      setBgModeState(next === "photo" ? "photo" : "clean");
-    };
-
-    window.addEventListener("aray-classic-change", syncBg);
-    return () => window.removeEventListener("aray-classic-change", syncBg);
   }, []);
 
   // Load profile data
@@ -231,7 +326,10 @@ export default function ProfilePage() {
     const res = await fetch("/api/cabinet/password", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: data.currentPassword, newPassword: data.newPassword }),
+      body: JSON.stringify({
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      }),
     });
     setPwLoading(false);
     if (res.ok) {
@@ -248,7 +346,10 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 2 * 1024 * 1024) { setError("Максимум 2MB"); return; }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Максимум 2MB");
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       setCropSrc(reader.result as string);
@@ -263,7 +364,10 @@ export default function ProfilePage() {
     setShowCropModal(false);
     const fd = new FormData();
     fd.append("file", blob, "avatar.jpg");
-    const res = await fetch("/api/cabinet/avatar", { method: "POST", body: fd });
+    const res = await fetch("/api/cabinet/avatar", {
+      method: "POST",
+      body: fd,
+    });
     if (res.ok) {
       const data = await res.json();
       setAvatarUrl(data.avatarUrl);
@@ -278,18 +382,6 @@ export default function ProfilePage() {
     setUploadingAvatar(false);
   };
 
-  const setAdminBgMode = (mode: AdminBgMode) => {
-    setBgModeState(mode);
-    localStorage.setItem(BG_MODE_KEY, mode);
-    localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
-    window.dispatchEvent(new Event("aray-classic-change"));
-  };
-
-  if (!session) {
-    router.push("/login");
-    return null;
-  }
-
   return (
     <div className="space-y-6">
       {/* Avatar + Header */}
@@ -297,7 +389,11 @@ export default function ProfilePage() {
         <div className="relative group">
           <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Аватар" className="w-full h-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt="Аватар"
+                className="w-full h-full object-cover"
+              />
             ) : (
               <User className="w-10 h-10 text-muted-foreground" />
             )}
@@ -309,12 +405,21 @@ export default function ProfilePage() {
           </div>
           <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-lg">
             <Camera className="w-4 h-4" />
-            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarSelect} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarSelect}
+            />
           </label>
         </div>
         <div className="text-center sm:text-left flex-1">
-          <h1 className="font-display font-bold text-xl">{session.user?.name || "Профиль"}</h1>
-          <p className="text-muted-foreground text-xs mt-0.5">{session.user?.email}</p>
+          <h1 className="font-display font-bold text-xl">
+            {session?.user?.name || "Профиль"}
+          </h1>
+          <p className="text-muted-foreground text-xs mt-0.5">
+            {session?.user?.email || "Email не указан"}
+          </p>
           {avatarUrl && (
             <button
               onClick={removeAvatar}
@@ -339,8 +444,12 @@ export default function ProfilePage() {
       <div className="bg-card rounded-2xl border border-border p-4 sm:p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-display font-semibold text-lg">Центр профиля</h2>
-            <p className="text-xs text-muted-foreground mt-1">Аккаунт, интерфейс, язык и личные настройки</p>
+            <h2 className="font-display font-semibold text-lg">
+              Центр профиля
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Аккаунт, интерфейс, язык и личные настройки
+            </p>
           </div>
           <span className="hidden sm:inline-flex rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
             ARAY ID
@@ -356,21 +465,31 @@ export default function ProfilePage() {
         <div className="border-t border-border/70 pt-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-foreground">Публичность и заработок</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Социальные и бизнес-возможности профиля ARAY</p>
+              <p className="text-sm font-semibold text-foreground">
+                Публичность и заработок
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Социальные и бизнес-возможности профиля ARAY
+              </p>
             </div>
-            <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">Этап 2</span>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-[10px] font-semibold text-muted-foreground">
+              Этап 2
+            </span>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-          {futureHubItems.map((item) => (
-            <ProfileHubCard key={item.title} item={item} />
-          ))}
+            {futureHubItems.map((item) => (
+              <ProfileHubCard key={item.title} item={item} />
+            ))}
           </div>
         </div>
       </div>
 
       {/* Profile form */}
-      <form id="profile-data" onSubmit={handleSubmit(onSaveProfile)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
+      <form
+        id="profile-data"
+        onSubmit={handleSubmit(onSaveProfile)}
+        className="bg-card rounded-2xl border border-border p-6 space-y-5"
+      >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <User className="w-5 h-5 text-primary" />
           Личные данные
@@ -378,23 +497,29 @@ export default function ProfilePage() {
 
         {/* Email (read-only) */}
         <div>
-          <Label className="text-sm font-medium mb-1.5 block text-muted-foreground">Email</Label>
+          <Label className="text-sm font-medium mb-1.5 block text-muted-foreground">
+            Email
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Mail className="w-4 h-4" />
             </div>
             <Input
-              value={session.user?.email || ""}
+              value={session?.user?.email || ""}
               disabled
               className="pl-10 h-11 rounded-xl bg-muted/50 text-muted-foreground cursor-not-allowed"
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Email нельзя изменить</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Email нельзя изменить
+          </p>
         </div>
 
         {/* Name */}
         <div>
-          <Label htmlFor="name" className="text-sm font-medium mb-1.5 block">Ваше имя</Label>
+          <Label htmlFor="name" className="text-sm font-medium mb-1.5 block">
+            Ваше имя
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <User className="w-4 h-4" />
@@ -407,12 +532,18 @@ export default function ProfilePage() {
               {...register("name")}
             />
           </div>
-          {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
+          {errors.name && (
+            <p className="text-xs text-destructive mt-1">
+              {errors.name.message}
+            </p>
+          )}
         </div>
 
         {/* Phone */}
         <div>
-          <Label htmlFor="phone" className="text-sm font-medium mb-1.5 block">Телефон</Label>
+          <Label htmlFor="phone" className="text-sm font-medium mb-1.5 block">
+            Телефон
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Phone className="w-4 h-4" />
@@ -432,7 +563,9 @@ export default function ProfilePage() {
 
         {/* Address */}
         <div>
-          <Label htmlFor="address" className="text-sm font-medium mb-1.5 block">Адрес доставки</Label>
+          <Label htmlFor="address" className="text-sm font-medium mb-1.5 block">
+            Адрес доставки
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <MapPin className="w-4 h-4" />
@@ -445,7 +578,9 @@ export default function ProfilePage() {
               {...register("address")}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Будет подставляться при оформлении заказа</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Будет подставляться при оформлении заказа
+          </p>
         </div>
 
         {error && (
@@ -454,17 +589,30 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <Button type="submit" disabled={loading} className="w-full sm:w-auto h-11 px-8 rounded-xl">
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full sm:w-auto h-11 px-8 rounded-xl"
+        >
           {loading ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение…</>
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение…
+            </>
           ) : saved ? (
-            <><CheckCircle2 className="w-4 h-4 mr-2" /> Сохранено!</>
-          ) : "Сохранить изменения"}
+            <>
+              <CheckCircle2 className="w-4 h-4 mr-2" /> Сохранено!
+            </>
+          ) : (
+            "Сохранить изменения"
+          )}
         </Button>
       </form>
 
       {/* Interface */}
-      <div id="interface" className="bg-card rounded-2xl border border-border p-6 space-y-5">
+      <div
+        id="interface"
+        className="bg-card rounded-2xl border border-border p-6 space-y-5"
+      >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Palette className="w-5 h-5 text-primary" />
           Интерфейс
@@ -490,8 +638,15 @@ export default function ProfilePage() {
                       }`}
                     >
                       <Icon className="mx-auto h-5 w-5" strokeWidth={1.75} />
-                      <span className="mt-2 block text-xs font-semibold">{option.label}</span>
-                      {active && <Check className="mx-auto mt-1 h-3.5 w-3.5" strokeWidth={2.4} />}
+                      <span className="mt-2 block text-xs font-semibold">
+                        {option.label}
+                      </span>
+                      {active && (
+                        <Check
+                          className="mx-auto mt-1 h-3.5 w-3.5"
+                          strokeWidth={2.4}
+                        />
+                      )}
                     </button>
                   );
                 })}
@@ -537,7 +692,9 @@ export default function ProfilePage() {
                           </span>
                         )}
                       </span>
-                      <span className={`mt-1.5 block truncate text-[11px] font-semibold ${active ? "text-primary" : "text-foreground"}`}>
+                      <span
+                        className={`mt-1.5 block truncate text-[11px] font-semibold ${active ? "text-primary" : "text-foreground"}`}
+                      >
                         {item.name}
                       </span>
                     </button>
@@ -545,44 +702,16 @@ export default function ProfilePage() {
                 })}
               </div>
             </div>
-
-            {isStaff && (
-              <div>
-                <p className="text-sm font-semibold mb-3">Фон админки</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {ADMIN_BG_OPTIONS.map((option) => {
-                    const Icon = option.icon;
-                    const active = bgMode === option.id;
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        onClick={() => setAdminBgMode(option.id)}
-                        className={`flex min-h-[4.25rem] items-center gap-3 rounded-2xl border px-3 text-left transition-all ${
-                          active
-                            ? "border-primary/45 bg-primary/10 text-foreground"
-                            : "border-border bg-background/45 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
-                        }`}
-                      >
-                        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                          <Icon className="h-4 w-4" strokeWidth={1.75} />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-xs font-semibold">{option.label}</span>
-                          <span className="block truncate text-[10px] text-muted-foreground">{option.hint}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>
 
       {/* Password form */}
-      <form id="security" onSubmit={handlePw(onChangePassword)} className="bg-card rounded-2xl border border-border p-6 space-y-5">
+      <form
+        id="security"
+        onSubmit={handlePw(onChangePassword)}
+        className="bg-card rounded-2xl border border-border p-6 space-y-5"
+      >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Lock className="w-5 h-5 text-primary" />
           Изменить пароль
@@ -590,7 +719,12 @@ export default function ProfilePage() {
 
         {/* Current password */}
         <div>
-          <Label htmlFor="currentPassword" className="text-sm font-medium mb-1.5 block">Текущий пароль</Label>
+          <Label
+            htmlFor="currentPassword"
+            className="text-sm font-medium mb-1.5 block"
+          >
+            Текущий пароль
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
@@ -602,17 +736,34 @@ export default function ProfilePage() {
               className="pl-10 pr-10 h-11 rounded-xl border-border/60 focus:border-primary"
               {...regPw("currentPassword")}
             />
-            <button type="button" onClick={() => setShowCurrent(!showCurrent)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-              {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <button
+              type="button"
+              onClick={() => setShowCurrent(!showCurrent)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              tabIndex={-1}
+            >
+              {showCurrent ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
-          {pwErrors.currentPassword && <p className="text-xs text-destructive mt-1">{pwErrors.currentPassword.message}</p>}
+          {pwErrors.currentPassword && (
+            <p className="text-xs text-destructive mt-1">
+              {pwErrors.currentPassword.message}
+            </p>
+          )}
         </div>
 
         {/* New password */}
         <div>
-          <Label htmlFor="newPassword" className="text-sm font-medium mb-1.5 block">Новый пароль</Label>
+          <Label
+            htmlFor="newPassword"
+            className="text-sm font-medium mb-1.5 block"
+          >
+            Новый пароль
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
@@ -625,17 +776,34 @@ export default function ProfilePage() {
               className="pl-10 pr-10 h-11 rounded-xl border-border/60 focus:border-primary"
               {...regPw("newPassword")}
             />
-            <button type="button" onClick={() => setShowNew(!showNew)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-              {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <button
+              type="button"
+              onClick={() => setShowNew(!showNew)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              tabIndex={-1}
+            >
+              {showNew ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
-          {pwErrors.newPassword && <p className="text-xs text-destructive mt-1">{pwErrors.newPassword.message}</p>}
+          {pwErrors.newPassword && (
+            <p className="text-xs text-destructive mt-1">
+              {pwErrors.newPassword.message}
+            </p>
+          )}
         </div>
 
         {/* Confirm */}
         <div>
-          <Label htmlFor="confirmPassword" className="text-sm font-medium mb-1.5 block">Повторите новый пароль</Label>
+          <Label
+            htmlFor="confirmPassword"
+            className="text-sm font-medium mb-1.5 block"
+          >
+            Повторите новый пароль
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-foreground/50 pointer-events-none">
               <Lock className="w-4 h-4" />
@@ -648,7 +816,11 @@ export default function ProfilePage() {
               {...regPw("confirmPassword")}
             />
           </div>
-          {pwErrors.confirmPassword && <p className="text-xs text-destructive mt-1">{pwErrors.confirmPassword.message}</p>}
+          {pwErrors.confirmPassword && (
+            <p className="text-xs text-destructive mt-1">
+              {pwErrors.confirmPassword.message}
+            </p>
+          )}
         </div>
 
         {pwError && (
@@ -657,17 +829,32 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <Button type="submit" variant="outline" disabled={pwLoading} className="w-full sm:w-auto h-11 px-8 rounded-xl">
+        <Button
+          type="submit"
+          variant="outline"
+          disabled={pwLoading}
+          className="w-full sm:w-auto h-11 px-8 rounded-xl"
+        >
           {pwLoading ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение…</>
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение…
+            </>
           ) : pwSaved ? (
-            <><CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> Пароль изменён!</>
-          ) : "Изменить пароль"}
+            <>
+              <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-500" /> Пароль
+              изменён!
+            </>
+          ) : (
+            "Изменить пароль"
+          )}
         </Button>
       </form>
 
       {/* Язык интерфейса */}
-      <div id="language" className="bg-card rounded-2xl border border-border p-6 space-y-4">
+      <div
+        id="language"
+        className="bg-card rounded-2xl border border-border p-6 space-y-4"
+      >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Globe className="w-5 h-5 text-primary" />
           Язык интерфейса
@@ -688,13 +875,22 @@ function ProfileHubCard({ item }: { item: ProfileHubItem }) {
         <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold leading-tight text-foreground">{item.title}</span>
-        <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">{item.desc}</span>
+        <span className="block truncate text-sm font-semibold leading-tight text-foreground">
+          {item.title}
+        </span>
+        <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
+          {item.desc}
+        </span>
       </span>
       {item.disabled ? (
-        <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">Скоро</span>
+        <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+          Скоро
+        </span>
       ) : (
-        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/55" strokeWidth={1.75} />
+        <ChevronRight
+          className="h-4 w-4 shrink-0 text-muted-foreground/55"
+          strokeWidth={1.75}
+        />
       )}
     </>
   );
@@ -717,7 +913,15 @@ function ProfileHubCard({ item }: { item: ProfileHubItem }) {
 }
 
 /** Crop modal — simple circular crop with drag & zoom */
-function AvatarCropModal({ src, onSave, onClose }: { src: string; onSave: (blob: Blob) => void; onClose: () => void }) {
+function AvatarCropModal({
+  src,
+  onSave,
+  onClose,
+}: {
+  src: string;
+  onSave: (blob: Blob) => void;
+  onClose: () => void;
+}) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const imgRef = React.useRef<HTMLImageElement | null>(null);
   const [scale, setScale] = useState(1);
@@ -729,7 +933,10 @@ function AvatarCropModal({ src, onSave, onClose }: { src: string; onSave: (blob:
 
   useEffect(() => {
     const img = new window.Image();
-    img.onload = () => { imgRef.current = img; draw(img, pos, scale); };
+    img.onload = () => {
+      imgRef.current = img;
+      draw(img, pos, scale);
+    };
     img.src = src;
   }, [src]);
 
@@ -737,14 +944,23 @@ function AvatarCropModal({ src, onSave, onClose }: { src: string; onSave: (blob:
     if (imgRef.current) draw(imgRef.current, pos, scale);
   }, [pos, scale]);
 
-  const draw = (img: HTMLImageElement, p: { x: number; y: number }, s: number) => {
+  const draw = (
+    img: HTMLImageElement,
+    p: { x: number; y: number },
+    s: number,
+  ) => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, SIZE, SIZE);
     const aspect = img.width / img.height;
     let w: number, h: number;
-    if (aspect > 1) { h = SIZE * s; w = h * aspect; }
-    else { w = SIZE * s; h = w / aspect; }
+    if (aspect > 1) {
+      h = SIZE * s;
+      w = h * aspect;
+    } else {
+      w = SIZE * s;
+      h = w / aspect;
+    }
     const x = (SIZE - w) / 2 + p.x;
     const y = (SIZE - h) / 2 + p.y;
     ctx.drawImage(img, x, y, w, h);
@@ -767,18 +983,31 @@ function AvatarCropModal({ src, onSave, onClose }: { src: string; onSave: (blob:
     setSaving(true);
     // Export circular crop as 256x256
     const out = document.createElement("canvas");
-    out.width = 256; out.height = 256;
+    out.width = 256;
+    out.height = 256;
     const ctx = out.getContext("2d")!;
     ctx.beginPath();
     ctx.arc(128, 128, 128, 0, Math.PI * 2);
     ctx.clip();
     ctx.drawImage(canvasRef.current!, 0, 0, SIZE, SIZE, 0, 0, 256, 256);
-    out.toBlob((blob) => { if (blob) onSave(blob); }, "image/jpeg", 0.9);
+    out.toBlob(
+      (blob) => {
+        if (blob) onSave(blob);
+      },
+      "image/jpeg",
+      0.9,
+    );
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={onClose}>
-      <div className="bg-card rounded-2xl border border-border p-5 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-card rounded-2xl border border-border p-5 w-full max-w-sm space-y-4"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h3 className="font-semibold text-base text-center">Обрезать фото</h3>
 
         <div className="relative mx-auto" style={{ width: SIZE, height: SIZE }}>
@@ -811,9 +1040,13 @@ function AvatarCropModal({ src, onSave, onClose }: { src: string; onSave: (blob:
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">Отмена</Button>
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Отмена
+          </Button>
           <Button onClick={handleSave} disabled={saving} className="flex-1">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : null}
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+            ) : null}
             Сохранить
           </Button>
         </div>

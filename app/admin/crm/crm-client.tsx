@@ -9,22 +9,24 @@ import {
   Banknote, Star, AlertCircle, RefreshCw, Loader2,
   ShoppingBag, Download, ExternalLink,
   Inbox, Settings2, Truck, Navigation, Package, Home, Flag,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { AdminModal } from "@/components/admin/admin-modal";
 import { useToast } from "@/components/ui/use-toast";
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 const STAGES = [
-  { key: "NEW",         label: "Новый лид",     dot: "bg-blue-400" },
-  { key: "CONTACTED",   label: "Контакт",       dot: "bg-cyan-400" },
+  { key: "NEW",         label: "Новая заявка",  dot: "bg-blue-400" },
+  { key: "CONTACTED",   label: "Связались",     dot: "bg-cyan-400" },
   { key: "PROPOSAL",    label: "Предложение",   dot: "bg-violet-400" },
-  { key: "NEGOTIATION", label: "Переговоры",    dot: "bg-amber-400" },
-  { key: "WON",         label: "Выигран",       dot: "bg-emerald-400" },
-  { key: "LOST",        label: "Проигран",      dot: "bg-red-400/50" },
-  { key: "DEFERRED",    label: "Отложен",       dot: "bg-orange-400" },
-  { key: "RECURRING",   label: "Повторный",     dot: "bg-purple-400" },
+  { key: "NEGOTIATION", label: "Обсуждаем",     dot: "bg-amber-400" },
+  { key: "WON",         label: "Продано",       dot: "bg-emerald-400" },
+  { key: "LOST",        label: "Отказ",         dot: "bg-red-400/50" },
+  { key: "DEFERRED",    label: "Позже",         dot: "bg-orange-400" },
+  { key: "RECURRING",   label: "Повторный клиент", dot: "bg-purple-400" },
 ];
 
 const ORDER_STAGES = [
@@ -43,7 +45,7 @@ const SOURCE_LABELS: Record<string, string> = {
   WEBSITE: "Сайт",
   PHONE: "Звонок",
   SOCIAL: "Соц.сети",
-  EMAIL: "Email",
+  EMAIL: "Почта",
   REFERRAL: "Рекомендация",
   PARTNER: "Партнёр",
   OTHER: "Другое",
@@ -79,6 +81,22 @@ type Lead = {
 
 type StaffMember = { id: string; name: string | null; role: string };
 
+function isLeadPayload(value: unknown): value is Lead {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    typeof (value as Lead).id === "string" &&
+    typeof (value as Lead).name === "string",
+  );
+}
+
+function getApiError(payload: unknown, fallback: string) {
+  if (payload && typeof payload === "object" && typeof (payload as { error?: unknown }).error === "string") {
+    return (payload as { error: string }).error;
+  }
+  return fallback;
+}
+
 function timeAgo(dateStr: string) {
   const ms = Date.now() - new Date(dateStr).getTime();
   const min = Math.floor(ms / 60000);
@@ -95,6 +113,15 @@ function formatMoney(n: number) {
   return n.toLocaleString("ru-RU") + " ₽";
 }
 
+function formatOrderUnit(unit?: string) {
+  const normalized = String(unit ?? "").toUpperCase();
+  if (normalized === "CUBE") return "м³";
+  if (normalized === "PIECE") return "шт";
+  if (normalized === "METER") return "п.м.";
+  if (normalized === "SQUARE") return "м²";
+  return unit || "";
+}
+
 // ─── LeadCard ─────────────────────────────────────────────────────────────────
 
 function LeadCard({
@@ -107,7 +134,10 @@ function LeadCard({
   staff: StaffMember[];
 }) {
   const SrcIcon = SOURCE_ICONS[lead.source] || MoreHorizontal;
-  const isUrgent = lead.tags.some(t => t.toLowerCase().includes("срочн") || t.toLowerCase().includes("urgent") || t.toLowerCase().includes("vip"));
+  const isUrgent = lead.tags.some(t => {
+    const normalized = t.toLowerCase();
+    return normalized.includes("срочн") || normalized.includes("важн") || normalized.includes("urgent") || normalized.includes("vip");
+  });
 
   return (
     <div
@@ -115,7 +145,7 @@ function LeadCard({
       onDragStart={(e) => onDragStart(e, lead)}
       onDragEnd={onDragEnd}
       onClick={() => onClick(lead)}
-      className={`arayglass arayglass-shimmer rounded-xl p-3.5 sm:p-3 cursor-pointer select-none transition-all duration-200 group ${
+      className={`rounded-2xl border border-border bg-card p-3.5 cursor-pointer select-none transition-colors duration-200 group min-w-0 hover:border-primary/35 hover:bg-primary/[0.035] ${
         isUrgent ? "arayglass-glow" : ""
       }`}
     >
@@ -135,19 +165,19 @@ function LeadCard({
           )}
         </div>
         {lead.value && lead.value > 0 && (
-          <span className="shrink-0 text-sm font-bold text-emerald-500 dark:text-emerald-400 px-2 py-1 rounded-xl bg-emerald-500/10">
+          <span className="shrink-0 max-w-[45%] truncate text-sm font-bold text-emerald-500 dark:text-emerald-400 px-2 py-1 rounded-xl bg-emerald-500/10">
             {formatMoney(lead.value)}
           </span>
         )}
       </div>
 
       {/* Contacts */}
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2 min-w-0">
         {lead.phone && (
-          <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{lead.phone}</span>
+          <span className="flex min-w-0 items-center gap-1"><Phone className="w-3 h-3 shrink-0" /><span className="truncate">{lead.phone}</span></span>
         )}
         {lead.email && (
-          <span className="flex items-center gap-1 truncate"><Mail className="w-3 h-3" />{lead.email}</span>
+          <span className="flex min-w-0 items-center gap-1 truncate"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></span>
         )}
       </div>
 
@@ -163,10 +193,10 @@ function LeadCard({
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-1.5 border-t border-primary/[0.06]">
-        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-primary/[0.06]">
+        <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
           <SrcIcon className="w-3 h-3" />
-          {SOURCE_LABELS[lead.source] || lead.source}
+          <span className="truncate">{SOURCE_LABELS[lead.source] || lead.source}</span>
         </span>
         <div className="flex items-center gap-2">
           {lead._count && lead._count.activities > 0 && (
@@ -202,7 +232,7 @@ function StageColumn({
 }) {
   return (
     <div
-      className={`flex flex-col arayglass rounded-2xl min-w-[260px] max-w-[300px] flex-1 transition-all duration-200 ${
+      className={`flex w-full flex-col rounded-2xl border border-border bg-card/70 transition-all duration-200 sm:min-w-[320px] sm:max-w-[360px] sm:flex-1 ${
         isDragOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
       }`}
       onDrop={(e) => onDrop(e, stage.key)}
@@ -210,9 +240,9 @@ function StageColumn({
     >
       {/* Column header */}
       <div className="px-3.5 pt-3.5 pb-2.5 flex-shrink-0 border-b border-primary/[0.08]">
-        <div className="flex items-center gap-2 mb-0.5">
+        <div className="flex items-center gap-2 mb-0.5 min-w-0">
           <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${stage.dot}`} />
-          <span className="text-sm font-bold text-foreground">{stage.label}</span>
+          <span className="text-sm font-bold text-foreground truncate">{stage.label}</span>
           <span className="text-xs text-muted-foreground bg-primary/[0.08] px-2 py-0.5 rounded-xl font-semibold ml-auto">
             {total}
           </span>
@@ -225,7 +255,7 @@ function StageColumn({
       </div>
 
       {/* Cards */}
-      <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 max-h-[calc(100vh-400px)] scrollbar-thin">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 max-h-none sm:max-h-[calc(100vh-400px)] scrollbar-thin">
         {leads.map(lead => (
           <LeadCard
             key={lead.id}
@@ -252,7 +282,7 @@ function StageColumn({
       <div className="p-2.5 flex-shrink-0">
         <button
           onClick={() => onAddLead(stage.key)}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium text-muted-foreground border border-dashed border-primary/15 hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground transition-all"
+          className="w-full flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-dashed border-primary/15 px-3 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground"
         >
           <Plus className="w-4 h-4" /> Добавить
         </button>
@@ -267,7 +297,7 @@ function LeadForm({
   onClose, onSave, staff, initial,
 }: {
   onClose: () => void;
-  onSave: (data: Partial<Lead>) => void;
+  onSave: (data: Partial<Lead>) => Promise<void> | void;
   staff: StaffMember[];
   initial?: Partial<Lead>;
 }) {
@@ -281,44 +311,70 @@ function LeadForm({
   const [comment, setComment] = useState(initial?.comment || "");
   const [tags, setTags] = useState(initial?.tags?.join(", ") || "");
   const [assigneeId, setAssigneeId] = useState(initial?.assigneeId || "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name.trim()) return;
-    onSave({
-      name: name.trim(),
-      company: company.trim() || null,
-      phone: phone.trim() || null,
-      email: email.trim() || null,
-      source,
-      stage,
-      value: value ? parseFloat(value) : null,
-      comment: comment.trim() || null,
-      tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-      assigneeId: assigneeId || null,
-    });
-    onClose();
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({
+        name: name.trim(),
+        company: company.trim() || null,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        source,
+        stage,
+        value: value ? parseFloat(value) : null,
+        comment: comment.trim() || null,
+        tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+        assigneeId: assigneeId || null,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать лид.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <>
-      <div className="arayglass-popup-backdrop" onClick={onClose} />
-      <div className="arayglass-popup-container">
-        <div className="arayglass-popup arayglass-popup-md">
-          {/* Header */}
-          <div className="arayglass-popup-header">
-            <div>
-              <h2 className="text-base font-bold text-foreground">Новый лид</h2>
-              <p className="text-sm mt-0.5 text-muted-foreground">Заполните данные о потенциальном клиенте</p>
+    <AdminModal
+      open
+      onClose={onClose}
+      title="Новая заявка"
+      subtitle="Кто обратился, что нужно и кто отвечает"
+      size="lg"
+      bodyClassName="space-y-3 p-4 sm:p-5"
+      footer={(
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-[44px] rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!name.trim() || saving}
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Создать заявку
+          </button>
+        </>
+      )}
+    >
+          {error && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
             </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Form */}
-          <div className="arayglass-popup-body space-y-3">
+          )}
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Имя / Компания *</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Клиент или организация *</label>
             <input value={name} onChange={e => setName(e.target.value)}
               className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
               placeholder="Имя контакта"
@@ -333,7 +389,7 @@ function LeadForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Телефон</label>
               <input value={phone} onChange={e => setPhone(e.target.value)}
@@ -342,15 +398,15 @@ function LeadForm({
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Email</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Почта</label>
               <input value={email} onChange={e => setEmail(e.target.value)}
                 className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
-                placeholder="email@..."
+                placeholder="почта@пример.рф"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Источник</label>
               <select value={source} onChange={e => setSource(e.target.value)}
@@ -367,9 +423,9 @@ function LeadForm({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Сумма ₽</label>
+              <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Ожидаемая сумма</label>
               <input type="number" value={value} onChange={e => setValue(e.target.value)}
                 className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
                 placeholder="0"
@@ -386,10 +442,10 @@ function LeadForm({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Теги (через запятую)</label>
+            <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Метки (через запятую)</label>
             <input value={tags} onChange={e => setTags(e.target.value)}
               className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all"
-              placeholder="VIP, Срочный, Опт..."
+              placeholder="Важный, Срочно, Опт..."
             />
           </div>
 
@@ -397,27 +453,10 @@ function LeadForm({
             <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Комментарий</label>
             <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
               className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all resize-none"
-              placeholder="Детали запроса..."
+              placeholder="Что нужно клиенту..."
             />
           </div>
-        </div>
-
-          {/* Actions */}
-          <div className="arayglass-popup-footer">
-            <div className="flex gap-3">
-              <button onClick={onClose}
-                className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
-                Отмена
-              </button>
-              <button onClick={handleSave} disabled={!name.trim()}
-                className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
-                Создать лид
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    </AdminModal>
   );
 }
 
@@ -434,6 +473,7 @@ function LeadDetailPanel({
 }) {
   const [activities, setActivities] = useState<any[]>([]);
   const [actLoading, setActLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(lead.name);
@@ -454,7 +494,16 @@ function LeadDetailPanel({
     setEditComment(lead.comment || "");
     setEditAssigneeId(lead.assigneeId || "");
     setEditing(false);
-  }, [lead.id]);
+  }, [
+    lead.id,
+    lead.name,
+    lead.company,
+    lead.phone,
+    lead.email,
+    lead.value,
+    lead.comment,
+    lead.assigneeId,
+  ]);
 
   useEffect(() => {
     setActLoading(true);
@@ -465,77 +514,102 @@ function LeadDetailPanel({
   }, [lead.id]);
 
   const handleStageChange = async (newStage: string) => {
-    const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stage: newStage }),
-    });
-    const updated = await res.json();
-    onUpdate(updated);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: newStage }),
+      });
+      const updated = await res.json().catch(() => null);
+      if (!res.ok || !isLeadPayload(updated)) {
+        throw new Error(getApiError(updated, "Не удалось изменить этап лида."));
+      }
+      onUpdate(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить этап лида.");
+    }
   };
 
   const handleSaveEdit = async () => {
-    const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: editName.trim(),
-        company: editCompany.trim() || null,
-        phone: editPhone.trim() || null,
-        email: editEmail.trim() || null,
-        value: editValue ? parseFloat(editValue) : null,
-        comment: editComment.trim() || null,
-        assigneeId: editAssigneeId || null,
-      }),
-    });
-    const updated = await res.json();
-    onUpdate(updated);
-    setEditing(false);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          company: editCompany.trim() || null,
+          phone: editPhone.trim() || null,
+          email: editEmail.trim() || null,
+          value: editValue ? parseFloat(editValue) : null,
+          comment: editComment.trim() || null,
+          assigneeId: editAssigneeId || null,
+        }),
+      });
+      const updated = await res.json().catch(() => null);
+      if (!res.ok || !isLeadPayload(updated)) {
+        throw new Error(getApiError(updated, "Не удалось сохранить лид."));
+      }
+      onUpdate(updated);
+      setEditing(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить лид.");
+    }
   };
 
   const handleDelete = async () => {
-    await fetch(`/api/admin/crm/leads/${lead.id}`, { method: "DELETE" });
-    onDelete(lead.id);
-    onClose();
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/crm/leads/${lead.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(getApiError(data, "Не удалось удалить лид."));
+      }
+      onDelete(lead.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить лид.");
+    }
   };
 
   const currentStage = STAGES.find(s => s.key === lead.stage);
 
   return (
     <>
-      {/* ARAY POPUP */}
-      <div className="arayglass-popup-backdrop" onClick={onClose} />
-      <div className="arayglass-popup-container">
-        <div className="arayglass-popup arayglass-popup-lg">
-          {/* Header */}
-          <div className="arayglass-popup-header">
-            <div className="min-w-0 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                <User className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-bold text-foreground truncate text-base">{lead.name}</p>
-                {lead.company && <p className="text-xs text-muted-foreground truncate mt-0.5">{lead.company}</p>}
-              </div>
+      <AdminModal
+        open
+        onClose={onClose}
+        title={lead.name}
+        subtitle={lead.company || currentStage?.label || "Заявка"}
+        size="lg"
+        bodyClassName="space-y-4 p-4 sm:p-5"
+        headerActions={(
+          <>
+            <button
+              type="button"
+              onClick={() => setEditing(!editing)}
+              className="admin-modal-action"
+            >
+              <Pencil className="h-4 w-4" />
+              <span>{editing ? "Просмотр" : "Править"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowConfirmDelete(true)}
+              className="admin-modal-action admin-modal-action-danger"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Удалить</span>
+            </button>
+          </>
+        )}
+      >
+          {error && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => setEditing(!editing)}
-                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground arayglass-icon">
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button onClick={() => setShowConfirmDelete(true)}
-                className="w-10 h-10 rounded-xl hover:bg-red-500/10 flex items-center justify-center transition-colors text-muted-foreground hover:text-red-500">
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <button onClick={onClose}
-                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="arayglass-popup-body space-y-4">
+          )}
           {/* Stage selector */}
           <div>
             <label className="text-sm font-medium text-muted-foreground mb-2 block">Этап воронки</label>
@@ -561,13 +635,13 @@ function LeadDetailPanel({
                 className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
               <input value={editCompany} onChange={e => setEditCompany(e.target.value)} placeholder="Компания"
                 className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="Телефон"
                   className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
-                <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Email"
+                <input value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="Почта"
                   className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input type="number" value={editValue} onChange={e => setEditValue(e.target.value)} placeholder="Сумма"
                   className="w-full bg-black/20 dark:bg-black/20 bg-white/50 border border-primary/15 rounded-xl px-4 py-3 text-base sm:text-sm text-foreground focus:border-primary/40 focus:ring-2 focus:ring-primary/15 focus:outline-none transition-all" />
                 <select value={editAssigneeId} onChange={e => setEditAssigneeId(e.target.value)}
@@ -594,15 +668,15 @@ function LeadDetailPanel({
               {/* Contact info */}
               <div className="arayglass rounded-xl p-4 space-y-3">
                 {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                  <a href={`tel:${lead.phone}`} className="flex min-w-0 items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                     <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
-                    {lead.phone}
+                    <span className="truncate">{lead.phone}</span>
                   </a>
                 )}
                 {lead.email && (
-                  <a href={`mailto:${lead.email}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                  <a href={`mailto:${lead.email}`} className="flex min-w-0 items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                     <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
-                    {lead.email}
+                    <span className="truncate">{lead.email}</span>
                   </a>
                 )}
                 {lead.value && lead.value > 0 && (
@@ -614,7 +688,7 @@ function LeadDetailPanel({
                 {lead.assignee && (
                   <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-h-[36px]">
                     <User className="w-4 h-4" />
-                    <span>{lead.assignee.name}</span>
+                    <span className="truncate">{lead.assignee.name}</span>
                   </div>
                 )}
               </div>
@@ -623,7 +697,7 @@ function LeadDetailPanel({
               {lead.comment && (
                 <div className="arayglass rounded-xl p-4">
                   <p className="text-sm text-muted-foreground mb-1.5 font-medium">Комментарий</p>
-                  <p className="text-sm text-foreground leading-relaxed">{lead.comment}</p>
+                  <p className="text-sm text-foreground leading-relaxed break-words">{lead.comment}</p>
                 </div>
               )}
 
@@ -671,16 +745,15 @@ function LeadDetailPanel({
               <p className="text-sm text-muted-foreground opacity-50 text-center py-4">Нет записей</p>
             )}
           </div>
-        </div>
-        </div>
-      </div>
+      </AdminModal>
 
       {showConfirmDelete && (
         <ConfirmDialog
+          open
           title="Удалить лид?"
           description={`Лид "${lead.name}" будет удалён безвозвратно.`}
           onConfirm={handleDelete}
-          onCancel={() => setShowConfirmDelete(false)}
+          onClose={() => setShowConfirmDelete(false)}
           variant="destructive"
         />
       )}
@@ -691,29 +764,83 @@ function LeadDetailPanel({
 // ─── CrmStats ─────────────────────────────────────────────────────────────────
 
 function CrmStats({ leads }: { leads: Lead[] }) {
-  const totalValue = leads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
   const activeLeads = leads.filter(l => !["WON", "LOST"].includes(l.stage)).length;
   const wonLeads = leads.filter(l => l.stage === "WON").length;
   const convRate = leads.length > 0 ? Math.round((wonLeads / leads.length) * 100) : 0;
 
   const stats = [
-    { label: "Всего лидов", value: leads.length.toString(), icon: Users, iconBg: "bg-primary" },
-    { label: "Активных", value: activeLeads.toString(), icon: TrendingUp, iconBg: "bg-amber-500" },
-    { label: "Выиграно", value: wonLeads.toString(), icon: CheckCircle2, iconBg: "bg-emerald-500" },
-    { label: "Конверсия", value: `${convRate}%`, icon: Star, iconBg: "bg-violet-500" },
+    { label: "Всего заявок", value: leads.length.toString(), icon: Users },
+    { label: "В работе", value: activeLeads.toString(), icon: TrendingUp },
+    { label: "Продано", value: wonLeads.toString(), icon: CheckCircle2 },
+    { label: "Дошли до покупки", value: `${convRate}%`, icon: Star },
   ];
 
   return (
-    <div className="arayglass-grid-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
-      {stats.map(stat => (
-        <div key={stat.label} className="aray-stat-card relative overflow-hidden">
-          <div className={`absolute top-3 right-3 p-2.5 rounded-xl ${stat.iconBg}`}>
-            <stat.icon className="w-5 h-5 text-white" />
+    <div className="border-b border-primary/[0.08] px-4 py-2.5 sm:px-5 sm:py-3 flex-shrink-0">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 lg:hidden scrollbar-hide">
+        {stats.map(stat => (
+          <div key={stat.label} className="min-w-[132px] rounded-2xl border border-primary/15 bg-card/70 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
+              <span className="rounded-lg border border-primary/10 bg-primary/[0.08] p-1.5">
+                <stat.icon className="h-3.5 w-3.5 text-primary" />
+              </span>
+            </div>
+            <p className="font-display text-2xl font-bold leading-none text-foreground">{stat.value}</p>
           </div>
-          <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-12">{stat.label}</p>
-          <p className="text-2xl lg:text-3xl font-bold mt-1.5 font-display leading-tight text-foreground">{stat.value}</p>
-        </div>
-      ))}
+        ))}
+      </div>
+      <div className="hidden grid-cols-2 gap-2 lg:grid lg:grid-cols-4 lg:gap-3">
+        {stats.map(stat => (
+          <div key={stat.label} className="aray-stat-card relative overflow-hidden">
+            <div className="absolute top-3 right-3 rounded-xl border border-primary/10 bg-primary/[0.08] p-2.5">
+              <stat.icon className="w-5 h-5 text-primary" />
+            </div>
+            <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-12">{stat.label}</p>
+            <p className="text-2xl lg:text-3xl font-bold mt-1.5 font-display leading-tight text-foreground">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CrmKanbanLoading({ label, columns = 4 }: { label: string; columns?: number }) {
+  const skeletons = Array.from({ length: columns });
+
+  return (
+    <div className="flex-1 overflow-hidden px-4 py-4 sm:px-5" aria-live="polite" aria-busy="true">
+      <div className="mb-3 flex min-h-11 items-center gap-2 rounded-xl border border-primary/10 bg-card/70 px-3 text-sm font-medium text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+        <span>{label}</span>
+      </div>
+
+      <div className="space-y-2.5 sm:hidden">
+        {skeletons.slice(0, 3).map((_, index) => (
+          <div key={index} className="rounded-2xl border border-primary/10 bg-card/65 p-3.5">
+            <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+            <div className="mt-3 h-3 w-1/2 animate-pulse rounded bg-muted/70" />
+            <div className="mt-4 h-9 w-full animate-pulse rounded-xl bg-muted/60" />
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden h-full gap-3 sm:flex">
+        {skeletons.map((_, index) => (
+          <div key={index} className="flex min-w-[265px] flex-1 flex-col rounded-2xl border border-primary/10 bg-card/65 p-3">
+            <div className="flex items-center gap-2 border-b border-primary/[0.08] pb-3">
+              <div className="h-7 w-7 animate-pulse rounded-lg bg-muted" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="ml-auto h-5 w-8 animate-pulse rounded-full bg-muted/70" />
+            </div>
+            <div className="space-y-2.5 pt-3">
+              <div className="h-20 animate-pulse rounded-xl bg-muted/65" />
+              <div className="h-16 animate-pulse rounded-xl bg-muted/50" />
+              <div className="h-16 animate-pulse rounded-xl bg-muted/40" />
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -723,17 +850,17 @@ function CrmStats({ leads }: { leads: Lead[] }) {
 const PRESETS = [
   {
     key: "lumber",
-    label: "🪵 Пиломатериалы",
+    label: "Пиломатериалы",
     desc: "Воронка для продаж лесоматериалов",
     sampleLeads: [
       { name: "Алексей Петров", company: "СтройМонтаж ООО", phone: "+7 903 123-45-67", source: "PHONE", stage: "NEW", value: 285000, comment: "Нужна доска обрезная 50×150, ~5м³", tags: ["Срочный"] },
       { name: "Дмитрий Козлов", company: "ИП Козлов", phone: "+7 916 234-56-78", source: "WEBSITE", stage: "CONTACTED", value: 120000, comment: "Брус 100×100, строительство дачи", tags: [] },
-      { name: "ТД Горизонт", company: "ТД Горизонт", phone: "+7 495 000-00-01", source: "PARTNER", stage: "PROPOSAL", value: 980000, comment: "Оптовая партия, ежемесячно", tags: ["VIP", "Опт"] },
+      { name: "ТД Горизонт", company: "ТД Горизонт", phone: "+7 495 000-00-01", source: "PARTNER", stage: "PROPOSAL", value: 980000, comment: "Оптовая партия, ежемесячно", tags: ["Важный", "Опт"] },
     ],
   },
   {
     key: "restaurant",
-    label: "🍕 Ресторан / Доставка",
+    label: "Ресторан и доставка",
     desc: "Воронка для корпоративных заказов",
     sampleLeads: [
       { name: "ООО Офис Центр", company: "Офис Центр", phone: "+7 499 111-11-11", source: "WEBSITE", stage: "NEW", value: 45000, comment: "Корпоративные обеды на 30 человек", tags: [] },
@@ -741,7 +868,7 @@ const PRESETS = [
   },
   {
     key: "furniture",
-    label: "🛋️ Мебель",
+    label: "Мебель",
     desc: "Воронка для продаж мебели",
     sampleLeads: [],
   },
@@ -752,20 +879,34 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
   const preset = PRESETS.find(p => p.key === selected);
 
   return (
-    <>
-      <div className="arayglass-popup-backdrop" onClick={onClose} />
-      <div className="arayglass-popup-container">
-        <div className="arayglass-popup arayglass-popup-sm">
-          <div className="arayglass-popup-header">
-            <div>
-              <h2 className="text-base font-bold text-foreground">Пресеты по отраслям</h2>
-              <p className="text-sm mt-0.5 text-muted-foreground">Загрузить демо-лиды для вашей сферы</p>
-            </div>
-            <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="arayglass-popup-body space-y-2">
+    <AdminModal
+      open
+      onClose={onClose}
+      title="Шаблоны по отраслям"
+      subtitle="Быстро добавьте примерные заявки для своей сферы"
+      size="sm"
+      bodyClassName="space-y-2 p-4"
+      footer={(
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-[44px] rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            disabled={!selected || !preset?.sampleLeads.length}
+            onClick={() => { preset && onApply(preset.sampleLeads); onClose(); }}
+            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" />
+            Добавить ({preset?.sampleLeads.length || 0})
+          </button>
+        </>
+      )}
+    >
             {PRESETS.map(p => (
               <button key={p.key} onClick={() => setSelected(p.key)}
                 className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
@@ -777,24 +918,7 @@ function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (lea
                 <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
               </button>
             ))}
-          </div>
-          <div className="arayglass-popup-footer">
-            <div className="flex gap-3">
-              <button onClick={onClose}
-                className="flex-1 py-3 rounded-xl border border-primary/15 text-sm font-medium text-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all">
-                Отмена
-              </button>
-              <button
-                disabled={!selected || !preset?.sampleLeads.length}
-                onClick={() => { preset && onApply(preset.sampleLeads); onClose(); }}
-                className="flex-1 py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-40">
-                Загрузить демо ({preset?.sampleLeads.length || 0} лидов)
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    </AdminModal>
   );
 }
 
@@ -836,13 +960,13 @@ function OrderKanbanCard({
       onDragStart={(e) => onDragStart(e, order)}
       onDragEnd={onDragEnd}
       onClick={() => onClick(order)}
-      className="arayglass arayglass-shimmer rounded-xl p-3 cursor-pointer select-none transition-all duration-200 group"
+      className="arayglass arayglass-shimmer group min-w-0 cursor-pointer select-none overflow-hidden rounded-xl p-3.5 transition-all duration-200"
     >
       {/* Row 1: номер + имя + сумма */}
-      <div className="flex items-center justify-between gap-1.5 mb-1.5">
-        <div className="flex items-center gap-1.5 min-w-0">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-1.5">
           <span className="text-xs font-bold text-primary shrink-0">#{order.orderNumber}</span>
-          <span className="text-sm font-semibold text-foreground truncate">{order.guestName || "Клиент"}</span>
+          <span className="line-clamp-2 text-sm font-semibold leading-snug text-foreground">{order.guestName || "Клиент"}</span>
         </div>
         <span className="shrink-0 text-xs font-bold px-2 py-0.5 rounded-lg text-emerald-600 dark:text-emerald-400 bg-emerald-500/10">
           {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
@@ -851,25 +975,27 @@ function OrderKanbanCard({
 
       {/* Row 2: телефон */}
       {order.guestPhone && (
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5">
+        <p className="text-xs text-muted-foreground flex items-center gap-1.5 mb-1.5 min-w-0">
           <Phone className="w-3 h-3 shrink-0 text-primary/40" />
-          <span className="font-medium">{order.guestPhone}</span>
+          <span className="font-medium truncate">{order.guestPhone}</span>
         </p>
       )}
 
       {/* Row 3: товар */}
       {firstItem && (
-        <p className="text-xs text-muted-foreground truncate mb-2 flex items-center gap-1.5">
+        <p className="mb-2 flex min-w-0 items-start gap-1.5 text-xs text-muted-foreground">
           <Package className="w-3 h-3 shrink-0 text-primary/40" />
-          <span>{firstItem.productName} {firstItem.variantSize}{moreCount > 0 ? ` +${moreCount}` : ""}</span>
+          <span className="line-clamp-2 break-words">
+            {firstItem.productName} {firstItem.variantSize}{moreCount > 0 ? ` +${moreCount}` : ""}
+          </span>
         </p>
       )}
 
       {/* Row 4: footer — оплата + дата */}
-      <div className="flex items-center justify-between pt-1.5 border-t border-primary/[0.06]">
-        <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 pt-1.5 border-t border-primary/[0.06]">
+        <span className="text-[11px] text-muted-foreground flex min-w-0 items-center gap-1">
           <Banknote className="w-3 h-3" />
-          {order.paymentMethod === "Наличные" ? "Нал" : "Безнал"}
+          <span className="truncate">{order.paymentMethod === "Наличные" ? "Наличные" : "Безналичный"}</span>
         </span>
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] text-muted-foreground flex items-center gap-1">
@@ -882,7 +1008,7 @@ function OrderKanbanCard({
   );
 }
 
-// ─── OrderDetailPanel (попап деталей заказа из канбана) ─────────────────────
+// ─── OrderDetailPanel (боковая карточка заказа из доски) ────────────────────
 
 function OrderDetailPanel({
   order, onClose, onStatusChange,
@@ -891,25 +1017,19 @@ function OrderDetailPanel({
   onClose: () => void;
   onStatusChange: (orderId: string, newStatus: string) => void;
 }) {
-  const currentStage = ORDER_STAGES.find(s => s.key === order.status);
   const itemsTotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const createdStr = new Date(order.createdAt).toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const updatedStr = order.updatedAt ? new Date(order.updatedAt).toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
 
   return (
-    <>
-      {/* ARAY POPUP */}
-      <div className="arayglass-popup-backdrop" onClick={onClose} />
-      <div className="arayglass-popup-container">
-        <div className="arayglass-popup arayglass-popup-lg">
-          {/* Header */}
-          <div className="arayglass-popup-header">
+    <aside className="fixed inset-x-3 bottom-[calc(92px+env(safe-area-inset-bottom,0px))] top-[104px] z-40 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl sm:left-auto sm:right-4 sm:w-[440px] lg:right-6">
+          <div className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
             <div className="min-w-0 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
                 <ShoppingBag className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="font-bold text-foreground text-base">Заказ #{order.orderNumber}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{order.guestName || "Клиент"}</p>
               </div>
@@ -926,8 +1046,7 @@ function OrderDetailPanel({
             </div>
           </div>
 
-          {/* Body */}
-          <div className="arayglass-popup-body space-y-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
             {/* Status selector */}
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-2 block">Статус заказа</label>
@@ -936,7 +1055,7 @@ function OrderDetailPanel({
                   const StIcon = s.icon;
                   return (
                     <button key={s.key} onClick={() => { onStatusChange(order.id, s.key); }}
-                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex min-h-11 items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                         order.status === s.key
                           ? "border-2 border-primary bg-primary/15 text-foreground shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
                           : "border border-primary/10 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05]"
@@ -971,15 +1090,15 @@ function OrderDetailPanel({
             <div className="arayglass rounded-xl p-4 space-y-3">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Контакт</p>
               {order.guestPhone && (
-                <a href={`tel:${order.guestPhone}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                <a href={`tel:${order.guestPhone}`} className="flex min-w-0 items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                   <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
-                  {order.guestPhone}
+                  <span className="truncate">{order.guestPhone}</span>
                 </a>
               )}
               {order.guestEmail && (
-                <a href={`mailto:${order.guestEmail}`} className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                <a href={`mailto:${order.guestEmail}`} className="flex min-w-0 items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                   <Mail className="w-4 h-4 text-muted-foreground arayglass-icon" />
-                  {order.guestEmail}
+                  <span className="truncate">{order.guestEmail}</span>
                 </a>
               )}
               <div className="flex items-center gap-2.5 text-sm text-muted-foreground min-h-[36px]">
@@ -989,7 +1108,7 @@ function OrderDetailPanel({
               {order.deliveryAddress && (
                 <div className="flex items-start gap-2.5 text-sm text-muted-foreground min-h-[36px]">
                   <Navigation className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{order.deliveryAddress}</span>
+                  <span className="break-words">{order.deliveryAddress}</span>
                 </div>
               )}
             </div>
@@ -1001,10 +1120,12 @@ function OrderDetailPanel({
               </div>
               <div className="divide-y divide-primary/[0.05]">
                 {order.items.map((item, i) => (
-                  <div key={i} className="px-4 py-3 flex items-center justify-between gap-3">
+                  <div key={i} className="flex items-start justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
-                      <p className="text-sm text-foreground truncate">{item.productName}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{item.variantSize} · {item.quantity} {item.unitType}</p>
+                      <p className="line-clamp-2 text-sm text-foreground">{item.productName}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {item.variantSize} · {item.quantity} {formatOrderUnit(item.unitType)}
+                      </p>
                     </div>
                     <span className="text-sm font-semibold text-foreground shrink-0">
                       {(item.price * item.quantity).toLocaleString("ru-RU")} ₽
@@ -1018,7 +1139,7 @@ function OrderDetailPanel({
             {order.comment && (
               <div className="arayglass rounded-xl p-4">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Комментарий</p>
-                <p className="text-sm text-foreground leading-relaxed">{order.comment}</p>
+                <p className="text-sm text-foreground leading-relaxed break-words">{order.comment}</p>
               </div>
             )}
 
@@ -1039,17 +1160,14 @@ function OrderDetailPanel({
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="arayglass-popup-footer">
+          <div className="flex-shrink-0 border-t border-border p-4">
             <Link href={`/admin/orders/${order.id}`}
               className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
               <ExternalLink className="w-4 h-4" />
               Открыть полную карточку
             </Link>
           </div>
-        </div>
-      </div>
-    </>
+    </aside>
   );
 }
 
@@ -1059,20 +1177,28 @@ function OrdersKanban({ search }: { search: string }) {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [mobileOrderStage, setMobileOrderStage] = useState("NEW");
   const [selectedOrder, setSelectedOrder] = useState<OrderCard | null>(null);
   const dragOrderRef = useRef<OrderCard | null>(null);
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch(`/api/admin/crm/orders-kanban${search ? `?search=${encodeURIComponent(search)}` : ""}`);
-    const data = await res.json();
-    setOrders(data.orders || []);
-    setLoading(false);
+  const fetchOrders = useCallback(async (initial = false) => {
+    if (initial) setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/crm/orders-kanban${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getApiError(data, "Не удалось загрузить заказы."));
+      setOrders(Array.isArray(data?.orders) ? data.orders : []);
+      setOrderError(null);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : "Не удалось загрузить заказы.");
+    } finally {
+      setLoading(false);
+    }
   }, [search]);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { fetchOrders(orders.length === 0); }, [fetchOrders]);
 
   // Auto-refresh every 30s
   useEffect(() => {
@@ -1082,11 +1208,19 @@ function OrdersKanban({ search }: { search: string }) {
 
   const handleSyncToLeads = async () => {
     setSyncing(true);
-    const res = await fetch("/api/admin/crm/sync-orders", { method: "POST" });
-    const data = await res.json();
-    setSyncResult(data.message || `Импортировано ${data.imported} заказов`);
-    setSyncing(false);
-    setTimeout(() => setSyncResult(null), 4000);
+    setSyncResult(null);
+    setOrderError(null);
+    try {
+      const res = await fetch("/api/admin/crm/sync-orders", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getApiError(data, "Не удалось синхронизировать заказы."));
+      setSyncResult(data.message || `Импортировано ${data.imported ?? 0} заказов`);
+      setTimeout(() => setSyncResult(null), 4000);
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : "Не удалось синхронизировать заказы.");
+    } finally {
+      setSyncing(false);
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, order: OrderCard) => {
@@ -1179,14 +1313,14 @@ function OrdersKanban({ search }: { search: string }) {
       {/* Статистика */}
       <div className="arayglass-grid-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
         {[
-          { label: "Всего заказов", value: orders.length.toString(), icon: ShoppingBag, iconBg: "bg-primary" },
-          { label: "Активных", value: activeOrders.toString(), icon: TrendingUp, iconBg: "bg-amber-500" },
-          { label: "Завершённых", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length.toString(), icon: CheckCircle2, iconBg: "bg-emerald-500" },
-          { label: "Выручка (факт)", value: formatMoney(totalRevenue) || "—", icon: Banknote, iconBg: "bg-violet-500" },
+          { label: "Всего заказов", value: orders.length.toString(), icon: ShoppingBag },
+          { label: "В работе", value: activeOrders.toString(), icon: TrendingUp },
+          { label: "Завершены", value: orders.filter(o => ["DELIVERED","COMPLETED"].includes(o.status)).length.toString(), icon: CheckCircle2 },
+          { label: "Оплачено", value: formatMoney(totalRevenue) || "—", icon: Banknote },
         ].map(stat => (
           <div key={stat.label} className="aray-stat-card relative overflow-hidden">
-            <div className={`absolute top-3 right-3 p-2.5 rounded-xl ${stat.iconBg}`}>
-              <stat.icon className="w-5 h-5 text-white" />
+            <div className="absolute top-3 right-3 rounded-xl border border-primary/10 bg-primary/[0.08] p-2.5">
+              <stat.icon className="w-5 h-5 text-primary" />
             </div>
             <p className="text-[10px] lg:text-xs text-muted-foreground font-medium uppercase tracking-wide pr-12">{stat.label}</p>
             <p className="text-2xl lg:text-3xl font-bold mt-1.5 font-display leading-tight text-foreground">{stat.value}</p>
@@ -1195,37 +1329,41 @@ function OrdersKanban({ search }: { search: string }) {
       </div>
 
       {/* Синхронизация */}
-      <div className="px-4 sm:px-5 py-2.5 border-b border-primary/[0.08] flex items-center gap-3 flex-shrink-0">
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-primary/[0.08] px-4 py-2.5 sm:gap-3 sm:px-5">
         <button
           onClick={handleSyncToLeads}
           disabled={syncing}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-primary/15 text-sm font-medium text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.05] transition-all disabled:opacity-50"
+          className="flex min-h-11 max-w-full items-center justify-center gap-2 rounded-xl border border-primary/15 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05] disabled:opacity-50"
         >
           {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 arayglass-icon" />}
-          Синхронизировать с лидами
+          Обновить лиды из заказов
         </button>
         {syncResult && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-500 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-4 h-4 shrink-0" /> {syncResult}</span>
         )}
         <span className="text-sm text-muted-foreground ml-auto hidden sm:block">
-          Перетащите карточку для смены статуса · Клик → детали
+          Перетащите карточку для смены статуса · нажмите, чтобы открыть детали
         </span>
       </div>
 
+      {orderError && (
+        <div className="mx-4 sm:mx-5 my-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {orderError}
+        </div>
+      )}
+
       {/* Kanban */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        </div>
+        <CrmKanbanLoading label="Загружаю заказы" />
       ) : (
         <>
           {/* Мобильный переключатель этапов заказов */}
-          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
+          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
             {ORDER_STAGES.map(s => {
               const cnt = (ordersByStatus[s.key] || []).length;
               return (
                 <button key={s.key} onClick={() => setMobileOrderStage(s.key)}
-                  className={`admin-pill-btn shrink-0 min-h-[40px] ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
+                  className={`admin-pill-btn shrink-0 min-h-11 ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
                   <s.icon className="w-3.5 h-3.5" />
                   {s.label}
                   {cnt > 0 && <span className={`px-1.5 rounded-md text-[10px] font-bold ${mobileOrderStage === s.key ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>{cnt}</span>}
@@ -1250,9 +1388,9 @@ function OrdersKanban({ search }: { search: string }) {
             )}
           </div>
 
-          {/* Десктоп — горизонтальный Kanban */}
-          <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 sm:px-5 py-4">
-            <div className="flex gap-3 h-full" style={{ minWidth: `${ORDER_STAGES.length * 280}px` }}>
+          {/* Десктоп — горизонтальная доска */}
+          <div className={`hidden flex-1 overflow-x-auto overflow-y-hidden px-4 py-4 sm:block sm:px-5 ${selectedOrder ? "lg:pr-[480px]" : ""}`}>
+            <div className="flex h-full gap-3" style={{ minWidth: `${ORDER_STAGES.length * 340}px` }}>
               {ORDER_STAGES.map(stage => {
                 const stageOrders = ordersByStatus[stage.key] || [];
                 const stageTotal = stageOrders.reduce((s, o) => s + Number(o.totalAmount), 0);
@@ -1262,7 +1400,7 @@ function OrdersKanban({ search }: { search: string }) {
                 return (
                   <div
                     key={stage.key}
-                    className={`flex flex-col arayglass rounded-2xl min-w-[265px] max-w-[300px] flex-1 transition-all duration-200 ${
+                    className={`flex min-w-[320px] max-w-[360px] flex-1 flex-col rounded-2xl border border-border bg-card transition-all duration-200 ${
                       isOver ? "!border-primary/50 shadow-[0_0_24px_hsl(var(--primary)/0.15)]" : ""
                     }`}
                     onDrop={(e) => handleDrop(e, stage.key)}
@@ -1346,19 +1484,34 @@ export function CrmClient() {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState("ALL");
   const [mobileStage, setMobileStage] = useState("NEW");
+  const [leadsError, setLeadsError] = useState<string | null>(null);
+  const [refreshingLeads, setRefreshingLeads] = useState(false);
   const dragLeadRef = useRef<Lead | null>(null);
+  const hasFetchedLeadsRef = useRef(false);
 
-  const fetchLeads = useCallback(async () => {
-    const res = await fetch(`/api/admin/crm/leads${search ? `?search=${encodeURIComponent(search)}` : ""}`);
-    const data = await res.json();
-    setLeads(data.leads || []);
-    setStaff(data.staff || []);
-    setLoading(false);
+  const fetchLeads = useCallback(async (showBusy = false) => {
+    if (showBusy) setRefreshingLeads(true);
+    if (!hasFetchedLeadsRef.current) setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/crm/leads${search ? `?search=${encodeURIComponent(search)}` : ""}`);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getApiError(data, "Не удалось загрузить заявки."));
+      setLeads(Array.isArray(data?.leads) ? data.leads : []);
+      setStaff(Array.isArray(data?.staff) ? data.staff : []);
+      setLeadsError(null);
+    } catch (err) {
+      setLeadsError(err instanceof Error ? err.message : "Не удалось загрузить заявки.");
+    } finally {
+      hasFetchedLeadsRef.current = true;
+      setLoading(false);
+      if (showBusy) setRefreshingLeads(false);
+    }
   }, [search]);
 
   useEffect(() => {
+    if (tab !== "leads") return;
     fetchLeads();
-  }, [fetchLeads]);
+  }, [fetchLeads, tab]);
 
   // Фильтрация по источнику
   const filteredLeads = sourceFilter === "ALL" ? leads : leads.filter(l => l.source === sourceFilter);
@@ -1368,6 +1521,15 @@ export function CrmClient() {
     acc[s.key] = filteredLeads.filter(l => l.stage === s.key);
     return acc;
   }, {} as Record<string, Lead[]>);
+
+  useEffect(() => {
+    if (tab !== "leads") return;
+    if ((leadsByStage[mobileStage] || []).length > 0) return;
+    const firstStageWithLeads = STAGES.find(s => (leadsByStage[s.key] || []).length > 0);
+    if (firstStageWithLeads && firstStageWithLeads.key !== mobileStage) {
+      setMobileStage(firstStageWithLeads.key);
+    }
+  }, [leadsByStage, mobileStage, tab]);
 
   // Drag & Drop
   const handleDragStart = (e: React.DragEvent, lead: Lead) => {
@@ -1427,7 +1589,10 @@ export function CrmClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const lead = await res.json();
+    const lead = await res.json().catch(() => null);
+    if (!res.ok || !isLeadPayload(lead)) {
+      throw new Error(getApiError(lead, "Не удалось создать заявку."));
+    }
     setLeads(prev => [lead, ...prev]);
   };
 
@@ -1446,63 +1611,99 @@ export function CrmClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(leadData),
       });
-      const lead = await res.json();
+      const lead = await res.json().catch(() => null);
+      if (!res.ok || !isLeadPayload(lead)) {
+        toast({
+          title: "Шаблон применён не полностью",
+          description: getApiError(lead, "Один из лидов не был создан."),
+          variant: "destructive",
+        });
+        continue;
+      }
       setLeads(prev => [...prev, lead]);
     }
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-148px)] lg:h-[calc(100vh-64px)] overflow-hidden">
+    <div className="crm-admin-scope flex flex-col h-[calc(100dvh-148px)] lg:h-[calc(100vh-64px)] overflow-hidden">
       {/* Топ-бар */}
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div>
-            <h1 className="font-display text-xl lg:text-2xl font-bold text-foreground">ARAY CRM</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {tab === "orders" ? "Перетащи карточку → статус заказа меняется" : "Перетащи лид между этапами воронки"}
-            </p>
+        <div className="mb-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          {/* Таб-переключатель */}
+          <div className="grid w-full grid-cols-2 items-center gap-1 rounded-xl p-1 arayglass sm:inline-flex sm:w-fit">
+            <button
+              onClick={() => setTab("orders")}
+              className={`admin-pill-btn min-h-11 justify-center ${tab === "orders" ? "admin-pill-btn-active" : ""}`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Заказы
+            </button>
+            <button
+              onClick={() => setTab("leads")}
+              className={`admin-pill-btn min-h-11 justify-center ${tab === "leads" ? "admin-pill-btn-active" : ""}`}
+            >
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">Лиды и заявки</span>
+              <span className="sm:hidden">Лиды</span>
+            </button>
           </div>
-          <div className="flex items-center gap-2">
-            {tab === "leads" && (
-              <>
-                <button onClick={() => setShowPresets(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/15 text-sm font-medium hover:border-primary/30 hover:bg-primary/[0.05] transition-all text-muted-foreground">
-                  <Zap className="w-4 h-4 arayglass-icon" />
-                  <span className="hidden sm:inline">Пресеты</span>
-                </button>
-                <button onClick={fetchLeads}
-                  className="w-9 h-9 rounded-xl border border-primary/15 flex items-center justify-center hover:border-primary/30 hover:bg-primary/[0.05] transition-all text-muted-foreground">
-                  <RefreshCw className="w-4 h-4 arayglass-icon" />
-                </button>
-                <button
-                  onClick={() => handleAddLead("NEW")}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
+
+          <div className="flex w-full flex-col gap-2 lg:flex-row lg:items-center xl:w-auto xl:justify-end">
+            <label className="relative block w-full lg:w-72">
+              <span className="sr-only">{tab === "orders" ? "Найти заказ" : "Найти заявку"}</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder={tab === "orders" ? "Найти заказ, телефон или клиента" : "Найти заявку, телефон или компанию"}
+                className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/35 focus:ring-2 focus:ring-primary/10"
+              />
+            </label>
+
+            <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+              <Link
+                href="/admin/crm/automation"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-primary/[0.05] hover:text-foreground"
+              >
+                <Settings2 className="w-4 h-4" />
+                <span className="hidden sm:inline">Настройки CRM</span>
+                <span className="sm:hidden">Настройки</span>
+              </Link>
+              {tab === "orders" && (
+                <Link
+                  href="/admin/orders/new"
+                  className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.98] sm:flex-none"
+                >
                   <Plus className="w-4 h-4" />
-                  Новый лид
-                </button>
-              </>
-            )}
+                  Новый заказ
+                </Link>
+              )}
+              {tab === "leads" && (
+                <>
+                  <button onClick={() => setShowPresets(true)}
+                    className="flex min-h-11 items-center gap-2 rounded-xl border border-primary/15 px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05]">
+                    <Zap className="w-4 h-4 arayglass-icon" />
+                    <span className="hidden sm:inline">Шаблоны</span>
+                  </button>
+                  <button
+                    onClick={() => fetchLeads(true)}
+                    disabled={refreshingLeads}
+                    aria-label="Обновить заявки"
+                    title="Обновить заявки"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/15 text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05] disabled:opacity-60">
+                    <RefreshCw className={`w-4 h-4 arayglass-icon ${refreshingLeads ? "animate-spin" : ""}`} />
+                  </button>
+                  <button
+                    onClick={() => handleAddLead("NEW")}
+                    className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:brightness-110 active:scale-[0.98] sm:flex-none">
+                    <Plus className="w-4 h-4" />
+                    Новая заявка
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Таб-переключатель */}
-        <div className="flex items-center gap-1 mb-3 p-1 arayglass rounded-xl w-fit">
-          <button
-            onClick={() => setTab("orders")}
-            className={`admin-pill-btn ${tab === "orders" ? "admin-pill-btn-active" : ""}`}
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Заказы
-          </button>
-          <button
-            onClick={() => setTab("leads")}
-            className={`admin-pill-btn ${tab === "leads" ? "admin-pill-btn-active" : ""}`}
-          >
-            <TrendingUp className="w-4 h-4" />
-            Воронка лидов
-          </button>
-        </div>
-
       </div>
 
       {/* Контент */}
@@ -1513,8 +1714,14 @@ export function CrmClient() {
           {/* Статистика лидов */}
           <CrmStats leads={leads} />
 
+          {leadsError && (
+            <div className="mx-4 mb-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {leadsError}
+            </div>
+          )}
+
           {/* Фильтр по источнику */}
-          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-primary/[0.08] overflow-x-auto flex-shrink-0">
+          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-primary/[0.08] overflow-x-auto scrollbar-hide flex-shrink-0">
             {[{ key: "ALL", label: "Все" }, ...Object.entries(SOURCE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(s => {
               const isActive = sourceFilter === s.key;
               return (
@@ -1534,20 +1741,18 @@ export function CrmClient() {
 
           {/* Kanban лидов */}
           {loading ? (
-            <div className="flex-1 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
+            <CrmKanbanLoading label="Загружаю заявки" />
           ) : (
             <>
               {/* Мобильный переключатель этапов */}
-              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto flex-shrink-0 border-b border-primary/[0.08]">
+              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
                 {STAGES.map(s => {
                   const cnt = (leadsByStage[s.key] || []).length;
                   return (
                     <button
                       key={s.key}
                       onClick={() => setMobileStage(s.key)}
-                      className={`admin-pill-btn shrink-0 min-h-[40px] ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
+                      className={`admin-pill-btn shrink-0 min-h-11 ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
                     >
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.dot}`} />
                       {s.label}
@@ -1558,7 +1763,7 @@ export function CrmClient() {
               </div>
 
               {/* Мобильный вид — одна колонка */}
-              <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3">
+              <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
                 {STAGES.filter(s => s.key === mobileStage).map(stage => {
                   const stageleads = leadsByStage[stage.key] || [];
                   const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
@@ -1584,7 +1789,7 @@ export function CrmClient() {
 
               {/* Десктоп — горизонтальный Kanban */}
               <div className="hidden sm:block flex-1 overflow-x-auto overflow-y-hidden px-4 py-4">
-                <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 315}px` }}>
+                <div className="flex gap-3 h-full" style={{ minWidth: `${STAGES.length * 360}px` }}>
                   {STAGES.map(stage => {
                     const stageleads = leadsByStage[stage.key] || [];
                     const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);

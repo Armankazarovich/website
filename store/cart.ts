@@ -40,6 +40,21 @@ export const useCartStore = create<CartStore>()(
       addItem: (item) => {
         const id = `${item.variantId}-${item.unitType}`;
         const existing = get().items.find((i) => i.id === id);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("aray:metrika-goal", {
+              detail: {
+                goal: "aray_cart_add",
+                params: {
+                  product: item.productName,
+                  variantId: item.variantId,
+                  quantity: item.quantity,
+                  unit: item.unitType,
+                },
+              },
+            }),
+          );
+        }
 
         if (existing) {
           set((state) => ({

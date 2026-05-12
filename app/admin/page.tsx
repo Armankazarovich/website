@@ -4,8 +4,8 @@ import { auth } from "@/lib/auth";
 import { formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
 import {
   ShoppingBag, Package, Star, Clock, Users, Truck, Warehouse, Target,
-  Mail, Bell, Settings, Wallet, BarChart2, CheckSquare, HeartPulse,
-  UserCircle, FileDown, ChevronRight, Zap, Activity,
+  Mail, Wallet, BarChart2, CheckSquare, HeartPulse,
+  UserCircle, FileDown, ChevronRight, Zap, CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
@@ -14,16 +14,17 @@ import { DashboardGreeting } from "@/components/admin/dashboard-greeting";
 import { DashboardMetrics, CourierMetrics } from "@/components/admin/dashboard-metrics";
 import { DashboardChart } from "@/components/admin/dashboard-chart";
 import { DashboardActions } from "@/components/admin/dashboard-actions";
+import { DashboardArayAdvice } from "@/components/admin/dashboard-aray-advice";
 import {
   ARAY_ICON_TONE,
   ARAY_ICON_TONE_WARNING,
-  ARAY_PROGRESS_TONE,
+  ARAY_ICON_TONE_SUCCESS,
 } from "@/lib/aray-design-tokens";
 // DashboardArayRail убран — Арай теперь fixed справа в AdminShell на ВСЕЙ админке
 // (сессия 40 hotfix: видение Армана для сенсорных мониторов/телевизоров)
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Сессия 40 (28.04.2026) — Дашборд-шедевр.
+// Сессия 40 (28.04.2026) — рабочий стол как эталонный экран.
 // Полная переписка под calm UI магазина:
 //  - Все aray-stat-card / arayglass-grid-* убраны.
 //  - bg-card border-border rounded-2xl на каждом блоке.
@@ -41,6 +42,27 @@ interface QuickAction {
   icon: React.ElementType;
 }
 
+interface TodayImportantItem {
+  href: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  tone: "primary" | "warning" | "success";
+}
+
+interface ArayAdvice {
+  label?: string;
+  title: string;
+  text: string;
+  prompt: string;
+}
+
+const IMPORTANT_TONE: Record<TodayImportantItem["tone"], string> = {
+  primary: ARAY_ICON_TONE,
+  warning: ARAY_ICON_TONE_WARNING,
+  success: ARAY_ICON_TONE_SUCCESS,
+};
+
 
 const QUICK_ACTIONS: Record<string, QuickAction[]> = {
   owner: [
@@ -49,9 +71,7 @@ const QUICK_ACTIONS: Record<string, QuickAction[]> = {
     { href: "/admin/analytics", label: "Аналитика", icon: BarChart2 },
     { href: "/admin/finance", label: "Финансы", icon: Wallet },
     { href: "/admin/products", label: "Каталог", icon: Package },
-    { href: "/admin/email", label: "Email", icon: Mail },
-    { href: "/admin/notifications", label: "Push", icon: Bell },
-    { href: "/admin/settings", label: "Настройки", icon: Settings },
+    { href: "/admin/email", label: "Рассылки", icon: Mail },
   ],
   manager: [
     { href: "/admin/orders", label: "Заказы", icon: ShoppingBag },
@@ -99,15 +119,61 @@ const ROLE_GREETINGS: Record<string, string> = {
   SELLER: "Продавец",
 };
 
-const ORDER_FLOW = [
-  { status: "NEW", href: "/admin/orders?status=NEW" },
-  { status: "CONFIRMED", href: "/admin/orders?status=CONFIRMED" },
-  { status: "PROCESSING", href: "/admin/orders?status=PROCESSING" },
-  { status: "IN_DELIVERY", href: "/admin/orders?status=IN_DELIVERY" },
-  { status: "READY_PICKUP", href: "/admin/orders?status=READY_PICKUP" },
-  { status: "DELIVERED", href: "/admin/orders?status=DELIVERED" },
-  { status: "COMPLETED", href: "/admin/orders?status=COMPLETED" },
-] as const;
+function buildArayAdvice({
+  newOrders,
+  pendingReviews,
+  pendingStaff,
+  totalOrders,
+  zeroStockVariants,
+  zeroStockMarkedInStock,
+}: {
+  newOrders: number;
+  pendingReviews: number;
+  pendingStaff: number;
+  totalOrders: number;
+  zeroStockVariants: number;
+  zeroStockMarkedInStock: number;
+}): ArayAdvice | null {
+  if (zeroStockVariants > 0) {
+    const zeroStockLabel = `${zeroStockVariants} ${pluralizeRu(zeroStockVariants, ["позиция", "позиции", "позиций"])} с остатком 0`;
+    const mismatchLabel = `${zeroStockMarkedInStock} ${pluralizeRu(zeroStockMarkedInStock, ["позиция", "позиции", "позиций"])} с флагом «В наличии» при нуле`;
+
+    return {
+      label: "ARAY · склад",
+      title: "Склад: нулевой остаток не равен наличию",
+      text: zeroStockMarkedInStock > 0
+        ? `${zeroStockLabel}. ${mismatchLabel}; dashboard и ARAY не считают это реальным наличием.`
+        : `${zeroStockLabel}. Эти позиции не считаются реальным наличием, пока остаток не станет больше 0.`,
+      prompt: `Арай, проверь склад без предположений: ${zeroStockLabel}, ${mismatchLabel}. Что нужно исправить в карточках и заказах?`,
+    };
+  }
+
+  if (newOrders > 0) {
+    return {
+      title: "Начни с подтверждения новых заказов",
+      text: "ARAY может быстро разложить очередь: что подтвердить, где клиент ждёт и какие заказы лучше не откладывать.",
+      prompt: "Арай, проверь рабочий стол: какие новые заказы требуют внимания в первую очередь и что мне сделать сейчас?",
+    };
+  }
+
+  if (pendingReviews > 0 || pendingStaff > 0) {
+    return {
+      title: "Закрой админские хвосты до продаж",
+      text: "Есть модерация или заявки сотрудников. Лучше разобрать это до активного потока заказов.",
+      prompt: "Арай, проверь рабочий стол и подскажи, какие административные задачи сейчас важнее закрыть.",
+    };
+  }
+
+  if (totalOrders === 0) {
+    return {
+      title: "Подготовь первый заказ без суеты",
+      text: "Проверь каталог, цены и сценарий терминала. После этого первый тестовый заказ станет хорошей проверкой всей цепочки.",
+      prompt: "Арай, помоги подготовить первый заказ: что проверить в каталоге, терминале, доставке и оплате?",
+    };
+  }
+
+  return null;
+}
 
 function getRoleGroup(role: string): string {
   if (role === "SUPER_ADMIN" || role === "ADMIN") return "owner";
@@ -127,6 +193,7 @@ export default async function AdminDashboard() {
   const roleGroup = getRoleGroup(role);
   const isOwner = roleGroup === "owner";
   const canCreateOrder = isOwner || roleGroup === "manager" || roleGroup === "seller";
+  const canOpenInventory = isOwner || roleGroup === "manager" || roleGroup === "warehouse";
   const quickActions = QUICK_ACTIONS[roleGroup] || QUICK_ACTIONS.manager;
 
   if ((!session?.user?.name || session.user.name.trim().length === 0) && userId) {
@@ -143,14 +210,13 @@ export default async function AdminDashboard() {
   const days30ago = new Date(now); days30ago.setDate(now.getDate() - 29); days30ago.setHours(0, 0, 0, 0);
 
   const [
-    totalOrders, newOrders, todayOrders, totalProducts,
+    totalOrders, newOrders, todayOrders,
     pendingReviews, recentOrders, revenue30, revenue7, revenueToday,
-    allOrdersForChart, statusCounts, pendingStaff,
+    allOrdersForChart, pendingStaff, zeroStockVariants, zeroStockMarkedInStock,
   ] = await Promise.all([
     prisma.order.count({ where: { deletedAt: null } }),
     prisma.order.count({ where: { status: "NEW", deletedAt: null } }),
     prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
-    prisma.product.count({ where: { active: true } }),
     prisma.review.count({ where: { approved: false } }),
     prisma.order.findMany({
       where: { deletedAt: null },
@@ -162,8 +228,9 @@ export default async function AdminDashboard() {
     prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
     prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
     prisma.order.findMany({ where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null }, select: { createdAt: true, totalAmount: true, deliveryCost: true }, orderBy: { createdAt: "asc" } }),
-    prisma.order.groupBy({ by: ["status"], where: { deletedAt: null }, _count: { _all: true } }),
     prisma.user.count({ where: { staffStatus: "PENDING" } }).catch(() => 0),
+    prisma.productVariant.count({ where: { stockQty: 0 } }),
+    prisma.productVariant.count({ where: { stockQty: 0, inStock: true } }),
   ]);
 
   // Chart data за последние 7 дней
@@ -183,54 +250,91 @@ export default async function AdminDashboard() {
   const revenue7total = Number(revenue7._sum.totalAmount || 0) + Number(revenue7._sum.deliveryCost || 0);
   const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0) + Number(revenueToday._sum.deliveryCost || 0);
   const avgOrder = orders30count > 0 ? revenue30total / orders30count : 0;
-  const statusCountMap = new Map(statusCounts.map((item) => [item.status, item._count._all]));
-  const orderFlow = ORDER_FLOW.map((item) => ({
-    ...item,
-    label: ORDER_STATUS_LABELS[item.status] || item.status,
-    count: statusCountMap.get(item.status) || 0,
-  }));
-  const liveOrderCount = orderFlow.reduce((sum, item) => sum + item.count, 0);
-  const readinessCards = [
-    {
-      href: "/admin/orders",
-      label: "Сегодня",
-      value: todayOrders.toLocaleString("ru-RU"),
-      helper: "заказов с полуночи",
+  const todayImportant: TodayImportantItem[] = [];
+
+  if (newOrders > 0) {
+    todayImportant.push({
+      href: "/admin/orders?status=NEW",
+      title: `${newOrders} ${pluralizeRu(newOrders, ["новый заказ", "новых заказа", "новых заказов"])}`,
+      description: "Ждут подтверждения",
       icon: Clock,
-      tone: ARAY_ICON_TONE,
-      show: true,
-    },
-    {
-      href: "/admin/products",
-      label: "Каталог",
-      value: totalProducts.toLocaleString("ru-RU"),
-      helper: "активных товаров",
-      icon: Package,
-      tone: ARAY_ICON_TONE,
-      show: isOwner || ["manager", "warehouse", "seller"].includes(roleGroup),
-    },
-    {
+      tone: "warning",
+    });
+  }
+
+  if (pendingReviews > 0 && isOwner) {
+    todayImportant.push({
       href: "/admin/reviews",
-      label: "Отзывы",
-      value: pendingReviews.toLocaleString("ru-RU"),
-      helper: "ждут модерации",
+      title: `${pendingReviews} ${pluralizeRu(pendingReviews, ["отзыв", "отзыва", "отзывов"])}`,
+      description: "Ждут модерации",
       icon: Star,
-      tone: pendingReviews > 0 ? ARAY_ICON_TONE_WARNING : ARAY_ICON_TONE,
-      show: isOwner || roleGroup === "manager",
-    },
-    {
+      tone: "warning",
+    });
+  }
+
+  if (pendingStaff > 0 && isOwner) {
+    todayImportant.push({
       href: "/admin/staff",
-      label: "Команда",
-      value: pendingStaff.toLocaleString("ru-RU"),
-      helper: "заявок на доступ",
+      title: `${pendingStaff} ${pluralizeRu(pendingStaff, ["сотрудник", "сотрудника", "сотрудников"])}`,
+      description: "Ждут одобрения",
       icon: Users,
-      tone: pendingStaff > 0 ? ARAY_ICON_TONE_WARNING : ARAY_ICON_TONE,
-      show: isOwner,
-    },
-  ].filter((card) => card.show);
+      tone: "warning",
+    });
+  }
+
+  if (zeroStockVariants > 0) {
+    todayImportant.push({
+      href: canOpenInventory ? "/admin/inventory?status=out" : "/admin/products",
+      title: `${zeroStockVariants} ${pluralizeRu(zeroStockVariants, ["позиция", "позиции", "позиций"])} с остатком 0`,
+      description: zeroStockMarkedInStock > 0
+        ? `${zeroStockMarkedInStock} ${pluralizeRu(zeroStockMarkedInStock, ["позиция", "позиции", "позиций"])} с флагом «В наличии»`
+        : "Не считаются реальным наличием",
+      icon: Warehouse,
+      tone: "warning",
+    });
+  }
+
+  if (totalOrders === 0 && canCreateOrder) {
+    todayImportant.push({
+      href: "/admin/orders/new",
+      title: "Запустить первый заказ",
+      description: "Проверить терминал и корзину",
+      icon: ShoppingBag,
+      tone: "primary",
+    });
+  }
+
+  if (totalOrders === 0 && (isOwner || roleGroup === "manager" || roleGroup === "seller")) {
+    todayImportant.push({
+      href: "/admin/products",
+      title: "Проверить каталог",
+      description: "Товары и цены перед продажами",
+      icon: Package,
+      tone: "primary",
+    });
+  }
+
+  if (todayImportant.length === 0) {
+    todayImportant.push({
+      href: "/admin/analytics",
+      title: "Новых срочных сигналов нет",
+      description: "Склад, заказы и модерация без предупреждений",
+      icon: CheckCircle2,
+      tone: "success",
+    });
+  }
+
+  const arayAdvice = buildArayAdvice({
+    newOrders,
+    pendingReviews,
+    pendingStaff,
+    totalOrders,
+    zeroStockVariants,
+    zeroStockMarkedInStock,
+  });
 
   return (
-    <div className="admin-dashboard-standard space-y-4 sm:space-y-5 min-w-0">
+    <div className="admin-dashboard-standard space-y-3.5 sm:space-y-5 min-w-0">
         <AutoRefresh intervalMs={60000} />
         <DashboardActions showNewOrder={canCreateOrder} />
 
@@ -240,68 +344,41 @@ export default async function AdminDashboard() {
           roleLabel={ROLE_GREETINGS[role] || role}
         />
 
-        {/* ── АЛЕРТЫ ── */}
-        {(newOrders > 0 || pendingReviews > 0 || pendingStaff > 0) && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-            {newOrders > 0 && (
-              <Link
-                href="/admin/orders?status=NEW"
-                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
-              >
-                <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
-                  <Clock className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {newOrders} {pluralizeRu(newOrders, ["новый заказ", "новых заказа", "новых заказов"])}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                    Ждут подтверждения
-                  </p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
-              </Link>
-            )}
-            {pendingReviews > 0 && isOwner && (
-              <Link
-                href="/admin/reviews"
-                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
-              >
-                <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
-                  <Star className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {pendingReviews} {pluralizeRu(pendingReviews, ["отзыв", "отзыва", "отзывов"])}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                    Ждут модерации
-                  </p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
-              </Link>
-            )}
-            {pendingStaff > 0 && isOwner && (
-              <Link
-                href="/admin/staff"
-                className="admin-liquid-surface admin-liquid-interactive flex items-center gap-3 px-4 py-3 rounded-2xl group min-w-0"
-              >
-                <div className={`w-10 h-10 rounded-xl ${ARAY_ICON_TONE_WARNING} flex items-center justify-center shrink-0`}>
-                  <Users className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">
-                    {pendingStaff} {pluralizeRu(pendingStaff, ["сотрудник", "сотрудника", "сотрудников"])}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                    Ждут одобрения
-                  </p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0" />
-              </Link>
-            )}
-          </div>
-        )}
+        {/* ── СЕГОДНЯ ВАЖНО + ARAY СОВЕТ ── */}
+        <div className={`grid grid-cols-1 gap-2.5 sm:gap-3 min-w-0 ${arayAdvice ? "xl:grid-cols-[minmax(18rem,0.95fr)_minmax(24rem,1.05fr)]" : ""}`}>
+          <section className="min-w-0" data-testid="dashboard-today-important">
+            <div className="admin-section-kicker mb-2.5 sm:mb-3">
+              <span className="admin-section-kicker-icon">
+                <Zap className="w-4 h-4" strokeWidth={1.75} />
+              </span>
+              <p className="font-display font-semibold text-sm text-foreground">
+                Сегодня важно
+              </p>
+            </div>
+            <div
+              className={[
+                "grid gap-2.5 min-w-0",
+                todayImportant.length === 1
+                  ? "grid-cols-1"
+                  : "grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2",
+              ].join(" ")}
+            >
+              {todayImportant.map((item) => (
+                <TodayImportantCard key={item.href + item.title} item={item} />
+              ))}
+            </div>
+          </section>
+          {arayAdvice && (
+            <section className="min-w-0 xl:pt-7">
+              <DashboardArayAdvice
+                label={arayAdvice.label}
+                title={arayAdvice.title}
+                text={arayAdvice.text}
+                prompt={arayAdvice.prompt}
+              />
+            </section>
+          )}
+        </div>
 
         {/* ── ГЛАВНЫЕ МЕТРИКИ (для владельца / менеджера / бухгалтера) ── */}
         {(isOwner || roleGroup === "manager" || roleGroup === "accountant") && (
@@ -318,119 +395,6 @@ export default async function AdminDashboard() {
           <CourierMetrics newOrders={newOrders} todayOrders={todayOrders} />
         )}
 
-        {/* ── ОПЕРАЦИОННЫЙ ПУЛЬС ── */}
-        <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)] gap-3 sm:gap-4 min-w-0 items-start">
-          <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
-            <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-xl aray-icon-tone flex items-center justify-center shrink-0">
-                  <Activity className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-display font-semibold text-sm text-foreground leading-tight">
-                    Пульс заказов
-                  </p>
-                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                    {liveOrderCount.toLocaleString("ru-RU")} в рабочем контуре · {totalOrders.toLocaleString("ru-RU")} всего
-                  </p>
-                </div>
-              </div>
-              <Link
-                href="/admin/orders"
-                className="text-xs text-primary flex items-center gap-0.5 hover:gap-1 transition-all shrink-0"
-              >
-                Заказы <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {liveOrderCount > 0 ? (
-              <div className="admin-order-flow-grid grid gap-2 min-w-0">
-                {orderFlow.map((item) => {
-                  const pct = Math.round((item.count / liveOrderCount) * 100);
-                  return (
-                    <Link
-                      key={item.status}
-                      href={item.href}
-                      className="group rounded-xl border border-border/70 bg-background/36 px-3 py-2.5 min-w-0 hover:border-primary/24 hover:bg-muted/30 transition-colors"
-                      style={{ WebkitTapHighlightColor: "transparent" }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-primary/70" />
-                        <span className="min-w-0 flex-1 text-xs font-medium text-foreground leading-tight truncate">
-                          {item.label}
-                        </span>
-                        <span className="text-sm font-display font-bold leading-none text-foreground tabular-nums">
-                          {item.count}
-                        </span>
-                      </div>
-                      <div className="mt-2 h-1 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${ARAY_PROGRESS_TONE}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="rounded-xl border border-border/70 bg-background/36 px-4 py-5 min-w-0">
-                <p className="text-sm font-semibold text-foreground leading-tight">
-                  Активных заказов нет
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                  Рабочий контур чистый. Новые заказы появятся здесь, когда начнется движение.
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="admin-liquid-surface rounded-2xl p-4 sm:p-5 min-w-0">
-            <div className="flex items-center gap-3 mb-4 min-w-0">
-              <div className={`w-9 h-9 rounded-xl ${ARAY_ICON_TONE} flex items-center justify-center shrink-0`}>
-                <CheckSquare className="w-[18px] h-[18px]" strokeWidth={1.75} />
-              </div>
-              <div className="min-w-0">
-                <p className="font-display font-semibold text-sm text-foreground leading-tight">
-                  Контроль готовности
-                </p>
-                <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                  Короткие входы в важные зоны
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 xs:grid-cols-2 2xl:grid-cols-1 gap-2.5">
-              {readinessCards.map((card) => {
-                const Icon = card.icon;
-                return (
-                  <Link
-                    key={card.href}
-                    href={card.href}
-                    className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/45 p-3 min-w-0 hover:border-primary/30 hover:bg-background/65 transition-colors"
-                    style={{ WebkitTapHighlightColor: "transparent" }}
-                  >
-                    <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${card.tone}`}>
-                      <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-                    </span>
-                    <span className="flex-1 min-w-0">
-                      <span className="block text-sm font-semibold text-foreground leading-tight truncate">
-                        {card.label}
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                        {card.helper}
-                      </span>
-                    </span>
-                    <span className="text-base font-display font-bold text-foreground tabular-nums shrink-0">
-                      {card.value}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
         {/* ── БЫСТРЫЕ ДЕЙСТВИЯ ── */}
         <div>
           <div className="admin-section-kicker mb-3">
@@ -446,7 +410,8 @@ export default async function AdminDashboard() {
               <Link
                 key={action.href}
                 href={action.href}
-                className="admin-liquid-surface admin-liquid-interactive group flex items-center justify-start gap-3 px-3 py-2.5 sm:px-4 rounded-2xl active:scale-[0.98] min-h-[64px] min-w-0"
+                prefetch
+                className="admin-liquid-surface group flex items-center justify-start gap-3 px-3 py-2.5 sm:px-4 rounded-2xl min-h-[58px] sm:min-h-[64px] min-w-0 transition-colors hover:border-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div
@@ -548,6 +513,31 @@ export default async function AdminDashboard() {
           )}
         </div>
     </div>
+  );
+}
+
+function TodayImportantCard({ item }: { item: TodayImportantItem }) {
+  const Icon = item.icon;
+
+  return (
+    <Link
+      href={item.href}
+      className="admin-liquid-surface admin-liquid-interactive group flex min-h-[84px] items-center gap-3 rounded-2xl px-4 py-3.5 min-w-0"
+      style={{ WebkitTapHighlightColor: "transparent" }}
+    >
+      <span className={`${IMPORTANT_TONE[item.tone]} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl`}>
+        <Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold leading-tight text-foreground">
+          {item.title}
+        </span>
+        <span className="mt-1 block truncate text-[11px] leading-tight text-muted-foreground">
+          {item.description}
+        </span>
+      </span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/45 transition-colors group-hover:text-primary" />
+    </Link>
   );
 }
 

@@ -52,7 +52,7 @@ type Translations = Record<PageTranslationKey, string>;
 export const PAGE_TRANSLATIONS: Partial<Record<LangCode, Translations>> = {
   ru: {
     page_orders: "Заказы", page_products: "Товары", page_clients: "Клиенты", page_delivery: "Доставка",
-    page_staff: "Команда", page_settings: "Настройки", page_notifications: "Уведомления", page_dashboard: "Дашборд",
+    page_staff: "Команда", page_settings: "Настройки", page_notifications: "Уведомления", page_dashboard: "Рабочий стол",
     btn_save: "Сохранить", btn_cancel: "Отмена", btn_delete: "Удалить", btn_edit: "Редактировать",
     btn_add: "Добавить", btn_back: "Назад", btn_open: "Открыть", btn_close: "Закрыть",
     btn_search: "Поиск", btn_export: "Экспорт", btn_import: "Импорт", btn_filter: "Фильтр",

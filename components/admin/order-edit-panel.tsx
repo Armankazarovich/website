@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, X, Check, Loader2, FileDown, Trash2, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 
 type OrderItem = {
   id: string;
@@ -44,6 +46,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   // Поля клиента
   const [form, setForm] = useState({
@@ -103,6 +106,9 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
     const newTotal = newItems.reduce((sum, it) => sum + it.quantity * it.price, 0);
     return existingTotal + newTotal + deliveryCost;
   }, [currentItems, removedIds, newItems, deliveryCost]);
+  const hasActiveItems = useMemo(() => {
+    return currentItems.some((item) => !removedIds.includes(item.id)) || newItems.length > 0;
+  }, [currentItems, removedIds, newItems]);
 
   const addItem = () => {
     if (!selProduct || !selVariant || !selPrice || selQty <= 0) return;
@@ -123,9 +129,14 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
   };
 
   const handleSave = async () => {
+    if (!hasActiveItems) {
+      setSaveError("В заказе должна остаться хотя бы одна позиция.");
+      return;
+    }
     setSaving(true);
+    setSaveError("");
     try {
-      await fetch(`/api/admin/orders/${order.id}`, {
+      const res = await fetch(`/api/admin/orders/${order.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -136,8 +147,21 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
           deliveryCost,
         }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Не удалось сохранить заказ");
+      }
       setEditing(false);
       router.refresh();
+      toast({ title: "Заказ сохранён" });
+    } catch (err: any) {
+      const message = err?.message || "Не удалось сохранить заказ";
+      setSaveError(message);
+      toast({
+        title: "Заказ не сохранён",
+        description: message,
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -158,6 +182,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
     setNewItems([]);
     setDeliveryCost(order.deliveryCost);
     setDeliveryCostInput(order.deliveryCost > 0 ? String(order.deliveryCost) : "");
+    setSaveError("");
   };
 
   const [pdfError, setPdfError] = useState("");
@@ -188,31 +213,73 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
     }
   };
 
+  const actionButtons = (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={saving || !hasActiveItems}
+        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+      >
+        {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+        Сохранить изменения
+      </button>
+      <button
+        type="button"
+        onClick={handleCancel}
+        className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-primary/[0.07]"
+      >
+        <X className="w-3.5 h-3.5" />
+        Отмена
+      </button>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="w-full space-y-3">
       {pdfError && (
         <p className="text-xs text-destructive">{pdfError}</p>
       )}
-    <div className="flex gap-2 flex-wrap">
-      <button
-        onClick={handleDownloadPdf}
-        disabled={downloading}
-        className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors disabled:opacity-50 min-h-[44px]"
-      >
-        {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-        Скачать PDF
-      </button>
-
-      {!editing ? (
+      {saveError && (
+        <p className="text-xs text-destructive">{saveError}</p>
+      )}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <button
+          type="button"
+          onClick={handleDownloadPdf}
+          disabled={downloading}
+          className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/[0.07] disabled:opacity-50"
+        >
+          {downloading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+          Скачать PDF
+        </button>
+
+        {!editing && (
+        <button
+          type="button"
           onClick={() => setEditing(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors min-h-[44px]"
+          className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/[0.07]"
         >
           <Pencil className="w-3.5 h-3.5" />
           Редактировать
         </button>
-      ) : (
-        <div className="w-full mt-4 space-y-4">
+        )}
+      </div>
+
+      {editing && (
+        <div className="space-y-4 pb-24 lg:pb-32">
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Редактирование заказа</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Данные клиента, позиции, доставка и итоговая сумма.
+                </p>
+              </div>
+              {actionButtons}
+            </div>
+          </div>
+
           {/* Данные клиента */}
           <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
             <h3 className="font-semibold text-sm">Данные клиента</h3>
@@ -235,15 +302,19 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
               ))}
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Способ оплаты</label>
-                <select
+                <Select
                   value={form.paymentMethod}
-                  onChange={(e) => setForm((f) => ({ ...f, paymentMethod: e.target.value }))}
-                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onValueChange={(value) => setForm((f) => ({ ...f, paymentMethod: value }))}
                 >
-                  <option>Наличные</option>
-                  <option>Безнал по счёту</option>
-                  <option>Наличные / Счёт</option>
-                </select>
+                  <SelectTrigger className="h-[46px] text-base sm:text-sm">
+                    <SelectValue placeholder="Способ оплаты" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Наличные">Наличные</SelectItem>
+                    <SelectItem value="Безнал по счёту">Безнал по счёту</SelectItem>
+                    <SelectItem value="Наличные / Счёт">Наличные / Счёт</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Комментарий</label>
@@ -287,7 +358,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                               removed ? prev.filter((id) => id !== item.id) : [...prev, item.id]
                             )
                           }
-                          className={`text-xs px-2 py-1 rounded-lg transition-colors ${removed ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-destructive hover:bg-destructive/10"}`}
+                          className={`text-xs px-2 py-1 rounded-xl transition-colors ${removed ? "text-primary bg-primary/10 hover:bg-primary/20" : "text-destructive hover:bg-destructive/10"}`}
                         >
                           {removed ? "Вернуть" : <Trash2 className="w-3.5 h-3.5" />}
                         </button>
@@ -296,7 +367,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                   );
                 })}
                 {newItems.map((item, i) => (
-                  <tr key={`new-${i}`} className="bg-green-500/5">
+                  <tr key={`new-${i}`} className="bg-primary/5">
                     <td className="px-4 py-2.5">
                       <p className="font-medium">{item.productName}</p>
                       <p className="text-xs text-muted-foreground">{item.variantSize}</p>
@@ -311,7 +382,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                       <button
                         type="button"
                         onClick={() => setNewItems((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="text-destructive hover:bg-destructive/10 p-1 rounded-lg"
+                        className="text-destructive hover:bg-destructive/10 p-1 rounded-xl"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -324,7 +395,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                     <td className="px-4 py-2.5 text-muted-foreground">—</td>
                     <td className="px-4 py-2.5 font-medium text-right">{deliveryCost.toLocaleString("ru-RU")} ₽</td>
                     <td className="px-4 py-2.5 text-right">
-                      <button type="button" onClick={() => setDeliveryCost(0)} className="text-destructive hover:bg-destructive/10 p-1 rounded-lg">
+                      <button type="button" onClick={() => setDeliveryCost(0)} className="text-destructive hover:bg-destructive/10 p-1 rounded-xl">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -345,37 +416,47 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
             <div className="px-5 py-4 border-t border-border space-y-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Добавить позицию</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <select
+                <Select
                   value={selProductId}
-                  onChange={(e) => {
-                    const p = products.find((pr) => pr.id === e.target.value);
-                    setSelProductId(e.target.value);
+                  onValueChange={(value) => {
+                    const p = products.find((pr) => pr.id === value);
+                    setSelProductId(value);
                     setSelVariantId("");
                     if (p) setSelUnit(p.saleUnit === "PIECE" ? "PIECE" : "CUBE");
                   }}
-                  className="px-3 py-2.5 text-base sm:text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="">— товар —</option>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <select
+                  <SelectTrigger className="h-[46px] text-base sm:text-sm">
+                    <SelectValue placeholder="Товар" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={selVariantId}
-                  onChange={(e) => setSelVariantId(e.target.value)}
+                  onValueChange={setSelVariantId}
                   disabled={!selProduct}
-                  className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none disabled:opacity-50"
                 >
-                  <option value="">— размер —</option>
-                  {selProduct?.variants.map((v) => <option key={v.id} value={v.id}>{v.size}</option>)}
-                </select>
-                <select
+                  <SelectTrigger className="h-[46px] text-base sm:text-sm">
+                    <SelectValue placeholder="Размер" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {selProduct?.variants.map((v) => <SelectItem key={v.id} value={v.id}>{v.size}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select
                   value={selUnit}
-                  onChange={(e) => setSelUnit(e.target.value as "CUBE" | "PIECE")}
+                  onValueChange={(value) => setSelUnit(value as "CUBE" | "PIECE")}
                   disabled={availableUnits.length <= 1}
-                  className="px-3 py-2 text-sm bg-background border border-border rounded-xl focus:outline-none disabled:opacity-70"
                 >
-                  {availableUnits.includes("CUBE") && <option value="CUBE">м³ (кубометры)</option>}
-                  {availableUnits.includes("PIECE") && <option value="PIECE">шт (штуки)</option>}
-                </select>
+                  <SelectTrigger className="h-[46px] text-base sm:text-sm">
+                    <SelectValue placeholder="Единица" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableUnits.includes("CUBE") && <SelectItem value="CUBE">м³ (кубометры)</SelectItem>}
+                    {availableUnits.includes("PIECE") && <SelectItem value="PIECE">шт (штуки)</SelectItem>}
+                  </SelectContent>
+                </Select>
                 <input
                   type="number"
                   min={0.01}
@@ -419,26 +500,17 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-              Сохранить изменения
-            </button>
-            <button
-              onClick={handleCancel}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-xl hover:bg-primary/[0.07] transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-              Отмена
-            </button>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Итого к оплате</p>
+                <p className="mt-1 text-xl font-bold">{totalAmount.toLocaleString("ru-RU")} ₽</p>
+              </div>
+              {actionButtons}
+            </div>
           </div>
         </div>
       )}
-    </div>
     </div>
   );
 }

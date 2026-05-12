@@ -19,6 +19,7 @@ export default async function TasksPage() {
         assignee: { select: { id: true, name: true, email: true } },
         createdBy: { select: { id: true, name: true } },
         order: { select: { id: true, orderNumber: true, guestName: true, guestPhone: true } },
+        relations: { orderBy: { createdAt: "asc" } },
         comments: {
           include: { user: { select: { id: true, name: true } } },
           orderBy: { createdAt: "asc" },
@@ -40,6 +41,10 @@ export default async function TasksPage() {
     updatedAt: t.updatedAt.toISOString(),
     dueDate: t.dueDate?.toISOString() ?? null,
     completedAt: t.completedAt?.toISOString() ?? null,
+    relations: t.relations.map((relation) => ({
+      ...relation,
+      createdAt: relation.createdAt.toISOString(),
+    })),
     comments: t.comments.map(c => ({
       ...c,
       createdAt: c.createdAt.toISOString(),

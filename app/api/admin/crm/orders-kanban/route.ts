@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { sendTelegramStatusUpdate, deleteTelegramMessage, FINAL_STATUSES } from "@/lib/telegram";
+import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 
@@ -104,6 +105,33 @@ export async function PATCH(req: NextRequest) {
     },
     include: { items: true },
   });
+
+  indexTerminalOrder({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    guestName: order.guestName,
+    guestPhone: order.guestPhone,
+    guestEmail: order.guestEmail,
+    deliveryAddress: order.deliveryAddress,
+    fulfillmentDetail: (order as any).fulfillmentDetail,
+    terminalProfile: (order as any).terminalProfile,
+    status: order.status,
+    paymentStatus: (order as any).paymentStatus,
+    totalAmount: order.totalAmount,
+    updatedAt: order.updatedAt,
+  }).catch(console.error);
+
+  enqueueTerminalOrderLifecycle({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    paymentStatus: (order as any).paymentStatus,
+    paymentMethod: (order as any).paymentMethod,
+    terminalProfile: (order as any).terminalProfile,
+    guestName: order.guestName,
+    guestPhone: order.guestPhone,
+    totalAmount: order.totalAmount,
+  }, "order.status_changed").catch(console.error);
 
   // Синхронизируем лид в CRM если есть
   const lead = await prisma.lead.findFirst({ where: { convertedOrderId: orderId } });

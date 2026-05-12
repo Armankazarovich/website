@@ -6,7 +6,7 @@ export const metadata = { title: "Водяной знак" };
 export default async function WatermarkPage() {
   const settings = await getSiteSettings();
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
+    <div className="admin-page-frame admin-page-frame-readable">
       <div>
         <h1 className="text-2xl font-display font-bold">Водяной знак</h1>
         <p className="text-muted-foreground text-sm mt-1">

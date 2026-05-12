@@ -2,16 +2,21 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/auth-helpers";
+import { requireSuperAdmin } from "@/lib/auth-helpers";
+import { requireArayModuleAccess } from "@/lib/aray-module-auth";
 import { USD_RUB_RATE } from "@/lib/api-pricing";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/admin/aray/costs
 // Возвращает агрегированные расходы по периодам и провайдерам.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
-  const auth = await requireAdmin();
+  const auth = await requireSuperAdmin();
   if (!auth.authorized) return auth.response;
+  const moduleAccess = await requireArayModuleAccess({ moduleId: "core.aray-voice", role: auth.role });
+  if (!moduleAccess.authorized) return moduleAccess.response;
+  const tenantId = getCurrentTenantId();
 
   try {
     const url = new URL(req.url);
@@ -128,6 +133,7 @@ export async function GET(req: NextRequest) {
       }),
       // Подписки (постоянные)
       (prisma as any).apiSubscription.findMany({
+        where: { tenantId },
         orderBy: [{ active: "desc" }, { costRub: "desc" }],
       }).catch(() => []),
     ]);

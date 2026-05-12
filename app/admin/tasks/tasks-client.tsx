@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Plus, X, ChevronDown, Calendar, User, Tag,
+  Plus, User,
   MessageSquare, Loader2, CheckCircle2, Clock,
-  AlertTriangle, Zap, MoreHorizontal, Link as LinkIcon,
-  ArrowRight, Filter, Search, Bell,
+  AlertTriangle, Zap, Link as LinkIcon,
+  ArrowRight, Search,
   Inbox, Square, RefreshCw, Eye, Flame,
   ArrowDown, Minus, ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { AdminModal } from "@/components/admin/admin-modal";
+import { TASK_RELATION_LABELS, type TaskRelationEntityType } from "@/lib/task-relations";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type TaskStatus = "BACKLOG" | "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
@@ -37,10 +40,43 @@ type Task = {
   assignee?: { id: string; name?: string; email: string };
   createdBy?: { id: string; name?: string };
   order?: { id: string; orderNumber: number; guestName?: string };
+  relations?: {
+    id: string;
+    entityType: TaskRelationEntityType;
+    entityId: string;
+    label?: string | null;
+    href?: string | null;
+  }[];
   comments: Comment[];
 };
 
 type Staff = { id: string; name?: string; email: string; role: string };
+
+function isTaskPayload(value: unknown): value is Task {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    typeof (value as Task).id === "string" &&
+    typeof (value as Task).title === "string" &&
+    typeof (value as Task).status === "string",
+  );
+}
+
+function isCommentPayload(value: unknown): value is Comment {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    typeof (value as Comment).id === "string" &&
+    typeof (value as Comment).text === "string",
+  );
+}
+
+function getApiError(payload: unknown, fallback: string) {
+  if (payload && typeof payload === "object" && typeof (payload as { error?: unknown }).error === "string") {
+    return (payload as { error: string }).error;
+  }
+  return fallback;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const COLUMNS: { id: TaskStatus; label: string; icon: React.ElementType; color: string; bg: string }[] = [
@@ -74,6 +110,27 @@ function initials(name?: string, email?: string) {
   return (email ?? "?")[0].toUpperCase();
 }
 
+function getTaskRelations(task: Task) {
+  const relations = task.relations ?? [];
+  if (task.order && !relations.some((relation) => relation.entityType === "ORDER" && relation.entityId === task.order?.id)) {
+    return [
+      ...relations,
+      {
+        id: `order-${task.order.id}`,
+        entityType: "ORDER" as const,
+        entityId: task.order.id,
+        label: `Заказ #${task.order.orderNumber}`,
+        href: `/admin/orders/${task.order.id}`,
+      },
+    ];
+  }
+  return relations;
+}
+
+function formatRelationLabel(relation: ReturnType<typeof getTaskRelations>[number]) {
+  return relation.label || TASK_RELATION_LABELS[relation.entityType] || "Связь";
+}
+
 // ─── Task Card ────────────────────────────────────────────────────────────────
 function TaskCard({
   task, onOpen, onMove, isDragging, dragHandlers,
@@ -87,14 +144,15 @@ function TaskCard({
   const pm = PRIORITY_META[task.priority];
   const due = task.dueDate ? formatDate(task.dueDate) : null;
   const col = COLUMNS.find(c => c.id === task.status)!;
+  const relations = getTaskRelations(task);
 
   return (
     <div
       {...dragHandlers}
       onClick={onOpen}
       className={`group bg-card border border-border rounded-2xl p-3.5 cursor-pointer
-        hover:border-primary/40 hover:shadow-md transition-all select-none
-        ${isDragging ? "opacity-50 rotate-2 shadow-xl scale-105" : ""}
+        hover:border-primary/40 transition-colors select-none
+        ${isDragging ? "opacity-60 ring-2 ring-primary/30" : ""}
         ${task.priority === "URGENT" ? "border-l-4 border-l-red-400" : ""}
       `}
     >
@@ -103,9 +161,10 @@ function TaskCard({
         <span className={`text-xs font-bold ${pm.color}`}>
           {pm.icon} {pm.label}
         </span>
-        {task.order && (
-          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-medium">
-            #{task.order.orderNumber}
+        {relations.length > 0 && (
+          <span className="inline-flex max-w-[55%] items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+            <LinkIcon className="h-3 w-3 shrink-0" />
+            <span className="truncate">{relations.length === 1 ? formatRelationLabel(relations[0]) : `${relations.length} связи`}</span>
           </span>
         )}
       </div>
@@ -182,17 +241,28 @@ function TaskModal({
   const [saving, setSaving] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const save = async () => {
+    if (!title.trim()) {
+      setError("Название задачи обязательно.");
+      return;
+    }
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch(`/api/admin/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description, priority, status, assigneeId: assigneeId || null, dueDate: dueDate || null, tags }),
       });
-      const updated = await res.json();
+      const updated = await res.json().catch(() => null);
+      if (!res.ok || !isTaskPayload(updated)) {
+        throw new Error(getApiError(updated, "Не удалось сохранить задачу."));
+      }
       onUpdate(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось сохранить задачу.");
     } finally {
       setSaving(false);
     }
@@ -201,15 +271,21 @@ function TaskModal({
   const addComment = async () => {
     if (!comment.trim()) return;
     setAddingComment(true);
+    setError(null);
     try {
       const res = await fetch(`/api/admin/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "comment", text: comment }),
       });
-      const c = await res.json();
+      const c = await res.json().catch(() => null);
+      if (!res.ok || !isCommentPayload(c)) {
+        throw new Error(getApiError(c, "Не удалось добавить комментарий."));
+      }
       setComments(prev => [...prev, c]);
       setComment("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось добавить комментарий.");
     } finally {
       setAddingComment(false);
     }
@@ -221,196 +297,261 @@ function TaskModal({
     setTagInput("");
   };
 
-  const pm = PRIORITY_META[priority];
   const due = dueDate ? formatDate(dueDate) : null;
+  const relations = getTaskRelations(task);
+  const relationSubtitle =
+    relations.length > 0
+      ? `Связи: ${relations.map(formatRelationLabel).slice(0, 2).join(", ")}${relations.length > 2 ? ` +${relations.length - 2}` : ""}`
+      : "Без связанных сущностей";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/40 backdrop-blur-sm" onClick={onClose}>
-      <div
-        className="w-full max-w-2xl h-full bg-background aray-task-panel shadow-2xl flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            {task.order && (
-              <Link href={`/admin/orders`} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-lg font-medium hover:bg-primary/20 transition-colors">
-                Заказ #{task.order.orderNumber}
-              </Link>
-            )}
-            <select
-              value={status}
-              onChange={e => setStatus(e.target.value as TaskStatus)}
-              className="text-xs border border-border rounded-xl px-2 py-1 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              {COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="text-xs text-destructive hover:text-destructive/80 px-2 py-1 rounded-lg hover:bg-destructive/10 transition-colors"
-            >
-              Удалить
-            </button>
-            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-primary/[0.08] transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Title */}
-          <textarea
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="w-full text-lg font-bold bg-transparent border-none outline-none resize-none leading-snug"
-            rows={2}
-            placeholder="Название задачи..."
-          />
-
-          {/* Meta grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Priority */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Приоритет</label>
-              <select
-                value={priority}
-                onChange={e => setPriority(e.target.value as TaskPriority)}
-                className="w-full text-sm border border-border rounded-xl px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                {Object.entries(PRIORITY_META).map(([k, v]) => (
-                  <option key={k} value={k}>{v.icon} {v.label}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Assignee */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Исполнитель</label>
-              <select
-                value={assigneeId}
-                onChange={e => setAssigneeId(e.target.value)}
-                className="w-full text-sm border border-border rounded-xl px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                <option value="">— не назначен —</option>
-                {staff.map(u => (
-                  <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Due date */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Дедлайн</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-                className="w-full text-sm border border-border rounded-xl px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              {due?.overdue && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" /> {due.text}
-                </p>
-              )}
-            </div>
-
-            {/* Tags */}
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground font-medium">Теги</label>
-              <div className="flex gap-1.5">
-                <input
-                  value={tagInput}
-                  onChange={e => setTagInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTag())}
-                  placeholder="Добавить тег..."
-                  className="flex-1 text-sm border border-border rounded-xl px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <button onClick={addTag} className="px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">+</button>
-              </div>
-              {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1 pt-1">
-                  {tags.map(t => (
-                    <span key={t} className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-lg">
-                      {t}
-                      <button onClick={() => setTags(prev => prev.filter(x => x !== t))} className="text-muted-foreground hover:text-destructive">×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground font-medium">Описание</label>
-            <textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={4}
-              placeholder="Опишите задачу подробнее..."
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-            />
-          </div>
-
-          {/* Comments */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              Комментарии ({comments.length})
-            </h3>
-            {comments.map(c => (
-              <div key={c.id} className="flex gap-3">
-                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
-                  {initials(c.user?.name)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-xs font-semibold">{c.user?.name ?? "Система"}</span>
-                    <span className="text-[10px] text-muted-foreground">
-                      {new Date(c.createdAt).toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                  <p className="text-sm bg-muted rounded-xl px-3 py-2">{c.text}</p>
-                </div>
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <input
-                value={comment}
-                onChange={e => setComment(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), addComment())}
-                placeholder="Написать комментарий... (Enter — отправить)"
-                className="flex-1 text-sm border border-border rounded-xl px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-              <button
-                onClick={addComment}
-                disabled={addingComment || !comment.trim()}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                {addingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : "→"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Save bar */}
-        <div className="border-t border-border px-6 py-4 flex items-center justify-between gap-3 bg-muted/30">
-          <p className="text-xs text-muted-foreground">
-            Создано {new Date(task.createdAt).toLocaleDateString("ru-RU")}
-            {task.createdBy && ` · ${task.createdBy.name}`}
-          </p>
+    <>
+      <AdminModal
+        open
+        onClose={onClose}
+        title={title.trim() || "Задача"}
+        subtitle={relationSubtitle}
+        size="xl"
+        bodyClassName="p-4 sm:p-5"
+        headerActions={(
           <button
-            onClick={save}
-            disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className="admin-modal-action admin-modal-action-danger"
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Сохранить
+            <AlertTriangle className="h-4 w-4" />
+            <span>Удалить</span>
           </button>
+        )}
+        footer={(
+          <>
+            <p className="mr-auto hidden text-xs text-muted-foreground sm:block">
+              Создано {new Date(task.createdAt).toLocaleDateString("ru-RU")}
+              {task.createdBy && ` · ${task.createdBy.name}`}
+            </p>
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              Сохранить
+            </button>
+          </>
+        )}
+      >
+        <div className="space-y-5">
+          {error && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
+
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
+            <section className="space-y-4">
+              <div className="rounded-2xl border border-border bg-muted/20 p-4">
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Название задачи
+                </label>
+                <textarea
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  className="min-h-[96px] w-full resize-none rounded-xl border border-border bg-card px-3 py-3 text-base font-semibold leading-snug text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Название задачи..."
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Описание</label>
+                <textarea
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={5}
+                  placeholder="Опишите задачу подробнее..."
+                  className="w-full resize-none rounded-xl border border-border bg-card px-3 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  Комментарии ({comments.length})
+                </h3>
+                {comments.length > 0 ? (
+                  <div className="space-y-3">
+                    {comments.map(c => (
+                      <div key={c.id} className="flex gap-3">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
+                          {initials(c.user?.name)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                            <span className="text-xs font-semibold">{c.user?.name ?? "Система"}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(c.createdAt).toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                          <p className="break-words rounded-xl bg-muted px-3 py-2 text-sm">{c.text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                    Комментариев пока нет
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    value={comment}
+                    onChange={e => setComment(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), addComment())}
+                    placeholder="Написать комментарий..."
+                    className="min-h-11 flex-1 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={addComment}
+                    disabled={addingComment || !comment.trim()}
+                    className="flex min-h-11 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary/90 disabled:opacity-50"
+                    aria-label="Добавить комментарий"
+                  >
+                    {addingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <aside className="space-y-4">
+              <div className="rounded-2xl border border-border bg-muted/20 p-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Статус</label>
+                    <select
+                      value={status}
+                      onChange={e => setStatus(e.target.value as TaskStatus)}
+                      className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      {COLUMNS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Приоритет</label>
+                    <select
+                      value={priority}
+                      onChange={e => setPriority(e.target.value as TaskPriority)}
+                      className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      {Object.entries(PRIORITY_META).map(([k, v]) => (
+                        <option key={k} value={k}>{v.icon} {v.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Исполнитель</label>
+                    <select
+                      value={assigneeId}
+                      onChange={e => setAssigneeId(e.target.value)}
+                      className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">Не назначен</option>
+                      {staff.map(u => (
+                        <option key={u.id} value={u.id}>{u.name ?? u.email}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Срок</label>
+                    <input
+                      type="date"
+                      value={dueDate}
+                      onChange={e => setDueDate(e.target.value)}
+                      className="min-h-11 w-full rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    {due?.overdue && (
+                      <p className="flex items-center gap-1 text-xs text-red-500">
+                        <AlertTriangle className="w-3 h-3" /> {due.text}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-muted/20 p-4">
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Метки</label>
+                <div className="flex gap-2">
+                  <input
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addTag())}
+                    placeholder="Добавить метку"
+                    className="min-h-11 flex-1 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={addTag}
+                    className="flex min-h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+                    aria-label="Добавить метку"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {tags.map(t => (
+                      <span key={t} className="inline-flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-xs">
+                        {t}
+                        <button type="button" onClick={() => setTags(prev => prev.filter(x => x !== t))} className="text-muted-foreground hover:text-destructive">
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-border bg-muted/20 p-4 text-sm">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Связи задачи</p>
+                {relations.length > 0 ? (
+                  <div className="space-y-2">
+                    {relations.map((relation) => {
+                      const content = (
+                        <>
+                          <LinkIcon className="h-4 w-4 shrink-0" />
+                          <span className="min-w-0 flex-1 truncate">{formatRelationLabel(relation)}</span>
+                          {relation.href && <ArrowRight className="h-3.5 w-3.5 shrink-0" />}
+                        </>
+                      );
+                      return relation.href ? (
+                        <Link
+                          key={`${relation.entityType}-${relation.entityId}`}
+                          href={relation.href}
+                          className="flex min-h-10 items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-3 text-primary transition-colors hover:bg-primary/15"
+                        >
+                          {content}
+                        </Link>
+                      ) : (
+                        <div
+                          key={`${relation.entityType}-${relation.entityId}`}
+                          className="flex min-h-10 items-center gap-2 rounded-xl border border-border bg-card px-3 text-muted-foreground"
+                        >
+                          {content}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">Задача пока не связана с сущностью.</p>
+                )}
+              </div>
+            </aside>
+          </div>
         </div>
-      </div>
+      </AdminModal>
 
       <ConfirmDialog
         open={confirmDelete}
@@ -421,7 +562,7 @@ function TaskModal({
         confirmLabel="Удалить"
         variant="danger"
       />
-    </div>
+    </>
   );
 }
 
@@ -439,26 +580,33 @@ function NewTaskForm({
   const [assigneeId, setAssigneeId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const submit = async () => {
     if (!title.trim()) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch("/api/admin/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, priority, status: defaultStatus, assigneeId: assigneeId || null, dueDate: dueDate || null }),
       });
-      const task = await res.json();
+      const task = await res.json().catch(() => null);
+      if (!res.ok || !isTaskPayload(task)) {
+        throw new Error(getApiError(task, "Не удалось создать задачу."));
+      }
       onAdd(task);
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать задачу.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="bg-card border-2 border-primary/40 rounded-2xl p-3.5 space-y-2.5 shadow-lg">
+    <div className="bg-card border-2 border-primary/40 rounded-2xl p-3.5 space-y-2.5">
       <textarea
         autoFocus
         value={title}
@@ -468,6 +616,7 @@ function NewTaskForm({
         rows={2}
         className="w-full text-sm font-medium bg-transparent border-none outline-none resize-none"
       />
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <div className="grid grid-cols-2 gap-2">
         <select value={priority} onChange={e => setPriority(e.target.value as TaskPriority)} className="text-xs border border-border rounded-xl px-2 py-1.5 bg-card focus:outline-none">
           {Object.entries(PRIORITY_META).map(([k, v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
@@ -492,6 +641,7 @@ function NewTaskForm({
 function Column({
   col, tasks, staff, onAddTask, onOpenTask,
   dragging, dragOver, onDragStart, onDragOver, onDragEnd, onDrop,
+  compact = false,
 }: {
   col: typeof COLUMNS[0];
   tasks: Task[];
@@ -504,13 +654,14 @@ function Column({
   onDragOver: (status: TaskStatus) => void;
   onDragEnd: () => void;
   onDrop: (status: TaskStatus) => void;
+  compact?: boolean;
 }) {
   const [adding, setAdding] = useState(false);
   const isOver = dragOver === col.id;
 
   return (
     <div
-      className={`flex flex-col min-h-[200px] w-72 shrink-0 rounded-2xl transition-all backdrop-blur-md ${col.bg} ${isOver ? "ring-2 ring-primary shadow-lg" : ""}`}
+      className={`flex flex-col rounded-2xl border border-border/70 transition-colors ${compact ? "min-h-[360px] w-full" : "min-h-[200px] w-72 shrink-0"} ${col.bg} ${isOver ? "ring-2 ring-primary/35" : ""}`}
       onDragOver={e => { e.preventDefault(); onDragOver(col.id); }}
       onDrop={e => { e.preventDefault(); onDrop(col.id); }}
     >
@@ -534,7 +685,7 @@ function Column({
       </div>
 
       {/* Cards */}
-      <div className="flex-1 px-3 pb-3 space-y-2.5 overflow-y-auto max-h-[calc(100vh-280px)]">
+      <div className={`flex-1 px-3 pb-3 space-y-2.5 overflow-y-auto ${compact ? "max-h-none" : "max-h-[calc(100vh-280px)]"}`}>
         {tasks.map(task => (
           <TaskCard
             key={task.id}
@@ -566,8 +717,18 @@ function Column({
         )}
 
         {tasks.length === 0 && !adding && !isOver && (
-          <div className="flex flex-col items-center justify-center py-8 text-center opacity-40">
-            <p className="text-xs text-muted-foreground">Нет задач</p>
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border/80 bg-background/35 px-4 py-8 text-center">
+            <p className="text-xs font-medium text-muted-foreground">Нет задач</p>
+            {col.id !== "DONE" && (
+              <button
+                type="button"
+                onClick={() => setAdding(true)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/15"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Создать
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -577,6 +738,9 @@ function Column({
 
 // ─── Main Kanban ───────────────────────────────────────────────────────────────
 export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task[]; initialStaff: Staff[] }) {
+  const searchParams = useSearchParams();
+  const relationEntityType = searchParams.get("entityType") as TaskRelationEntityType | null;
+  const relationEntityId = searchParams.get("entityId");
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [staff] = useState<Staff[]>(initialStaff);
   const [openTask, setOpenTask] = useState<Task | null>(null);
@@ -585,9 +749,64 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
   const [search, setSearch] = useState("");
   const [filterPriority, setFilterPriority] = useState<TaskPriority | "">("");
   const [filterAssignee, setFilterAssignee] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
+  const [boardError, setBoardError] = useState<string | null>(null);
+  const [mobileStatus, setMobileStatus] = useState<TaskStatus>("TODO");
+
+  const refreshTasks = useCallback(async (showBusy = false) => {
+    if (showBusy) setRefreshing(true);
+    try {
+      const params = new URLSearchParams();
+      if (relationEntityType && relationEntityId) {
+        params.set("entityType", relationEntityType);
+        params.set("entityId", relationEntityId);
+      }
+      const query = params.toString();
+      const res = await fetch(`/api/admin/tasks${query ? `?${query}` : ""}`, { cache: "no-store" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getApiError(data, "Не удалось обновить задачи."));
+      if (Array.isArray(data?.tasks)) setTasks(data.tasks);
+      setBoardError(null);
+    } catch (err) {
+      setBoardError(err instanceof Error ? err.message : "Не удалось обновить задачи.");
+    } finally {
+      if (showBusy) setRefreshing(false);
+    }
+  }, [relationEntityId, relationEntityType]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => refreshTasks(), 12000);
+    const onFocus = () => refreshTasks();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refreshTasks();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [refreshTasks]);
 
   const filteredTasks = tasks.filter(t => {
-    if (search && !t.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (relationEntityType && relationEntityId) {
+      const hasRelation = getTaskRelations(t).some(
+        (relation) => relation.entityType === relationEntityType && relation.entityId === relationEntityId,
+      );
+      if (!hasRelation) return false;
+    }
+    const q = search.trim().toLowerCase();
+    const haystack = [
+      t.title,
+      t.description ?? "",
+      t.order ? `заказ ${t.order.orderNumber} ${t.order.guestName ?? ""}` : "",
+      ...getTaskRelations(t).map((relation) => formatRelationLabel(relation)),
+      t.assignee?.name ?? "",
+      t.assignee?.email ?? "",
+      ...t.tags,
+    ].join(" ").toLowerCase();
+    if (q && !haystack.includes(q)) return false;
     if (filterPriority && t.priority !== filterPriority) return false;
     if (filterAssignee && t.assignee?.id !== filterAssignee) return false;
     return true;
@@ -597,29 +816,36 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
     filteredTasks
       .filter(t => t.status === status)
       .sort((a, b) => a.sortOrder - b.sortOrder);
+  const activeMobileColumn = COLUMNS.find((col) => col.id === mobileStatus) ?? COLUMNS[1];
 
   const handleDrop = async (targetStatus: TaskStatus) => {
     if (!dragging) return;
-    const task = tasks.find(t => t.id === dragging);
+    const taskId = dragging;
+    const task = tasks.find(t => t.id === taskId);
     if (!task || task.status === targetStatus) { setDragging(null); setDragOver(null); return; }
 
     // Optimistic update
-    setTasks(prev => prev.map(t => t.id === dragging ? { ...t, status: targetStatus } : t));
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: targetStatus } : t));
     setDragging(null);
     setDragOver(null);
+    setBoardError(null);
 
     // API call
     try {
-      const res = await fetch(`/api/admin/tasks/${dragging}`, {
+      const res = await fetch(`/api/admin/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: targetStatus }),
       });
-      const updated = await res.json();
-      setTasks(prev => prev.map(t => t.id === dragging ? updated : t));
-    } catch {
+      const updated = await res.json().catch(() => null);
+      if (!res.ok || !isTaskPayload(updated)) {
+        throw new Error(getApiError(updated, "Не удалось переместить задачу."));
+      }
+      setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+    } catch (err) {
       // Rollback
-      setTasks(prev => prev.map(t => t.id === dragging ? task : t));
+      setTasks(prev => prev.map(t => t.id === taskId ? task : t));
+      setBoardError(err instanceof Error ? err.message : "Не удалось переместить задачу.");
     }
   };
 
@@ -629,7 +855,12 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
   };
 
   const handleDeleteTask = async (id: string) => {
-    await fetch(`/api/admin/tasks/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/tasks/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setBoardError(getApiError(data, "Не удалось удалить задачу."));
+      return;
+    }
     setTasks(prev => prev.filter(t => t.id !== id));
   };
 
@@ -637,12 +868,26 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
   const overdue = tasks.filter(t => t.dueDate && t.status !== "DONE" && new Date(t.dueDate) < new Date()).length;
   const urgent = tasks.filter(t => t.priority === "URGENT" && t.status !== "DONE").length;
   const inProgress = tasks.filter(t => t.status === "IN_PROGRESS").length;
+  const unassigned = tasks.filter(t => !t.assignee && t.status !== "DONE").length;
+  const linkedTasks = tasks.filter(t => getTaskRelations(t).length > 0).length;
+  const relationFilterLabel =
+    relationEntityType && relationEntityId
+      ? TASK_RELATION_LABELS[relationEntityType] || "Связь"
+      : null;
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact header row — stats + autoworkflow link */}
-      <div className="px-6 pt-4 pb-2 flex items-center gap-3 flex-wrap">
-        <div className="flex gap-2">
+      {/* Compact header row — stats + smart controls */}
+      <div className="px-6 pt-4 pb-3 space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="min-w-0 mr-auto">
+            <p className="text-sm font-semibold">Командный поток</p>
+            <p className="text-xs text-muted-foreground">
+              {relationFilterLabel
+                ? `Показаны задачи по связи: ${relationFilterLabel}`
+                : "Задачи, связи и ответственные в одном живом потоке."}
+            </p>
+          </div>
           {overdue > 0 && (
             <span className="flex items-center gap-1 text-xs bg-red-500/15 text-red-400 px-2 py-1 rounded-xl font-medium border border-red-500/20">
               <AlertTriangle className="w-3 h-3" /> {overdue} просрочено
@@ -658,19 +903,116 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
               <RefreshCw className="w-3 h-3" /> {inProgress} в работе
             </span>
           )}
+          {unassigned > 0 && (
+            <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded-xl font-medium border border-primary/20">
+              <User className="w-3 h-3" /> {unassigned} без исполнителя
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-xs bg-muted/50 text-muted-foreground px-2 py-1 rounded-xl font-medium border border-border">
+            <LinkIcon className="w-3 h-3" /> {linkedTasks} со связями
+          </span>
+          <button
+            type="button"
+            onClick={() => refreshTasks(true)}
+            disabled={refreshing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-background text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-foreground disabled:opacity-60 transition-colors"
+          >
+            <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+            Обновить
+          </button>
+          <Link
+            href="/admin/workflows"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+          >
+            <Zap className="w-3 h-3" />
+            Автоворкфлоу
+          </Link>
         </div>
-        <Link
-          href="/admin/workflows"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary/30 bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors ml-auto"
-        >
-          <Zap className="w-3 h-3" />
-          Автоворкфлоу
-        </Link>
+
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_160px_220px]">
+          <label className="relative block">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Найти задачу, заказ, тег или исполнителя..."
+              className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </label>
+          <select
+            value={filterPriority}
+            onChange={(e) => setFilterPriority(e.target.value as TaskPriority | "")}
+            className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">Все приоритеты</option>
+            {Object.entries(PRIORITY_META).map(([key, meta]) => (
+              <option key={key} value={key}>{meta.label}</option>
+            ))}
+          </select>
+          <select
+            value={filterAssignee}
+            onChange={(e) => setFilterAssignee(e.target.value)}
+            className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="">Вся команда</option>
+            {staff.map((member) => (
+              <option key={member.id} value={member.id}>{member.name ?? member.email}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:hidden">
+          {COLUMNS.map((col) => {
+            const count = tasksByStatus(col.id).length;
+            const active = col.id === mobileStatus;
+            return (
+              <button
+                key={col.id}
+                type="button"
+                onClick={() => setMobileStatus(col.id)}
+                className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors ${
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                }`}
+              >
+                <col.icon className="h-3.5 w-3.5" />
+                {col.label}
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${active ? "bg-primary-foreground/20" : "bg-muted"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
+      {boardError && (
+        <div className="mx-6 mb-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {boardError}
+        </div>
+      )}
+
       {/* Board */}
-      <div className="flex-1 overflow-x-auto p-6">
-        <div className="flex gap-4 min-w-max">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 lg:overflow-x-auto lg:p-6">
+        <div className="lg:hidden">
+          <Column
+            col={activeMobileColumn}
+            tasks={tasksByStatus(activeMobileColumn.id)}
+            staff={staff}
+            onAddTask={t => setTasks(prev => [...prev, t])}
+            onOpenTask={setOpenTask}
+            dragging={dragging}
+            dragOver={dragOver === activeMobileColumn.id ? activeMobileColumn.id : null}
+            onDragStart={id => setDragging(id)}
+            onDragOver={status => setDragOver(status)}
+            onDragEnd={() => setDragOver(null)}
+            onDrop={handleDrop}
+            compact
+          />
+        </div>
+
+        <div className="hidden gap-4 lg:flex lg:min-w-max">
           {COLUMNS.map(col => (
             <Column
               key={col.id}

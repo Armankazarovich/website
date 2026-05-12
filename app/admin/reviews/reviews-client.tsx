@@ -3,7 +3,27 @@
 import { useState, useMemo, useEffect } from "react";
 
 const PER_PAGE = 12;
-import { Star, CheckCircle, Trash2, Loader2, Sparkles, ExternalLink, Download, Globe, MapPin, MessageSquare, Plus, X, ChevronDown, ChevronUp, Map, Monitor, Lightbulb, Send, ThumbsUp } from "lucide-react";
+import {
+  Star,
+  CheckCircle,
+  Trash2,
+  Loader2,
+  Sparkles,
+  ExternalLink,
+  Download,
+  Globe,
+  MapPin,
+  MessageSquare,
+  Plus,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Map,
+  Monitor,
+  Lightbulb,
+  Send,
+  ThumbsUp,
+} from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { Button } from "@/components/ui/button";
 
@@ -16,7 +36,13 @@ const QUICK_REPLIES = [
   "Благодарим за тёплые слова! Качество — наш приоритет.",
 ];
 
-function AdminReplyBlock({ reviewId, onReply }: { reviewId: string; onReply: (reply: string) => void }) {
+function AdminReplyBlock({
+  reviewId,
+  onReply,
+}: {
+  reviewId: string;
+  onReply: (reply: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -42,8 +68,10 @@ function AdminReplyBlock({ reviewId, onReply }: { reviewId: string; onReply: (re
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)}
-        className="mt-2 flex items-center gap-1.5 text-xs text-primary hover:underline">
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-2 flex items-center gap-1.5 text-xs text-primary hover:underline"
+      >
         <MessageSquare className="w-3 h-3" /> Ответить
       </button>
     );
@@ -51,11 +79,17 @@ function AdminReplyBlock({ reviewId, onReply }: { reviewId: string; onReply: (re
 
   return (
     <div className="mt-3 space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">Быстрый ответ:</p>
+      <p className="text-xs font-medium text-muted-foreground">
+        Быстрый ответ:
+      </p>
       <div className="flex flex-wrap gap-1.5">
         {QUICK_REPLIES.map((q, i) => (
-          <button key={i} onClick={() => send(q)} disabled={sending}
-            className="text-[11px] px-2.5 py-1.5 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary border border-border transition-colors text-left max-w-[200px] truncate">
+          <button
+            key={i}
+            onClick={() => send(q)}
+            disabled={sending}
+            className="text-[11px] px-2.5 py-1.5 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary border border-border transition-colors text-left max-w-[200px] truncate"
+          >
             {q}
           </button>
         ))}
@@ -68,9 +102,16 @@ function AdminReplyBlock({ reviewId, onReply }: { reviewId: string; onReply: (re
           className="flex-1 px-3 py-2 text-sm rounded-xl border border-border bg-card"
           onKeyDown={(e) => e.key === "Enter" && send(text)}
         />
-        <button onClick={() => send(text)} disabled={!text.trim() || sending}
-          className="px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm disabled:opacity-50">
-          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        <button
+          onClick={() => send(text)}
+          disabled={!text.trim() || sending}
+          className="px-3 py-2 rounded-xl bg-primary text-primary-foreground text-sm disabled:opacity-50"
+        >
+          {sending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
         </button>
       </div>
     </div>
@@ -112,7 +153,8 @@ const PLATFORMS: {
     badge: "bg-secondary text-muted-foreground",
     icon: Globe,
     href: "https://maps.google.com/?cid=YOUR_CID",
-    instruction: "Откройте Google Мой Бизнес → Отзывы → скопируйте нужные и добавьте вручную",
+    instruction:
+      "Откройте Google Мой Бизнес → Отзывы → скопируйте нужные и добавьте вручную",
     status: "manual",
   },
   {
@@ -123,7 +165,8 @@ const PLATFORMS: {
     badge: "bg-secondary text-muted-foreground",
     icon: Map,
     href: "https://business.yandex.ru/",
-    instruction: "Откройте Яндекс Бизнес → Репутация → скопируйте отзывы для публикации",
+    instruction:
+      "Откройте Яндекс Бизнес → Репутация → скопируйте отзывы для публикации",
     status: "manual",
   },
   {
@@ -134,7 +177,8 @@ const PLATFORMS: {
     badge: "bg-secondary text-muted-foreground",
     icon: MapPin,
     href: "https://account.2gis.com/",
-    instruction: "Авторизуйтесь в 2GIS для бизнеса → Отзывы → скопируйте лучшие",
+    instruction:
+      "Авторизуйтесь в 2GIS для бизнеса → Отзывы → скопируйте лучшие",
     status: "manual",
   },
   {
@@ -145,13 +189,19 @@ const PLATFORMS: {
     badge: "bg-secondary text-muted-foreground",
     icon: MessageSquare,
     href: "https://vk.com/",
-    instruction: "Перейдите в группу ВК → раздел «Отзывы» → скопируйте нужные комментарии",
+    instruction:
+      "Перейдите в группу ВК → раздел «Отзывы» → скопируйте нужные комментарии",
     status: "manual",
   },
 ];
 
 /* ─── Форма добавления отзыва вручную ─── */
-function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">) => void; onClose: () => void }) {
+function AddReviewForm({
+  onAdd,
+}: {
+  onAdd: (r: Omit<Review, "id" | "createdAt">) => void;
+  onClose: () => void;
+}) {
   const [name, setName] = useState("");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
@@ -160,13 +210,23 @@ function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">)
   const [error, setError] = useState("");
 
   const submit = async () => {
-    if (!name.trim() || !text.trim()) { setError("Заполните имя и текст"); return; }
-    setLoading(true); setError("");
+    if (!name.trim() || !text.trim()) {
+      setError("Заполните имя и текст");
+      return;
+    }
+    setLoading(true);
+    setError("");
     try {
       const res = await fetch("/api/admin/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), rating, text: text.trim(), source, approved: true }),
+        body: JSON.stringify({
+          name: name.trim(),
+          rating,
+          text: text.trim(),
+          source,
+          approved: true,
+        }),
       });
       if (res.ok) {
         const r = await res.json();
@@ -174,55 +234,89 @@ function AddReviewForm({ onAdd }: { onAdd: (r: Omit<Review, "id" | "createdAt">)
       } else {
         setError("Ошибка при сохранении");
       }
-    } catch { setError("Нет соединения"); }
-    finally { setLoading(false); }
+    } catch {
+      setError("Нет соединения");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="space-y-3 p-4 bg-card border border-border rounded-2xl">
       <div className="flex gap-3">
         <div className="flex-1">
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">Имя автора</label>
-          <input value={name} onChange={e => setName(e.target.value)}
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+            Имя автора
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             placeholder="Иван Петров"
-            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">Оценка</label>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">
+            Оценка
+          </label>
           <div className="flex gap-1 py-2">
-            {[1,2,3,4,5].map(s => (
+            {[1, 2, 3, 4, 5].map((s) => (
               <button key={s} onClick={() => setRating(s)}>
-                <Star className={`w-5 h-5 ${s <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                <Star
+                  className={`w-5 h-5 ${s <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`}
+                />
               </button>
             ))}
           </div>
         </div>
       </div>
       <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1 block">Источник</label>
+        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+          Источник
+        </label>
         <div className="flex gap-2 flex-wrap">
-          {PLATFORMS.map(p => (
-            <button key={p.key} onClick={() => setSource(p.key)}
-              className={`admin-pill-btn ${source === p.key ? "admin-pill-btn-active" : ""}`}>
-              <p.icon className="w-3.5 h-3.5 inline mr-1" />{p.name}
+          {PLATFORMS.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setSource(p.key)}
+              className={`admin-pill-btn ${source === p.key ? "admin-pill-btn-active" : ""}`}
+            >
+              <p.icon className="w-3.5 h-3.5 inline mr-1" />
+              {p.name}
             </button>
           ))}
-          <button onClick={() => setSource("site")}
-            className={`admin-pill-btn ${source === "site" ? "admin-pill-btn-active" : ""}`}>
-            <Monitor className="w-3.5 h-3.5 inline mr-1" />Сайт
+          <button
+            onClick={() => setSource("site")}
+            className={`admin-pill-btn ${source === "site" ? "admin-pill-btn-active" : ""}`}
+          >
+            <Monitor className="w-3.5 h-3.5 inline mr-1" />
+            Сайт
           </button>
         </div>
       </div>
       <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1 block">Текст отзыва</label>
-        <textarea value={text} onChange={e => setText(e.target.value)} rows={3}
+        <label className="text-xs font-medium text-muted-foreground mb-1 block">
+          Текст отзыва
+        </label>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={3}
           placeholder="Отличный материал, всё понравилось..."
-          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+          className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+        />
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
-      <button onClick={submit} disabled={loading}
-        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60">
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+      <button
+        onClick={submit}
+        disabled={loading}
+        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-60"
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Plus className="w-4 h-4" />
+        )}
         Добавить отзыв
       </button>
     </div>
@@ -237,7 +331,9 @@ export function ReviewsClient({
   initialFilter?: "ALL" | "PENDING" | "APPROVED";
 }) {
   const [reviews, setReviews] = useState(initial);
-  const [statusFilter, setStatusFilter] = useState<"ALL" | "PENDING" | "APPROVED">(initialFilter);
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | "PENDING" | "APPROVED"
+  >(initialFilter);
   const [ratingFilter, setRatingFilter] = useState<number | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [starterLoading, setStarterLoading] = useState(false);
@@ -246,6 +342,7 @@ export function ReviewsClient({
   const [confirmSeed, setConfirmSeed] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showPlatforms, setShowPlatforms] = useState(false);
+  const [actionError, setActionError] = useState("");
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -260,24 +357,31 @@ export function ReviewsClient({
   }, [reviews, statusFilter, ratingFilter]);
 
   // Сброс страницы при смене фильтра
-  useEffect(() => { setPage(1); }, [statusFilter, ratingFilter]);
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, ratingFilter]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const toggleApprove = async (id: string, approved: boolean) => {
     setLoadingId(id);
+    setActionError("");
     try {
       const res = await fetch(`/api/admin/reviews/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ approved: !approved }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Не удалось обновить отзыв");
       if (res.ok) {
         setReviews((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, approved: !approved } : r))
+          prev.map((r) => (r.id === id ? { ...r, approved: !approved } : r)),
         );
       }
+    } catch (error: any) {
+      setActionError(error.message || "Не удалось обновить отзыв");
     } finally {
       setLoadingId(null);
     }
@@ -285,11 +389,14 @@ export function ReviewsClient({
 
   const handleDelete = async (id: string) => {
     setLoadingId(id);
+    setActionError("");
     try {
       const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setReviews((prev) => prev.filter((r) => r.id !== id));
-      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Не удалось удалить отзыв");
+      setReviews((prev) => prev.filter((r) => r.id !== id));
+    } catch (error: any) {
+      setActionError(error.message || "Не удалось удалить отзыв");
     } finally {
       setLoadingId(null);
     }
@@ -302,7 +409,9 @@ export function ReviewsClient({
       const res = await fetch("/api/admin/reviews/starter", { method: "POST" });
       const data = await res.json();
       if (res.ok && data.ok) {
-        setStarterResult(`Добавлено ${data.created} отзывов. Обновите страницу, чтобы увидеть их.`);
+        setStarterResult(
+          `Добавлено ${data.created} отзывов. Обновите страницу, чтобы увидеть их.`,
+        );
       } else {
         setStarterResult("Ошибка при добавлении отзывов.");
       }
@@ -316,7 +425,15 @@ export function ReviewsClient({
   const pendingCount = reviews.filter((r) => !r.approved).length;
 
   const handleAdd = (r: any) => {
-    setReviews(prev => [{ ...r, id: r.id || Math.random().toString(), createdAt: new Date(), approved: true }, ...prev]);
+    setReviews((prev) => [
+      {
+        ...r,
+        id: r.id || Math.random().toString(),
+        createdAt: new Date(),
+        approved: true,
+      },
+      ...prev,
+    ]);
     setShowAddForm(false);
   };
 
@@ -331,14 +448,21 @@ export function ReviewsClient({
           onClick={() => setConfirmSeed(true)}
           disabled={starterLoading}
         >
-          {starterLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+          {starterLoading ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            <Sparkles className="w-3.5 h-3.5" />
+          )}
           Стартовые отзывы
         </Button>
         <Button
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => { setShowAddForm(v => !v); setShowPlatforms(false); }}
+          onClick={() => {
+            setShowAddForm((v) => !v);
+            setShowPlatforms(false);
+          }}
         >
           <Plus className="w-3.5 h-3.5" />
           Добавить вручную
@@ -347,11 +471,18 @@ export function ReviewsClient({
           variant="outline"
           size="sm"
           className="gap-2"
-          onClick={() => { setShowPlatforms(v => !v); setShowAddForm(false); }}
+          onClick={() => {
+            setShowPlatforms((v) => !v);
+            setShowAddForm(false);
+          }}
         >
           <Globe className="w-3.5 h-3.5" />
           Внешние платформы
-          {showPlatforms ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {showPlatforms ? (
+            <ChevronUp className="w-3 h-3" />
+          ) : (
+            <ChevronDown className="w-3 h-3" />
+          )}
         </Button>
         {starterResult && (
           <span className="text-sm text-muted-foreground">{starterResult}</span>
@@ -372,30 +503,49 @@ export function ReviewsClient({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold text-sm">Внешние платформы</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Соберите лучшие отзывы с внешних площадок и добавьте на сайт</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Соберите лучшие отзывы с внешних площадок и добавьте на сайт
+              </p>
             </div>
             <button onClick={() => setShowPlatforms(false)}>
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {PLATFORMS.map(p => (
-              <div key={p.key} className={`border ${p.borderColor} rounded-xl p-3 space-y-2`}>
+            {PLATFORMS.map((p) => (
+              <div
+                key={p.key}
+                className={`border ${p.borderColor} rounded-xl p-3 space-y-2`}
+              >
                 <div className="flex items-center gap-2">
                   <p.icon className="w-5 h-5 shrink-0" />
                   <span className="font-semibold text-sm">{p.name}</span>
-                  <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${p.badge}`}>Ручной импорт</span>
+                  <span
+                    className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${p.badge}`}
+                  >
+                    Ручной импорт
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{p.instruction}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {p.instruction}
+                </p>
                 <div className="flex gap-2">
-                  <a href={p.href} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                  <a
+                    href={p.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
                     <ExternalLink className="w-3 h-3" />
                     Открыть площадку
                   </a>
                   <button
-                    onClick={() => { setShowAddForm(true); setShowPlatforms(false); }}
-                    className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground">
+                    onClick={() => {
+                      setShowAddForm(true);
+                      setShowPlatforms(false);
+                    }}
+                    className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  >
                     <Download className="w-3 h-3" />
                     Добавить отзыв
                   </button>
@@ -406,21 +556,35 @@ export function ReviewsClient({
           <div className="flex items-start gap-2.5 p-3 bg-primary/8 border border-primary/15 rounded-xl">
             <Lightbulb className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Совет:</strong> Попросите клиентов оставить отзыв в Google и Яндекс — это улучшает SEO. Лучшие отзывы оттуда добавляйте на сайт кнопкой «Добавить вручную».
+              <strong className="text-foreground">Совет:</strong> Попросите
+              клиентов оставить отзыв в Google и Яндекс — это улучшает SEO.
+              Лучшие отзывы оттуда добавляйте на сайт кнопкой «Добавить
+              вручную».
             </p>
           </div>
         </div>
       )}
 
       {/* Фильтры */}
+      {actionError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {actionError}
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3">
         {/* Статус */}
         <div className="flex gap-1.5">
-          {([
-            { key: "ALL", label: "Все" },
-            { key: "PENDING", label: `На проверке${pendingCount ? ` (${pendingCount})` : ""}` },
-            { key: "APPROVED", label: "Опубликованы" },
-          ] as const).map((f) => (
+          {(
+            [
+              { key: "ALL", label: "Все" },
+              {
+                key: "PENDING",
+                label: `На проверке${pendingCount ? ` (${pendingCount})` : ""}`,
+              },
+              { key: "APPROVED", label: "Опубликованы" },
+            ] as const
+          ).map((f) => (
             <button
               key={f.key}
               onClick={() => setStatusFilter(f.key)}
@@ -467,10 +631,12 @@ export function ReviewsClient({
             <div
               key={review.id}
               className={`bg-card rounded-2xl border p-5 transition-opacity ${
-                review.approved ? "border-border" : "border-amber-200 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-900/10"
+                review.approved
+                  ? "border-border"
+                  : "border-amber-200 dark:border-amber-800/50 bg-amber-50/30 dark:bg-amber-900/10"
               }`}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <p className="font-medium text-sm">{review.name}</p>
@@ -479,7 +645,9 @@ export function ReviewsClient({
                         <Star
                           key={i}
                           className={`w-3.5 h-3.5 ${
-                            i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"
+                            i < review.rating
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-muted-foreground/30"
                           }`}
                         />
                       ))}
@@ -493,42 +661,86 @@ export function ReviewsClient({
                     >
                       {review.approved ? "Опубликован" : "На проверке"}
                     </span>
-                    {review.source && review.source !== "site" && (() => {
-                      const pl = PLATFORMS.find(p => p.key === review.source);
-                      if (!pl) return null;
-                      const PlIcon = pl.icon;
-                      return (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-0.5 ${pl.badge}`}>
-                          <PlIcon className="w-2.5 h-2.5" /> {pl.name}
-                        </span>
-                      );
-                    })()}
+                    {review.source &&
+                      review.source !== "site" &&
+                      (() => {
+                        const pl = PLATFORMS.find(
+                          (p) => p.key === review.source,
+                        );
+                        if (!pl) return null;
+                        const PlIcon = pl.icon;
+                        return (
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium inline-flex items-center gap-0.5 ${pl.badge}`}
+                          >
+                            <PlIcon className="w-2.5 h-2.5" /> {pl.name}
+                          </span>
+                        );
+                      })()}
                     <span className="text-[11px] text-muted-foreground">
                       {new Date(review.createdAt).toLocaleDateString("ru-RU")}
                     </span>
                   </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{review.text}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {review.text}
+                  </p>
 
                   {/* Photos — large preview for admin to check before publishing */}
-                  {review.images && review.images.filter((u: string) => u && !u.startsWith("data:")).length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-[11px] text-muted-foreground mb-2 font-medium">📷 {review.images.filter((u: string) => u && !u.startsWith("data:")).length} фото от клиента:</p>
-                      <div className="flex gap-2 overflow-x-auto">
-                        {review.images.filter((u: string) => u && !u.startsWith("data:")).map((img: string, i: number) => (
-                          <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="shrink-0 group relative">
-                            <img src={img} alt="" className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-border group-hover:border-primary transition-colors"
-                              onError={(e) => { (e.target as HTMLImageElement).closest("a")!.style.display = "none"; }} />
-                            <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md">открыть</span>
-                          </a>
-                        ))}
+                  {review.images &&
+                    review.images.filter(
+                      (u: string) => u && !u.startsWith("data:"),
+                    ).length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-[11px] text-muted-foreground mb-2 font-medium">
+                          📷{" "}
+                          {
+                            review.images.filter(
+                              (u: string) => u && !u.startsWith("data:"),
+                            ).length
+                          }{" "}
+                          фото от клиента:
+                        </p>
+                        <div className="flex gap-2 overflow-x-auto">
+                          {review.images
+                            .filter((u: string) => u && !u.startsWith("data:"))
+                            .map((img: string, i: number) => (
+                              <a
+                                key={i}
+                                href={img}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="shrink-0 group relative"
+                              >
+                                <img
+                                  src={img}
+                                  alt=""
+                                  className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-2 border-border group-hover:border-primary transition-colors"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).closest(
+                                      "a",
+                                    )!.style.display = "none";
+                                  }}
+                                />
+                                <span className="absolute bottom-1 right-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-md">
+                                  открыть
+                                </span>
+                              </a>
+                            ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Product link */}
                   {review.product && (
                     <p className="text-xs text-primary mt-2">
-                      Товар: <a href={`/product/${review.product.slug}`} target="_blank" className="underline">{review.product.name}</a>
+                      Товар:{" "}
+                      <a
+                        href={`/product/${review.product.slug}`}
+                        target="_blank"
+                        className="underline"
+                      >
+                        {review.product.name}
+                      </a>
                     </p>
                   )}
 
@@ -541,29 +753,46 @@ export function ReviewsClient({
                   {/* Admin reply */}
                   {review.adminReply && (
                     <div className="mt-3 pl-3 border-l-2 border-primary/30 bg-primary/5 rounded-r-lg py-2 pr-3">
-                      <p className="text-[11px] font-semibold text-primary mb-1">Ответ магазина</p>
-                      <p className="text-xs text-muted-foreground">{review.adminReply}</p>
+                      <p className="text-[11px] font-semibold text-primary mb-1">
+                        Ответ магазина
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {review.adminReply}
+                      </p>
                     </div>
                   )}
 
                   {/* Reply button + quick templates */}
                   {!review.adminReply && (
-                    <AdminReplyBlock reviewId={review.id} onReply={(reply) => {
-                      setReviews(prev => prev.map(r => r.id === review.id ? { ...r, adminReply: reply } : r));
-                    }} />
+                    <AdminReplyBlock
+                      reviewId={review.id}
+                      onReply={(reply) => {
+                        setReviews((prev) =>
+                          prev.map((r) =>
+                            r.id === review.id
+                              ? { ...r, adminReply: reply }
+                              : r,
+                          ),
+                        );
+                      }}
+                    />
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="grid w-full grid-cols-[minmax(0,1fr)_44px] gap-2 sm:flex sm:w-auto sm:items-center">
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    <div className="col-span-2 flex min-h-11 items-center justify-center sm:col-span-1">
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    </div>
                   ) : (
                     <>
                       <Button
                         size="sm"
                         variant={review.approved ? "outline" : "default"}
-                        className="h-8 text-xs"
-                        onClick={() => toggleApprove(review.id, review.approved)}
+                        className="min-h-11 w-full text-xs sm:w-auto"
+                        onClick={() =>
+                          toggleApprove(review.id, review.approved)
+                        }
                       >
                         <CheckCircle className="w-3 h-3 mr-1" />
                         {review.approved ? "Скрыть" : "Опубликовать"}
@@ -571,8 +800,9 @@ export function ReviewsClient({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        className="h-11 w-11 p-0 text-muted-foreground hover:text-destructive"
                         onClick={() => setConfirmDeleteId(review.id)}
+                        aria-label="Удалить отзыв"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -594,17 +824,19 @@ export function ReviewsClient({
       {totalPages > 1 && (
         <div className="flex items-center justify-between pt-2">
           <p className="text-xs text-muted-foreground">
-            {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} из {filtered.length} отзывов
+            {(page - 1) * PER_PAGE + 1}–
+            {Math.min(page * PER_PAGE, filtered.length)} из {filtered.length}{" "}
+            отзывов
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-primary/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               ← Назад
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
                 key={p}
                 onClick={() => setPage(p)}
@@ -618,7 +850,7 @@ export function ReviewsClient({
               </button>
             ))}
             <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className="px-3 py-1.5 rounded-lg text-xs font-medium bg-muted/40 text-muted-foreground hover:bg-primary/[0.08] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
@@ -628,11 +860,13 @@ export function ReviewsClient({
         </div>
       )}
 
-
       <ConfirmDialog
         open={!!confirmDeleteId}
         onClose={() => setConfirmDeleteId(null)}
-        onConfirm={() => { if (confirmDeleteId) handleDelete(confirmDeleteId); setConfirmDeleteId(null); }}
+        onConfirm={() => {
+          if (confirmDeleteId) handleDelete(confirmDeleteId);
+          setConfirmDeleteId(null);
+        }}
         title="Удалить отзыв?"
         description="Отзыв будет удалён без возможности восстановления."
         confirmLabel="Удалить"
@@ -642,7 +876,10 @@ export function ReviewsClient({
       <ConfirmDialog
         open={confirmSeed}
         onClose={() => setConfirmSeed(false)}
-        onConfirm={() => { setConfirmSeed(false); addStarterReviews(); }}
+        onConfirm={() => {
+          setConfirmSeed(false);
+          addStarterReviews();
+        }}
         title="Добавить стартовые отзывы?"
         description="6 готовых отзывов будут добавлены и сразу опубликованы на сайте."
         confirmLabel="Добавить"

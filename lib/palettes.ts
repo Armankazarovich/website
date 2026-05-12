@@ -32,6 +32,9 @@ export const PALETTE_GROUPS: { label: string; palettes: PaletteItem[] }[] = [
 
 export const PALETTES: PaletteItem[] = PALETTE_GROUPS.flatMap((group) => group.palettes);
 export const ALL_PALETTE_IDS = PALETTES.map((palette) => palette.id);
+export const PILORUS_BRAND_PALETTE_ID = "timber";
+export const ADMIN_PALETTE_STORAGE_KEY = "admin-color-palette";
+export const LEGACY_PALETTE_STORAGE_KEY = "color-palette";
 
 const PALETTE_ID_SET = new Set(ALL_PALETTE_IDS);
 

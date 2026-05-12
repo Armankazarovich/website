@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="ARAY">
+  <defs>
+    <radialGradient id="bg" cx="30%" cy="18%" r="86%">
+      <stop offset="0%" stop-color="#102A3B"/>
+      <stop offset="55%" stop-color="#061019"/>
+      <stop offset="100%" stop-color="#030609"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14B8A6" stop-opacity="0.34"/>
+      <stop offset="36%" stop-color="#F59E0B" stop-opacity="0.22"/>
+      <stop offset="72%" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbBase" cx="50%" cy="55%" r="48%">
+      <stop offset="0%" stop-color="#0F766E"/>
+      <stop offset="42%" stop-color="#082F49"/>
+      <stop offset="74%" stop-color="#020617"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </radialGradient>
+    <radialGradient id="blueFlash" cx="38%" cy="30%" r="34%">
+      <stop offset="0%" stop-color="#F0FDFA" stop-opacity="0.95"/>
+      <stop offset="18%" stop-color="#38BDF8" stop-opacity="0.86"/>
+      <stop offset="48%" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="goldFlash" cx="66%" cy="64%" r="30%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="core" cx="42%" cy="34%" r="50%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="22%" stop-color="#22D3EE" stop-opacity="0.72"/>
+      <stop offset="62%" stop-color="#14B8A6" stop-opacity="0.18"/>
+      <stop offset="70%" stop-color="#14B8A6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glance" x1="26%" y1="22%" x2="78%" y2="82%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.42"/>
+      <stop offset="42%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="63%" stop-color="#F59E0B" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#F59E0B" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="orbStroke" x1="18%" y1="12%" x2="82%" y2="88%">
+      <stop offset="0%" stop-color="#14B8A6"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+    <linearGradient id="letterGold" x1="30%" y1="12%" x2="70%" y2="88%">
+      <stop offset="0%" stop-color="#FFF7ED"/>
+      <stop offset="32%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+    <filter id="letterShadow" x="-24%" y="-24%" width="148%" height="148%">
+      <feDropShadow dx="0" dy="9.2" stdDeviation="9.2" flood-color="#020617" flood-opacity="0.72"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="6.1" flood-color="#F59E0B" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="113" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="241" fill="url(#halo)"/>
+  <circle cx="256" cy="256" r="215" fill="url(#orbBase)" stroke="url(#orbStroke)" stroke-width="6"/>
+  <circle cx="256" cy="256" r="215" fill="url(#blueFlash)"/>
+  <circle cx="256" cy="256" r="215" fill="url(#goldFlash)"/>
+  <circle cx="256" cy="256" r="82" fill="url(#core)"/>
+  <circle cx="256" cy="256" r="176" fill="url(#glance)"/>
+  <text
+    x="256"
+    y="343"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="246"
+    font-weight="900"
+    letter-spacing="-10"
+    fill="url(#letterGold)"
+    stroke="#061019"
+    stroke-width="8"
+    paint-order="stroke fill"
+    filter="url(#letterShadow)"
+  >A</text>
+</svg>

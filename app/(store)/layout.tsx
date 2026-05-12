@@ -5,114 +5,137 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
-import { PageTransition } from "@/components/layout/page-transition";
-import { prisma } from "@/lib/prisma";
-import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
+import { RouteTransition } from "@/components/layout/route-transition";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
-import { getAvailableTypes } from "@/lib/product-types";
-import { getPublicProductsFilter } from "@/lib/product-seo";
-
-/** Извлекает уникальные сечения из variant sizes для мега-меню */
-function extractUniqueCrossSections(sizes: string[]): string[] {
-  const set = new Set<string>();
-  for (const size of sizes) {
-    // 3-part: "25×100×6000" → "25×100"
-    const m3 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)\s*[×xXхХ]\s*\d+/);
-    if (m3) { set.add(`${m3[1]}×${m3[2]}`); continue; }
-    // 2-part: "20×95" → "20×95"
-    const m2 = size.match(/^(\d+)\s*[×xXхХ]\s*(\d+)$/);
-    if (m2 && parseInt(m2[1]) > 5 && parseInt(m2[2]) > 5) { set.add(`${m2[1]}×${m2[2]}`); }
-  }
-  return Array.from(set).sort((a, b) => {
-    const [a1, a2] = a.split("×").map(Number);
-    const [b1, b2] = b.split("×").map(Number);
-    return a1 - b1 || a2 - b2;
-  });
-}
+import { getStoreShellData } from "@/lib/store-shell-data";
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
-const ArayChatHost = dynamic(() => import("@/components/store/aray-chat-host").then(m => ({ default: m.ArayChatHost })), { ssr: false });
-const ArayDock = dynamic(() => import("@/components/store/aray-dock").then(m => ({ default: m.ArayDock })), { ssr: false });
-const SideIconRail = dynamic(() => import("@/components/store/side-icon-rail").then(m => ({ default: m.SideIconRail })), { ssr: false });
-const MobileBottomNav = dynamic(() => import("@/components/store/mobile-bottom-nav").then(m => ({ default: m.MobileBottomNav })), { ssr: false });
-const VoiceModeOverlay = dynamic(() => import("@/components/store/voice-mode-overlay").then(m => ({ default: m.VoiceModeOverlay })), { ssr: false });
-const AccountDrawer = dynamic(() => import("@/components/store/account-drawer").then(m => ({ default: m.AccountDrawer })), { ssr: false });
-const FiltersDrawer = dynamic(() => import("@/components/store/filters-drawer").then(m => ({ default: m.FiltersDrawer })), { ssr: false });
-const SearchDrawer = dynamic(() => import("@/components/store/search-drawer").then(m => ({ default: m.SearchDrawer })), { ssr: false });
-const CartDrawer = dynamic(() => import("@/components/store/cart-drawer").then(m => ({ default: m.CartDrawer })), { ssr: false });
-const CookieConsent = dynamic(() => import("@/components/store/cookie-consent").then(m => ({ default: m.CookieConsent })), { ssr: false });
-const PwaInstall = dynamic(() => import("@/components/store/pwa-install").then(m => ({ default: m.PwaInstall })), { ssr: false });
-const ScrollToTop = dynamic(() => import("@/components/ui/scroll-to-top").then(m => ({ default: m.ScrollToTop })), { ssr: false });
+const ArayGlobalAssistant = dynamic(
+  () =>
+    import("@/components/store/aray-global-assistant").then((m) => ({
+      default: m.ArayGlobalAssistant,
+    })),
+  { ssr: false },
+);
+const SideIconRail = dynamic(
+  () =>
+    import("@/components/store/side-icon-rail").then((m) => ({
+      default: m.SideIconRail,
+    })),
+  { ssr: false },
+);
+const MobileBottomNav = dynamic(
+  () =>
+    import("@/components/store/mobile-bottom-nav").then((m) => ({
+      default: m.MobileBottomNav,
+    })),
+  { ssr: false },
+);
+const AccountDrawerMount = dynamic(
+  () =>
+    import("@/components/store/account-drawer-mount").then((m) => ({
+      default: m.AccountDrawerMount,
+    })),
+  { ssr: false },
+);
+const FiltersDrawer = dynamic(
+  () =>
+    import("@/components/store/filters-drawer").then((m) => ({
+      default: m.FiltersDrawer,
+    })),
+  { ssr: false },
+);
+const SearchDrawer = dynamic(
+  () =>
+    import("@/components/store/search-drawer").then((m) => ({
+      default: m.SearchDrawer,
+    })),
+  { ssr: false },
+);
+const CartDrawer = dynamic(
+  () =>
+    import("@/components/store/cart-drawer").then((m) => ({
+      default: m.CartDrawer,
+    })),
+  { ssr: false },
+);
+const CookieConsent = dynamic(
+  () =>
+    import("@/components/store/cookie-consent").then((m) => ({
+      default: m.CookieConsent,
+    })),
+  { ssr: false },
+);
+const PwaInstall = dynamic(
+  () =>
+    import("@/components/store/pwa-install").then((m) => ({
+      default: m.PwaInstall,
+    })),
+  { ssr: false },
+);
+const ScrollToTop = dynamic(
+  () =>
+    import("@/components/ui/scroll-to-top").then((m) => ({
+      default: m.ScrollToTop,
+    })),
+  { ssr: false },
+);
 
-export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [categories, footerCategories, siteSettings, allProductNames, allVariantSizes] = await Promise.all([
-    prisma.category.findMany({
-      where: { showInMenu: true, products: { some: { active: true } } },
-      orderBy: { sortOrder: "asc" },
-      include: { _count: { select: { products: { where: { active: true } } } } },
-    }),
-    prisma.category.findMany({
-      where: { showInFooter: true, parentId: null },
-      orderBy: { sortOrder: "asc" },
-      select: { id: true, name: true, slug: true },
-    }),
-    getSiteSettings(),
-    // Для динамических типов в мега-меню (только публичные — с фото, ценой, в наличии)
-    prisma.product.findMany({
-      where: { ...getPublicProductsFilter(), category: { showInMenu: true } },
-      select: { name: true },
-    }),
-    // Для динамических размеров в мега-меню (только публичные товары + variant с ценой)
-    prisma.productVariant.findMany({
-      where: {
-        product: { ...getPublicProductsFilter(), category: { showInMenu: true } },
-        inStock: true,
-        OR: [
-          { pricePerCube: { not: null, gt: 0 } },
-          { pricePerPiece: { not: null, gt: 0 } },
-        ],
-      },
-      select: { size: true },
-      distinct: ["size"],
-    }),
-  ]);
-
-  // Динамические типы и размеры для мега-меню (из реальных данных)
-  const megaMenuTypes = getAvailableTypes(allProductNames.map(p => p.name));
-  const megaMenuSizes = extractUniqueCrossSections(allVariantSizes.map(v => v.size));
-
-  const photoAspect = getSetting(siteSettings, "photo_aspect_ratio") || "1/1";
-  const cardStyle = getSetting(siteSettings, "card_style") || "classic";
-  const arayEnabled = getSetting(siteSettings, "aray_enabled") !== "false";
+export default async function StoreLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const {
+    categories,
+    footerCategories,
+    siteSettings,
+    phones,
+    workingHours,
+    megaMenuTypes,
+    megaMenuSizes,
+    photoAspect,
+    cardStyle,
+    arayEnabled,
+  } = await getStoreShellData();
 
   return (
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
-    <div className="flex min-h-screen flex-col" style={{ "--photo-aspect": photoAspect } as React.CSSProperties}>
-      {/* Хедер — критичный для LCP, рендерим сразу */}
-      <Header categories={categories} phones={getPhones(siteSettings)} workingHours={getSetting(siteSettings, "working_hours") || undefined} dynamicTypes={megaMenuTypes} dynamicSizes={megaMenuSizes} />
-      <main className="flex-1" style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}>{children}</main>
-      <Footer settings={siteSettings} categories={footerCategories} />
+      <div
+        className="flex min-h-screen flex-col"
+        style={{ "--photo-aspect": photoAspect } as React.CSSProperties}
+      >
+        {/* Хедер — критичный для LCP, рендерим сразу */}
+        <Header
+          categories={categories}
+          phones={phones}
+          workingHours={workingHours}
+          dynamicTypes={megaMenuTypes}
+          dynamicSizes={megaMenuSizes}
+        />
+        <main className="store-shell-main flex-1 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
+          <RouteTransition surface="store">{children}</RouteTransition>
+        </main>
+        <Footer settings={siteSettings} categories={footerCategories} />
 
-      {/* Навигация для разных размеров экрана:
+        {/* Навигация для разных размеров экрана:
           - MobileBottomNav (<640px) — нижнее меню с Араем в центре
           - SideIconRail (640-1023px) — колонка иконок справа
-          - ArayDock (≥1024px) — Telegram-style чат-бар внизу для десктопа
+          - ArayGlobalAssistant (≥1024px dock + panel) — один ARAY UI для всех зон
           - Header мега-меню (≥1024px) — в шапке */}
-      <MobileBottomNav arayEnabled={arayEnabled} />
-      <SideIconRail />
-      <ArayDock enabled={arayEnabled} />
+        <MobileBottomNav arayEnabled={arayEnabled} />
+        <SideIconRail />
+        <ArayGlobalAssistant enabled={arayEnabled} />
 
-      {/* Всё остальное — lazy (не блокирует первую отрисовку) */}
-      <CookieConsent />
-      <PwaInstall />
-      <AccountDrawer />
-      <FiltersDrawer />
-      <SearchDrawer />
-      <CartDrawer />
-      <ScrollToTop />
-      {arayEnabled && <ArayChatHost />}
-      {arayEnabled && <VoiceModeOverlay />}
-    </div>
+        {/* Всё остальное — lazy (не блокирует первую отрисовку) */}
+        <CookieConsent />
+        <PwaInstall />
+        <AccountDrawerMount />
+        <FiltersDrawer />
+        <SearchDrawer />
+        <CartDrawer />
+        <ScrollToTop />
+      </div>
     </StoreSettingsProvider>
   );
 }

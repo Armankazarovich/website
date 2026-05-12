@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Send, Keyboard, X, Loader2, RotateCw, AlertCircle, Zap, ZapOff } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { useAccountDrawer } from "@/store/account-drawer";
+import { requestArayOpen, requestArayPrompt } from "@/components/store/aray-events";
 import { stopAraySpeech } from "@/lib/aray-audio";
 
 type VoiceState =
@@ -249,9 +250,7 @@ export function VoiceModeOverlay() {
     setReply("");
 
     // Эмитим как сообщение пользователя в чат (для истории)
-    try {
-      window.dispatchEvent(new CustomEvent("aray:prompt", { detail: { text, mode: "voice" } }));
-    } catch {}
+    requestArayPrompt(text);
 
     try {
       const res = await fetch("/api/ai/chat", {
@@ -441,7 +440,7 @@ export function VoiceModeOverlay() {
     haptic(6);
     closeOverlay();
     // Открываем обычный чат
-    try { window.dispatchEvent(new CustomEvent("aray:open")); } catch {}
+    requestArayOpen("open");
   }, [closeOverlay]);
 
   // Cleanup на unmount — критично, иначе Арай продолжает говорить после ухода со страницы

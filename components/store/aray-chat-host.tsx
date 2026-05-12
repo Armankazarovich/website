@@ -7,7 +7,7 @@
  *   - `aray:open`         → открыть чат
  *   - `aray:prompt`       → отправить сообщение Араю (от Dock или MobileNav)
  *   - `aray:close`        → закрыть чат
- *   - `aray:reply`        → внешний триггер ответа (от VoiceModeOverlay для истории)
+ *   - `aray:reply`        → внешний триггер ответа для общей истории
  *
  * Архитектура:
  *   - Десктоп (≥1024px) → окно справа снизу 420×600, draggable, swipe-to-orb
@@ -25,15 +25,31 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Send, Mic, Volume2, VolumeX, RotateCcw, Loader2,
   ShoppingCart, Calculator, Truck, Package, Search, Sparkles,
-  ChevronRight, Minimize2, Copy, Check,
+  ChevronRight, Minimize2, Copy, Check, Play, ThumbsDown, ThumbsUp,
 } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 import { useCartStore } from "@/store/cart";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
-import { stopAraySpeech } from "@/lib/aray-audio";
+import { playAraySpeech, speakAraySpeechBrowser, stopAraySpeech } from "@/lib/aray-audio";
+import { prepareAraySpeechText } from "@/lib/aray-speech";
+import {
+  DEFAULT_ARAY_VOICE_PREFERENCES,
+  getArayVoicePreferences,
+  isArayVoiceReplyAllowed,
+  saveArayVoicePreferences,
+  subscribeArayVoicePreferences,
+  type ArayVoicePreferences,
+} from "@/lib/aray-voice-preferences";
 import { UI_LAYERS } from "@/lib/ui-layers";
+import {
+  createAraySyncSource,
+  notifyArayHistoryUpdated,
+  notifyArayStop,
+  subscribeArayHistoryUpdated,
+  subscribeArayStop,
+} from "@/lib/aray-sync";
 
 // ─── Типы ──────────────────────────────────────────────────────────────────────
 interface AssistantAction {
@@ -59,10 +75,19 @@ interface QuickAction {
   prompt: string;
 }
 
+type ArayPromptWindow = Window & {
+  __arayPendingPrompt?: { text: string };
+};
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: any;
+  webkitSpeechRecognition?: any;
+};
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const HISTORY_KEY = "aray.chat.history.v1";
-const VOICE_PREF_KEY = "aray.voice.enabled.v1";
 const MAX_HISTORY = 30;
+const ARAY_CHAT_HOST_SOURCE = createAraySyncSource("aray-chat-host");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function haptic(ms: number | number[] = 8) {
@@ -71,8 +96,18 @@ function haptic(ms: number | number[] = 8) {
   }
 }
 
+function getSpeechRecognitionCtor() {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as SpeechWindow;
+  return speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition || null;
+}
+
 function formatPrice(n: number): string {
   return new Intl.NumberFormat("ru-RU").format(Math.round(n));
+}
+
+function normalizeSpeechText(text: string): string {
+  return prepareAraySpeechText(text, { maxLength: 650 });
 }
 
 function loadHistory(): Message[] {
@@ -90,6 +125,46 @@ function saveHistory(messages: Message[]) {
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-MAX_HISTORY)));
   } catch {}
+}
+
+async function loadServerHistory(): Promise<Message[] | null> {
+  try {
+    const res = await fetch("/api/ai/chat/history", { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const messages = Array.isArray(data?.messages) ? data.messages : [];
+    return messages.slice(-MAX_HISTORY).map((message: any) => ({
+      id: String(message.id || `${message.role}-${message.createdAt || Date.now()}`),
+      role: message.role === "user" ? "user" : "assistant",
+      content: String(message.content || ""),
+      timestamp: new Date(message.createdAt || Date.now()),
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function notifyHistoryUpdated() {
+  notifyArayHistoryUpdated(ARAY_CHAT_HOST_SOURCE);
+}
+
+async function persistServerHistory(
+  role: "user" | "assistant",
+  content: string,
+  context: Record<string, unknown>,
+) {
+  if (!content.trim()) return;
+  try {
+    await fetch("/api/ai/chat/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role, content, context }),
+    });
+  } catch {
+    // Local history remains the fallback when the server history is unavailable.
+  } finally {
+    notifyHistoryUpdated();
+  }
 }
 
 // ─── Парсер маркеров из streamed ответа ───────────────────────────────────────
@@ -305,6 +380,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voicePrefs, setVoicePrefs] = useState<ArayVoicePreferences>(DEFAULT_ARAY_VOICE_PREFERENCES);
   const [showActions, setShowActions] = useState(true);
   const [browserState, setBrowserState] = useState<{ url: string; title?: string } | null>(null);
   const [browserAction, setBrowserAction] = useState<ArayBrowserAction | null>(null);
@@ -318,75 +394,120 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
   }, [toastInfo]);
   const [isMobile, setIsMobile] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [ratings, setRatings] = useState<Record<string, "up" | "down">>({});
+  const [inputListening, setInputListening] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isProcessing = useRef(false);
+  const suppressHistoryNotifyRef = useRef(false);
+  const inputSpeechRecognitionRef = useRef<any>(null);
+  const inputSpeechTranscriptRef = useRef("");
+
+  const refreshServerHistory = useCallback(async (options?: { suppressNotify?: boolean }) => {
+    const serverMessages = await loadServerHistory();
+    if (!serverMessages || serverMessages.length === 0) return;
+    if (options?.suppressNotify) suppressHistoryNotifyRef.current = true;
+    setMessages(serverMessages);
+    saveHistory(serverMessages);
+  }, []);
 
   // ── Initial mount ────────────────────────────────────────────────────────────
   useEffect(() => {
     setMessages(loadHistory());
+    void refreshServerHistory({ suppressNotify: true });
     try {
-      setVoiceEnabled(localStorage.getItem(VOICE_PREF_KEY) === "true");
+      const savedVoicePrefs = getArayVoicePreferences();
+      setVoicePrefs(savedVoicePrefs);
+      setVoiceEnabled(savedVoicePrefs.voiceRepliesEnabled);
     } catch {}
     initArayTracker();
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, [refreshServerHistory]);
+
+  // ── Sync voice preferences across settings panel, tabs and ARAY chat ─────────
+  useEffect(() => {
+    return subscribeArayVoicePreferences((nextPreferences) => {
+      setVoicePrefs(nextPreferences);
+      setVoiceEnabled(nextPreferences.voiceRepliesEnabled);
+    });
   }, []);
 
-  // ── Persist voice preference ────────────────────────────────────────────────
-  useEffect(() => {
-    try { localStorage.setItem(VOICE_PREF_KEY, String(voiceEnabled)); } catch {}
-  }, [voiceEnabled]);
+  const updateVoiceEnabled = useCallback((enabled: boolean) => {
+    setVoiceEnabled(enabled);
+    setVoicePrefs((current) => {
+      const nextPreferences = {
+        ...current,
+        voiceRepliesEnabled: enabled,
+        updatedAt: new Date().toISOString(),
+      };
+      saveArayVoicePreferences(nextPreferences);
+      return nextPreferences;
+    });
+  }, []);
 
   // ── Persist messages ────────────────────────────────────────────────────────
   useEffect(() => {
     if (messages.length > 0 && !messages.some(m => m.typing)) {
       saveHistory(messages);
+      if (suppressHistoryNotifyRef.current) {
+        suppressHistoryNotifyRef.current = false;
+        return;
+      }
+      notifyHistoryUpdated();
     }
   }, [messages]);
+
+  useEffect(() => {
+    return subscribeArayHistoryUpdated(ARAY_CHAT_HOST_SOURCE, () => {
+      if (isProcessing.current) return;
+      void refreshServerHistory({ suppressNotify: true });
+    });
+  }, [refreshServerHistory]);
+
+  useEffect(() => {
+    return subscribeArayStop(ARAY_CHAT_HOST_SOURCE, () => {
+      try { inputSpeechRecognitionRef.current?.stop?.(); } catch {}
+      stopAraySpeech();
+    });
+  }, []);
 
   // ── Auto-scroll к низу ──────────────────────────────────────────────────────
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
-  // ── TTS озвучка ─────────────────────────────────────────────────────────────
-  const speak = useCallback(async (text: string) => {
-    if (!text || !voiceEnabled) return;
+  const playAssistantSpeech = useCallback(async (text: string) => {
+    if (!text) return;
+    const spokenText = normalizeSpeechText(text);
+    if (!spokenText) return;
     try {
       const res = await fetch("/api/ai/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: spokenText }),
       });
       if (res.ok && res.headers.get("content-type")?.includes("audio")) {
         const buf = await res.arrayBuffer();
-        // ⚠️ Глобальный singleton — гарантия что играет только ОДИН Арай.
-        // Раньше при reopen чата создавалось несколько Audio параллельно (2-3 голоса).
-        stopAraySpeech();
-        const blob = new Blob([buf], { type: "audio/mpeg" });
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => URL.revokeObjectURL(url);
-        await audio.play();
+        await playAraySpeech(buf);
       } else {
-        // Browser fallback
-        try {
-          stopAraySpeech();
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = "ru-RU";
-          speechSynthesis.speak(u);
-        } catch {}
+        await speakAraySpeechBrowser(spokenText);
       }
     } catch (e) {
       console.warn("[ArayHost] TTS error", e);
+      await speakAraySpeechBrowser(spokenText);
     }
-  }, [voiceEnabled]);
+  }, []);
+
+  // ── TTS озвучка ─────────────────────────────────────────────────────────────
+  const speak = useCallback(async (text: string) => {
+    if (!text || !voiceEnabled || !isArayVoiceReplyAllowed(voicePrefs)) return;
+    await playAssistantSpeech(text);
+  }, [playAssistantSpeech, voiceEnabled, voicePrefs]);
 
   // ── Отправка сообщения в Арая ───────────────────────────────────────────────
   const sendMessage = useCallback(async (text: string, options?: { silent?: boolean }) => {
@@ -394,6 +515,21 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     isProcessing.current = true;
     setLoading(true);
     setShowActions(false);
+
+    const productName = (() => {
+      const m = pathname.match(/\/product\/([^/]+)/);
+      return m ? decodeURIComponent(m[1]).replace(/-/g, " ") : null;
+    })();
+    const cartTotal = cartItems.reduce((s, it: any) => s + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
+    const ctx = {
+      ...getArayContext(),
+      page: pathname,
+      productName,
+      cartTotal,
+      zone: pathname.startsWith("/admin") ? "admin" : pathname.startsWith("/cabinet") ? "cabinet" : "store",
+      source: isArayVoiceReplyAllowed(voicePrefs) ? "voice-mode" : "chat",
+      inputMode: isArayVoiceReplyAllowed(voicePrefs) ? "voice" : "text",
+    };
 
     const userMsg: Message = {
       id: `u-${Date.now()}`,
@@ -403,6 +539,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     };
 
     setMessages(prev => [...prev, userMsg]);
+    void persistServerHistory("user", userMsg.content, ctx);
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
 
@@ -414,21 +551,6 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     ]);
 
     try {
-      // Контекст для API
-      const productName = (() => {
-        const m = pathname.match(/\/product\/([^/]+)/);
-        return m ? decodeURIComponent(m[1]).replace(/-/g, " ") : null;
-      })();
-      const cartTotal = cartItems.reduce((s, it: any) => s + (Number(it.price) || 0) * (Number(it.quantity) || 0), 0);
-
-      const ctx = {
-        ...getArayContext(),
-        page: pathname,
-        productName,
-        cartTotal,
-        zone: pathname.startsWith("/admin") ? "admin" : pathname.startsWith("/cabinet") ? "cabinet" : "store",
-      };
-
       const apiMessages = messages
         .filter(m => !m.typing)
         .map(m => ({ role: m.role, content: m.content }));
@@ -483,6 +605,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       setMessages(prev =>
         prev.map(m => m.id === assistantId ? { ...m, content: parsed.text, actions: parsed.actions } : m)
       );
+      void persistServerHistory("assistant", parsed.text, ctx);
 
       // Действия
       if (parsed.addToCart) {
@@ -493,44 +616,17 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
         } catch (e) { console.warn("[Aray] add-to-cart error", e); }
       }
 
-      // Известно что блокируют iframe (X-Frame-Options/CSP). Для них — новая вкладка.
-      const externalIframeBlockers = [
-        "yandex.ru", "ya.ru", "direct.yandex", "metrika.yandex",
-        "gosuslugi.ru", "nalog.ru", "egrul.nalog",
-        "sberbank.ru", "tinkoff.ru", "alfabank.ru", "vtb.ru",
-        "wildberries.ru", "ozon.ru", "avito.ru",
-      ];
-
-      const isBlockedExternal = (u: string) => {
-        try {
-          if (!u.startsWith("http")) return false;
-          const host = new URL(u).hostname.toLowerCase();
-          return externalIframeBlockers.some(b => host.includes(b));
-        } catch { return false; }
-      };
-
       const showCandidate = parsed.showUrl || parsed.popup;
       if (showCandidate) {
-        if (isBlockedExternal(showCandidate.url)) {
-          // Открываем в новой вкладке — попытка iframe бесполезна
-          window.open(showCandidate.url, "_blank", "noopener,noreferrer");
-          setToastInfo(`Открыл ${showCandidate.title || "страницу"} в новой вкладке`);
+        const isInternalPath = showCandidate.url.startsWith("/") && !showCandidate.url.startsWith("//");
+        if (isInternalPath) {
+          router.push(showCandidate.url);
+          setToastInfo(`Открыл ${showCandidate.title || "раздел"}`);
         } else {
-          setBrowserState({ url: showCandidate.url, title: showCandidate.title });
-          // Если есть spotlight — ставим через 1.2с (даём странице загрузиться)
-          if (parsed.spotlight) {
-            setTimeout(() => {
-              setBrowserAction({
-                type: "spotlight",
-                spotX: parsed.spotlight!.x,
-                spotY: parsed.spotlight!.y,
-                hint: parsed.spotlight!.hint,
-              });
-            }, 1200);
-          }
+          window.open(showCandidate.url, "_blank", "noopener,noreferrer");
+          setToastInfo(`Открыл ${showCandidate.title || "страницу"} во вкладке`);
         }
       } else if (parsed.spotlight && browserState) {
-        // Если попап уже открыт — сразу ставим указатель
         setBrowserAction({
           type: "spotlight",
           spotX: parsed.spotlight.x,
@@ -553,7 +649,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       }
 
       // Озвучка
-      if (parsed.text && voiceEnabled && !options?.silent) {
+      if (parsed.text && voiceEnabled && isArayVoiceReplyAllowed(voicePrefs) && !options?.silent) {
         speak(parsed.text);
       }
 
@@ -578,7 +674,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       setLoading(false);
       isProcessing.current = false;
     }
-  }, [pathname, cartItems, messages, voiceEnabled, speak, router]);
+  }, [pathname, cartItems, messages, voiceEnabled, voicePrefs, speak, router]);
 
   // ── Listen to global events ──────────────────────────────────────────────────
   // В pinned режиме (на десктопе) окно всегда видимо — aray:open лишь фокусирует
@@ -587,6 +683,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
   useEffect(() => {
     const isPinnedDesktop = () => pinned && typeof window !== "undefined" && window.innerWidth >= 1024;
     const onOpen = () => {
+      void refreshServerHistory();
       if (isPinnedDesktop()) {
         haptic(6);
         setTimeout(() => inputRef.current?.focus(), 100);
@@ -601,10 +698,12 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       if (isPinnedDesktop()) {
         // На pinned не закрываем окно — только останавливаем озвучку
         stopAraySpeech();
+        notifyArayStop(ARAY_CHAT_HOST_SOURCE);
         return;
       }
       setOpen(false);
       stopAraySpeech();
+      notifyArayStop(ARAY_CHAT_HOST_SOURCE);
     };
     const onPrompt = (e: Event) => {
       const ce = e as CustomEvent<{ text: string; mode?: string }>;
@@ -620,12 +719,17 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     window.addEventListener("aray:open", onOpen);
     window.addEventListener("aray:close", onClose);
     window.addEventListener("aray:prompt", onPrompt as EventListener);
+    const pending = (window as ArayPromptWindow).__arayPendingPrompt;
+    if (pending?.text) {
+      delete (window as ArayPromptWindow).__arayPendingPrompt;
+      onPrompt(new CustomEvent("aray:prompt", { detail: { text: pending.text } }));
+    }
     return () => {
       window.removeEventListener("aray:open", onOpen);
       window.removeEventListener("aray:close", onClose);
       window.removeEventListener("aray:prompt", onPrompt as EventListener);
     };
-  }, [sendMessage, pinned]);
+  }, [refreshServerHistory, sendMessage, pinned]);
 
   // ── Escape → close ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -653,6 +757,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     return () => {
       window.removeEventListener("beforeunload", onUnload);
       window.removeEventListener("pagehide", onUnload);
+      try { inputSpeechRecognitionRef.current?.stop?.(); } catch {}
       stopAraySpeech();
     };
   }, []);
@@ -662,6 +767,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     setMinimized(false);
     // ⚠️ Глобальный singleton — гарантия полной остановки + speechSynthesis.cancel()
     stopAraySpeech();
+    notifyArayStop(ARAY_CHAT_HOST_SOURCE);
     audioRef.current = null;
   }, []);
 
@@ -669,8 +775,17 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     setMessages([]);
     setShowActions(true);
     saveHistory([]);
+    void fetch("/api/ai/chat/history", { method: "DELETE" })
+      .catch(() => {})
+      .finally(() => notifyHistoryUpdated());
     haptic(10);
   }, []);
+
+  useEffect(() => {
+    const onClear = () => handleClear();
+    window.addEventListener("aray:clear", onClear);
+    return () => window.removeEventListener("aray:clear", onClear);
+  }, [handleClear]);
 
   const copyMessage = useCallback((id: string, text: string) => {
     try {
@@ -679,6 +794,63 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       setTimeout(() => setCopiedId(null), 1500);
     } catch {}
   }, []);
+
+  const speakMessage = useCallback((text: string) => {
+    void playAssistantSpeech(text);
+  }, [playAssistantSpeech]);
+
+  const startInputPushToTalk = useCallback(() => {
+    if (input.trim() || inputSpeechRecognitionRef.current) return;
+    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+    if (!SpeechRecognitionCtor) {
+      haptic([10, 30, 10]);
+      return;
+    }
+
+    const recognition = new SpeechRecognitionCtor();
+    inputSpeechTranscriptRef.current = "";
+    inputSpeechRecognitionRef.current = recognition;
+    recognition.lang = "ru-RU";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.onresult = (event: any) => {
+      const chunks: string[] = [];
+      for (let i = 0; i < event.results.length; i += 1) {
+        chunks.push(event.results[i]?.[0]?.transcript || "");
+      }
+      inputSpeechTranscriptRef.current = chunks.join(" ").replace(/\s+/g, " ").trim();
+    };
+    recognition.onerror = () => {
+      inputSpeechRecognitionRef.current = null;
+      inputSpeechTranscriptRef.current = "";
+      setInputListening(false);
+    };
+    recognition.onend = () => setInputListening(false);
+
+    try {
+      recognition.start();
+      setInputListening(true);
+      haptic(10);
+    } catch {
+      inputSpeechRecognitionRef.current = null;
+      inputSpeechTranscriptRef.current = "";
+      setInputListening(false);
+    }
+  }, [input]);
+
+  const finishInputPushToTalk = useCallback(() => {
+    const recognition = inputSpeechRecognitionRef.current;
+    if (!recognition) return;
+    try { recognition.stop(); } catch {}
+    inputSpeechRecognitionRef.current = null;
+    setInputListening(false);
+
+    const spokenText = inputSpeechTranscriptRef.current.trim();
+    inputSpeechTranscriptRef.current = "";
+    if (!spokenText) return;
+    haptic(10);
+    sendMessage(spokenText);
+  }, [sendMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -745,15 +917,17 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                 ? "right-0 top-16 bottom-0 lg:w-72 xl:w-96 2xl:w-[28rem] rounded-l-3xl border-r-0 shadow-[-8px_0_32px_hsl(var(--foreground)/0.06)]"
                 : isMobile
                   ? "inset-0 rounded-none"
-                  : `bottom-20 ${placement === "left" ? "left-24" : "right-6"} w-[420px] h-[640px] rounded-[24px] shadow-2xl`
+                  : `bottom-20 ${placement === "left" ? "left-24" : "right-6"} rounded-[22px] shadow-2xl`
             }`}
             style={{
               backdropFilter: isMobile || usePinned ? undefined : "blur(20px) saturate(180%)",
               WebkitBackdropFilter: isMobile || usePinned ? undefined : "blur(20px) saturate(180%)",
+              width: !isMobile && !usePinned ? "min(520px, calc(100vw - 132px))" : undefined,
+              height: !isMobile && !usePinned ? "min(720px, calc(100vh - 112px))" : undefined,
             }}
             role={usePinned ? "complementary" : "dialog"}
             aria-modal={usePinned ? undefined : "true"}
-            aria-label={usePinned ? "Помощник Арай" : "Чат с Араем"}
+            aria-label={usePinned ? "Помощник ARAY" : "Чат с ARAY"}
           >
             {/* ─── Header ─────────────────────────────────────────────── */}
             <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-border"
@@ -763,7 +937,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                   <ArayOrb size={36} pulse={loading ? "listening" : "idle"} id="header" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="font-display font-bold text-base truncate">Арай</h2>
+                  <h2 className="font-display font-bold text-base truncate">ARAY</h2>
                   <p className="text-[11px] text-muted-foreground truncate">
                     {loading ? "думаю..." : isStaff ? "правая рука" : "проводник по дереву"}
                   </p>
@@ -782,42 +956,42 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                   </button>
                 )}
                 <button
-                  onClick={() => setVoiceEnabled(v => !v)}
-                  className="p-2 rounded-xl hover:bg-muted transition-colors"
+                  onClick={() => updateVoiceEnabled(!voiceEnabled)}
+                  className="p-1.5 rounded-lg text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground transition-colors"
                   title={voiceEnabled ? "Выключить озвучку" : "Включить озвучку"}
                   aria-label="Озвучка"
                 >
                   {voiceEnabled
-                    ? <Volume2 className="w-4 h-4 text-primary" />
-                    : <VolumeX className="w-4 h-4 text-muted-foreground" />}
+                    ? <Volume2 className="w-3.5 h-3.5 text-primary" />
+                    : <VolumeX className="w-3.5 h-3.5" />}
                 </button>
                 {messages.length > 0 && (
                   <button
                     onClick={handleClear}
-                    className="p-2 rounded-xl hover:bg-muted transition-colors"
+                    className="p-1.5 rounded-lg text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground transition-colors"
                     title="Очистить чат"
                     aria-label="Очистить"
                   >
-                    <RotateCcw className="w-4 h-4 text-muted-foreground" />
+                    <RotateCcw className="w-3.5 h-3.5" />
                   </button>
                 )}
                 {!isMobile && !usePinned && (
                   <button
                     onClick={() => setMinimized(true)}
-                    className="p-2 rounded-xl hover:bg-muted transition-colors"
+                    className="p-1.5 rounded-lg text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground transition-colors"
                     title="Свернуть к орбу"
                     aria-label="Свернуть"
                   >
-                    <Minimize2 className="w-4 h-4 text-muted-foreground" />
+                    <Minimize2 className="w-3.5 h-3.5" />
                   </button>
                 )}
                 {!usePinned && (
                   <button
                     onClick={handleClose}
-                    className="p-2 rounded-xl hover:bg-muted transition-colors"
+                    className="p-1.5 rounded-lg text-muted-foreground/70 hover:bg-muted/50 hover:text-foreground transition-colors"
                     aria-label="Закрыть"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
@@ -839,7 +1013,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                   <p className="text-sm text-muted-foreground mt-1.5 max-w-[280px]">
                     {isStaff
                       ? "Я твоя правая рука. Спроси про заказы, склад, задачи — отвечу или сделаю."
-                      : "Я Арай. Помогу подобрать материал, рассчитать сколько нужно и оформить заказ."}
+                      : "Я ARAY. Помогу подобрать материал, рассчитать сколько нужно и оформить заказ."}
                   </p>
                 </motion.div>
               )}
@@ -879,12 +1053,6 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                       transition={{ duration: 0.18 }}
                       className={`flex ${isUser ? "justify-end" : "justify-start"} group`}
                     >
-                      {!isUser && (
-                        <div className="w-8 h-8 rounded-full shrink-0 mr-2 mt-0.5 overflow-hidden border border-primary/30">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src="/images/aray/face-mob.png" alt="Арай" className="w-full h-full object-cover" />
-                        </div>
-                      )}
                       <div className={`max-w-[82%] flex flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}>
                         <div
                           className={`rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed ${
@@ -917,7 +1085,11 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                                   } else if (a.type === "call" && a.url) {
                                     window.location.href = a.url;
                                   } else if (a.type === "show" && a.url) {
-                                    setBrowserState({ url: a.url, title: a.label });
+                                    if (a.url.startsWith("/") && !a.url.startsWith("//")) {
+                                      router.push(a.url);
+                                    } else {
+                                      window.open(a.url, "_blank", "noopener,noreferrer");
+                                    }
                                   }
                                 }}
                                 className="px-3 py-1.5 rounded-xl text-[12px] font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
@@ -928,22 +1100,57 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                           </div>
                         )}
 
-                        {/* Time + copy */}
+                        {/* Time + actions */}
                         {!msg.typing && (
-                          <div className="flex items-center gap-2 px-1">
-                            <span className="text-[10px] text-muted-foreground/60">
+                          <div className="flex flex-wrap items-center gap-1 px-1 opacity-55 transition-opacity group-hover:opacity-100">
+                            <span className="inline-flex h-5 items-center rounded-full bg-muted/25 px-1.5 text-[10px] text-muted-foreground/70">
                               {msg.timestamp.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                             </span>
                             {!isUser && msg.content && (
+                              <>
                               <button
                                 onClick={() => copyMessage(msg.id, msg.content)}
-                                className="opacity-0 group-hover:opacity-60 hover:opacity-100 transition-opacity"
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/45 hover:text-primary"
                                 title="Копировать"
+                                aria-label="Копировать"
                               >
                                 {copiedId === msg.id
                                   ? <Check className="w-3 h-3 text-emerald-500" />
-                                  : <Copy className="w-3 h-3 text-muted-foreground" />}
+                                  : <Copy className="w-3 h-3" />}
                               </button>
+                              <button
+                                onClick={() => speakMessage(msg.content)}
+                                className="inline-flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted/45 hover:text-primary"
+                                title="Прослушать"
+                                aria-label="Прослушать"
+                              >
+                                <Play className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => setRatings((prev) => ({ ...prev, [msg.id]: "up" }))}
+                                className={`inline-flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
+                                  ratings[msg.id] === "up"
+                                    ? "bg-primary/15 text-primary"
+                                    : "text-muted-foreground hover:bg-muted/45 hover:text-primary"
+                                }`}
+                                title="Полезно"
+                                aria-label="Полезно"
+                              >
+                                <ThumbsUp className="w-3 h-3" />
+                              </button>
+                              <button
+                                onClick={() => setRatings((prev) => ({ ...prev, [msg.id]: "down" }))}
+                                className={`inline-flex h-5 w-5 items-center justify-center rounded-full transition-colors ${
+                                  ratings[msg.id] === "down"
+                                    ? "bg-primary/15 text-primary"
+                                    : "text-muted-foreground hover:bg-muted/45 hover:text-primary"
+                                }`}
+                                title="Не подошло"
+                                aria-label="Не подошло"
+                              >
+                                <ThumbsDown className="w-3 h-3" />
+                              </button>
+                              </>
                             )}
                           </div>
                         )}
@@ -963,22 +1170,39 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
             >
               <div className="flex items-end gap-2">
                 <button
-                  onClick={() => {
-                    haptic(8);
-                    window.dispatchEvent(new CustomEvent("aray:voice"));
+                  type="button"
+                  onPointerDown={startInputPushToTalk}
+                  onPointerUp={finishInputPushToTalk}
+                  onPointerCancel={finishInputPushToTalk}
+                  onPointerLeave={() => { if (inputListening) finishInputPushToTalk(); }}
+                  onKeyDown={(event) => {
+                    if ((event.key === "Enter" || event.key === " ") && !inputListening) {
+                      event.preventDefault();
+                      startInputPushToTalk();
+                    }
                   }}
-                  className="p-2.5 rounded-xl hover:bg-muted transition-colors shrink-0 mb-0.5"
-                  title="Голосовой режим"
-                  aria-label="Голос"
+                  onKeyUp={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      finishInputPushToTalk();
+                    }
+                  }}
+                  className={`p-2.5 rounded-xl transition-colors shrink-0 mb-0.5 ${
+                    inputListening
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                  title={inputListening ? "Отпустите, чтобы отправить" : "Удерживайте и говорите"}
+                  aria-label={inputListening ? "Отпустите, чтобы отправить голос ARAY" : "Удерживайте и говорите ARAY"}
                 >
-                  <Mic className="w-5 h-5 text-muted-foreground" />
+                  <Mic className="w-5 h-5" />
                 </button>
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Напиши Араю..."
+                  placeholder="Напишите ARAY..."
                   rows={1}
                   className="flex-1 px-4 py-2.5 text-[14px] rounded-2xl border border-border bg-background text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 resize-none"
                   style={{ minHeight: "44px", maxHeight: "120px", fontSize: "16px" }}
@@ -1013,7 +1237,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
             onClick={() => { setMinimized(false); haptic(8); }}
             className={`fixed ${UI_LAYERS.assistant} bottom-24 right-6 w-14 h-14 rounded-full bg-card border border-primary/30 shadow-2xl flex items-center justify-center hover:scale-110 transition-transform`}
             style={{ boxShadow: "0 8px 32px hsl(var(--primary) / 0.25)" }}
-            aria-label="Развернуть чат с Араем"
+            aria-label="Развернуть чат с ARAY"
           >
             <ArayOrb size={42} pulse={loading ? "listening" : "idle"} id="min" />
             {loading && (

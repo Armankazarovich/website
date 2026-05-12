@@ -117,8 +117,17 @@ function scanSecrets() {
 }
 
 run("Diff whitespace check", "git", ["diff", "--check"]);
+run("Design system guard", "node", ["scripts/validate-design-system.js"]);
 run("Agent registry validation", "node", ["scripts/validate-aray-agent-registry.js"]);
-run("Admin atmosphere assets", "node", ["scripts/validate-admin-atmospheres.js"]);
+run("Architecture automation guard", "node", ["scripts/aray-architecture-audit.js"]);
+run("Section approval protocol guard", "node", ["scripts/validate-section-approval-protocol.js"]);
+run("Module registry validation", "node", ["scripts/validate-aray-modules.js"]);
+run("Module navigation foundation check", "node", ["scripts/validate-aray-module-navigation-contract.js"]);
+run("Dynamic role OS guard", "node", ["scripts/validate-dynamic-role-os.js"]);
+run("Admin navigation model validation", "node", ["scripts/validate-admin-navigation-model.js"]);
+run("Admin UI integrity guard", "node", ["scripts/validate-admin-ui-integrity.js"]);
+run("Admin responsive guard", "node", ["scripts/validate-admin-responsive.js"]);
+run("Admin performance guard", "node", ["scripts/validate-admin-performance.js"]);
 run("TypeScript check", "npx", ["tsc", "--noEmit"]);
 scanSecrets();
 

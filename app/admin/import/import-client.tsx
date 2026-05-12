@@ -5,7 +5,7 @@ import {
   FileDown, Upload, FileSpreadsheet, CheckCircle2,
   AlertCircle, AlertTriangle, Loader2, Info, Download, Table2, CloudUpload,
   ChevronDown, ChevronUp, Copy, ExternalLink, Settings,
-  Globe, RefreshCw, ShoppingBag, Package, Zap, Clock, ArrowRight,
+  Globe, RefreshCw, ShoppingBag, Package, Zap, Clock,
   Building2, BarChart3, Link as LinkIcon,
   Search, FolderOpen, ImageIcon,
 } from "lucide-react";
@@ -151,7 +151,7 @@ export function ImportClient() {
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-3xl">
+    <div className="admin-page-frame admin-page-frame-readable">
       <div>
         <h1 className="text-2xl font-display font-bold">Импорт / Экспорт товаров</h1>
         <p className="text-sm text-muted-foreground mt-0.5">
@@ -445,7 +445,7 @@ const MARKETPLACES = [
   {
     name: "Wildberries",
     logo: "WB",
-    color: "bg-purple-600",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Товары, цены, остатки, заказы",
     ready: false,
     category: "marketplace",
@@ -453,7 +453,7 @@ const MARKETPLACES = [
   {
     name: "Ozon",
     logo: "OZ",
-    color: "bg-blue-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Синхронизация каталога и FBO/FBS",
     ready: false,
     category: "marketplace",
@@ -461,7 +461,7 @@ const MARKETPLACES = [
   {
     name: "Яндекс.Маркет",
     logo: "ЯМ",
-    color: "bg-yellow-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Прайс-лист и заказы",
     ready: false,
     category: "marketplace",
@@ -469,7 +469,7 @@ const MARKETPLACES = [
   {
     name: "Авито",
     logo: "AV",
-    color: "bg-emerald-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Объявления и цены",
     ready: false,
     category: "marketplace",
@@ -477,7 +477,7 @@ const MARKETPLACES = [
   {
     name: "Aliexpress",
     logo: "AE",
-    color: "bg-red-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Экспорт каталога",
     ready: false,
     category: "marketplace",
@@ -485,7 +485,7 @@ const MARKETPLACES = [
   {
     name: "СберМегаМаркет",
     logo: "СМ",
-    color: "bg-green-600",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Товары и заказы",
     ready: false,
     category: "marketplace",
@@ -496,7 +496,7 @@ const CMS_SYSTEMS = [
   {
     name: "1С: Предприятие",
     logo: "1C",
-    color: "bg-orange-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Двусторонняя синхронизация товаров, заказов и остатков",
     ready: false,
     category: "erp",
@@ -504,7 +504,7 @@ const CMS_SYSTEMS = [
   {
     name: "МойСклад",
     logo: "МС",
-    color: "bg-cyan-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Складской учёт и заказы в реальном времени",
     ready: false,
     category: "erp",
@@ -512,7 +512,7 @@ const CMS_SYSTEMS = [
   {
     name: "Битрикс24",
     logo: "Б24",
-    color: "bg-blue-600",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "CRM лиды и сделки из заказов",
     ready: false,
     category: "crm",
@@ -520,7 +520,7 @@ const CMS_SYSTEMS = [
   {
     name: "AmoCRM",
     logo: "Амо",
-    color: "bg-indigo-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Воронка продаж и клиенты",
     ready: false,
     category: "crm",
@@ -528,7 +528,7 @@ const CMS_SYSTEMS = [
   {
     name: "WooCommerce",
     logo: "WC",
-    color: "bg-purple-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Перенос товаров из WordPress",
     ready: false,
     category: "cms",
@@ -536,7 +536,7 @@ const CMS_SYSTEMS = [
   {
     name: "Shopify",
     logo: "SH",
-    color: "bg-green-500",
+    color: "bg-primary/10 text-primary border border-primary/20",
     desc: "Перенос каталога и клиентов",
     ready: false,
     category: "cms",
@@ -576,8 +576,8 @@ function MarketplacesSection() {
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors ${
-                activeTab === t.key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground hover:bg-primary/[0.07]"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium shrink-0 transition-colors ${
+                activeTab === t.key ? "border-primary/45 bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:text-foreground hover:bg-primary/[0.07]"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -590,7 +590,7 @@ function MarketplacesSection() {
       <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {filtered.map((item) => (
           <div key={item.name} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/20 hover:border-primary/30 transition-colors">
-            <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+            <div className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center text-xs font-bold shrink-0`}>
               {item.logo}
             </div>
             <div className="flex-1 min-w-0">
@@ -598,12 +598,12 @@ function MarketplacesSection() {
               <p className="text-[11px] text-muted-foreground">{item.desc}</p>
             </div>
             {item.ready ? (
-              <button className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+              <button disabled className="shrink-0 flex items-center gap-1 text-xs px-2.5 py-1.5 border border-border bg-muted text-muted-foreground rounded-xl cursor-not-allowed">
                 <LinkIcon className="w-3 h-3" />
-                Подключить
+                Скоро
               </button>
             ) : (
-              <span className="shrink-0 flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-muted border border-border text-muted-foreground">
+              <span className="shrink-0 flex items-center gap-1 text-[10px] px-2 py-1 rounded-xl bg-muted border border-border text-muted-foreground">
                 <Clock className="w-3 h-3" />
                 Скоро
               </span>
@@ -701,11 +701,12 @@ function SiteMigrationSection() {
                 />
                 <button
                   onClick={handleMigrate}
-                  disabled={!domain.trim() || migrating}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 whitespace-nowrap"
+                  disabled
+                  title="Инструмент готовится к запуску"
+                  className="flex items-center gap-2 px-4 py-2.5 border border-border bg-muted text-muted-foreground rounded-xl text-sm font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
                 >
-                  {migrating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-                  {migrating ? "Переносим..." : "Перенести"}
+                  <Clock className="w-4 h-4" />
+                  Скоро
                 </button>
               </div>
             </div>

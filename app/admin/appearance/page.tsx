@@ -17,21 +17,30 @@ export default async function AppearancePage() {
     ? normalizedDefaultPalette
     : "sber";
   const arayEnabled = (settings.aray_enabled ?? DEFAULT_SETTINGS.aray_enabled) !== "false";
+  const initialProductPage = {
+    showReviews: (settings.product_page_show_reviews ?? "true") !== "false",
+    showRelated: (settings.product_page_show_related ?? "true") !== "false",
+    showCalculator: (settings.product_page_show_calculator ?? "true") !== "false",
+    showBreadcrumbs: (settings.product_page_show_breadcrumbs ?? "true") !== "false",
+  };
+  const initialCheckout = {
+    allowPickup: (settings.checkout_allow_pickup ?? "true") !== "false",
+    allowDelivery: (settings.checkout_allow_delivery ?? "true") !== "false",
+    showPromo: (settings.checkout_show_promo ?? "true") !== "false",
+    allowGuest: (settings.checkout_allow_guest ?? "true") !== "false",
+    requireComment: (settings.checkout_require_comment ?? "false") === "true",
+  };
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold">Оформление</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Цветовые темы, стиль карточек и формат фотографий
-        </p>
-      </div>
+    <div className="admin-dashboard-standard space-y-5 min-w-0">
       <AppearanceClient
         initialEnabledIds={enabledIds}
         initialPhotoAspect={photoAspect}
         initialCardStyle={cardStyle}
         initialDefaultPalette={defaultPalette}
         initialArayEnabled={arayEnabled}
+        initialProductPage={initialProductPage}
+        initialCheckout={initialCheckout}
       />
     </div>
   );

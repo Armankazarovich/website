@@ -1,18 +1,27 @@
 export const dynamic = "force-dynamic";
-
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Truck, Phone, MapPin, Package, ArrowRight, Calculator, FileDown, Archive, Store, MessageSquare, Send } from "lucide-react";
+import {
+  Truck,
+  Phone,
+  MapPin,
+  Package,
+  ArrowRight,
+  Calculator,
+  FileDown,
+  Archive,
+  Store,
+  MessageSquare,
+  Send,
+} from "lucide-react";
 import { DeliveryStatusSelect } from "./delivery-status-select";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 import { DeliveryActions } from "./delivery-actions";
-
 const ACTIVE_STATUSES = ["CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY"];
 const PICKUP_STATUS = "READY_PICKUP";
 const ARCHIVE_STATUSES = ["DELIVERED", "COMPLETED", "CANCELLED"];
-
 const STATUS_LABELS: Record<string, string> = {
   CONFIRMED: "Подтверждён",
   PROCESSING: "В обработке",
@@ -23,7 +32,6 @@ const STATUS_LABELS: Record<string, string> = {
   COMPLETED: "Завершён (самовывоз)",
   CANCELLED: "Отменён",
 };
-
 const STATUS_COLORS: Record<string, string> = {
   CONFIRMED: "bg-primary/10 text-primary",
   PROCESSING: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
@@ -34,7 +42,6 @@ const STATUS_COLORS: Record<string, string> = {
   COMPLETED: "bg-teal-500/10 text-teal-700 dark:text-teal-400",
   CANCELLED: "bg-destructive/10 text-destructive",
 };
-
 export default async function DeliveryPage({
   searchParams,
 }: {
@@ -42,84 +49,98 @@ export default async function DeliveryPage({
 }) {
   const session = await auth();
   const role = (session?.user as any)?.role;
-  if (!session || !role || role === "USER") redirect("/login");
-
-  // Фильтр из Smart Command Bar (чипсы: Подтверждён / В пути / Самовывоз)
+  if (!session || !role || role === "USER") redirect("/login"); // Фильтр из Smart Command Bar (чипсы: Подтверждён / В пути / Самовывоз)
   const statusFilter = searchParams.status || null;
-
-  const allOrders = await prisma.order.findMany({
+  const activeAndPickupOrders = await prisma.order.findMany({
     where: {
-      status: { in: [...ACTIVE_STATUSES, PICKUP_STATUS, ...ARCHIVE_STATUSES] as any },
+      status: {
+        in: [...ACTIVE_STATUSES, PICKUP_STATUS] as any,
+      },
       deletedAt: null,
     },
     include: { items: true },
     orderBy: { createdAt: "asc" },
   });
-
-  const allActive = allOrders.filter((o) => ACTIVE_STATUSES.includes(o.status));
-  const allPickup = allOrders.filter((o) => o.status === PICKUP_STATUS);
-  const archiveOrders = allOrders.filter((o) => ARCHIVE_STATUSES.includes(o.status));
-
-  // Применяем фильтр чипса если он задан
-  const activeOrders = statusFilter && statusFilter !== PICKUP_STATUS
-    ? allActive.filter((o) => o.status === statusFilter)
-    : allActive;
-  const pickupOrders = statusFilter === PICKUP_STATUS ? allPickup : (statusFilter ? [] : allPickup);
-
-  const totalDelivery = [...activeOrders, ...pickupOrders].reduce(
-    (sum, o) => sum + Number((o as any).deliveryCost ?? 0),
-    0
+  const archiveOrders = await prisma.order.findMany({
+    where: {
+      status: { in: ARCHIVE_STATUSES as any },
+      deletedAt: null,
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 50,
+    select: {
+      id: true,
+      orderNumber: true,
+      guestName: true,
+      guestPhone: true,
+      deliveryAddress: true,
+      totalAmount: true,
+      status: true,
+    },
+  });
+  const allActive = activeAndPickupOrders.filter((o) =>
+    ACTIVE_STATUSES.includes(o.status),
   );
-
-  const grouped: Record<string, typeof allOrders> = {};
+  const allPickup = activeAndPickupOrders.filter(
+    (o) => o.status === PICKUP_STATUS,
+  );
+  // Применяем фильтр чипса если он задан
+  const activeOrders =
+    statusFilter && statusFilter !== PICKUP_STATUS
+      ? allActive.filter((o) => o.status === statusFilter)
+      : allActive;
+  const pickupOrders =
+    statusFilter === PICKUP_STATUS ? allPickup : statusFilter ? [] : allPickup;
+  const totalDelivery = activeOrders.reduce(
+    (sum, o) => sum + Number((o as any).deliveryCost ?? 0),
+    0,
+  );
+  const grouped: Record<string, typeof activeAndPickupOrders> = {};
   for (const s of ACTIVE_STATUSES) {
     grouped[s] = activeOrders.filter((o) => o.status === s);
   }
-
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Автообновление каждые 30 секунд */}
-      <AutoRefresh intervalMs={30000} />
-      <DeliveryActions />
-
-      {/* Активный фильтр из Smart Bar */}
+    <div className="admin-page-frame admin-page-frame-fluid">
+      {/* Автообновление каждые 30 секунд */} <AutoRefresh intervalMs={30000} />
+      <DeliveryActions /> {/* Активный фильтр из Smart Bar */}
       {statusFilter && (
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/25 rounded-2xl">
+        <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 bg-primary/10 border border-primary/25 rounded-2xl">
           <span className="text-sm text-primary font-medium">
             Фильтр: {STATUS_LABELS[statusFilter] || statusFilter}
           </span>
-          <Link href="/admin/delivery" className="ml-auto text-xs text-primary/60 hover:text-primary transition-colors">
+          <Link
+            href="/admin/delivery"
+            className="sm:ml-auto text-xs text-primary/60 hover:text-primary transition-colors"
+          >
             Сбросить ×
           </Link>
         </div>
       )}
-
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <h1 className="font-display font-bold text-2xl flex items-center gap-2">
-          <Truck className="w-6 h-6 text-primary" />
-          Доставка
+          <Truck className="w-6 h-6 text-primary" /> Доставка
         </h1>
-        <div className="flex flex-wrap gap-3 text-sm">
+        <div className="flex w-full flex-wrap gap-3 text-sm sm:w-auto sm:justify-end">
           <Link
             href="/admin/delivery/rates"
             className="flex items-center gap-1.5 px-3 py-2 border border-border rounded-xl text-sm hover:bg-primary/[0.07] transition-colors"
           >
-            <Calculator className="w-4 h-4" />
-            Тарифы и калькулятор
+            <Calculator className="w-4 h-4" /> Тарифы и калькулятор
           </Link>
           <div className="px-4 py-2 bg-card border border-border rounded-xl">
-            <span className="text-muted-foreground">Активных:</span>{" "}
+            <span className="text-muted-foreground">Активных:</span>
             <strong>{activeOrders.length + pickupOrders.length}</strong>
           </div>
           {totalDelivery > 0 && (
             <div className="px-4 py-2 bg-primary/10 border border-primary/20 rounded-xl text-primary">
-              <strong>Доставка: {totalDelivery.toLocaleString("ru-RU")} ₽</strong>
+              <strong>
+                Доставка: {totalDelivery.toLocaleString("ru-RU")} ₽
+              </strong>
             </div>
           )}
         </div>
       </div>
-
       {/* Active delivery orders */}
       {activeOrders.length === 0 && pickupOrders.length === 0 ? (
         <div className="bg-card border border-border rounded-2xl p-12 text-center">
@@ -128,31 +149,39 @@ export default async function DeliveryPage({
         </div>
       ) : (
         <>
-          {ACTIVE_STATUSES.filter((s) => grouped[s]?.length > 0).map((status) => (
-            <div key={status} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold ${STATUS_COLORS[status]}`}>
-                  {STATUS_LABELS[status]}
-                </span>
-                <span className="text-sm text-muted-foreground">{grouped[status].length} заказов</span>
+          {ACTIVE_STATUSES.filter((s) => grouped[s]?.length > 0).map(
+            (status) => (
+              <div key={status} className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2.5 py-1 rounded-xl text-xs font-semibold ${STATUS_COLORS[status]}`}
+                  >
+                    {STATUS_LABELS[status]}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {grouped[status].length} заказов
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {grouped[status].map((order) => (
+                    <OrderCard key={order.id} order={order} />
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {grouped[status].map((order) => (
-                  <OrderCard key={order.id} order={order} />
-                ))}
-              </div>
-            </div>
-          ))}
-
+            ),
+          )}
           {/* Self-pickup section */}
           {pickupOrders.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 w-fit ${STATUS_COLORS[PICKUP_STATUS]}`}>
-                  <Store className="w-3.5 h-3.5" />
-                  Самовывоз — Готов к выдаче
+                <span
+                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 w-fit ${STATUS_COLORS[PICKUP_STATUS]}`}
+                >
+                  <Store className="w-3.5 h-3.5" /> Самовывоз — Готов к выдаче
                 </span>
-                <span className="text-sm text-muted-foreground">{pickupOrders.length} заказов</span>
+                <span className="text-sm text-muted-foreground">
+                  {pickupOrders.length} заказов
+                </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {pickupOrders.map((order) => (
@@ -163,169 +192,238 @@ export default async function DeliveryPage({
           )}
         </>
       )}
-
       {/* Archive */}
       {archiveOrders.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Archive className="w-4 h-4 text-muted-foreground" />
-            <span className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Архив</span>
-            <span className="text-sm text-muted-foreground">({archiveOrders.length})</span>
+            <span className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+              Архив
+            </span>
+            <span className="text-sm text-muted-foreground">
+              ({archiveOrders.length})
+            </span>
           </div>
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 border-b border-border">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold">Заказ</th>
-                  <th className="text-left px-4 py-3 font-semibold">Клиент</th>
-                  <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Адрес</th>
-                  <th className="text-right px-4 py-3 font-semibold">Сумма</th>
-                  <th className="text-center px-4 py-3 font-semibold">Статус</th>
-                  <th className="px-4 py-3 w-10"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {archiveOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-primary/[0.04] transition-colors">
-                    <td className="px-4 py-3 font-medium">#{order.orderNumber}</td>
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{order.guestName || "—"}</p>
-                      {order.guestPhone && (
-                        <a href={`tel:${order.guestPhone}`} className="text-xs text-primary hover:underline">{order.guestPhone}</a>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground hidden sm:table-cell max-w-[180px] truncate">
-                      {order.deliveryAddress || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold">
-                      {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-0.5 rounded-lg text-xs font-semibold ${STATUS_COLORS[order.status]}`}>
-                        {STATUS_LABELS[order.status]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </td>
+              <table className="w-full min-w-[560px] text-sm">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-semibold">Заказ</th>
+                    <th className="text-left px-4 py-3 font-semibold">
+                      Клиент
+                    </th>
+                    <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">
+                      Адрес
+                    </th>
+                    <th className="text-right px-4 py-3 font-semibold">
+                      Сумма
+                    </th>
+                    <th className="text-center px-4 py-3 font-semibold">
+                      Статус
+                    </th>
+                    <th className="px-4 py-3 w-10"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {archiveOrders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className="hover:bg-primary/[0.04] transition-colors"
+                    >
+                      <td className="px-4 py-3 font-medium">
+                        #{order.orderNumber}
+                      </td>
+                      <td className="px-4 py-3">
+                        <p className="font-medium truncate max-w-[180px]">
+                          {order.guestName || "—"}
+                        </p>
+                        {order.guestPhone && (
+                          <a
+                            href={`tel:${order.guestPhone}`}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            {order.guestPhone}
+                          </a>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground hidden sm:table-cell max-w-[180px] truncate">
+                        {order.deliveryAddress || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold">
+                        {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span
+                          className={`px-2 py-0.5 rounded-xl text-xs font-semibold ${STATUS_COLORS[order.status]}`}
+                        >
+                          {STATUS_LABELS[order.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/admin/orders/${order.id}`}
+                          className="text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-}
-
-// ── Парсим способ связи из комментария ("Способ связи: WhatsApp — @handle\n...") ──
+} // ── Парсим способ связи из комментария ("Способ связи: WhatsApp — @handle\n...") ──
 function parseContact(comment: string | null, phone: string | null) {
-  if (!comment) return { icon: null, href: phone ? `tel:${phone}` : null, label: phone, restComment: null };
+  if (!comment)
+    return {
+      icon: null,
+      href: phone ? `tel:${phone}` : null,
+      label: phone,
+      restComment: null,
+    };
   const match = comment.match(/^Способ связи: ([^\n]+)\n?([\s\S]*)$/);
-  if (!match) return { icon: null, href: phone ? `tel:${phone}` : null, label: phone, restComment: comment };
-
+  if (!match)
+    return {
+      icon: null,
+      href: phone ? `tel:${phone}` : null,
+      label: phone,
+      restComment: comment,
+    };
   const contactLine = match[1]; // e.g. "WhatsApp — +79991234567"
   const restComment = match[2].trim() || null;
-  const handle = contactLine.includes(" — ") ? contactLine.split(" — ")[1]?.trim() : null;
-
+  const handle = contactLine.includes(" — ")
+    ? contactLine.split(" — ")[1]?.trim()
+    : null;
   if (contactLine.includes("WhatsApp")) {
     const waNum = (handle || phone || "").replace(/\D/g, "");
-    return { icon: "whatsapp", href: `https://wa.me/${waNum}`, label: `WA: ${handle || phone}`, target: "_blank", restComment };
+    return {
+      icon: "whatsapp",
+      href: `https://wa.me/${waNum}`,
+      label: `WA: ${handle || phone}`,
+      target: "_blank",
+      restComment,
+    };
   }
   if (contactLine.includes("Telegram")) {
     const tgHandle = (handle || "").replace("@", "");
-    return { icon: "telegram", href: tgHandle ? `https://t.me/${tgHandle}` : `tel:${phone}`, label: handle || phone, target: tgHandle ? "_blank" : undefined, restComment };
+    return {
+      icon: "telegram",
+      href: tgHandle ? `https://t.me/${tgHandle}` : `tel:${phone}`,
+      label: handle || phone,
+      target: tgHandle ? "_blank" : undefined,
+      restComment,
+    };
   }
   if (contactLine.includes("SMS")) {
-    return { icon: "sms", href: `sms:${phone}`, label: `SMS: ${phone}`, restComment };
+    return {
+      icon: "sms",
+      href: `sms:${phone}`,
+      label: `SMS: ${phone}`,
+      restComment,
+    };
   }
-  return { icon: null, href: phone ? `tel:${phone}` : null, label: phone, restComment };
+  return {
+    icon: null,
+    href: phone ? `tel:${phone}` : null,
+    label: phone,
+    restComment,
+  };
 }
-
 function OrderCard({ order }: { order: any }) {
   const deliveryCost = Number(order.deliveryCost ?? 0);
-  const { icon: contactIcon, href: contactHref, label: contactLabel, target: contactTarget, restComment } =
-    parseContact(order.comment, order.guestPhone);
-
+  const {
+    icon: contactIcon,
+    href: contactHref,
+    label: contactLabel,
+    target: contactTarget,
+    restComment,
+  } = parseContact(order.comment, order.guestPhone);
   return (
-    <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+    <div className="bg-card border border-border rounded-2xl p-4 space-y-3 min-w-0">
       {/* Заголовок */}
-      <div className="flex items-start justify-between gap-2">
-        <div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <p className="font-semibold">Заказ #{order.orderNumber}</p>
-          <p className="text-sm font-medium mt-0.5">{order.guestName || "Клиент"}</p>
+          <p className="text-sm font-medium mt-0.5 truncate">
+            {order.guestName || "Клиент"}
+          </p>
         </div>
-        <div className="text-right">
-          <p className="font-bold text-primary">{Number(order.totalAmount).toLocaleString("ru-RU")} ₽</p>
+        <div className="shrink-0 text-left sm:text-right">
+          <p className="font-bold text-primary">
+            {Number(order.totalAmount).toLocaleString("ru-RU")} ₽
+          </p>
           {deliveryCost > 0 && (
-            <p className="text-xs text-muted-foreground">доставка: {deliveryCost.toLocaleString("ru-RU")} ₽</p>
+            <p className="text-xs text-muted-foreground">
+              доставка: {deliveryCost.toLocaleString("ru-RU")} ₽
+            </p>
           )}
         </div>
       </div>
-
       {/* Контакт — иконка меняется по способу связи */}
       {contactHref && (
         <a
           href={contactHref}
           target={contactTarget as any}
           rel="noopener noreferrer"
-          className="flex items-center gap-2 text-sm text-primary hover:underline"
+          className="flex min-w-0 items-center gap-2 text-sm text-primary hover:underline"
         >
-          {contactIcon === "whatsapp" && <MessageSquare className="w-3.5 h-3.5 text-green-500" />}
-          {contactIcon === "telegram" && <Send className="w-3.5 h-3.5 text-sky-500" />}
-          {contactIcon === "sms"      && <MessageSquare className="w-3.5 h-3.5 text-purple-400" />}
-          {!contactIcon               && <Phone className="w-3.5 h-3.5" />}
-          {contactLabel}
+          {contactIcon === "whatsapp" && (
+            <MessageSquare className="w-3.5 h-3.5 text-green-500" />
+          )}
+          {contactIcon === "telegram" && (
+            <Send className="w-3.5 h-3.5 text-sky-500" />
+          )}
+          {contactIcon === "sms" && (
+            <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+          )}
+          {!contactIcon && <Phone className="w-3.5 h-3.5" />}
+          <span className="truncate">{contactLabel}</span>
         </a>
       )}
-
       {/* Адрес доставки */}
       {order.deliveryAddress && (
         <div className="flex items-start gap-2 text-sm text-muted-foreground">
           <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          <span>{order.deliveryAddress}</span>
+          <span className="break-words">{order.deliveryAddress}</span>
         </div>
       )}
-
       {/* Состав заказа */}
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <Package className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-        <span>
-          {order.items.map((i: any) =>
-            `${i.productName} ${i.variantSize} × ${Number(i.quantity)} ${i.unitType === "CUBE" ? "м³" : "шт"}`
-          ).join(", ")}
+        <span className="break-words">
+          {order.items
+            .map(
+              (i: any) =>
+                `${i.productName} ${i.variantSize} × ${Number(i.quantity)} ${i.unitType === "CUBE" ? "м³" : "шт"}`,
+            )
+            .join(", ")}
         </span>
       </div>
-
       {/* Комментарий (без "Способ связи:" строки) */}
       {restComment && (
-        <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2 flex items-start gap-1.5">
+        <p className="text-xs text-muted-foreground bg-muted/50 rounded-xl px-3 py-2 flex items-start gap-1.5 break-words">
           <MessageSquare className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           {restComment}
         </p>
       )}
-
       {/* Нижняя строка */}
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-border">
+      <div className="flex flex-col gap-2 pt-1 border-t border-border sm:flex-row sm:items-center sm:justify-between">
         <DeliveryStatusSelect orderId={order.id} currentStatus={order.status} />
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <a
             href={`/api/admin/orders/${order.id}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
             title="Скачать счёт PDF"
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-primary/[0.07] rounded-lg"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 hover:bg-primary/[0.07] rounded-xl"
           >
-            <FileDown className="w-3.5 h-3.5" />
-            PDF
+            <FileDown className="w-3.5 h-3.5" /> PDF
           </a>
           <Link
             href={`/admin/orders/${order.id}`}

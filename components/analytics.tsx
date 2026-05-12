@@ -29,6 +29,26 @@ export function Analytics({ yandexMetrikaId, googleAnalyticsId }: AnalyticsProps
                 webvisor: true,
                 ecommerce: "dataLayer"
               });
+
+              window.arayMetrikaGoal = function(goal, params) {
+                if (!goal || typeof ym !== "function") return;
+                ym(${yandexMetrikaId}, "reachGoal", goal, params || {});
+              };
+              window.addEventListener("aray:metrika-goal", function(event) {
+                var detail = event && event.detail ? event.detail : {};
+                window.arayMetrikaGoal(detail.goal || detail.name, detail.params || {});
+              });
+              document.addEventListener("click", function(event) {
+                var target = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+                if (!target) return;
+                var href = target.getAttribute("href") || "";
+                if (href.indexOf("tel:") === 0) {
+                  window.arayMetrikaGoal("aray_phone_click", { href: href });
+                }
+                if (/wa\\.me|whatsapp|t\\.me|telegram/i.test(href)) {
+                  window.arayMetrikaGoal("aray_messenger_click", { href: href });
+                }
+              }, true);
             `}
           </Script>
           <noscript>

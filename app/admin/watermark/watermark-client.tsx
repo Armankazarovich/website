@@ -57,6 +57,12 @@ export function WatermarkClient({
   const [confirmCleanup,  setConfirmCleanup]  = useState(false);
   const [confirmApplyAll, setConfirmApplyAll] = useState(false);
 
+  const readJson = async (res: Response, fallback: string) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.ok === false || data?.error) throw new Error(data?.error || fallback);
+    return data;
+  };
+
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -65,37 +71,47 @@ export function WatermarkClient({
       const form = new FormData();
       form.append("file", file);
       const res  = await fetch("/api/admin/watermark", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok || data.error) { setUploadError(data.error || `Ошибка ${res.status}`); return; }
-      if (data.url) { setLogoUrl(data.url + "?t=" + Date.now()); setUploadOk(true); setTimeout(() => setUploadOk(false), 3000); }
-    } catch { setUploadError("Не удалось подключиться к серверу"); }
+      const data = await readJson(res, `Ошибка ${res.status}`);
+      if (!data.url) throw new Error("Сервер не вернул URL файла");
+      setLogoUrl(data.url + "?t=" + Date.now());
+      setUploadOk(true);
+      setTimeout(() => setUploadOk(false), 3000);
+    } catch (error) { setUploadError(error instanceof Error ? error.message : "Не удалось подключиться к серверу"); }
     finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
   };
 
   const saveSettings = async () => {
     setSaving(true);
+    setSavedOk(false);
+    setApplyResult(null);
     try {
-      await fetch("/api/admin/watermark", {
+      const res = await fetch("/api/admin/watermark", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "save_settings", position, opacity, sizePct, type: wmType, text: wmText, textColor }),
       });
+      await readJson(res, "Не удалось сохранить настройки");
       setSavedOk(true);
       setTimeout(() => setSavedOk(false), 2500);
+    } catch (error) {
+      setApplyResult(error instanceof Error ? error.message : "Не удалось сохранить настройки");
+      setApplyOk(false);
     } finally { setSaving(false); }
   };
 
   const backupImages = async () => {
     setBacking(true);
+    setApplyResult(null);
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "backup_images" }) });
-      const data = await res.json();
-      if (data.ok) {
-        const now = new Date().toLocaleString("ru-RU", { day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" });
-        setBackupDate(now);
-        setApplyResult(`Резервная копия создана: ${data.count} товаров`);
-        setApplyOk(true);
-      }
+      const data = await readJson(res, "Не удалось создать резервную копию");
+      const now = new Date().toLocaleString("ru-RU", { day: "2-digit", month: "long", hour: "2-digit", minute: "2-digit" });
+      setBackupDate(now);
+      setApplyResult(`Резервная копия создана: ${data.count} товаров`);
+      setApplyOk(true);
+    } catch (error) {
+      setApplyResult(error instanceof Error ? error.message : "Не удалось создать резервную копию");
+      setApplyOk(false);
     } finally { setBacking(false); }
   };
 
@@ -104,9 +120,12 @@ export function WatermarkClient({
     setApplyResult(null);
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "restore_images" }) });
-      const data = await res.json();
-      setApplyResult(data.ok ? `Восстановлено: ${data.restored} товаров` : `Ошибка: ${data.error}`);
-      setApplyOk(data.ok ? true : false);
+      const data = await readJson(res, "Не удалось восстановить оригиналы");
+      setApplyResult(`Восстановлено: ${data.restored} товаров`);
+      setApplyOk(true);
+    } catch (error) {
+      setApplyResult(error instanceof Error ? error.message : "Не удалось восстановить оригиналы");
+      setApplyOk(false);
     } finally { setRestoring(false); }
   };
 
@@ -114,9 +133,12 @@ export function WatermarkClient({
     setCleaning(true); setApplyResult(null);
     try {
       const res  = await fetch("/api/admin/watermark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "cleanup_orphans" }) });
-      const data = await res.json();
-      setApplyResult(data.ok ? `Удалено дублей: ${data.deleted} файл(ов)` : `Ошибка: ${data.error}`);
-      setApplyOk(data.ok ? true : false);
+      const data = await readJson(res, "Не удалось удалить неиспользуемые файлы");
+      setApplyResult(`Удалено дублей: ${data.deleted} файл(ов)`);
+      setApplyOk(true);
+    } catch (error) {
+      setApplyResult(error instanceof Error ? error.message : "Не удалось удалить неиспользуемые файлы");
+      setApplyOk(false);
     } finally { setCleaning(false); }
   };
 
@@ -128,9 +150,12 @@ export function WatermarkClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "apply_all", position, opacity, sizePct, type: wmType, text: wmText, textColor }),
       });
-      const data = await res.json();
-      setApplyResult(data.ok ? `Готово! Обработано товаров: ${data.count}` : `Ошибка: ${data.error}`);
-      setApplyOk(data.ok ? true : false);
+      const data = await readJson(res, "Не удалось применить водяной знак");
+      setApplyResult(`Готово! Обработано товаров: ${data.count}`);
+      setApplyOk(true);
+    } catch (error) {
+      setApplyResult(error instanceof Error ? error.message : "Не удалось применить водяной знак");
+      setApplyOk(false);
     } finally { setApplying(false); }
   };
 

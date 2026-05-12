@@ -10,6 +10,6 @@ export const UI_LAYERS = {
   header: "z-50",
   overlay: "z-[320]",
   assistant: "z-[300]",
-  assistantBrowser: "z-[340]",
+  assistantBrowser: "z-[290]",
   toast: "z-[400]",
 } as const;

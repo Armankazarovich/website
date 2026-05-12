@@ -14,7 +14,7 @@ export function BackButton({ href, label, className }: BackButtonProps) {
     <Link
       href={href}
       aria-label={label}
-      className={`inline-flex items-center justify-center w-9 h-9 rounded-xl
+      className={`inline-flex h-11 w-11 items-center justify-center rounded-xl
         text-muted-foreground hover:text-foreground border border-border/40
         hover:bg-muted transition-all shrink-0 ${className ?? "mb-3"}`}
     >

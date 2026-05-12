@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
-import { getPublicProductsFilter } from "@/lib/product-seo";
+import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 
 // Кэш 60 сек — быстрее чем force-dynamic, но данные актуальны
 export const revalidate = 60;
@@ -113,18 +113,20 @@ export const metadata: Metadata = {
 };
 
 async function getData() {
+  const publicProductFilter = getPublicProductsFilter();
+  const publicVariantFilter = getPublicVariantsFilter();
   const [categories, featuredProducts, promotions, reviews, settings] = await Promise.all([
     prisma.category.findMany({
       where: { showInMenu: true },
       orderBy: { sortOrder: "asc" },
-      include: { _count: { select: { products: true } } },
+      include: { _count: { select: { products: { where: publicProductFilter } } } },
       take: 6,
     }),
     prisma.product.findMany({
-      where: { ...getPublicProductsFilter(), featured: true },
+      where: { ...publicProductFilter, featured: true },
       include: {
         category: true,
-        variants: { where: { inStock: true }, orderBy: { pricePerCube: "asc" } },
+        variants: { where: publicVariantFilter, orderBy: { pricePerCube: "asc" } },
       },
       take: 8,
     }),
@@ -562,6 +564,7 @@ export default async function HomePage() {
                     slug={product.slug}
                     name={product.name}
                     category={product.category.name}
+                    description={product.description}
                     images={product.images}
                     saleUnit={product.saleUnit}
                     variants={product.variants.map((v) => ({

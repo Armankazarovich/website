@@ -12,9 +12,9 @@ import {
   Calculator, Copy, Sparkles, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AdminBack } from "@/components/admin/admin-back";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ActionToast } from "@/components/admin/action-toast";
+import { RelatedTasksPanel } from "@/components/admin/related-tasks-panel";
 
 // Lazy-load heavy modals — загружаются только при первом открытии
 const PhotoEditor = dynamic(
@@ -61,6 +61,11 @@ type Product = {
 };
 
 type Category = { id: string; name: string; slug: string };
+
+function getProductId(id: string | string[] | undefined): string | null {
+  if (Array.isArray(id)) return id[0] ?? null;
+  return id ?? null;
+}
 
 function adminPreviewSrc(src: string) {
   if (!src.startsWith("/")) return src;
@@ -173,7 +178,8 @@ function calcReadiness(p: {
 export default function AdminProductEditPage() {
   const params = useParams();
   const router = useRouter();
-  const isNew = params.id === "new";
+  const productId = getProductId(params.id);
+  const isNew = productId === "new" || !productId;
 
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -216,8 +222,8 @@ export default function AdminProductEditPage() {
       if (Array.isArray(data)) setAllProductIds(data.map((p: any) => p.id));
     }).catch(() => {});
 
-    if (!isNew && params.id) {
-      fetch(`/api/admin/products/${params.id}`)
+    if (!isNew && productId) {
+      fetch(`/api/admin/products/${productId}`)
         .then((r) => r.json())
         .then((p: Product) => {
           setProduct(p);
@@ -245,22 +251,10 @@ export default function AdminProductEditPage() {
           setLoading(false);
         });
     }
-  }, [params.id, isNew]);
-
-  // Ctrl+S save
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [name, slug, description, categoryId, images, saleUnit, active, featured, variants]);
+  }, [productId, isNew]);
 
   // Prev / Next navigation
-  const currentIdx = allProductIds.indexOf(String(params.id));
+  const currentIdx = allProductIds.indexOf(productId ?? "");
   const prevId = currentIdx > 0 ? allProductIds[currentIdx - 1] : null;
   const nextId = currentIdx < allProductIds.length - 1 ? allProductIds[currentIdx + 1] : null;
 
@@ -385,7 +379,7 @@ export default function AdminProductEditPage() {
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch(`/api/admin/products/${params.id}`, {
+        res = await fetch(`/api/admin/products/${productId}`, {
           method: "PATCH", headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
@@ -408,12 +402,25 @@ export default function AdminProductEditPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
     if (isNew && data.id) router.replace(`/admin/products/${data.id}`);
-  }, [saving, name, slug, description, categoryId, images, saleUnit, active, featured, variants, isNew, params.id, router]);
+  }, [saving, name, slug, description, categoryId, images, saleUnit, active, featured, variants, isNew, productId, router]);
+
+  // Ctrl+S save
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSave]);
 
   const handleDelete = async () => {
+    if (!productId || isNew) return;
     setDeletingProduct(true);
     try {
-      const res = await fetch(`/api/admin/products/${params.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/products/${productId}`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
@@ -490,14 +497,14 @@ export default function AdminProductEditPage() {
 
   // Улучшить описание через AI (тот же endpoint что и в drawer)
   const improveDescription = async () => {
-    if (isNew || !params.id) {
+    if (isNew || !productId) {
       setImproveError("Сохраните товар хотя бы раз, потом AI сможет улучшить описание");
       return;
     }
     setImprovingDesc(true);
     setImproveError(null);
     try {
-      const res = await fetch(`/api/admin/products/${params.id}/improve-seo`, { method: "POST" });
+      const res = await fetch(`/api/admin/products/${productId}/improve-seo`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) {
         setImproveError(data.error || `Ошибка ${res.status}`);
@@ -516,7 +523,7 @@ export default function AdminProductEditPage() {
 
   // Дублировать товар — создаёт копию с `-copy` slug, перекидывает на редактирование дубля
   const duplicateProduct = async () => {
-    if (isNew || !params.id) return;
+    if (isNew || !productId) return;
     if (!confirm(`Дублировать "${name}"? Будет создан новый товар с тем же набором вариантов.`)) return;
     setDuplicating(true);
     try {
@@ -561,6 +568,45 @@ export default function AdminProductEditPage() {
 
   // Прогресс готовности товара
   const readiness = calcReadiness({ name, categoryId, slug, images, variants, description });
+  const saveStatus = saved ? (
+    <>
+      <Check className="mr-1 inline h-3.5 w-3.5 text-primary" />
+      Сохранено
+    </>
+  ) : (
+    <>
+      <Keyboard className="mr-1 inline h-3.5 w-3.5" />
+      Ctrl+S для быстрого сохранения
+    </>
+  );
+  const saveActions = (
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-2 sm:w-auto sm:flex sm:items-center">
+      <Link
+        href="/admin/products"
+        className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-3 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.05] hover:text-foreground sm:w-auto"
+      >
+        К списку
+      </Link>
+      <Button onClick={handleSave} disabled={saving || saved} size="sm" className="min-h-11 min-w-[148px]">
+        {saved ? (
+          <>
+            <Check className="mr-2 h-4 w-4" />
+            Сохранено
+          </>
+        ) : saving ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Сохраняем...
+          </>
+        ) : (
+          <>
+            <Save className="mr-2 h-4 w-4" />
+            Сохранить
+          </>
+        )}
+      </Button>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -571,19 +617,18 @@ export default function AdminProductEditPage() {
   }
 
   return (
-    <div className="space-y-5 max-w-5xl pb-40">
+    <div className="admin-page-frame admin-page-frame-fluid pb-28">
 
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <AdminBack />
+      <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 items-start gap-3">
           {/* Prev / Next */}
           {!isNew && (
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border bg-card p-1">
               <button
                 onClick={() => prevId && router.push(`/admin/products/${prevId}`)}
                 disabled={!prevId}
-                className="p-1.5 rounded-lg hover:bg-primary/[0.08] disabled:opacity-30 transition-colors"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg transition-colors hover:bg-primary/[0.08] disabled:opacity-30"
                 title="Предыдущий товар"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -591,24 +636,26 @@ export default function AdminProductEditPage() {
               <button
                 onClick={() => nextId && router.push(`/admin/products/${nextId}`)}
                 disabled={!nextId}
-                className="p-1.5 rounded-lg hover:bg-primary/[0.08] disabled:opacity-30 transition-colors"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-lg transition-colors hover:bg-primary/[0.08] disabled:opacity-30"
                 title="Следующий товар"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
-          <div>
-            <h1 className="font-display font-bold text-xl">{isNew ? "Новый товар" : name || "Редактирование"}</h1>
-            {!isNew && slug && <p className="text-xs text-muted-foreground">/{slug}</p>}
+          <div className="min-w-0 pt-1">
+            <h1 className="break-words font-display text-xl font-bold leading-tight sm:text-2xl">
+              {isNew ? "Новый товар" : name || "Редактирование"}
+            </h1>
+            {!isNew && slug && <p className="mt-0.5 truncate text-xs text-muted-foreground">/{slug}</p>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
           {!isNew && slug && (
             <a
               href={`/product/${slug}`}
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-border hover:bg-primary/[0.08] transition-colors text-muted-foreground"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] sm:flex-none"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               На сайте
@@ -620,19 +667,33 @@ export default function AdminProductEditPage() {
               onClick={duplicateProduct}
               disabled={duplicating}
               title="Дублировать товар (создать копию с теми же вариантами)"
-              className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border border-border hover:bg-primary/[0.08] transition-colors text-muted-foreground disabled:opacity-50"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] disabled:opacity-50 sm:flex-none"
             >
               {duplicating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">Дублировать</span>
             </button>
           )}
           {!isNew && (
-            <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteProduct(true)} className="text-destructive hover:text-destructive hover:bg-destructive/10">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteProduct(true)} className="min-h-11 min-w-11 text-destructive hover:text-destructive hover:bg-destructive/10">
               <Trash2 className="w-4 h-4" />
             </Button>
           )}
         </div>
       </div>
+
+      <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              {isNew ? "Создание товара" : "Редактирование товара"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Заполните данные, цены и фото. Сохранение находится внутри формы и не перекрывает помощника.
+            </p>
+          </div>
+          {saveActions}
+        </div>
+      </section>
 
       {/* ── Readiness Bar (тонкая строка прогресса готовности для менеджера) ── */}
       {!isNew && readiness.percent === 100 && (
@@ -829,6 +890,15 @@ export default function AdminProductEditPage() {
               </button>
             </label>
           </div>
+
+          {!isNew && productId && (
+            <RelatedTasksPanel
+              entityType="PRODUCT"
+              entityId={productId}
+              entityLabel={name || product?.name || "Товар"}
+              entityHref={`/admin/products/${productId}`}
+            />
+          )}
         </div>
 
         {/* ── RIGHT: Main info ── */}
@@ -1073,28 +1143,15 @@ export default function AdminProductEditPage() {
         </div>
       </div>
 
-      {/* ── Sticky Save Bar ── */}
-      <div className="fixed left-0 right-0 z-[60] lg:left-16" style={{ bottom: "calc(72px + env(safe-area-inset-bottom, 0px))" }}>
-        <div className="bg-background/95 backdrop-blur border-t border-border px-4 sm:px-6 pt-3 flex items-center justify-between gap-4 max-w-5xl" style={{ paddingBottom: "12px" }}>
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            {saved ? <><Check className="w-3 h-3 inline mr-1" /> Сохранено</> : <><Keyboard className="w-3 h-3 inline mr-1" /> Ctrl+S для быстрого сохранения</>}
-          </p>
-          <div className="flex items-center gap-3 ml-auto">
-            <Link href="/admin/products" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              ← К списку
-            </Link>
-            <Button onClick={handleSave} disabled={saving || saved} size="sm" className="min-w-[140px]">
-              {saved ? (
-                <><Check className="w-4 h-4 mr-2" /> Сохранено!</>
-              ) : saving ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение...</>
-              ) : (
-                <><Save className="w-4 h-4 mr-2" /> Сохранить</>
-              )}
-            </Button>
+      <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Проверьте товар перед сохранением</p>
+            <p className="mt-1 text-xs text-muted-foreground">{saveStatus}</p>
           </div>
+          {saveActions}
         </div>
-      </div>
+      </section>
 
       {/* Toast (фидбек админских действий: сортировка, авто-расчёт и т.п.) */}
       <ActionToast message={toast} onDismiss={() => setToast(null)} />
@@ -1114,7 +1171,7 @@ export default function AdminProductEditPage() {
       />
       {photoSearchOpen && (
         <PhotoSearch
-          productId={String(params.id)}
+          productId={productId ?? "new"}
           productName={name || "товар"}
           onPhotoAdded={(url) => {
             setImages(prev => prev.includes(url) ? prev : [url, ...prev]);

@@ -8,6 +8,22 @@ import { generateProductDescription } from "@/lib/product-seo";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 
+function serializeMoney(value: unknown) {
+  if (value === null || value === undefined) return null;
+  return Number(value);
+}
+
+function serializeProduct<T extends { variants?: Array<Record<string, unknown>> }>(product: T) {
+  return {
+    ...product,
+    variants: product.variants?.map((variant) => ({
+      ...variant,
+      pricePerCube: serializeMoney(variant.pricePerCube),
+      pricePerPiece: serializeMoney(variant.pricePerPiece),
+    })) ?? [],
+  };
+}
+
 async function checkProductsAccess() {
   const session = await auth();
   const role = session?.user?.role as string | undefined;
@@ -20,7 +36,7 @@ export async function GET() {
     include: { category: true, variants: true },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json(products);
+  return NextResponse.json(products.map(serializeProduct));
 }
 
 export async function POST(req: Request) {
@@ -53,31 +69,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Название не должно превышать 200 символов" }, { status: 400 });
   }
   if (!slug || typeof slug !== "string" || !slug.trim()) {
-    return NextResponse.json({ error: "Slug обязателен" }, { status: 400 });
+    return NextResponse.json({ error: "Адрес страницы товара обязателен" }, { status: 400 });
   }
   if (!/^[a-z0-9-]+$/.test(slug)) {
     return NextResponse.json(
-      { error: "Slug может содержать только латиницу (a-z), цифры и дефис" },
+      { error: "Адрес страницы может содержать только латинские буквы, цифры и дефис" },
       { status: 400 }
     );
   }
   if (slug.length > 120) {
-    return NextResponse.json({ error: "Slug не должен превышать 120 символов" }, { status: 400 });
+    return NextResponse.json({ error: "Адрес страницы не должен превышать 120 символов" }, { status: 400 });
   }
   if (!categoryId || typeof categoryId !== "string") {
     return NextResponse.json({ error: "Выберите категорию" }, { status: 400 });
   }
   if (saleUnit !== undefined && !["CUBE", "PIECE", "BOTH"].includes(saleUnit)) {
     return NextResponse.json(
-      { error: "saleUnit должен быть CUBE, PIECE или BOTH" },
+      { error: "Единица продажи выбрана некорректно" },
       { status: 400 }
     );
   }
   if (images !== undefined && !Array.isArray(images)) {
-    return NextResponse.json({ error: "images должно быть массивом URL" }, { status: 400 });
+    return NextResponse.json({ error: "Фото переданы в неверном формате" }, { status: 400 });
   }
   if (variants !== undefined && !Array.isArray(variants)) {
-    return NextResponse.json({ error: "variants должно быть массивом" }, { status: 400 });
+    return NextResponse.json({ error: "Размеры и цены переданы в неверном формате" }, { status: 400 });
   }
 
   type InVariant = {
@@ -210,12 +226,12 @@ export async function POST(req: Request) {
       },
       include: { category: true, variants: true },
     });
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(serializeProduct(product), { status: 201 });
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;
     if (code === "P2002") {
       return NextResponse.json(
-        { error: "Товар с таким slug уже существует. Выберите другой slug." },
+        { error: "Товар с таким адресом страницы уже существует. Выберите другой адрес." },
         { status: 409 }
       );
     }

@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 // Названия разделов по пути
 const PATH_LABELS: Record<string, string> = {
-  "/admin":               "Дашборд",
+  "/admin":               "Рабочий стол",
   "/admin/orders":        "Заказы",
   "/admin/crm":           "CRM",
   "/admin/tasks":         "Задачи",

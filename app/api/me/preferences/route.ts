@@ -7,13 +7,12 @@ import { isPaletteId } from "@/lib/palettes";
 import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
 
 const THEMES = new Set(["light", "dark", "system"]);
-const BG_MODES = new Set(["photo", "clean"]);
 const LANG_CODES = new Set(ADMIN_LANGUAGES.map((lang) => lang.code));
 
 type UserPreferences = {
   palette?: string;
   theme?: "light" | "dark" | "system";
-  adminBgMode?: "photo" | "clean";
+  adminBgMode?: "clean";
   lang?: LangCode;
   updatedAt?: string;
 };
@@ -37,9 +36,7 @@ function parsePreferences(value: string | null | undefined): UserPreferences {
       preferences.theme = raw.theme as UserPreferences["theme"];
     }
 
-    if (typeof raw.adminBgMode === "string" && BG_MODES.has(raw.adminBgMode)) {
-      preferences.adminBgMode = raw.adminBgMode as UserPreferences["adminBgMode"];
-    }
+    preferences.adminBgMode = "clean";
 
     if (typeof raw.lang === "string" && LANG_CODES.has(raw.lang as LangCode)) {
       preferences.lang = raw.lang as LangCode;
@@ -66,9 +63,7 @@ function sanitizePreferences(body: Record<string, unknown>, existing: UserPrefer
     next.theme = body.theme as UserPreferences["theme"];
   }
 
-  if (typeof body.adminBgMode === "string" && BG_MODES.has(body.adminBgMode)) {
-    next.adminBgMode = body.adminBgMode as UserPreferences["adminBgMode"];
-  }
+  next.adminBgMode = "clean";
 
   if (typeof body.lang === "string" && LANG_CODES.has(body.lang as LangCode)) {
     next.lang = body.lang as LangCode;

@@ -13,17 +13,28 @@ import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react
 import { ProductGallery } from "@/components/store/product-gallery";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
-import { getPublicProductsFilter } from "@/lib/product-seo";
+import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
   params: { slug: string };
 }
 
+function productIntro(description?: string | null) {
+  const text = (description || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  if (text.length <= 260) return text;
+  const firstSentence = text.match(/^.+?[.!?](\s|$)/)?.[0]?.trim();
+  if (firstSentence && firstSentence.length >= 90 && firstSentence.length <= 260) {
+    return firstSentence;
+  }
+  return `${text.slice(0, 240).trim()}...`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
-    include: { category: true, variants: { where: { inStock: true } } },
+  const product = await prisma.product.findFirst({
+    where: { slug: params.slug, ...getPublicProductsFilter() },
+    include: { category: true, variants: { where: getPublicVariantsFilter() } },
   });
 
   if (!product) return { title: "Товар не найден" };
@@ -61,11 +72,11 @@ export default async function ProductPage({ params }: Props) {
   const role = (session?.user as any)?.role;
   const isAdmin = session && ["ADMIN", "MANAGER"].includes(role);
 
-  const product = await prisma.product.findUnique({
-    where: { slug: params.slug, active: true },
+  const product = await prisma.product.findFirst({
+    where: { slug: params.slug, ...getPublicProductsFilter() },
     include: {
       category: true,
-      variants: { orderBy: { size: "asc" } },
+      variants: { where: getPublicVariantsFilter(), orderBy: { size: "asc" } },
     },
   });
 
@@ -80,7 +91,7 @@ export default async function ProductPage({ params }: Props) {
     },
     include: {
       category: true,
-      variants: { where: { inStock: true }, orderBy: { pricePerCube: "asc" } },
+      variants: { where: getPublicVariantsFilter(), orderBy: { pricePerCube: "asc" } },
     },
     take: 4,
   });
@@ -93,14 +104,16 @@ export default async function ProductPage({ params }: Props) {
     take: 10,
   });
 
-  // Site settings + Yandex Maps review URL + show_reviews_block setting
-  const [siteSettings, yandexMapsSetting, showReviewsSetting] = await Promise.all([
+  // Site settings + Yandex Maps review URL
+  const [siteSettings, yandexMapsSetting] = await Promise.all([
     getSiteSettings(),
     prisma.siteSettings.findUnique({ where: { key: "yandex_maps_review_url" } }),
-    prisma.siteSettings.findUnique({ where: { key: "product_page_show_reviews" } }),
   ]);
   const yandexMapsUrl = yandexMapsSetting?.value || "";
-  const showReviewsBlock = showReviewsSetting?.value !== "false";
+  const showReviewsBlock = (siteSettings.product_page_show_reviews ?? "true") !== "false";
+  const showRelatedProducts = (siteSettings.product_page_show_related ?? "true") !== "false";
+  const showCalculatorLink = (siteSettings.product_page_show_calculator ?? "true") !== "false";
+  const showBreadcrumbs = (siteSettings.product_page_show_breadcrumbs ?? "true") !== "false";
   const phonesList = getPhones(siteSettings);
   const firstPhoneLink = phonesList[0]?.tel || getSetting(siteSettings, "phone_link");
 
@@ -114,6 +127,7 @@ export default async function ProductPage({ params }: Props) {
   const telegramLink = telegramUsername
     ? `https://t.me/${telegramUsername.replace("@", "")}?text=${encodeURIComponent(tgMessage)}`
     : null;
+  const intro = productIntro(product.description);
 
   // Build schema.org structured data
   // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
@@ -159,7 +173,7 @@ export default async function ProductPage({ params }: Props) {
     },
   };
 
-  if (avgRating && reviews.length > 0) {
+  if (showReviewsBlock && avgRating && reviews.length > 0) {
     schemaOrg["aggregateRating"] = {
       "@type": "AggregateRating",
       "ratingValue": avgRating,
@@ -222,6 +236,7 @@ export default async function ProductPage({ params }: Props) {
         {/* Product info + variant selector */}
         <div className="space-y-6">
           <div>
+            {showBreadcrumbs && (
             <div className="flex items-center gap-2 mb-1">
               <Link
                 href={product.category.sortOrder < 900 ? `/catalog?category=${product.category.slug}` : "/catalog"}
@@ -237,9 +252,10 @@ export default async function ProductPage({ params }: Props) {
                 {product.category.sortOrder < 900 ? product.category.name : "Каталог"}
               </Link>
             </div>
+            )}
             <h1 className="font-display font-bold text-3xl mt-1 mb-2">{product.name}</h1>
-            {product.description && (
-              <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+            {intro && (
+              <p className="text-muted-foreground leading-relaxed">{intro}</p>
             )}
           </div>
 
@@ -315,10 +331,12 @@ export default async function ProductPage({ params }: Props) {
           )}
 
           {/* Calculator link */}
-          <Link href="/calculator" className="flex items-center gap-2 text-sm text-primary hover:underline mt-2">
-            <Calculator className="w-4 h-4" />
-            Рассчитать точное количество в калькуляторе
-          </Link>
+          {showCalculatorLink && (
+            <Link href="/calculator" className="flex items-center gap-2 text-sm text-primary hover:underline mt-2">
+              <Calculator className="w-4 h-4" />
+              Рассчитать точное количество в калькуляторе
+            </Link>
+          )}
 
           {/* Delivery info */}
           <div className="rounded-2xl border border-border bg-muted/20 overflow-hidden">
@@ -430,7 +448,7 @@ export default async function ProductPage({ params }: Props) {
       )}
 
       {/* Related products */}
-      {related.length > 0 && (
+      {showRelatedProducts && related.length > 0 && (
         <section>
           <h2 className="font-display font-bold text-2xl mb-6">Похожие товары</h2>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -441,6 +459,7 @@ export default async function ProductPage({ params }: Props) {
                 slug={product.slug}
                 name={product.name}
                 category={product.category.name}
+                description={product.description}
                 images={product.images}
                 saleUnit={product.saleUnit}
                 variants={product.variants.map((v) => ({

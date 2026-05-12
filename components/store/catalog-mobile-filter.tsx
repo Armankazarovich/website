@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { cn } from "@/lib/utils";
 
 interface TypeInfo {
@@ -40,6 +41,7 @@ export function CatalogMobileFilter({
   const [catOpen, setCatOpen] = useState(true);
   const [sizeOpen, setSizeOpen] = useState(true);
   const dragStartY = useRef(0);
+  useAdminOverlayGuard(open);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -99,7 +101,7 @@ export function CatalogMobileFilter({
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-[210] bg-black/50 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -108,7 +110,7 @@ export function CatalogMobileFilter({
 
             {/* Drawer */}
             <motion.div
-              className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl overflow-hidden"
+              className="fixed bottom-0 left-0 right-0 z-[220] bg-card rounded-t-3xl overflow-hidden"
               style={{ maxHeight: "82dvh" }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}

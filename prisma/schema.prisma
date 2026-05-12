@@ -29,9 +29,11 @@ model User {
   orders         Order[]
   pushSubs       PushSubscription[]
   reviews        Review[]
+  supportIncidents SupportIncident[]
   assignedTasks  Task[]             @relation("TaskAssignee")
   createdTasks   Task[]             @relation("TaskCreator")
   taskComments   TaskComment[]
+  businessRoleMembers BusinessRoleMember[]
 
   @@index([tenantId])
 
@@ -127,6 +129,13 @@ model Order {
   telegramMessageId String?
   contactMethod     String?
   contactUsername   String?
+  terminalProfile   String?
+  terminalWorkMode  String?
+  fulfillmentType   String?
+  fulfillmentDetail String?
+  receiptMode       String?
+  paymentStatus     String      @default("PENDING")
+  fiscalStatus      String      @default("PENDING")
   discountAmount    Decimal     @default(0) @db.Decimal(10, 2)
   promoCode         String?
   utmSource         String?
@@ -150,6 +159,8 @@ model Order {
   @@index([createdAt])
   @@index([guestPhone])
   @@index([telegramMessageId])
+  @@index([paymentStatus, createdAt])
+  @@index([fiscalStatus, createdAt])
   @@index([utmSource, createdAt])
   @@index([utmCampaign, createdAt])
 }
@@ -234,6 +245,141 @@ model PushSubscription {
   user      User?    @relation(fields: [userId], references: [id])
 
   @@index([userId, createdAt])
+}
+
+model NotificationCenterEvent {
+  id              String                     @id @default(cuid())
+  tenantId        String                     @default("pilorus")
+  direction       NotificationDirection      @default(OUTBOUND)
+  channel         NotificationChannel        @default(PUSH)
+  status          NotificationStatus         @default(QUEUED)
+  source          NotificationSource         @default(ADMIN)
+  sourceUserId    String?
+  title           String
+  body            String                     @db.Text
+  url             String?
+  segment         String?
+  recipientUserId String?
+  recipientLabel  String?
+  recipientRole   String?
+  sentCount       Int                        @default(0)
+  failedCount     Int                        @default(0)
+  cleanedCount    Int                        @default(0)
+  error           String?                    @db.Text
+  entityType      TaskRelationEntityType?
+  entityId        String?
+  entityLabel     String?
+  entityHref      String?
+  metadata        Json                       @default("{}")
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  sentAt          DateTime?
+  readAt          DateTime?
+  archivedAt      DateTime?
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, channel, createdAt])
+  @@index([tenantId, entityType, entityId])
+  @@index([recipientUserId, createdAt])
+}
+
+model NotificationRolePreference {
+  id                String   @id @default(cuid())
+  tenantId          String   @default("pilorus")
+  role              Role
+  eventKey          String
+  enabled           Boolean  @default(true)
+  channels          Json     @default("[]")
+  quietHoursEnabled Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tenantId, role, eventKey])
+  @@index([tenantId, role])
+  @@index([eventKey])
+}
+
+model NotificationRoleSchedule {
+  id                String   @id @default(cuid())
+  tenantId          String   @default("pilorus")
+  role              Role
+  quietHoursEnabled Boolean  @default(false)
+  quietStart        String   @default("21:00")
+  quietEnd          String   @default("09:00")
+  weekendsMuted     Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([tenantId, role])
+  @@index([tenantId])
+}
+
+model BusinessRole {
+  id               String   @id @default(cuid())
+  tenantId         String   @default("pilorus")
+  roleKey          String
+  label            String
+  description      String?
+  baseRole         Role?
+  scope            String   @default("business")
+  roleKind         String   @default("custom")
+  permissions      Json     @default("{}")
+  notificationSeed Json     @default("{}")
+  isSystem         Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  members          BusinessRoleMember[]
+  notificationPreferences NotificationAudiencePreference[]
+
+  @@unique([tenantId, roleKey])
+  @@index([tenantId, isActive])
+  @@index([tenantId, baseRole])
+  @@index([tenantId, scope])
+}
+
+model BusinessRoleMember {
+  id             String       @id @default(cuid())
+  tenantId       String       @default("pilorus")
+  businessRoleId String
+  userId         String
+  status         StaffStatus?
+  isPrimary      Boolean      @default(false)
+  metadata       Json         @default("{}")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  role           BusinessRole @relation(fields: [businessRoleId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([businessRoleId, userId])
+  @@index([tenantId, userId])
+  @@index([tenantId, userId, isPrimary])
+  @@index([tenantId, businessRoleId])
+}
+
+model NotificationAudiencePreference {
+  id                String        @id @default(cuid())
+  tenantId          String        @default("pilorus")
+  audienceKey       String
+  audienceLabel     String?
+  businessRoleId    String?
+  eventKey          String
+  enabled           Boolean       @default(true)
+  channels          Json          @default("[]")
+  quietHoursEnabled Boolean       @default(false)
+  quietStart        String        @default("21:00")
+  quietEnd          String        @default("09:00")
+  weekendsMuted     Boolean       @default(false)
+  metadata          Json          @default("{}")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  businessRole      BusinessRole? @relation(fields: [businessRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, audienceKey, eventKey])
+  @@index([tenantId, audienceKey])
+  @@index([tenantId, eventKey])
+  @@index([businessRoleId])
 }
 
 model SiteSettings {
@@ -349,8 +495,26 @@ model Task {
   createdBy   User?         @relation("TaskCreator", fields: [createdById], references: [id])
   order       Order?        @relation(fields: [orderId], references: [id])
   comments    TaskComment[]
+  relations   TaskRelation[]
 
   @@index([tenantId])
+}
+
+model TaskRelation {
+  id         String                 @id @default(cuid())
+  tenantId   String                 @default("pilorus")
+  taskId     String
+  entityType TaskRelationEntityType
+  entityId   String
+  label      String?
+  href       String?
+  metadata   Json                   @default("{}")
+  createdAt  DateTime               @default(now())
+  task       Task                   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, entityType, entityId])
+  @@index([tenantId, entityType, entityId])
+  @@index([taskId])
 }
 
 model TaskComment {
@@ -509,6 +673,224 @@ model ActivityLog {
   @@index([userId, createdAt(sort: Desc)])
 }
 
+model SupportIncident {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("pilorus")
+  code        String   @unique
+  title       String
+  category    String   @default("terminal")
+  severity    String   @default("medium")
+  status      String   @default("OPEN")
+  source      String   @default("aray")
+  page        String?
+  orderId     String?
+  device      String?
+  message     String   @db.Text
+  diagnostics Json     @default("{}")
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolvedAt  DateTime?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([tenantId, status, createdAt])
+  @@index([category, severity])
+  @@index([orderId])
+}
+
+model TerminalWorkstation {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("pilorus")
+  name        String
+  type        String   @default("MOBILE")
+  profile     String   @default("lumber")
+  status      String   @default("ACTIVE")
+  deviceLabel String?
+  printerMode String?
+  scannerMode String?
+  paymentMode String?
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shifts      CashShift[]
+  printJobs   PrintJob[]
+
+  @@index([tenantId, status])
+  @@index([profile, type])
+}
+
+model CashShift {
+  id             String   @id @default(cuid())
+  tenantId       String   @default("pilorus")
+  workstationId  String?
+  openedById     String?
+  closedById     String?
+  status         String   @default("OPEN")
+  openingCash    Decimal  @default(0) @db.Decimal(10, 2)
+  expectedCash   Decimal  @default(0) @db.Decimal(10, 2)
+  actualCash     Decimal? @db.Decimal(10, 2)
+  cashDelta      Decimal? @db.Decimal(10, 2)
+  cardTotal      Decimal  @default(0) @db.Decimal(10, 2)
+  onlineTotal    Decimal  @default(0) @db.Decimal(10, 2)
+  salesTotal     Decimal  @default(0) @db.Decimal(10, 2)
+  refundTotal    Decimal  @default(0) @db.Decimal(10, 2)
+  orderCount     Int      @default(0)
+  notes          String?
+  openedAt       DateTime @default(now())
+  closedAt       DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  workstation    TerminalWorkstation? @relation(fields: [workstationId], references: [id])
+  operations     ShiftOperation[]
+
+  @@index([tenantId, status, openedAt])
+  @@index([workstationId, status])
+  @@index([openedById, status])
+}
+
+model ShiftOperation {
+  id        String   @id @default(cuid())
+  tenantId  String   @default("pilorus")
+  shiftId   String
+  type      String
+  amount    Decimal  @default(0) @db.Decimal(10, 2)
+  orderId   String?
+  actorId   String?
+  note      String?
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now())
+  shift     CashShift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@index([shiftId, createdAt])
+  @@index([type, createdAt])
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("pilorus")
+  orderId     String?
+  shiftId     String?
+  method      String
+  status      String   @default("PENDING")
+  amount      Decimal  @db.Decimal(10, 2)
+  provider    String?
+  externalId  String?
+  qrPayload   String?
+  receiptUrl  String?
+  error       String?
+  createdById String?
+  paidAt      DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([tenantId, status, createdAt])
+  @@index([orderId])
+  @@index([shiftId])
+  @@index([method, status])
+}
+
+model PrintJob {
+  id            String   @id @default(cuid())
+  tenantId      String   @default("pilorus")
+  orderId       String?
+  shiftId       String?
+  workstationId String?
+  route         String   @default("receipt")
+  type          String   @default("RECEIPT")
+  status        String   @default("QUEUED")
+  title         String
+  payload       Json     @default("{}")
+  attempts      Int      @default(0)
+  lastError     String?
+  createdById   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  printedAt     DateTime?
+  workstation   TerminalWorkstation? @relation(fields: [workstationId], references: [id])
+
+  @@index([tenantId, status, createdAt])
+  @@index([orderId])
+  @@index([workstationId, status])
+  @@index([route, status])
+}
+
+model TerminalConnector {
+  id           String   @id @default(cuid())
+  tenantId     String   @default("pilorus")
+  name         String
+  type         String
+  provider     String
+  status       String   @default("PLANNED")
+  trustLevel   String   @default("PLANNED")
+  direction    String   @default("BIDIRECTIONAL")
+  mode         String   @default("MANUAL")
+  capabilities String[] @default([])
+  settings     Json     @default("{}")
+  health       Json     @default("{}")
+  lastSyncAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  syncJobs     TerminalSyncJob[]
+
+  @@unique([tenantId, type, provider])
+  @@index([tenantId, status, type])
+  @@index([provider, status])
+}
+
+model TerminalSyncJob {
+  id             String   @id @default(cuid())
+  tenantId       String   @default("pilorus")
+  connectorId    String?
+  channel        String
+  event          String
+  entityType     String
+  entityId       String?
+  status         String   @default("QUEUED")
+  direction      String   @default("OUTBOUND")
+  priority       Int      @default(5)
+  attempts       Int      @default(0)
+  maxAttempts    Int      @default(5)
+  idempotencyKey String?  @unique
+  payload        Json     @default("{}")
+  result         Json?
+  lastError      String?
+  scheduledAt    DateTime @default(now())
+  lockedAt       DateTime?
+  processedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  connector      TerminalConnector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, scheduledAt])
+  @@index([channel, status])
+  @@index([entityType, entityId])
+  @@index([connectorId, status])
+}
+
+model TerminalSearchIndex {
+  id              String   @id @default(cuid())
+  tenantId        String   @default("pilorus")
+  entityType      String
+  entityId        String
+  profile         String?
+  title           String
+  subtitle        String?
+  keywords        String
+  barcode         String?
+  phoneTail       String?
+  payload         Json     @default("{}")
+  sourceUpdatedAt DateTime?
+  indexedAt       DateTime @default(now())
+  stale           Boolean  @default(false)
+
+  @@unique([tenantId, entityType, entityId])
+  @@index([tenantId, entityType, indexedAt])
+  @@index([profile, entityType])
+  @@index([keywords])
+  @@index([barcode])
+  @@index([phoneTail])
+}
+
 model Subscription {
   id         String   @id @default(cuid())
   userId     String
@@ -529,6 +911,26 @@ model Subscription {
 // Колонка tenantId добавлена ко всем core моделям с @default("pilorus"),
 // @@index([tenantId]) — для быстрой фильтрации.
 // Пока данные НЕ разделяются (в Этапе 3 добавим middleware фильтр + RLS).
+model ArayModuleState {
+  id               String   @id @default(cuid())
+  tenantId         String   @default("pilorus")
+  moduleId         String
+  enabled          Boolean  @default(true)
+  locked           Boolean  @default(false)
+  rolePolicy       Json     @default("{}")
+  subscriptionPlan String?
+  connectorPolicy  Json     @default("{}")
+  reason           String?
+  updatedById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([tenantId, moduleId])
+  @@index([tenantId, enabled])
+  @@index([moduleId])
+  @@index([updatedById])
+}
+
 model Tenant {
   id          String   @id @default(cuid())
   slug        String   @unique           // "pilorus", "severniy-les"
@@ -598,6 +1000,56 @@ enum TaskPriority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum TaskRelationEntityType {
+  TASK
+  ORDER
+  LEAD
+  SUPPORT_INCIDENT
+  REVIEW
+  PRODUCT
+  CLIENT
+  SUPPLIER
+  CATEGORY
+  MARKETPLACE_LISTING
+  BUSINESS
+  USER
+}
+
+enum NotificationDirection {
+  INBOUND
+  OUTBOUND
+  SYSTEM
+}
+
+enum NotificationChannel {
+  PUSH
+  TELEGRAM
+  EMAIL
+  SMS
+  SYSTEM
+  ARAY
+}
+
+enum NotificationStatus {
+  DRAFT
+  QUEUED
+  SENT
+  PARTIAL
+  FAILED
+  READ
+  ARCHIVED
+}
+
+enum NotificationSource {
+  ADMIN
+  ARAY
+  SYSTEM
+  AUTOMATION
+  ORDER
+  TASK
+  TELEGRAM
 }
 
 enum LeadSource {

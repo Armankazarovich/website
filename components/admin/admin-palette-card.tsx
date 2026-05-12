@@ -1,15 +1,13 @@
 "use client";
 
 import type { MouseEventHandler } from "react";
-import { Check, Eye } from "lucide-react";
-import type { AdminAtmosphereItem } from "@/lib/admin-atmospheres";
+import { Check } from "lucide-react";
 import { ARAY_FOCUS_RING } from "@/lib/aray-design-tokens";
 import type { PaletteItem } from "@/lib/palettes";
 import { cn } from "@/lib/utils";
 
 type AdminPaletteCardProps = {
   palette: PaletteItem;
-  atmosphere?: AdminAtmosphereItem | null;
   active?: boolean;
   enabled?: boolean;
   previewing?: boolean;
@@ -25,10 +23,8 @@ type AdminPaletteCardProps = {
 
 export function AdminPaletteCard({
   palette,
-  atmosphere,
   active = false,
   enabled = true,
-  previewing = false,
   variant = "compact",
   showLabel = true,
   className,
@@ -59,7 +55,7 @@ export function AdminPaletteCard({
         isLarge ? "rounded-2xl p-2" : "rounded-xl p-1.5",
         active
           ? "border border-primary/55 bg-primary/[0.12]"
-          : "border border-border/70 bg-background/45 hover:border-primary/35 hover:bg-background/70",
+          : "border border-border/70 bg-background/50 hover:border-primary/40 hover:bg-background/70",
         !enabled && "opacity-55",
         disabled && "cursor-not-allowed opacity-45",
         className,
@@ -74,18 +70,6 @@ export function AdminPaletteCard({
           background: previewBackground,
         }}
       >
-        {isLarge && atmosphere?.src && (
-          <img
-            src={atmosphere.src}
-            alt=""
-            loading={active ? "eager" : "lazy"}
-            decoding="async"
-            className="h-full w-full object-cover"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-            }}
-          />
-        )}
         <span
           className="absolute inset-0"
           style={{
@@ -114,11 +98,6 @@ export function AdminPaletteCard({
             <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
           </span>
         )}
-        {previewing && isLarge && !active && (
-          <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur" title="Предпросмотр">
-            <Eye className="h-3.5 w-3.5" />
-          </span>
-        )}
       </span>
 
       {showLabel && (
@@ -127,7 +106,7 @@ export function AdminPaletteCard({
             {palette.name}
           </span>
           <span className={cn("block truncate font-medium leading-tight text-muted-foreground", isLarge ? "text-[11px]" : "text-[9px]")}>
-            {atmosphere?.shortName ?? "ARAY"}
+            {palette.mood}
           </span>
         </span>
       )}

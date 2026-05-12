@@ -27,6 +27,7 @@ const MEDIA_DIRS = [
 ];
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "svg", "gif"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
+const DEFAULT_MEDIA_LIMIT = 500;
 
 function getMediaKind(filename: string): "image" | "video" | "document" {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
@@ -36,9 +37,11 @@ function getMediaKind(filename: string): "image" | "video" | "document" {
 }
 
 // ── GET: list all media files ─────────────────────────────────────────────────
-export async function GET() {
+export async function GET(req: Request) {
   const role = await getRole();
   if (!canViewGlobalMedia(role)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const url = new URL(req.url);
+  const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? DEFAULT_MEDIA_LIMIT) || DEFAULT_MEDIA_LIMIT, 1), 1000);
 
   // Load ALT map from SiteSettings
   const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
@@ -94,7 +97,7 @@ export async function GET() {
   // Sort: newest first
   files.sort((a, b) => b.mtime - a.mtime);
 
-  return NextResponse.json({ files, total: files.length });
+  return NextResponse.json({ files: files.slice(0, limit), total: files.length, hasMore: files.length > limit });
 }
 
 // ── POST: save ALT or delete file ─────────────────────────────────────────────

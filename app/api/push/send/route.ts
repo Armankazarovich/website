@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { normalizeNotificationEntity, recordNotificationCenterEvent, resolveNotificationStatus } from "@/lib/notification-center";
+import { canAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 function getWebPush() {
@@ -50,11 +52,12 @@ async function sendToSubscriptions(
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || !canAccess(session.user.role, "notifications")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 
-  const { title, body, url, segment = "all" } = await req.json();
+  const payload = await req.json();
+  const { title, body, url, segment = "all" } = payload;
 
   if (!title || !body) {
     return NextResponse.json({ error: "title and body required" }, { status: 400 });
@@ -104,5 +107,35 @@ export async function POST(req: NextRequest) {
     url: url || "/",
   });
 
-  return NextResponse.json(result);
+  let notificationEventId: string | undefined;
+  try {
+    const status = resolveNotificationStatus(result);
+    const entity = normalizeNotificationEntity(payload);
+    const event = await recordNotificationCenterEvent({
+      channel: "PUSH",
+      direction: "OUTBOUND",
+      source: "ADMIN",
+      sourceUserId: session.user.id,
+      status,
+      title,
+      body,
+      url: url || "/",
+      segment,
+      recipientUserId: typeof payload.recipientUserId === "string" ? payload.recipientUserId : null,
+      recipientLabel: typeof payload.recipientLabel === "string" ? payload.recipientLabel : null,
+      recipientRole: typeof payload.recipientRole === "string" ? payload.recipientRole : null,
+      sentCount: result.sent,
+      failedCount: result.failed,
+      cleanedCount: "cleaned" in result ? result.cleaned || 0 : 0,
+      error: "error" in result ? result.error || null : null,
+      sentAt: status === "SENT" || status === "PARTIAL" ? new Date() : null,
+      metadata: { targetCount: subscriptions.length },
+      ...entity,
+    });
+    notificationEventId = event.id;
+  } catch (error) {
+    console.error("[notification-center] failed to record push event", error);
+  }
+
+  return NextResponse.json({ ...result, notificationEventId });
 }

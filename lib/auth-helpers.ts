@@ -15,6 +15,9 @@ export const MANAGEMENT_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"] as const;
 /** Роли-администраторы (полный доступ) */
 export const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"] as const;
 
+/** Только владелец платформы: ключи, оплаты, лимиты и системные подключения */
+export const SUPER_ADMIN_ROLES = ["SUPER_ADMIN"] as const;
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Получить сессию и роль. Возвращает null если не авторизован */
@@ -34,6 +37,15 @@ export async function requireAdmin() {
   const data = await getSessionRole();
   if (!data || !ADMIN_ROLES.includes(data.role as any)) {
     return { authorized: false as const, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  return { authorized: true as const, ...data };
+}
+
+/** Проверяет что пользователь — SUPER_ADMIN */
+export async function requireSuperAdmin() {
+  const data = await getSessionRole();
+  if (!data || !SUPER_ADMIN_ROLES.includes(data.role as any)) {
+    return { authorized: false as const, response: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
   return { authorized: true as const, ...data };
 }

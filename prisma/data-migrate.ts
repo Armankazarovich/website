@@ -33,6 +33,100 @@ function findStableProductImage(slug: string): string | null {
   return null;
 }
 
+const CATEGORY_SEO_20260424: Record<string, { seoTitle: string; seoDescription: string; name?: string }> = {
+  "sosna-el": {
+    seoTitle: "Сосна и ель — купить пиломатериалы от производителя в Химках",
+    seoDescription:
+      "Доска, брус, вагонка, блок-хаус и планкен из сосны и ели. Склад в Химках, доставка по Москве и Московской области.",
+  },
+  "listvennitsa": {
+    seoTitle: "Лиственница — террасная доска, планкен и брус в Химках",
+    seoDescription:
+      "Пиломатериалы из лиственницы для фасадов, террас, бань и влажных зон. Фото, цены, размеры и заказ с доставкой по Москве и МО.",
+  },
+  "fanera": {
+    name: "Фанера и листовые материалы",
+    seoTitle: "Фанера и листовые материалы — купить в Химках",
+    seoDescription:
+      "Фанера ФК, ФСФ, ламинированная фанера и листовые материалы со склада ПилоРус. Цены за лист, доставка по Москве и области.",
+  },
+  "lipa-osina": {
+    seoTitle: "Липа и осина для бани — вагонка и пиломатериалы",
+    seoDescription:
+      "Вагонка из липы и осины, доска и брус для бань, саун и внутренней отделки. Склад в Химках, доставка 1-3 дня.",
+  },
+};
+
+const PRODUCT_DESCRIPTIONS_20260424: Record<string, { name?: string; description: string }> = {
+  "doska-stroganaya-suhaya-sosna": {
+    name: "Доска сухая строганная (Сосна/Ель)",
+    description:
+      "Сухая строганная доска из сосны и ели проходит камерную сушку и механическую обработку, поэтому держит геометрию и имеет гладкую поверхность. Длина доски — 6 м. Подходит для внутренней отделки, полов, стен, потолков, каркасного строительства, лестниц, мебели и столярных работ.",
+  },
+  "brus-strogannyy-suhoy-sosna": {
+    description:
+      "Сухой строганный брус из сосны и ели с точной геометрией и гладкой поверхностью. Материал проходит камерную сушку, поэтому меньше подвержен усадке, растрескиванию и деформации. Длина бруса — 6 м; применяется в каркасах, перегородках, стропильных системах и видимых деревянных конструкциях.",
+  },
+  "brus-strogannyy-suhoy-listv": {
+    description:
+      "Сухой строганный брус из лиственницы — прочный материал с высокой природной влагостойкостью. Лиственница устойчива к истиранию, точечным нагрузкам, грибку и насекомым, поэтому подходит для наружных работ, бань, террас, садовой мебели и ответственных конструкций. Длина бруса — 6 м.",
+  },
+  "doska-stroganaya-suhaya-listv": {
+    description:
+      "Строганная сухая доска из лиственницы — плотный и долговечный материал для чистовой отделки, полов, террас и влажных зон. Лиственница почти не впитывает влагу, хорошо держит геометрию и ценится за выразительную текстуру. Доступные размеры и сорт уточняются в карточке товара.",
+  },
+  "terrasnaya-doska-listv": {
+    description:
+      "Террасная доска из лиственницы подходит для открытых площадок, настилов, веранд и зон у воды. Древесина плотная, устойчива к влаге, грибку и механическим нагрузкам; рифленая поверхность помогает снизить скольжение. Варианты поставляются длиной 3 или 4 м, точную длину выбирайте в размере или уточняйте при заказе.",
+  },
+  "imitaciya-brusa-listv": {
+    description:
+      "Имитация бруса из лиственницы, или фальшбрус, — сухой строганый погонаж для внешней и внутренней обшивки стен. Профиль с фасками и соединением шип-паз дает плотное примыкание без сквозных щелей, а вентиляционные борозды на обратной стороне помогают сохранять геометрию. Подходит для фасадов, комнат отдыха, бань и интерьеров в стиле шале.",
+  },
+  "blok-haus-sosna": {
+    description:
+      "Блок-хаус из сосны и ели имитирует оцилиндрованное бревно и используется для внутренней отделки, фасадов с защитным покрытием, беседок, веранд и балконов. Вся доска поставляется длиной 6 м. Материал помогает получить вид деревянного сруба без тяжелой бревенчатой конструкции.",
+  },
+  "doska-pola-sosna": {
+    description:
+      "Доска пола, или европол, из сосны и ели — шпунтованная доска для чистовых полов в домах, банях и хозяйственных помещениях. Длина доски — 6 м. Соединение шип-паз помогает собрать ровный настил и уменьшить щели между элементами.",
+  },
+  "vagonka-lipa": {
+    description:
+      "Вагонка из липы — классический материал для бань и саун. Липа имеет низкую теплопроводность, не обжигает кожу при нагреве, не выделяет смолу и дает легкий медовый аромат. Подходит для стен, потолков и полков в парной при правильном монтаже и уходе.",
+  },
+  "vagonka-osina": {
+    description:
+      "Вагонка из осины ценится за стойкость к сырости и стабильность во влажной среде. Осина не выделяет смолу, не обжигает при нагреве, меньше подвержена гниению и хорошо подходит для парных, моечных и банной отделки.",
+  },
+  "vagonka-shtil-listv": {
+    description:
+      "Вагонка «Штиль» из лиственницы создает ровную, почти бесшовную поверхность для стен и потолков. Материал прочнее сосны, устойчив к влаге и хорошо подходит для премиальных интерьеров, влажных зон, фасадов, веранд, комнат отдыха и предбанников.",
+  },
+  "planken-listv": {
+    description:
+      "Планкен из лиственницы — фасадная доска для современной архитектурной отделки. При монтаже оставляют дренажный зазор 3-8 мм: фасад проветривается, влага не запирается, а линии выглядят аккуратно и ритмично. Для лиственницы доступны варианты длиной 3 или 4 м.",
+  },
+  "planken-sosna": {
+    description:
+      "Планкен из хвои — строганая фасадная доска из сосны и ели без шип-паза. Ее крепят с зазором 3-6 мм, поэтому фасад получает вентиляцию, выразительную тень и современный лаконичный рисунок. Длина доски — 6 м.",
+  },
+};
+
+const DRY_PLANED_PINE_BOARD_VARIANTS = [
+  { size: "20×90×6000", pricePerPiece: 320 },
+  { size: "20×120×6000", pricePerPiece: 450 },
+  { size: "20×140×6000", pricePerPiece: 530 },
+  { size: "20×190×6000", pricePerPiece: 730 },
+  { size: "40×100×6000", pricePerCube: 21000, pricePerPiece: 512, piecesPerCube: 41 },
+  { size: "40×150×6000", pricePerCube: 21000, pricePerPiece: 778, piecesPerCube: 27 },
+  { size: "40×200×6000", pricePerCube: 21000, pricePerPiece: 1050, piecesPerCube: 20 },
+  { size: "50×150×6000", pricePerCube: 21000, pricePerPiece: 955, piecesPerCube: 22 },
+  { size: "50×200×6000", pricePerCube: 21000, pricePerPiece: 1313, piecesPerCube: 16 },
+  { size: "50×250×6000", pricePerCube: 24000, pricePerPiece: 1846, piecesPerCube: 13 },
+  { size: "50×300×6000", pricePerCube: 24000, pricePerPiece: 2182, piecesPerCube: 11 },
+];
+
 async function main() {
   console.log("[data-migrate] Запуск миграций данных...");
 
@@ -310,6 +404,113 @@ async function main() {
     if (createdSubs > 0) console.log(`[data-migrate] ✓ Постоянные подписки засеяны (${createdSubs} новых)`);
   } catch (e: any) {
     console.log("[data-migrate] ⚠ Сид подписок пропущен:", e.message);
+  }
+
+  // ── 2026-04-24 / 2026-05-12: правки ПилоРус из презентации менеджеров ────
+  try {
+    let updatedCategories = 0;
+    for (const [slug, data] of Object.entries(CATEGORY_SEO_20260424)) {
+      const cat = await prisma.category.findUnique({ where: { slug } });
+      if (!cat) continue;
+      await prisma.category.update({
+        where: { slug },
+        data: {
+          ...(data.name ? { name: data.name } : {}),
+          seoTitle: data.seoTitle,
+          seoDescription: data.seoDescription,
+        },
+      });
+      updatedCategories++;
+    }
+    console.log(`[data-migrate] ✓ SEO категорий ПилоРус обновлено (${updatedCategories}) — шаг 2026-04-24`);
+
+    const sosnaCat = await prisma.category.findUnique({ where: { slug: "sosna-el" } });
+    if (sosnaCat) {
+      await prisma.product.upsert({
+        where: { slug: "doska-stroganaya-suhaya-sosna" },
+        create: {
+          slug: "doska-stroganaya-suhaya-sosna",
+          name: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].name || "Доска сухая строганная (Сосна/Ель)",
+          description: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].description,
+          categoryId: sosnaCat.id,
+          images: ["/images/products/doska-stroganaya-antisept-sosna.webp"],
+          saleUnit: "BOTH",
+          active: true,
+          featured: true,
+        },
+        update: {
+          name: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].name,
+          description: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].description,
+          images: ["/images/products/doska-stroganaya-antisept-sosna.webp"],
+          saleUnit: "BOTH",
+          active: true,
+        },
+      });
+
+      const dryBoard = await prisma.product.findUnique({ where: { slug: "doska-stroganaya-suhaya-sosna" } });
+      const dryBeam = await prisma.product.findUnique({ where: { slug: "brus-strogannyy-suhoy-sosna" } });
+      if (dryBoard && dryBeam) {
+        const moved = await prisma.productVariant.updateMany({
+          where: {
+            productId: dryBeam.id,
+            OR: [
+              { size: { startsWith: "25×" } },
+              { size: { startsWith: "40×" } },
+              { size: { startsWith: "50×" } },
+            ],
+          },
+          data: { productId: dryBoard.id },
+        });
+        if (moved.count > 0) {
+          console.log(`[data-migrate] ✓ Сухая строганная доска вынесена из бруса (${moved.count} вариантов)`);
+        }
+
+        await prisma.productVariant.updateMany({
+          where: {
+            productId: dryBoard.id,
+            OR: [
+              { size: "50×100" },
+              { size: "50×100×6000" },
+              { size: { startsWith: "50×100 " } },
+            ],
+          },
+          data: { inStock: false },
+        });
+
+        const dryBoardVariantCount = await prisma.productVariant.count({ where: { productId: dryBoard.id } });
+        if (dryBoardVariantCount === 0) {
+          await prisma.productVariant.createMany({
+            data: DRY_PLANED_PINE_BOARD_VARIANTS.map((v, index) => ({
+              productId: dryBoard.id,
+              size: v.size,
+              pricePerCube: "pricePerCube" in v ? v.pricePerCube : undefined,
+              pricePerPiece: v.pricePerPiece,
+              piecesPerCube: "piecesPerCube" in v ? v.piecesPerCube : undefined,
+              inStock: true,
+              sortOrder: index,
+            })),
+          });
+          console.log("[data-migrate] ✓ Добавлены варианты сухой строганной доски (Сосна/Ель)");
+        }
+      }
+    }
+
+    let updatedProducts = 0;
+    for (const [slug, data] of Object.entries(PRODUCT_DESCRIPTIONS_20260424)) {
+      const product = await prisma.product.findUnique({ where: { slug } });
+      if (!product) continue;
+      await prisma.product.update({
+        where: { slug },
+        data: {
+          ...(data.name ? { name: data.name } : {}),
+          description: data.description,
+        },
+      });
+      updatedProducts++;
+    }
+    console.log(`[data-migrate] ✓ Описания товаров ПилоРус обновлены (${updatedProducts}) — шаг 2026-04-24`);
+  } catch (e: any) {
+    console.log("[data-migrate] ⚠ Правки ПилоРус из презентации пропущены:", e.message);
   }
 
   console.log("[data-migrate] Готово.");

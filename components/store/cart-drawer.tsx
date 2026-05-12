@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { X, ShoppingCart, Minus, Plus, Trash2, Package, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/store/cart";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { formatPrice } from "@/lib/utils";
 
 function CartImage({ src, alt }: { src: string; alt: string }) {
@@ -30,6 +31,7 @@ function CartImage({ src, alt }: { src: string; alt: string }) {
 export function CartDrawer() {
   const { cartOpen, setCartOpen, items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore();
   const [mounted, setMounted] = useState(false);
+  useAdminOverlayGuard(cartOpen);
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -50,7 +52,7 @@ export function CartDrawer() {
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="relative w-[92vw] max-w-[420px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            className="admin-popup-liquid relative w-[92vw] max-w-[420px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}

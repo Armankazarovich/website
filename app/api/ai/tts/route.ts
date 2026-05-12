@@ -11,16 +11,16 @@ const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
 const MODEL_ID = "eleven_multilingual_v2";
 
 // Голосовые настройки настроены на "Брат-Арай":
-// stability 0.55  — живой, не монотонный (было 0.82 = робот)
+// stability 0.52  — живой, но не дерганый
 // similarity 0.78 — узнаваемый Anton Ru
-// style 0.42      — эмоции: тёплый, искренний (было 0.0 = робот)
-// speed 1.0       — естественный темп (было 1.05 — слишком быстрый)
+// style 0.46      — теплее и душевнее, без театральности
+// speed 0.96      — быстрее для рабочего режима, но без проглатывания окончаний
 const VOICE_SETTINGS = {
-  stability: 0.55,
+  stability: 0.52,
   similarity_boost: 0.78,
-  style: 0.42,
+  style: 0.46,
   use_speaker_boost: true,
-  speed: 1.0,
+  speed: 0.96,
 };
 
 // ── Прямой запрос к ElevenLabs ──────────────────────────────────────────────
@@ -69,6 +69,11 @@ async function cloudflareProxy(cleanText: string, apiKey: string): Promise<Array
       body: JSON.stringify({
         text: cleanText,
         voiceId: VOICE_ID,
+        voice_id: VOICE_ID,
+        modelId: MODEL_ID,
+        model_id: MODEL_ID,
+        voiceSettings: VOICE_SETTINGS,
+        voice_settings: VOICE_SETTINGS,
         apiKey,
       }),
     });
@@ -92,9 +97,16 @@ async function cloudflareProxy(cleanText: string, apiKey: string): Promise<Array
 }
 
 // ── Web Speech API fallback info ────────────────────────────────────────────
-function browserFallback(cleanText: string) {
+function normalizeSpeechLang(lang: unknown): string | undefined {
+  if (typeof lang !== "string") return undefined;
+  const normalized = lang.trim();
+  if (!/^[a-z]{2,3}(?:-[A-Z]{2})?$/.test(normalized)) return undefined;
+  return normalized;
+}
+
+function browserFallback(cleanText: string, lang?: string) {
   return NextResponse.json(
-    { error: "voice_blocked", fallback: "browser", text: cleanText },
+    { error: "voice_blocked", fallback: "browser", text: cleanText, lang: lang || "ru-RU" },
     { status: 200 }
   );
 }
@@ -105,7 +117,7 @@ export async function POST(req: NextRequest) {
     const apiKey = process.env.ELEVENLABS_API_KEY;
 
     const body = await req.json();
-    const { text, source } = body as { text?: string; source?: string };
+    const { text, source, lang } = body as { text?: string; source?: string; lang?: string };
     if (!text || typeof text !== "string") {
       return NextResponse.json({ error: "Нет текста" }, { status: 400 });
     }
@@ -115,6 +127,7 @@ export async function POST(req: NextRequest) {
     // единицы (₽/м³→"рублей за кубометр"), телефоны (+7-985→плюс 7 985),
     // скобки→паузы, кавычки→удалить, размеры через ×→"на" и т.д.
     const cleanText = cleanForTTS(text);
+    const speechLang = normalizeSpeechLang(lang);
 
     if (!cleanText) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });
@@ -122,7 +135,7 @@ export async function POST(req: NextRequest) {
 
     if (!apiKey) {
       console.warn("[TTS] ELEVENLABS_API_KEY is not configured, using browser fallback");
-      return browserFallback(cleanText);
+      return browserFallback(cleanText, speechLang);
     }
 
     // Стратегия: Cloudflare Worker → Direct → Browser fallback
@@ -139,7 +152,7 @@ export async function POST(req: NextRequest) {
     // 3. Если ничего не сработало — браузерный fallback (НЕ логируем, не платный)
     if (!audio || audio.byteLength < 100) {
       console.log("[TTS] All providers failed, browser fallback");
-      return browserFallback(cleanText);
+      return browserFallback(cleanText, speechLang);
     }
 
     // ── Логирование расходов ElevenLabs в фоне ─────────────────────────────

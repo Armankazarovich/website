@@ -1,6 +1,7 @@
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { cn } from "@/lib/utils";
 
 export const Sheet = DialogPrimitive.Root;
@@ -9,6 +10,8 @@ export const SheetClose = DialogPrimitive.Close;
 export const SheetPortal = DialogPrimitive.Portal;
 
 export function SheetOverlay({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>) {
+  useAdminOverlayGuard(true);
+
   return (
     <DialogPrimitive.Overlay
       className={cn(

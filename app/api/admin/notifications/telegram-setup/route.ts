@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { requireArayModuleAccess } from "@/lib/aray-module-auth";
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SITE_URL = process.env.NEXTAUTH_URL || "https://pilo-rus.ru";
@@ -9,13 +10,18 @@ const SITE_URL = process.env.NEXTAUTH_URL || "https://pilo-rus.ru";
 async function checkAdmin() {
   const session = await auth();
   const role = session?.user?.role;
-  return session && (role === "ADMIN" || role === "SUPER_ADMIN");
+  if (!session || (role !== "ADMIN" && role !== "SUPER_ADMIN")) {
+    return { authorized: false as const, response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
+  const moduleAccess = await requireArayModuleAccess({ moduleId: "core.notifications", role });
+  if (!moduleAccess.authorized) return moduleAccess;
+  return { authorized: true as const, session };
 }
 
 // GET — check current webhook status
 export async function GET() {
-  if (!(await checkAdmin()))
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await checkAdmin();
+  if (!access.authorized) return access.response;
 
   if (!TOKEN) {
     return NextResponse.json({
@@ -56,8 +62,8 @@ export async function GET() {
 
 // POST — register/update webhook
 export async function POST(req: NextRequest) {
-  if (!(await checkAdmin()))
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await checkAdmin();
+  if (!access.authorized) return access.response;
 
   if (!TOKEN) {
     return NextResponse.json({ ok: false, error: "TELEGRAM_BOT_TOKEN не установлен" }, { status: 400 });

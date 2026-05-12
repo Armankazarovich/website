@@ -49,6 +49,7 @@ interface ProductCardProps {
   slug: string;
   name: string;
   category: string;
+  description?: string | null;
   images: string[];
   saleUnit: "CUBE" | "PIECE" | "BOTH";
   variants: Variant[];
@@ -59,8 +60,14 @@ interface ProductCardProps {
 const FALLBACK_GRADIENT =
   "bg-gradient-to-br from-amber-900/80 via-amber-800/60 to-brand-brown/80 dark:from-amber-950/90 dark:via-amber-900/70 dark:to-brand-brown/90";
 
+function shortCardDescription(description?: string | null) {
+  const text = (description || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return text.length > 118 ? `${text.slice(0, 115).trim()}...` : text;
+}
+
 export function ProductCard({
-  id, slug, name, category, images, saleUnit, variants, featured,
+  id, slug, name, category, description, images, saleUnit, variants, featured,
 }: ProductCardProps) {
   const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
@@ -69,6 +76,7 @@ export function ProductCard({
 
   const activeVariants = variants.filter((v) => v.inStock);
   const hasStock = activeVariants.length > 0;
+  const teaser = shortCardDescription(description);
 
   const defaultVariant = activeVariants[0] || variants[0];
 
@@ -246,6 +254,11 @@ export function ProductCard({
               {name}
             </h3>
           </Link>
+          {teaser && (
+            <p className="mb-2 hidden text-[11px] leading-snug text-white/65 sm:line-clamp-2">
+              {teaser}
+            </p>
+          )}
 
           {/* Sizes */}
           {variants.length > 0 && (
@@ -392,6 +405,12 @@ export function ProductCard({
             {name}
           </h3>
         </Link>
+
+        {teaser && (
+          <p className="mb-3 hidden text-xs leading-relaxed text-muted-foreground sm:line-clamp-2">
+            {teaser}
+          </p>
+        )}
 
         {/* Размеры-пилюли — кликабельные */}
         {variants.length > 0 && (

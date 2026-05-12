@@ -29,5 +29,13 @@ export default async function InventoryPage() {
     ],
   });
 
-  return <InventoryClient variants={variants} />;
+  const clientVariants = variants.map((variant) => ({
+    ...variant,
+    pricePerCube: variant.pricePerCube === null ? null : Number(variant.pricePerCube),
+    pricePerPiece: variant.pricePerPiece === null ? null : Number(variant.pricePerPiece),
+    stockQty: variant.stockQty === null ? null : Number(variant.stockQty),
+    lowStockThreshold: variant.lowStockThreshold ?? 0,
+  }));
+
+  return <InventoryClient variants={clientVariants} />;
 }

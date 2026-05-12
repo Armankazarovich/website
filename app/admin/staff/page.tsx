@@ -24,8 +24,10 @@ import {
 } from "lucide-react";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { InfoPopup } from "@/components/admin/info-popup";
+import { getAccessibleSections, type Section } from "@/lib/permissions";
 
 // ─── Role definitions ───────────────────────────────────────────────────────
+// Visual labels live here; access chips are derived from lib/permissions.
 
 const ROLE_DEFINITIONS: Record<
   string,
@@ -35,7 +37,6 @@ const ROLE_DEFINITIONS: Record<
     dot: string;
     avatarBg: string;
     description: string;
-    sections: string[];
     defaultPassword: string;
   }
 > = {
@@ -45,7 +46,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-orange-500",
     avatarBg: "bg-orange-500/20 text-orange-700 dark:text-orange-300",
     description: "Владелец системы — неограниченный доступ ко всему",
-    sections: ["Всё без ограничений", "Управление ADMIN аккаунтами"],
     defaultPassword: "superadmin123",
   },
   ADMIN: {
@@ -54,7 +54,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-red-500",
     avatarBg: "bg-red-500/20 text-red-700 dark:text-red-300",
     description: "Полный доступ ко всем разделам",
-    sections: ["Всё без ограничений"],
     defaultPassword: "admin123",
   },
   MANAGER: {
@@ -62,8 +61,7 @@ const ROLE_DEFINITIONS: Record<
     color: "bg-primary/15 text-primary",
     dot: "bg-primary",
     avatarBg: "bg-primary/20 text-primary",
-    description: "Продажи, товары, клиенты, маркетинг",
-    sections: ["Заказы", "Каталог товаров", "Клиенты", "Акции", "Отзывы", "Медиабиблиотека", "Импорт"],
+    description: "Продажи, клиенты, каталог, маркетинг и рабочие операции",
     defaultPassword: "manager123",
   },
   COURIER: {
@@ -71,8 +69,7 @@ const ROLE_DEFINITIONS: Record<
     color: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
     dot: "bg-amber-500",
     avatarBg: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
-    description: "Заказы и доставка",
-    sections: ["Заказы", "Доставка"],
+    description: "Заказы, доставка, задачи и обучение терминала",
     defaultPassword: "courier123",
   },
   ACCOUNTANT: {
@@ -80,8 +77,7 @@ const ROLE_DEFINITIONS: Record<
     color: "bg-purple-500/15 text-purple-700 dark:text-purple-400",
     dot: "bg-purple-500",
     avatarBg: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
-    description: "Просмотр заказов и финансовых данных",
-    sections: ["Заказы (просмотр)"],
+    description: "Финансы, аналитика, задачи и обучение терминала",
     defaultPassword: "accountant123",
   },
   WAREHOUSE: {
@@ -89,8 +85,7 @@ const ROLE_DEFINITIONS: Record<
     color: "bg-green-500/15 text-green-700 dark:text-green-400",
     dot: "bg-green-500",
     avatarBg: "bg-green-500/20 text-green-700 dark:text-green-300",
-    description: "Склад, остатки, импорт товаров",
-    sections: ["Каталог товаров", "Склад / Остатки", "Импорт / Экспорт"],
+    description: "Склад, каталог, доставка, заказы, импорт и задачи",
     defaultPassword: "warehouse123",
   },
   SELLER: {
@@ -98,13 +93,67 @@ const ROLE_DEFINITIONS: Record<
     color: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-400",
     dot: "bg-cyan-500",
     avatarBg: "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300",
-    description: "Каталог и заказы (только просмотр)",
-    sections: ["Заказы (просмотр)", "Каталог (просмотр)"],
+    description: "Продажи, каталог, CRM, отзывы, медиа и задачи",
     defaultPassword: "seller123",
   },
 };
 
-const ALL_ROLES = ["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "ADMIN", "SUPER_ADMIN"];
+const ALL_ROLES = [
+  "MANAGER",
+  "COURIER",
+  "ACCOUNTANT",
+  "WAREHOUSE",
+  "SELLER",
+  "ADMIN",
+  "SUPER_ADMIN",
+];
+
+const SECTION_LABELS: Partial<Record<Section, string>> = {
+  dashboard: "Рабочий стол",
+  orders: "Заказы",
+  delivery: "Доставка",
+  products: "Каталог товаров",
+  categories: "Категории",
+  inventory: "Склад / Остатки",
+  import: "Импорт / Экспорт",
+  clients: "Клиенты",
+  staff: "Команда",
+  crm: "CRM",
+  tasks: "Задачи",
+  finance: "Финансы",
+  analytics: "Аналитика",
+  settings: "Настройки",
+  notifications: "Уведомления",
+  email: "Рассылки",
+  reviews: "Отзывы",
+  promotions: "Акции",
+  promotion: "Продвижение",
+  services: "Услуги",
+  posts: "Статьи",
+  site: "Настройки сайта",
+  business_settings: "Настройки бизнеса",
+  appearance: "Оформление",
+  watermark: "Водяной знак",
+  terminals: "Терминалы",
+  terminals_training: "Обучение терминала",
+  aray: "ARAY AI",
+  aray_agents: "Агенты ARAY",
+  aray_costs: "Бюджет ARAY",
+  help: "База знаний",
+  health: "Здоровье системы",
+  media: "Медиабиблиотека",
+};
+
+function getRoleSections(role: string): string[] {
+  if (role === "SUPER_ADMIN")
+    return ["Всё без ограничений", "Управление ADMIN аккаунтами"];
+  if (role === "ADMIN") return ["Всё без ограничений"];
+
+  return getAccessibleSections(role)
+    .filter((section) => !section.startsWith("cabinet"))
+    .map((section) => SECTION_LABELS[section] || section)
+    .filter((label, index, labels) => labels.indexOf(label) === index);
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -118,6 +167,25 @@ type StaffMember = {
   customRole: string | null;
   lastActiveAt: string | null;
   createdAt: string;
+  primaryBusinessRoleId: string | null;
+  businessRoles: Array<{
+    id: string;
+    roleKey: string;
+    label: string;
+    baseRole: string | null;
+    scope: string;
+    isPrimary: boolean;
+  }>;
+};
+
+type AssignableBusinessRole = {
+  id: string;
+  roleKey: string;
+  label: string;
+  description: string | null;
+  baseRole: string;
+  scope: string;
+  isActive: boolean;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -145,7 +213,10 @@ function getOnlineDot(date: string | null) {
 
 function generatePassword(): string {
   const chars = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$";
-  return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  return Array.from(
+    { length: 8 },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join("");
 }
 
 function getInitials(name: string | null, email: string): string {
@@ -159,12 +230,25 @@ function getInitials(name: string | null, email: string): string {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function RoleBadge({ role, customRole }: { role: string; customRole?: string | null }) {
+function RoleBadge({
+  role,
+  customRole,
+}: {
+  role: string;
+  customRole?: string | null;
+}) {
   const def = ROLE_DEFINITIONS[role];
-  if (!def) return <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{role}</span>;
+  if (!def)
+    return (
+      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+        {role}
+      </span>
+    );
   return (
     <span className="inline-flex items-center gap-1">
-      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${def.color}`}>
+      <span
+        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${def.color}`}
+      >
         <span className={`w-1.5 h-1.5 rounded-full ${def.dot}`} />
         {customRole || def.label}
       </span>
@@ -173,11 +257,18 @@ function RoleBadge({ role, customRole }: { role: string; customRole?: string | n
         align="start"
         content={
           <div className="space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">{def.label}</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">{def.description}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground/60">
+              {def.label}
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {def.description}
+            </p>
             <div className="pt-1.5 border-t border-border flex flex-wrap gap-1.5">
-              {def.sections.map((s) => (
-                <span key={s} className="text-[10px] px-2 py-0.5 rounded-md text-muted-foreground bg-muted/50 border border-border">
+              {getRoleSections(role).map((s) => (
+                <span
+                  key={s}
+                  className="text-[10px] px-2 py-0.5 rounded-md text-muted-foreground bg-muted/50 border border-border"
+                >
                   {s}
                 </span>
               ))}
@@ -191,11 +282,26 @@ function RoleBadge({ role, customRole }: { role: string; customRole?: string | n
 
 function StatusBadge({ status }: { status: string | null }) {
   if (status === "ACTIVE")
-    return <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-700 dark:text-green-400"><CheckCircle2 className="w-3 h-3" />Активен</span>;
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-green-500/15 text-green-700 dark:text-green-400">
+        <CheckCircle2 className="w-3 h-3" />
+        Активен
+      </span>
+    );
   if (status === "SUSPENDED")
-    return <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-500/15 text-red-700 dark:text-red-400"><XCircle className="w-3 h-3" />Заблокирован</span>;
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-500/15 text-red-700 dark:text-red-400">
+        <XCircle className="w-3 h-3" />
+        Заблокирован
+      </span>
+    );
   if (status === "PENDING")
-    return <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-700 dark:text-yellow-400"><Clock className="w-3 h-3" />Ожидает</span>;
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-500/15 text-yellow-700 dark:text-yellow-400">
+        <Clock className="w-3 h-3" />
+        Ожидает
+      </span>
+    );
   return <span className="text-xs text-muted-foreground">—</span>;
 }
 
@@ -205,6 +311,7 @@ export default function StaffPage() {
   const searchParams = useSearchParams();
   const urlStatus = searchParams.get("status"); // "PENDING" | "ACTIVE" | "SUSPENDED" | null
   const [members, setMembers] = useState<StaffMember[]>([]);
+  const [businessRoles, setBusinessRoles] = useState<AssignableBusinessRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [matrixOpen, setMatrixOpen] = useState(false);
 
@@ -216,6 +323,7 @@ export default function StaffPage() {
     phone: "",
     role: "",
     customRole: "",
+    businessRoleId: "",
     password: "",
   });
   const [showPwd, setShowPwd] = useState(false);
@@ -223,9 +331,13 @@ export default function StaffPage() {
   const [formError, setFormError] = useState("");
 
   // Inline panels: "role" | "password" | "delete" per member id
-  const [panel, setPanel] = useState<{ id: string; type: "role" | "password" | "delete" } | null>(null);
+  const [panel, setPanel] = useState<{
+    id: string;
+    type: "role" | "password" | "delete";
+  } | null>(null);
   const [panelRole, setPanelRole] = useState("");
   const [panelCustomRole, setPanelCustomRole] = useState("");
+  const [panelBusinessRoleId, setPanelBusinessRoleId] = useState("");
   const [panelPassword, setPanelPassword] = useState("");
   const [showPanelPwd, setShowPanelPwd] = useState(false);
   const [panelLoading, setPanelLoading] = useState(false);
@@ -233,25 +345,64 @@ export default function StaffPage() {
 
   // ── Load staff ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch("/api/admin/staff")
-      .then((r) => r.json())
-      .then((data) => setMembers(Array.isArray(data) ? data : []))
-      .finally(() => setLoading(false));
+    let mounted = true;
+    Promise.all([
+      fetch("/api/admin/staff").then((r) => r.json()).catch(() => []),
+      fetch("/api/admin/business-roles").then((r) => r.json()).catch(() => null),
+    ])
+      .then(([staffData, roleData]) => {
+        if (!mounted) return;
+        setMembers(Array.isArray(staffData) ? staffData : []);
+        const roles = Array.isArray(roleData?.roles) ? roleData.roles : [];
+        setBusinessRoles(
+          roles.filter((role: AssignableBusinessRole) => role.isActive && role.baseRole && role.baseRole !== "USER"),
+        );
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // ── API helper ──────────────────────────────────────────────────────────────
-  async function apiPost(body: object): Promise<{ ok?: boolean; user?: StaffMember; error?: string }> {
+  async function apiPost(
+    body: object,
+  ): Promise<{ ok?: boolean; user?: StaffMember; error?: string }> {
     const res = await fetch("/api/admin/staff", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    return res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: data.error || `Ошибка ${res.status}` };
+    return data;
   }
 
   // ── Update member in list ───────────────────────────────────────────────────
   function updateMember(user: StaffMember) {
     setMembers((prev) => prev.map((m) => (m.id === user.id ? user : m)));
+  }
+
+  function applyBusinessRoleToCreate(roleId: string) {
+    const smartRole = businessRoles.find((role) => role.id === roleId);
+    setForm((current) => ({
+      ...current,
+      businessRoleId: roleId,
+      role: smartRole?.baseRole || current.role,
+      customRole: smartRole?.label || current.customRole,
+      password: smartRole?.baseRole
+        ? ROLE_DEFINITIONS[smartRole.baseRole]?.defaultPassword || current.password
+        : current.password,
+    }));
+  }
+
+  function applyBusinessRoleToPanel(roleId: string) {
+    const smartRole = businessRoles.find((role) => role.id === roleId);
+    setPanelBusinessRoleId(roleId);
+    if (smartRole?.baseRole) setPanelRole(smartRole.baseRole);
+    if (smartRole?.label) setPanelCustomRole(smartRole.label);
   }
 
   // ── Create ──────────────────────────────────────────────────────────────────
@@ -265,10 +416,21 @@ export default function StaffPage() {
     setFormLoading(true);
     try {
       const data = await apiPost({ action: "create", ...form });
-      if (data.error) { setFormError(data.error); return; }
+      if (data.error) {
+        setFormError(data.error);
+        return;
+      }
       if (data.user) {
         setMembers((prev) => [data.user!, ...prev]);
-        setForm({ name: "", email: "", phone: "", role: "", customRole: "", password: "" });
+        setForm({
+          name: "",
+          email: "",
+          phone: "",
+          role: "",
+          customRole: "",
+          businessRoleId: "",
+          password: "",
+        });
         setShowForm(false);
       }
     } finally {
@@ -277,7 +439,11 @@ export default function StaffPage() {
   }
 
   // ── Open panel ──────────────────────────────────────────────────────────────
-  function openPanel(id: string, type: "role" | "password" | "delete", member?: StaffMember) {
+  function openPanel(
+    id: string,
+    type: "role" | "password" | "delete",
+    member?: StaffMember,
+  ) {
     if (panel?.id === id && panel.type === type) {
       setPanel(null);
       return;
@@ -286,6 +452,7 @@ export default function StaffPage() {
     if (type === "role" && member) {
       setPanelRole(member.role);
       setPanelCustomRole(member.customRole || "");
+      setPanelBusinessRoleId(member.primaryBusinessRoleId || "");
     }
     if (type === "password") {
       setPanelPassword("");
@@ -299,9 +466,21 @@ export default function StaffPage() {
     setPanelError("");
     setPanelLoading(true);
     try {
-      const data = await apiPost({ action: "update_role", userId, role: panelRole, customRole: panelCustomRole });
-      if (data.error) { setPanelError(data.error); return; }
-      if (data.user) { updateMember(data.user); setPanel(null); }
+      const data = await apiPost({
+        action: "update_role",
+        userId,
+        role: panelRole,
+        customRole: panelCustomRole,
+        businessRoleId: panelBusinessRoleId || null,
+      });
+      if (data.error) {
+        setPanelError(data.error);
+        return;
+      }
+      if (data.user) {
+        updateMember(data.user);
+        setPanel(null);
+      }
     } finally {
       setPanelLoading(false);
     }
@@ -316,8 +495,15 @@ export default function StaffPage() {
     }
     setPanelLoading(true);
     try {
-      const data = await apiPost({ action: "reset_password", userId, password: panelPassword });
-      if (data.error) { setPanelError(data.error); return; }
+      const data = await apiPost({
+        action: "reset_password",
+        userId,
+        password: panelPassword,
+      });
+      if (data.error) {
+        setPanelError(data.error);
+        return;
+      }
       setPanel(null);
     } finally {
       setPanelLoading(false);
@@ -327,12 +513,19 @@ export default function StaffPage() {
   // ── Toggle status ───────────────────────────────────────────────────────────
   async function handleToggleStatus(member: StaffMember) {
     const newStatus = member.staffStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-    const data = await apiPost({ action: "set_status", userId: member.id, staffStatus: newStatus });
+    const data = await apiPost({
+      action: "set_status",
+      userId: member.id,
+      staffStatus: newStatus,
+    });
     if (data.user) updateMember(data.user);
   }
 
   // ── Approve / Reject PENDING ────────────────────────────────────────────────
-  async function handleSetStatus(userId: string, staffStatus: "ACTIVE" | "SUSPENDED") {
+  async function handleSetStatus(
+    userId: string,
+    staffStatus: "ACTIVE" | "SUSPENDED",
+  ) {
     const data = await apiPost({ action: "set_status", userId, staffStatus });
     if (data.user) updateMember(data.user);
   }
@@ -342,7 +535,10 @@ export default function StaffPage() {
     setPanelLoading(true);
     try {
       const data = await apiPost({ action: "delete", userId });
-      if (data.error) { setPanelError(data.error); return; }
+      if (data.error) {
+        setPanelError(data.error);
+        return;
+      }
       setMembers((prev) => prev.filter((m) => m.id !== userId));
       setPanel(null);
     } finally {
@@ -358,12 +554,17 @@ export default function StaffPage() {
     const isActive = panel?.id === member.id;
 
     return (
-      <div key={member.id} className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div
+        key={member.id}
+        className="bg-card border border-border rounded-2xl overflow-hidden"
+      >
         {/* Card body */}
         <div className="flex items-start gap-4 p-4">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm ${avatarBg}`}>
+            <div
+              className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm ${avatarBg}`}
+            >
               {initials}
             </div>
             <span
@@ -375,12 +576,28 @@ export default function StaffPage() {
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <span className="font-semibold text-sm leading-tight">{member.name || "—"}</span>
+              <span className="font-semibold text-sm leading-tight">
+                {member.name || "—"}
+              </span>
               <RoleBadge role={member.role} customRole={member.customRole} />
               <StatusBadge status={member.staffStatus} />
             </div>
             <p className="text-xs text-muted-foreground">{member.email}</p>
-            {member.phone && <p className="text-xs text-muted-foreground">{member.phone}</p>}
+            {member.phone && (
+              <p className="text-xs text-muted-foreground">{member.phone}</p>
+            )}
+            {member.businessRoles?.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {member.businessRoles.map((role) => (
+                  <span
+                    key={role.id}
+                    className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary"
+                  >
+                    {role.label}{role.isPrimary ? " · основная" : ""}
+                  </span>
+                ))}
+              </div>
+            )}
             <p className="text-[11px] text-muted-foreground/60 mt-1">
               Был(а) активен: {relativeTime(member.lastActiveAt)}
             </p>
@@ -390,7 +607,7 @@ export default function StaffPage() {
           <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
             <button
               onClick={() => openPanel(member.id, "role", member)}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-xl border transition-colors ${
+              className={`inline-flex min-h-10 items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors ${
                 isActive && panel?.type === "role"
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
@@ -401,7 +618,7 @@ export default function StaffPage() {
             </button>
             <button
               onClick={() => openPanel(member.id, "password")}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-xl border transition-colors ${
+              className={`inline-flex min-h-10 items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors ${
                 isActive && panel?.type === "password"
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
@@ -412,23 +629,33 @@ export default function StaffPage() {
             </button>
             <button
               onClick={() => handleToggleStatus(member)}
-              title={member.staffStatus === "ACTIVE" ? "Заблокировать" : "Разблокировать"}
-              className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-xl border transition-colors ${
+              title={
+                member.staffStatus === "ACTIVE"
+                  ? "Заблокировать"
+                  : "Разблокировать"
+              }
+              className={`inline-flex min-h-10 items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-xl border transition-colors ${
                 member.staffStatus === "SUSPENDED"
                   ? "border-primary/40 text-primary hover:bg-primary/10 dark:border-primary/40 dark:text-primary dark:hover:bg-primary/10"
                   : "border-border hover:bg-primary/[0.08] text-muted-foreground hover:text-foreground"
               }`}
             >
               {member.staffStatus === "SUSPENDED" ? (
-                <><ShieldCheck className="w-3.5 h-3.5" /><span className="hidden sm:inline">Разблокировать</span></>
+                <>
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Разблокировать</span>
+                </>
               ) : (
-                <><ShieldOff className="w-3.5 h-3.5" /><span className="hidden sm:inline">Блокировка</span></>
+                <>
+                  <ShieldOff className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Блокировка</span>
+                </>
               )}
             </button>
             {member.role !== "ADMIN" && (
               <button
                 onClick={() => openPanel(member.id, "delete")}
-                className={`inline-flex items-center justify-center w-8 h-8 rounded-xl border transition-colors ${
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
                   isActive && panel?.type === "delete"
                     ? "border-destructive bg-destructive/10 text-destructive"
                     : "border-border hover:border-destructive hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
@@ -444,18 +671,19 @@ export default function StaffPage() {
         {member.staffStatus === "PENDING" && (
           <div className="border-t border-yellow-200 dark:border-yellow-900/40 bg-yellow-50/50 dark:bg-yellow-900/10 px-4 py-3">
             <p className="text-xs text-yellow-700 dark:text-yellow-400 font-medium mb-2.5">
-              <Clock className="w-3 h-3 inline mr-1" /> Сотрудник ожидает подтверждения. Одобрите или отклоните заявку:
+              <Clock className="w-3 h-3 inline mr-1" /> Сотрудник ожидает
+              подтверждения. Одобрите или отклоните заявку:
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleSetStatus(member.id, "ACTIVE")}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-semibold transition-colors shadow-sm"
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
               >
                 <Check className="w-4 h-4" /> Одобрить
               </button>
               <button
                 onClick={() => handleSetStatus(member.id, "SUSPENDED")}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-destructive/40 bg-destructive/5 hover:bg-destructive/10 text-destructive text-sm font-semibold transition-colors"
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
               >
                 <X className="w-4 h-4" /> Отклонить
               </button>
@@ -466,15 +694,38 @@ export default function StaffPage() {
         {/* Inline panels */}
         {isActive && panel?.type === "role" && (
           <div className="border-t border-border bg-muted/30 px-4 py-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Изменить роль</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">
+              Изменить роль
+            </p>
+            {businessRoles.length > 0 && (
+              <div className="mb-2">
+                <select
+                  value={panelBusinessRoleId}
+                  onChange={(e) => applyBusinessRoleToPanel(e.target.value)}
+                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">Без умной роли ARAY</option>
+                  {businessRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.label} · {ROLE_DEFINITIONS[role.baseRole]?.label || role.baseRole}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={panelRole}
-                onChange={(e) => setPanelRole(e.target.value)}
-                className="flex-1 h-9 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                onChange={(e) => {
+                  setPanelRole(e.target.value);
+                  setPanelBusinessRoleId("");
+                }}
+                className="min-h-11 flex-1 rounded-xl border border-border bg-background px-3 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               >
                 {ALL_ROLES.map((r) => (
-                  <option key={r} value={r}>{ROLE_DEFINITIONS[r]?.label || r}</option>
+                  <option key={r} value={r}>
+                    {ROLE_DEFINITIONS[r]?.label || r}
+                  </option>
                 ))}
               </select>
               <input
@@ -482,33 +733,44 @@ export default function StaffPage() {
                 placeholder="Своя должность (необяз.)"
                 value={panelCustomRole}
                 onChange={(e) => setPanelCustomRole(e.target.value)}
-                className="flex-1 h-9 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                className="min-h-11 flex-1 rounded-xl border border-border bg-background px-3 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <button
                 onClick={() => handleSaveRole(member.id)}
                 disabled={panelLoading}
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
+                className="flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                {panelLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                {panelLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : null}
                 Сохранить
               </button>
-              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
+              <button
+                onClick={() => setPanel(null)}
+                className="min-h-11 rounded-xl border border-border px-3 text-sm text-muted-foreground hover:bg-primary/[0.08]"
+              >
                 Отмена
               </button>
             </div>
             {panelRole && ROLE_DEFINITIONS[panelRole] && (
               <div className="mt-2 text-xs text-muted-foreground">
-                <span className="font-medium">{ROLE_DEFINITIONS[panelRole].label}:</span>{" "}
+                <span className="font-medium">
+                  {ROLE_DEFINITIONS[panelRole].label}:
+                </span>{" "}
                 {ROLE_DEFINITIONS[panelRole].description}
               </div>
             )}
-            {panelError && <p className="mt-2 text-xs text-destructive">{panelError}</p>}
+            {panelError && (
+              <p className="mt-2 text-xs text-destructive">{panelError}</p>
+            )}
           </div>
         )}
 
         {isActive && panel?.type === "password" && (
           <div className="border-t border-border bg-muted/30 px-4 py-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Сбросить пароль</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">
+              Сбросить пароль
+            </p>
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <input
@@ -516,20 +778,27 @@ export default function StaffPage() {
                   placeholder="Новый пароль"
                   value={panelPassword}
                   onChange={(e) => setPanelPassword(e.target.value)}
-                  className="w-full h-9 px-3 pr-9 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 pr-9 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPanelPwd((v) => !v)}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPanelPwd ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  {showPanelPwd ? (
+                    <EyeOff className="w-3.5 h-3.5" />
+                  ) : (
+                    <Eye className="w-3.5 h-3.5" />
+                  )}
                 </button>
               </div>
               <button
                 type="button"
-                onClick={() => { setPanelPassword(generatePassword()); setShowPanelPwd(true); }}
-                className="h-9 px-3 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08] flex items-center gap-1.5"
+                onClick={() => {
+                  setPanelPassword(generatePassword());
+                  setShowPanelPwd(true);
+                }}
+                className="flex min-h-11 items-center gap-1.5 rounded-xl border border-border px-3 text-sm text-muted-foreground hover:bg-primary/[0.08]"
                 title="Сгенерировать пароль"
               >
                 <Shuffle className="w-3.5 h-3.5" />
@@ -538,38 +807,55 @@ export default function StaffPage() {
               <button
                 onClick={() => handleSavePassword(member.id)}
                 disabled={panelLoading}
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1.5"
+                className="flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               >
-                {panelLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                {panelLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : null}
                 Сохранить пароль
               </button>
-              <button onClick={() => setPanel(null)} className="h-9 px-3 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]">
+              <button
+                onClick={() => setPanel(null)}
+                className="min-h-11 rounded-xl border border-border px-3 text-sm text-muted-foreground hover:bg-primary/[0.08]"
+              >
                 Отмена
               </button>
             </div>
-            {panelError && <p className="mt-2 text-xs text-destructive">{panelError}</p>}
+            {panelError && (
+              <p className="mt-2 text-xs text-destructive">{panelError}</p>
+            )}
           </div>
         )}
 
         {isActive && panel?.type === "delete" && (
           <div className="border-t border-destructive/30 bg-destructive/5 px-4 py-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <p className="text-sm text-destructive flex-1">
-              Удалить <strong>{member.name || member.email}</strong>? Это действие нельзя отменить.
+              Удалить <strong>{member.name || member.email}</strong>? Это
+              действие нельзя отменить.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => handleDelete(member.id)}
                 disabled={panelLoading}
-                className="h-8 px-4 rounded-lg bg-destructive text-destructive-foreground text-xs font-medium hover:bg-destructive/90 disabled:opacity-50 flex items-center gap-1.5"
+                className="flex min-h-10 items-center gap-1.5 rounded-xl bg-destructive px-4 text-xs font-medium text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
               >
-                {panelLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                {panelLoading ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3 h-3" />
+                )}
                 Удалить
               </button>
-              <button onClick={() => setPanel(null)} className="h-8 px-3 rounded-xl border border-border text-xs text-muted-foreground hover:bg-primary/[0.08]">
+              <button
+                onClick={() => setPanel(null)}
+                className="min-h-10 rounded-xl border border-border px-3 text-xs text-muted-foreground hover:bg-primary/[0.08]"
+              >
                 Отмена
               </button>
             </div>
-            {panelError && <p className="text-xs text-destructive mt-1">{panelError}</p>}
+            {panelError && (
+              <p className="text-xs text-destructive mt-1">{panelError}</p>
+            )}
           </div>
         )}
       </div>
@@ -577,17 +863,19 @@ export default function StaffPage() {
   }
 
   // ── Sorted groups — с учётом URL фильтра из Smart Command Bar ─────────────
-  const showPending  = !urlStatus || urlStatus === "PENDING";
-  const showActive   = !urlStatus || urlStatus === "ACTIVE";
+  const showPending = !urlStatus || urlStatus === "PENDING";
+  const showActive = !urlStatus || urlStatus === "ACTIVE";
   const showSuspended = !urlStatus || urlStatus === "SUSPENDED";
 
-  const pending  = members.filter((m) => m.staffStatus === "PENDING");
-  const active   = members.filter((m) => m.staffStatus === "ACTIVE" || !m.staffStatus);
+  const pending = members.filter((m) => m.staffStatus === "PENDING");
+  const active = members.filter(
+    (m) => m.staffStatus === "ACTIVE" || !m.staffStatus,
+  );
   const suspended = members.filter((m) => m.staffStatus === "SUSPENDED");
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="admin-page-frame admin-page-frame-fluid">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -597,8 +885,11 @@ export default function StaffPage() {
           </p>
         </div>
         <button
-          onClick={() => { setShowForm((v) => !v); setFormError(""); }}
-          className={`inline-flex items-center gap-2 h-10 px-4 rounded-xl font-medium text-sm transition-colors ${
+          onClick={() => {
+            setShowForm((v) => !v);
+            setFormError("");
+          }}
+          className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-medium transition-colors ${
             showForm
               ? "border border-border bg-muted text-muted-foreground hover:bg-muted/80"
               : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -620,43 +911,79 @@ export default function StaffPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Name */}
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Имя и фамилия *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Имя и фамилия *
+              </label>
               <input
                 type="text"
                 placeholder="Иван Иванов"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, name: e.target.value }))
+                }
                 disabled={formLoading}
                 className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Email */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Email *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Email *
+              </label>
               <input
                 type="email"
                 placeholder="ivan@company.ru"
                 value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
                 disabled={formLoading}
                 className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Phone */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Телефон</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Телефон
+              </label>
               <input
                 type="tel"
                 placeholder="+7 999 000-00-00"
                 value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, phone: e.target.value }))
+                }
                 disabled={formLoading}
                 className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Role */}
+            {businessRoles.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-1">
+                  Умная роль ARAY
+                </label>
+                <select
+                  value={form.businessRoleId}
+                  onChange={(e) => applyBusinessRoleToCreate(e.target.value)}
+                  disabled={formLoading}
+                  className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                >
+                  <option value="">Без умной роли</option>
+                  {businessRoles.map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.label} · {ROLE_DEFINITIONS[role.baseRole]?.label || role.baseRole}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Role */}
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Роль *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Роль *
+              </label>
               <select
                 value={form.role}
                 onChange={(e) => {
@@ -664,7 +991,9 @@ export default function StaffPage() {
                   setForm((f) => ({
                     ...f,
                     role: r,
-                    password: ROLE_DEFINITIONS[r]?.defaultPassword || f.password,
+                    businessRoleId: "",
+                    password:
+                      ROLE_DEFINITIONS[r]?.defaultPassword || f.password,
                   }));
                 }}
                 disabled={formLoading}
@@ -672,7 +1001,9 @@ export default function StaffPage() {
               >
                 <option value="">Выберите роль...</option>
                 {ALL_ROLES.map((r) => (
-                  <option key={r} value={r}>{ROLE_DEFINITIONS[r]?.label || r}</option>
+                  <option key={r} value={r}>
+                    {ROLE_DEFINITIONS[r]?.label || r}
+                  </option>
                 ))}
               </select>
             </div>
@@ -686,20 +1017,26 @@ export default function StaffPage() {
                 type="text"
                 placeholder="Напр.: Старший менеджер"
                 value={form.customRole}
-                onChange={(e) => setForm((f) => ({ ...f, customRole: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, customRole: e.target.value }))
+                }
                 disabled={formLoading}
                 className="w-full h-10 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
               />
             </div>
             {/* Password */}
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Пароль *</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                Пароль *
+              </label>
               <div className="relative">
                 <input
                   type={showPwd ? "text" : "password"}
                   placeholder="Минимум 6 символов"
                   value={form.password}
-                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, password: e.target.value }))
+                  }
                   disabled={formLoading}
                   className="w-full h-10 px-3 pr-10 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 />
@@ -708,7 +1045,11 @@ export default function StaffPage() {
                   onClick={() => setShowPwd((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPwd ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -719,11 +1060,16 @@ export default function StaffPage() {
             <div className="rounded-xl border border-border p-3 bg-muted/30">
               <div className="flex flex-wrap items-center gap-2 mb-1.5">
                 <RoleBadge role={form.role} />
-                <span className="text-xs text-muted-foreground">{ROLE_DEFINITIONS[form.role].description}</span>
+                <span className="text-xs text-muted-foreground">
+                  {ROLE_DEFINITIONS[form.role].description}
+                </span>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {ROLE_DEFINITIONS[form.role].sections.map((s) => (
-                  <span key={s} className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
+                {getRoleSections(form.role).map((s) => (
+                  <span
+                    key={s}
+                    className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border"
+                  >
                     {s}
                   </span>
                 ))}
@@ -732,7 +1078,9 @@ export default function StaffPage() {
           )}
 
           {formError && (
-            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{formError}</p>
+            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+              {formError}
+            </p>
           )}
 
           <div className="flex gap-2">
@@ -741,12 +1089,19 @@ export default function StaffPage() {
               disabled={formLoading}
               className="h-10 px-5 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
             >
-              {formLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+              {formLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <UserPlus className="w-4 h-4" />
+              )}
               Создать
             </button>
             <button
               type="button"
-              onClick={() => { setShowForm(false); setFormError(""); }}
+              onClick={() => {
+                setShowForm(false);
+                setFormError("");
+              }}
               className="h-10 px-4 rounded-xl border border-border text-sm text-muted-foreground hover:bg-primary/[0.08]"
             >
               Отмена
@@ -763,8 +1118,12 @@ export default function StaffPage() {
         >
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-muted-foreground" />
-            <span className="font-semibold text-sm">Матрица доступа по ролям</span>
-            <span className="text-xs text-muted-foreground hidden sm:inline">— кто что может делать</span>
+            <span className="font-semibold text-sm">
+              Матрица доступа по ролям
+            </span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              — кто что может делать
+            </span>
           </div>
           {matrixOpen ? (
             <ChevronUp className="w-4 h-4 text-muted-foreground" />
@@ -778,14 +1137,22 @@ export default function StaffPage() {
             {ALL_ROLES.map((role) => {
               const def = ROLE_DEFINITIONS[role];
               return (
-                <div key={role} className="flex flex-col sm:flex-row sm:items-start gap-3 px-5 py-3.5">
+                <div
+                  key={role}
+                  className="flex flex-col sm:flex-row sm:items-start gap-3 px-5 py-3.5"
+                >
                   <div className="sm:w-44 shrink-0">
                     <RoleBadge role={role} />
-                    <p className="text-[11px] text-muted-foreground mt-1">{def.description}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {def.description}
+                    </p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {def.sections.map((s) => (
-                      <span key={s} className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border">
+                    {getRoleSections(role).map((s) => (
+                      <span
+                        key={s}
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border"
+                      >
                         {s}
                       </span>
                     ))}
@@ -807,7 +1174,9 @@ export default function StaffPage() {
         <div className="text-center py-16 text-muted-foreground">
           <Users className="w-12 h-12 mx-auto mb-3 opacity-20" />
           <p className="font-medium">Сотрудников пока нет</p>
-          <p className="text-sm mt-1 opacity-70">Добавьте первого сотрудника кнопкой выше</p>
+          <p className="text-sm mt-1 opacity-70">
+            Добавьте первого сотрудника кнопкой выше
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -819,7 +1188,9 @@ export default function StaffPage() {
                 title="Ожидают подтверждения"
                 action={
                   <span className="flex items-center gap-1.5">
-                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-bold">{pending.length}</span>
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-bold">
+                      {pending.length}
+                    </span>
                     <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
                   </span>
                 }
@@ -835,7 +1206,9 @@ export default function StaffPage() {
                 icon={CheckCircle2}
                 title="Активные сотрудники"
                 action={
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold">{active.length}</span>
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold">
+                    {active.length}
+                  </span>
                 }
               />
               <div className="space-y-2">{active.map(renderCard)}</div>
@@ -849,7 +1222,9 @@ export default function StaffPage() {
                 icon={XCircle}
                 title="Заблокированы"
                 action={
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold">{suspended.length}</span>
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold">
+                    {suspended.length}
+                  </span>
                 }
               />
               <div className="space-y-2">{suspended.map(renderCard)}</div>

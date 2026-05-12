@@ -15,11 +15,132 @@ import {
 } from "@/lib/aray-memory";
 import { classifyQuery, getModelConfig, getBrevityInstruction } from "@/lib/aray-router";
 import { calculateAnthropicCost } from "@/lib/api-pricing";
+import {
+  buildOrderTaskRelation,
+  mergeTaskRelations,
+  normalizeTaskRelationAlias,
+} from "@/lib/task-relations";
+import {
+  normalizeNotificationEntity,
+  recordNotificationCenterEvent,
+  resolveNotificationStatus,
+} from "@/lib/notification-center";
+import { isArayExternalTabOnly } from "@/lib/aray-navigation";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
   ...(process.env.ANTHROPIC_BASE_URL ? { baseURL: process.env.ANTHROPIC_BASE_URL } : {}),
 });
+
+type IncomingAttachment = {
+  id?: string;
+  name?: string;
+  mimeType?: string;
+  size?: number;
+  kind?: "image" | "text" | "audio" | "video" | "archive" | "file";
+  text?: string;
+  dataUrl?: string;
+  note?: string;
+};
+
+function isSupportedImageMime(mimeType?: string) {
+  return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(mimeType || "");
+}
+
+function getDataUrlPayload(dataUrl?: string) {
+  if (!dataUrl) return null;
+  const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) return null;
+  return { mediaType: match[1], data: match[2] };
+}
+
+function sanitizeAttachment(input: unknown): IncomingAttachment | null {
+  if (!input || typeof input !== "object") return null;
+  const item = input as Record<string, unknown>;
+  const name = typeof item.name === "string" ? item.name.slice(0, 160) : "attachment";
+  const mimeType = typeof item.mimeType === "string" ? item.mimeType.slice(0, 80) : "application/octet-stream";
+  const kind = item.kind === "image" || item.kind === "text" || item.kind === "audio" || item.kind === "video" || item.kind === "archive" || item.kind === "file"
+    ? item.kind
+    : "file";
+  return {
+    id: typeof item.id === "string" ? item.id.slice(0, 80) : undefined,
+    name,
+    mimeType,
+    size: typeof item.size === "number" ? Math.max(0, Math.min(item.size, 20 * 1024 * 1024)) : undefined,
+    kind,
+    text: typeof item.text === "string" ? item.text.slice(0, 12000) : undefined,
+    dataUrl: typeof item.dataUrl === "string" ? item.dataUrl : undefined,
+    note: typeof item.note === "string" ? item.note.slice(0, 120) : undefined,
+  };
+}
+
+function buildAttachmentContentBlocks(text: string, attachments: IncomingAttachment[]) {
+  const blocks: any[] = [{ type: "text", text }];
+
+  for (const file of attachments.slice(0, 4)) {
+    if (file.kind === "image") {
+      const payload = getDataUrlPayload(file.dataUrl);
+      if (payload && isSupportedImageMime(payload.mediaType)) {
+        blocks.push({
+          type: "image",
+          source: { type: "base64", media_type: payload.mediaType, data: payload.data },
+        });
+        blocks.push({ type: "text", text: `\n[Изображение: ${file.name}. Проанализируй содержимое, если запрос связан с фото, скрином, QR/штрих-кодом, бумажным каталогом, списком товаров или карточкой товара. Если это товар или список, готовь черновик данных и проси подтверждение перед изменением каталога.]` });
+        continue;
+      }
+    }
+
+    if (file.kind === "text" && file.text) {
+      blocks.push({
+        type: "text",
+        text: `\n\n[Текстовый файл: ${file.name}]\n${file.text}\n[/Текстовый файл]`,
+      });
+      continue;
+    }
+
+    if (file.kind === "audio") {
+      blocks.push({
+        type: "text",
+        text: `\n\n[Аудио приложено: ${file.name}, тип ${file.mimeType}. Автоматическая расшифровка аудио еще не подключена в этом запросе: скажи человеку, что запись принята, и предложи расшифровать через голосовой контур ARAY, когда он будет включен.]`,
+      });
+      continue;
+    }
+
+    if (file.kind === "video") {
+      blocks.push({
+        type: "text",
+        text: `\n\n[Видео приложено: ${file.name}, тип ${file.mimeType}. Автоматический разбор видео еще не подключен в этом запросе: помоги составить сценарий, описание, план нарезки или список данных, которые нужно извлечь.]`,
+      });
+      continue;
+    }
+
+    if (file.kind === "archive") {
+      blocks.push({
+        type: "text",
+        text: `\n\n[Архив приложен: ${file.name}, тип ${file.mimeType}. Распаковка архивов должна идти отдельным безопасным обработчиком, не обещай, что видишь содержимое архива прямо сейчас.]`,
+      });
+      continue;
+    }
+
+    blocks.push({
+      type: "text",
+      text: `\n\n[Файл приложен: ${file.name}, тип ${file.mimeType}. ${file.note === "pdf-text-extraction-not-enabled-yet" ? "PDF пока виден как файл без извлечения текста: попроси прислать фото страницы или текст, если нужно прочитать содержимое." : "Содержимое файла пока не извлечено автоматически."}]`,
+    });
+  }
+
+  return blocks;
+}
+
+function messageContentToText(content: any): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((block) => block?.type === "text" && typeof block.text === "string")
+      .map((block) => block.text)
+      .join("\n");
+  }
+  return "";
+}
 
 function generateSessionId(): string {
   return `aray_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -37,9 +158,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { messages, context } = body;
+    const { messages, context, confirmAction } = body;
 
-    if (!messages?.length) {
+    if (!confirmAction && !messages?.length) {
       return new Response(encoder.encode("__ARAY_ERR__Нет сообщений"), {
         status: 400, headers: { "Content-Type": "text/plain; charset=utf-8" }
       });
@@ -60,6 +181,36 @@ export async function POST(req: NextRequest) {
     let arayRole: ArayRole = "customer";
     if (["SUPER_ADMIN", "ADMIN"].includes(sessionRole || "")) arayRole = "admin";
     else if (["MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"].includes(sessionRole || "")) arayRole = "staff";
+
+    const responseHeaders = new Headers({ "Content-Type": "text/plain; charset=utf-8" });
+    if (isNewSession && sessionId) {
+      responseHeaders.set("Set-Cookie",
+        `aray_sid=${sessionId}; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; SameSite=Lax; Path=/`
+      );
+    }
+
+    if (confirmAction) {
+      const tool = String(confirmAction.tool || "");
+      const draft = isRecord(confirmAction.draft) ? confirmAction.draft : {};
+      const roleTools = getToolsForRole(arayRole, sessionRole || undefined);
+      const isAllowed = roleTools.some((toolDef: any) => toolDef?.name === tool);
+
+      if (!tool || !isAllowed || !requiresConfirmationForTool(tool, draft)) {
+        return new Response(encoder.encode("__ARAY_ERR__Нет прав на подтверждение этого действия."), {
+          status: 403,
+          headers: responseHeaders,
+        });
+      }
+
+      const result = await handleTool(tool, draft, userId || undefined, { confirmed: true });
+      const text = formatConfirmedToolResult(result);
+      const action = isRecord(result) && typeof result.action === "string" ? `\n${result.action}` : "";
+
+      return new Response(
+        encoder.encode(`${text}${action}\n__ARAY_META__${JSON.stringify({ role: arayRole, model: "confirmed-action", memoryId: null })}`),
+        { headers: responseHeaders }
+      );
+    }
 
     // Загружаем параллельно: память, настройки, профиль клиента
     const [memory, siteSettings, userProfile] = await Promise.all([
@@ -105,15 +256,24 @@ export async function POST(req: NextRequest) {
         : { page: context?.page, productName: context?.productName, cartTotal: context?.cartTotal, project: savedProject }
     );
     // ── Сообщения ────────────────────────────────────────────────────────────
-    type ChatMessage = { role: "user" | "assistant"; content: string };
+    type ChatMessage = { role: "user" | "assistant"; content: any };
     const rawMessages: ChatMessage[] = messages.slice(-20).map((m: any) => ({
-      role: m.role as "user" | "assistant", content: m.content,
+      role: m.role as "user" | "assistant",
+      content: (() => {
+        const text = String(m.content || "");
+        const attachments = Array.isArray(m.attachments)
+          ? m.attachments.map(sanitizeAttachment).filter(Boolean) as IncomingAttachment[]
+          : [];
+        return attachments.length && m.role === "user"
+          ? buildAttachmentContentBlocks(text || "Посмотри вложение.", attachments)
+          : text;
+      })(),
     }));
     const firstUserIdx = rawMessages.findIndex(m => m.role === "user");
     const formattedMessages: ChatMessage[] = firstUserIdx >= 0 ? rawMessages.slice(firstUserIdx) : rawMessages;
 
     // ── Умная маршрутизация модели ──────────────────────────────────────────
-    const lastUserMessage = formattedMessages.filter(m => m.role === "user").pop()?.content || "";
+    const lastUserMessage = messageContentToText(formattedMessages.filter(m => m.role === "user").pop()?.content || "");
     const hasTools = arayRole !== "customer" || !!context?.productName;
     const tier = classifyQuery(lastUserMessage, { role: arayRole, hasTools, messageCount: formattedMessages.length });
     const modelConfig = getModelConfig(tier);
@@ -122,6 +282,32 @@ export async function POST(req: NextRequest) {
     let trackerContext = "";
     if (context?.zone) {
       trackerContext += `\n\n[Контекст сессии]\nТекущая зона: ${context.zone}`;
+      if (context.source) trackerContext += `\nИсточник запроса: ${context.source}`;
+      if (context.inputMode) trackerContext += `\nРежим ввода: ${context.inputMode}`;
+      if (context.adminNavigation?.currentPage) {
+        trackerContext += `\nТекущий раздел ARAY: ${context.adminNavigation.currentPage.label} (${context.adminNavigation.currentPage.href})`;
+      }
+      if (context.adminNavigation?.nearbyPages?.length) {
+        const nearbyPages = context.adminNavigation.nearbyPages
+          .slice(0, 8)
+          .map((page: any) => `${page.label}: ${page.href}`)
+          .join(", ");
+        trackerContext += `\nДоступные рядом разделы: ${nearbyPages}`;
+      }
+      if (context.adminNavigation?.availablePages?.length) {
+        const availablePages = context.adminNavigation.availablePages
+          .slice(0, 80)
+          .map((page: any) => `${page.label}: ${page.href}`)
+          .join(", ");
+        trackerContext += `\nКарта админки для быстрых переходов: ${availablePages}`;
+      }
+      if (context.adminNavigation?.quickActions?.length) {
+        const quickActions = context.adminNavigation.quickActions
+          .slice(0, 5)
+          .map((action: any) => `${action.label} — ${action.prompt || action.href || ""}`.trim())
+          .join("; ");
+        trackerContext += `\nБыстрые действия ARAY по странице: ${quickActions}`;
+      }
       if (context.navHistory?.length) trackerContext += `\nИстория переходов: ${context.navHistory.slice(-5).join(" → ")}`;
       if (context.actions?.length) {
         const recentActions = context.actions.slice(-5).map((a: any) =>
@@ -150,16 +336,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const systemPrompt = basePrompt + memoryContext + trackerContext + profileContext + getBrevityInstruction(tier);
+    const voiceModeInstruction = context?.source === "voice-mode"
+      ? "\n\n[Активен голосовой режим]\nОтвет пойдёт в TTS. Говори как спокойный живой помощник рядом: тепло, уверенно, без спешки. Дай 1-3 коротких предложения без markdown, таблиц, списков и эмодзи. Ставь естественные точки и запятые для пауз. Цены, размеры и единицы формулируй понятно для русского голоса: рубли, кубометр, квадратный метр, погонный метр."
+      : "";
+    const translatorInstruction =
+      "\n\n[Живой переводчик]\nЕсли человек просит перевести слово, фразу или разговор на другой язык, переведи точно и естественно. В голосовом режиме сначала дай сам перевод на целевом языке, без длинных объяснений; если нужна подсказка, добавь коротко по-русски после паузы. Для фраз вроде \"переведи доброе утро на китайский\" ответ должен начинаться с китайской фразы.";
+
+    const systemPrompt = basePrompt + memoryContext + trackerContext + profileContext + voiceModeInstruction + translatorInstruction + getBrevityInstruction(tier);
 
     // ── Streaming response ───────────────────────────────────────────────────
-    const responseHeaders = new Headers({ "Content-Type": "text/plain; charset=utf-8" });
-    if (isNewSession && sessionId) {
-      responseHeaders.set("Set-Cookie",
-        `aray_sid=${sessionId}; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; SameSite=Lax; Path=/`
-      );
-    }
-
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
 
@@ -193,12 +378,17 @@ export async function POST(req: NextRequest) {
 
         // ── Обработка инструментов ───────────────────────────────────────────
         if (toolBlocks.length > 0) {
+          const confirmationDrafts: ArayConfirmationDraft[] = [];
           const toolResults = await Promise.all(
-            toolBlocks.map(async (block: any) => ({
-              type: "tool_result" as const,
-              tool_use_id: block.id,
-              content: JSON.stringify(await handleTool(block.name, block.input, userId || undefined)),
-            }))
+            toolBlocks.map(async (block: any) => {
+              const result = await handleTool(block.name, block.input, userId || undefined);
+              if (isConfirmationDraft(result)) confirmationDrafts.push(result);
+              return {
+                type: "tool_result" as const,
+                tool_use_id: block.id,
+                content: JSON.stringify(result),
+              };
+            })
           );
 
           const followStream = anthropic.messages.stream({
@@ -221,11 +411,21 @@ export async function POST(req: NextRequest) {
 
           // Сохраняем usage второго stream для логирования
           followMsg = await followStream.finalMessage();
+
+          if (confirmationDrafts.length > 0) {
+            await writer.write(encoder.encode(`\n__ARAY_CONFIRM__${JSON.stringify(confirmationDrafts)}`));
+          }
         }
 
         // ── Обновление памяти в фоне ─────────────────────────────────────────
         if (memory && fullText) {
-          const allMsgs = [...formattedMessages, { role: "assistant", content: fullText }];
+          const allMsgs = [
+            ...formattedMessages.map((message) => ({
+              role: message.role,
+              content: messageContentToText(message.content),
+            })),
+            { role: "assistant" as const, content: fullText },
+          ];
           Promise.all([
             extractAndUpdateMemory(memory.id, memory.facts as any, allMsgs, anthropic),
             userId ? updateCustomerLevel(memory.id, userId) : Promise.resolve(),
@@ -287,8 +487,85 @@ export async function POST(req: NextRequest) {
 
 // ─── Инструменты ─────────────────────────────────────────────────────────────
 
-async function handleTool(name: string, input: Record<string, unknown>, userId?: string): Promise<unknown> {
+const MUTATING_ADMIN_TOOLS = new Set([
+  "update_order_status",
+  "create_task",
+  "update_task",
+  "update_product_price",
+  "toggle_product_active",
+  "send_push_notification",
+  "create_lead",
+  "create_product",
+  "create_category",
+  "update_stock",
+]);
+
+type ArayConfirmationDraft = {
+  requiresConfirmation: true;
+  blockedExecution: true;
+  tool: string;
+  draft: Record<string, unknown>;
+  message: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function requiresConfirmationForTool(name: string, input: Record<string, unknown>) {
+  return (
+    MUTATING_ADMIN_TOOLS.has(name) ||
+    (name === "import_price_list" && !Boolean(input.dryRun)) ||
+    (name === "manage_settings" && String(input.action || "get") !== "get")
+  );
+}
+
+function buildConfirmationDraft(name: string, input: Record<string, unknown>): ArayConfirmationDraft {
+  return {
+    requiresConfirmation: true,
+    blockedExecution: true,
+    tool: name,
+    draft: input,
+    message:
+      "Подготовил черновик действия, но не выполняю его без подтверждения сотрудника. Проверь детали и подтверди действие в интерфейсе.",
+  };
+}
+
+function isConfirmationDraft(value: unknown): value is ArayConfirmationDraft {
+  return isRecord(value) && value.requiresConfirmation === true && typeof value.tool === "string";
+}
+
+function formatConfirmedToolResult(result: unknown) {
+  if (isRecord(result)) {
+    if (typeof result.message === "string" && result.message.trim()) return result.message;
+    if (typeof result.error === "string" && result.error.trim()) return `Не получилось: ${result.error}`;
+    if (result.success === true) return "Готово, действие выполнено.";
+  }
+  return "Готово, действие выполнено.";
+}
+
+function emptyToolResult(kind: string, message: string, extra: Record<string, unknown> = {}) {
+  return {
+    empty: true,
+    kind,
+    total: 0,
+    message,
+    nextStep: "Могу проверить другой фильтр или открыть нужный раздел.",
+    ...extra,
+  };
+}
+
+async function handleTool(
+  name: string,
+  input: Record<string, unknown>,
+  userId?: string,
+  options: { confirmed?: boolean } = {}
+): Promise<unknown> {
   try {
+    if (!options.confirmed && requiresConfirmationForTool(name, input)) {
+      return buildConfirmationDraft(name, input);
+    }
+
     if (name === "search_products") {
       const query = String(input.query || "");
       const products = await prisma.product.findMany({
@@ -305,6 +582,11 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
         },
         take: 5,
       });
+      if (products.length === 0) {
+        return emptyToolResult("products", query ? `По запросу "${query}" товаров не нашёл.` : "Товаров не найдено.", {
+          products: [],
+        });
+      }
       return products.map(p => ({
         name: p.name, slug: p.slug, category: p.category.name,
         variants: p.variants.map(v => ({
@@ -413,6 +695,12 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
           items: { select: { productName: true, quantity: true }, take: 2 },
         },
       });
+      if (orders.length === 0) {
+        return emptyToolResult("orders", statusFilter ? `Заказов со статусом ${statusFilter} нет.` : "Нет заказов.", {
+          orders: [],
+          filter: statusFilter || null,
+        });
+      }
       const statusLabels: Record<string, string> = {
         NEW: "Новый", CONFIRMED: "Подтверждён", PROCESSING: "В обработке",
         SHIPPED: "Отгружен", IN_DELIVERY: "Доставляется",
@@ -451,6 +739,11 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
         orderBy: { _count: { guestPhone: "desc" } },
         take: limit,
       });
+      if (clients.length === 0) {
+        return emptyToolResult("clients", query ? `Клиентов по запросу "${query}" не найдено.` : "Клиентов пока нет.", {
+          clients: [],
+        });
+      }
       return clients.map(c => ({
         имя: c._max.guestName,
         телефон: c.guestPhone,
@@ -486,6 +779,12 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
         take: limit,
         orderBy: { createdAt: "desc" },
       });
+      if (products.length === 0) {
+        return emptyToolResult("products", catFilter ? `В категории "${catFilter}" товаров не найдено.` : "Товаров не найдено.", {
+          products: [],
+          filter: catFilter || null,
+        });
+      }
       return products.map(p => ({
         id: p.id,
         название: p.name,
@@ -551,12 +850,78 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
       }
     }
 
+    if (name === "get_aray_capabilities") {
+      const area = String(input.area || "all");
+      const mutatingTools = Array.from(MUTATING_ADMIN_TOOLS);
+      const toolNames = ARAY_TOOLS.map((tool: { name: string }) => tool.name);
+      const customerTools = [
+        "search_products",
+        "calculate_volume",
+        "calculate_project_materials",
+        "get_order_status",
+        "add_to_cart",
+        "show_page",
+        "navigate_page",
+        "web_search",
+      ].filter((tool) => toolNames.includes(tool));
+      const adminTools = [
+        "get_admin_dashboard",
+        "get_orders_list",
+        "get_clients_list",
+        "get_products_list",
+        "get_staff_list",
+        "get_tasks_list",
+        "get_stock_summary",
+        "generate_report",
+        "admin_navigate",
+      ].filter((tool) => toolNames.includes(tool));
+
+      return {
+        area,
+        summary: "ARAY сейчас работает как единый помощник: чат, голос, навигация, данные бизнеса, черновики действий и безопасные подтверждения.",
+        facts: {
+          toolsTotal: toolNames.length,
+          customerTools,
+          adminTools,
+          confirmationRequired: mutatingTools,
+          voice: {
+            ttsEndpoint: "/api/ai/tts",
+            browserSpeechRecognition: true,
+            pushToTalk: true,
+            stopButton: true,
+            alwaysOn: "только после согласия/действия пользователя; фоновое скрытое прослушивание не включено",
+          },
+          ui: {
+            popupBrowser: false,
+            quickNavigation: true,
+            promptActions: true,
+            confirmationCards: true,
+            attachments: ["image", "text", "audio accepted", "video accepted", "pdf/file accepted"],
+          },
+          direct: {
+            draft: "/api/admin/direct/draft",
+            export: "/api/admin/direct/export",
+            readiness: "/api/admin/direct/readiness",
+            launchRule: "бюджет и показы не запускаются без подтверждения владельца",
+          },
+        },
+        limits: [
+          "PDF/Word/Excel/audio/video пока принимаются как файлы; полный extractor надо подключать отдельным безопасным контуром.",
+          "Реклама, деньги, склад, цены, роли, CRM и настройки идут только через подтверждение.",
+          "Внешние данные показываются только с источником; если ключа нет, ARAY честно пишет 'нужен доступ'.",
+        ],
+      };
+    }
+
     if (name === "get_staff_list") {
       const staff = await prisma.user.findMany({
         where: { role: { not: "USER" as any } },
         select: { id: true, name: true, email: true, role: true, createdAt: true },
         orderBy: { createdAt: "asc" },
       });
+      if (staff.length === 0) {
+        return emptyToolResult("staff", "Сотрудников не найдено.", { staff: [] });
+      }
       const ROLE_LABELS: Record<string, string> = {
         SUPER_ADMIN: "Владелец", ADMIN: "Администратор", MANAGER: "Менеджер",
         COURIER: "Курьер", ACCOUNTANT: "Бухгалтер", WAREHOUSE: "Кладовщик", SELLER: "Продавец",
@@ -580,32 +945,124 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
     if (name === "create_task") {
       const title = String(input.title || "").trim();
       if (!title) return { error: "Название задачи обязательно" };
+      let orderId = input.orderId ? String(input.orderId) : null;
+      if (!orderId && input.orderNumber) {
+        const order = await prisma.order.findFirst({
+          where: { orderNumber: Number(input.orderNumber), deletedAt: null },
+          select: { id: true },
+        });
+        orderId = order?.id || null;
+      }
+      if (orderId) {
+        const orderExists = await prisma.order.findUnique({ where: { id: orderId }, select: { id: true } });
+        if (!orderExists) return { error: "Заказ для привязки задачи не найден" };
+      }
 
-      const task = await prisma.task.create({
-        data: {
-          title,
-          description: input.description ? String(input.description) : null,
-          priority: (input.priority as any) || "MEDIUM",
-          status: "TODO",
-          assigneeId: input.assigneeId ? String(input.assigneeId) : null,
-          createdById: userId || null,
-          dueDate: input.dueDate ? new Date(String(input.dueDate)) : null,
-          tags: Array.isArray(input.tags) ? input.tags.map(String) : [],
-        },
-        include: {
-          assignee: { select: { name: true } },
-        },
+      const tags = Array.isArray(input.tags) ? input.tags.map(String) : [];
+      const sourceType = input.sourceType ? String(input.sourceType).trim().toLowerCase() : "";
+      const sourceId = input.sourceId ? String(input.sourceId).trim() : "";
+      const sourceLabel = input.sourceLabel ? String(input.sourceLabel).trim() : "";
+      if (sourceType && !tags.includes(`source:${sourceType}`)) tags.push(`source:${sourceType}`);
+      if (sourceId && !tags.includes(`${sourceType || "source"}:${sourceId}`)) tags.push(`${sourceType || "source"}:${sourceId}`);
+      if (sourceLabel && !tags.includes(sourceLabel)) tags.push(sourceLabel.slice(0, 48));
+      const sourceEntityType = normalizeTaskRelationAlias(sourceType);
+      const sourceRelation = sourceEntityType && sourceId
+        ? {
+            entityType: sourceEntityType,
+            entityId: sourceId,
+            label: sourceLabel || null,
+            href:
+              sourceEntityType === "ORDER" ? `/admin/orders/${sourceId}` :
+              sourceEntityType === "PRODUCT" ? `/admin/products/${sourceId}` :
+              sourceEntityType === "LEAD" ? `/admin/crm?lead=${sourceId}` :
+              sourceEntityType === "CLIENT" ? `/admin/clients?client=${sourceId}` :
+              null,
+          }
+        : null;
+      const orderRelation = buildOrderTaskRelation(orderId, orderId ? sourceLabel || "Заказ" : null);
+      const relations = mergeTaskRelations([
+        ...(sourceRelation ? [sourceRelation] : []),
+        ...(orderRelation ? [orderRelation] : []),
+      ]);
+
+      const task = await prisma.$transaction(async (tx) => {
+        const created = await tx.task.create({
+          data: {
+            title,
+            description: input.description ? String(input.description) : null,
+            priority: (input.priority as any) || "MEDIUM",
+            status: "TODO",
+            assigneeId: input.assigneeId ? String(input.assigneeId) : null,
+            createdById: userId || null,
+            orderId,
+            dueDate: input.dueDate ? new Date(String(input.dueDate)) : null,
+            tags,
+          },
+        });
+
+        if (relations.length > 0) {
+          await tx.taskRelation.createMany({
+            data: relations.map((relation) => ({
+              taskId: created.id,
+              entityType: relation.entityType,
+              entityId: relation.entityId,
+              label: relation.label,
+              href: relation.href,
+              metadata: (relation.metadata || {}) as any,
+            })),
+          });
+        }
+
+        return tx.task.findUniqueOrThrow({
+          where: { id: created.id },
+          include: {
+            assignee: { select: { name: true } },
+            order: { select: { orderNumber: true } },
+            relations: true,
+          },
+        });
       });
+
+      let notified = 0;
+      if (task.assigneeId && process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+        try {
+          const subs = await prisma.pushSubscription.findMany({ where: { userId: task.assigneeId } });
+          if (subs.length > 0) {
+            const webpush = await import("web-push");
+            webpush.setVapidDetails(
+              "mailto:info@pilo-rus.ru",
+              process.env.VAPID_PUBLIC_KEY || "",
+              process.env.VAPID_PRIVATE_KEY || ""
+            );
+            const payload = JSON.stringify({
+              title: "Новая задача",
+              body: task.title,
+              url: "/admin/tasks",
+              icon: "/icons/icon-192.png",
+            });
+            const results = await Promise.allSettled(subs.map((sub) => webpush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+              payload
+            )));
+            notified = results.filter((result) => result.status === "fulfilled").length;
+          }
+        } catch {
+          notified = 0;
+        }
+      }
 
       return {
         success: true,
         taskId: task.id,
         title: task.title,
         assignee: task.assignee?.name || "Без исполнителя",
+        relatedOrder: task.order?.orderNumber || null,
         priority: task.priority,
         status: task.status,
         dueDate: task.dueDate?.toLocaleDateString("ru-RU") || null,
-        message: `Задача "${task.title}" создана${task.assignee ? ` → ${task.assignee.name}` : ""}`,
+        relations: task.relations.map((relation) => relation.label || relation.entityType),
+        notified,
+        message: `Задача "${task.title}" создана${task.assignee ? ` → ${task.assignee.name}` : ""}${task.order ? ` · заказ #${task.order.orderNumber}` : ""}${task.relations.length ? ` · связи: ${task.relations.length}` : ""}${notified ? ` · уведомил: ${notified}` : ""}`,
         action: "__ARAY_NAVIGATE:/admin/tasks__",
       };
     }
@@ -623,8 +1080,14 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
         include: {
           assignee: { select: { name: true } },
           createdBy: { select: { name: true } },
+          order: { select: { orderNumber: true, guestName: true } },
+          relations: true,
         },
       });
+
+      if (tasks.length === 0) {
+        return emptyToolResult("tasks", "Задач по этому фильтру нет.", { tasks: [] });
+      }
 
       const PRIORITY_LABELS: Record<string, string> = { LOW: "Низкий", MEDIUM: "Средний", HIGH: "Высокий", URGENT: "🔥 Срочный" };
       const STATUS_LABELS: Record<string, string> = { BACKLOG: "Бэклог", TODO: "К выполнению", IN_PROGRESS: "В работе", REVIEW: "На проверке", DONE: "Готово" };
@@ -638,6 +1101,9 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
           приоритет: PRIORITY_LABELS[t.priority] || t.priority,
           исполнитель: t.assignee?.name || "—",
           создал: t.createdBy?.name || "—",
+          связь: t.relations.length
+            ? t.relations.map((relation) => relation.label || relation.entityType).join(", ")
+            : t.order ? `Заказ #${t.order.orderNumber}${t.order.guestName ? ` · ${t.order.guestName}` : ""}` : (t.tags.find((tag) => tag.startsWith("source:")) || null),
           срок: t.dueDate?.toLocaleDateString("ru-RU") || null,
           создана: t.createdAt.toLocaleDateString("ru-RU"),
           теги: t.tags,
@@ -742,13 +1208,19 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
 
       let sent = 0;
       let errors = 0;
+      let cleaned = 0;
+      let sendError: string | null = null;
 
       // Динамический импорт web-push
-      const webpush = await import("web-push");
+      if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+        sendError = "VAPID keys not configured";
+        errors = subs.length;
+      } else {
+        const webpush = await import("web-push");
       webpush.setVapidDetails(
         "mailto:info@pilo-rus.ru",
-        process.env.VAPID_PUBLIC_KEY || "",
-        process.env.VAPID_PRIVATE_KEY || ""
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
       );
 
       const payload = JSON.stringify({ title, body, url, icon: "/icons/icon-192.png" });
@@ -762,21 +1234,55 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
             );
             sent++;
           } catch (err: any) {
-            errors++;
             // Удаляем мёртвые подписки
             if (err?.statusCode === 410 || err?.statusCode === 404) {
               await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+              cleaned++;
+            } else {
+              errors++;
             }
           }
         })
       );
+      }
+
+      const status = resolveNotificationStatus({ sent, failed: errors, cleaned, error: sendError });
+      let notificationEventId: string | undefined;
+      try {
+        const entity = normalizeNotificationEntity(input);
+        const event = await recordNotificationCenterEvent({
+          channel: "PUSH",
+          direction: "OUTBOUND",
+          source: "ARAY",
+          sourceUserId: userId || null,
+          status,
+          title,
+          body,
+          url,
+          segment,
+          sentCount: sent,
+          failedCount: errors,
+          cleanedCount: cleaned,
+          error: sendError,
+          sentAt: status === "SENT" || status === "PARTIAL" ? new Date() : null,
+          metadata: { targetCount: subs.length, tool: "send_push_notification" },
+          ...entity,
+        });
+        notificationEventId = event.id;
+      } catch (logError) {
+        console.error("[notification-center] failed to record ARAY push event", logError);
+      }
 
       return {
-        success: true,
+        success: !sendError,
         sent,
         errors,
+        cleaned,
         segment,
-        message: `Push отправлен: ${sent} получателей${errors > 0 ? `, ${errors} ошибок` : ""} ✅`,
+        notificationEventId,
+        message: sendError
+          ? `Push не отправлен: ${sendError}`
+          : `Push отправлен: ${sent} получателей${errors > 0 ? `, ${errors} ошибок` : ""} ✅`,
       };
     }
 
@@ -822,7 +1328,7 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
         success: true,
         path,
         action: `__ARAY_NAVIGATE:${path}__`,
-        message: `Открываю ${path}`,
+        message: "Открыл нужный раздел. Проверь, пожалуйста.",
       };
     }
 
@@ -864,32 +1370,37 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
     if (name === "navigate_page" || name === "show_page") {
       const url = String(input.url || "/");
       const title = input.title ? String(input.title) : undefined;
-      // mode: "popup" — показать в попапе (по умолчанию для show_page и для просмотра)
-      // mode: "redirect" — полный переход страницы (только если пользователь явно хочет перейти)
-      const mode = input.mode === "redirect" ? "redirect" : (name === "show_page" ? "popup" : (input.mode || "popup"));
+      const isInternal = url.startsWith("/") && !url.startsWith("//");
+      const isExternalTabOnly = isArayExternalTabOnly(url);
 
-      // Всегда открываем в попапе (ArayBrowser) — и внутренние и внешние URL
-      if (mode === "popup") {
+      if (isInternal) {
         return {
           success: true,
-          action: `__ARAY_POPUP:${JSON.stringify({ url, title: title || url })}__`,
-          message: title ? `Показываю: ${title}` : `Показываю: ${url}`,
+          action: `__ARAY_NAVIGATE:${url}__`,
+          message: "Открыл нужный раздел. Проверь, пожалуйста.",
         };
       }
 
-      // Полный переход (redirect) — только по явному запросу
+      if (isExternalTabOnly) {
+        return {
+          success: true,
+          action: `__ARAY_SHOW_URL:${url}:${title || url}__`,
+          message: "Открыл вкладку.",
+        };
+      }
+
       if (url.startsWith("http")) {
         return {
           success: true,
           action: `__ARAY_SHOW_URL:${url}:${title || url}__`,
-          message: `Открываю: ${title || url}`,
+          message: "Открыл вкладку.",
         };
       }
 
       return {
         success: true,
         action: `__ARAY_NAVIGATE:${url}__`,
-        message: `Перехожу на ${title || url}`,
+        message: "Открыл нужный раздел. Проверь, пожалуйста.",
       };
     }
 
@@ -1128,6 +1639,12 @@ async function handleTool(name: string, input: Record<string, unknown>, userId?:
       }
 
       const totalItems = items.length;
+      if (totalItems === 0) {
+        return emptyToolResult("stock", input.lowStockOnly ? "Заканчивающихся позиций по этому фильтру нет." : "Позиции склада по этому фильтру не найдены.", {
+          items: [],
+          summary: { всего: 0, нет_в_наличии: 0, мало_на_складе: 0 },
+        });
+      }
       const outOfStock = items.filter(i => !i.в_наличии).length;
       const lowStock = items.filter(i => i.остаток_шт > 0 && i.остаток_шт < 10).length;
 

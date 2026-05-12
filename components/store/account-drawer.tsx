@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,21 +8,62 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Link from "next/link";
-import type { LucideIcon } from "lucide-react";
 import {
-  X, User, LogOut, ShoppingBag, Settings, Eye, EyeOff,
-  Mail, Lock, Loader2, CheckCircle2, ChevronRight, Phone,
-  Heart, Bell, Image as ImageIcon, Clock, BookmarkPlus,
-  LayoutDashboard, PackagePlus, CalendarCheck, Star, Truck,
-  LifeBuoy, Palette, Globe2, ShieldCheck,
-  Users, Package, BarChart3,
+  X,
+  User,
+  LogOut,
+  ShoppingBag,
+  Settings,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Loader2,
+  CheckCircle2,
+  ChevronRight,
+  Phone,
+  Heart,
+  Bell,
+  Image as ImageIcon,
+  Clock,
+  BookmarkPlus,
+  LayoutDashboard,
+  CalendarCheck,
+  Star,
+  Truck,
+  LifeBuoy,
+  Palette,
+  Globe2,
+  ShieldCheck,
+  Users,
+  Package,
+  BarChart3,
+  Monitor,
+  Warehouse,
+  Megaphone,
+  BadgePercent,
+  Tag,
+  FileDown,
+  Stamp,
+  Wallet,
+  BookOpen,
+  Wrench,
+  Zap,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { UI_LAYERS } from "@/lib/ui-layers";
-import { usePathname } from "next/navigation";
-import { AdminPwaInstall } from "@/components/admin/admin-pwa-install";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  buildAdminNavigationGroups,
+  getAdminNavItemLabel,
+  getAdminNavigationSearchContext,
+  getAdminNavigationSubtitle,
+} from "@/components/admin/admin-navigation-model";
+import { ArayIcon } from "@/components/shared/aray-orb";
+import { canAccess, pathToSection } from "@/lib/permissions";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatPhone(raw: string): string {
@@ -39,15 +80,26 @@ function formatPhone(raw: string): string {
   if (d.length > 9) result += "-" + d.slice(9, 11);
   return result;
 }
-function isPhone(v: string) { return /^[\d\s\-\+\(\)]{7,}$/.test(v.trim()) && !v.includes("@"); }
+function isPhone(v: string) {
+  return /^[\d\s\-\+\(\)]{7,}$/.test(v.trim()) && !v.includes("@");
+}
 
 function formatPrice(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(".0", "") + " млн ₽";
+  if (n >= 1_000_000)
+    return (n / 1_000_000).toFixed(1).replace(".0", "") + " млн ₽";
   if (n >= 1_000) return Math.round(n / 1000) + " тыс ₽";
   return Math.round(n) + " ₽";
 }
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const STAFF_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "MANAGER",
+  "COURIER",
+  "ACCOUNTANT",
+  "WAREHOUSE",
+  "SELLER",
+];
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: "Супер-админ",
@@ -61,6 +113,19 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 // ── Login form ────────────────────────────────────────────────────────────────
+const ACCOUNT_DRAWER_GROUP_ICONS: Record<string, React.ElementType> = {
+  main: LayoutDashboard,
+  personal: User,
+  sales: ShoppingBag,
+  aray: ArayIcon,
+  products: Package,
+  content: BookOpen,
+  marketing: Megaphone,
+  finance: Wallet,
+  settings: Settings,
+  help: LifeBuoy,
+};
+
 const loginSchema = z.object({
   login: z.string().min(1, "Введите телефон или email"),
   password: z.string().min(6, "Минимум 6 символов"),
@@ -75,7 +140,12 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
   const [loginValue, setLoginValue] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginForm>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
 
@@ -109,16 +179,26 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
           <User className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="font-display font-bold text-xl text-foreground">Войти в кабинет</h2>
-        <p className="text-muted-foreground text-sm mt-1 text-center">Телефон или email + пароль</p>
+        <h2 className="font-display font-bold text-xl text-foreground">
+          Войти в кабинет
+        </h2>
+        <p className="text-muted-foreground text-sm mt-1 text-center">
+          Телефон или email + пароль
+        </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex-1 px-5 space-y-4">
         <div>
-          <Label className="text-sm font-medium mb-1.5 block text-foreground">Телефон или Email</Label>
+          <Label className="text-sm font-medium mb-1.5 block text-foreground">
+            Телефон или Email
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-              {isPhone(loginValue) ? <Phone className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+              {isPhone(loginValue) ? (
+                <Phone className="w-4 h-4" />
+              ) : (
+                <Mail className="w-4 h-4" />
+              )}
             </div>
             <Input
               value={loginValue}
@@ -129,11 +209,17 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
               style={{ fontSize: 16 }}
             />
           </div>
-          {errors.login && <p className="text-xs text-destructive mt-1">{errors.login.message}</p>}
+          {errors.login && (
+            <p className="text-xs text-destructive mt-1">
+              {errors.login.message}
+            </p>
+          )}
         </div>
 
         <div>
-          <Label className="text-sm font-medium mb-1.5 block text-foreground">Пароль</Label>
+          <Label className="text-sm font-medium mb-1.5 block text-foreground">
+            Пароль
+          </Label>
           <div className="relative">
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
               <Lock className="w-4 h-4" />
@@ -146,17 +232,32 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
               style={{ fontSize: 16 }}
               {...register("password")}
             />
-            <button type="button" onClick={() => setShowPass(!showPass)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors" tabIndex={-1}>
-              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              tabIndex={-1}
+            >
+              {showPass ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
-          {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
+          {errors.password && (
+            <p className="text-xs text-destructive mt-1">
+              {errors.password.message}
+            </p>
+          )}
         </div>
 
         <div className="text-right -mt-2">
-          <Link href="/forgot-password" onClick={() => setOpen(false)}
-            className="text-xs text-muted-foreground hover:text-primary transition-colors">
+          <Link
+            href="/forgot-password"
+            onClick={() => setOpen(false)}
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
             Забыли пароль?
           </Link>
         </div>
@@ -167,16 +268,32 @@ function LoginPanel({ onSwitch }: { onSwitch: () => void }) {
           </div>
         )}
 
-        <Button type="submit" disabled={loading || success} className="w-full h-11 rounded-xl text-base">
-          {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Вход…</>
-            : success ? <><CheckCircle2 className="w-4 h-4 mr-2" /> Успешно!</>
-            : "Войти"}
+        <Button
+          type="submit"
+          disabled={loading || success}
+          className="w-full h-11 rounded-xl text-base"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Вход…
+            </>
+          ) : success ? (
+            <>
+              <CheckCircle2 className="w-4 h-4 mr-2" /> Успешно!
+            </>
+          ) : (
+            "Войти"
+          )}
         </Button>
 
         <div className="text-center">
-          <button type="button" onClick={onSwitch}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors">
-            Нет аккаунта? <span className="text-primary font-medium">Зарегистрироваться</span>
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            Нет аккаунта?{" "}
+            <span className="text-primary font-medium">Зарегистрироваться</span>
           </button>
         </div>
       </form>
@@ -200,7 +317,12 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
   const [showPass, setShowPass] = useState(false);
   const [phoneValue, setPhoneValue] = useState("");
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<RegForm>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<RegForm>({
     resolver: zodResolver(regSchema),
   });
 
@@ -224,7 +346,11 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
       setLoading(false);
       return;
     }
-    await signIn("credentials", { redirect: false, login: data.email, password: data.password });
+    await signIn("credentials", {
+      redirect: false,
+      login: data.email,
+      password: data.password,
+    });
     setLoading(false);
     setOpen(false);
   };
@@ -235,48 +361,106 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
         <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
           <User className="w-7 h-7 text-primary" />
         </div>
-        <h2 className="font-display font-bold text-xl text-foreground">Создать аккаунт</h2>
-        <p className="text-muted-foreground text-sm mt-1 text-center">Быстрая регистрация</p>
+        <h2 className="font-display font-bold text-xl text-foreground">
+          Создать аккаунт
+        </h2>
+        <p className="text-muted-foreground text-sm mt-1 text-center">
+          Быстрая регистрация
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex-1 px-5 space-y-3 overflow-y-auto pb-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="flex-1 px-5 space-y-3 overflow-y-auto pb-6"
+      >
         <div>
-          <Label className="text-sm font-medium mb-1.5 block text-foreground">Ваше имя</Label>
-          <Input placeholder="Иван Петров" className="h-11 rounded-xl" style={{ fontSize: 16 }} {...register("name")} />
-          {errors.name && <p className="text-xs text-destructive mt-1">{errors.name.message}</p>}
-        </div>
-        <div>
-          <Label className="text-sm font-medium mb-1.5 block text-foreground">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
-            <Input type="email" placeholder="ivan@mail.ru" autoComplete="email"
-              className="pl-10 h-11 rounded-xl" style={{ fontSize: 16 }} {...register("email")} />
-          </div>
-          {errors.email && <p className="text-xs text-destructive mt-1">{errors.email.message}</p>}
+          <Label className="text-sm font-medium mb-1.5 block text-foreground">
+            Ваше имя
+          </Label>
+          <Input
+            placeholder="Иван Петров"
+            className="h-11 rounded-xl"
+            style={{ fontSize: 16 }}
+            {...register("name")}
+          />
+          {errors.name && (
+            <p className="text-xs text-destructive mt-1">
+              {errors.name.message}
+            </p>
+          )}
         </div>
         <div>
           <Label className="text-sm font-medium mb-1.5 block text-foreground">
-            Телефон <span className="text-muted-foreground font-normal">(необязательно)</span>
+            Email
+          </Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+            <Input
+              type="email"
+              placeholder="ivan@mail.ru"
+              autoComplete="email"
+              className="pl-10 h-11 rounded-xl"
+              style={{ fontSize: 16 }}
+              {...register("email")}
+            />
+          </div>
+          {errors.email && (
+            <p className="text-xs text-destructive mt-1">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
+        <div>
+          <Label className="text-sm font-medium mb-1.5 block text-foreground">
+            Телефон{" "}
+            <span className="text-muted-foreground font-normal">
+              (необязательно)
+            </span>
           </Label>
           <div className="relative">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
-            <Input type="tel" placeholder="+7 (985) 000-00-00" value={phoneValue} onChange={handlePhoneInput}
-              className="pl-10 h-11 rounded-xl" style={{ fontSize: 16 }} />
+            <Input
+              type="tel"
+              placeholder="+7 (985) 000-00-00"
+              value={phoneValue}
+              onChange={handlePhoneInput}
+              className="pl-10 h-11 rounded-xl"
+              style={{ fontSize: 16 }}
+            />
           </div>
         </div>
         <div>
-          <Label className="text-sm font-medium mb-1.5 block text-foreground">Пароль</Label>
+          <Label className="text-sm font-medium mb-1.5 block text-foreground">
+            Пароль
+          </Label>
           <div className="relative">
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
-            <Input type={showPass ? "text" : "password"} placeholder="Минимум 6 символов"
+            <Input
+              type={showPass ? "text" : "password"}
+              placeholder="Минимум 6 символов"
               autoComplete="new-password"
-              className="pl-10 pr-10 h-11 rounded-xl" style={{ fontSize: 16 }} {...register("password")} />
-            <button type="button" onClick={() => setShowPass(!showPass)} tabIndex={-1}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
-              {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              className="pl-10 pr-10 h-11 rounded-xl"
+              style={{ fontSize: 16 }}
+              {...register("password")}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPass ? (
+                <EyeOff className="w-4 h-4" />
+              ) : (
+                <Eye className="w-4 h-4" />
+              )}
             </button>
           </div>
-          {errors.password && <p className="text-xs text-destructive mt-1">{errors.password.message}</p>}
+          {errors.password && (
+            <p className="text-xs text-destructive mt-1">
+              {errors.password.message}
+            </p>
+          )}
         </div>
 
         {error && (
@@ -285,14 +469,28 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
           </div>
         )}
 
-        <Button type="submit" disabled={loading} className="w-full h-11 rounded-xl text-base">
-          {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Регистрация…</> : "Зарегистрироваться"}
+        <Button
+          type="submit"
+          disabled={loading}
+          className="w-full h-11 rounded-xl text-base"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Регистрация…
+            </>
+          ) : (
+            "Зарегистрироваться"
+          )}
         </Button>
 
         <div className="text-center">
-          <button type="button" onClick={onSwitch}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors">
-            Уже есть аккаунт? <span className="text-primary font-medium">Войти</span>
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            Уже есть аккаунт?{" "}
+            <span className="text-primary font-medium">Войти</span>
           </button>
         </div>
       </form>
@@ -303,17 +501,46 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
 // ── Section row (Telegram-style: иконка без фона, чистая) ─────────────────────
 type RowItem = {
   href: string;
-  icon: LucideIcon;
+  icon: React.ElementType;
   label: string;
   desc?: string;
   badge?: number | string;
 };
 
-function SectionRow({ item }: { item: RowItem }) {
+function canOpenDrawerHref(href: string, role: string): boolean {
+  const section = pathToSection(href);
+  if (section) return canAccess(role, section);
+  if (href.startsWith("/admin")) return false;
+  return true;
+}
+
+function filterDrawerRows(items: RowItem[], role: string): RowItem[] {
+  return items.filter((item) => canOpenDrawerHref(item.href, role));
+}
+
+function getDrawerActiveHref(
+  items: RowItem[],
+  pathname: string | null,
+): string | null {
+  if (!pathname) return null;
+  const normalizedPathname =
+    pathname.endsWith("/") && pathname !== "/"
+      ? pathname.slice(0, -1)
+      : pathname;
+  return (
+    items
+      .filter(
+        (item) =>
+          normalizedPathname === item.href ||
+          normalizedPathname.startsWith(`${item.href}/`),
+      )
+      .sort((a, b) => b.href.length - a.href.length)[0]?.href ?? null
+  );
+}
+
+function SectionRow({ item, active }: { item: RowItem; active: boolean }) {
   const Icon = item.icon;
   const { setOpen } = useAccountDrawer();
-  const pathname = usePathname();
-  const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
   return (
     <Link
       href={item.href}
@@ -324,8 +551,14 @@ function SectionRow({ item }: { item: RowItem }) {
         <Icon className="h-5 w-5" strokeWidth={1.85} />
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground leading-tight">{item.label}</p>
-        {item.desc && <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.desc}</p>}
+        <p className="text-sm font-medium text-foreground leading-tight truncate">
+          {item.label}
+        </p>
+        {item.desc && (
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {item.desc}
+          </p>
+        )}
       </div>
       {item.badge !== undefined && item.badge !== 0 && (
         <span className="bg-primary text-primary-foreground text-[11px] font-semibold rounded-full min-w-[22px] h-[22px] inline-flex items-center justify-center px-2 shrink-0">
@@ -337,7 +570,15 @@ function SectionRow({ item }: { item: RowItem }) {
   );
 }
 
-function SectionGroup({ title, items }: { title: string; items: RowItem[] }) {
+function SectionGroup({
+  title,
+  items,
+  activeHref,
+}: {
+  title: string;
+  items: RowItem[];
+  activeHref: string | null;
+}) {
   if (items.length === 0) return null;
   return (
     <div>
@@ -349,6 +590,7 @@ function SectionGroup({ title, items }: { title: string; items: RowItem[] }) {
           <SectionRow
             key={item.href}
             item={item}
+            active={item.href === activeHref}
           />
         ))}
       </div>
@@ -358,10 +600,12 @@ function SectionGroup({ title, items }: { title: string; items: RowItem[] }) {
 
 // ── Quick action card (Tinkoff-style: круглая primary заливка) ────────────────
 function QuickActionCard({
-  href, icon: Icon, label,
+  href,
+  icon: Icon,
+  label,
 }: {
   href: string;
-  icon: LucideIcon;
+  icon: React.ElementType;
   label: string;
 }) {
   const { setOpen } = useAccountDrawer();
@@ -369,7 +613,7 @@ function QuickActionCard({
     <Link
       href={href}
       onClick={() => setOpen(false)}
-      className="admin-drawer-quick admin-liquid-interactive flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/40 transition-colors"
+      className="admin-drawer-quick flex flex-col items-center gap-2 bg-card border border-border rounded-2xl p-3 hover:border-primary/20 hover:bg-primary/[0.03] transition-colors"
     >
       <div className="admin-drawer-quick-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-primary">
         <Icon className="w-5 h-5" strokeWidth={2} />
@@ -398,9 +642,12 @@ type ProfileData = {
 function ProfilePanel() {
   const { data: session } = useSession();
   const { setOpen } = useAccountDrawer();
+  const pathname = usePathname();
+  const router = useRouter();
   const [data, setData] = useState<ProfileData | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const user = session?.user;
-  const role = ((user as { role?: string })?.role) || "USER";
+  const role = (user as { role?: string })?.role || "USER";
   const isStaff = STAFF_ROLES.includes(role);
   const isAdmin = ADMIN_ROLES.includes(role);
 
@@ -414,47 +661,54 @@ function ProfilePanel() {
         setData(d);
       })
       .catch(() => {});
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const close = () => setOpen(false);
+  const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await signOut({ redirect: false });
+      close();
+
+      if (pathname?.startsWith("/admin") || pathname?.startsWith("/cabinet")) {
+        router.replace("/");
+        window.setTimeout(() => router.refresh(), 0);
+      } else {
+        router.refresh();
+      }
+    } catch {
+      setLoggingOut(false);
+    }
+  };
   const stats = data?.stats;
   const staffStats = data?.staffStats;
   const avatarUrl = data?.avatarUrl ?? null;
   const totalOrders = stats ? stats.activeOrders + stats.finishedOrders : 0;
   const initial = (user?.name?.[0] || user?.email?.[0] || "U").toUpperCase();
+  const profileActive =
+    pathname === "/cabinet/profile" ||
+    pathname?.startsWith("/cabinet/profile/");
 
   // ── Группы разделов (без soon-обещаний) ──
-
-  // Для STAFF — секция "Управление" с админскими разделами
-  const managementItems: RowItem[] = isStaff ? [
-    {
-      href: "/admin/orders",
-      icon: ShoppingBag,
-      label: "Заказы",
-      desc: staffStats?.todayNewOrders
-        ? `${staffStats.todayNewOrders} ${pluralOrders(staffStats.todayNewOrders)} сегодня`
-        : "Все заказы и статусы",
-      badge: staffStats?.todayNewOrders || undefined,
-    },
-    { href: "/admin/clients", icon: Users, label: "Клиенты", desc: "База покупателей" },
-    { href: "/admin/products", icon: Package, label: "Товары", desc: "Каталог и наличие" },
-    { href: "/admin/media", icon: ImageIcon, label: "Медиабиблиотека", desc: "Фото товаров и сайта" },
-    { href: "/admin/delivery", icon: Truck, label: "Доставка", desc: "Маршруты и тарифы" },
-    {
-      href: "/admin/reviews",
-      icon: Star,
-      label: "Отзывы",
-      desc: staffStats?.pendingReviews
-        ? `${staffStats.pendingReviews} ожидают модерации`
-        : "Модерация и ответы",
-      badge: staffStats?.pendingReviews || undefined,
-    },
-    ...(isAdmin ? [
-      { href: "/admin/analytics" as const, icon: BarChart3, label: "Аналитика", desc: "Выручка и динамика" },
-      { href: "/admin/staff" as const, icon: Users, label: "Команда", desc: "Сотрудники и роли" },
-    ] : []),
-  ] : [];
+  const accountNavigationContext = getAdminNavigationSearchContext({
+    pathname: pathname || (isStaff ? "/admin" : "/cabinet"),
+    role,
+  });
+  const quickActionItems = filterDrawerRows(
+    isStaff
+      ? accountNavigationContext.quick.map((item) => ({
+          href: item.href.split("?")[0],
+          icon: item.icon,
+          label: item.title,
+          desc: item.subtitle,
+        }))
+      : [],
+    role,
+  ).slice(0, 3);
 
   const purchasesItems: RowItem[] = [
     {
@@ -468,11 +722,21 @@ function ProfilePanel() {
         : "История и статусы",
       badge: stats?.activeOrders || undefined,
     },
-    { href: "/wishlist", icon: Heart, label: "Избранное", desc: "Сохранённые товары" },
+    {
+      href: "/wishlist",
+      icon: Heart,
+      label: "Избранное",
+      desc: "Сохранённые товары",
+    },
   ];
 
   const accountItems: RowItem[] = [
-    { href: "/cabinet/profile", icon: Settings, label: "Профиль", desc: "Имя, телефон, адрес" },
+    {
+      href: "/cabinet/profile",
+      icon: Settings,
+      label: "Профиль",
+      desc: "Имя, телефон, адрес",
+    },
     {
       href: "/cabinet/reviews",
       icon: Star,
@@ -481,45 +745,100 @@ function ProfilePanel() {
         ? `${stats.reviewsCount} ${stats.reviewsCount === 1 ? "отзыв" : "отзывов"}`
         : "Оценки и ответы",
     },
-    ...(!isStaff ? [
-      { href: "/cabinet/media" as const, icon: ImageIcon, label: "Медиабиблиотека", desc: "Фото и документы" },
-    ] : []),
-    { href: "/cabinet/subscriptions", icon: BookmarkPlus, label: "Подписки", desc: "Магазины и категории" },
-    { href: "/cabinet/history", icon: Clock, label: "История действий", desc: "Просмотры и заказы" },
+    ...(!isStaff
+      ? [
+          {
+            href: "/cabinet/media" as const,
+            icon: ImageIcon,
+            label: "Медиабиблиотека",
+            desc: "Фото и документы",
+          },
+        ]
+      : []),
+    {
+      href: "/cabinet/subscriptions",
+      icon: BookmarkPlus,
+      label: "Подписки",
+      desc: "Магазины и категории",
+    },
+    {
+      href: "/cabinet/history",
+      icon: Clock,
+      label: "История действий",
+      desc: "Просмотры и заказы",
+    },
   ];
 
-  const staffSystemItems: RowItem[] = isStaff ? [
-    ...(isAdmin ? [
-      { href: "/admin/site" as const, icon: Globe2, label: "Сайт", desc: "Контакты, SEO, виджет" },
-      { href: "/admin/settings" as const, icon: Settings, label: "Параметры", desc: "Базовые настройки" },
-      { href: "/admin/appearance" as const, icon: Palette, label: "Оформление", desc: "Темы и палитры" },
-      { href: "/admin/watermark" as const, icon: ImageIcon, label: "Водяной знак", desc: "Защита фото" },
-      { href: "/admin/notifications" as const, icon: Bell, label: "Уведомления", desc: "Push рассылка" },
-    ] : []),
-    { href: "/admin/health", icon: ShieldCheck, label: "Здоровье системы", desc: "Состояние сервисов" },
-  ] : [];
+  const settingsItems: RowItem[] = isStaff
+    ? []
+    : [
+        {
+          href: "/cabinet/notifications",
+          icon: Bell,
+          label: "Уведомления",
+          desc: "Push и email",
+        },
+        {
+          href: "/cabinet/appearance",
+          icon: Palette,
+          label: "Оформление",
+          desc: "Палитра, тема, шрифт",
+        },
+        {
+          href: "/contacts",
+          icon: LifeBuoy,
+          label: "Помощь",
+          desc: "Связь с магазином",
+        },
+      ];
 
-  const settingsItems: RowItem[] = isStaff ? staffSystemItems : [
-    { href: "/cabinet/notifications", icon: Bell, label: "Уведомления", desc: "Push и email" },
-    { href: "/cabinet/appearance", icon: Palette, label: "Оформление", desc: "Палитра, тема, шрифт" },
-    { href: "/contacts", icon: LifeBuoy, label: "Помощь", desc: "Связь с магазином" },
-  ];
+  const staffNavigationSections = isStaff
+    ? buildAdminNavigationGroups(role, undefined, ACCOUNT_DRAWER_GROUP_ICONS)
+        .map((group) => {
+          const items = filterDrawerRows(
+            group.items.map((item) => ({
+              href: item.href,
+              icon: item.icon,
+              label: getAdminNavItemLabel(item),
+              desc: getAdminNavigationSubtitle(item.href) || group.label,
+              badge:
+                item.href === "/admin/orders"
+                  ? staffStats?.todayNewOrders || item.badge
+                  : item.badge,
+            })),
+            role,
+          );
+          return { key: group.key, title: group.label, items };
+        })
+        .filter((section) => section.items.length > 0)
+    : [];
+  const staffDrawerItems = staffNavigationSections.flatMap((section) => section.items);
+  const activeDrawerHref = getDrawerActiveHref(
+    isStaff ? staffDrawerItems : [...purchasesItems, ...accountItems, ...settingsItems],
+    pathname,
+  );
 
   return (
     <div className="flex flex-col h-full">
       {/* User card hero — кликабельный, ведёт в профиль */}
       <div className="px-4 pt-4 pb-3">
         <Link
-          href={isStaff ? "/admin/staff" : "/cabinet/profile"}
+          href="/cabinet/profile"
           onClick={close}
-          className="admin-drawer-profile admin-liquid-interactive flex items-center gap-3 bg-card border border-border rounded-2xl p-4 hover:border-primary/40 transition-colors"
+          className={`admin-drawer-profile flex items-center gap-3 bg-card border rounded-2xl p-4 hover:border-primary/20 hover:bg-primary/[0.03] transition-colors ${
+            profileActive
+              ? "border-primary/35 bg-primary/[0.04]"
+              : "border-border"
+          }`}
         >
           {avatarUrl ? (
             <img
               src={avatarUrl}
               alt={user?.name ?? "avatar"}
               className="w-12 h-12 rounded-full object-cover shrink-0"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
             />
           ) : (
             <div className="admin-drawer-profile-icon flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-semibold text-primary">
@@ -530,10 +849,17 @@ function ProfilePanel() {
             <p className="font-semibold text-sm leading-tight truncate text-foreground">
               {user?.name ?? "Пользователь"}
             </p>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
+              {user?.email}
+            </p>
             {!isStaff && stats && totalOrders > 0 && (
               <p className="text-[11px] text-muted-foreground mt-1">
-                {totalOrders} {totalOrders === 1 ? "заказ" : totalOrders < 5 ? "заказа" : "заказов"}
+                {totalOrders}{" "}
+                {totalOrders === 1
+                  ? "заказ"
+                  : totalOrders < 5
+                    ? "заказа"
+                    : "заказов"}
                 {stats.totalSpent > 0 && ` · ${formatPrice(stats.totalSpent)}`}
               </p>
             )}
@@ -550,56 +876,67 @@ function ProfilePanel() {
       {/* Контент со скроллом */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4 space-y-5">
         {/* Staff: Quick actions */}
-        {isStaff && (
+        {isStaff && quickActionItems.length > 0 && (
           <div>
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground px-1 mb-2">
               Быстрые действия
             </p>
             <div className="grid grid-cols-3 gap-2">
-              <QuickActionCard
-                href="/admin"
-                icon={LayoutDashboard}
-                label="Админка"
-              />
-              {isAdmin ? (
+              {quickActionItems.map((item) => (
                 <QuickActionCard
-                  href="/admin/orders/new"
-                  icon={PackagePlus}
-                  label="Новый заказ"
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={item.label}
                 />
-              ) : (
-                <QuickActionCard
-                  href="/admin/orders"
-                  icon={ShoppingBag}
-                  label="Заказы"
-                />
-              )}
-              <QuickActionCard
-                href="/admin/delivery"
-                icon={CalendarCheck}
-                label="Доставка"
-              />
+              ))}
             </div>
           </div>
         )}
 
-        {isStaff && <AdminPwaInstall />}
-
-        {/* Группы разделов */}
-        {isStaff && managementItems.length > 0 && (
-          <SectionGroup title="Управление" items={managementItems} />
+        {isStaff &&
+          staffNavigationSections.map((section) => (
+            <SectionGroup
+              key={section.key}
+              title={section.title}
+              items={section.items}
+              activeHref={activeDrawerHref}
+            />
+          ))}
+        {!isStaff && (
+          <SectionGroup
+            title="Покупки"
+            items={purchasesItems}
+            activeHref={activeDrawerHref}
+          />
         )}
-        {!isStaff && <SectionGroup title="Покупки" items={purchasesItems} />}
-        {!isStaff && <SectionGroup title="Аккаунт" items={accountItems} />}
-        <SectionGroup title="Настройки" items={settingsItems} />
+        {!isStaff && (
+          <SectionGroup
+            title="Аккаунт"
+            items={accountItems}
+            activeHref={activeDrawerHref}
+          />
+        )}
+        {!isStaff && (
+          <SectionGroup
+            title="Настройки"
+            items={settingsItems}
+            activeHref={activeDrawerHref}
+          />
+        )}
 
         {/* Logout — destructive outline */}
         <button
-          onClick={() => { signOut({ redirect: false }); close(); }}
-          className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/5 transition-colors text-sm font-medium"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-full flex items-center justify-center gap-2 h-11 rounded-xl border border-destructive/30 text-destructive hover:bg-destructive/5 transition-colors text-sm font-medium disabled:opacity-60"
         >
-          <LogOut className="w-4 h-4" />
-          Выйти из аккаунта
+          {loggingOut ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <LogOut className="w-4 h-4" />
+          )}
+          {loggingOut ? "Выходим..." : "Выйти из аккаунта"}
         </button>
       </div>
     </div>
@@ -619,7 +956,8 @@ export function AccountDrawer() {
   const pathname = usePathname();
   const [mode, setMode] = useState<"login" | "register">("login");
   const lastPathRef = useRef(pathname);
-  const opensFromLeft = pathname?.startsWith("/admin");
+  const isAdminWorkspace = Boolean(pathname?.startsWith("/admin"));
+  useAdminOverlayGuard(open);
 
   useEffect(() => {
     if (lastPathRef.current === pathname) return;
@@ -630,7 +968,9 @@ export function AccountDrawer() {
   // Escape + body scroll lock
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
     window.addEventListener("keydown", onKey);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -644,7 +984,7 @@ export function AccountDrawer() {
     <AnimatePresence>
       {open && (
         <div
-          className={`fixed inset-0 ${UI_LAYERS.overlay} flex ${opensFromLeft ? "justify-start" : "justify-end"}`}
+          className={`fixed inset-0 ${UI_LAYERS.overlay} flex justify-end`}
           onClick={() => setOpen(false)}
           role="dialog"
           aria-modal="true"
@@ -656,26 +996,30 @@ export function AccountDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className={`absolute inset-0 ${isAdminWorkspace ? "bg-black/45 backdrop-blur-[2px]" : "bg-black/50 backdrop-blur-sm"}`}
           />
 
           {/* Drawer */}
           <motion.div
-            initial={{ x: opensFromLeft ? "-100%" : "100%" }}
+            initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: opensFromLeft ? "-100%" : "100%" }}
+            exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={`account-drawer-panel ${opensFromLeft ? "admin-popup-liquid admin-account-drawer border-r" : "border-l"} relative w-full sm:w-[420px] max-w-full h-full bg-background border-border shadow-2xl flex flex-col overflow-hidden`}
+            className={`account-drawer-panel ${isAdminWorkspace ? "admin-popup-liquid admin-account-drawer border-l" : "border-l"} relative w-full sm:w-[420px] max-w-full h-full bg-background border-border shadow-2xl flex flex-col overflow-hidden`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-border shrink-0">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-[0.2em]">
-                {status === "authenticated" ? "Личный кабинет" : mode === "login" ? "Вход" : "Регистрация"}
+                {status === "authenticated"
+                  ? "Личный кабинет"
+                  : mode === "login"
+                    ? "Вход"
+                    : "Регистрация"}
               </p>
               <button
                 onClick={() => setOpen(false)}
-                className="w-9 h-9 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
+                className="w-11 h-11 rounded-full border border-border hover:bg-muted/40 flex items-center justify-center transition-colors"
                 aria-label="Закрыть"
               >
                 <X className="w-4 h-4 text-muted-foreground" />
@@ -690,11 +1034,12 @@ export function AccountDrawer() {
                 </div>
               )}
               {status === "authenticated" && <ProfilePanel />}
-              {status === "unauthenticated" && (
-                mode === "login"
-                  ? <LoginPanel onSwitch={() => setMode("register")} />
-                  : <RegisterPanel onSwitch={() => setMode("login")} />
-              )}
+              {status === "unauthenticated" &&
+                (mode === "login" ? (
+                  <LoginPanel onSwitch={() => setMode("register")} />
+                ) : (
+                  <RegisterPanel onSwitch={() => setMode("login")} />
+                ))}
             </div>
           </motion.div>
         </div>

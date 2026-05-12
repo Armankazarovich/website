@@ -6,9 +6,9 @@
  * Структура (5 пунктов): Каталог · Поиск · АРАЙ (центр, приподнят) · Корзина · Аккаунт
  * Стиль: DESIGN_SYSTEM.md — bg-card border-t border-border, без backdrop-blur, без arayglass.
  *
- * Арай в центре:
- *  - Tap                → "aray:open" (открывает fullscreen чат-панель)
- *  - Long-press 400ms   → "aray:voice" (push-to-talk fullscreen)
+ * ARAY в центре:
+ *  - Tap / long-press   → "aray:open" (открывает единый чат)
+ *  - Голос живет внутри общего ARAY-ввода, без legacy fullscreen overlay.
  *  - Бейдж количества   → подсвечивается при добавлении в корзину
  *
  * Скрывается когда клавиатура открыта (visualViewport API).
@@ -25,10 +25,13 @@ import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 import { ArayOrb } from "@/components/shared/aray-orb";
+import { requestArayOpen } from "@/components/store/aray-events";
 
 function haptic(pattern: number | number[] = 6) {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    try { navigator.vibrate(pattern); } catch {}
+    try {
+      navigator.vibrate(pattern);
+    } catch {}
   }
 }
 
@@ -42,7 +45,15 @@ interface NavItemProps {
   href?: string;
 }
 
-function NavItem({ icon: Icon, label, isActive, badge, customLabel, onClick, href }: NavItemProps) {
+function NavItem({
+  icon: Icon,
+  label,
+  isActive,
+  badge,
+  customLabel,
+  onClick,
+  href,
+}: NavItemProps) {
   const content = (
     <motion.div
       whileTap={{ scale: 0.92 }}
@@ -63,16 +74,25 @@ function NavItem({ icon: Icon, label, isActive, badge, customLabel, onClick, hre
           </span>
         )}
       </div>
-      <span className={`text-[10px] leading-none tabular-nums ${isActive ? "font-semibold" : "font-medium"}`}>
+      <span
+        className={`block max-w-[52px] truncate text-[10px] leading-none tabular-nums ${isActive ? "font-semibold" : "font-medium"}`}
+      >
         {customLabel ?? label}
       </span>
     </motion.div>
   );
 
-  const tapHandler = () => { haptic(); onClick?.(); };
+  const tapHandler = () => {
+    haptic();
+    onClick?.();
+  };
 
   if (href) {
-    return <Link href={href} onClick={tapHandler} aria-label={label}>{content}</Link>;
+    return (
+      <Link href={href} onClick={tapHandler} aria-label={label}>
+        {content}
+      </Link>
+    );
   }
   return (
     <button onClick={tapHandler} aria-label={label} type="button">
@@ -81,24 +101,46 @@ function NavItem({ icon: Icon, label, isActive, badge, customLabel, onClick, hre
   );
 }
 
-export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean }) {
+export function MobileBottomNav({
+  arayEnabled = true,
+}: {
+  arayEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const totalItems = useCartStore((s) => s.totalItems());
   const totalPrice = useCartStore((s) => s.totalPrice());
+  const cartOpen = useCartStore((s) => s.cartOpen);
   const setCartOpen = useCartStore((s) => s.setCartOpen);
-  const { toggle: toggleAccount } = useAccountDrawer();
-  const { toggle: toggleSearch } = useSearchDrawer();
+  const accountOpen = useAccountDrawer((s) => s.open);
+  const toggleAccount = useAccountDrawer((s) => s.toggle);
+  const searchOpen = useSearchDrawer((s) => s.open);
+  const toggleSearch = useSearchDrawer((s) => s.toggle);
 
   const [mounted, setMounted] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
   const [arayPulse, setArayPulse] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
+  const [globalOverlayOpen, setGlobalOverlayOpen] = useState(false);
   const prevItemsRef = useRef(0);
 
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggered = useRef(false);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const sync = () => {
+      setGlobalOverlayOpen(document.body.dataset.adminOverlayOpen === "true");
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-admin-overlay-open"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   // Скрываем при открытой клавиатуре
   useEffect(() => {
@@ -123,47 +165,59 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
     }
   }, [totalItems, mounted]);
 
-  // Арай: tap = чат, long-press = голос
+  // ARAY: tap/long-press = unified chat. Voice is handled by the chat input.
   const onArayPointerDown = useCallback(() => {
     longPressTriggered.current = false;
     longPressRef.current = setTimeout(() => {
       longPressTriggered.current = true;
       haptic([12, 40, 12]);
-      window.dispatchEvent(new CustomEvent("aray:voice"));
+      requestArayOpen("open");
     }, 400);
   }, []);
 
   const onArayPointerUp = useCallback(() => {
-    if (longPressRef.current) { clearTimeout(longPressRef.current); longPressRef.current = null; }
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
   }, []);
 
   const onArayClick = useCallback(() => {
     if (longPressTriggered.current) return;
     haptic(8);
-    window.dispatchEvent(new CustomEvent("aray:open"));
+    requestArayOpen("open");
   }, []);
 
   // Cleanup
-  useEffect(() => () => {
-    if (longPressRef.current) clearTimeout(longPressRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (longPressRef.current) clearTimeout(longPressRef.current);
+    },
+    [],
+  );
 
-  const isActive = (path: string) =>
-    path === "/"
-      ? pathname === "/"
-      : pathname === path || pathname.startsWith(path);
+  const normalizeHref = (value: string) => {
+    const clean = value.split("?")[0].replace(/\/$/, "");
+    return clean || "/";
+  };
+  const isActive = (path: string) => {
+    const current = normalizeHref(pathname);
+    const target = normalizeHref(path);
+    if (target === "/") return current === target;
+    return current === target || current.startsWith(`${target}/`);
+  };
+  const hiddenByOverlay = kbOpen || cartOpen || accountOpen || searchOpen || globalOverlayOpen;
 
   return (
     <nav
-      className="fixed left-0 right-0 z-50 lg:hidden transition-all duration-300"
+      data-store-mobile-dock
+      className="fixed left-0 right-0 z-50 sm:hidden transition-all duration-300"
       style={{
-        bottom: kbOpen ? "-120px" : "0",
-        opacity: kbOpen ? 0 : 1,
-        pointerEvents: kbOpen ? "none" : "auto",
+        bottom: hiddenByOverlay ? "-120px" : "0",
+        opacity: hiddenByOverlay ? 0 : 1,
+        pointerEvents: hiddenByOverlay ? "none" : "auto",
         // Liquid Glass — единый стиль с Header магазина (но легче: blur 20px вместо 32px)
-        background: "hsl(var(--background) / 0.85)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: "hsl(var(--background) / 0.96)",
         borderTop: "1px solid hsl(var(--primary) / 0.12)",
         boxShadow: "0 -4px 20px hsl(var(--foreground) / 0.06)",
       }}
@@ -180,7 +234,9 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
 
       <div
         className="flex items-end justify-around px-1 pt-1 relative"
-        style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))" }}
+        style={{
+          paddingBottom: "max(10px, env(safe-area-inset-bottom, 10px))",
+        }}
       >
         {/* Левые: Каталог + Поиск */}
         <div className="flex items-center justify-around flex-1 pt-1">
@@ -194,7 +250,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             icon={Search}
             label="Поиск"
             onClick={() => toggleSearch()}
-            isActive={false}
+            isActive={searchOpen}
           />
         </div>
 
@@ -210,7 +266,7 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
               onPointerDown={onArayPointerDown}
               onPointerUp={onArayPointerUp}
               onPointerCancel={onArayPointerUp}
-              aria-label="Арай — нажми для чата, удерживай для голоса"
+              aria-label="ARAY — открыть чат"
               className={`flex flex-col items-center transition-transform duration-150 active:scale-[0.92] focus:outline-none ${
                 cartBounce ? "animate-cart-bounce" : ""
               }`}
@@ -235,15 +291,22 @@ export function MobileBottomNav({ arayEnabled = true }: { arayEnabled?: boolean 
             icon={ShoppingCart}
             label="Корзина"
             onClick={() => setCartOpen(true)}
-            isActive={false}
+            isActive={
+              cartOpen || pathname === "/cart" || pathname === "/checkout"
+            }
             badge={mounted ? totalItems : undefined}
-            customLabel={mounted && totalItems > 0 ? formatPrice(totalPrice) : undefined}
+            customLabel={
+              mounted && totalItems > 0 ? formatPrice(totalPrice) : undefined
+            }
           />
           <NavItem
             icon={User}
             label="Кабинет"
             onClick={() => toggleAccount()}
-            isActive={false}
+            isActive={
+              accountOpen ||
+              pathname.startsWith("/cabinet")
+            }
           />
         </div>
       </div>

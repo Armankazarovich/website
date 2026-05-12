@@ -95,22 +95,22 @@ export function AppHeader({
 
       <div
         className={cn(
-          "container flex items-center gap-3",
+          "container flex items-center gap-3 overflow-visible",
           containerClassName,
         )}
-        style={{ height }}
+        style={{ minHeight: height }}
       >
         {leftSlot && (
           <div
             className={cn(
               "flex items-center gap-2 min-w-0",
-              centerSlot ? "shrink-0" : "flex-1"
+              centerSlot ? "flex-1 xl:flex-none xl:shrink-0" : "flex-1"
             )}
           >
             {leftSlot}
           </div>
         )}
-        {centerSlot && <div className="flex-1 min-w-0 flex items-center justify-center">{centerSlot}</div>}
+        {centerSlot && <div className="hidden flex-1 min-w-0 items-center justify-center xl:flex">{centerSlot}</div>}
         {rightSlot && <div className="flex items-center gap-2 shrink-0 ml-auto">{rightSlot}</div>}
       </div>
     </header>

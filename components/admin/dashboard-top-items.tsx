@@ -69,7 +69,7 @@ export function DashboardTopItems() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={fetchItems}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted/60 transition-colors"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-primary"
             title="Обновить"
             aria-label="Обновить"
             type="button"

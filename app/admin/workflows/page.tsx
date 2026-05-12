@@ -4,11 +4,11 @@ import { useState, useEffect } from "react";
 
 import {
   Zap, Plus, Trash2, Play, Pause, ChevronRight,
-  ShoppingBag, Clock, CheckSquare, X,
+  ShoppingBag, Clock, CheckSquare,
   Loader2, RefreshCw, CheckCircle2,
 } from "lucide-react";
+import { AdminModal } from "@/components/admin/admin-modal";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { useClassicMode } from "@/lib/use-classic-mode";
 
 type Workflow = {
   id: string;
@@ -21,6 +21,28 @@ type Workflow = {
   createdAt: string;
   _count?: { logs: number };
 };
+
+function isWorkflowPayload(value: unknown): value is Workflow {
+  return Boolean(
+    value &&
+    typeof value === "object" &&
+    typeof (value as Workflow).id === "string" &&
+    typeof (value as Workflow).name === "string",
+  );
+}
+
+function getApiError(payload: unknown, fallback: string) {
+  if (payload && typeof payload === "object" && typeof (payload as { error?: unknown }).error === "string") {
+    return (payload as { error: string }).error;
+  }
+  return fallback;
+}
+
+const VISIBLE_EMOJI_PATTERN = /[\u{1f300}-\u{1faff}\u{2600}-\u{27bf}\ufe0f]/gu;
+
+function cleanWorkflowText(value: string | undefined | null) {
+  return (value ?? "").replace(VISIBLE_EMOJI_PATTERN, "").replace(/\s{2,}/g, " ").trim();
+}
 
 const TRIGGERS: { id: string; label: string; icon: any; desc: string }[] = [
   { id: "order_created",        label: "Новый заказ",          icon: ShoppingBag, desc: "Когда клиент оформил заказ" },
@@ -45,7 +67,7 @@ const ROLE_OPTIONS = [
 // ─── Preset Workflows ─────────────────────────────────────────────────────────
 const PRESETS = [
   {
-    name: "🛒 Новый заказ → Задача менеджеру",
+    name: "Новый заказ -> задача менеджеру",
     description: "При каждом новом заказе создаётся задача для менеджера — связаться с клиентом",
     trigger: "order_created",
     conditions: {},
@@ -61,13 +83,13 @@ const PRESETS = [
     }],
   },
   {
-    name: "💰 Крупный заказ → Срочная задача",
-    description: "Заказ от 50 000 ₽ → задача помечается как СРОЧНАЯ",
+    name: "Крупный заказ -> срочная задача",
+    description: "Заказ от 50 000 ₽ — задача помечается как срочная",
     trigger: "order_created",
     conditions: {},
     actions: [{
       type: "create_task",
-      title: "🔥 КРУПНЫЙ ЗАКАЗ #{{orderNumber}} — {{guestName}}",
+      title: "Крупный заказ #{{orderNumber}} — {{guestName}}",
       description: "Сумма: {{totalAmount}} ₽\nТелефон: {{guestPhone}}",
       priority: "URGENT",
       status: "TODO",
@@ -79,15 +101,18 @@ const PRESETS = [
 ];
 
 function WorkflowCard({
-  wf, onToggle, onDelete,
+  wf, onToggle, onDelete, busy,
 }: {
   wf: Workflow;
   onToggle: () => void;
   onDelete: () => void;
+  busy?: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const trigger = TRIGGERS.find(t => t.id === wf.trigger);
   const TriggerIcon = trigger?.icon ?? Zap;
+  const workflowName = cleanWorkflowText(wf.name) || wf.name;
+  const workflowDescription = cleanWorkflowText(wf.description);
 
   return (
     <div className={`bg-card border rounded-2xl p-5 transition-all ${wf.active ? "border-border" : "border-border/50 opacity-60"}`}>
@@ -98,12 +123,12 @@ function WorkflowCard({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-semibold text-sm">{wf.name}</h3>
+              <h3 className="font-semibold text-sm">{workflowName}</h3>
               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${wf.active ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                 {wf.active ? "Активен" : "Выкл"}
               </span>
             </div>
-            {wf.description && <p className="text-xs text-muted-foreground mt-0.5">{wf.description}</p>}
+            {workflowDescription && <p className="text-xs text-muted-foreground mt-0.5">{workflowDescription}</p>}
             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <span className="font-medium">Триггер:</span> {trigger?.label ?? wf.trigger}
@@ -117,6 +142,7 @@ function WorkflowCard({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onToggle}
+            disabled={busy}
             className={`p-2 rounded-xl transition-colors ${wf.active ? "bg-muted hover:bg-amber-100 dark:hover:bg-amber-950/30 text-muted-foreground hover:text-amber-600" : "bg-primary/10 hover:bg-primary/20 text-primary"}`}
             title={wf.active ? "Выключить" : "Включить"}
           >
@@ -124,9 +150,10 @@ function WorkflowCard({
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            disabled={busy}
+            className="p-2 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-50 transition-colors"
           >
-            <Trash2 className="w-4 h-4" />
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
           </button>
         </div>
       </div>
@@ -135,8 +162,8 @@ function WorkflowCard({
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); onDelete(); }}
-        title={`Удалить воркфлоу?`}
-        description={`Воркфлоу «${wf.name}» будет удалён без возможности восстановления.`}
+        title={`Удалить сценарий?`}
+        description={`Сценарий «${workflowName}» будет удалён без возможности восстановления.`}
         confirmLabel="Удалить"
         variant="danger"
       />
@@ -148,7 +175,7 @@ function WorkflowCard({
             <div key={i} className="flex items-center gap-1.5 text-xs bg-muted px-2.5 py-1.5 rounded-xl">
               <CheckSquare className="w-3 h-3 text-primary" />
               <span className="font-medium">{a.type === "create_task" ? "Задача:" : a.type}</span>
-              <span className="text-muted-foreground truncate max-w-[160px]">{a.title}</span>
+              <span className="text-muted-foreground truncate max-w-[160px]">{cleanWorkflowText(String(a.title ?? ""))}</span>
             </div>
           ))}
         </div>
@@ -159,18 +186,6 @@ function WorkflowCard({
 
 // ─── Create Workflow Modal ────────────────────────────────────────────────────
 function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (wf: Workflow) => void }) {
-  const isClassic = useClassicMode();
-  const popupStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-  } : {
-    background: "rgba(12,12,14,0.82)",
-    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
-  };
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [trigger, setTrigger] = useState("order_created");
@@ -185,6 +200,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     tags: [],
   }]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadPreset = (preset: typeof PRESETS[0]) => {
     setName(preset.name);
@@ -200,32 +216,61 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const save = async () => {
     if (!name.trim()) return;
     setSaving(true);
+    setError(null);
     try {
       const res = await fetch("/api/admin/workflows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, description, trigger, conditions: {}, actions }),
       });
-      const wf = await res.json();
+      const wf = await res.json().catch(() => null);
+      if (!res.ok || !isWorkflowPayload(wf)) {
+        throw new Error(getApiError(wf, "Не удалось создать сценарий."));
+      }
       onCreated(wf);
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось создать сценарий.");
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
-        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold text-xl flex items-center gap-2" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>
-            <Zap className="w-5 h-5 text-primary" />
-            Новый воркфлоу
-          </h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-primary/[0.04] transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}><X className="w-4 h-4" /></button>
-        </div>
-
-        <div className="p-6 space-y-5">
+    <AdminModal
+      open
+      onClose={onClose}
+      title="Новый сценарий продаж"
+      subtitle="Шаблон CRM или ручное правило для заказов"
+      size="lg"
+      bodyClassName="space-y-5 p-4"
+      footer={(
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-[44px] rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
+          >
+            Отмена
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving || !name.trim()}
+            className="flex min-h-[44px] items-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            Создать сценарий
+          </button>
+        </>
+      )}
+    >
+      <div className="space-y-5">
+          {error && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
           {/* Presets */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Готовые шаблоны</p>
@@ -342,17 +387,8 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               ))}
             </div>
           </div>
-        </div>
-
-        <div className="px-6 py-4 border-t border-border flex items-center justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 rounded-xl border border-border text-sm hover:bg-primary/[0.08] transition-colors">Отмена</button>
-          <button onClick={save} disabled={saving || !name.trim()} className="flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-            Создать воркфлоу
-          </button>
-        </div>
       </div>
-    </div>
+    </AdminModal>
   );
 }
 
@@ -364,13 +400,27 @@ export default function WorkflowsPage() {
   const [seeding, setSeeding] = useState(false);
   const [seedDone, setSeedDone] = useState(false);
   const [confirmSeed, setConfirmSeed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mutatingId, setMutatingId] = useState<string | null>(null);
+  const seedPreview = [
+    { label: "Новый заказ: звонок", icon: ShoppingBag },
+    { label: "Крупный заказ: срочно", icon: Zap },
+    { label: "В сборке: склад", icon: CheckSquare },
+    { label: "Готов: доставка", icon: CheckCircle2 },
+    { label: "Счет: бухгалтер", icon: CheckSquare },
+    { label: "Выполнен: отзыв", icon: CheckCircle2 },
+  ];
 
   const load = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/admin/workflows");
-      const data = await res.json();
-      setWorkflows(data.workflows ?? []);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getApiError(data, "Не удалось загрузить сценарии."));
+      setWorkflows(Array.isArray(data?.workflows) ? data.workflows : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось загрузить сценарии.");
     } finally {
       setLoading(false);
     }
@@ -380,43 +430,72 @@ export default function WorkflowsPage() {
 
   const installDefaults = async () => {
     setSeeding(true);
+    setError(null);
     try {
       const res = await fetch("/api/admin/workflows/seed", { method: "POST" });
-      const data = await res.json();
-      if (data.ok) { setSeedDone(true); await load(); }
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error(getApiError(data, "Не удалось установить готовые воронки."));
+      setSeedDone(true);
+      await load();
+    } catch (err) {
+      setSeedDone(false);
+      setError(err instanceof Error ? err.message : "Не удалось установить готовые воронки.");
     } finally {
       setSeeding(false);
     }
   };
 
   const toggle = async (wf: Workflow) => {
-    const res = await fetch(`/api/admin/workflows/${wf.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ active: !wf.active }),
-    });
-    const updated = await res.json();
-    setWorkflows(prev => prev.map(w => w.id === updated.id ? updated : w));
+    setMutatingId(wf.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/workflows/${wf.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active: !wf.active }),
+      });
+      const updated = await res.json().catch(() => null);
+      if (!res.ok || !isWorkflowPayload(updated)) {
+        throw new Error(getApiError(updated, "Не удалось изменить статус сценария."));
+      }
+      setWorkflows(prev => prev.map(w => w.id === updated.id ? updated : w));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось изменить статус сценария.");
+    } finally {
+      setMutatingId(null);
+    }
   };
 
   const deleteWf = async (id: string) => {
-    await fetch(`/api/admin/workflows/${id}`, { method: "DELETE" });
-    setWorkflows(prev => prev.filter(w => w.id !== id));
+    setMutatingId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/workflows/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(getApiError(data, "Не удалось удалить сценарий."));
+      }
+      setWorkflows(prev => prev.filter(w => w.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить сценарий.");
+    } finally {
+      setMutatingId(null);
+    }
   };
 
   const activeCount = workflows.filter(w => w.active).length;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="admin-page-frame admin-page-frame-readable">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display font-bold text-2xl flex items-center gap-2">
             <Zap className="w-6 h-6 text-primary" />
-            Автоворкфлоу
+            Сценарии продаж
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Автоматизируй рутину — {activeCount} из {workflows.length} активно
+            CRM-автоматизация заказов — {activeCount} из {workflows.length} активно
           </p>
         </div>
         <button
@@ -424,9 +503,15 @@ export default function WorkflowsPage() {
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Новый воркфлоу
+          Новый сценарий
         </button>
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
@@ -453,7 +538,7 @@ export default function WorkflowsPage() {
                 <CheckCircle2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-bold text-emerald-700 dark:text-emerald-400">6 воронок установлены и активны!</p>
+                <p className="font-bold text-emerald-700 dark:text-emerald-400">6 сценариев установлены и активны!</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Теперь при каждом заказе задачи создаются автоматически</p>
               </div>
             </div>
@@ -462,12 +547,15 @@ export default function WorkflowsPage() {
               <div className="flex-1">
                 <p className="font-bold flex items-center gap-2">
                   <Zap className="w-4 h-4 text-primary" />
-                  Готовые воронки для магазина пиломатериалов
+                  Готовые сценарии для магазина пиломатериалов
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Одна кнопка — и 6 воронок сразу активны:</p>
+                <p className="text-xs text-muted-foreground mt-1">Одна кнопка — и 6 сценариев сразу активны:</p>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {["📞 Новый заказ → звонок", "🔥 Крупный заказ → срочно", "🏗️ В сборке → склад", "🚚 Готов → курьер", "📄 Счёт → бухгалтер", "⭐ Выполнен → отзыв"].map(t => (
-                    <span key={t} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-lg font-medium">{t}</span>
+                  {seedPreview.map(({ label, icon: Icon }) => (
+                    <span key={label} className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      <Icon className="h-3 w-3" strokeWidth={1.8} />
+                      {label}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -493,7 +581,7 @@ export default function WorkflowsPage() {
       ) : workflows.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            Нажмите «Установить всё» выше или создайте воркфлоу вручную
+            Нажмите «Установить всё» выше или создайте сценарий вручную
           </p>
           <button onClick={() => setShowCreate(true)} className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm hover:bg-primary/[0.08] transition-colors">
             <Plus className="w-4 h-4" />
@@ -508,6 +596,7 @@ export default function WorkflowsPage() {
               wf={wf}
               onToggle={() => toggle(wf)}
               onDelete={() => deleteWf(wf.id)}
+              busy={mutatingId === wf.id}
             />
           ))}
         </div>
@@ -525,8 +614,8 @@ export default function WorkflowsPage() {
         open={confirmSeed}
         onClose={() => setConfirmSeed(false)}
         onConfirm={() => { setConfirmSeed(false); installDefaults(); }}
-        title="Установить готовые воронки?"
-        description="Установить 6 готовых воронок для магазина пиломатериалов? Они будут сразу активны."
+        title="Установить готовые сценарии?"
+        description="Установить 6 готовых сценариев для магазина пиломатериалов? Они будут сразу активны."
         confirmLabel="Установить"
         variant="default"
         loading={seeding}

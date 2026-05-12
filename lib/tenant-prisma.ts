@@ -1,3 +1,5 @@
+import "server-only";
+
 /**
  * tenant-prisma.ts — Prisma Client extension для авто-фильтрации по tenantId.
  *

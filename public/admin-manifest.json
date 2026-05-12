@@ -1,62 +1,62 @@
 {
-  "name": "ПилоРус — Панель управления",
-  "short_name": "Арай",
-  "description": "Панель управления ПилоРус — заказы, склад, команда",
+  "name": "ARAY Production",
+  "short_name": "ARAY",
+  "description": "ARAY Production admin workspace: orders, catalog, finance, CRM, modules and assistant.",
   "start_url": "/admin",
   "scope": "/admin",
   "display": "standalone",
-  "background_color": "#080C1E",
-  "theme_color": "#E8700A",
+  "background_color": "#061018",
+  "theme_color": "#08202d",
   "orientation": "portrait-primary",
-  "id": "/admin",
+  "id": "/pwa/aray-workspace",
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/icons/aray-72.png",
+      "src": "/api/pwa/icon?s=72&v=aray-production-20260508",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-96.png",
+      "src": "/api/pwa/icon?s=96&v=aray-production-20260508",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-128.png",
+      "src": "/api/pwa/icon?s=128&v=aray-production-20260508",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-144.png",
+      "src": "/api/pwa/icon?s=144&v=aray-production-20260508",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-152.png",
+      "src": "/api/pwa/icon?s=152&v=aray-production-20260508",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-180.png",
+      "src": "/api/pwa/icon?s=180&v=aray-production-20260508",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-192.png",
+      "src": "/api/pwa/icon?s=192&v=aray-production-20260508",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/icons/aray-384.png",
+      "src": "/api/pwa/icon?s=384&v=aray-production-20260508",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "/icons/aray-512.png",
+      "src": "/api/pwa/icon?s=512&v=aray-production-20260508",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "maskable any"
     }
   ],
   "categories": ["business", "productivity"],
@@ -64,18 +64,18 @@
   "dir": "ltr",
   "shortcuts": [
     {
-      "name": "Заказы",
-      "short_name": "Заказы",
-      "description": "Новые заказы",
+      "name": "Orders",
+      "short_name": "Orders",
+      "description": "Active orders",
       "url": "/admin/orders",
-      "icons": [{ "src": "/icons/aray-96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/api/pwa/icon?s=96&v=aray-production-20260508", "sizes": "96x96", "type": "image/png" }]
     },
     {
-      "name": "Дашборд",
-      "short_name": "Дашборд",
-      "description": "Панель управления",
+      "name": "Workspace",
+      "short_name": "Workspace",
+      "description": "Admin workspace",
       "url": "/admin",
-      "icons": [{ "src": "/icons/aray-96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/api/pwa/icon?s=96&v=aray-production-20260508", "sizes": "96x96", "type": "image/png" }]
     }
   ]
 }

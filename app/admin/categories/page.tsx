@@ -4,13 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
-import {
   Upload, Save, Plus, Loader2, Check, ImageIcon, Trash2,
   Eye, EyeOff, ChevronUp, ChevronDown, Settings2,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { AdminModal } from "@/components/admin/admin-modal";
 
 type Category = {
   id: string;
@@ -62,7 +60,7 @@ function CategoryRow({
           <button
             onClick={() => { setMoving(true); onMove(cat.id, "up").finally(() => setMoving(false)); }}
             disabled={isFirst || moving || hidden}
-            className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25 transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25 transition-colors md:min-h-0 md:min-w-0"
           ><ChevronUp className="w-3.5 h-3.5" /></button>
           <span className="text-[10px] font-mono text-muted-foreground w-5 text-center">
             {hidden ? "—" : cat.sortOrder}
@@ -70,7 +68,7 @@ function CategoryRow({
           <button
             onClick={() => { setMoving(true); onMove(cat.id, "down").finally(() => setMoving(false)); }}
             disabled={isLast || moving || hidden}
-            className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25 transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-25 transition-colors md:min-h-0 md:min-w-0"
           ><ChevronDown className="w-3.5 h-3.5" /></button>
         </div>
 
@@ -119,21 +117,21 @@ function CategoryRow({
             onClick={handleToggle}
             disabled={toggling}
             title={hidden ? "Показать на сайте" : "Скрыть с сайта"}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors md:min-h-0 md:min-w-0"
           >
             {toggling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : hidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
           </button>
           <button
             onClick={() => setModalOpen(true)}
             title="Настройки"
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors md:min-h-0 md:min-w-0"
           >
             <Settings2 className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => setConfirmDelete(true)}
             title="Удалить"
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center p-1.5 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors md:min-h-0 md:min-w-0"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -186,6 +184,7 @@ function CategoryModal({
   const [dragOver, setDragOver]             = useState(false);
   const [saving, setSaving]                 = useState(false);
   const [saved, setSaved]                   = useState(false);
+  const [saveError, setSaveError]           = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Заполнить поля при открытии
@@ -201,6 +200,7 @@ function CategoryModal({
       setSeoDescription(cat?.seoDescription || "");
       setSaved(false);
       setUploadError("");
+      setSaveError("");
     }
   }, [open, cat]);
 
@@ -212,11 +212,13 @@ function CategoryModal({
       fd.append("file", file);
       fd.append("folder", "categories");
       const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.url) {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        setUploadError(data.error || "Не удалось загрузить файл");
+      } else if (data.url) {
         setImage(data.url);
       } else {
-        setUploadError(data.error || "Ошибка загрузки");
+        setUploadError("Сервер не вернул URL файла");
       }
     } catch (e) {
       setUploadError("Ошибка загрузки файла");
@@ -227,36 +229,56 @@ function CategoryModal({
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave({
-      name, slug,
-      image: image || null,
-      parentId: parentId || null,
-      showInMenu, showInFooter,
-      seoTitle: seoTitle || null,
-      seoDescription: seoDescription || null,
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => { setSaved(false); onClose(); }, 800);
+    setSaveError("");
+    setSaved(false);
+    try {
+      await onSave({
+        name, slug,
+        image: image || null,
+        parentId: parentId || null,
+        showInMenu, showInFooter,
+        seoTitle: seoTitle || null,
+        seoDescription: seoDescription || null,
+      });
+      setSaved(true);
+      setTimeout(() => { setSaved(false); onClose(); }, 800);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Не удалось сохранить категорию");
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Исключаем текущую категорию из списка родителей
   const parentOptions = allCats.filter(c => c.id !== cat?.id && !isHidden(c));
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-lg w-[calc(100vw-2rem)] flex flex-col p-0 gap-0 max-h-[90dvh] overflow-hidden">
-        <DialogHeader className="px-5 pt-5 pb-4 border-b border-border shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Settings2 className="w-4 h-4" />
-            {cat ? cat.name : "Новая категория"}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
+    <AdminModal
+      open={open}
+      onClose={onClose}
+      title={cat ? cat.name : "Новая категория"}
+      subtitle="Фото, меню, футер, подкатегория и SEO"
+      size="lg"
+      bodyClassName="px-5 py-4 space-y-5"
+      footer={(
+        <>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
+            Отмена
+          </Button>
+          <Button onClick={handleSave} disabled={saving || saved || !name || !slug}>
+            {saved
+              ? <><Check className="w-3.5 h-3.5 mr-1.5" /> Сохранено</>
+              : saving
+              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Сохранение...</>
+              : <><Save className="w-3.5 h-3.5 mr-1.5" /> Сохранить</>
+            }
+          </Button>
+        </>
+      )}
+    >
 
         {/* Фото + Основные поля */}
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           {/* Drag & drop зона */}
           <div className="shrink-0">
             <label className="block text-xs text-muted-foreground mb-1.5">Фото</label>
@@ -305,7 +327,7 @@ function CategoryModal({
           </div>
 
           {/* Название + Slug */}
-          <div className="flex-1 space-y-3">
+          <div className="flex-1 min-w-0 space-y-3">
             <div>
               <label className="block text-xs text-muted-foreground mb-1">Название</label>
               <input
@@ -330,11 +352,17 @@ function CategoryModal({
           </div>
         </div>
 
+        {saveError && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {saveError}
+          </div>
+        )}
+
         {/* Навигация */}
         <div className="border-t pt-4 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Навигация</p>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label className={`flex items-center gap-2.5 p-2.5 rounded-xl border cursor-pointer transition-colors ${showInMenu ? "border-primary/30 bg-primary/5" : "border-border bg-muted/50"}`}>
               <input type="checkbox" checked={showInMenu} onChange={(e) => setShowInMenu(e.target.checked)} className="w-4 h-4 accent-primary" />
               <div>
@@ -397,22 +425,7 @@ function CategoryModal({
           </div>
         </div>
 
-        </div>{/* end scroll area */}
-
-        {/* Кнопки — fixed at bottom */}
-        <div className="flex gap-2 justify-end px-5 py-4 border-t border-border shrink-0 bg-card">
-          <Button variant="ghost" onClick={onClose}>Отмена</Button>
-          <Button onClick={handleSave} disabled={saving || saved || !name || !slug}>
-            {saved
-              ? <><Check className="w-3.5 h-3.5 mr-1.5" /> Сохранено</>
-              : saving
-              ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Сохранение...</>
-              : <><Save className="w-3.5 h-3.5 mr-1.5" /> Сохранить</>
-            }
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </AdminModal>
   );
 }
 
@@ -420,16 +433,38 @@ function CategoryModal({
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
   const visibleCats = categories.filter((c) => !isHidden(c));
   const hiddenCats  = categories.filter((c) =>  isHidden(c));
 
   useEffect(() => {
-    fetch("/api/admin/categories")
-      .then((r) => r.json())
-      .then((data) => { setCategories(data); setLoading(false); });
+    let alive = true;
+    const load = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const r = await fetch("/api/admin/categories");
+        const data = await r.json().catch(() => null);
+        if (!r.ok) throw new Error(data?.error || "Не удалось загрузить категории");
+        if (!Array.isArray(data)) throw new Error("API категорий вернул неожиданный ответ");
+        if (alive) setCategories(data);
+      } catch (err) {
+        if (alive) setError(err instanceof Error ? err.message : "Не удалось загрузить категории");
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    load();
+    return () => { alive = false; };
   }, []);
+
+  const readApi = async <T,>(res: Response, fallback: string): Promise<T> => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.error || fallback);
+    return data as T;
+  };
 
   const handleUpdate = async (id: string, data: Partial<Category>) => {
     // Если снимаем скрытие → назначить порядок
@@ -441,12 +476,13 @@ export default function AdminCategoriesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    const updated = await res.json();
+    const updated = await readApi<Partial<Category>>(res, "Не удалось обновить категорию");
     setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
   };
 
   const handleDelete = async (id: string) => {
-    await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+    await readApi(res, "Не удалось удалить категорию");
     setCategories((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -457,10 +493,11 @@ export default function AdminCategoriesPage() {
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
     const a = sorted[idx];
     const b = sorted[swapIdx];
-    await Promise.all([
+    const results = await Promise.all([
       fetch(`/api/admin/categories/${a.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sortOrder: b.sortOrder }) }),
       fetch(`/api/admin/categories/${b.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sortOrder: a.sortOrder }) }),
     ]);
+    await Promise.all(results.map((res) => readApi(res, "Не удалось изменить порядок категорий")));
     setCategories((prev) =>
       prev.map((c) => {
         if (c.id === a.id) return { ...c, sortOrder: b.sortOrder };
@@ -476,7 +513,7 @@ export default function AdminCategoriesPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...data, sortOrder: visibleCats.length + 1 }),
     });
-    const created = await res.json();
+    const created = await readApi<Category>(res, "Не удалось создать категорию");
     setCategories((prev) => [...prev, created]);
   };
 
@@ -486,15 +523,15 @@ export default function AdminCategoriesPage() {
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div className="flex items-center justify-between">
+    <div className="admin-page-frame admin-page-frame-readable">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display font-bold text-2xl">Категории</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             {visibleCats.length} видимых · {hiddenCats.length} скрытых
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" /> Добавить
         </Button>
       </div>
@@ -502,6 +539,12 @@ export default function AdminCategoriesPage() {
       <div className="border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground bg-muted/30">
         Стрелки ↑↓ — порядок в меню и каталоге. <strong className="text-foreground/70 font-medium">Настройки</strong> — фото, SEO, навигация, подкатегория.
       </div>
+
+      {error && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* Видимые */}
       <div className="space-y-2">

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -108,6 +109,23 @@ const DEFAULT_WORKFLOWS = [
   },
 ];
 
+const VISIBLE_EMOJI_PATTERN = /[\u{1f300}-\u{1faff}\u{2600}-\u{27bf}\ufe0f]/gu;
+
+function cleanWorkflowText(value: string) {
+  return value.replace(VISIBLE_EMOJI_PATTERN, "").replace(/\s{2,}/g, " ").trim();
+}
+
+function cleanWorkflowActions(actions: Array<Record<string, unknown>>): Prisma.InputJsonValue {
+  return actions.map((action) =>
+    Object.fromEntries(
+      Object.entries(action).map(([key, value]) => [
+        key,
+        typeof value === "string" ? cleanWorkflowText(value) : value,
+      ]),
+    ),
+  ) as Prisma.InputJsonValue;
+}
+
 export async function POST() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -116,11 +134,11 @@ export async function POST() {
     DEFAULT_WORKFLOWS.map(wf =>
       prisma.workflow.create({
         data: {
-          name: wf.name,
-          description: wf.description,
+          name: cleanWorkflowText(wf.name),
+          description: cleanWorkflowText(wf.description),
           trigger: wf.trigger,
           conditions: wf.conditions,
-          actions: wf.actions,
+          actions: cleanWorkflowActions(wf.actions),
           active: true,
         },
       })

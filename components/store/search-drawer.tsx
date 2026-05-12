@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, X, Package, Loader2, ChevronRight, Tag, LayoutGrid } from "lucide-react";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { formatPrice } from "@/lib/utils";
 import { useSearchDrawer } from "@/store/search-drawer";
 
@@ -356,6 +357,7 @@ function SearchContent({ onClose }: { onClose: () => void }) {
 
 export function SearchDrawer() {
   const { open, setOpen } = useSearchDrawer();
+  useAdminOverlayGuard(open);
 
   return (
     <AnimatePresence>
@@ -369,7 +371,7 @@ export function SearchDrawer() {
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="relative w-full sm:w-[92vw] sm:max-w-[420px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            className="admin-popup-liquid relative w-full sm:w-[92vw] sm:max-w-[420px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

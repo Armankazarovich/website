@@ -20,7 +20,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { getSetting } from "@/lib/site-settings";
+import { getSetting } from "@/lib/site-settings-public";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -163,7 +163,13 @@ function isPickupOrder(status: OrderStatus): boolean {
 
 const STATUS_CARD: Record<
   OrderStatus,
-  { bg: string; border: string; text: string; label: string; icon: React.ElementType }
+  {
+    bg: string;
+    border: string;
+    text: string;
+    label: string;
+    icon: React.ElementType;
+  }
 > = {
   NEW: {
     bg: "bg-blue-50 dark:bg-blue-950/30",
@@ -269,7 +275,9 @@ function StatusTimeline({
       <div className="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-200 dark:border-red-800">
         <XCircle className="w-6 h-6 text-red-500 shrink-0" />
         <div>
-          <p className="font-semibold text-red-700 dark:text-red-300">Заказ отменён</p>
+          <p className="font-semibold text-red-700 dark:text-red-300">
+            Заказ отменён
+          </p>
           <p className="text-sm text-red-600/70 dark:text-red-400/70 mt-0.5">
             Если это ошибка — пожалуйста, свяжитесь с нами
           </p>
@@ -294,7 +302,10 @@ function StatusTimeline({
           const { Icon } = step;
 
           return (
-            <div key={step.status} className="relative flex items-start gap-4 pb-6 last:pb-0">
+            <div
+              key={step.status}
+              className="relative flex items-start gap-4 pb-6 last:pb-0"
+            >
               {/* Circle */}
               <div className="relative z-10 shrink-0">
                 {isCurrent ? (
@@ -336,8 +347,8 @@ function StatusTimeline({
                     isCurrent
                       ? "text-muted-foreground"
                       : isDone
-                      ? "text-muted-foreground/70"
-                      : "text-muted-foreground/40"
+                        ? "text-muted-foreground/70"
+                        : "text-muted-foreground/40"
                   }`}
                 >
                   {step.desc}
@@ -361,7 +372,7 @@ export function TrackOrderClient({
   settings: Record<string, string>;
 }) {
   const [order, setOrder] = useState<TrackOrder>(initialOrder);
-  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+  const [lastRefreshed, setLastRefreshed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const phone = getSetting(settings, "phone");
@@ -378,7 +389,7 @@ export function TrackOrderClient({
         status: data.status,
         updatedAt: data.updatedAt,
       }));
-      setLastRefreshed(new Date());
+      setLastRefreshed(new Date().toISOString());
     } catch {
       // silent — don't break the UI
     } finally {
@@ -388,6 +399,7 @@ export function TrackOrderClient({
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
+    setLastRefreshed(new Date().toISOString());
     const timer = setInterval(refresh, 30_000);
     return () => clearInterval(timer);
   }, [refresh]);
@@ -404,7 +416,6 @@ export function TrackOrderClient({
   return (
     <div className="min-h-screen bg-background">
       <div className="container max-w-2xl py-8 px-4 sm:px-6 space-y-5">
-
         {/* ── Back link ─────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between">
           <Link
@@ -420,7 +431,9 @@ export function TrackOrderClient({
             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             title="Обновить статус"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`}
+            />
             Обновить
           </button>
         </div>
@@ -451,8 +464,8 @@ export function TrackOrderClient({
               isFinished
                 ? "bg-emerald-500/20 dark:bg-emerald-500/10"
                 : isCancelled
-                ? "bg-red-500/20 dark:bg-red-500/10"
-                : "bg-primary/10"
+                  ? "bg-red-500/20 dark:bg-red-500/10"
+                  : "bg-primary/10"
             }`}
           >
             <CardIcon
@@ -460,8 +473,8 @@ export function TrackOrderClient({
                 isFinished
                   ? "text-emerald-600 dark:text-emerald-400"
                   : isCancelled
-                  ? "text-red-500"
-                  : "text-primary"
+                    ? "text-red-500"
+                    : "text-primary"
               }`}
             />
           </div>
@@ -473,8 +486,8 @@ export function TrackOrderClient({
               {isCancelled
                 ? "Если это ошибка или у вас есть вопросы — позвоните нам"
                 : isFinished
-                ? "Спасибо за покупку! Будем рады видеть вас снова"
-                : `Обновлено ${formatDateTime(order.updatedAt)}`}
+                  ? "Спасибо за покупку! Будем рады видеть вас снова"
+                  : `Обновлено ${formatDateTime(order.updatedAt)}`}
             </p>
             {!isCancelled && !isFinished && (
               <p className="text-xs text-muted-foreground/60 mt-1">
@@ -533,7 +546,9 @@ export function TrackOrderClient({
                   <MapPin className="w-4 h-4 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Адрес доставки</p>
+                  <p className="text-xs text-muted-foreground">
+                    Адрес доставки
+                  </p>
                   <p className="font-medium mt-0.5">{order.deliveryAddress}</p>
                 </div>
               </div>
@@ -609,7 +624,9 @@ export function TrackOrderClient({
 
                   {/* Line total */}
                   <div className="text-right shrink-0">
-                    <p className="font-semibold text-sm">{formatPrice(lineTotal)}</p>
+                    <p className="font-semibold text-sm">
+                      {formatPrice(lineTotal)}
+                    </p>
                   </div>
                 </div>
               );
@@ -656,11 +673,13 @@ export function TrackOrderClient({
         <div className="text-center pb-4">
           <p className="text-xs text-muted-foreground">
             Последнее обновление:{" "}
-            {lastRefreshed.toLocaleTimeString("ru-RU", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            })}
+            {lastRefreshed
+              ? new Date(lastRefreshed).toLocaleTimeString("ru-RU", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })
+              : "после загрузки"}
           </p>
           <Link
             href="/"

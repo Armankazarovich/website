@@ -21,33 +21,43 @@
  *  - useClassicMode / playOrderChime / LS_FONT экспорты (используются другими)
  *  - AdminMobileBottomNav (нижний dock на мобилке с Арай-орбом)
  *  - ArayControlCenter (sticky справа — пока не трогаем)
- *  - LazyAdminAray (плавающий Арай)
+ *  - LazyAdminArayAssistant (единый PiloRus voice-first ARAY: dock + panel)
  */
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Search, Sparkles, ChevronLeft, RefreshCw, MoreVertical, Trash2,
-  LayoutDashboard, ShoppingBag, Plus, Target, Zap, CheckSquare,
-  Truck, Package, Tag, Warehouse, FileDown, FileCheck, Images, Megaphone,
-  Star, Mail, TrendingUp, Wallet, UserCircle, HeartPulse, Globe,
-  Settings, Palette, BarChart2, Stamp, Stethoscope, Users, Bell, HelpCircle,
-  Receipt, FlaskConical, BookOpen, Wrench, Heart, History,
-  Network, Sun, Moon,
+  Search,
+  ChevronLeft,
+  RefreshCw,
+  MoreVertical,
+  Trash2,
+  Plus,
+  BarChart2,
+  FileCheck,
+  Stethoscope,
+  Sun,
+  Moon,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
 import { AccessGuard } from "@/components/admin/access-guard";
-import { LazyAdminAray } from "@/components/admin/lazy-components";
+import { LazyAdminArayAssistant } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
+import { RouteTransition } from "@/components/layout/route-transition";
+import { AdminHeaderSearch } from "@/components/admin/admin-header-search";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
+import { AdminPwaInstallButton } from "@/components/admin/admin-pwa-install";
+import { AdminNotificationBell } from "@/components/admin/admin-notification-bell";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
 import { AdminWeatherChip } from "@/components/admin/admin-weather";
-import { AdminAtmosphere, type AdminBgMode } from "@/components/admin/admin-atmosphere";
+import { ArayOrb } from "@/components/shared/aray-orb";
 import { AdminPageActionsProvider, useAdminPageActionsState, type AdminAction } from "@/components/admin/admin-page-actions";
+import { buildAdminArayNavigation } from "@/components/admin/admin-aray-navigation";
+import { getAdminNavigationPageMeta } from "@/components/admin/admin-navigation-model";
+import { requestArayOpen as dispatchArayOpen, type ArayOpenMode } from "@/components/store/aray-events";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { UI_LAYERS } from "@/lib/ui-layers";
@@ -58,6 +68,7 @@ const LS_BG_MODE = "aray-bg-mode";
 const LS_BG_MODE_MIGRATION = "aray-bg-clean-default-v2";
 export const LS_FONT = "aray-font-size";
 
+type AdminBgMode = "clean";
 type BgMode = AdminBgMode | "classic";
 
 /**
@@ -66,61 +77,25 @@ type BgMode = AdminBgMode | "classic";
  * теперь чистый bg-background.
  */
 export function useClassicMode() {
-  const [bgMode, setBgMode] = useState<AdminBgMode>("clean");
-  const [isLight, setIsLight] = useState(false);
+  const bgMode: AdminBgMode = "clean";
   useEffect(() => {
-    const legacyClassic = localStorage.getItem(LS_CLASSIC) === "1";
-    let stored = localStorage.getItem(LS_BG_MODE);
-    if (localStorage.getItem(LS_BG_MODE_MIGRATION) !== "1") {
-      if (stored !== "clean") {
-        stored = "clean";
-        localStorage.setItem(LS_BG_MODE, "clean");
-        localStorage.setItem(LS_CLASSIC, "1");
-      }
-      localStorage.setItem(LS_BG_MODE_MIGRATION, "1");
-    }
-    if (stored === "clean" || stored === "photo") {
-      setBgMode(stored);
-    } else if (stored === "video") {
-      setBgMode("clean");
-      localStorage.setItem(LS_BG_MODE, "clean");
-    } else if (stored === "classic") {
-      setBgMode("clean");
-      localStorage.setItem(LS_BG_MODE, "clean");
-    } else if (legacyClassic) {
-      setBgMode("clean");
-      localStorage.setItem(LS_BG_MODE, "clean");
-    } else {
-      setBgMode("clean");
-    }
-    const checkLight = () => {
-      const html = document.documentElement;
-      setIsLight(
-        html.classList.contains("light") ||
-        html.getAttribute("data-theme") === "light" ||
-        (!html.classList.contains("dark") && window.matchMedia("(prefers-color-scheme: light)").matches)
-      );
-    };
-    checkLight();
-    const obs = new MutationObserver(checkLight);
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    localStorage.setItem(LS_BG_MODE, "clean");
+    localStorage.setItem(LS_CLASSIC, "1");
+    localStorage.setItem(LS_BG_MODE_MIGRATION, "1");
     const handler = () => {
-      const m = localStorage.getItem(LS_BG_MODE);
-      if (m === "clean" || m === "photo") setBgMode(m);
-      if (m === "video") setBgMode("clean");
-      if (m === "classic") setBgMode("clean");
+      localStorage.setItem(LS_BG_MODE, "clean");
+      localStorage.setItem(LS_CLASSIC, "1");
     };
     window.addEventListener("aray-classic-change", handler);
-    return () => { window.removeEventListener("aray-classic-change", handler); obs.disconnect(); };
+    return () => window.removeEventListener("aray-classic-change", handler);
   }, []);
-  const setBg = (mode: BgMode) => {
-    const normalized: AdminBgMode = mode === "classic" ? "clean" : mode;
-    localStorage.setItem(LS_BG_MODE, normalized);
-    localStorage.setItem(LS_CLASSIC, normalized === "clean" ? "1" : "0");
+  const setBg = (_mode: BgMode) => {
+    localStorage.setItem(LS_BG_MODE, "clean");
+    localStorage.setItem(LS_CLASSIC, "1");
     window.dispatchEvent(new Event("aray-classic-change"));
   };
-  const toggle = () => setBg(bgMode === "clean" ? "photo" : "clean");
-  const classic = isLight || bgMode === "clean";
+  const toggle = () => setBg("clean");
+  const classic = true;
   return { classic, rawClassic: bgMode === "clean", bgMode, setBg, toggle };
 }
 
@@ -147,68 +122,12 @@ export function playOrderChime() {
   } catch {}
 }
 
-// ──────────────────────────────────────────────────────────────────────────
-// Названия страниц по путям (для шапки)
-// ──────────────────────────────────────────────────────────────────────────
-
 type PageIcon = React.ElementType | "aray";
 type PageMeta = { title: string; subtitle?: string; icon: PageIcon };
 
-const PAGE_TITLES: Record<string, PageMeta> = {
-  "/admin":                  { title: "Рабочий стол",    subtitle: "Сводка магазина",     icon: LayoutDashboard },
-  "/admin/orders":           { title: "Заказы",          subtitle: "Активные и архив",    icon: ShoppingBag },
-  "/admin/orders/new":       { title: "Новый заказ",     subtitle: "По телефону",         icon: Plus },
-  "/admin/crm":              { title: "ARAY CRM",        subtitle: "Лиды и сделки",       icon: Target },
-  "/admin/crm/automation":   { title: "Автоматизация",   subtitle: "Тоннели",             icon: Zap },
-  "/admin/tasks":            { title: "Задачи",          subtitle: "Команда",             icon: CheckSquare },
-  "/admin/delivery":         { title: "Доставка",        subtitle: "Маршруты и тарифы",   icon: Truck },
-  "/admin/products":         { title: "Каталог товаров", subtitle: "Товары магазина",     icon: Package },
-  "/admin/categories":       { title: "Категории",       subtitle: "Дерево разделов",     icon: Tag },
-  "/admin/inventory":        { title: "Склад",           subtitle: "Остатки и движение",  icon: Warehouse },
-  "/admin/import":           { title: "Импорт / Экспорт",subtitle: "CSV, Excel",          icon: FileDown },
-  "/admin/media":            { title: "Медиабиблиотека", subtitle: "Фото и документы",    icon: Images },
-  "/admin/promotions":       { title: "Акции",           subtitle: "Скидки и предложения",icon: Megaphone },
-  "/admin/reviews":          { title: "Отзывы",          subtitle: "Модерация",           icon: Star },
-  "/admin/email":            { title: "Email рассылка",  subtitle: "Кампании",            icon: Mail },
-  "/admin/promotion":        { title: "Продвижение",     subtitle: "SEO и реклама",       icon: TrendingUp },
-  "/admin/finance":          { title: "Финансы",         subtitle: "Доходы и расходы",    icon: Wallet },
-  "/admin/clients":          { title: "Клиенты",         subtitle: "База покупателей",    icon: UserCircle },
-  "/admin/health":           { title: "Здоровье",        subtitle: "Состояние системы",   icon: HeartPulse },
-  "/admin/site":             { title: "Сайт",            subtitle: "Настройки магазина",  icon: Globe },
-  "/admin/settings":         { title: "Настройки",       subtitle: "Параметры",           icon: Settings },
-  "/admin/appearance":       { title: "Оформление",      subtitle: "Темы и палитры",      icon: Palette },
-  "/admin/analytics":        { title: "Аналитика",       subtitle: "Графики и отчёты",    icon: BarChart2 },
-  "/admin/watermark":        { title: "Водяной знак",    subtitle: "Защита фото",         icon: Stamp },
-  "/admin/staff":            { title: "Команда",         subtitle: "Сотрудники",          icon: Users },
-  "/admin/notifications":    { title: "Уведомления",     subtitle: "Push рассылка",       icon: Bell },
-  "/admin/help":             { title: "Помощь",          subtitle: "Гайды",               icon: HelpCircle },
-  "/admin/aray":             { title: "ARAY AI",         subtitle: "Главная",             icon: "aray" },
-  "/admin/aray/agents":      { title: "Agent Control",   subtitle: "Отделы и качество",   icon: Network },
-  "/admin/aray/costs":       { title: "Расходы Арая",    subtitle: "Токены и подписки",   icon: Receipt },
-  "/admin/aray-lab":         { title: "Лаборатория",     subtitle: "Эксперименты",        icon: FlaskConical },
-  "/admin/posts":            { title: "Статьи",          subtitle: "Блог и новости",      icon: BookOpen },
-  "/admin/services":         { title: "Услуги",          subtitle: "Сервисы",             icon: Wrench },
-  // Кабинет
-  "/cabinet":                { title: "Главная",         subtitle: "Личный кабинет",      icon: LayoutDashboard },
-  "/cabinet/orders":         { title: "Мои заказы",      subtitle: "Активные и история",  icon: ShoppingBag },
-  "/cabinet/profile":        { title: "Профиль",         subtitle: "Имя, аватар, тема",   icon: UserCircle },
-  "/cabinet/notifications":  { title: "Уведомления",     subtitle: "Push и email",        icon: Bell },
-  "/cabinet/reviews":        { title: "Мои отзывы",      subtitle: "Что я писал",         icon: Star },
-  "/cabinet/media":          { title: "Медиа",           subtitle: "Мои файлы",           icon: Images },
-  "/cabinet/subscriptions":  { title: "Подписки",        subtitle: "Поставщики",          icon: Heart },
-  "/cabinet/history":        { title: "История",         subtitle: "Действия",            icon: History },
-  "/cabinet/appearance":     { title: "Оформление",      subtitle: "Темы и палитры",      icon: Palette },
-};
-
 function usePageMeta(): PageMeta {
   const pathname = usePathname();
-  const sorted = Object.entries(PAGE_TITLES).sort((a, b) => b[0].length - a[0].length);
-  for (const [path, meta] of sorted) {
-    if (pathname === path || (path !== "/admin" && path !== "/cabinet" && pathname.startsWith(path))) {
-      return meta;
-    }
-  }
-  return { title: "Панель управления", icon: Sparkles };
+  return getAdminNavigationPageMeta(pathname);
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -219,6 +138,7 @@ interface AdminShellProps {
   role: string;
   email: string | null | undefined;
   userName?: string | null;
+  disabledModuleIds?: string[];
   children: React.ReactNode;
 }
 
@@ -246,18 +166,30 @@ function scheduleIdleTask(callback: () => void, delay = 1500) {
   };
 }
 
-function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
+function isAdminActionVisibleForModules(action: AdminAction, disabledModuleIds: string[]) {
+  const href = action.href || "";
+  if (disabledModuleIds.includes("business.terminal") && (href.startsWith("/admin/orders/new") || href.startsWith("/admin/terminals"))) {
+    return false;
+  }
+  if (disabledModuleIds.includes("core.notifications") && href.startsWith("/admin/notifications")) {
+    return false;
+  }
+  return true;
+}
+
+function AdminShellInner({ role, email, userName, disabledModuleIds = [], children }: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
-  const [arayMounted, setArayMounted] = useState(false);
-  const [pendingArayOpen, setPendingArayOpen] = useState(false);
+  const [refreshingPage, setRefreshingPage] = useState(false);
+  const [arayAssistantMounted, setArayAssistantMounted] = useState(false);
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const { bgMode } = useClassicMode();
+  const { t } = useAdminLang();
+  useClassicMode();
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
-  const { onRefresh, actions } = useAdminPageActionsState();
+  const { onRefresh, actions, headerMeta } = useAdminPageActionsState();
   const fallbackActions = useMemo<AdminAction[]>(() => {
     if (pathname === "/admin") {
       return [
@@ -331,9 +263,47 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
 
     return [];
   }, [pathname, router]);
-  const headerActions = actions.length > 0 ? actions : fallbackActions;
+  const headerActions = (actions.length > 0 ? actions : fallbackActions).filter((action) =>
+    isAdminActionVisibleForModules(action, disabledModuleIds),
+  );
+  const arayNavigation = useMemo(
+    () => buildAdminArayNavigation({ pathname, role, actions: headerActions, t, disabledModuleIds }),
+    [disabledModuleIds, pathname, role, headerActions, t]
+  );
+
+  useEffect(() => {
+    const hrefs = Array.from(new Set(
+      headerActions.map((action) => action.href).filter((href): href is string => Boolean(href && href !== pathname))
+    )).slice(0, 3);
+    if (hrefs.length === 0) return;
+
+    const cancel = scheduleIdleTask(() => {
+      hrefs.forEach((href) => {
+        try { router.prefetch(href); } catch {}
+      });
+    }, 1800);
+
+    return cancel;
+  }, [headerActions, pathname, router]);
+
   const showBack = !ROOT_ROUTES.has(pathname);
+  const handleSoftRefresh = async () => {
+    if (refreshingPage) return;
+    setRefreshingPage(true);
+    try {
+      window.dispatchEvent(new CustomEvent("aray:admin-refresh", { detail: { pathname } }));
+      if (onRefresh) await Promise.resolve(onRefresh());
+      router.refresh();
+    } finally {
+      window.setTimeout(() => setRefreshingPage(false), 700);
+    }
+  };
   const handleBack = () => {
+    if (headerMeta?.backHref) {
+      router.push(headerMeta.backHref);
+      return;
+    }
+
     const segments = pathname.split("/").filter(Boolean);
     segments.pop();
     const fallback =
@@ -383,58 +353,34 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
   }, []);
 
   useEffect(() => {
-    return scheduleIdleTask(() => setArayMounted(true), 2200);
+    const timer = window.setTimeout(() => setArayAssistantMounted(true), 4500);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    const openAray = () => {
-      setArayMounted(true);
-      setPendingArayOpen(true);
-    };
-    window.addEventListener("aray:open", openAray);
-    return () => window.removeEventListener("aray:open", openAray);
+    const ensureArayMounted = () => setArayAssistantMounted(true);
+    window.addEventListener("aray:ensure-mounted", ensureArayMounted);
+    return () => window.removeEventListener("aray:ensure-mounted", ensureArayMounted);
   }, []);
 
-  useEffect(() => {
-    if (!arayMounted || !pendingArayOpen) return;
-    const timers = [180, 520, 1000].map((delay) =>
-      window.setTimeout(() => window.dispatchEvent(new Event("aray:open")), delay)
-    );
-    const done = window.setTimeout(() => setPendingArayOpen(false), 1200);
-    return () => {
-      timers.forEach((timer) => window.clearTimeout(timer));
-      window.clearTimeout(done);
-    };
-  }, [arayMounted, pendingArayOpen]);
-
-  const requestArayOpen = () => {
-    setArayMounted(true);
-    setPendingArayOpen(true);
-  };
+  const requestArayOpen = useCallback((mode: ArayOpenMode = "open") => {
+    setArayAssistantMounted(true);
+    dispatchArayOpen(mode);
+  }, []);
 
   // ── Cmd/Ctrl + K — открывает поиск (как VS Code, Slack, Linear) ──
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setSearchOpen((v) => !v);
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-
   const initial =
     (userName?.charAt(0) || email?.charAt(0) || "A").toUpperCase();
+  const effectiveTitle = headerMeta?.title || pageMeta.title;
+  const effectiveSubtitle = headerMeta?.subtitle || pageMeta.subtitle;
   const HeaderIcon = pageMeta.icon;
   const isDarkTheme = (resolvedTheme || theme) === "dark";
 
   return (
-    <div className="admin-shell-root relative flex flex-col min-h-screen bg-background overflow-x-hidden">
-      <AdminAtmosphere mode={bgMode} />
+    <div className="admin-shell-root relative flex flex-col min-h-screen bg-background overflow-x-clip">
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
       <AppHeader
-        containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-8"
+        containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-4 xl:grid xl:grid-cols-[minmax(18rem,26rem)_minmax(24rem,1fr)_auto]"
         leftSlot={
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {/* Кнопка «Назад» — глобальная, скрыта на корневых маршрутах */}
@@ -442,72 +388,82 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               <button
                 onClick={handleBack}
                 type="button"
-                aria-label="Назад"
-                title="Назад"
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+                aria-label={headerMeta?.backLabel ? `Назад: ${headerMeta.backLabel}` : "Назад"}
+                title={headerMeta?.backLabel ? `Назад: ${headerMeta.backLabel}` : "Назад"}
+                className={`admin-header-back-button flex h-10 items-center justify-center rounded-xl border border-border/70 bg-background/35 text-muted-foreground transition-colors hover:text-foreground shrink-0 ${
+                  headerMeta?.backLabel ? "w-10 xl:w-auto xl:gap-2 xl:px-2 xl:pr-2.5" : "w-10"
+                }`}
               >
-                <ChevronLeft className="w-5 h-5" strokeWidth={2} />
+                <ChevronLeft className="w-4 h-4" strokeWidth={2} />
+                {headerMeta?.backLabel && (
+                  <span className="hidden min-w-0 flex-col items-start leading-none xl:flex">
+                    <span className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground/80">назад</span>
+                    <span className="mt-0.5 max-w-28 truncate text-xs font-semibold text-foreground">{headerMeta.backLabel}</span>
+                  </span>
+                )}
               </button>
             )}
 
-            {/* Кнопка «Обновить» — видна если страница зарегистрировала onRefresh */}
-            {onRefresh && (
-              <button
-                onClick={() => onRefresh()}
-                type="button"
-                aria-label="Обновить"
-                title="Обновить"
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
-              >
-                <RefreshCw className="w-[18px] h-[18px]" strokeWidth={1.75} />
-              </button>
-            )}
-
-            {/* Иконка раздела + заголовок с анимацией влёта при смене страницы.
-               БЕЗ AnimatePresence/exit — это блокировало рендер если переход
-               быстрее анимации. Только enter-анимация по key={pathname}. */}
+            {/* Иконка раздела + заголовок. Без route-анимации: переходы должны ощущаться мгновенными. */}
             <Link href={role === "USER" ? "/cabinet" : "/admin"} className="flex items-center gap-2.5 sm:gap-3 group min-w-0 flex-1">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0, x: -8, scale: 0.85 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+              <div
                 className="shrink-0"
                 data-header-icon
               >
-                {pageMeta.icon === "aray" ? (
+                {headerMeta?.logoSrc === "aray" ? (
+                  <ArayOrb size={44} pulse="idle" intensity="normal" />
+                ) : headerMeta?.logoSrc ? (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src="/images/aray/face-mob.png"
-                    alt="ARAY AI"
-                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-1 ring-primary/30"
+                    src={headerMeta.logoSrc}
+                    alt={headerMeta.logoAlt || effectiveTitle}
+                    className="h-11 w-11 rounded-full object-cover"
                   />
+                ) : pageMeta.icon === "aray" ? (
+                  <ArayOrb size={44} pulse="idle" intensity="normal" />
                 ) : (
                   <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl aray-icon-tone flex items-center justify-center transition-colors">
                     {/* @ts-ignore — HeaderIcon может быть "aray" или ElementType, проверка выше */}
                     <HeaderIcon className="w-5 h-5" strokeWidth={1.75} />
                   </div>
                 )}
-              </motion.div>
-              <motion.div
-                key={pathname + "-text"}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22, ease: [0.32, 0.72, 0.4, 1] }}
+              </div>
+              <div
                 className="flex flex-col gap-0 min-w-0 flex-1"
               >
                 <p className="font-display font-bold text-base lg:text-lg leading-none text-foreground truncate">
-                  {pageMeta.title}
+                  {effectiveTitle}
                 </p>
-                {pageMeta.subtitle && (
+                {effectiveSubtitle && (
                   <p className="hidden sm:block text-[11px] text-muted-foreground leading-none mt-1 truncate">
-                    {pageMeta.subtitle}
+                    {effectiveSubtitle}
                   </p>
                 )}
-              </motion.div>
+                {headerMeta?.badge && (
+                  <span className="mt-1 hidden w-fit rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary lg:inline-flex">
+                    {headerMeta.badge}
+                  </span>
+                )}
+              </div>
             </Link>
           </div>
         }
-        centerSlot={undefined}
+        centerSlot={
+          <div className="hidden w-full min-w-0 items-center gap-3 md:flex">
+            {headerMeta?.context && (
+              <div className="hidden min-w-0 flex-[0.9] min-[1180px]:block">
+                {headerMeta.context}
+              </div>
+            )}
+            <div className="min-w-0 flex-[1.45]">
+              <AdminHeaderSearch
+                role={role}
+                disabledModuleIds={disabledModuleIds}
+                onCompactSearch={() => setSearchOpen(true)}
+              />
+            </div>
+          </div>
+        }
         rightSlot={
           <div className="flex items-center gap-1.5">
             {/* Поиск — компактная иконка → открывает side-panel слева */}
@@ -516,12 +472,36 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               type="button"
               aria-label="Поиск (Ctrl+K)"
               title="Поиск (Ctrl+K)"
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground md:flex xl:hidden"
             >
               <Search className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>
 
-            <ArayControlCenter userRole={role} position="header" />
+            <button
+              onClick={handleSoftRefresh}
+              disabled={refreshingPage}
+              type="button"
+              aria-label="Обновить данные"
+              title="Обновить данные"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-foreground disabled:opacity-60"
+            >
+              <RefreshCw
+                className={`w-[18px] h-[18px] ${refreshingPage ? "animate-spin" : ""}`}
+                strokeWidth={1.75}
+              />
+            </button>
+
+            <AdminPwaInstallButton />
+
+            {role !== "USER" && !disabledModuleIds.includes("core.notifications") && (
+              <div className="block">
+                <AdminNotificationBell role={role} />
+              </div>
+            )}
+
+            <div className="hidden sm:block">
+              <ArayControlCenter userRole={role} position="header" />
+            </div>
 
             {/* Переключатель темы (только когда mounted — избегаем SSR mismatch) */}
             {mounted && (
@@ -530,7 +510,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
                 type="button"
                 aria-label={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
                 title={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
-                className="hidden sm:flex w-10 h-10 rounded-xl items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors shrink-0"
+                className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground sm:flex"
               >
                 {isDarkTheme ? (
                   <Sun className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -546,7 +526,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
               type="button"
               aria-label="Аккаунт"
               title={userName || email || "Аккаунт"}
-              className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-muted/60 transition-colors shrink-0 overflow-hidden"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition-colors hover:bg-muted/60 sm:flex"
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-primary/20" />
@@ -581,6 +561,7 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         avatarUrl={avatarUrl}
         userName={userName}
         email={email}
+        disabledModuleIds={disabledModuleIds}
       />
 
       {/* ─── Контент ──────────────────────────────────── */}
@@ -592,16 +573,20 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
-        style={{ paddingBottom: "max(calc(88px + env(safe-area-inset-bottom, 16px)), 88px)" }}
+        className={`admin-content-root flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
+        style={{ paddingBottom: "max(calc(132px + env(safe-area-inset-bottom, 16px)), 132px)" }}
       >
-        <AccessGuard role={role}>{children}</AccessGuard>
+        <RouteTransition surface="admin" className="admin-page-transition-shell">
+          <AccessGuard role={role}>{children}</AccessGuard>
+        </RouteTransition>
       </main>
 
       {/* ─── Mobile bottom nav (с Арай-орбом) ─────────── */}
       <AdminMobileBottomNav
         role={role}
+        disabledModuleIds={disabledModuleIds}
         onArayOpen={requestArayOpen}
+        onSearchOpen={() => setSearchOpen(true)}
       />
 
       {/* ─── Поиск-панель слева (по кнопке Search или ⌘K) ── */}
@@ -609,16 +594,17 @@ function AdminShellInner({ role, email, userName, children }: AdminShellProps) {
         open={searchOpen}
         onClose={() => setSearchOpen(false)}
         role={role}
+        disabledModuleIds={disabledModuleIds}
       />
 
-      {/* ─── Арай — тот же режим, что на сайте: обычный store widget без
-            постоянной правой колонки. Открывается по aray:open и не забирает
-            рабочее пространство админки. ── */}
-      {arayMounted && (
-        <LazyAdminAray
-          placement="left"
+      {/* ─── ARAY — единый PiloRus assistant surface: dock + voice-first panel. ── */}
+      {arayAssistantMounted && (
+        <LazyAdminArayAssistant
+          enabled
+          page={pathname}
           staffName={userName || (email && !email.startsWith("info") ? email.split("@")[0] : null) || "Коллега"}
           userRole={role}
+          adminNavigation={arayNavigation}
         />
       )}
     </div>
@@ -675,8 +661,8 @@ function HeaderActions({
   const others = actions.filter((a) => a !== primary);
   const actionClassName = (isPrimary: boolean) =>
     isPrimary
-      ? "inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground font-medium text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      : "inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-border text-foreground hover:bg-muted/60 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed";
+      ? "inline-flex min-h-10 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+      : "inline-flex min-h-10 items-center gap-2 rounded-xl border border-border px-3.5 text-sm text-foreground transition-colors hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-50";
 
   return (
     <>
@@ -729,7 +715,7 @@ function HeaderActions({
       <div className="md:hidden flex items-center gap-1.5">
         {primary && (() => {
           const PrimaryIcon = primary.icon;
-          const primaryClassName = "w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 shrink-0";
+          const primaryClassName = "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-50";
           if (primary.href) {
             return (
               <Link
@@ -766,15 +752,15 @@ function HeaderActions({
               type="button"
               onClick={() => setMenuOpen(!menuOpen)}
               aria-label="Ещё действия"
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <MoreVertical className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </button>
             {menuOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-2xl shadow-lg py-1 z-50">
+              <div className="admin-popup-liquid absolute right-0 top-full z-50 mt-2 w-56 rounded-2xl border border-border py-1">
                 {others.filter(a => !a.hideOnMobile).map((a) => {
                   const Icon = a.icon;
-                  const itemClassName = "w-full flex items-center gap-3 px-4 py-2.5 text-sm text-foreground hover:bg-accent transition-colors text-left disabled:opacity-50";
+                  const itemClassName = "flex min-h-11 w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-foreground transition-colors hover:bg-accent disabled:opacity-50";
                   const itemContent = (
                     <>
                       <Icon className="w-4 h-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />

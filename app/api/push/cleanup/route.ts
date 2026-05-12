@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { canAccess } from "@/lib/permissions";
 
 // Оставляем максимум MAX_PER_USER подписок на пользователя (самые новые)
 // Гостевые подписки не трогаем (нет userId)
@@ -10,7 +11,7 @@ const MAX_PER_USER = 3;
 
 export async function POST() {
   const session = await auth();
-  if (!session || session.user.role !== "ADMIN") {
+  if (!session || !canAccess(session.user.role, "notifications")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

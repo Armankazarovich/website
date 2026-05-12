@@ -11,7 +11,15 @@ import { HapticInit } from "@/components/haptic-init";
 import { UtmTracker } from "@/components/utm-tracker";
 import { ThemeChromeSync } from "@/components/layout/theme-chrome-sync";
 import { UserPreferencesSync } from "@/components/user-preferences-sync";
-import { ALL_PALETTE_IDS, normalizePaletteId, normalizePaletteIds } from "@/lib/palettes";
+import { PwaManifestSync } from "@/components/pwa-manifest-sync";
+import {
+  ADMIN_PALETTE_STORAGE_KEY,
+  ALL_PALETTE_IDS,
+  LEGACY_PALETTE_STORAGE_KEY,
+  PILORUS_BRAND_PALETTE_ID,
+  normalizePaletteId,
+  normalizePaletteIds,
+} from "@/lib/palettes";
 import "./globals.css";
 
 // Шрифты локальные (vendored в public/fonts/) — не зависим от fonts.gstatic.com при билде
@@ -81,7 +89,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
     shortcut: "/icons/icon-192x192.png",
   },
-  manifest: "/manifest.json",
+  manifest: "/api/pwa/manifest?app=pilorus-site",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -169,6 +177,39 @@ const organizationSchema = {
   "sameAs": ["https://pilmos.ru"]
 };
 
+const localDevCacheResetScript =
+  process.env.NODE_ENV !== "production"
+    ? `
+(function(){try{
+  var host=location.hostname;
+  var isLocal=host==="localhost"||host==="127.0.0.1"||host==="::1";
+  if(!isLocal||!navigator.serviceWorker)return;
+  var key="aray-local-sw-hard-reset-v3";
+  if(sessionStorage.getItem(key)==="done")return;
+  if(navigator.serviceWorker.controller){
+    sessionStorage.setItem(key,"redirecting");
+    location.replace("/sw-reset.html?next="+encodeURIComponent(location.href));
+    return;
+  }
+  var changed=false;
+  var jobs=[];
+  jobs.push(navigator.serviceWorker.getRegistrations().then(function(regs){
+    return Promise.all(regs.map(function(reg){changed=true;return reg.unregister().catch(function(){return false;});}));
+  }).catch(function(){}));
+  if(window.caches){
+    jobs.push(caches.keys().then(function(keys){
+      if(keys.length)changed=true;
+      return Promise.all(keys.map(function(name){return caches.delete(name);}));
+    }).catch(function(){}));
+  }
+  Promise.all(jobs).then(function(){
+    sessionStorage.setItem(key,"done");
+    if(changed||navigator.serviceWorker.controller)location.reload();
+  });
+}catch(e){}}());
+`
+    : null;
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSiteSettings();
   const yandexMetrikaId = getSetting(settings, "yandex_metrika_id");
@@ -186,6 +227,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
+        {localDevCacheResetScript && (
+          <script dangerouslySetInnerHTML={{ __html: localDevCacheResetScript }} />
+        )}
         <link rel="preload" href="/fonts/Roboto-Regular.woff" as="font" type="font/woff" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/Roboto-Bold.woff" as="font" type="font/woff" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://videos.pexels.com" />
@@ -193,21 +237,30 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://translate.google.com" />
         <link rel="preconnect" href="https://translate.googleapis.com" />
         <link rel="dns-prefetch" href="https://translate.google.com" />
-        <link rel="icon" href="/icons/aray-192.png" type="image/png" sizes="192x192" />
-        <link rel="icon" href="/icons/aray-96.png" type="image/png" sizes="96x96" />
+        <link rel="icon" href="/icons/icon-192x192.png" type="image/png" sizes="192x192" />
+        <link rel="icon" href="/icons/icon-96x96.png" type="image/png" sizes="96x96" />
         <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
-        <link rel="apple-touch-icon" href="/icons/aray-apple-touch.png" sizes="180x180" />
-        <link rel="shortcut icon" href="/icons/aray-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
+        <link rel="shortcut icon" href="/icons/icon-192x192.png" />
         {yandexVerification && <meta name="yandex-verification" content={yandexVerification} />}
         {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
         {/* Anti-flash: синхронно применяем палитру ДО гидратации React */}
         <script dangerouslySetInnerHTML={{ __html: `
 (function(){try{
-  var def=${JSON.stringify(defaultPalette)};
+  var adminDef=${JSON.stringify(defaultPalette)};
+  var brand=${JSON.stringify(PILORUS_BRAND_PALETTE_ID)};
+  var adminKey=${JSON.stringify(ADMIN_PALETTE_STORAGE_KEY)};
+  var legacyKey=${JSON.stringify(LEGACY_PALETTE_STORAGE_KEY)};
   var valid=${JSON.stringify(ALL_PALETTE_IDS)};
-  var stored=localStorage.getItem('color-palette');
-  var p=valid.indexOf(stored)!==-1?stored:def;
-  if(stored&&valid.indexOf(stored)===-1)localStorage.removeItem('color-palette');
+  var isWorkspace=location.pathname.indexOf('/admin')===0||location.pathname.indexOf('/cabinet')===0;
+  var stored=isWorkspace?localStorage.getItem(adminKey):null;
+  var legacy=isWorkspace?localStorage.getItem(legacyKey):null;
+  if(isWorkspace&&!stored&&valid.indexOf(legacy)!==-1){
+    localStorage.setItem(adminKey,legacy);
+    stored=legacy;
+  }
+  var p=isWorkspace?(valid.indexOf(stored)!==-1?stored:adminDef):brand;
+  if(isWorkspace&&stored&&valid.indexOf(stored)===-1)localStorage.removeItem(adminKey);
   if(p&&p!=='timber')document.documentElement.setAttribute('data-palette',p);
   else document.documentElement.removeAttribute('data-palette');
 }catch(e){}}());
@@ -227,6 +280,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <ThemeChromeSync />
           <PaletteProvider enabledIds={enabledIds} defaultPalette={defaultPalette}>
             <UserPreferencesSync />
+            <PwaManifestSync />
             {children}
             <Toaster />
             <HapticInit />

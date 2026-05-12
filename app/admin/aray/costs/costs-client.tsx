@@ -6,6 +6,7 @@ import {
   Plus, Pencil, Trash2, RefreshCw, Loader2, X, Bot, Sparkles, Users, Activity,
   AlertCircle, CheckCircle2, Bell, CalendarClock,
 } from "lucide-react";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
 type Summary = {
@@ -112,6 +113,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   elevenlabs: "ElevenLabs TTS",
   google: "Google AI",
   openai: "OpenAI",
+  yandex: "Yandex Cloud",
   beget: "Beget VPS",
   domain: "Домен",
 };
@@ -121,9 +123,83 @@ const PROVIDER_ICONS: Record<string, React.ElementType> = {
   elevenlabs: Mic,
   google: Globe,
   openai: Bot,
+  yandex: Database,
   beget: Server,
   domain: LinkIcon,
 };
+
+const SUBSCRIPTION_PRESETS = [
+  {
+    label: "Yandex Cloud / AI Studio",
+    provider: "yandex",
+    name: "Yandex Cloud / AI Studio",
+    costRub: "5000",
+    billingType: "prepaid",
+    notes: "Пополнение баланса для ARAY: интернет-поиск, Wordstat, фото-анализ, голос и YandexGPT. Проверять баланс перед датой контроля.",
+  },
+  {
+    label: "OpenAI / GPT",
+    provider: "openai",
+    name: "OpenAI / GPT",
+    costRub: "",
+    billingType: "on_demand",
+    notes: "Основной мозг ARAY. Расход по факту токенов, лимит держать в кабинете провайдера.",
+  },
+  {
+    label: "Google Ads / запросы",
+    provider: "google",
+    name: "Google Ads / Keyword Planner",
+    costRub: "",
+    billingType: "on_demand",
+    notes: "Глобальный спрос, страны, языки и подбор запросов. Подключать после Yandex, чтобы не плодить сервисы на старте.",
+  },
+  {
+    label: "ElevenLabs / голос",
+    provider: "elevenlabs",
+    name: "ElevenLabs TTS",
+    costUsd: "",
+    costRub: "",
+    billingType: "monthly",
+    notes: "Голос ARAY. Можно отключить, если переводим голос полностью на Yandex SpeechKit или другой единый канал.",
+  },
+  {
+    label: "Anthropic / резерв",
+    provider: "anthropic",
+    name: "Anthropic Claude",
+    costUsd: "",
+    costRub: "",
+    billingType: "on_demand",
+    notes: "Резервная сильная модель для сложных задач. Держать только если реально нужна в работе.",
+  },
+] as const;
+
+const PAYMENT_LINKS = [
+  {
+    title: "Yandex Cloud",
+    text: "Баланс, платежный аккаунт, детализация и пополнение.",
+    href: "https://console.yandex.cloud/billing",
+  },
+  {
+    title: "OpenAI",
+    text: "Оплата сервиса, лимиты проекта и ключи GPT.",
+    href: "https://platform.openai.com/settings/organization/billing/overview",
+  },
+  {
+    title: "Google Ads",
+    text: "Оплаты рекламы, Keyword Planner и платежные профили.",
+    href: "https://ads.google.com/aw/billing/summary",
+  },
+  {
+    title: "ElevenLabs",
+    text: "Голос, подписка и лимиты символов.",
+    href: "https://elevenlabs.io/app/billing",
+  },
+  {
+    title: "Beget",
+    text: "Хостинг, домены, почта и серверные платежи.",
+    href: "https://cp.beget.com/billing",
+  },
+] as const;
 
 const SOURCE_LABELS: Record<string, string> = {
   "voice-mode": "Голосовой режим",
@@ -220,7 +296,7 @@ export function CostsClient() {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading && !data) {
     return (
-      <div className="p-6 max-w-[1400px] mx-auto">
+      <div className="admin-page-frame admin-page-frame-fluid">
         <div className="flex items-center gap-3 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin" />
           <span>Загружаю расходы...</span>
@@ -232,7 +308,7 @@ export function CostsClient() {
   // ── Error ──────────────────────────────────────────────────────────────────
   if (error && !data) {
     return (
-      <div className="p-6 max-w-[1400px] mx-auto">
+      <div className="admin-page-frame admin-page-frame-fluid">
         <div className="bg-card border border-destructive/30 rounded-2xl p-6 flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
           <div>
@@ -253,13 +329,13 @@ export function CostsClient() {
   if (!data) return null;
 
   return (
-    <div className="p-4 sm:p-6 max-w-[1400px] mx-auto space-y-6">
+    <div className="admin-page-frame admin-page-frame-fluid">
       {/* ── Шапка ──────────────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-3">
             <Wallet className="w-7 h-7 text-primary" />
-            Расходы Арая
+            Бюджет ARAY
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Полная картина расходов на AI и инфраструктуру. Курс: 1$ = {data.summary.usdRubRate}₽. Авто-обновление каждую минуту.
@@ -274,6 +350,37 @@ export function CostsClient() {
           Обновить
         </button>
       </div>
+
+      <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Кабинеты оплат</h2>
+            <p className="text-sm text-muted-foreground">
+              Только для супер-админа: платежи, ключи, лимиты и детализация внешних сервисов.
+            </p>
+          </div>
+          <span className="w-fit rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            SUPER_ADMIN
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          {PAYMENT_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-xl border border-border bg-background/70 p-3 transition hover:border-primary/45 hover:bg-primary/5"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-foreground">{link.title}</span>
+                <LinkIcon className="h-4 w-4 text-primary" />
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{link.text}</p>
+            </a>
+          ))}
+        </div>
+      </section>
 
       {/* ── 4 топ-карточки ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -380,7 +487,7 @@ export function CostsClient() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-sm">
           <div className="text-muted-foreground">
-            <span className="font-medium text-foreground">{fmtRub(data.summary.month.costRub)}</span> — реальные вызовы Арая (этот месяц)
+            <span className="font-medium text-foreground">{fmtRub(data.summary.month.costRub)}</span> — реальные вызовы ARAY (этот месяц)
           </div>
           <div className="text-muted-foreground">
             <span className="font-medium text-foreground">{fmtRub(data.summary.monthlyFixedRub)}</span> — постоянные подписки
@@ -393,7 +500,7 @@ export function CostsClient() {
         <h2 className="text-lg font-semibold text-foreground mb-3">По провайдерам (за месяц)</h2>
         {data.byProvider.length === 0 ? (
           <div className="bg-card border border-border rounded-2xl p-6 text-sm text-muted-foreground">
-            Пока нет данных. Логирование начнётся со следующего вызова Арая.
+            Пока нет данных. Логирование начнётся со следующего вызова ARAY.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -753,6 +860,16 @@ function SubscriptionForm({
   const [notes, setNotes] = useState(sub?.notes || "");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  useAdminOverlayGuard(true);
+
+  const applyPreset = (preset: (typeof SUBSCRIPTION_PRESETS)[number]) => {
+    setProvider(preset.provider);
+    setName(preset.name);
+    setCostUsd("costUsd" in preset ? preset.costUsd ?? "" : "");
+    setCostRub("costRub" in preset ? preset.costRub ?? "" : "");
+    setBillingType(preset.billingType);
+    setNotes(preset.notes);
+  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -767,7 +884,7 @@ function SubscriptionForm({
         billingDay: billingDay ? Number(billingDay) : null,
         billingType,
         notes: notes.trim() || null,
-        active: true,
+        active: sub?.active ?? true,
       };
       const res = sub
         ? await fetch(`/api/admin/aray/subscriptions?id=${sub.id}`, {
@@ -792,11 +909,11 @@ function SubscriptionForm({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+      className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto"
+        className="admin-popup-liquid bg-card border border-border rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90dvh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -815,6 +932,26 @@ function SubscriptionForm({
           </button>
         </div>
         <form onSubmit={onSubmit} className="p-5 space-y-4">
+          {!sub && (
+            <div className="rounded-2xl border border-border bg-background/60 p-3">
+              <div className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Быстро добавить</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {SUBSCRIPTION_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => applyPreset(preset)}
+                    className="rounded-xl border border-border bg-card px-3 py-2 text-left text-sm text-foreground transition hover:border-primary/50 hover:bg-primary/5"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Пресеты не подключают сервис автоматически, они только ставят расход и напоминание.
+              </p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">Провайдер</label>
             <select
@@ -828,6 +965,7 @@ function SubscriptionForm({
               <option value="elevenlabs">ElevenLabs</option>
               <option value="google">Google</option>
               <option value="openai">OpenAI</option>
+              <option value="yandex">Yandex Cloud</option>
               <option value="beget">Beget</option>
               <option value="domain">Домен</option>
               <option value="other">Другое</option>

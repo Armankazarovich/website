@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Mail, MapPin, Clock } from "lucide-react";
 import { FooterPartnershipButton } from "@/components/store/footer-partnership-button";
 import { PwaFooterBadges } from "@/components/store/pwa-footer-badges";
-import { getSetting, getPhones } from "@/lib/site-settings";
+import { getSetting, getPhones } from "@/lib/site-settings-public";
 import { PhoneLinks } from "@/components/shared/phone-links";
 
 interface FooterCategory {
@@ -20,7 +20,7 @@ interface FooterProps {
 export function Footer({ settings = {}, categories = [] }: FooterProps) {
   const s = (key: string) => getSetting(settings, key);
   return (
-    <footer className="bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-white mt-auto border-t-[3px] border-brand-orange">
+    <footer className="store-shell-footer bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-white mt-auto border-t-[3px] border-brand-orange">
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
           {/* Logo & About */}

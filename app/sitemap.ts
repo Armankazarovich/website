@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { getPublicProductsFilter } from "@/lib/product-seo";
 
 const BASE = "https://pilo-rus.ru";
 
@@ -23,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true },
     }),
     prisma.product.findMany({
-      where: { active: true, category: { showInMenu: true } },
+      where: { ...getPublicProductsFilter(), category: { showInMenu: true } },
       select: { slug: true, updatedAt: true },
     }),
     prisma.post.findMany({
@@ -37,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((c) => ({
-    url: `${BASE}/catalog/${c.slug}`,
+    url: `${BASE}/catalog?category=${c.slug}`,
     lastModified: c.updatedAt,
     priority: 0.85,
     changeFrequency: "weekly" as const,

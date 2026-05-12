@@ -3,11 +3,12 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { canAccess } from "@/lib/permissions";
 
 export async function GET() {
   const session = await auth();
   const role = session?.user?.role;
-  if (!session || !["SUPER_ADMIN", "ADMIN", "SUPER_ADMIN"].includes(role as string)) {
+  if (!session || !canAccess(role, "notifications")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
 

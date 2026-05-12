@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { UI_LAYERS } from "@/lib/ui-layers";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 
 interface Props {
   open: boolean;
@@ -63,6 +64,8 @@ export function SidePanel({
   side = "right",
 }: Props) {
   const isLeft = side === "left";
+  useAdminOverlayGuard(open);
+
   // Escape + lock body scroll
   useEffect(() => {
     if (!open) return;
@@ -80,7 +83,7 @@ export function SidePanel({
     <AnimatePresence>
       {open && (
         <div
-          className={`fixed inset-0 ${zIndex} flex ${isLeft ? "justify-start" : "justify-end"}`}
+          className={`admin-side-panel-root fixed inset-0 ${zIndex} flex ${isLeft ? "justify-start" : "justify-end"}`}
           onClick={() => onClose()}
         >
           {/* Backdrop */}
@@ -89,7 +92,7 @@ export function SidePanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-background/[0.66] backdrop-blur-md"
           />
 
           {/* Panel */}
@@ -98,7 +101,7 @@ export function SidePanel({
             animate={{ x: 0 }}
             exit={{ x: isLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className={`relative w-full sm:w-[92vw] h-full ${isLeft ? "border-r" : "border-l"} flex flex-col overflow-hidden ${panelClassName ?? "bg-background border-border shadow-2xl"}`}
+            className={`admin-side-panel-panel relative w-full sm:w-[92vw] h-full ${isLeft ? "border-r" : "border-l"} flex flex-col overflow-hidden ${panelClassName ?? "admin-popup-liquid bg-card border-border shadow-2xl"}`}
             style={{ maxWidth }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -130,7 +133,7 @@ export function SidePanel({
                 </div>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors shrink-0"
+                  className="w-10 h-10 rounded-xl border border-border text-muted-foreground hover:bg-muted/45 hover:text-foreground flex items-center justify-center transition-colors shrink-0"
                   aria-label="Закрыть"
                 >
                   <X className="w-4 h-4" />

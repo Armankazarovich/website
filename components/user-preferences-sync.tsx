@@ -1,18 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { usePalette } from "@/components/palette-provider";
-import type { AdminBgMode } from "@/components/admin/admin-atmosphere";
-import { isPaletteId } from "@/lib/palettes";
+import { ADMIN_PALETTE_STORAGE_KEY, isPaletteId } from "@/lib/palettes";
 
-const PALETTE_KEY = "color-palette";
 const BG_MODE_KEY = "aray-bg-mode";
 const BG_MODE_MIGRATION_KEY = "aray-bg-clean-default-v2";
 const SYNC_TIME_KEY = "aray-ui-preferences-updated-at";
 const VALID_THEMES = new Set(["light", "dark", "system"]);
 
 type ThemeMode = "light" | "dark" | "system";
+type AdminBgMode = "clean";
 
 type PreferencesPayload = {
   palette?: string;
@@ -27,13 +27,14 @@ function normalizeTheme(value: unknown): ThemeMode {
 
 function readBgMode(): AdminBgMode {
   if (typeof window === "undefined") return "clean";
-  const stored = localStorage.getItem(BG_MODE_KEY);
-  return stored === "photo" ? "photo" : "clean";
+  localStorage.setItem(BG_MODE_KEY, "clean");
+  localStorage.setItem("aray-classic-mode", "1");
+  return "clean";
 }
 
-function writeBgMode(mode: AdminBgMode) {
-  localStorage.setItem(BG_MODE_KEY, mode);
-  localStorage.setItem("aray-classic-mode", mode === "clean" ? "1" : "0");
+function writeBgMode(_mode: AdminBgMode) {
+  localStorage.setItem(BG_MODE_KEY, "clean");
+  localStorage.setItem("aray-classic-mode", "1");
   window.dispatchEvent(new Event("aray-classic-change"));
 }
 
@@ -59,6 +60,8 @@ function touchLocalPreferences(timestamp = Date.now()) {
 export function UserPreferencesSync() {
   const { palette, setPalette } = usePalette();
   const { theme, setTheme } = useTheme();
+  const pathname = usePathname();
+  const isAdminPath = pathname?.startsWith("/admin") ?? false;
   const [mounted, setMounted] = useState(false);
   const [ready, setReady] = useState(false);
   const [canSync, setCanSync] = useState(false);
@@ -77,6 +80,11 @@ export function UserPreferencesSync() {
     window.addEventListener("aray-classic-change", syncBg);
     return () => window.removeEventListener("aray-classic-change", syncBg);
   }, []);
+
+  useEffect(() => {
+    bootstrappedRef.current = false;
+    initialStateCapturedRef.current = false;
+  }, [isAdminPath]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -98,14 +106,14 @@ export function UserPreferencesSync() {
         const server = data?.preferences || {};
         const serverTimestamp = Date.parse(server.updatedAt || "") || 0;
         const localTimestamp = readLocalTimestamp();
-        const localPalette = localStorage.getItem(PALETTE_KEY);
+        const localPalette = localStorage.getItem(ADMIN_PALETTE_STORAGE_KEY);
         const localTheme = normalizeTheme(localStorage.getItem("theme") || theme);
         const localBgMode = readBgMode();
 
         if (serverTimestamp > localTimestamp) {
           applyingServerRef.current = true;
 
-          if (server.palette && isPaletteId(server.palette)) {
+          if (isAdminPath && server.palette && isPaletteId(server.palette)) {
             setPalette(server.palette);
           }
 
@@ -123,9 +131,10 @@ export function UserPreferencesSync() {
             applyingServerRef.current = false;
           }, 250);
         } else if (localTimestamp > serverTimestamp && data) {
-          const paletteToSave = localPalette && isPaletteId(localPalette) ? localPalette : palette;
           void savePreferences({
-            palette: paletteToSave,
+            ...(isAdminPath
+              ? { palette: localPalette && isPaletteId(localPalette) ? localPalette : palette }
+              : {}),
             theme: localTheme,
             adminBgMode: localBgMode,
           });
@@ -138,13 +147,13 @@ export function UserPreferencesSync() {
     return () => {
       alive = false;
     };
-  }, [mounted, palette, setPalette, setTheme, theme]);
+  }, [isAdminPath, mounted, palette, setPalette, setTheme, theme]);
 
   useEffect(() => {
     if (!mounted || !ready || applyingServerRef.current) return;
 
     const next = {
-      palette,
+      ...(isAdminPath ? { palette } : {}),
       theme: normalizeTheme(theme),
       adminBgMode: bgMode,
     };
@@ -169,13 +178,13 @@ export function UserPreferencesSync() {
     }, 450);
 
     return () => window.clearTimeout(timer);
-  }, [bgMode, canSync, mounted, palette, ready, theme]);
+  }, [bgMode, canSync, isAdminPath, mounted, palette, ready, theme]);
 
   return null;
 }
 
 async function savePreferences(payload: {
-  palette: string;
+  palette?: string;
   theme: ThemeMode;
   adminBgMode: AdminBgMode;
 }) {

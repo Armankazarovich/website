@@ -7,7 +7,7 @@
  * Удалено:
  *  - aray-stat-card (старый ARAYGLASS)
  *  - emoji в приветствии (стоп-лист DESIGN_SYSTEM п.10)
- *  - role-badge (дублирует AppHeader, не несёт UX-ценности на дашборде)
+ *  - role-badge (дублирует AppHeader, не несёт UX-ценности на рабочем столе)
  *
  * Добавлено:
  *  - bg-card border-border rounded-2xl

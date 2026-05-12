@@ -4,15 +4,14 @@ import dynamic from "next/dynamic";
 // These components are code-split and only loaded when actually needed.
 // This reduces the initial JS bundle for the admin panel significantly.
 
-// LazyAdminAray = единый ArayChatHost (тот же что на сайте). Принимает legacy props
-// (staffName, userRole, enabled) для обратной совместимости с admin-shell, но игнорирует —
-// ChatHost берёт контекст из session/pathname сам.
+// Admin ARAY uses the same global assistant surface as store/cabinet:
+// ArayDock (desktop bottom input) + ArayWidget (voice-first panel, one global chat).
 import type { ComponentType } from "react";
-const LazyArayChatHost = dynamic(
-  () => import("@/components/store/aray-chat-host").then(m => ({ default: m.ArayChatHost })),
+const LazyArayGlobalAssistant = dynamic(
+  () => import("@/components/store/aray-global-assistant").then(m => ({ default: m.ArayGlobalAssistant })),
   { loading: () => null, ssr: false }
 );
-export const LazyAdminAray: ComponentType<any> = LazyArayChatHost as ComponentType<any>;
+export const LazyAdminArayAssistant: ComponentType<any> = LazyArayGlobalAssistant as ComponentType<any>;
 
 export const LazyAdminVideoBg = dynamic(
   () => import("@/components/admin/admin-video-bg").then(m => ({ default: m.AdminVideoBg })),

@@ -24,6 +24,7 @@ import {
   Settings, X, Wallet, Cpu, Sparkles, Check, Volume2,
 } from "lucide-react";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 
 export type AraySettingsData = {
   todayCostRub: number;
@@ -94,6 +95,7 @@ function AraySettingsPopup({
 }) {
   const [tab, setTab] = useState<Tab>("plans");
   const [mounted, setMounted] = useState(false);
+  useAdminOverlayGuard(true);
 
   // Заводим анимацию: на mount ставим mounted=true чтобы CSS перевёл из -100% в 0%.
   useEffect(() => {
@@ -121,7 +123,7 @@ function AraySettingsPopup({
 
   return (
     <div
-      className="fixed inset-0 z-[60]"
+      className="fixed inset-0 z-[220]"
       role="dialog"
       aria-modal="true"
       aria-label="Настройки Арая"
@@ -136,7 +138,7 @@ function AraySettingsPopup({
 
       {/* Popup panel — slide from left */}
       <aside
-        className={`absolute top-0 left-0 h-full bg-card border-r border-border shadow-2xl flex flex-col transition-transform duration-250 ease-out`}
+        className="admin-popup-liquid absolute top-0 left-0 h-full border-r border-border shadow-2xl flex flex-col transition-transform duration-250 ease-out"
         style={{
           width: "min(420px, 90vw)",
           transform: mounted ? "translateX(0)" : "translateX(-100%)",
@@ -353,7 +355,7 @@ function CostsTab({ data }: { data: AraySettingsData }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-foreground">
-              Подробный дашборд расходов
+              Подробная сводка бюджета
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
               Графики, прогноз на месяц, разбивка по моделям

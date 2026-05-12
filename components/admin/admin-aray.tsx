@@ -16,7 +16,7 @@ const CHAT_KEY = "aray-chat-history";
 
 // ─── Page context for smart chips ───────────────────────────────────────────
 const PAGE_CHIPS: Record<string, string[]> = {
-  "/admin": ["Сводка за сегодня", "Новые заказы", "Что срочно?"],
+  "/admin": ["Открыть заказы", "Открыть каталог", "Открыть аналитику"],
   "/admin/orders": ["Новые заказы", "Подтверди все новые", "Заказы за сегодня"],
   "/admin/products": ["Что не в наличии?", "Покажи все цены", "Актуальные цены"],
   "/admin/clients": ["Новые клиенты", "Постоянные покупатели", "Топ клиентов"],
@@ -29,7 +29,7 @@ const PAGE_CHIPS: Record<string, string[]> = {
   "/admin/settings": ["Проверь настройки", "Тест Telegram", "SMTP работает?"],
   "/admin/notifications": ["Отправь push всем", "Сколько подписчиков?", "Тест уведомления"],
 };
-const DEFAULT_CHIPS = ["Сводка за сегодня", "Новые заказы", "Создай задачу"];
+const DEFAULT_CHIPS: string[] = [];
 
 function getChips(pathname: string): string[] {
   if (PAGE_CHIPS[pathname]) return PAGE_CHIPS[pathname];

@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
+import type { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -10,13 +11,21 @@ import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
-import { Calculator, ArrowRight, Phone, SearchX } from "lucide-react";
-import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
+import { Calculator, ArrowRight, SearchX } from "lucide-react";
+import { getSiteSettings, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
-import { getPublicProductsFilter } from "@/lib/product-seo";
+import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { SubscribeButton } from "@/components/store/subscribe-button";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  if (searchParams.search) {
+    const query = searchParams.search.trim();
+    return {
+      title: `Поиск «${query}» — каталог ПилоРус`,
+      description: `Результаты поиска по каталогу ПилоРус: ${query}. Пиломатериалы от производителя в Химках с доставкой по Москве и МО.`,
+      alternates: { canonical: `https://pilo-rus.ru/catalog?search=${encodeURIComponent(query)}` },
+    };
+  }
   if (searchParams.category) {
     const cat = await prisma.category.findUnique({
       where: { slug: searchParams.category },
@@ -62,9 +71,10 @@ export default async function CatalogPage({
   const currentInStock = searchParams.instock === "1";
   const currentMinPrice = searchParams.minprice ? Number(searchParams.minprice) : null;
   const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
+  const currentSearch = (searchParams.search || "").trim();
 
   // Build variant sub-filter (user-driven: size, instock, price)
-  const variantWhere: Record<string, unknown> = {};
+  const variantWhere: Prisma.ProductVariantWhereInput = {};
   if (currentSize) variantWhere.size = { contains: currentSize };
   if (currentInStock) variantWhere.inStock = true;
   if (currentMinPrice !== null || currentMaxPrice !== null) {
@@ -77,6 +87,7 @@ export default async function CatalogPage({
   // Public safety filter — не показываем в каталоге товары без фото/цены/остатка.
   // Админ видит всё в /admin/products с индикаторами, публика — только готовое.
   const publicFilter = getPublicProductsFilter();
+  const publicVariantFilter = getPublicVariantsFilter();
   const publicVariantSome = (publicFilter.variants as any)?.some ?? {};
 
   // Комбинируем публичный variant-фильтр с пользовательским через AND
@@ -88,6 +99,17 @@ export default async function CatalogPage({
   const categoryFilter = searchParams.category
     ? { slug: searchParams.category, showInMenu: true }
     : { showInMenu: true };
+
+  const searchFilter: Prisma.ProductWhereInput = currentSearch
+    ? {
+        OR: [
+          { name: { contains: currentSearch, mode: "insensitive" } },
+          { description: { contains: currentSearch, mode: "insensitive" } },
+          { category: { name: { contains: currentSearch, mode: "insensitive" } } },
+          { variants: { some: { size: { contains: currentSearch, mode: "insensitive" } } } },
+        ],
+      }
+    : {};
 
   // Умная фильтрация по типу: regex-based через extractProductType
   // Поддержка групп: type=доска → все подтипы (обрезная, строганная, пола, террасная)
@@ -108,17 +130,18 @@ export default async function CatalogPage({
       .map(p => p.id);
   }
 
-  const where = {
+  const where: Prisma.ProductWhereInput = {
     active: true,
     images: { isEmpty: false },
     category: categoryFilter,
+    ...searchFilter,
     ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
     variants: { some: combinedVariantSome },
   };
 
   // Базовый where без фильтра по типу — для подсчёта доступных типов
   // Учитывает выбранный размер и "в наличии", и public safety (без фото/цены — не считаем)
-  const sizeVariantFilter: Record<string, unknown> = {};
+  const sizeVariantFilter: Prisma.ProductVariantWhereInput = {};
   if (currentSize) sizeVariantFilter.size = { contains: currentSize };
   if (currentInStock) sizeVariantFilter.inStock = true;
 
@@ -126,12 +149,13 @@ export default async function CatalogPage({
     ? { AND: [publicVariantSome, sizeVariantFilter] }
     : publicVariantSome;
 
-  const whereForTypes = {
+  const whereForTypes: Prisma.ProductWhereInput = {
     active: true,
     images: { isEmpty: false },
     category: searchParams.category
       ? { slug: searchParams.category, showInMenu: true }
       : { showInMenu: true },
+    ...searchFilter,
     variants: { some: combinedTypesVariantSome },
   };
 
@@ -144,13 +168,13 @@ export default async function CatalogPage({
       prisma.category.findMany({
         where: { showInMenu: true },
         orderBy: { sortOrder: "asc" },
-        include: { _count: { select: { products: { where: { active: true } } } } },
+        include: { _count: { select: { products: { where: publicFilter } } } },
       }),
       prisma.product.findMany({
         where,
         include: {
           category: true,
-          variants: { orderBy: { pricePerCube: "asc" } },
+          variants: { where: publicVariantFilter, orderBy: { pricePerCube: "asc" } },
         },
         orderBy:
           searchParams.sort === "name" ? { name: "asc" } : { createdAt: "desc" },
@@ -229,6 +253,7 @@ export default async function CatalogPage({
   const buildFilterUrl = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams();
     if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
@@ -248,6 +273,7 @@ export default async function CatalogPage({
   const buildPageUrl = (p: number) => {
     const params = new URLSearchParams();
     if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
@@ -261,6 +287,7 @@ export default async function CatalogPage({
   const buildSortUrl = (sort: string) => {
     const params = new URLSearchParams();
     if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
@@ -331,6 +358,7 @@ export default async function CatalogPage({
         types={dynamicTypes}
         preserveParams={{
           ...(searchParams.sort ? { sort: searchParams.sort } : {}),
+          ...(searchParams.search ? { search: searchParams.search } : {}),
           ...(searchParams.size ? { size: searchParams.size } : {}),
           ...(searchParams.instock ? { instock: searchParams.instock } : {}),
           ...(searchParams.minprice ? { minprice: searchParams.minprice } : {}),
@@ -430,7 +458,9 @@ export default async function CatalogPage({
           {/* Header */}
           <div className="flex items-center justify-between mb-5 gap-4">
             <h2 className="font-display font-bold text-2xl">
-              {searchParams.category
+              {currentSearch
+                ? `Поиск: ${currentSearch}`
+                : searchParams.category
                 ? categories.find((c) => c.slug === searchParams.category)?.name || "Каталог"
                 : "Все пиломатериалы"}
             </h2>
@@ -464,8 +494,19 @@ export default async function CatalogPage({
           </div>
 
           {/* Active filters */}
-          {(currentSize || currentType) && (
+          {(currentSearch || currentSize || currentType) && (
             <div className="flex flex-wrap gap-2 mb-4">
+              {currentSearch && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
+                  Поиск: {currentSearch}
+                  <Link
+                    href={buildFilterUrl({ search: null })}
+                    className="ml-0.5 hover:text-destructive"
+                  >
+                    ×
+                  </Link>
+                </span>
+              )}
               {currentType && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
                   Тип: {currentTypeInfo?.label || currentType}
@@ -522,6 +563,7 @@ export default async function CatalogPage({
                   slug={product.slug}
                   name={product.name}
                   category={product.category.name}
+                  description={product.description}
                   images={product.images}
                   saleUnit={product.saleUnit}
                   variants={product.variants.map((v: any) => ({

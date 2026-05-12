@@ -1,326 +1,269 @@
 "use client";
 
-/**
- * AdminSearchPanel — поиск админки выезжает с правой стороны (side-panel).
- *
- * Сессия 39 (28.04.2026): после фидбека Армана — поиск делаем как в магазине
- * (открывается справа, не центральный modal). Использует SidePanel из магазина
- * для единого UX.
- *
- * Что ищет:
- *  1. Разделы админки (instant, фильтр по allNavItems)
- *  2. Товары магазина (через /api/search — debounced)
- *  3. Заказы / Клиенты — заглушка «скоро» (расширим следующими заходами)
- *
- * Структура (1-в-1 как магазинный поиск на скриншоте Армана):
- *  - Search input
- *  - Категории (4 быстрых раздела как карточки 2x2)
- *  - Популярные товары (если что-то найдено по query)
- *  - Быстрый поиск (chip-кнопки)
- */
-
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  Search, Loader2, ShoppingBag, Package, UserCircle, BarChart2,
-  ArrowRight, Truck, Receipt,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Loader2, Search, X } from "lucide-react";
 import { SidePanel } from "@/components/store/side-panel";
-import { useAdminLang } from "@/lib/admin-lang-context";
-import { allNavItems, GROUP_LABELS, type NavItem } from "@/components/admin/admin-nav";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
-import { formatPrice } from "@/lib/utils";
+import { useAdminSmartSearch, type AdminSmartSearchResult } from "@/components/admin/use-admin-smart-search";
 
-interface ProductResult {
-  id: string;
-  slug: string;
-  name: string;
-  category: { name: string };
-  images: string[];
-  saleUnit: string;
-  variants: { pricePerCube: number | null; pricePerPiece: number | null }[];
-}
-
-interface Props {
+type Props = {
   open: boolean;
   onClose: () => void;
   role: string;
+  disabledModuleIds?: string[];
+};
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+      {children}
+    </p>
+  );
 }
 
-// ── 4 быстрых категории-раздела (карточки 2x2) ──
-const QUICK_SECTIONS_STAFF = [
-  { href: "/admin/orders", label: "Заказы", hint: "Активные, история", icon: ShoppingBag, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"] },
-  { href: "/admin/products", label: "Товары", hint: "Каталог, склад", icon: Package, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"] },
-  { href: "/admin/clients", label: "Клиенты", hint: "База покупателей", icon: UserCircle, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER"] },
-  { href: "/admin/analytics", label: "Аналитика", hint: "Выручка, отчёты", icon: BarChart2, roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"] },
-];
-const QUICK_SECTIONS_USER = [
-  { href: "/cabinet/orders", label: "Мои заказы", hint: "Активные, история", icon: ShoppingBag, roles: ["USER"] },
-  { href: "/catalog", label: "Каталог", hint: "Товары магазина", icon: Package, roles: ["USER"] },
-  { href: "/cabinet/profile", label: "Профиль", hint: "Имя, аватар, тема", icon: UserCircle, roles: ["USER"] },
-  { href: "/cabinet/reviews", label: "Мои отзывы", hint: "Оценки и фото", icon: BarChart2, roles: ["USER"] },
-];
+function ResultLink({
+  result,
+  selected = false,
+  onMouseEnter,
+  onClose,
+}: {
+  result: AdminSmartSearchResult;
+  selected?: boolean;
+  onMouseEnter?: () => void;
+  onClose: () => void;
+}) {
+  const Icon = result.icon;
 
-// ── Быстрый поиск (chip-подсказки) ──
-const QUICK_HINTS_STAFF = [
-  "Новый заказ", "Доставка", "Команда", "Расходы Арая", "Email рассылка",
-];
-const QUICK_HINTS_USER = [
-  "Доска обрезная", "Брус 150×150", "Вагонка", "Планкен", "Лиственница",
-];
+  return (
+    <Link
+      href={result.href}
+      onClick={onClose}
+      onMouseEnter={onMouseEnter}
+      className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
+        selected ? "bg-muted/65" : "hover:bg-muted/50"
+      }`}
+    >
+      <span className={`${ARAY_ICON_TONE} flex h-9 w-9 shrink-0 items-center justify-center rounded-xl`}>
+        <Icon className="h-4 w-4" strokeWidth={1.8} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium leading-tight text-foreground">{result.title}</span>
+        {result.subtitle && (
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground">{result.subtitle}</span>
+        )}
+      </span>
+      {result.meta && (
+        <span className="hidden shrink-0 rounded-full border border-border bg-muted/40 px-2 py-1 text-[10px] font-medium text-muted-foreground sm:inline-flex">
+          {result.meta}
+        </span>
+      )}
+      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+    </Link>
+  );
+}
 
-export function AdminSearchPanel({ open, onClose, role }: Props) {
-  const { t } = useAdminLang();
-  const [query, setQuery] = useState("");
-  const [products, setProducts] = useState<ProductResult[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
+export function AdminSearchPanel({ open, onClose, role, disabledModuleIds }: Props) {
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const search = useAdminSmartSearch({ role, open, debounceMs: 150, limit: 12, disabledModuleIds });
+  const {
+    query,
+    setQuery,
+    selected,
+    setSelected,
+    results,
+    quickItems,
+    queryHints,
+    loading,
+    error,
+    placeholder,
+    activeContextLabel,
+    clearQuery,
+    reset,
+  } = search;
 
-  const isUser = role === "USER";
-
-  // ── Auto-focus ──
   useEffect(() => {
     if (!open) return;
-    setQuery("");
-    setProducts([]);
-    setTimeout(() => inputRef.current?.focus(), 80);
-  }, [open]);
+    reset();
+    window.setTimeout(() => inputRef.current?.focus(), 80);
+  }, [open, reset]);
 
-  // ── Поиск товаров (debounced) ──
-  useEffect(() => {
-    if (query.length < 2) {
-      setProducts([]);
+  const handleClose = () => {
+    reset();
+    onClose();
+  };
+
+  const onInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      if (query) {
+        clearQuery();
+      } else {
+        handleClose();
+      }
       return;
     }
-    const timer = setTimeout(async () => {
-      setLoadingProducts(true);
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProducts(data.results || []);
-        }
-      } catch {
-        setProducts([]);
-      } finally {
-        setLoadingProducts(false);
-      }
-    }, 280);
-    return () => clearTimeout(timer);
-  }, [query]);
 
-  // ── Локальный поиск по разделам ──
-  const visibleSections = useMemo(
-    () => allNavItems.filter((i) => i.roles.includes(role)),
-    [role]
-  );
-  const matchedSections = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return visibleSections.filter((i) => {
-      const label = (i.labelKey ? t(i.labelKey) : i.label).toLowerCase();
-      const groupLabel = (GROUP_LABELS[i.group] || "").toLowerCase();
-      return label.includes(q) || groupLabel.includes(q);
-    }).slice(0, 8);
-  }, [visibleSections, query, t]);
+    if (!results.length) return;
 
-  const quickSections = useMemo(() => {
-    const list = isUser ? QUICK_SECTIONS_USER : QUICK_SECTIONS_STAFF;
-    return list.filter((s) => s.roles.includes(role));
-  }, [role, isUser]);
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelected((value) => Math.min(value + 1, results.length - 1));
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelected((value) => Math.max(value - 1, 0));
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const href = results[selected]?.href || results[0].href;
+      handleClose();
+      router.push(href);
+    }
+  };
 
-  const quickHints = isUser ? QUICK_HINTS_USER : QUICK_HINTS_STAFF;
-
-  const showCategories = !query;
-  const showHints = !query;
-  const showSections = matchedSections.length > 0;
-  const showProducts = !loadingProducts && products.length > 0;
-  const showLoading = loadingProducts && query.length >= 2;
-  const showEmpty =
-    !loadingProducts &&
-    query.length >= 2 &&
-    matchedSections.length === 0 &&
-    products.length === 0;
+  const hasQuery = query.trim().length > 0;
+  const hasResults = results.length > 0;
 
   return (
     <SidePanel
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title="Поиск"
-      icon={<Search className="w-4 h-4" strokeWidth={2} />}
+      subtitle="Разделы, заказы, клиенты, товары"
+      icon={<Search className="h-4 w-4" strokeWidth={2} />}
       iconTone={ARAY_ICON_TONE}
-      maxWidth="480px"
-      panelClassName="admin-popup-liquid border-border"
-      side="left"
+      maxWidth="520px"
+      panelClassName="admin-popup-liquid border-border bg-card"
+      side="right"
     >
-      <div className="px-5 py-4 space-y-5">
-        {/* Search input */}
-        <div className="flex items-center gap-3 px-4 h-11 rounded-xl bg-muted/50 border border-border focus-within:border-primary/40 focus-within:bg-background transition-all">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" strokeWidth={1.75} />
+      <div className="space-y-4 px-4 py-4 sm:px-5">
+        <div className="flex h-11 items-center gap-3 rounded-xl border border-border bg-background/70 px-4 transition-colors focus-within:border-primary/50">
+          <Search className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
           <input
             ref={inputRef}
-            type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={isUser ? "Доска, брус, вагонка, 50×150…" : "Раздел, товар, заказ, клиент…"}
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={onInputKeyDown}
+            placeholder={placeholder}
+            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             style={{ fontSize: 16 }}
+            autoComplete="off"
+            spellCheck={false}
           />
-          {loadingProducts && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
+          {loading ? (
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+          ) : query ? (
+            <button
+              type="button"
+              onClick={() => {
+                clearQuery();
+                inputRef.current?.focus();
+              }}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              aria-label="Очистить поиск"
+            >
+              <X className="h-4 w-4" strokeWidth={1.8} />
+            </button>
+          ) : null}
         </div>
 
-        {/* Категории (когда нет query) */}
-        {showCategories && (
-          <div>
-            <h3 className="font-display font-semibold text-xs mb-2.5 text-muted-foreground uppercase tracking-wider">
-              Категории
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {quickSections.map((s) => {
-                const Icon = s.icon;
-                return (
-                  <Link
-                    key={s.href}
-                    href={s.href}
-                    onClick={onClose}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border hover:bg-accent hover:border-primary/30 transition-all group"
+        {!hasQuery && (
+          <>
+            {quickItems.length > 0 && (
+              <div className="space-y-2">
+                <SectionTitle>{activeContextLabel}</SectionTitle>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {quickItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        onClick={handleClose}
+                        className="group flex min-h-16 items-center gap-3 rounded-xl border border-border bg-background/55 p-3 transition-colors hover:border-primary/40 hover:bg-muted/40 active:scale-[0.98]"
+                      >
+                        <span className={`${ARAY_ICON_TONE} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl`}>
+                          <Icon className="h-4 w-4" strokeWidth={1.8} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">{item.title}</span>
+                          <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <SectionTitle>Запросы</SectionTitle>
+              <div className="flex flex-wrap gap-2">
+                {queryHints.map((hint) => (
+                  <button
+                    key={hint}
+                    type="button"
+                    onClick={() => setQuery(hint)}
+                    className="min-h-10 rounded-full border border-border bg-muted/35 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/35 hover:text-foreground active:scale-[0.98]"
                   >
-                    <div className={`${ARAY_ICON_TONE} w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors`}>
-                      <Icon className="w-4 h-4" strokeWidth={1.75} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground leading-tight truncate">
-                        {s.label}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                        {s.hint}
-                      </p>
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-                  </Link>
-                );
-              })}
+                    {hint}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          </>
         )}
 
-        {/* Найденные разделы */}
-        {showSections && (
-          <div>
-            <h3 className="font-display font-semibold text-xs mb-2 text-muted-foreground uppercase tracking-wider">
-              Разделы
-            </h3>
-            <div className="rounded-xl border border-border overflow-hidden bg-card divide-y divide-border">
-              {matchedSections.map((i) => {
-                const ItemIcon = i.icon;
-                const label = i.labelKey ? t(i.labelKey) : i.label;
-                const groupLabel = GROUP_LABELS[i.group] || "";
-                return (
-                  <Link
-                    key={i.href}
-                    href={i.href}
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors"
-                  >
-                    <div className={`${ARAY_ICON_TONE} w-8 h-8 rounded-lg flex items-center justify-center shrink-0`}>
-                      <ItemIcon className="w-4 h-4" strokeWidth={1.75} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-foreground leading-tight truncate">{label}</p>
-                      {groupLabel && (
-                        <p className="text-[11px] text-muted-foreground truncate">{groupLabel}</p>
-                      )}
-                    </div>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {hasQuery && (
+          <div className="space-y-3">
+            {hasResults && (
+              <div className="space-y-2">
+                <SectionTitle>Результаты</SectionTitle>
+                <div className="rounded-2xl border border-border bg-background/35 p-1.5">
+                  {results.map((result, index) => (
+                    <ResultLink
+                      key={result.key}
+                      result={result}
+                      selected={selected === index}
+                      onMouseEnter={() => setSelected(index)}
+                      onClose={handleClose}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Товары — реальный API */}
-        {showProducts && (
-          <div>
-            <h3 className="font-display font-semibold text-xs mb-2 text-muted-foreground uppercase tracking-wider">
-              Популярные товары
-            </h3>
-            <div className="rounded-xl border border-border overflow-hidden bg-card divide-y divide-border">
-              {products.slice(0, 5).map((p) => {
-                const minPrice = p.variants.reduce((min, v) => {
-                  const price = v.pricePerCube ?? v.pricePerPiece;
-                  return price !== null && price < min ? price : min;
-                }, Infinity);
-                return (
-                  <Link
-                    key={p.id}
-                    href={`/product/${p.slug}`}
-                    onClick={onClose}
-                    className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent transition-colors"
-                  >
-                    <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0">
-                      {p.images[0] ? (
-                        <Image src={p.images[0]} alt={p.name} fill className="object-cover" sizes="40px" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-5 h-5 text-muted-foreground opacity-50" strokeWidth={1.75} />
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-foreground line-clamp-1 leading-tight">{p.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">{p.category.name}</p>
-                    </div>
-                    {minPrice !== Infinity && (
-                      <p className="text-sm font-semibold text-primary shrink-0">от {formatPrice(minPrice)}</p>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        )}
+            {!loading && !hasResults && (
+              <div className="rounded-2xl border border-dashed border-border bg-background/30 px-4 py-8 text-center">
+                <p className="text-sm font-medium text-foreground">По запросу «{query.trim()}» ничего не найдено</p>
+                <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+                  {query.trim().length === 1
+                    ? "Введите еще символ или номер заказа."
+                    : "Попробуйте номер заказа, телефон, имя клиента, название товара или раздел админки."}
+                </p>
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {queryHints.slice(0, 3).map((hint) => (
+                    <button
+                      key={hint}
+                      type="button"
+                      onClick={() => setQuery(hint)}
+                      className="min-h-9 rounded-full border border-border bg-muted/35 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/35 hover:text-foreground"
+                    >
+                      {hint}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {/* Loading state товаров */}
-        {showLoading && (
-          <div className="py-6 text-center">
-            <Loader2 className="w-5 h-5 text-muted-foreground animate-spin mx-auto" />
-          </div>
-        )}
-
-        {/* Empty state */}
-        {showEmpty && (
-          <div className="py-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              По запросу «{query}» ничего не найдено
-            </p>
-            <button
-              onClick={() => setQuery("")}
-              className="mt-2 text-primary hover:underline text-xs"
-            >
-              Сбросить
-            </button>
-          </div>
-        )}
-
-        {/* Быстрый поиск (chips, когда нет query) */}
-        {showHints && (
-          <div>
-            <h3 className="font-display font-semibold text-xs mb-2.5 text-muted-foreground uppercase tracking-wider">
-              Быстрый поиск
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {quickHints.map((hint) => (
-                <button
-                  key={hint}
-                  onClick={() => setQuery(hint)}
-                  className="px-3 py-1.5 rounded-full bg-muted/50 border border-border text-muted-foreground hover:text-foreground hover:bg-primary/10 hover:border-primary/30 transition-colors text-xs"
-                >
-                  {hint}
-                </button>
-              ))}
-            </div>
+            {error && (
+              <div className="rounded-xl border border-border bg-muted/35 px-3 py-2 text-xs text-muted-foreground">
+                {error}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -27,8 +27,11 @@ import {
 import { useClassicMode } from "@/lib/use-classic-mode";
 
 const MediaPickerModal = dynamic(
-  () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
-  { ssr: false }
+  () =>
+    import("@/app/admin/media/media-client").then((m) => ({
+      default: m.MediaPickerModal,
+    })),
+  { ssr: false },
 );
 
 type Post = {
@@ -65,17 +68,20 @@ function EditModal({
   onSave: (id: string, data: Partial<Post>) => Promise<void>;
 }) {
   const isClassic = useClassicMode();
-  const popupStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-  } : {
-    background: "rgba(12,12,14,0.82)",
-    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
-  };
+  const popupStyle = isClassic
+    ? {
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+      }
+    : {
+        background: "rgba(12,12,14,0.82)",
+        backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+        WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        boxShadow:
+          "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+      };
   const [title, setTitle] = useState(post.title);
   const [excerpt, setExcerpt] = useState(post.excerpt);
   const [topic, setTopic] = useState(post.topic ?? "");
@@ -87,13 +93,26 @@ function EditModal({
   const [urlDraft, setUrlDraft] = useState("");
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(post.id, { title, excerpt, topic, readTime, coverImage: coverImage.trim() || null });
-    setSaving(false);
-    onClose();
+    setError("");
+    try {
+      await onSave(post.id, {
+        title,
+        excerpt,
+        topic,
+        readTime,
+        coverImage: coverImage.trim() || null,
+      });
+      onClose();
+    } catch (error: any) {
+      setError(error.message || "Не удалось сохранить статью");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleUpload = useCallback(async (file: File) => {
@@ -103,33 +122,52 @@ function EditModal({
       const fd = new FormData();
       fd.append("file", file);
       fd.append("folder", "banners");
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: fd,
+      });
       const data = await res.json();
       if (data.url) setCoverImage(data.url);
-    } catch { /* silent */ } finally {
+    } catch {
+      /* silent */
+    } finally {
       setUploading(false);
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file) handleUpload(file);
-  }, [handleUpload]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      const file = e.dataTransfer.files[0];
+      if (file) handleUpload(file);
+    },
+    [handleUpload],
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="rounded-2xl w-full max-w-xl" style={popupStyle}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Редактировать статью</p>
-          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
+          <p
+            className="font-display font-semibold"
+            style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}
+          >
+            Редактировать статью
+          </p>
+          <button
+            onClick={onClose}
+            style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}
+            className="hover:opacity-80 transition-opacity"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Заголовок</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+              Заголовок
+            </label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -137,7 +175,9 @@ function EditModal({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Краткое описание</label>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+              Краткое описание
+            </label>
             <textarea
               value={excerpt}
               onChange={(e) => setExcerpt(e.target.value)}
@@ -147,7 +187,9 @@ function EditModal({
           </div>
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Тема</label>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                Тема
+              </label>
               <input
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
@@ -155,7 +197,9 @@ function EditModal({
               />
             </div>
             <div className="w-24">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">Мин чтения</label>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
+                Мин чтения
+              </label>
               <input
                 type="number"
                 value={readTime}
@@ -178,18 +222,25 @@ function EditModal({
                 dragging
                   ? "border-primary bg-primary/5 scale-[1.01]"
                   : coverImage
-                  ? "border-border"
-                  : "border-dashed border-border hover:border-primary/50 bg-muted/30"
+                    ? "border-border"
+                    : "border-dashed border-border hover:border-primary/50 bg-muted/30"
               }`}
               style={{ height: coverImage ? 180 : 120 }}
-              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragging(true);
+              }}
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
             >
               {coverImage ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverImage} alt="Обложка" className="w-full h-full object-cover" />
+                  <img
+                    src={coverImage}
+                    alt="Обложка"
+                    className="w-full h-full object-cover"
+                  />
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-black/0 hover:bg-black/40 transition-all group flex items-center justify-center gap-2">
                     <button
@@ -215,7 +266,9 @@ function EditModal({
                   ) : (
                     <>
                       <Upload className="w-6 h-6 opacity-40" />
-                      <p className="text-xs">Перетащите фото или выберите ниже</p>
+                      <p className="text-xs">
+                        Перетащите фото или выберите ниже
+                      </p>
                     </>
                   )}
                 </div>
@@ -240,8 +293,12 @@ function EditModal({
               </button>
               <button
                 type="button"
-                onClick={() => { setShowUrlInput(!showUrlInput); setUrlDraft(coverImage); }}
+                onClick={() => {
+                  setShowUrlInput(!showUrlInput);
+                  setUrlDraft(coverImage);
+                }}
                 className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-border text-xs font-medium hover:bg-primary/10 hover:text-primary hover:border-primary/30 transition-colors"
+                aria-label="Вставить URL обложки"
                 title="Вставить URL"
               >
                 <Link2 className="w-3.5 h-3.5" />
@@ -258,13 +315,19 @@ function EditModal({
                   className="flex-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   autoFocus
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") { setCoverImage(urlDraft); setShowUrlInput(false); }
+                    if (e.key === "Enter") {
+                      setCoverImage(urlDraft);
+                      setShowUrlInput(false);
+                    }
                     if (e.key === "Escape") setShowUrlInput(false);
                   }}
                 />
                 <button
                   type="button"
-                  onClick={() => { setCoverImage(urlDraft); setShowUrlInput(false); }}
+                  onClick={() => {
+                    setCoverImage(urlDraft);
+                    setShowUrlInput(false);
+                  }}
                   className="px-3 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
                 >
                   <Check className="w-4 h-4" />
@@ -277,14 +340,28 @@ function EditModal({
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleUpload(f);
+              }}
             />
           </div>
+          {error && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          )}
         </div>
         <div className="flex justify-end gap-2 px-6 pb-5">
-          <Button variant="outline" onClick={onClose}>Отмена</Button>
+          <Button variant="outline" onClick={onClose}>
+            Отмена
+          </Button>
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
             Сохранить
           </Button>
         </div>
@@ -294,7 +371,10 @@ function EditModal({
       <MediaPickerModal
         open={showMediaPicker}
         onClose={() => setShowMediaPicker(false)}
-        onPick={(url) => { setCoverImage(url); setShowMediaPicker(false); }}
+        onPick={(url) => {
+          setCoverImage(url);
+          setShowMediaPicker(false);
+        }}
       />
     </div>
   );
@@ -309,17 +389,20 @@ function GenerateDialog({
   onConfirm: (data: GeneratedPost) => Promise<void>;
 }) {
   const isClassic = useClassicMode();
-  const popupStyle = isClassic ? {
-    background: "hsl(var(--card))",
-    border: "1px solid hsl(var(--border))",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-  } : {
-    background: "rgba(12,12,14,0.82)",
-    backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
-  };
+  const popupStyle = isClassic
+    ? {
+        background: "hsl(var(--card))",
+        border: "1px solid hsl(var(--border))",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+      }
+    : {
+        background: "rgba(12,12,14,0.82)",
+        backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+        WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        boxShadow:
+          "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
+      };
   const [topic, setTopic] = useState("");
   const [keywords, setKeywords] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -328,7 +411,10 @@ function GenerateDialog({
   const [saving, setSaving] = useState(false);
 
   const handleGenerate = async () => {
-    if (!topic.trim()) { setError("Введите тему статьи"); return; }
+    if (!topic.trim()) {
+      setError("Введите тему статьи");
+      return;
+    }
     setError("");
     setGenerating(true);
     try {
@@ -350,20 +436,43 @@ function GenerateDialog({
   const handleConfirm = async () => {
     if (!preview) return;
     setSaving(true);
-    await onConfirm(preview);
-    setSaving(false);
-    onClose();
+    setError("");
+    try {
+      await onConfirm(preview);
+      onClose();
+    } catch (error: any) {
+      setError(error.message || "Не удалось сохранить статью");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" style={popupStyle}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10" style={popupStyle}>
+      <div
+        className="rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        style={popupStyle}
+      >
+        <div
+          className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10"
+          style={popupStyle}
+        >
           <div className="flex items-center gap-2">
             <Wand2 className="w-5 h-5 text-primary" />
-            <p className="font-display font-semibold" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Генерация статьи с Арай</p>
+            <p
+              className="font-display font-semibold"
+              style={{
+                color: isClassic ? undefined : "rgba(255,255,255,0.92)",
+              }}
+            >
+              Генерация статьи с Арай
+            </p>
           </div>
-          <button onClick={onClose} style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }} className="hover:opacity-80 transition-opacity">
+          <button
+            onClick={onClose}
+            style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}
+            className="hover:opacity-80 transition-opacity"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -372,7 +481,9 @@ function GenerateDialog({
           {!preview ? (
             <>
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">Тема статьи *</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Тема статьи *
+                </label>
                 <input
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
@@ -382,7 +493,9 @@ function GenerateDialog({
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">Ключевые слова (опционально)</label>
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 block">
+                  Ключевые слова (опционально)
+                </label>
                 <input
                   value={keywords}
                   onChange={(e) => setKeywords(e.target.value)}
@@ -390,22 +503,38 @@ function GenerateDialog({
                   className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
               </div>
-              {error && <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">{error}</p>}
+              {error && (
+                <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-lg">
+                  {error}
+                </p>
+              )}
             </>
           ) : (
             <div className="space-y-4">
               <div className="bg-muted/40 rounded-xl p-4 space-y-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Превью статьи</p>
-                <p className="font-display font-bold text-lg">{preview.title}</p>
-                <p className="text-sm text-muted-foreground">{preview.excerpt}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                  Превью статьи
+                </p>
+                <p className="font-display font-bold text-lg">
+                  {preview.title}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {preview.excerpt}
+                </p>
                 <div className="flex gap-2 text-xs">
-                  <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full">{preview.topic}</span>
-                  <span className="text-muted-foreground">{preview.readTime} мин чтения</span>
+                  <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                    {preview.topic}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {preview.readTime} мин чтения
+                  </span>
                   <span className="text-muted-foreground">/{preview.slug}</span>
                 </div>
               </div>
               <div className="border border-border rounded-xl p-4 max-h-64 overflow-y-auto">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">Содержание</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-2">
+                  Содержание
+                </p>
                 <div
                   className="text-sm prose prose-sm dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: preview.content }}
@@ -415,20 +544,35 @@ function GenerateDialog({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 px-6 pb-5 sticky bottom-0 pt-2 border-t border-border" style={popupStyle}>
+        <div
+          className="flex justify-end gap-2 px-6 pb-5 sticky bottom-0 pt-2 border-t border-border"
+          style={popupStyle}
+        >
           {!preview ? (
             <>
-              <Button variant="outline" onClick={onClose}>Отмена</Button>
+              <Button variant="outline" onClick={onClose}>
+                Отмена
+              </Button>
               <Button onClick={handleGenerate} disabled={generating}>
-                {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {generating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
                 {generating ? "Генерирую..." : "Сгенерировать"}
               </Button>
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={() => setPreview(null)}>Перегенерировать</Button>
+              <Button variant="outline" onClick={() => setPreview(null)}>
+                Перегенерировать
+              </Button>
               <Button onClick={handleConfirm} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {saving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4" />
+                )}
                 Сохранить как черновик
               </Button>
             </>
@@ -450,20 +594,32 @@ export default function AdminPostsPage() {
   const deletingRef = useRef<Set<string>>(new Set());
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [creating, setCreating] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const handleCreateBlank = async () => {
     setCreating(true);
+    setActionError("");
     try {
       const res = await fetch("/api/admin/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Новая статья", excerpt: "", topic: "", readTime: 3, published: false }),
+        body: JSON.stringify({
+          slug: `novaya-statya-${Date.now()}`,
+          title: "Новая статья",
+          excerpt: "",
+          content: "",
+          topic: "",
+          readTime: 3,
+          published: false,
+        }),
       });
-      if (res.ok) {
-        const created = await res.json();
-        setPosts((prev) => [created, ...prev]);
-        setEditPost(created);
-      }
+      const created = await res.json().catch(() => ({}));
+      if (!res.ok)
+        throw new Error(created.error || "Не удалось создать статью");
+      setPosts((prev) => [created, ...prev]);
+      setEditPost(created);
+    } catch (error: any) {
+      setActionError(error.message || "Не удалось создать статью");
     } finally {
       setCreating(false);
     }
@@ -472,13 +628,20 @@ export default function AdminPostsPage() {
   const loadPosts = async () => {
     try {
       const res = await fetch("/api/admin/posts");
-      if (res.ok) setPosts(await res.json());
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Не удалось загрузить статьи");
+      setPosts(Array.isArray(data) ? data : []);
+      setActionError("");
+    } catch (error: any) {
+      setActionError(error.message || "Не удалось загрузить статьи");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { loadPosts(); }, []);
+  useEffect(() => {
+    loadPosts();
+  }, []);
 
   const updatePost = async (id: string, data: Partial<Post>) => {
     const res = await fetch(`/api/admin/posts/${id}`, {
@@ -486,10 +649,11 @@ export default function AdminPostsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (res.ok) {
-      const updated = await res.json();
-      setPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
-    }
+    const updated = await res.json().catch(() => ({}));
+    if (!res.ok)
+      throw new Error(updated.error || "Не удалось сохранить статью");
+    setPosts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+    setActionError("");
   };
 
   const deletePost = async (id: string) => {
@@ -498,14 +662,27 @@ export default function AdminPostsPage() {
     next.add(id);
     deletingRef.current = next;
     setDeletingIds(new Set(next));
-    await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
-    setPosts((prev) => prev.filter((p) => p.id !== id));
-    deletingRef.current.delete(id);
-    setDeletingIds(new Set(deletingRef.current));
+    setActionError("");
+    try {
+      const res = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Не удалось удалить статью");
+      setPosts((prev) => prev.filter((p) => p.id !== id));
+    } catch (error: any) {
+      setActionError(error.message || "Не удалось удалить статью");
+    } finally {
+      deletingRef.current.delete(id);
+      setDeletingIds(new Set(deletingRef.current));
+    }
   };
 
-  const togglePublish = (post: Post) =>
-    updatePost(post.id, { published: !post.published });
+  const togglePublish = async (post: Post) => {
+    try {
+      await updatePost(post.id, { published: !post.published });
+    } catch (error: any) {
+      setActionError(error.message || "Не удалось изменить публикацию");
+    }
+  };
 
   const handleGenerate = async (data: GeneratedPost) => {
     const res = await fetch("/api/admin/posts", {
@@ -513,29 +690,35 @@ export default function AdminPostsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...data, aiGenerated: true, published: false }),
     });
-    if (res.ok) {
-      const created = await res.json();
-      setPosts((prev) => [created, ...prev]);
-    }
+    const created = await res.json().catch(() => ({}));
+    if (!res.ok)
+      throw new Error(
+        created.error || "Не удалось сохранить сгенерированную статью",
+      );
+    setPosts((prev) => [created, ...prev]);
+    setActionError("");
   };
 
   const handleSeed = async () => {
     setSeeding(true);
     setSeedMsg("");
+    setActionError("");
     try {
       const res = await fetch("/api/admin/posts/seed", { method: "POST" });
       const data = await res.json();
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "Не удалось загрузить стартовые данные");
       setSeedMsg(data.message || "Готово");
       await loadPosts();
-    } catch {
-      setSeedMsg("Ошибка");
+    } catch (error: any) {
+      setActionError(error.message || "Ошибка");
     } finally {
       setSeeding(false);
     }
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl">
+    <div className="admin-page-frame admin-page-frame-readable">
       <AdminSectionTitle
         icon={BookOpen}
         title="Статьи и новости"
@@ -549,15 +732,27 @@ export default function AdminPostsPage() {
               disabled={seeding}
               title="Создать начальные данные (5 статей + 4 услуги)"
             >
-              {seeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Database className="w-3.5 h-3.5" />}
+              {seeding ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Database className="w-3.5 h-3.5" />
+              )}
               Стартовые данные
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowGenerate(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowGenerate(true)}
+            >
               <Sparkles className="w-3.5 h-3.5" />
               Генерировать с Арай
             </Button>
             <Button size="sm" onClick={handleCreateBlank} disabled={creating}>
-              {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              {creating ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Plus className="w-3.5 h-3.5" />
+              )}
               Новая статья
             </Button>
           </div>
@@ -570,6 +765,12 @@ export default function AdminPostsPage() {
         </div>
       )}
 
+      {actionError && (
+        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+          {actionError}
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
           <Loader2 className="w-6 h-6 animate-spin mr-2" />
@@ -579,8 +780,15 @@ export default function AdminPostsPage() {
         <div className="text-center py-20 text-muted-foreground border border-dashed border-border rounded-2xl">
           <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
           <p className="font-medium mb-1">Статей нет</p>
-          <p className="text-sm mb-4">Создайте первую статью или загрузите стартовые данные</p>
-          <Button size="sm" variant="outline" onClick={handleSeed} disabled={seeding}>
+          <p className="text-sm mb-4">
+            Создайте первую статью или загрузите стартовые данные
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSeed}
+            disabled={seeding}
+          >
             <Database className="w-4 h-4" />
             Загрузить стартовые данные
           </Button>
@@ -590,31 +798,40 @@ export default function AdminPostsPage() {
           {posts.map((post) => (
             <div
               key={post.id}
-              className="flex items-center gap-3 bg-card border border-border rounded-xl px-4 py-3 hover:border-primary/20 transition-colors"
+              className="flex flex-col gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors hover:border-primary/20 sm:flex-row sm:items-center"
             >
-              {/* Status dot */}
-              <div
-                className={`w-2 h-2 rounded-full shrink-0 ${post.published ? "bg-primary" : "bg-zinc-400"}`}
-                title={post.published ? "Опубликована" : "Черновик"}
-              />
-
               {/* Main info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{post.title}</p>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {post.topic && (
-                    <span className="text-xs text-muted-foreground">{post.topic}</span>
-                  )}
-                  {post.aiGenerated && (
-                    <Badge variant="outline" className="text-[10px] py-0 h-4 border-primary/30 text-primary">
-                      <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                      AI
-                    </Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">{post.readTime} мин</span>
-                  {post.views > 0 && (
-                    <span className="text-xs text-muted-foreground">{post.views} просмотров</span>
-                  )}
+              <div className="flex min-w-0 flex-1 gap-3">
+                <div
+                  className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${post.published ? "bg-primary" : "bg-zinc-400"}`}
+                  aria-label={post.published ? "Опубликована" : "Черновик"}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{post.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {post.topic && (
+                      <span className="text-xs text-muted-foreground">
+                        {post.topic}
+                      </span>
+                    )}
+                    {post.aiGenerated && (
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] py-0 h-4 border-primary/30 text-primary"
+                      >
+                        <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                        AI
+                      </Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {post.readTime} мин
+                    </span>
+                    {post.views > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        {post.views} просмотров
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -627,18 +844,24 @@ export default function AdminPostsPage() {
               </Badge>
 
               {/* Actions */}
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-1">
                 <button
                   onClick={() => togglePublish(post)}
-                  title={post.published ? "Скрыть" : "Опубликовать"}
-                  className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={
+                    post.published ? "Скрыть статью" : "Опубликовать статью"
+                  }
+                  className="flex min-h-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:w-11"
                 >
-                  {post.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {post.published ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
                 <button
                   onClick={() => setEditPost(post)}
-                  title="Редактировать"
-                  className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Редактировать статью"
+                  className="flex min-h-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:w-11"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
@@ -646,16 +869,16 @@ export default function AdminPostsPage() {
                   href={`/news/${post.slug}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Открыть на сайте"
-                  className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Открыть статью на сайте"
+                  className="flex min-h-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:w-11"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
                 <button
                   onClick={() => deletePost(post.id)}
                   disabled={deletingIds.has(post.id)}
-                  title="Удалить"
-                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Удалить статью"
+                  className="flex min-h-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60 sm:w-11"
                 >
                   {deletingIds.has(post.id) ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

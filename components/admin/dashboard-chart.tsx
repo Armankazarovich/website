@@ -6,10 +6,8 @@
  * Сессия 40 (28.04.2026): переписан под calm UI магазина.
  *  - bg-card border-border rounded-2xl вместо aray-stat-card
  *  - Высота столбцов больше (h-32 sm:h-40), толщина чище
- *  - Tooltip всегда видим над сегодняшним столбцом
  *  - Bottom-row (7 дн / 30 дн) сохранён
  */
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BarChart3, ChevronRight } from "lucide-react";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
@@ -26,18 +24,14 @@ interface DashboardChartProps {
 }
 
 export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProps) {
-  const [animated, setAnimated] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 250);
-    return () => clearTimeout(t);
-  }, []);
-
   const maxAmount = Math.max(...days.map((d) => d.amount), 1);
+  const hasData = days.some((d) => d.amount > 0);
 
   return (
     <Link
       href="/admin/analytics"
-      className="admin-liquid-surface admin-liquid-interactive group block rounded-2xl p-4 sm:p-5 active:scale-[0.99] min-w-0"
+      prefetch
+      className="admin-liquid-surface group block rounded-2xl p-4 sm:p-5 min-w-0 transition-colors hover:border-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
     >
       {/* Header */}
       <div className="flex items-start sm:items-center justify-between gap-3 mb-5 min-w-0">
@@ -60,8 +54,14 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
       </div>
 
       {/* Chart */}
-      <div className="flex items-end gap-1.5 sm:gap-2 h-32 sm:h-40 min-w-0">
-        {days.map((d, i) => {
+      <div className={`${hasData ? "h-32 sm:h-40" : "h-20 sm:h-24"} min-w-0`}>
+        {!hasData ? (
+          <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-border/80 bg-background/25 px-4 text-center text-xs text-muted-foreground">
+            Пока нет продаж. Начни с терминала или проверь готовность каталога.
+          </div>
+        ) : (
+          <div className="flex h-full items-end gap-1.5 sm:gap-2">
+            {days.map((d, i) => {
           const pct = Math.max((d.amount / maxAmount) * 100, d.amount > 0 ? 5 : 0);
           const isToday = i === days.length - 1;
           return (
@@ -71,7 +71,7 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
                 className={`text-[10px] font-medium leading-none transition-opacity ${
                   isToday
                     ? "text-primary opacity-100"
-                    : "text-muted-foreground opacity-0 group-hover:opacity-100"
+                    : "text-muted-foreground opacity-70"
                 }`}
               >
                 {d.amount > 0 ? `${Math.round(d.amount / 1000)}к` : ""}
@@ -84,9 +84,8 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
                       : "bg-primary/20 group-hover:bg-primary/35"
                   }`}
                   style={{
-                    height: animated ? `${pct}%` : "0%",
+                    height: `${pct}%`,
                     minHeight: d.amount > 0 ? "4px" : "0",
-                    transitionDelay: `${i * 60}ms`,
                   }}
                 />
               </div>
@@ -99,7 +98,9 @@ export function DashboardChart({ days, revenue7, revenue30 }: DashboardChartProp
               </span>
             </div>
           );
-        })}
+            })}
+          </div>
+        )}
       </div>
 
       {/* Footer summary */}

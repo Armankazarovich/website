@@ -1,8 +1,11 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
-  ALL_PALETTE_IDS,
+  ADMIN_PALETTE_STORAGE_KEY,
+  LEGACY_PALETTE_STORAGE_KEY,
+  PILORUS_BRAND_PALETTE_ID,
   isPaletteId,
   normalizePaletteId,
   normalizePaletteIds,
@@ -12,18 +15,18 @@ export type PaletteId = string;
 export type { PaletteItem } from "@/lib/palettes";
 export { PALETTE_GROUPS, PALETTES } from "@/lib/palettes";
 
-const STORAGE_KEY = "color-palette";
-
 type PaletteContextType = {
   palette: PaletteId;
   setPalette: (id: PaletteId) => void;
   enabledIds: string[];
+  editable: boolean;
 };
 
 const PaletteContext = createContext<PaletteContextType>({
-  palette: "sber",
+  palette: PILORUS_BRAND_PALETTE_ID,
   setPalette: () => {},
-  enabledIds: ALL_PALETTE_IDS,
+  enabledIds: [PILORUS_BRAND_PALETTE_ID],
+  editable: false,
 });
 
 function applyPalette(id: PaletteId) {
@@ -44,29 +47,53 @@ export function PaletteProvider({
   enabledIds?: string[];
   defaultPalette?: string;
 }) {
+  const pathname = usePathname();
+  const editable = (pathname?.startsWith("/admin") || pathname?.startsWith("/cabinet")) ?? false;
   const allowed = normalizePaletteIds(enabledIds);
   const safeDefaultPalette = normalizePaletteId(defaultPalette, "sber");
-  const [palette, setPaletteState] = useState<PaletteId>(safeDefaultPalette);
+  const [palette, setPaletteState] = useState<PaletteId>(
+    editable ? safeDefaultPalette : PILORUS_BRAND_PALETTE_ID
+  );
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const next = stored && isPaletteId(stored) ? stored : safeDefaultPalette;
+    if (!editable) {
+      setPaletteState(PILORUS_BRAND_PALETTE_ID);
+      applyPalette(PILORUS_BRAND_PALETTE_ID);
+      return;
+    }
+
+    const stored = localStorage.getItem(ADMIN_PALETTE_STORAGE_KEY);
+    const legacyStored = localStorage.getItem(LEGACY_PALETTE_STORAGE_KEY);
+    if (!stored && legacyStored && isPaletteId(legacyStored)) {
+      localStorage.setItem(ADMIN_PALETTE_STORAGE_KEY, legacyStored);
+    }
+
+    const nextStored = stored || legacyStored;
+    const next = nextStored && isPaletteId(nextStored) ? nextStored : safeDefaultPalette;
     if (stored && !isPaletteId(stored)) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(ADMIN_PALETTE_STORAGE_KEY);
     }
     setPaletteState(next);
     applyPalette(next);
-  }, [safeDefaultPalette]);
+  }, [editable, safeDefaultPalette]);
 
   const setPalette = (id: PaletteId) => {
+    if (!editable) return;
     if (!isPaletteId(id)) return;
     setPaletteState(id);
-    localStorage.setItem(STORAGE_KEY, id);
+    localStorage.setItem(ADMIN_PALETTE_STORAGE_KEY, id);
     applyPalette(id);
   };
 
   return (
-    <PaletteContext.Provider value={{ palette, setPalette, enabledIds: allowed }}>
+    <PaletteContext.Provider
+      value={{
+        palette,
+        setPalette,
+        enabledIds: editable ? allowed : [PILORUS_BRAND_PALETTE_ID],
+        editable,
+      }}
+    >
       {children}
     </PaletteContext.Provider>
   );

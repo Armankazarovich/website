@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 
 export function DeleteOrderButton({ orderId }: { orderId: string }) {
   const router = useRouter();
@@ -11,6 +13,7 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleDelete = async () => {
+    if (deleting) return;
     setDeleting(true);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, { method: "DELETE" });
@@ -18,7 +21,19 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
         setConfirmOpen(false);
         router.push("/admin/orders");
         router.refresh();
+      } else {
+        toast({
+          title: "Заказ не удалён",
+          description: "Сервер не подтвердил перенос в корзину.",
+          variant: "destructive",
+        });
       }
+    } catch {
+      toast({
+        title: "Заказ не удалён",
+        description: "Проверьте соединение и попробуйте снова.",
+        variant: "destructive",
+      });
     } finally {
       setDeleting(false);
     }
@@ -26,21 +41,26 @@ export function DeleteOrderButton({ orderId }: { orderId: string }) {
 
   return (
     <>
-      <button
+      <Button
+        type="button"
         onClick={() => setConfirmOpen(true)}
         disabled={deleting}
-        className="flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-xl text-sm font-semibold hover:bg-destructive/90 transition-colors disabled:opacity-50"
+        aria-busy={deleting}
+        variant="destructive"
+        className="min-h-[44px] w-full rounded-xl px-4 text-sm font-semibold sm:w-auto"
       >
         {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
         Удалить заказ
-      </button>
+      </Button>
 
       <ConfirmDialog
         open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
+        onClose={() => {
+          if (!deleting) setConfirmOpen(false);
+        }}
         onConfirm={handleDelete}
         title="Переместить заказ в корзину?"
-        description="Заказ будет перемещён в корзину. Вы сможете восстановить его позже."
+        description="Заказ будет перемещён в корзину. Его можно будет восстановить позже."
         confirmLabel="Переместить в корзину"
         variant="warning"
         loading={deleting}

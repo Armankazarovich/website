@@ -37,99 +37,124 @@ type HealthData = {
   memoryTotalMb?: number;
 };
 
-const FIX_LINKS: Record<string, { href: string; label: string; external?: boolean }> = {
-  smtp:             { href: "/admin/email",         label: "Email рассылка" },
-  metrika:          { href: "/admin/analytics",     label: "Аналитика" },
-  sitemap:          { href: "https://pilo-rus.ru/sitemap.xml", label: "Открыть Sitemap", external: true },
-  yml:              { href: "/admin/analytics",     label: "Аналитика" },
-  push:             { href: "/admin/notifications", label: "Уведомления" },
-  telegram:         { href: "/admin/notifications", label: "Настроить Telegram" },
-  watermark_backup: { href: "/admin/watermark",     label: "Водяной знак" },
-  stale_orders:     { href: "/admin/orders",        label: "Заказы" },
-  product_images:   { href: "/admin/products",      label: "Каталог товаров" },
-  product_prices:   { href: "/admin/products",      label: "Каталог товаров" },
+const FIX_LINKS: Record<
+  string,
+  { href: string; label: string; external?: boolean }
+> = {
+  smtp: { href: "/admin/email", label: "Email рассылка" },
+  aray_economy: { href: "/admin/aray/costs", label: "Бюджет и лимиты ARAY" },
+  aray_api_key: { href: "/admin/aray-lab", label: "ARAY Lab" },
+  metrika: { href: "/admin/analytics", label: "Аналитика" },
+  sitemap: {
+    href: "https://pilo-rus.ru/sitemap.xml",
+    label: "Открыть Sitemap",
+    external: true,
+  },
+  yml: { href: "/admin/analytics", label: "Аналитика" },
+  push: { href: "/admin/notifications", label: "Уведомления" },
+  telegram: { href: "/admin/notifications", label: "Настроить Telegram" },
+  watermark_backup: { href: "/admin/watermark", label: "Водяной знак" },
+  stale_orders: { href: "/admin/orders", label: "Заказы" },
+  product_images: { href: "/admin/products", label: "Каталог товаров" },
+  product_prices: { href: "/admin/products", label: "Каталог товаров" },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
   infrastructure: "Инфраструктура",
-  seo:            "SEO и фиды",
-  analytics:      "Аналитика",
-  notifications:  "Уведомления",
-  catalog:        "Каталог",
-  sales:          "Продажи",
-  media:          "Медиа",
+  seo: "SEO и фиды",
+  analytics: "Аналитика",
+  notifications: "Уведомления",
+  catalog: "Каталог",
+  sales: "Продажи",
+  media: "Медиа",
+  aray: "ARAY",
 };
 
-const CATEGORY_ORDER = ["infrastructure","seo","analytics","notifications","catalog","sales","media"];
+const CATEGORY_ORDER = [
+  "infrastructure",
+  "seo",
+  "analytics",
+  "notifications",
+  "catalog",
+  "sales",
+  "media",
+  "aray",
+];
 
-function StatusIcon({ status, size = "md" }: { status: "ok" | "warn" | "error"; size?: "sm" | "md" | "lg" }) {
-  const sizeClass = size === "lg" ? "w-8 h-8" : size === "sm" ? "w-4 h-4" : "w-5 h-5";
-  if (status === "ok")   return <CheckCircle2 className={`${sizeClass} text-emerald-500 shrink-0`} />;
-  if (status === "warn") return <AlertTriangle className={`${sizeClass} text-amber-500 shrink-0`} />;
-  return                        <XCircle       className={`${sizeClass} text-red-500 shrink-0`} />;
+function StatusIcon({
+  status,
+  size = "md",
+}: {
+  status: "ok" | "warn" | "error";
+  size?: "sm" | "md" | "lg";
+}) {
+  const sizeClass =
+    size === "lg" ? "w-8 h-8" : size === "sm" ? "w-4 h-4" : "w-5 h-5";
+  if (status === "ok")
+    return (
+      <CheckCircle2 className={`${sizeClass} text-emerald-500 shrink-0`} />
+    );
+  if (status === "warn")
+    return <AlertTriangle className={`${sizeClass} text-amber-500 shrink-0`} />;
+  return <XCircle className={`${sizeClass} text-red-500 shrink-0`} />;
 }
 
 function statusBg(status: "ok" | "warn" | "error") {
-  if (status === "ok")   return "bg-emerald-500/10";
+  if (status === "ok") return "bg-emerald-500/10";
   if (status === "warn") return "bg-amber-500/10";
-  return                        "bg-red-500/10";
+  return "bg-red-500/10";
 }
 
 function statusBorder(status: "ok" | "warn" | "error") {
-  if (status === "ok")   return "border-emerald-500/20";
+  if (status === "ok") return "border-emerald-500/20";
   if (status === "warn") return "border-amber-500/20";
-  return                        "border-red-500/20";
+  return "border-red-500/20";
 }
 
 function statusText(status: "ok" | "warn" | "error") {
-  if (status === "ok")   return "text-emerald-700 dark:text-emerald-400";
+  if (status === "ok") return "text-emerald-700 dark:text-emerald-400";
   if (status === "warn") return "text-amber-700 dark:text-amber-400";
-  return                        "text-red-700 dark:text-red-400";
+  return "text-red-700 dark:text-red-400";
 }
 
 function formatTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return d.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 export default function HealthPage() {
-  const [data, setData]       = useState<HealthData | null>(null);
+  const [data, setData] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loaded, setLoaded]   = useState(0);
-  const [error, setError]     = useState<string | null>(null);
-  const TOTAL_CHECKS = 15;
+  const [error, setError] = useState<string | null>(null);
 
   const runChecks = useCallback(async () => {
     setLoading(true);
-    setLoaded(0);
     setError(null);
     setData(null);
 
-    // Simulate incremental progress while fetch runs
-    const interval = setInterval(() => {
-      setLoaded((prev) => (prev < TOTAL_CHECKS - 1 ? prev + 1 : prev));
-    }, 350);
-
     try {
       const res = await fetch("/api/admin/health");
-      clearInterval(interval);
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setError(j.error || `Ошибка ${res.status}`);
         return;
       }
       const json: HealthData = await res.json();
-      setLoaded(json.checks.length);
       setData(json);
     } catch (e: any) {
-      clearInterval(interval);
       setError("Не удалось выполнить проверку. Попробуйте ещё раз.");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { runChecks(); }, [runChecks]);
+  useEffect(() => {
+    runChecks();
+  }, [runChecks]);
 
   /* ─── Summary banner ─── */
   function SummaryBanner() {
@@ -148,11 +173,14 @@ export default function HealthPage() {
               Критические ошибки!
             </p>
             <p className="text-sm text-red-600/80 dark:text-red-400/70 mt-0.5">
-              {err} {err === 1 ? "компонент требует" : "компонента требуют"} немедленного внимания
+              {err} {err === 1 ? "компонент требует" : "компонента требуют"}{" "}
+              немедленного внимания
             </p>
           </div>
           <div className="text-right shrink-0 hidden sm:block">
-            <p className="text-2xl font-bold text-red-500">{err} / {total}</p>
+            <p className="text-2xl font-bold text-red-500">
+              {err} / {total}
+            </p>
             <p className="text-xs text-muted-foreground">с ошибками</p>
           </div>
         </div>
@@ -170,11 +198,14 @@ export default function HealthPage() {
               Есть предупреждения
             </p>
             <p className="text-sm text-amber-600/80 dark:text-amber-400/70 mt-0.5">
-              {warn} {warn === 1 ? "пункт требует" : "пункта требуют"} вашего внимания, но сайт работает
+              {warn} {warn === 1 ? "пункт требует" : "пункта требуют"} вашего
+              внимания, но сайт работает
             </p>
           </div>
           <div className="text-right shrink-0 hidden sm:block">
-            <p className="text-2xl font-bold text-amber-500">{warn} / {total}</p>
+            <p className="text-2xl font-bold text-amber-500">
+              {warn} / {total}
+            </p>
             <p className="text-xs text-muted-foreground">предупреждений</p>
           </div>
         </div>
@@ -195,7 +226,9 @@ export default function HealthPage() {
           </p>
         </div>
         <div className="text-right shrink-0 hidden sm:block">
-          <p className="text-2xl font-bold text-emerald-500">{ok} / {total}</p>
+          <p className="text-2xl font-bold text-emerald-500">
+            {ok} / {total}
+          </p>
           <p className="text-xs text-muted-foreground">в норме</p>
         </div>
       </div>
@@ -212,23 +245,21 @@ export default function HealthPage() {
         <div>
           <p className="font-semibold text-base">Проверяем систему…</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Проверено {loaded} из {TOTAL_CHECKS} компонентов
+            Запрашиваем актуальный список проверок из API
           </p>
         </div>
         <div className="max-w-xs mx-auto">
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary rounded-full transition-all duration-500"
-              style={{ width: `${(loaded / TOTAL_CHECKS) * 100}%` }}
-            />
+            <div className="h-full w-full rounded-full bg-primary/80 animate-pulse" />
           </div>
           <div className="flex justify-between text-xs text-muted-foreground mt-1.5">
             <span>Инфраструктура</span>
-            <span>Продажи</span>
+            <span>ARAY</span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Тестируем 15 компонентов — это займёт несколько секунд
+          Количество проверок приходит с сервера, без зашитого счётчика в
+          интерфейсе
         </p>
       </div>
     );
@@ -257,8 +288,12 @@ export default function HealthPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="font-semibold text-sm leading-tight">{check.name}</p>
-                <p className={`text-sm mt-0.5 ${isNotOk ? statusText(check.status) : "text-muted-foreground"}`}>
+                <p className="font-semibold text-sm leading-tight">
+                  {check.name}
+                </p>
+                <p
+                  className={`text-sm mt-0.5 ${isNotOk ? statusText(check.status) : "text-muted-foreground"}`}
+                >
                   {check.message}
                 </p>
               </div>
@@ -266,13 +301,19 @@ export default function HealthPage() {
               <span
                 className={`shrink-0 text-[11px] font-semibold uppercase tracking-wide px-2.5 py-1 rounded-full ${statusBg(check.status)} ${statusText(check.status)}`}
               >
-                {check.status === "ok" ? "OK" : check.status === "warn" ? "Внимание" : "Ошибка"}
+                {check.status === "ok"
+                  ? "OK"
+                  : check.status === "warn"
+                    ? "Внимание"
+                    : "Ошибка"}
               </span>
             </div>
 
             {/* Detail info (version, count, etc.) */}
             {check.detail && (
-              <p className="text-[11px] text-muted-foreground/70 mt-1 font-mono">{check.detail}</p>
+              <p className="text-[11px] text-muted-foreground/70 mt-1 font-mono">
+                {check.detail}
+              </p>
             )}
 
             {/* Fix instructions */}
@@ -280,10 +321,16 @@ export default function HealthPage() {
               <div
                 className={`mt-3 rounded-xl p-3 border flex items-start gap-2.5 ${statusBg(check.status)} ${statusBorder(check.status)}`}
               >
-                <ArrowRight className={`w-4 h-4 shrink-0 mt-0.5 ${statusText(check.status)}`} />
+                <ArrowRight
+                  className={`w-4 h-4 shrink-0 mt-0.5 ${statusText(check.status)}`}
+                />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-foreground mb-0.5">Как исправить:</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{check.fix}</p>
+                  <p className="text-xs font-semibold text-foreground mb-0.5">
+                    Как исправить:
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {check.fix}
+                  </p>
                 </div>
               </div>
             )}
@@ -329,12 +376,24 @@ export default function HealthPage() {
           <p className="text-2xl font-bold text-emerald-500">{ok}</p>
           <p className="text-xs text-muted-foreground mt-0.5">В норме</p>
         </div>
-        <div className={`border rounded-2xl p-4 text-center ${warn > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-muted/40 border-border"}`}>
-          <p className={`text-2xl font-bold ${warn > 0 ? "text-amber-500" : "text-muted-foreground"}`}>{warn}</p>
+        <div
+          className={`border rounded-2xl p-4 text-center ${warn > 0 ? "bg-amber-500/10 border-amber-500/20" : "bg-muted/40 border-border"}`}
+        >
+          <p
+            className={`text-2xl font-bold ${warn > 0 ? "text-amber-500" : "text-muted-foreground"}`}
+          >
+            {warn}
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">Предупреждений</p>
         </div>
-        <div className={`border rounded-2xl p-4 text-center ${err > 0 ? "bg-red-500/10 border-red-500/20" : "bg-muted/40 border-border"}`}>
-          <p className={`text-2xl font-bold ${err > 0 ? "text-red-500" : "text-muted-foreground"}`}>{err}</p>
+        <div
+          className={`border rounded-2xl p-4 text-center ${err > 0 ? "bg-red-500/10 border-red-500/20" : "bg-muted/40 border-border"}`}
+        >
+          <p
+            className={`text-2xl font-bold ${err > 0 ? "text-red-500" : "text-muted-foreground"}`}
+          >
+            {err}
+          </p>
           <p className="text-xs text-muted-foreground mt-0.5">Ошибок</p>
         </div>
       </div>
@@ -342,23 +401,24 @@ export default function HealthPage() {
   }
 
   /* ─── Group checks by status ─── */
-  const errors  = data?.checks.filter(c => c.status === "error") ?? [];
-  const warns   = data?.checks.filter(c => c.status === "warn")  ?? [];
-  const oks     = data?.checks.filter(c => c.status === "ok")    ?? [];
+  const errors = data?.checks.filter((c) => c.status === "error") ?? [];
+  const warns = data?.checks.filter((c) => c.status === "warn") ?? [];
+  const oks = data?.checks.filter((c) => c.status === "ok") ?? [];
 
   /* ─── Group checks by category ─── */
-  const byCategory = CATEGORY_ORDER.map(cat => ({
+  const byCategory = CATEGORY_ORDER.map((cat) => ({
     cat,
     label: CATEGORY_LABELS[cat] || cat,
-    checks: data?.checks.filter(c => c.category === cat) ?? [],
-  })).filter(g => g.checks.length > 0);
+    checks: data?.checks.filter((c) => c.category === cat) ?? [],
+  })).filter((g) => g.checks.length > 0);
 
-  const memPct = data?.memoryMb && data?.memoryTotalMb
-    ? Math.round((data.memoryMb / data.memoryTotalMb) * 100)
-    : null;
+  const memPct =
+    data?.memoryMb && data?.memoryTotalMb
+      ? Math.round((data.memoryMb / data.memoryTotalMb) * 100)
+      : null;
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="admin-page-frame admin-page-frame-readable">
       {/* Page header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -366,13 +426,15 @@ export default function HealthPage() {
             <Shield className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="font-display font-bold text-xl leading-tight">Здоровье системы</h1>
+            <h1 className="font-display font-bold text-xl leading-tight">
+              Здоровье системы
+            </h1>
             <p className="text-xs text-muted-foreground">
               {data
                 ? `Последняя проверка: ${formatTime(data.checkedAt)}`
                 : loading
-                ? "Выполняется проверка…"
-                : "Не проверялось"}
+                  ? "Выполняется проверка…"
+                  : "Не проверялось"}
             </p>
           </div>
         </div>
@@ -396,7 +458,9 @@ export default function HealthPage() {
         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-5 flex items-start gap-3">
           <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-red-700 dark:text-red-400 text-sm">Не удалось выполнить проверку</p>
+            <p className="font-semibold text-red-700 dark:text-red-400 text-sm">
+              Не удалось выполнить проверку
+            </p>
             <p className="text-xs text-muted-foreground mt-1">{error}</p>
           </div>
         </div>
@@ -418,19 +482,29 @@ export default function HealthPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {data.nodeVersion && (
               <div className="bg-card border border-border rounded-2xl p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Node.js</p>
-                <p className="font-mono font-bold text-sm">{data.nodeVersion}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
+                  Node.js
+                </p>
+                <p className="font-mono font-bold text-sm">
+                  {data.nodeVersion}
+                </p>
               </div>
             )}
             {data.nextVersion && (
               <div className="bg-card border border-border rounded-2xl p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Next.js</p>
-                <p className="font-mono font-bold text-sm">{data.nextVersion}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
+                  Next.js
+                </p>
+                <p className="font-mono font-bold text-sm">
+                  {data.nextVersion}
+                </p>
               </div>
             )}
             {data.platform && (
               <div className="bg-card border border-border rounded-2xl p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Платформа</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">
+                  Платформа
+                </p>
                 <p className="font-mono font-bold text-sm">{data.platform}</p>
               </div>
             )}
@@ -442,12 +516,18 @@ export default function HealthPage() {
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all ${
-                      memPct > 85 ? "bg-red-500" : memPct > 70 ? "bg-amber-500" : "bg-emerald-500"
+                      memPct > 85
+                        ? "bg-red-500"
+                        : memPct > 70
+                          ? "bg-amber-500"
+                          : "bg-emerald-500"
                     }`}
                     style={{ width: `${memPct}%` }}
                   />
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-1">{memPct}% использовано</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {memPct}% использовано
+                </p>
               </div>
             )}
           </div>
@@ -461,7 +541,9 @@ export default function HealthPage() {
                   Критические ошибки — {errors.length}
                 </h2>
               </div>
-              {errors.map(c => <CheckCard key={c.id} check={c} />)}
+              {errors.map((c) => (
+                <CheckCard key={c.id} check={c} />
+              ))}
             </section>
           )}
 
@@ -473,7 +555,9 @@ export default function HealthPage() {
                   Требуют внимания — {warns.length}
                 </h2>
               </div>
-              {warns.map(c => <CheckCard key={c.id} check={c} />)}
+              {warns.map((c) => (
+                <CheckCard key={c.id} check={c} />
+              ))}
             </section>
           )}
 
@@ -487,23 +571,33 @@ export default function HealthPage() {
             </div>
           </div>
           {byCategory.map(({ cat, label, checks }) => {
-            const hasIssue = checks.some(c => c.status !== "ok");
+            const hasIssue = checks.some((c) => c.status !== "ok");
             return (
               <section key={cat} className="space-y-2">
                 <div className="flex items-center gap-2 px-1">
-                  <span className={`text-[11px] font-bold uppercase tracking-wide ${
-                    hasIssue ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"
-                  }`}>
+                  <span
+                    className={`text-[11px] font-bold uppercase tracking-wide ${
+                      hasIssue
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-emerald-600 dark:text-emerald-400"
+                    }`}
+                  >
                     {label}
                   </span>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-                    hasIssue ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                             : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                  }`}>
-                    {checks.filter(c => c.status === "ok").length}/{checks.length} OK
+                  <span
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+                      hasIssue
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                    }`}
+                  >
+                    {checks.filter((c) => c.status === "ok").length}/
+                    {checks.length} OK
                   </span>
                 </div>
-                {checks.map(c => <CheckCard key={c.id} check={c} />)}
+                {checks.map((c) => (
+                  <CheckCard key={c.id} check={c} />
+                ))}
               </section>
             );
           })}
@@ -512,7 +606,8 @@ export default function HealthPage() {
           <div className="bg-muted/40 border border-border rounded-2xl p-4 flex items-start gap-3">
             <Zap className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground leading-relaxed">
-              15 проверок в реальном времени: инфраструктура, SEO, аналитика, уведомления, каталог, продажи, медиа.
+              {data.checks.length} проверок в реальном времени: инфраструктура,
+              SEO, аналитика, уведомления, каталог, продажи, медиа и ARAY.
               Нажмите «Перепроверить всё» после изменений.
             </p>
           </div>

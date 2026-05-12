@@ -1,3 +1,7 @@
+const ignoredWatchPaths =
+  /([\\/](?:node_modules|\.git|\.next|backups|System Volume Information)([\\/]|$))|([\\/](?:pagefile\.sys|DumpStack\.log\.tmp)$)|(^D:[\\/](?:pagefile\.sys|DumpStack\.log\.tmp)$)/i;
+const isProduction = process.env.NODE_ENV === 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async redirects() {
@@ -28,7 +32,12 @@ const nextConfig = {
         // Статические файлы Next.js — кэш на 1 год (immutable)
         source: '/_next/static/:path*',
         headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+          {
+            key: 'Cache-Control',
+            value: isProduction
+              ? 'public, max-age=31536000, immutable'
+              : 'no-cache, no-store, must-revalidate',
+          },
         ],
       },
       {
@@ -59,7 +68,11 @@ const nextConfig = {
     ];
   },
   images: {
-    domains: ['localhost', 'pilo-rus.ru', 'pilmos.ru'],
+    remotePatterns: [
+      { hostname: 'localhost', pathname: '/**' },
+      { protocol: 'https', hostname: 'pilo-rus.ru', pathname: '/**' },
+      { protocol: 'https', hostname: 'pilmos.ru', pathname: '/**' },
+    ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 дней кэш
   },
@@ -79,7 +92,7 @@ const nextConfig = {
   webpack: (config, { isServer, webpack }) => {
     config.watchOptions = {
       ...(config.watchOptions || {}),
-      ignored: /(^|[\\/])(?:node_modules|\.git|\.next|System Volume Information)([\\/]|$)|(^|[\\/])(?:pagefile\.sys|DumpStack\.log\.tmp)$/,
+      ignored: ignoredWatchPaths,
     };
 
     // Prevent webpack from trying to bundle onnxruntime-web in the browser bundle.

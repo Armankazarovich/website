@@ -2,44 +2,170 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireOrdersStaff } from "@/lib/orders-auth";
 import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendPushToStaff } from "@/lib/push";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
+import { syncTerminalOrderToCrm } from "@/lib/terminal-crm-sync";
+import { createTerminalOrderOps } from "@/lib/terminal-ops";
+import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const UNIT_TYPES = new Set(["CUBE", "PIECE"]);
+const HIDDEN_CATEGORY_SORT_ORDER = 999;
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session || !STAFF_ROLES.includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersStaff();
+  if (!access.authorized) return access.response;
+  const { session } = access;
 
   try {
     const body = await req.json();
-    const { guestName, guestPhone, guestEmail, deliveryAddress, paymentMethod, comment, items, totalAmount, deliveryCost } = body;
+    const {
+      guestName,
+      guestPhone,
+      guestEmail,
+      deliveryAddress,
+      paymentMethod,
+      contactMethod,
+      contactUsername,
+      terminalProfile,
+      fulfillmentType,
+      fulfillmentDetail,
+      workMode,
+      receiptMode,
+      shiftId,
+      comment,
+      items,
+      deliveryCost,
+    } = body;
 
-    if (!guestName || !guestPhone || !items?.length) {
-      return NextResponse.json({ error: "Обязательные поля: имя, телефон, товары" }, { status: 400 });
+    if (!guestName || !items?.length) {
+      return NextResponse.json({ error: "Обязательные поля: клиент/точка и позиции" }, { status: 400 });
     }
+
+    const normalizedItems = Array.isArray(items)
+      ? items.map((item: any) => ({
+          variantId: String(item.variantId || ""),
+          productName: String(item.productName || ""),
+          variantSize: String(item.variantSize || ""),
+          unitType: String(item.unitType || ""),
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        }))
+      : [];
+
+    const hasInvalidItem = normalizedItems.some((item) =>
+      !item.variantId ||
+      !item.productName ||
+      !item.variantSize ||
+      !UNIT_TYPES.has(item.unitType) ||
+      !Number.isFinite(item.quantity) ||
+      item.quantity <= 0 ||
+      !Number.isFinite(item.price) ||
+      item.price <= 0
+    );
+
+    if (hasInvalidItem) {
+      return NextResponse.json({ error: "Проверьте товары, количество и цену" }, { status: 400 });
+    }
+
+    const requestedVariantIds = [...new Set(normalizedItems.map((item) => item.variantId))];
+    const allowedVariants = await prisma.productVariant.findMany({
+      where: {
+        id: { in: requestedVariantIds },
+        ...getPublicVariantsFilter(),
+        product: {
+          ...getPublicProductsFilter(),
+          category: {
+            showInMenu: true,
+            sortOrder: { lt: HIDDEN_CATEGORY_SORT_ORDER },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    const allowedVariantIds = new Set(allowedVariants.map((variant) => variant.id));
+    const hasUnavailableVariant = requestedVariantIds.some((variantId) => !allowedVariantIds.has(variantId));
+
+    if (hasUnavailableVariant) {
+      return NextResponse.json(
+        { error: "Товар снят с продажи или нет в наличии. Обновите корзину." },
+        { status: 400 }
+      );
+    }
+
+    const normalizedDeliveryCost = Number(deliveryCost ?? 0);
+    if (!Number.isFinite(normalizedDeliveryCost) || normalizedDeliveryCost < 0) {
+      return NextResponse.json({ error: "Некорректная стоимость доставки" }, { status: 400 });
+    }
+
+    const itemsTotal = normalizedItems.reduce(
+      (sum, item) => sum + item.quantity * item.price,
+      0
+    );
+    const orderTotal = itemsTotal + normalizedDeliveryCost;
+    const normalizedContactMethod = typeof contactMethod === "string" ? contactMethod.trim() : "";
+    const normalizedContactUsername = typeof contactUsername === "string" ? contactUsername.trim() : "";
+    const normalizedTerminalProfile = typeof terminalProfile === "string" ? terminalProfile.trim() : "";
+    const normalizedFulfillmentType = typeof fulfillmentType === "string" ? fulfillmentType.trim() : "";
+    const normalizedFulfillmentDetail = typeof fulfillmentDetail === "string" ? fulfillmentDetail.trim() : "";
+    const normalizedPaymentMethod = typeof paymentMethod === "string" && paymentMethod.trim()
+      ? paymentMethod.trim()
+      : "Наличные";
+    const normalizedWorkMode = typeof workMode === "string" ? workMode.trim() : "";
+    const normalizedReceiptMode = typeof receiptMode === "string" ? receiptMode.trim() : "";
+    const normalizedShiftId = typeof shiftId === "string" ? shiftId.trim() : "";
+    if (normalizedShiftId) {
+      const activeShift = await prisma.cashShift.findFirst({
+        where: { id: normalizedShiftId, status: "OPEN" },
+        select: { id: true },
+      });
+      if (!activeShift) {
+        return NextResponse.json(
+          { error: "Открытая кассовая смена не найдена. Обновите терминал и откройте смену заново." },
+          { status: 400 }
+        );
+      }
+    }
+    const paymentStatus = normalizedPaymentMethod === "QR / ссылка" || normalizedPaymentMethod === "Безнал по счёту"
+      ? "REQUESTED"
+      : "PENDING";
+    const fiscalStatus = normalizedReceiptMode === "LATER" ? "PENDING" : "AWAITING_PROVIDER";
+    const pushChannel =
+      normalizedContactMethod === "WEBSITE"
+        ? "с сайта"
+        : normalizedContactMethod === "OFFICE"
+          ? "из офиса"
+          : normalizedContactMethod === "MESSENGER"
+            ? "из чата"
+            : "по телефону";
 
     const order = await prisma.order.create({
       data: {
-        guestName,
-        guestPhone,
+        guestName: String(guestName).trim(),
+        guestPhone: guestPhone ? String(guestPhone).trim() : null,
         guestEmail: guestEmail || null,
-        deliveryAddress: deliveryAddress || null,
-        paymentMethod: paymentMethod || "Наличные",
+        deliveryAddress: normalizedFulfillmentDetail || deliveryAddress || null,
+        paymentMethod: normalizedPaymentMethod,
+        contactMethod: normalizedContactMethod || "PHONE",
+        contactUsername: normalizedContactUsername || null,
+        terminalProfile: normalizedTerminalProfile || "lumber",
+        terminalWorkMode: normalizedWorkMode || "MOBILE",
+        fulfillmentType: normalizedFulfillmentType || null,
+        fulfillmentDetail: normalizedFulfillmentDetail || null,
+        receiptMode: normalizedReceiptMode || "ELECTRONIC",
+        paymentStatus,
+        fiscalStatus,
         comment: comment || null,
-        totalAmount,
-        deliveryCost: deliveryCost || 0,
+        totalAmount: orderTotal,
+        deliveryCost: normalizedDeliveryCost,
         items: {
-          create: items.map((item: any) => ({
+          create: normalizedItems.map((item) => ({
             variantId: item.variantId,
             productName: item.productName,
             variantSize: item.variantSize,
-            unitType: item.unitType,
+            unitType: item.unitType as "CUBE" | "PIECE",
             quantity: item.quantity,
             price: item.price,
           })),
@@ -79,7 +205,7 @@ export async function POST(req: NextRequest) {
 
     // Push сотрудникам
     sendPushToStaff({
-      title: `📞 Заказ по телефону #${order.orderNumber}`,
+      title: `Заказ ${pushChannel} #${order.orderNumber}`,
       body: `${order.guestName} — ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽`,
       url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
@@ -117,6 +243,33 @@ export async function POST(req: NextRequest) {
     }
 
     // CRM Automation — trigger workflows
+    syncTerminalOrderToCrm({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      guestEmail: order.guestEmail,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      terminalProfile: order.terminalProfile,
+      contactMethod: order.contactMethod,
+      contactUsername: order.contactUsername,
+    }).catch(console.error);
+
+    createTerminalOrderOps({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      receiptMode: order.receiptMode,
+      terminalProfile: order.terminalProfile,
+      fulfillmentType: order.fulfillmentType,
+      fulfillmentDetail: order.fulfillmentDetail,
+      terminalWorkMode: order.terminalWorkMode,
+      shiftId: normalizedShiftId || null,
+    }, session.user.id).catch(console.error);
+
     import("@/lib/workflow-engine").then(({ runWorkflows }) => {
       runWorkflows("order_created", {
         orderId: order.id,

@@ -13,15 +13,31 @@ async function checkAdmin() {
 }
 
 async function getSmtpConfig() {
-  const keys = ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from", "smtp_from_name"];
-  const rows = await prisma.siteSettings.findMany({ where: { key: { in: keys } } });
+  const keys = [
+    "smtp_host",
+    "smtp_port",
+    "smtp_user",
+    "smtp_pass",
+    "smtp_from",
+    "smtp_from_name",
+  ];
+  const rows = await prisma.siteSettings.findMany({
+    where: { key: { in: keys } },
+  });
   const cfg: Record<string, string> = {};
   for (const r of rows) cfg[r.key] = r.value;
   return cfg;
 }
 
+function normalizeEmail(value: unknown) {
+  if (typeof value !== "string") return null;
+  const email = value.trim().toLowerCase();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
 export async function GET(req: Request) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAdmin()))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const action = searchParams.get("action");
 
@@ -31,38 +47,81 @@ export async function GET(req: Request) {
     return NextResponse.json({ ...cfg, smtp_pass: cfg.smtp_pass ? "***" : "" });
   }
 
-  // Get email subscribers (users with email + orders)
-  const [users, orders] = await Promise.all([
-    prisma.user.findMany({ select: { id: true, name: true, email: true, createdAt: true } }),
-    prisma.order.findMany({ select: { guestEmail: true, guestName: true, createdAt: true } }),
+  // Get email subscribers (users with email + orders + imported newsletter base)
+  const [users, orders, newsletter] = await Promise.all([
+    prisma.user.findMany({
+      select: { id: true, name: true, email: true, createdAt: true },
+    }),
+    prisma.order.findMany({
+      where: { deletedAt: null },
+      select: { guestEmail: true, guestName: true, createdAt: true },
+    }),
+    prisma.newsletterSubscriber.findMany({
+      where: { active: true },
+      select: { email: true, name: true, source: true, createdAt: true },
+    }),
   ]);
 
   // Build unique email list
-  const emailMap = new Map<string, { name: string; source: string; date: Date }>();
+  const emailMap = new Map<
+    string,
+    { name: string; source: string; date: Date }
+  >();
   for (const u of users) {
-    if (u.email) emailMap.set(u.email, { name: u.name || "", source: "registered", date: u.createdAt });
+    const email = normalizeEmail(u.email);
+    if (email)
+      emailMap.set(email, {
+        name: u.name || "",
+        source: "registered",
+        date: u.createdAt,
+      });
   }
   for (const o of orders) {
-    if (o.guestEmail && !emailMap.has(o.guestEmail)) {
-      emailMap.set(o.guestEmail, { name: o.guestName || "", source: "order", date: o.createdAt });
+    const email = normalizeEmail(o.guestEmail);
+    if (email && !emailMap.has(email)) {
+      emailMap.set(email, {
+        name: o.guestName || "",
+        source: "order",
+        date: o.createdAt,
+      });
+    }
+  }
+  for (const n of newsletter) {
+    const email = normalizeEmail(n.email);
+    if (email && !emailMap.has(email)) {
+      emailMap.set(email, {
+        name: n.name || "",
+        source: n.source || "newsletter",
+        date: n.createdAt,
+      });
     }
   }
 
-  const subscribers = Array.from(emailMap.entries()).map(([email, info]) => ({
-    email,
-    ...info,
-  }));
+  const subscribers = Array.from(emailMap.entries())
+    .map(([email, info]) => ({
+      email,
+      ...info,
+    }))
+    .sort((a, b) => b.date.getTime() - a.date.getTime());
 
   return NextResponse.json({ subscribers, total: subscribers.length });
 }
 
 export async function POST(req: Request) {
-  if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await checkAdmin()))
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const { action } = body;
 
   if (action === "save_smtp") {
-    const { smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from, smtp_from_name } = body;
+    const {
+      smtp_host,
+      smtp_port,
+      smtp_user,
+      smtp_pass,
+      smtp_from,
+      smtp_from_name,
+    } = body;
     const settings = [
       { key: "smtp_host", value: smtp_host || "" },
       { key: "smtp_port", value: String(smtp_port || "587") },
@@ -79,8 +138,8 @@ export async function POST(req: Request) {
           where: { key },
           create: { id: key, key, value },
           update: { value },
-        })
-      )
+        }),
+      ),
     );
     return NextResponse.json({ ok: true });
   }
@@ -97,7 +156,10 @@ export async function POST(req: Request) {
         auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
       });
       await transporter.verify();
-      return NextResponse.json({ ok: true, message: "SMTP подключение успешно!" });
+      return NextResponse.json({
+        ok: true,
+        message: "SMTP подключение успешно!",
+      });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 500 });
     }
@@ -106,7 +168,10 @@ export async function POST(req: Request) {
   if (action === "send") {
     const { subject, html: rawHtml, recipients } = body;
     if (!subject || !rawHtml || !recipients?.length) {
-      return NextResponse.json({ error: "Заполните все поля" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Заполните все поля" },
+        { status: 400 },
+      );
     }
     // Sanitize: strip script tags, event handlers, and javascript: URLs
     const html = (rawHtml as string)
@@ -116,8 +181,10 @@ export async function POST(req: Request) {
     const cfg = await getSmtpConfig();
     if (!cfg.smtp_host || !cfg.smtp_user || !cfg.smtp_pass) {
       return NextResponse.json(
-        { error: "SMTP не настроен. Настройте в разделе Email → Настройки SMTP" },
-        { status: 400 }
+        {
+          error: "SMTP не настроен. Настройте в разделе Email → Настройки SMTP",
+        },
+        { status: 400 },
       );
     }
     const transporter = nodemailer.createTransport({
@@ -149,13 +216,19 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, sent, errors, batches: Math.ceil(recipients.length / BATCH_SIZE) });
+    return NextResponse.json({
+      ok: true,
+      sent,
+      errors,
+      batches: Math.ceil(recipients.length / BATCH_SIZE),
+    });
   }
 
   if (action === "register_clients") {
     // Parse list: "email" or "email,Имя" per line
     const { lines } = body as { lines: string[] };
-    if (!lines?.length) return NextResponse.json({ error: "Список пустой" }, { status: 400 });
+    if (!lines?.length)
+      return NextResponse.json({ error: "Список пустой" }, { status: 400 });
 
     const cfg = await getSmtpConfig();
     const hasSmtp = cfg.smtp_host && cfg.smtp_user && cfg.smtp_pass;
@@ -171,7 +244,12 @@ export async function POST(req: Request) {
       });
     }
 
-    const results = { created: 0, existing: 0, emailsSent: 0, errors: [] as string[] };
+    const results = {
+      created: 0,
+      existing: 0,
+      emailsSent: 0,
+      errors: [] as string[],
+    };
 
     for (const line of lines) {
       const parts = line.trim().split(/[,;]/);
@@ -186,7 +264,17 @@ export async function POST(req: Request) {
       }
 
       // Generate readable password: 3 words style e.g. "Oak-47-Pine"
-      const words = ["Лес","Дуб","Сосна","Клён","Берёза","Ель","Пила","Доска","Брус"];
+      const words = [
+        "Лес",
+        "Дуб",
+        "Сосна",
+        "Клён",
+        "Берёза",
+        "Ель",
+        "Пила",
+        "Доска",
+        "Брус",
+      ];
       const w1 = words[Math.floor(Math.random() * words.length)];
       const num = Math.floor(10 + Math.random() * 89);
       const w2 = words[Math.floor(Math.random() * words.length)];
@@ -194,7 +282,14 @@ export async function POST(req: Request) {
 
       try {
         const passwordHash = await bcrypt.hash(password, 10);
-        await prisma.user.create({ data: { email, name: name || email.split("@")[0], passwordHash, role: "USER" } });
+        await prisma.user.create({
+          data: {
+            email,
+            name: name || email.split("@")[0],
+            passwordHash,
+            role: "USER",
+          },
+        });
         results.created++;
 
         if (transporter) {
@@ -220,7 +315,12 @@ export async function POST(req: Request) {
 </div>
 </div></body></html>`;
           try {
-            await transporter.sendMail({ from, to: email, subject: "Ваш личный кабинет на pilo-rus.ru", html: welcomeHtml });
+            await transporter.sendMail({
+              from,
+              to: email,
+              subject: "Ваш личный кабинет на pilo-rus.ru",
+              html: welcomeHtml,
+            });
             results.emailsSent++;
           } catch {
             // Email failed but user was created — not critical
@@ -235,9 +335,92 @@ export async function POST(req: Request) {
   }
 
   if (action === "import_emails") {
-    // Legacy: just count
-    const { emails } = body;
-    return NextResponse.json({ ok: true, count: emails?.length || 0 });
+    const source = body.source === "scanner" ? "scanner" : "import";
+    const emails = Array.isArray(body.emails)
+      ? [
+          ...new Set(
+            body.emails.map(normalizeEmail).filter(Boolean) as string[],
+          ),
+        ]
+      : [];
+
+    if (emails.length === 0) {
+      return NextResponse.json(
+        { error: "Нет валидных email для импорта" },
+        { status: 400 },
+      );
+    }
+
+    const [users, orders, existingNewsletter] = await Promise.all([
+      prisma.user.findMany({
+        where: { email: { in: emails } },
+        select: { email: true },
+      }),
+      prisma.order.findMany({
+        where: { guestEmail: { in: emails }, deletedAt: null },
+        select: { guestEmail: true },
+      }),
+      prisma.newsletterSubscriber.findMany({
+        where: { email: { in: emails } },
+        select: { email: true, active: true },
+      }),
+    ]);
+
+    const knownEmails = new Set([
+      ...users.map((user) => user.email.toLowerCase()),
+      ...orders.flatMap((order) => {
+        const email = normalizeEmail(order.guestEmail);
+        return email ? [email] : [];
+      }),
+    ]);
+    const newsletterByEmail = new Map(
+      existingNewsletter.map((item) => [item.email.toLowerCase(), item]),
+    );
+    const results = {
+      created: 0,
+      existing: 0,
+      reactivated: 0,
+      errors: [] as string[],
+    };
+
+    for (const email of emails) {
+      const existing = newsletterByEmail.get(email);
+      if (existing) {
+        if (!existing.active) {
+          await prisma.newsletterSubscriber.update({
+            where: { email },
+            data: { active: true, source },
+          });
+          results.reactivated++;
+        } else {
+          results.existing++;
+        }
+        continue;
+      }
+
+      if (knownEmails.has(email)) {
+        results.existing++;
+        continue;
+      }
+
+      try {
+        await prisma.newsletterSubscriber.create({
+          data: { email, source, active: true },
+        });
+        results.created++;
+      } catch (error: any) {
+        results.errors.push(
+          `${email}: ${error.message || "не удалось сохранить"}`,
+        );
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      total: emails.length,
+      count: results.created + results.reactivated,
+      ...results,
+    });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });

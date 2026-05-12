@@ -3,16 +3,12 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireOrdersStaff } from "@/lib/orders-auth";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
-
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session || !STAFF_ROLES.includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersStaff();
+  if (!access.authorized) return access.response;
 
   const order = await prisma.order.findUnique({
     where: { id: params.id },

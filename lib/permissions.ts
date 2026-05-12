@@ -10,6 +10,9 @@ export type Section =
   | "orders"
   | "delivery"
   | "products"
+  | "categories"
+  | "inventory"
+  | "import"
   | "clients"
   | "staff"
   | "crm"
@@ -20,11 +23,19 @@ export type Section =
   | "notifications"
   | "email"
   | "reviews"
+  | "promotions"
   | "promotion"
   | "services"
   | "posts"
   | "site"
+  | "business_settings"
   | "appearance"
+  | "watermark"
+  | "terminals"
+  | "terminals_training"
+  | "aray"
+  | "aray_agents"
+  | "aray_costs"
   | "help"
   | "health"
   | "media"
@@ -46,6 +57,9 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   orders: ["MANAGER", "SELLER", "COURIER", "WAREHOUSE"],
   delivery: ["MANAGER", "COURIER", "WAREHOUSE"],
   products: ["MANAGER", "WAREHOUSE", "SELLER"],
+  categories: [], // ADMIN only
+  inventory: ["MANAGER", "WAREHOUSE"],
+  import: ["MANAGER", "WAREHOUSE"],
   clients: ["MANAGER"],
   staff: [], // ADMIN only
   crm: ["MANAGER", "SELLER"],
@@ -56,11 +70,19 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   notifications: ["MANAGER"],
   email: ["MANAGER"],
   reviews: ["MANAGER", "SELLER"],
+  promotions: ["MANAGER"],
   promotion: ["MANAGER"],
   services: ["MANAGER"],
   posts: ["MANAGER"],
   site: [], // ADMIN only
+  business_settings: ["MANAGER"],
   appearance: [], // ADMIN only
+  watermark: [], // ADMIN only
+  terminals: [], // ADMIN only
+  terminals_training: ["MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
+  aray: ["MANAGER"],
+  aray_agents: [], // ADMIN only
+  aray_costs: [], // ADMIN only
   help: ["MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
   health: [], // ADMIN only
   media: ["MANAGER", "WAREHOUSE", "SELLER"],
@@ -102,6 +124,9 @@ export function pathToSection(path: string): Section | null {
     "/admin/orders": "orders",
     "/admin/delivery": "delivery",
     "/admin/products": "products",
+    "/admin/categories": "categories",
+    "/admin/inventory": "inventory",
+    "/admin/import": "import",
     "/admin/clients": "clients",
     "/admin/staff": "staff",
     "/admin/crm": "crm",
@@ -112,11 +137,19 @@ export function pathToSection(path: string): Section | null {
     "/admin/notifications": "notifications",
     "/admin/email": "email",
     "/admin/reviews": "reviews",
+    "/admin/promotions": "promotions",
     "/admin/promotion": "promotion",
     "/admin/services": "services",
     "/admin/posts": "posts",
     "/admin/site": "site",
+    "/admin/business/settings": "business_settings",
     "/admin/appearance": "appearance",
+    "/admin/watermark": "watermark",
+    "/admin/terminals": "terminals",
+    "/admin/terminals/training": "terminals_training",
+    "/admin/aray": "aray",
+    "/admin/aray/agents": "aray_agents",
+    "/admin/aray/costs": "aray_costs",
     "/admin/help": "help",
     "/admin/health": "health",
     "/admin/media": "media",

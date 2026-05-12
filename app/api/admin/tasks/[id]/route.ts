@@ -2,6 +2,11 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  buildOrderTaskRelation,
+  mergeTaskRelations,
+  normalizeTaskRelations,
+} from "@/lib/task-relations";
 
 async function getSession() {
   const session = await auth();
@@ -10,6 +15,17 @@ async function getSession() {
   if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role as string)) return null;
   return { role, id };
 }
+
+const taskInclude = {
+  assignee: { select: { id: true, name: true, email: true } },
+  createdBy: { select: { id: true, name: true } },
+  order: { select: { id: true, orderNumber: true, guestName: true } },
+  relations: { orderBy: { createdAt: "asc" as const } },
+  comments: {
+    include: { user: { select: { id: true, name: true } } },
+    orderBy: { createdAt: "asc" as const },
+  },
+};
 
 // PATCH — update task (status, fields, add comment)
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
@@ -42,21 +58,51 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (body.description !== undefined) updateData.description = body.description;
   if (body.priority !== undefined) updateData.priority = body.priority;
   if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId || null;
+  if (body.orderId !== undefined) updateData.orderId = body.orderId || null;
   if (body.dueDate !== undefined) updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
   if (body.tags !== undefined) updateData.tags = body.tags;
+
+  const shouldReplaceRelations = body.relations !== undefined;
+  if (shouldReplaceRelations) {
+    const orderRelation = buildOrderTaskRelation(body.orderId, body.orderLabel);
+    const relations = mergeTaskRelations([
+      ...normalizeTaskRelations(body.relations),
+      ...(orderRelation ? [orderRelation] : []),
+    ]);
+    const orderIdFromRelations = relations.find((relation) => relation.entityType === "ORDER")?.entityId ?? null;
+    if (body.orderId === undefined) updateData.orderId = orderIdFromRelations;
+
+    const task = await prisma.$transaction(async (tx) => {
+      await tx.taskRelation.deleteMany({ where: { taskId: params.id } });
+      const updated = await tx.task.update({
+        where: { id: params.id },
+        data: updateData,
+      });
+      if (relations.length > 0) {
+        await tx.taskRelation.createMany({
+          data: relations.map((relation) => ({
+            taskId: updated.id,
+            entityType: relation.entityType,
+            entityId: relation.entityId,
+            label: relation.label,
+            href: relation.href,
+            metadata: (relation.metadata || {}) as any,
+          })),
+        });
+      }
+      return tx.task.findUniqueOrThrow({
+        where: { id: updated.id },
+        include: taskInclude,
+      });
+    });
+
+    return NextResponse.json(task);
+  }
 
   const task = await prisma.task.update({
     where: { id: params.id },
     data: updateData,
-    include: {
-      assignee: { select: { id: true, name: true, email: true } },
-      createdBy: { select: { id: true, name: true } },
-      order: { select: { id: true, orderNumber: true, guestName: true } },
-      comments: {
-        include: { user: { select: { id: true, name: true } } },
-        orderBy: { createdAt: "asc" },
-      },
-    },
+    include: taskInclude,
   });
 
   return NextResponse.json(task);

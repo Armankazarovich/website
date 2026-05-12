@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * DashboardMetrics — главные KPI-карточки дашборда.
+ * DashboardMetrics — главные KPI-карточки рабочего стола.
  *
  * Сессия 40+ (2026-05-01): calm UI и единый закон ARAY.
  *  - карточки держат общий bg-card / border / rounded-2xl ритм;
@@ -10,21 +10,15 @@
  *  - декоративную радугу не возвращаем.
  *
  * Добавлено:
- *  - hover:border-primary/30 + glow
  *  - Крупные числа font-display, primary акцент при необходимости
  *  - Trend hint снизу (опционально)
- *  - Анимация появления + counter
  */
-import type { MouseEvent } from "react";
-import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   ARAY_ICON_TONE,
   ARAY_ICON_TONE_MUTED,
   ARAY_ICON_TONE_WARNING,
 } from "@/lib/aray-design-tokens";
-import { AnimatedCounter } from "./animated-counter";
 import { TrendingUp, BarChart3, Clock, ArrowUpRight, Truck } from "lucide-react";
 
 type Tone = "primary" | "muted" | "warning";
@@ -43,60 +37,27 @@ interface MetricCardProps {
   suffix?: string;
   tone: Tone;
   hint?: string;
-  delay?: number;
 }
 
-function MetricCard({ href, icon: Icon, value, label, suffix = "", tone, hint, delay = 0 }: MetricCardProps) {
-  const [visible, setVisible] = useState(false);
-  const [isPending, startTransition] = useTransition();
-  const router = useRouter();
-  useEffect(() => {
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay]);
-
-  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.shiftKey
-    ) {
-      return;
-    }
-
-    event.preventDefault();
-    startTransition(() => {
-      router.push(href);
-    });
-  }
-
+function MetricCard({ href, icon: Icon, value, label, suffix = "", tone, hint }: MetricCardProps) {
   return (
     <Link
       href={href}
       prefetch
-      onClick={handleClick}
-      aria-busy={isPending}
-      className="admin-liquid-surface admin-liquid-interactive group rounded-2xl p-4 sm:p-5 active:scale-[0.98] min-w-0"
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(12px)",
-        transition: "opacity 0.5s ease, transform 0.5s ease",
-        WebkitTapHighlightColor: "transparent",
-      }}
+      className="admin-liquid-surface group rounded-2xl p-4 sm:p-5 min-w-0 transition-colors hover:border-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20"
+      style={{ WebkitTapHighlightColor: "transparent" }}
+      aria-label={`${label}: ${value.toLocaleString("ru-RU")}${suffix}`}
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium uppercase tracking-wider leading-tight">
           {label}
         </p>
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${isPending ? "animate-pulse" : ""} ${TONE_ICON[tone]}`}>
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${TONE_ICON[tone]}`}>
           <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
       </div>
-      <p className="font-display font-bold text-2xl sm:text-3xl mt-2 text-foreground leading-tight">
-        <AnimatedCounter value={value} duration={1400} />
+      <p className="font-display font-bold text-2xl sm:text-3xl mt-2 text-foreground leading-tight tabular-nums">
+        {value.toLocaleString("ru-RU")}
         {suffix && <span className="text-base sm:text-lg ml-0.5 text-muted-foreground/80">{suffix}</span>}
       </p>
       {hint && (
@@ -132,8 +93,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Выручка 30 дней"
         suffix=" ₽"
         tone="primary"
-        hint={hasRevenue30 ? "Все продажи без отмененных" : "Продажи появятся после первых заказов"}
-        delay={0}
+        hint={hasRevenue30 ? "Все продажи без отмененных" : "Начни с терминала или каталога"}
       />
       <MetricCard
         href="/admin/analytics"
@@ -142,8 +102,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Сегодня"
         suffix=" ₽"
         tone="primary"
-        hint={hasRevenueToday ? "С полуночи" : "Сегодня пока спокойно"}
-        delay={80}
+        hint={hasRevenueToday ? "С полуночи" : "Можно создать заказ в терминале"}
       />
       <MetricCard
         href="/admin/orders?status=NEW"
@@ -152,7 +111,6 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Новых заказов"
         tone={newOrders > 0 ? "warning" : "primary"}
         hint={newOrders > 0 ? "Ожидают подтверждения" : "Очередь свободна"}
-        delay={160}
       />
       <MetricCard
         href="/admin/analytics"
@@ -161,8 +119,7 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
         label="Средний чек"
         suffix=" ₽"
         tone="primary"
-        hint={hasAvgOrder ? "За 30 дней" : "Появится после продаж"}
-        delay={240}
+        hint={hasAvgOrder ? "За 30 дней" : "Появится после первой продажи"}
       />
     </div>
   );
@@ -171,8 +128,8 @@ export function DashboardMetrics({ revenue30, revenueToday, newOrders, avgOrder 
 export function CourierMetrics({ newOrders, todayOrders }: { newOrders: number; todayOrders: number }) {
   return (
     <div className="grid grid-cols-1 xs:grid-cols-2 gap-2.5 sm:gap-3 min-w-0">
-      <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" tone={newOrders > 0 ? "warning" : "primary"} delay={0} />
-      <MetricCard href="/admin/delivery" icon={Truck} value={todayOrders} label="Доставок сегодня" tone="primary" delay={80} />
+      <MetricCard href="/admin/orders" icon={Clock} value={newOrders} label="Новых заказов" tone={newOrders > 0 ? "warning" : "primary"} />
+      <MetricCard href="/admin/delivery" icon={Truck} value={todayOrders} label="Доставок сегодня" tone="primary" />
     </div>
   );
 }

@@ -23,6 +23,14 @@ function bufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+function isLocalDevHost() {
+  if (typeof window === "undefined") return false;
+  return (
+    process.env.NODE_ENV !== "production" ||
+    ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)
+  );
+}
+
 async function saveSub(sub: PushSubscription) {
   const key = sub.getKey("p256dh");
   const auth = sub.getKey("auth");
@@ -40,7 +48,11 @@ async function saveSub(sub: PushSubscription) {
       }),
     });
     if (!res.ok) {
-      console.error("[Push] save subscription failed:", res.status, await res.text());
+      console.error(
+        "[Push] save subscription failed:",
+        res.status,
+        await res.text(),
+      );
     }
   } catch (err) {
     console.error("[Push] save subscription error:", err);
@@ -51,6 +63,7 @@ export function PushSubscription() {
   const { data: session } = useSession();
 
   useEffect(() => {
+    if (isLocalDevHost()) return;
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
     if (!vapidKey) return;
     if (!("Notification" in window)) return;
@@ -95,34 +108,66 @@ export function PushPromptBanner() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const isAdmin = pathname?.startsWith("/admin");
+  const isExplicitPushSettings =
+    pathname === "/cabinet/notifications" ||
+    pathname === "/admin/notifications";
 
   useEffect(() => {
-    if (!("Notification" in window) || !("PushManager" in window) || !("serviceWorker" in navigator)) return;
-    if (Notification.permission === "granted" || Notification.permission === "denied") return;
+    if (isExplicitPushSettings) return;
+    if (isLocalDevHost()) return;
+    if (
+      !("Notification" in window) ||
+      !("PushManager" in window) ||
+      !("serviceWorker" in navigator)
+    )
+      return;
+    if (
+      Notification.permission === "granted" ||
+      Notification.permission === "denied"
+    )
+      return;
     if (!process.env.NEXT_PUBLIC_VAPID_KEY) return;
     const dismissed = localStorage.getItem(BANNER_KEY);
-    if (dismissed && (Date.now() - Number(dismissed)) < 7 * 86400000) return;
+    if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
     const t = setTimeout(() => setShow(true), 8000);
     return () => clearTimeout(t);
-  }, []);
+  }, [isExplicitPushSettings]);
 
-  const dismiss = () => { localStorage.setItem(BANNER_KEY, String(Date.now())); setShow(false); };
+  useEffect(() => {
+    if (isExplicitPushSettings) setShow(false);
+  }, [isExplicitPushSettings]);
+
+  const dismiss = () => {
+    localStorage.setItem(BANNER_KEY, String(Date.now()));
+    setShow(false);
+  };
 
   const handleSubscribe = async () => {
     setBusy(true);
     try {
       const ok = await requestPushPermission();
-      if (ok) { setDone(true); setTimeout(() => setShow(false), 2000); }
-      else dismiss();
-    } catch { dismiss(); } finally { setBusy(false); }
+      if (ok) {
+        setDone(true);
+        setTimeout(() => setShow(false), 2000);
+      } else dismiss();
+    } catch {
+      dismiss();
+    } finally {
+      setBusy(false);
+    }
   };
 
-  if (!show) return null;
+  if (!show || isExplicitPushSettings) return null;
 
   return (
-    <div className="fixed bottom-28 lg:bottom-6 left-3 right-3 sm:left-4 sm:right-4 lg:left-auto lg:right-6 lg:w-[360px] z-[70]" style={{animation:"slideUp .3s ease"}}>
+    <div
+      className="fixed bottom-28 lg:bottom-6 left-3 right-3 sm:left-4 sm:right-4 lg:left-auto lg:right-6 lg:w-[360px] z-[70]"
+      style={{ animation: "slideUp .3s ease" }}
+    >
       <style>{`@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <div className={`${isAdmin ? "admin-popup-liquid" : "bg-card"} border border-border rounded-2xl shadow-2xl p-4 relative`}>
+      <div
+        className={`${isAdmin ? "admin-popup-liquid" : "bg-card"} border border-border rounded-2xl shadow-2xl p-4 relative`}
+      >
         {done ? (
           <p className="flex items-center gap-2 text-sm font-medium text-emerald-600 py-1">
             <CheckCircle2 className="w-4 h-4" />
@@ -130,22 +175,40 @@ export function PushPromptBanner() {
           </p>
         ) : (
           <>
-            <button onClick={dismiss} className="absolute top-3 right-3 w-7 h-7 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center transition-colors" aria-label="Закрыть">
+            <button
+              onClick={dismiss}
+              className="absolute top-3 right-3 w-7 h-7 rounded-full border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 flex items-center justify-center transition-colors"
+              aria-label="Закрыть"
+            >
               <X className="w-3.5 h-3.5" />
             </button>
             <div className="flex items-start gap-3 pr-6">
               <div className="w-9 h-9 rounded-xl bg-primary/10 ring-1 ring-primary/15 flex items-center justify-center shrink-0 text-primary">
                 <Bell className="w-4 h-4" />
               </div>
-              <div><p className="font-semibold text-sm text-foreground">Включите уведомления</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Новые заказы и важные события без лишнего шума</p></div>
+              <div>
+                <p className="font-semibold text-sm text-foreground">
+                  Включите уведомления
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Новые заказы и важные события без лишнего шума
+                </p>
+              </div>
             </div>
             <div className="flex gap-2 mt-3">
-              <button onClick={handleSubscribe} disabled={busy}
-                className="flex-1 py-2 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60">
+              <button
+                onClick={handleSubscribe}
+                disabled={busy}
+                className="flex-1 py-2 px-3 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 disabled:opacity-60"
+              >
                 {busy ? "..." : "Включить"}
               </button>
-              <button onClick={dismiss} className="py-2 px-3 rounded-xl text-xs text-muted-foreground hover:bg-muted">Не сейчас</button>
+              <button
+                onClick={dismiss}
+                className="py-2 px-3 rounded-xl text-xs text-muted-foreground hover:bg-muted"
+              >
+                Не сейчас
+              </button>
             </div>
           </>
         )}
@@ -156,10 +219,15 @@ export function PushPromptBanner() {
 
 // Экспортируем функцию для вызова из PWA-баннера при явном запросе
 export async function requestPushPermission(): Promise<boolean> {
+  if (isLocalDevHost()) return false;
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_KEY;
-  if (!vapidKey) { console.error("[Push] NEXT_PUBLIC_VAPID_KEY not set"); return false; }
+  if (!vapidKey) {
+    console.error("[Push] NEXT_PUBLIC_VAPID_KEY not set");
+    return false;
+  }
   if (!("Notification" in window)) return false;
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window))
+    return false;
 
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return false;
@@ -174,8 +242,16 @@ export async function requestPushPermission(): Promise<boolean> {
     } else {
       reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
       await new Promise<void>((resolve) => {
-        if (reg.active) { resolve(); return; }
-        const handler = () => { if (reg.active) { resolve(); reg.removeEventListener("updatefound", handler); } };
+        if (reg.active) {
+          resolve();
+          return;
+        }
+        const handler = () => {
+          if (reg.active) {
+            resolve();
+            reg.removeEventListener("updatefound", handler);
+          }
+        };
         reg.addEventListener("updatefound", handler);
         // Fallback через 3s
         setTimeout(resolve, 3000);
@@ -186,7 +262,7 @@ export async function requestPushPermission(): Promise<boolean> {
     reg = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("SW not ready after 10s")), 10000)
+        setTimeout(() => reject(new Error("SW not ready after 10s")), 10000),
       ),
     ]);
   } catch (err) {

@@ -18,6 +18,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category"); // "robot" | "tunnel" | "report"
   const includeStats = searchParams.get("stats") === "true";
+  const includePresets = searchParams.get("presets") === "true";
 
   try {
     const where: any = {};
@@ -28,28 +29,26 @@ export async function GET(req: Request) {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       include: includeStats
         ? {
-            logs: {
-              take: 5,
-              orderBy: { createdAt: "desc" },
-              select: { id: true, result: true, createdAt: true, error: true },
-            },
             _count: { select: { logs: true } },
           }
         : undefined,
     });
 
-    // Общая статистика
-    const [totalLogs, errorLogs] = await Promise.all([
-      prisma.workflowLog.count({
-        where: { createdAt: { gte: new Date(Date.now() - 86400000) } },
-      }),
-      prisma.workflowLog.count({
-        where: {
-          createdAt: { gte: new Date(Date.now() - 86400000) },
-          result: "error",
-        },
-      }),
-    ]);
+    let totalLogs = 0;
+    let errorLogs = 0;
+    if (includeStats) {
+      [totalLogs, errorLogs] = await Promise.all([
+        prisma.workflowLog.count({
+          where: { createdAt: { gte: new Date(Date.now() - 86400000) } },
+        }),
+        prisma.workflowLog.count({
+          where: {
+            createdAt: { gte: new Date(Date.now() - 86400000) },
+            result: "error",
+          },
+        }),
+      ]);
+    }
 
     return NextResponse.json({
       workflows,
@@ -59,7 +58,7 @@ export async function GET(req: Request) {
         logsToday: totalLogs,
         errorsToday: errorLogs,
       },
-      presets: LUMBER_PRESET_WORKFLOWS,
+      ...(includePresets ? { presets: LUMBER_PRESET_WORKFLOWS } : {}),
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

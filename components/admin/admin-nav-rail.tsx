@@ -24,30 +24,40 @@
  * arayglass-glow/shimmer. Палитра-aware через text-primary.
  */
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard, ShoppingBag, Sparkles, Package, BookOpen,
+  LayoutDashboard, ShoppingBag, Package, BookOpen,
   Megaphone, Settings, HelpCircle, UserCircle, ChevronRight,
-  ExternalLink, X,
+  ChevronLeft, ExternalLink, Wallet,
 } from "lucide-react";
 import { useAdminLang } from "@/lib/admin-lang-context";
+import { type NavItem } from "@/components/admin/admin-navigation-registry";
 import {
-  allNavItems, GROUP_LABELS, type NavItem,
-} from "@/components/admin/admin-nav";
+  buildAdminNavigationGroups,
+  getAdminNavigationSubtitle,
+  isAdminNavItemMatch,
+} from "@/components/admin/admin-navigation-model";
+import {
+  ADMIN_NAV_GROUP_DESCRIPTIONS,
+  buildAdminNavSections,
+} from "@/components/admin/admin-nav-structure";
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { AdminWeatherChip } from "@/components/admin/admin-weather";
+import { ArayIcon, ArayOrb } from "@/components/shared/aray-orb";
+import { requestArayClose, requestArayOpen } from "@/components/store/aray-events";
 
 // ── Иконка для каждой группы (главная иконка раздела) ──
 const GROUP_ICONS: Record<string, React.ElementType> = {
   main: LayoutDashboard,
   personal: UserCircle,
   sales: ShoppingBag,
-  aray: Sparkles,
+  aray: ArayIcon,
   products: Package,
   content: BookOpen,
   marketing: Megaphone,
+  finance: Wallet,
   settings: Settings,
   help: HelpCircle,
 };
@@ -56,47 +66,43 @@ const GROUP_ICONS: Record<string, React.ElementType> = {
 // Дублирует PAGE_TITLES из admin-shell.tsx — держим локально,
 // чтобы избежать circular import. Если ключа нет — subtitle не показывается.
 const SUBTITLE_BY_HREF: Record<string, string> = {
-  "/admin": "Сводка магазина",
+  "/admin": "Рабочий стол и сводка дня",
   "/admin/orders": "Активные и архив",
-  "/admin/orders/new": "По телефону",
+  "/admin/orders/new": "Касса и заказы",
   "/admin/crm": "Лиды и сделки",
-  "/admin/crm/automation": "Тоннели",
+  "/admin/crm/automation": "Тоннели и правила",
   "/admin/tasks": "Команда",
   "/admin/delivery": "Маршруты и тарифы",
   "/admin/delivery/rates": "Тарифы доставки",
-  "/admin/products": "Товары магазина",
+  "/admin/products": "Каталог товаров",
   "/admin/categories": "Дерево разделов",
   "/admin/inventory": "Остатки и движение",
   "/admin/import": "CSV, Excel",
   "/admin/media": "Фото и документы",
+  "/admin/business/settings": "Сайт, витрина, SEO",
   "/admin/promotions": "Скидки и предложения",
   "/admin/reviews": "Модерация",
-  "/admin/email": "Кампании",
+  "/admin/email": "Email и push",
   "/admin/promotion": "SEO и реклама",
   "/admin/finance": "Доходы и расходы",
   "/admin/clients": "База покупателей",
   "/admin/health": "Состояние системы",
   "/admin/site": "Настройки магазина",
   "/admin/settings": "Параметры",
+  "/admin/terminals": "Оплата, устройства и рабочие места",
+  "/admin/terminals/training": "Сценарии запуска",
   "/admin/appearance": "Темы и палитры",
   "/admin/analytics": "Графики и отчёты",
   "/admin/watermark": "Защита фото",
   "/admin/staff": "Сотрудники",
   "/admin/notifications": "Push рассылка",
-  "/admin/help": "Гайды",
-  "/admin/aray": "Главная Арая",
+  "/admin/help": "База знаний",
+  "/admin/aray": "ARAY AI",
   "/admin/aray/agents": "Отделы и качество",
   "/admin/aray/costs": "Токены и подписки",
-  "/admin/aray-lab": "Эксперименты",
   "/admin/posts": "Блог и новости",
   "/admin/services": "Сервисы",
 };
-
-// Порядок групп в рельсе (сверху вниз)
-const GROUP_ORDER = [
-  "main", "personal", "sales", "aray", "products",
-  "content", "marketing", "settings", "help",
-];
 
 type Group = {
   key: string;
@@ -115,74 +121,94 @@ interface Props {
   avatarUrl?: string | null;
   userName?: string | null;
   email?: string | null;
+  disabledModuleIds?: string[];
 }
 
-export function AdminNavRail({ role }: Props) {
+export function AdminNavRail({ role, disabledModuleIds }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useAdminLang();
-  const [hoverGroup, setHoverGroup] = useState<string | null>(null);
   const [pinnedGroup, setPinnedGroup] = useState<string | null>(null);
-  const closeTimer = useRef<number | null>(null);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [arayWorkspaceOpen, setArayWorkspaceOpen] = useState(false);
+  const shiftedGroup = pinnedGroup;
 
   // ── Фильтрация по роли + группировка ──
-  const groups = useMemo<Group[]>(() => {
-    const visible = allNavItems.filter(i => !i.roles || i.roles.includes(role));
-    const map = new Map<string, NavItem[]>();
-    for (const item of visible) {
-      const arr = map.get(item.group) || [];
-      arr.push(item);
-      map.set(item.group, arr);
-    }
-    const result: Group[] = [];
-    for (const key of GROUP_ORDER) {
-      const items = map.get(key);
-      if (!items || items.length === 0) continue;
-      result.push({
-        key,
-        label: GROUP_LABELS[key] || key,
-        icon: GROUP_ICONS[key] || LayoutDashboard,
-        items,
-      });
-    }
-    return result;
-  }, [role]);
+  const groups = useMemo<Group[]>(
+    () => buildAdminNavigationGroups(role, t, GROUP_ICONS, disabledModuleIds).map(({ key, label, icon, items }) => ({
+      key,
+      label,
+      icon,
+      items,
+    })),
+    [disabledModuleIds, role, t],
+  );
 
   // ── Активный пункт: берём самый специфичный матч, чтобы вложенные маршруты
   // не подсвечивали родителя и дочерний пункт одновременно.
   const activeItem = useMemo(() => {
     return groups
       .flatMap((group) => group.items)
-      .filter((item) => isNavItemMatch(item, pathname))
+      .filter((item) => isAdminNavItemMatch(item, pathname))
       .sort((a, b) => b.href.length - a.href.length)[0] || null;
   }, [groups, pathname]);
   const activeGroupKey = activeItem?.group || null;
 
-  // ── Hover delay (150мс) для плавного перехода иконка → popup ──
-  function clearCloseTimer() {
-    if (closeTimer.current) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }
-  function scheduleClose() {
-    clearCloseTimer();
-    if (pinnedGroup) return;
-    closeTimer.current = window.setTimeout(() => {
-      setHoverGroup(null);
-    }, 150);
-  }
-  useEffect(() => () => clearCloseTimer(), []);
-
-  // ── Закрыть popup при смене страницы ──
+  // Закрываем меню только после того, как целевая страница уже сменилась.
   useEffect(() => {
-    setHoverGroup(null);
-    setPinnedGroup(null);
-  }, [pathname]);
+    if (!pendingHref) return;
+    if (pathname === pendingHref || pathname.startsWith(`${pendingHref}/`)) {
+      setPinnedGroup(null);
+      setPendingHref(null);
+    }
+  }, [pathname, pendingHref]);
 
   const closePanels = useCallback(() => {
-    clearCloseTimer();
-    setHoverGroup(null);
     setPinnedGroup(null);
+    setPendingHref(null);
+  }, []);
+
+  const handlePanelNavigate = useCallback((href: string) => {
+    const nextPath = href.split("?")[0];
+    if (pathname === nextPath) {
+      closePanels();
+      return;
+    }
+    setPendingHref(nextPath);
+  }, [closePanels, pathname]);
+
+  const closeArayWorkspace = useCallback(() => {
+    requestArayClose();
+  }, []);
+
+  const openArayWorkspace = useCallback(() => {
+    closePanels();
+    requestArayOpen("open");
+  }, [closePanels]);
+
+  useEffect(() => {
+    if (!shiftedGroup) {
+      document.body.removeAttribute("data-admin-nav-capsule");
+      delete document.body.dataset.adminNavCapsule;
+      return;
+    }
+
+    document.body.setAttribute("data-admin-nav-capsule", shiftedGroup);
+    document.body.dataset.adminNavCapsule = shiftedGroup;
+    return () => {
+      document.body.removeAttribute("data-admin-nav-capsule");
+      delete document.body.dataset.adminNavCapsule;
+    };
+  }, [shiftedGroup]);
+
+  useEffect(() => {
+    const syncWorkspaceState = () => {
+      setArayWorkspaceOpen(document.body.hasAttribute("data-aray-workspace"));
+    };
+    syncWorkspaceState();
+    const observer = new MutationObserver(syncWorkspaceState);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-aray-workspace"] });
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -210,13 +236,26 @@ export function AdminNavRail({ role }: Props) {
     <aside
       data-admin-nav-rail
       className={`admin-rail-liquid admin-rail-shell hidden lg:flex ${UI_LAYERS.navRail} flex-col items-center py-4 px-2.5 gap-2`}
-      onMouseLeave={scheduleClose}
     >
+      <div className="shrink-0 pb-2">
+        <button
+          type="button"
+          aria-label="Открыть ARAY"
+          title="ARAY Production"
+          className={`admin-rail-icon admin-rail-orb-button ${arayWorkspaceOpen ? "is-aray-active" : ""}`}
+          onClick={openArayWorkspace}
+        >
+          <span className="admin-rail-orb-inner" aria-hidden="true">
+            <ArayOrb size={37} pulse={arayWorkspaceOpen ? "thinking" : "idle"} intensity="normal" />
+          </span>
+        </button>
+      </div>
+
       {/* ── Группы навигации ── */}
       <nav className="admin-rail-list flex flex-col items-center gap-2 flex-1 min-h-0">
         {groups.map((g) => {
           const isActive = activeGroupKey === g.key;
-          const isOpen = (pinnedGroup || hoverGroup) === g.key;
+          const isOpen = pinnedGroup === g.key;
           const primaryHref = g.items[0].href;
           const Icon = g.icon;
 
@@ -233,49 +272,35 @@ export function AdminNavRail({ role }: Props) {
             <div
               key={g.key}
               className="relative"
-              onPointerEnter={(event) => {
-                if (event.pointerType === "touch") return;
-                clearCloseTimer();
-                if (!pinnedGroup) setHoverGroup(g.key);
-              }}
             >
-              {g.items.length > 1 ? (
-                <button
-                  type="button"
-                  aria-label={g.label}
-                  aria-expanded={isOpen}
-                  title={g.label}
-                  className="block appearance-none border-0 bg-transparent p-0"
-                  onClick={() => {
-                    clearCloseTimer();
-                    const nextPinned = pinnedGroup === g.key ? null : g.key;
-                    setPinnedGroup(nextPinned);
-                    setHoverGroup(nextPinned ? g.key : null);
-                  }}
-                  aria-controls={isOpen ? `admin-nav-panel-${g.key}` : undefined}
-                >
-                  {railIcon}
-                </button>
-              ) : (
-                <Link
-                  href={primaryHref}
-                  aria-label={g.label}
-                  title={g.label}
-                  className="block"
-                  onClick={closePanels}
-                >
-                  {railIcon}
-                </Link>
-              )}
+              <button
+                type="button"
+                aria-label={g.label}
+                aria-expanded={isOpen}
+                title={g.label}
+                className="block appearance-none border-0 bg-transparent p-0"
+                onClick={() => {
+                  if (g.items.length === 1) {
+                    handlePanelNavigate(primaryHref);
+                    router.push(primaryHref);
+                    return;
+                  }
+                  const nextPinned = pinnedGroup === g.key ? null : g.key;
+                  if (nextPinned) closeArayWorkspace();
+                  setPinnedGroup(nextPinned);
+                }}
+                aria-controls={isOpen ? `admin-nav-panel-${g.key}` : undefined}
+              >
+                {railIcon}
+              </button>
 
-              {isOpen && g.items.length > 1 && (
+              {isOpen && (
                 <GroupPopup
                   group={g}
                   pathname={pathname}
                   t={t}
-                  onMouseEnter={clearCloseTimer}
-                  onMouseLeave={scheduleClose}
                   onClose={closePanels}
+                  onNavigate={handlePanelNavigate}
                   activeHref={activeItem?.href}
                 />
               )}
@@ -287,14 +312,19 @@ export function AdminNavRail({ role }: Props) {
       {/* ── Низ: ссылка на сайт ── */}
       <div className="shrink-0 pt-2 flex flex-col items-center gap-2">
         <AdminWeatherChip variant="rail" />
-        <Link
-          href="/"
-          className="admin-rail-icon"
-          aria-label="На сайт"
-          title="На сайт"
+        <div
+          className="relative"
         >
-          <ExternalLink className="w-[18px] h-[18px]" strokeWidth={1.75} />
-        </Link>
+          <Link
+            href="/"
+            className="admin-rail-icon"
+            aria-label="На сайт"
+            title="На сайт"
+            onClick={closePanels}
+          >
+            <ExternalLink className="w-[18px] h-[18px]" strokeWidth={1.75} />
+          </Link>
+        </div>
       </div>
     </aside>
   );
@@ -305,24 +335,29 @@ export function AdminNavRail({ role }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function GroupPopup({
-  group, pathname, t, onMouseEnter, onMouseLeave, onClose, activeHref,
+  group, pathname, t, onClose, onNavigate, activeHref,
 }: {
   group: Group;
   pathname: string;
   t: (key: any) => string;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
   onClose: () => void;
+  onNavigate: (href: string) => void;
   activeHref?: string;
 }) {
   const GroupIcon = group.icon;
+  const description = ADMIN_NAV_GROUP_DESCRIPTIONS[group.key];
+  const singleItem = group.items.length === 1 ? group.items[0] : null;
+  const singleLabel = singleItem ? (singleItem.labelKey ? t(singleItem.labelKey) : singleItem.label) : null;
+  const singleSubtitle = singleItem ? getAdminNavigationSubtitle(singleItem.href, t) : null;
+  const sections = buildAdminNavSections(group.key, group.items);
+  const showSectionLabels = sections.length > 1;
 
   return (
     <div
       id={`admin-nav-panel-${group.key}`}
-      className="admin-popup-liquid admin-nav-panel admin-nav-drawer border rounded-[24px] overflow-hidden flex flex-col"
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      className={`admin-popup-liquid admin-nav-panel admin-nav-drawer border rounded-[24px] overflow-hidden flex flex-col ${
+        singleItem ? "max-h-none" : ""
+      }`}
     >
       {/* Шапка попапа: иконка группы + label */}
       <div className="admin-nav-panel-head flex items-center gap-3 px-4 py-4 border-b border-border/70 shrink-0">
@@ -333,60 +368,96 @@ function GroupPopup({
           <p className="font-display font-semibold text-[15px] text-foreground leading-tight truncate">
             {group.label}
           </p>
-          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
             {group.items.length} {pluralizeRu(group.items.length, ["раздел", "раздела", "разделов"])}
+            {description ? ` · ${description}` : ""}
           </p>
         </div>
         <button
           type="button"
           className="admin-nav-panel-close"
           aria-label="Закрыть меню"
+          title="Свернуть меню"
           onClick={onClose}
         >
-          <X className="w-4 h-4" strokeWidth={1.75} />
+          <ChevronLeft className="w-4 h-4" strokeWidth={1.75} />
         </button>
       </div>
 
-      {/* Список пунктов с разделителями */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
-        {group.items.map((item) => {
-          const isActive = item.exact
-            ? pathname === item.href
-            : activeHref === item.href;
-          const ItemIcon = item.icon;
-          const label = item.labelKey ? t(item.labelKey) : item.label;
-          const subtitle = SUBTITLE_BY_HREF[item.href];
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`admin-nav-panel-item flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150
-                ${isActive ? "is-active" : ""}`}
-              onClick={onClose}
-            >
-              <div
-                data-fly-icon
-                className="admin-nav-panel-item-icon w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors"
-              >
-                <ItemIcon className="w-[18px] h-[18px]" strokeWidth={1.75} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm leading-tight truncate ${isActive ? "font-semibold" : "font-medium"}`}>
-                  {label}
+      {singleItem ? (
+        <div className="p-3">
+          <Link
+            href={singleItem.href}
+            className="admin-nav-panel-item group flex min-h-[4.25rem] items-center gap-3 rounded-2xl px-3 py-3 transition-all duration-150"
+            onClick={() => onNavigate(singleItem.href)}
+          >
+            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold leading-tight text-foreground">
+                {singleLabel}
+              </p>
+              <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                {singleSubtitle || description || "Открыть раздел"}
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/45 transition-colors group-hover:text-primary" />
+          </Link>
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-3">
+          {sections.map((section) => (
+            <div key={section.label} className="space-y-1">
+              {showSectionLabels && (
+                <p className="px-3 pt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/75">
+                  {section.label}
                 </p>
-                {subtitle && (
-                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                    {subtitle}
-                  </p>
-                )}
-              </div>
-              <ChevronRight
-                className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
-              />
-            </Link>
-          );
-        })}
-      </div>
+              )}
+              {section.items.map((item) => {
+                const isActive = item.exact
+                  ? pathname === item.href
+                  : activeHref === item.href;
+                const label = item.labelKey ? t(item.labelKey) : item.label;
+                const subtitle = getAdminNavigationSubtitle(item.href, t);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`admin-nav-panel-item group flex min-h-[3.25rem] items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150
+                      ${isActive ? "is-active" : ""}`}
+                    onClick={() => onNavigate(item.href)}
+                  >
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full transition-colors ${
+                        isActive ? "bg-primary" : "bg-muted-foreground/30 group-hover:bg-primary/55"
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className={`min-w-0 truncate text-sm leading-tight ${isActive ? "font-semibold" : "font-medium"}`}>
+                          {label}
+                        </p>
+                        {item.badge && (
+                          <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold leading-none text-primary">
+                            {item.badge}
+                          </span>
+                        )}
+                      </div>
+                      {subtitle && (
+                        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
+                          {subtitle}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight
+                      className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

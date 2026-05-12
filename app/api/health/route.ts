@@ -78,12 +78,9 @@ export async function GET() {
   checks.disk = { ok: true, details: "проверь вручную на VPS" };
 
   // ── Итог ──────────────────────────────────────────────────────────────────
-  // In local development external integrations are often intentionally empty.
-  // The public health endpoint should then show "degraded", not make dev look down.
-  const isProduction = process.env.NODE_ENV === "production";
-  const CRITICAL_KEYS = isProduction
-    ? ["database", "orders", "telegram", "email", "push"]
-    : ["database", "orders"];
+  // Public uptime monitors should alert only when the core app is down.
+  // Optional integrations stay visible as degraded checks without turning the site into 503.
+  const CRITICAL_KEYS = ["database", "orders"];
   const criticalOk = CRITICAL_KEYS.every(k => checks[k]?.ok !== false);
   const allOk = Object.values(checks).every(c => c.ok);
   const totalMs = Date.now() - start;

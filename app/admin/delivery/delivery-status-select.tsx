@@ -15,38 +15,62 @@ const STATUS_OPTIONS = [
   { value: "CANCELLED", label: "Отменён" },
 ];
 
-export function DeliveryStatusSelect({ orderId, currentStatus }: { orderId: string; currentStatus: string }) {
+export function DeliveryStatusSelect({
+  orderId,
+  currentStatus,
+}: {
+  orderId: string;
+  currentStatus: string;
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = async (newStatus: string) => {
     if (newStatus === currentStatus) return;
     setSaving(true);
+    setError("");
     try {
-      await fetch(`/api/admin/orders/${orderId}`, {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.error || "Не удалось изменить статус");
+      }
       router.refresh();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Не удалось изменить статус",
+      );
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className="flex items-center gap-1.5 flex-1">
-      {saving && <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />}
-      <select
-        value={currentStatus}
-        onChange={(e) => handleChange(e.target.value)}
-        disabled={saving}
-        className="flex-1 px-2.5 py-1.5 text-xs bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-      >
-        {STATUS_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
+    <div className="flex flex-1 flex-col gap-1">
+      <div className="flex items-center gap-1.5">
+        {saving && (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+        )}
+        <select
+          value={currentStatus}
+          onChange={(e) => handleChange(e.target.value)}
+          disabled={saving}
+          aria-invalid={Boolean(error)}
+          className="min-h-[44px] flex-1 rounded-xl border border-border bg-background px-2.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 import {
-  Search, Pencil, X, Star, Eye, EyeOff,
+  Pencil, X, Star, Eye, EyeOff,
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Trash2, Tag, TrendingUp, TrendingDown, Check,
   ImageOff, Stamp, AlertTriangle, Sparkles, Loader2,
@@ -79,7 +79,6 @@ export function ProductsClient({
   const router = useRouter();
   const pathname = usePathname();
   const [products, setProducts] = useState(init);
-  const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("newest");
 
@@ -94,6 +93,7 @@ export function ProductsClient({
   const hiddenOnly = urlHidden === "1";
   const [drawer, setDrawer] = useState<Product | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   /* bulk selection */
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -126,28 +126,34 @@ export function ProductsClient({
 
   const patch = async (id: string, body: object) => {
     setSaving(id);
+    setActionError(null);
     try {
-      await fetch(`/api/admin/products/${id}`, {
+      const res = await fetch(`/api/admin/products/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Не удалось сохранить товар");
+      return data;
     } finally { setSaving(null); }
+  };
+
+  const ensureOk = async (res: Response, fallback: string) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.ok === false) throw new Error(data?.error || fallback);
+    return data;
   };
 
   /* filtered + sorted */
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const list = products.filter(p => {
       const matchCat = catFilter === "ALL" || p.categoryId === catFilter;
-      const matchS = !q || [p.name, p.slug, p.category.name].some((value) =>
-        value.toLowerCase().includes(q)
-      );
       const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
       const matchNophoto = !noPhotoOnly || p.images.length === 0;
       const matchFeatured = !urlFeatured || p.featured;
       const matchHidden = !hiddenOnly || !checkProductReadiness(p).ready;
-      return matchCat && matchS && matchActive && matchNophoto && matchFeatured && matchHidden;
+      return matchCat && matchActive && matchNophoto && matchFeatured && matchHidden;
     });
     return list.sort((a, b) => {
       if (sortBy === "name_az") return a.name.localeCompare(b.name, "ru");
@@ -158,7 +164,7 @@ export function ProductsClient({
       if (sortBy === "price_desc") return (minPrice(b) ?? 0) - (minPrice(a) ?? 0);
       return 0; // newest — сервер уже вернул в нужном порядке
     });
-  }, [products, search, catFilter, noPhotoOnly, hiddenOnly, urlActive, urlFeatured, sortBy]);
+  }, [products, catFilter, noPhotoOnly, hiddenOnly, urlActive, urlFeatured, sortBy]);
 
   /* счётчик скрытых от публики товаров (для бейджа) */
   const hiddenFromPublicCount = useMemo(
@@ -189,17 +195,23 @@ export function ProductsClient({
   /* ── bulk actions ── */
   const bulkSetActive = async (active: boolean) => {
     const ids = Array.from(selected);
+    const before = products;
     setProducts(ps => ps.map(p => selected.has(p.id) ? { ...p, active } : p));
     setSelected(new Set());
     setBulkSaving(true);
+    setActionError(null);
     try {
-      await Promise.all(ids.map(id =>
+      const results = await Promise.all(ids.map(id =>
         fetch(`/api/admin/products/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ active }),
         })
       ));
+      await Promise.all(results.map((res) => ensureOk(res, "Не удалось изменить статус товаров")));
+    } catch (err) {
+      setProducts(before);
+      setActionError(err instanceof Error ? err.message : "Не удалось изменить статус товаров");
     } finally { setBulkSaving(false); }
   };
 
@@ -208,17 +220,19 @@ export function ProductsClient({
     if (isNaN(pct) || pct === 0) return;
     const ids = Array.from(selected);
     setBulkSaving(true);
+    setActionError(null);
     try {
       const res = await fetch("/api/admin/products/bulk-price", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productIds: ids, percent: pct }),
       });
-      if (res.ok) {
-        setPriceChanged(true);
-        setPricePercent("");
-        setTimeout(() => setPriceChanged(false), 2000);
-      }
+      await ensureOk(res, "Не удалось изменить цены");
+      setPriceChanged(true);
+      setPricePercent("");
+      setTimeout(() => setPriceChanged(false), 2000);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Не удалось изменить цены");
     } finally { setBulkSaving(false); }
   };
 
@@ -226,20 +240,26 @@ export function ProductsClient({
     if (!categoryId) return;
     const cat = categories.find(c => c.id === categoryId);
     const ids = Array.from(selected);
+    const before = products;
     setProducts(ps => ps.map(p => selected.has(p.id)
       ? { ...p, categoryId, category: cat ? { name: cat.name } : p.category }
       : p
     ));
     setSelected(new Set());
     setBulkSaving(true);
+    setActionError(null);
     try {
-      await Promise.all(ids.map(id =>
+      const results = await Promise.all(ids.map(id =>
         fetch(`/api/admin/products/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ categoryId }),
         })
       ));
+      await Promise.all(results.map((res) => ensureOk(res, "Не удалось перенести товары")));
+    } catch (err) {
+      setProducts(before);
+      setActionError(err instanceof Error ? err.message : "Не удалось перенести товары");
     } finally {
       setBulkCat("");
       setBulkSaving(false);
@@ -251,14 +271,18 @@ export function ProductsClient({
     const withImages = products.filter(p => ids.includes(p.id) && p.images[0]);
     if (!withImages.length) return;
     setWmSaving(true);
+    setActionError(null);
     try {
-      await Promise.all(withImages.map(p =>
+      const results = await Promise.all(withImages.map(p =>
         fetch("/api/admin/watermark", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId: p.id, imageUrl: p.images[0] }),
         })
       ));
+      await Promise.all(results.map((res) => ensureOk(res, "Не удалось нанести водяной знак")));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Не удалось нанести водяной знак");
     } finally { setWmSaving(false); }
   };
 
@@ -267,7 +291,12 @@ export function ProductsClient({
     e.preventDefault(); e.stopPropagation();
     const val = !p.active;
     setProducts(ps => ps.map(x => x.id === p.id ? { ...x, active: val } : x));
-    await patch(p.id, { active: val });
+    try {
+      await patch(p.id, { active: val });
+    } catch (err) {
+      setProducts(ps => ps.map(x => x.id === p.id ? p : x));
+      setActionError(err instanceof Error ? err.message : "Не удалось изменить статус товара");
+    }
   };
 
   /* ── клик по карандашу: сразу на страницу редактирования ── */
@@ -279,6 +308,7 @@ export function ProductsClient({
   const saveDrawer = async () => {
     if (!drawer) return;
     const cat = categories.find(c => c.id === dCat);
+    const before = products;
     setProducts(ps => ps.map(x => x.id === drawer.id
       ? {
           ...x,
@@ -291,14 +321,19 @@ export function ProductsClient({
         }
       : x
     ));
-    setDrawer(null);
-    await patch(drawer.id, {
-      name: dName,
-      categoryId: dCat,
-      active: dActive,
-      featured: dFeatured,
-      description: dDesc,
-    });
+    try {
+      await patch(drawer.id, {
+        name: dName,
+        categoryId: dCat,
+        active: dActive,
+        featured: dFeatured,
+        description: dDesc,
+      });
+      setDrawer(null);
+    } catch (err) {
+      setProducts(before);
+      setActionError(err instanceof Error ? err.message : "Не удалось сохранить товар");
+    }
   };
 
   /* ── ARAY: улучшить описание ── */
@@ -318,7 +353,7 @@ export function ProductsClient({
         setDDesc(data.description);
       }
     } catch (err) {
-      setImproveError(err instanceof Error ? err.message : "Ошибка связи с ARAY");
+      setImproveError(err instanceof Error ? err.message : "Не удалось связаться со мной");
     } finally {
       setImproving(false);
     }
@@ -330,7 +365,7 @@ export function ProductsClient({
       onClick={(e) => toggleActive(p, e)}
       disabled={saving === p.id}
       title="Нажмите для переключения"
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all active:scale-95
+      className={`inline-flex min-h-11 items-center gap-1 px-3 py-2 rounded-full text-xs font-semibold border transition-all active:scale-95 sm:min-h-0 sm:px-2.5 sm:py-1
         ${saving === p.id ? "opacity-50 cursor-wait" : "cursor-pointer hover:opacity-80"}
         ${p.active
           ? "bg-primary/10 text-primary border-primary/30"
@@ -405,28 +440,14 @@ export function ProductsClient({
 
   return (
     <>
+      {actionError && (
+        <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {actionError}
+        </div>
+      )}
+
       {/* ── Filters ── */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 items-start sm:items-center">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по названию, ссылке или категории"
-            className="w-full py-2 pl-9 pr-9 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-              aria-label="Очистить поиск"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
         <div className="relative w-full sm:w-auto">
           <select
             value={catFilter}
@@ -444,7 +465,7 @@ export function ProductsClient({
             if (noPhotoOnly) { params.delete("nophoto"); } else { params.set("nophoto", "1"); }
             router.push(`${pathname}?${params.toString()}`);
           }}
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${noPhotoOnly ? "border-amber-400 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
+          className={`flex w-full items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-colors sm:w-auto ${noPhotoOnly ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
         >
           <ImageOff className="w-4 h-4" />
           Без фото {noPhotoOnly && `(${products.filter(p => p.images.length === 0).length})`}
@@ -456,16 +477,16 @@ export function ProductsClient({
             router.push(`${pathname}?${params.toString()}`);
           }}
           title="Товары, которые не показываются клиентам (нет фото, цены или всё не в наличии)"
-          className={`flex items-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-all ${hiddenOnly ? "border-rose-400 bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
+          className={`flex w-full items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-colors sm:w-auto ${hiddenOnly ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
         >
           <AlertTriangle className="w-4 h-4" />
           Скрытые от клиентов {hiddenFromPublicCount > 0 && `(${hiddenFromPublicCount})`}
         </button>
-        <div className="relative">
+        <div className="relative w-full sm:w-auto">
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
-            className="appearance-none py-2 pl-3 pr-8 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full appearance-none py-2 pl-3 pr-8 text-sm bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 sm:w-auto"
           >
             <option value="newest">Сначала новые</option>
             <option value="name_az">Название А→Я</option>
@@ -823,7 +844,7 @@ export function ProductsClient({
             <div className="px-5 py-4 border-t border-border space-y-2">
               <button
                 onClick={saveDrawer}
-                className="w-full py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors active:scale-[0.98]"
+                className="w-full py-2.5 border border-primary/45 bg-primary/10 text-primary rounded-xl text-sm font-semibold hover:bg-primary/15 transition-colors active:scale-[0.98]"
               >
                 Сохранить
               </button>

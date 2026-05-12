@@ -20,12 +20,14 @@
 export const dynamic = "force-dynamic";
 
 import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { ArayHomeActions } from "@/components/admin/aray-home-actions";
 import { getArayActivityToday, type ArayActivityItem } from "@/lib/aray-activity";
+import { getArayModuleAccess } from "@/lib/aray-module-state";
 import {
   MessageSquare, Mic, Wallet, Search, Package, Users, Sparkles,
-  Camera, Video, BarChart3, Zap,
+  Camera, Video, BarChart3, Zap, Navigation, Megaphone, ShieldCheck, FileText,
 } from "lucide-react";
 
 const ICON_MAP: Record<ArayActivityItem["iconKey"], React.ElementType> = {
@@ -46,16 +48,20 @@ type Skill = {
 };
 
 const SKILLS_NOW: Skill[] = [
-  { icon: MessageSquare, label: "Чат текстом и голосом", hint: "Отвечаю в чате или говорю голосом ElevenLabs" },
-  { icon: Search, label: "Поиск по магазину и админке", hint: "Найду товар, заказ, клиента, остаток" },
-  { icon: Package, label: "Помощь с заказами", hint: "Подскажу менеджеру, оформлю по телефону" },
-  { icon: BarChart3, label: "Сводки и отчёты дня", hint: "Расскажу что произошло, на что обратить внимание" },
-  { icon: Wallet, label: "Слежу за расходами", hint: "Подписки, токены, бюджет — всё под контролем" },
+  { icon: MessageSquare, label: "Короткий бизнес-чат", hint: "Отвечаю по делу, держу контекст страницы, роли и задачи" },
+  { icon: Mic, label: "Голосовой режим", hint: "Слушаю по нажатию, отвечаю голосом и умею остановиться" },
+  { icon: Navigation, label: "Быстрые переходы и действия", hint: "Открываю нужные разделы, показываю кнопки следующего шага" },
+  { icon: Package, label: "Заказы, каталог и склад", hint: "Проверяю заказы, товары, остатки, цены и рабочие задачи" },
+  { icon: Users, label: "CRM и команда", hint: "Работаю с клиентами, лидами, сотрудниками и задачами" },
+  { icon: Megaphone, label: "Direct, Метрика и SEO", hint: "Готовлю рекламу, цели, SEO-проверки и экспорт без запуска без команды" },
+  { icon: BarChart3, label: "Отчёты и аналитика", hint: "Собираю выручку, спрос, риски и честно говорю, где нет данных" },
+  { icon: FileText, label: "Файлы и черновики", hint: "Принимаю фото, текст, аудио, видео и файлы как контекст к задаче" },
+  { icon: ShieldCheck, label: "Безопасные подтверждения", hint: "Опасные изменения показываю черновиком и жду подтверждение" },
 ];
 
 const SKILLS_SOON: Skill[] = [
-  { icon: Camera, label: "Генерация фото товаров", hint: "Создам красивые фото для каталога", soon: true },
-  { icon: Video, label: "Видео-обзоры производства", hint: "Сниму ролики для соцсетей и сайта", soon: true },
+  { icon: Camera, label: "Полный разбор прайсов и фото", hint: "Автоматически извлеку товары, цены и остатки из файлов", soon: true },
+  { icon: Video, label: "Глубокий разбор аудио и видео", hint: "Сделаю расшифровку, задачи и короткое резюме", soon: true },
 ];
 
 function greetingByHour(name: string): { title: string; sub: string } {
@@ -86,13 +92,24 @@ function formatTime(date: Date): string {
 
 export default async function ArayHomePage() {
   const session = await auth();
+  const role = session?.user?.role as string | undefined;
+  if (!session || !role) redirect("/login");
+
+  const access = await getArayModuleAccess({
+    moduleId: "core.aray-voice",
+    role,
+  });
+  if (!access.allowed) {
+    redirect("/admin/aray/modules?module=core.aray-voice");
+  }
+
   const userName = session?.user?.name || "";
   const greeting = greetingByHour(userName);
 
   const activity = await getArayActivityToday().catch(() => [] as ArayActivityItem[]);
 
   return (
-    <div className="space-y-4 max-w-3xl mx-auto">
+    <div className="admin-page-frame admin-page-frame-readable">
         {/* ── HERO: Янус + приветствие + CTA ──────────────────────── */}
         <section className="bg-card border border-border rounded-2xl px-5 py-8 lg:px-6 lg:py-10">
           <div className="flex flex-col items-center text-center">

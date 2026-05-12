@@ -147,4 +147,8 @@ export const TENANT_AWARE_MODELS = new Set<string>([
   "reportSchedule",
   "crmHint",
   "nicheTemplate",
+  "businessRole",
+  "businessRoleMember",
+  "notificationAudiencePreference",
+  "arayModuleState",
 ]);

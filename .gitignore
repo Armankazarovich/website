@@ -21,6 +21,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+dev-server*.log
+dev-server*.err.log
+
+# local backups / generated visual references
+/backups/
+/docs/aray-platform-background-contact-sheet.jpg
 
 # local env files
 .env

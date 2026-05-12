@@ -1,230 +1,321 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, Share, Plus, Bell } from "lucide-react";
-import { requestPushPermission } from "@/components/push-subscription";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { CheckCircle2, Chrome, Download, ExternalLink, Plus, Share, X } from "lucide-react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { resolvePwaInstallContext } from "@/lib/pwa-install-context";
+import {
+  clearStoredPwaInstallPrompt,
+  detectPwaPlatform,
+  getStoredPwaInstallPrompt,
+  rememberPwaInstallPrompt,
+  writePreferredPwaStart,
+  type BeforeInstallPromptEvent,
+  type PwaPlatform,
+} from "@/lib/pwa-install-events";
 
-type Platform = "ios-safari" | "ios-other" | "android" | "desktop-chrome" | "desktop-other" | "installed" | null;
+type InstallState = "idle" | "installing" | "dismissed" | "error";
 
-function detectPlatform(): Platform {
-  if (typeof window === "undefined") return null;
-  if (window.matchMedia("(display-mode: standalone)").matches) return "installed";
-  if ((window.navigator as any).standalone === true) return "installed";
+type InstallStep = {
+  icon: ReactNode;
+  text: string;
+};
 
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-  const isAndroid = /Android/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
-  const isChrome = /Chrome/.test(ua) && /Google Inc/.test(navigator.vendor);
+function getStoreInstallSteps(platform: PwaPlatform, shortName: string, hasNativePrompt: boolean): InstallStep[] {
+  if (platform === "ios-safari") {
+    return [
+      { icon: <Share className="h-3.5 w-3.5 text-primary" />, text: "Нажмите «Поделиться» в Safari." },
+      { icon: <Plus className="h-3.5 w-3.5 text-primary" />, text: `Выберите «На экран Домой» для ${shortName}.` },
+      { icon: <CheckCircle2 className="h-3.5 w-3.5 text-primary" />, text: "Проверьте название и нажмите «Добавить»." },
+    ];
+  }
 
-  if (isIOS && isSafari) return "ios-safari";
-  if (isIOS) return "ios-other";
-  if (isAndroid) return "android";
-  if (isChrome) return "desktop-chrome";
-  return "desktop-other";
+  if (platform === "ios-other") {
+    return [
+      { icon: <ExternalLink className="h-3.5 w-3.5 text-primary" />, text: "Откройте эту страницу в Safari." },
+      { icon: <Share className="h-3.5 w-3.5 text-primary" />, text: "В Safari нажмите «Поделиться»." },
+      { icon: <Plus className="h-3.5 w-3.5 text-primary" />, text: `Добавьте ${shortName} на экран Домой.` },
+    ];
+  }
+
+  if (platform === "android") {
+    return [
+      { icon: <Chrome className="h-3.5 w-3.5 text-primary" />, text: "Лучше открыть страницу в Chrome." },
+      {
+        icon: <Download className="h-3.5 w-3.5 text-primary" />,
+        text: hasNativePrompt
+          ? "Нажмите кнопку установки ниже."
+          : "Если пункт доступен, выберите «Установить приложение» в меню браузера.",
+      },
+      { icon: <Plus className="h-3.5 w-3.5 text-primary" />, text: `После установки ${shortName} появится на экране устройства.` },
+    ];
+  }
+
+  if (platform === "desktop-chrome") {
+    return [
+      { icon: <Chrome className="h-3.5 w-3.5 text-primary" />, text: "В Chrome или Edge нажмите значок установки в адресной строке." },
+      {
+        icon: <Download className="h-3.5 w-3.5 text-primary" />,
+        text: hasNativePrompt
+          ? "Или используйте кнопку установки ниже."
+          : "Если значка нет, откройте меню браузера и выберите установку приложения.",
+      },
+      { icon: <CheckCircle2 className="h-3.5 w-3.5 text-primary" />, text: `После установки ${shortName} будет запускаться отдельным окном.` },
+    ];
+  }
+
+  return [
+    { icon: <Chrome className="h-3.5 w-3.5 text-primary" />, text: "Для установки откройте страницу в Chrome, Edge или Safari на iPhone." },
+    { icon: <Plus className="h-3.5 w-3.5 text-primary" />, text: `После установки ${shortName} будет запускаться как отдельное приложение.` },
+  ];
 }
 
-const DISMISS_KEY = "pwa-banner-v3";
-const DISMISS_DAYS = 30;
+function getPlatformLabel(platform: PwaPlatform) {
+  if (platform === "ios-safari") return "iPhone / iPad Safari";
+  if (platform === "ios-other") return "iPhone / iPad";
+  if (platform === "android") return "Android";
+  if (platform === "desktop-chrome") return "Chrome / Edge";
+  if (platform === "desktop-other") return "Браузер";
+  return "Устройство";
+}
 
 export function PwaInstall() {
-  const [platform, setPlatform] = useState<Platform>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const context = resolvePwaInstallContext(pathname || "/", searchParams);
+  const [platform, setPlatform] = useState<PwaPlatform>(null);
   const [visible, setVisible] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showSteps, setShowSteps] = useState(false);
-  const [pushState, setPushState] = useState<"idle" | "granted" | "denied">("idle");
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
+  const [installState, setInstallState] = useState<InstallState>("idle");
+
+  const refreshInstallState = useCallback(() => {
+    const detected = detectPwaPlatform();
+    setPlatform(detected);
+    setInstallPrompt(getStoredPwaInstallPrompt());
+  }, []);
 
   useEffect(() => {
-    const p = detectPlatform();
-    setPlatform(p);
-    if (p === "installed" || p === null) return;
+    writePreferredPwaStart(context.id, context.startUrl);
+    setInstallState("idle");
+    setShowSteps(false);
+  }, [context.id, context.startUrl]);
 
-    try {
-      const raw = localStorage.getItem(DISMISS_KEY);
-      if (raw) {
-        const { ts } = JSON.parse(raw);
-        if (Date.now() - ts < DISMISS_DAYS * 86400_000) return;
-      }
-    } catch {}
+  useEffect(() => {
+    refreshInstallState();
 
-    // Проверяем установлен ли PWA через getInstalledRelatedApps (Chrome Android)
-    if ("getInstalledRelatedApps" in navigator) {
-      (navigator as any).getInstalledRelatedApps().then((apps: any[]) => {
-        if (apps && apps.length > 0) setAlreadyInstalled(true);
-      }).catch(() => {});
-    }
-
-    if (typeof Notification !== "undefined") {
-      if (Notification.permission === "granted") setPushState("granted");
-      else if (Notification.permission === "denied") setPushState("denied");
-    }
-
-    const cookiesAccepted = localStorage.getItem("cookies-accepted");
-    if (cookiesAccepted) {
-      const t = setTimeout(() => setVisible(true), 5000);
-      const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
-      window.addEventListener("beforeinstallprompt", handler);
-      return () => { clearTimeout(t); window.removeEventListener("beforeinstallprompt", handler); };
-    }
-
-    let shown = false;
-    const onCookies = () => {
-      if (!shown) { shown = true; setTimeout(() => setVisible(true), 3000); }
+    const installedApps = navigator as Navigator & {
+      getInstalledRelatedApps?: () => Promise<unknown[]>;
     };
-    window.addEventListener("cookies-accepted", onCookies, { once: true });
-    const fallback = setTimeout(() => { if (!shown) { shown = true; setVisible(true); } }, 25000);
+    if (installedApps.getInstalledRelatedApps) {
+      installedApps
+        .getInstalledRelatedApps()
+        .then((apps) => {
+          if (apps.length > 0) setAlreadyInstalled(true);
+        })
+        .catch(() => {});
+    }
 
-    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
-    window.addEventListener("beforeinstallprompt", handler);
+    const readyHandler = () => {
+      setInstallPrompt(getStoredPwaInstallPrompt());
+      setInstallState("idle");
+    };
+    const installHandler = (event: Event) => {
+      rememberPwaInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const installedHandler = () => {
+      clearStoredPwaInstallPrompt();
+      setInstallPrompt(null);
+      setPlatform("installed");
+      setVisible(false);
+    };
+
+    window.addEventListener("aray:pwa-install-ready", readyHandler);
+    window.addEventListener("beforeinstallprompt", installHandler);
+    window.addEventListener("appinstalled", installedHandler);
 
     return () => {
-      window.removeEventListener("cookies-accepted", onCookies);
-      clearTimeout(fallback);
-      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("aray:pwa-install-ready", readyHandler);
+      window.removeEventListener("beforeinstallprompt", installHandler);
+      window.removeEventListener("appinstalled", installedHandler);
     };
-  }, []);
+  }, [refreshInstallState]);
 
   const dismiss = () => {
     setVisible(false);
-    try {
-      localStorage.setItem(DISMISS_KEY, JSON.stringify({ ts: Date.now() }));
-    } catch {}
   };
 
   const handleInstall = async () => {
-    if (platform === "ios-safari" || platform === "ios-other") {
+    writePreferredPwaStart(context.id, context.startUrl);
+
+    if (!installPrompt || platform === "ios-safari" || platform === "ios-other") {
       setShowSteps(true);
+      setInstallState("idle");
       return;
     }
-    if (installPrompt) {
-      installPrompt.prompt();
+
+    setInstallState("installing");
+
+    try {
+      await installPrompt.prompt();
       const result = await installPrompt.userChoice;
-      if (result.outcome === "accepted") dismiss();
+      clearStoredPwaInstallPrompt();
+      setInstallPrompt(null);
+
+      if (result.outcome === "accepted") {
+        dismiss();
+        return;
+      }
+
+      setInstallState("dismissed");
+      setShowSteps(true);
+    } catch {
+      clearStoredPwaInstallPrompt();
+      setInstallPrompt(null);
+      setInstallState("error");
+      setShowSteps(true);
     }
   };
 
-  // В PWA-режиме баннер не нужен — управление уведомлениями в /cabinet/notifications
-  if (platform === "installed") return null;
-  // Не показываем пока не пришло время
-  if (!visible) return null;
-  // Платформа не определена — не показываем
-  if (platform === null) return null;
+  const hasNativePrompt = Boolean(installPrompt) && (platform === "android" || platform === "desktop-chrome");
+  const manualSteps = useMemo(
+    () => getStoreInstallSteps(platform, context.shortName, hasNativePrompt),
+    [context.shortName, hasNativePrompt, platform],
+  );
+
+  if (platform === "installed" || platform === null) return null;
+
+  const canNativeInstall = !alreadyInstalled && hasNativePrompt && installState !== "installing";
+  const statusText = (() => {
+    if (alreadyInstalled) return "Если значок уже есть, откройте его с экрана устройства или из списка приложений.";
+    if (installState === "installing") return "Жду ответ браузера. Обычно это занимает пару секунд.";
+    if (installState === "dismissed") return "Браузер отклонил запрос. Можно вернуться к установке позже.";
+    if (installState === "error") return "Системная установка не открылась. Ниже оставил ручные шаги.";
+    if (platform === "ios-other") return "На iPhone установка работает через Safari.";
+    if (platform === "desktop-other") return "Этот браузер может не дать установку. Надежнее открыть Chrome или Edge.";
+    if (hasNativePrompt) return "Можно установить системной кнопкой.";
+    return context.installDescription;
+  })();
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 16, scale: 0.95 }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="fixed right-4 bottom-[84px] lg:bottom-6 z-[150] w-[300px] sm:w-[320px]"
-        >
-          <div className="bg-card border border-border rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/40 overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-brand-orange to-brand-brown" />
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          refreshInstallState();
+          setShowSteps(false);
+          setVisible(true);
+        }}
+        className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 inline-flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-2.5 py-2 text-sm font-semibold text-foreground shadow-xl shadow-black/10 backdrop-blur transition-colors hover:border-primary/30 hover:bg-card lg:bottom-6"
+        aria-label={context.installTitle}
+        title={context.installTitle}
+      >
+        <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-border/40 bg-white shadow-sm">
+          <img src="/logo.png" alt="" width={24} height={24} className="object-contain" />
+        </span>
+        <span className="hidden sm:inline">Приложение</span>
+        {installPrompt && <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />}
+      </button>
 
-            <div className="p-4">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white border border-border/40 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
-                  <img src="/logo.png" alt="ПилоРус" width={32} height={32} className="object-contain" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-foreground leading-tight">ПилоРус — приложение</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {alreadyInstalled
-                      ? "Приложение установлено"
-                      : platform === "ios-other"
-                      ? "Откройте в Safari для установки"
-                      : platform === "desktop-other"
-                      ? "Откройте в Chrome"
-                      : "Быстрый доступ без браузера"}
-                  </p>
-                </div>
-                <button
-                  onClick={dismiss}
-                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0 -mt-0.5"
-                  aria-label="Закрыть"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+      <AnimatePresence>
+        {visible && (
+          <motion.div
+            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(9.3rem+env(safe-area-inset-bottom,0px))] z-[150] w-[calc(100vw-1.5rem)] max-w-[320px] lg:bottom-20"
+          >
+            <div className="max-h-[calc(100dvh-10.5rem)] overflow-y-auto rounded-2xl border border-border bg-card shadow-xl shadow-black/10 dark:shadow-black/40">
+              <div className="h-1 bg-gradient-to-r from-brand-orange to-brand-brown" />
 
-              {showSteps && platform === "ios-safari" && (
-                <div className="mt-3 space-y-1.5">
-                  {[
-                    { icon: <Share className="w-3.5 h-3.5 text-primary shrink-0" />, text: 'Нажмите «Поделиться» в Safari' },
-                    { icon: <Plus className="w-3.5 h-3.5 text-primary shrink-0" />, text: 'Выберите «На экран "Домой"»' },
-                    { icon: <span className="text-primary text-xs font-bold shrink-0">✓</span>, text: 'Нажмите «Добавить»' },
-                  ].map((s, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground bg-muted rounded-lg px-3 py-2">
-                      {s.icon} {s.text}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!showSteps && (
-                <>
-                  <div className="mt-3 flex items-center gap-2">
-                    {alreadyInstalled ? (
-                      <a
-                        href={window.location.href}
-                        rel="noreferrer"
-                        className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90 text-center"
-                        onClick={dismiss}
-                      >
-                        Открыть в приложении
-                      </a>
-                    ) : (
-                      <>
-                        {(platform === "android" || platform === "desktop-chrome") && installPrompt && (
-                          <button
-                            onClick={handleInstall}
-                            className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
-                          >
-                            Установить
-                          </button>
-                        )}
-                        {platform === "ios-safari" && (
-                          <button
-                            onClick={handleInstall}
-                            className="flex-1 bg-primary text-primary-foreground rounded-xl py-2 text-sm font-semibold transition-colors hover:bg-primary/90"
-                          >
-                            Как установить
-                          </button>
-                        )}
-                      </>
-                    )}
-                    <button
-                      onClick={dismiss}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-2"
-                    >
-                      Не сейчас
-                    </button>
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/40 bg-white shadow-sm">
+                    <img
+                      src="/logo.png"
+                      alt="ПилоРус"
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-tight text-foreground">
+                      {context.name}
+                    </p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+                      {statusText}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={dismiss}
+                    className="-mt-0.5 shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                    aria-label="Закрыть"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
 
-                  {"PushManager" in (typeof window !== "undefined" ? window : {}) && pushState === "idle" && (
-                    <div className="mt-2 pt-2 border-t border-border/50">
-                      <button
-                        onClick={async () => {
-                          const ok = await requestPushPermission();
-                          setPushState(ok ? "granted" : "denied");
-                        }}
-                        className="w-full flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-2 rounded-lg hover:bg-muted"
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-muted-foreground">
+                  <span className="rounded-full border border-border bg-muted/30 px-2 py-1">Контекст: {context.shortName}</span>
+                  <span className="rounded-full border border-border bg-muted/30 px-2 py-1">{getPlatformLabel(platform)}</span>
+                </div>
+
+                {(showSteps || !hasNativePrompt || installState === "dismissed" || installState === "error") && !alreadyInstalled && (
+                  <div className="mt-3 space-y-1.5">
+                    {manualSteps.map((step, index) => (
+                      <div
+                        key={`${index}:${step.text}`}
+                        className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground"
                       >
-                        <Bell className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span>Уведомления о заказах и акциях</span>
-                      </button>
-                    </div>
+                        <span className="shrink-0">{step.icon}</span>
+                        <span className="min-w-0 leading-relaxed">{step.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="mt-3 flex items-center gap-2">
+                  {alreadyInstalled ? (
+                    <button
+                      type="button"
+                      onClick={dismiss}
+                      className="flex-1 rounded-xl bg-primary py-2 text-center text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      Понятно
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleInstall}
+                      disabled={installState === "installing"}
+                      className="flex-1 rounded-xl bg-primary py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                    >
+                      {installState === "installing"
+                        ? "Открываю установку"
+                        : canNativeInstall
+                          ? context.installCta
+                          : "Как установить"}
+                    </button>
                   )}
-                </>
-              )}
+                  <button
+                    type="button"
+                    onClick={dismiss}
+                    className="px-2 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Не сейчас
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

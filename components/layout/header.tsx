@@ -572,7 +572,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleSearch}
               aria-label="Поиск"
-              className="hidden sm:flex w-10 h-10 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="hidden sm:flex w-11 h-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <Search className="w-4 h-4" />
             </button>
@@ -584,7 +584,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Переключить тему"
-              className="w-10 h-10 flex items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground relative overflow-hidden"
+              className="w-11 h-11 flex items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground relative overflow-hidden"
             >
               <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -598,7 +598,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 data-cart-icon
                 aria-label="Корзина"
                 className={cn(
-                  "relative w-10 h-10 flex items-center justify-center rounded-xl border transition-all duration-200",
+                  "relative w-11 h-11 flex items-center justify-center rounded-xl border transition-all duration-200",
                   mounted && totalItems > 0
                     ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 hover:border-brand-orange/70 hover:shadow-[0_0_14px_3px_rgba(232,112,10,0.25)]"
                     : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-brand-orange hover:border-brand-orange/30 hover:shadow-[0_0_10px_2px_rgba(232,112,10,0.12)]"
@@ -646,7 +646,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleAccount}
               aria-label="Личный кабинет"
-              className="hidden lg:flex w-10 h-10 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="hidden lg:flex w-11 h-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <User className="w-4 h-4" />
             </button>
@@ -654,7 +654,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {/* Partnership — md only */}
             <button
               onClick={() => setPartnershipOpen(true)}
-              className="hidden md:flex lg:hidden items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
+              className="hidden md:flex lg:hidden min-h-11 items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
             >
               <Handshake className="w-3.5 h-3.5" />
               Партнёрство
@@ -716,10 +716,13 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-0 top-0 h-full w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
+              className="fixed left-0 top-0 h-dvh w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
             >
               {/* ── Шапка ── */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
+              <div
+                className="flex items-center justify-between px-5 pb-4 border-b border-border/60"
+                style={{ paddingTop: "max(1rem, env(safe-area-inset-top, 0px))" }}
+              >
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2.5">
                   <div className="relative w-10 h-10 shrink-0">
                     <Image src="/logo.png" alt="ПилоРус" fill sizes="40px" className="object-contain" />
@@ -732,7 +735,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 <button
                   onClick={() => setMobileMenuOpen(false)}
                   aria-label="Закрыть меню"
-                  className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                  className="w-11 h-11 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                     <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -873,7 +876,10 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               </div>
 
               {/* ── Подвал ── */}
-              <div className="px-4 py-4 border-t border-border/60 space-y-2">
+              <div
+                className="px-4 pt-4 border-t border-border/60 space-y-2"
+                style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 0px))" }}
+              >
                 {/* Тема */}
                 <button
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}

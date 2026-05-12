@@ -14,7 +14,7 @@ export default async function ArayLabPage() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto py-8 px-4 space-y-6">
+    <div className="admin-page-frame admin-page-frame-fluid">
       <ArayLabClient />
     </div>
   );

@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useTransition } from "react
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, useRouter } from "next/navigation";
 import { X, SlidersHorizontal, Filter, ChevronDown, LayoutGrid, Ruler, ArrowLeft } from "lucide-react";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useFiltersDrawer } from "@/store/filters-drawer";
 
 const PRODUCT_TYPES = [
@@ -242,6 +243,7 @@ function FiltersContent({ onClose }: { onClose: () => void }) {
 
 export function FiltersDrawer() {
   const { open, setOpen } = useFiltersDrawer();
+  useAdminOverlayGuard(open);
 
   return (
     <AnimatePresence>
@@ -255,7 +257,7 @@ export function FiltersDrawer() {
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="relative w-[88vw] max-w-[360px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            className="admin-popup-liquid relative w-[88vw] max-w-[360px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}

@@ -8,9 +8,11 @@ import {
   CheckSquare, Square, Smartphone, Video, FileText,
 } from "lucide-react";
 import { InfoCard } from "@/components/admin/info-popup";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useClassicMode } from "@/lib/use-classic-mode";
 
 type MediaKind = "image" | "video" | "document";
+const MEDIA_BATCH = 96;
 
 type MediaFile = {
   url: string; folder: string; filename: string; kind: MediaKind;
@@ -38,19 +40,28 @@ function MediaCard({
   bulkSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
-  onAltSave: (alt: string) => void;
+  onAltSave: (alt: string) => Promise<void>;
   onCopy: () => void;
 }) {
   const [alt, setAlt] = useState(file.alt);
   const [altSaved, setAltSaved] = useState(false);
+  const [altError, setAltError] = useState("");
   const [delConfirm, setDelConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [previewFailed, setPreviewFailed] = useState(false);
 
   const saveAlt = async () => {
     setSaving(true);
-    onAltSave(alt);
-    setTimeout(() => { setAltSaved(true); setSaving(false); setTimeout(() => setAltSaved(false), 1500); }, 300);
+    setAltError("");
+    try {
+      await onAltSave(alt);
+      setAltSaved(true);
+      setTimeout(() => setAltSaved(false), 1500);
+    } catch (error) {
+      setAltError(error instanceof Error ? error.message : "Не удалось сохранить ALT");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const ext = file.filename.split(".").pop()?.toUpperCase() ?? "";
@@ -179,6 +190,7 @@ function MediaCard({
                 {file.usedIn.map((u) => u.name).join(", ")}
               </div>
             )}
+            {altError && <p className="text-[10px] text-destructive">{altError}</p>}
           </>
         )}
 
@@ -225,6 +237,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   };
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [search, setSearch] = useState("");
@@ -239,15 +252,25 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   const [bulkSelected, setBulkSelected] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [bulkConfirm, setBulkConfirm] = useState(false);
+  useAdminOverlayGuard(bulkConfirm);
+  const [renderLimit, setRenderLimit] = useState(MEDIA_BATCH);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/admin/media");
-    const data = await res.json();
-    setFiles(data.files ?? []);
-    setLoading(false);
+    setLoadError("");
+    try {
+      const res = await fetch("/api/admin/media");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Не удалось загрузить медиабиблиотеку");
+      setFiles(data.files ?? []);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Не удалось загрузить медиабиблиотеку");
+      setFiles([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { loadFiles(); }, [loadFiles]);
@@ -261,6 +284,12 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
       f.usedIn.some((u) => u.name.toLowerCase().includes(search.toLowerCase()));
     return matchFolder && matchSearch;
   });
+  const visibleFiles = filtered.slice(0, renderLimit);
+  const hasMoreFiles = renderLimit < filtered.length;
+
+  useEffect(() => {
+    setRenderLimit(MEDIA_BATCH);
+  }, [search, folder, pickerMode]);
 
   const folders = ["all", ...Array.from(new Set(files.map((f) => f.folder)))];
 
@@ -304,7 +333,12 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   }
 
   async function deleteFile(url: string) {
-    await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", url }) });
+    const res = await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", url }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      setUploadError(data?.error || "Не удалось удалить файл");
+      return;
+    }
     setFiles((prev) => prev.filter((f) => f.url !== url));
     if (selected === url) setSelected(null);
   }
@@ -313,13 +347,23 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
     setBulkDeleting(true);
     setBulkConfirm(false);
     const toDelete = bulkSelectedDeletable;
-    for (const url of toDelete) {
-      await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", url }) });
+    const deleted: string[] = [];
+    try {
+      for (const url of toDelete) {
+        const res = await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "delete", url }) });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) throw new Error(data?.error || "Не удалось удалить часть файлов");
+        deleted.push(url);
+      }
+      setFiles((prev) => prev.filter(f => !deleted.includes(f.url)));
+      setBulkSelected(new Set());
+      setBulkMode(false);
+    } catch (error) {
+      setFiles((prev) => prev.filter(f => !deleted.includes(f.url)));
+      setUploadError(error instanceof Error ? error.message : "Не удалось удалить часть файлов");
+    } finally {
+      setBulkDeleting(false);
     }
-    setFiles((prev) => prev.filter(f => !toDelete.includes(f.url)));
-    setBulkSelected(new Set());
-    setBulkMode(false);
-    setBulkDeleting(false);
   }
 
   function toggleBulkSelect(url: string) {
@@ -340,18 +384,27 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   }
 
   async function saveAlt(url: string, alt: string) {
-    await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "save_alt", url, alt }) });
+    const res = await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "save_alt", url, alt }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data?.error || "Не удалось сохранить ALT");
     setFiles((prev) => prev.map((f) => f.url === url ? { ...f, alt } : f));
   }
 
   async function autoGenerateAlt() {
     setAutoAltLoading(true);
-    const res = await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "auto_generate_alt" }) });
-    const data = await res.json();
-    setAutoAltResult(`Заполнено ALT: ${data.count} файлов`);
-    await loadFiles();
-    setAutoAltLoading(false);
-    setTimeout(() => setAutoAltResult(""), 3000);
+    setUploadError("");
+    try {
+      const res = await fetch("/api/admin/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "auto_generate_alt" }) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data?.error || "Не удалось заполнить ALT");
+      setAutoAltResult(`Заполнено ALT: ${data.count} файлов`);
+      await loadFiles();
+      setTimeout(() => setAutoAltResult(""), 3000);
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Не удалось заполнить ALT");
+    } finally {
+      setAutoAltLoading(false);
+    }
   }
 
   function copyUrl(url: string) {
@@ -470,6 +523,12 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         </div>
       )}
 
+      {loadError && (
+        <div className="rounded-xl border border-destructive/25 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {loadError}
+        </div>
+      )}
+
       {/* Mobile camera upload button */}
       {!pickerMode && (
         <button
@@ -541,7 +600,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         </div>
       ) : (
         <div className={`grid gap-3 ${pickerMode ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"}`}>
-          {filtered.map((file) => (
+          {visibleFiles.map((file) => (
             <MediaCard
               key={file.url}
               file={file}
@@ -561,6 +620,20 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         </div>
       )}
 
+      {!loading && hasMoreFiles && (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/70 p-4 text-center sm:flex-row">
+          <p className="text-sm text-muted-foreground">
+            Показано {visibleFiles.length} из {filtered.length}. Остальные файлы подгружаются порциями.
+          </p>
+          <button
+            onClick={() => setRenderLimit((value) => value + MEDIA_BATCH)}
+            className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+          >
+            Показать ещё {Math.min(MEDIA_BATCH, filtered.length - visibleFiles.length)}
+          </button>
+        </div>
+      )}
+
       {/* Copy feedback */}
       {copiedUrl && (
         <div className="fixed bottom-6 right-6 z-50 bg-foreground text-background px-4 py-2 rounded-xl text-sm font-medium shadow-lg flex items-center gap-2 animate-in slide-in-from-bottom-2">
@@ -571,7 +644,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
       {/* Bulk delete confirm dialog */}
       {bulkConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setBulkConfirm(false)} />
           <div className="relative rounded-2xl p-6 w-full max-w-sm text-center space-y-4" style={popupStyle}>
             <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
@@ -605,6 +678,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 // ── Picker modal (for use inside product edit) ────────────────────────────────
 export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (url: string) => void }) {
   const isClassic = useClassicMode();
+  useAdminOverlayGuard(open);
   const popupStyle = isClassic ? {
     background: "hsl(var(--card))",
     border: "1px solid hsl(var(--border))",
@@ -618,9 +692,9 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
   };
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden" style={popupStyle}>
+      <div className="admin-popup-liquid relative rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden" style={popupStyle}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>

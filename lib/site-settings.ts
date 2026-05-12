@@ -1,3 +1,5 @@
+import "server-only";
+
 import { prisma } from "@/lib/prisma";
 
 // Graceful degrade: если БД недоступна или исчерпан пул (SSG на build),
@@ -24,6 +26,9 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   phone3: "8-977-606-80-20",
   phone3_link: "+79776068020",
   email: "info@pilo-rus.ru",
+  business_type: "lumber",
+  terminal_profile: "lumber",
+  terminal_enabled_modules: "",
   address: "Химки, ул. Заводская 2А, стр.28",
   address_map: "https://yandex.ru/maps/-/CHqJJGqe",
   working_hours: "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00",

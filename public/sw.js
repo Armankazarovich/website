@@ -2,20 +2,56 @@
 // Стратегии: CacheFirst для статики, NetworkFirst для HTML/API
 // Версия: меняй CACHE_VERSION при каждом деплое для сброса кэша
 
-var CACHE_VERSION = 'aray-v5';
+var CACHE_VERSION = 'aray-v6';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var IMAGE_CACHE   = CACHE_VERSION + '-images';
 var PAGE_CACHE    = CACHE_VERSION + '-pages';
+var IS_LOCAL_DEV_SW = ['localhost', '127.0.0.1', '::1'].indexOf(self.location.hostname) !== -1;
+
+function disableLocalDevSw() {
+  return caches.keys().then(function(keys) {
+    return Promise.all(
+      keys
+        .filter(function(key) { return key.startsWith('aray-'); })
+        .map(function(key) { return caches.delete(key); })
+    );
+  }).then(function() {
+    return self.registration.unregister();
+  });
+}
+
+function shouldDeleteCacheKey(key, includeAllOriginCaches) {
+  if (includeAllOriginCaches) return true;
+  return key.startsWith('aray-') || key.startsWith('workbox-');
+}
+
+function clearRuntimeCaches(includeAllOriginCaches) {
+  return caches.keys().then(function(keys) {
+    var targets = keys.filter(function(key) {
+      return shouldDeleteCacheKey(key, !!includeAllOriginCaches);
+    });
+    return Promise.all(targets.map(function(key) {
+      return caches.delete(key).then(function(deleted) {
+        return deleted ? key : null;
+      });
+    })).then(function(deleted) {
+      return deleted.filter(Boolean);
+    });
+  });
+}
 
 // Файлы для предзагрузки при установке SW
 var PRECACHE_URLS = [
   '/offline',
-  '/icons/aray-192.png',
-  '/icons/aray-512.png',
+  '/aray/aray-production-logo.png',
 ];
 
 // ── INSTALL — предзагрузка ────────────────────────────────────────────────────
 self.addEventListener('install', function(event) {
+  if (IS_LOCAL_DEV_SW) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
   self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE).then(function(cache) {
@@ -28,6 +64,10 @@ self.addEventListener('install', function(event) {
 
 // ── ACTIVATE — чистим старые кэши ────────────────────────────────────────────
 self.addEventListener('activate', function(event) {
+  if (IS_LOCAL_DEV_SW) {
+    event.waitUntil(disableLocalDevSw());
+    return;
+  }
   event.waitUntil(
     caches.keys().then(function(keys) {
       return Promise.all(
@@ -46,6 +86,7 @@ self.addEventListener('activate', function(event) {
 
 // ── FETCH — стратегии кэширования ────────────────────────────────────────────
 self.addEventListener('fetch', function(event) {
+  if (IS_LOCAL_DEV_SW) return;
   var req = event.request;
   var url = new URL(req.url);
 
@@ -55,6 +96,15 @@ self.addEventListener('fetch', function(event) {
 
   // API запросы — пропускаем (всегда свежие данные)
   if (url.pathname.startsWith('/api/')) return;
+
+  // Видео и пользовательские загрузки не держим в CacheStorage: это может
+  // быстро раздуть PWA-кэш и оставить менеджера на старых тяжёлых файлах.
+  if (
+    url.pathname.startsWith('/uploads/') ||
+    /\.(mp4|webm|mov|avi|mkv)$/i.test(url.pathname)
+  ) {
+    return;
+  }
 
   // Админка и кабинет должны всегда брать свежий HTML/JS.
   // Иначе после деплоя менеджер может остаться на старом client-bundle и получить "мертвые" кнопки.
@@ -131,6 +181,7 @@ function networkFirstWithFallback(req) {
 
 // ── PUSH УВЕДОМЛЕНИЯ ─────────────────────────────────────────────────────────
 self.addEventListener('push', function(event) {
+  if (IS_LOCAL_DEV_SW) return;
   if (!event.data) return;
 
   var data;
@@ -143,8 +194,8 @@ self.addEventListener('push', function(event) {
   var title = data.title || 'Арай';
   var options = {
     body: data.body || '',
-    icon: '/icons/aray-192.png',
-    badge: '/icons/aray-72.png',
+    icon: '/api/pwa/icon?s=192&v=aray-production-20260508',
+    badge: '/api/pwa/icon?s=72&v=aray-production-20260508',
     data: { url: data.url || '/' },
     vibrate: [200, 100, 200]
   };
@@ -184,6 +235,22 @@ self.addEventListener('notificationclick', function(event) {
 
 // ── SKIP_WAITING — мгновенная активация нового SW ────────────────────────────
 self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'CLEAR_ARAY_CACHES') {
+    var includeAllOriginCaches = !!event.data.includeAllOriginCaches;
+    event.waitUntil(
+      clearRuntimeCaches(includeAllOriginCaches).then(function(deletedCaches) {
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ ok: true, deletedCaches: deletedCaches });
+        }
+      }).catch(function(error) {
+        if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({ ok: false, error: String(error && error.message || error) });
+        }
+      })
+    );
+    return;
+  }
+
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { motion, useDragControls, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, RotateCcw, Maximize2, Minimize2, ExternalLink } from "lucide-react";
 import { UI_LAYERS } from "@/lib/ui-layers";
+import { isArayExternalTabOnly } from "@/lib/aray-navigation";
 
 export interface ArayBrowserAction {
   type: "navigate" | "spotlight" | "highlight";
@@ -20,6 +21,34 @@ interface ArayBrowserProps {
   onClose: () => void;
   pendingAction?: ArayBrowserAction | null;
   isMobile?: boolean;
+}
+
+function getExternalTabOnlyMessage(rawUrl: string): string | null {
+  try {
+    const parsed = new URL(rawUrl, "https://pilo-rus.ru");
+    const host = parsed.hostname.toLowerCase();
+    if (host === "pilo-rus.ru") return null;
+    if (host === "yandex.ru" || host.endsWith(".yandex.ru")) {
+      return "Кабинет Яндекса открывается во вкладке.";
+    }
+    if (host === "google.com" || host.endsWith(".google.com")) {
+      return "Кабинет Google открывается во вкладке.";
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function formatBrowserUrl(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl, "https://pilo-rus.ru");
+    const path = `${parsed.pathname}${parsed.search}`;
+    if (parsed.hostname === "pilo-rus.ru") return `pilo-rus.ru${path || "/"}`;
+    return `${parsed.hostname}${path}`;
+  } catch {
+    return rawUrl;
+  }
 }
 
 // Анимированная стрелка-указатель
@@ -88,8 +117,15 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
   const [loading, setLoading] = useState(true);
   const [maximized, setMaximized] = useState(false);
   const [pointer, setPointer] = useState<{ x: number; y: number; hint?: string } | null>(null);
+  const tabOnlyMessage = getExternalTabOnlyMessage(url);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const dragControls = useDragControls();
+
+  useEffect(() => {
+    if (!tabOnlyMessage) return;
+    setLoading(false);
+    window.open(url, "_blank", "noopener,noreferrer");
+    window.setTimeout(onClose, 0);
+  }, [onClose, tabOnlyMessage, url]);
 
   // Обрабатываем входящие действия от Арай
   useEffect(() => {
@@ -106,6 +142,10 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
   }, [pendingAction]);
 
   const navigateTo = useCallback((newUrl: string) => {
+    if (isArayExternalTabOnly(newUrl)) {
+      window.open(newUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
     setUrl(newUrl);
     setLoading(true);
     setPointer(null);
@@ -146,23 +186,18 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
   // Mobile:   почти full-screen
   const panelW = isMobile
     ? "calc(100vw - 16px)"
-    : maximized
-      ? "min(1100px, 82vw)"
-      : "min(620px, 45vw)";
+    : "min(1120px, calc(100vw - 464px))";
   const panelH = isMobile
     ? "72dvh"
     : maximized
-      ? "min(820px, 88vh)"
-      : "min(700px, 78vh)";
+      ? "calc(100dvh - 112px)"
+      : "min(760px, calc(100dvh - 128px))";
 
-  const displayUrl = url.replace(/^https?:\/\/[^/]+/, "") || "/";
+  const displayUrl = formatBrowserUrl(url);
+  if (tabOnlyMessage) return null;
 
   return (
     <motion.div
-      drag={!isMobile}
-      dragControls={dragControls}
-      dragMomentum={false}
-      dragElastic={0}
       className={`fixed ${UI_LAYERS.assistantBrowser} overflow-hidden`}
       style={{
         width: panelW,
@@ -175,12 +210,12 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
         boxShadow: "0 32px 80px rgba(0,0,0,0.65), 0 1px 0 rgba(255,255,255,0.08) inset",
         bottom: isMobile ? 0 : undefined,
         left: isMobile ? 8 : undefined,
-        right: isMobile ? undefined : "420px",
+        right: isMobile ? undefined : 24,
         top: isMobile ? undefined : "80px",
       }}
-      initial={{ opacity: 0, scale: 0.88, y: 24 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.88, y: 24 }}
+      initial={{ opacity: 0, scale: 0.98, x: isMobile ? "100%" : 96 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.98, x: isMobile ? "100%" : 96 }}
       transition={{ type: "spring", stiffness: 380, damping: 28 }}
     >
       {/* ── Шапка браузера ── */}
@@ -188,31 +223,35 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
         className="flex items-center gap-2 px-3 py-2.5 select-none"
         style={{
           borderBottom: "1px solid rgba(255,255,255,0.08)",
-          cursor: isMobile ? "default" : "grab",
+          cursor: "default",
           background: "rgba(255,255,255,0.03)",
         }}
-        onPointerDown={!isMobile ? (e) => dragControls.start(e) : undefined}
       >
-        {/* Traffic lights */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={onClose}
-            className="w-3 h-3 rounded-full transition-opacity hover:opacity-80 active:scale-90"
-            style={{ background: "#ff5f57" }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white active:scale-95"
             title="Закрыть"
-          />
+            type="button"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <button
             onClick={() => setMaximized(!maximized)}
-            className="w-3 h-3 rounded-full transition-opacity hover:opacity-80 active:scale-90"
-            style={{ background: "#ffbd2e" }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white active:scale-95"
             title={maximized ? "Уменьшить" : "Увеличить"}
-          />
+            type="button"
+          >
+            {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
           <button
             onClick={reload}
-            className="w-3 h-3 rounded-full transition-opacity hover:opacity-80 active:scale-90"
-            style={{ background: "#28ca42" }}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white active:scale-95"
             title="Обновить"
-          />
+            type="button"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Навигация */}
@@ -243,8 +282,8 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
           }}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-          <span className="truncate">pilo-rus.ru{displayUrl}</span>
-          {loading && (
+          <span className="truncate">{displayUrl}</span>
+          {loading && !tabOnlyMessage && (
             <motion.div
               className="w-3 h-3 border border-white/30 border-t-white/70 rounded-full shrink-0 ml-auto"
               animate={{ rotate: 360 }}
@@ -269,7 +308,7 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
       {/* ── iframe + overlay ── */}
       <div className="relative flex-1 overflow-hidden" style={{ height: "calc(100% - 48px)" }}>
         {/* Загрузчик */}
-        {loading && (
+        {loading && !tabOnlyMessage && (
           <div className="absolute inset-0 z-10 flex items-center justify-center"
             style={{ background: "rgba(12,12,14,0.7)" }}>
             <div className="flex flex-col items-center gap-3">
@@ -285,7 +324,7 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
         )}
 
         {/* Прогресс-бар загрузки */}
-        {loading && (
+        {loading && !tabOnlyMessage && (
           <motion.div
             className="absolute top-0 left-0 h-0.5 z-20 rounded-full"
             style={{ background: "linear-gradient(90deg, #e8700a, #f59e0b)" }}
@@ -297,7 +336,7 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
 
         <iframe
           ref={iframeRef}
-          src={initialUrl}
+          src={url}
           className="w-full h-full border-0"
           onLoad={() => setLoading(false)}
           title="Арай — просмотр страницы"

@@ -11,7 +11,7 @@ import { useEffect, useRef, useCallback } from "react";
  *
  * Селекторы карточек, на которых работает свечение:
  * - .glow-card  (явный opt-in)
- * - Карточки дашборда, таблиц, панелей с border + rounded
+ * - Карточки рабочего стола, таблиц, панелей с border + rounded
  */
 
 const GLOW_SELECTORS = [

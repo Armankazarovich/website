@@ -48,8 +48,8 @@ async function scheduleReminder(task: DayTask) {
   setTimeout(() => {
     new Notification(`⏰ ${task.text}`, {
       body: `Запланировано на ${task.time}`,
-      icon: "/icons/icon-192x192.png",
-      badge: "/icons/icon-72x72.png",
+      icon: "/api/pwa/icon?s=192&v=aray-production-20260508",
+      badge: "/api/pwa/icon?s=72&v=aray-production-20260508",
     });
   }, diff);
 }

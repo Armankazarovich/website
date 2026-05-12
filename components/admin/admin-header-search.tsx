@@ -1,374 +1,218 @@
 "use client";
 
-/**
- * AdminHeaderSearch — гибридный поиск в шапке админки.
- *
- * Видение Армана (28.04.2026 вечер): «можно интерактивный умный поиск который
- * предложит несколько вариантов релевантных красивых выпадающими архитектурами»
- * — то есть inline dropdown как Google Search Suggestions / Ozon / Linear.
- *
- * Архитектура:
- *  1. Input поля в центре шапки (max-w-3xl, h-11, rounded-2xl).
- *  2. При фокусе и наличии текста (>= 1 символ) — inline dropdown под input
- *     с suggestions: разделы (instant) + товары (debounced 250мс).
- *  3. Клик в dropdown ведёт на страницу.
- *  4. Кнопка "Расширенный поиск" в правом краю input → открывает
- *     полный side-panel слева (Cmd+K тоже его открывает).
- *  5. Click outside / Escape — закрывает dropdown.
- *  6. Стрелки ↑↓ + Enter — навигация по suggestions клавиатурой.
- *
- * Стиль: 1-в-1 в духе магазинного search-modal — bg-card, rounded-2xl,
- * shadow-2xl, divide-y, плавная анимация (animate-in fade-in slide-in-from-top-1).
- */
-
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  Search, Loader2, ArrowRight, Package, ChevronRight, Command, X,
-  ShoppingBag, UserCircle,
-} from "lucide-react";
-import { allNavItems, GROUP_LABELS } from "@/components/admin/admin-nav";
-import { useAdminLang } from "@/lib/admin-lang-context";
-import { formatPrice } from "@/lib/utils";
+import { ArrowRight, Loader2, Search, X } from "lucide-react";
+import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
+import { useAdminSmartSearch } from "@/components/admin/use-admin-smart-search";
 
-interface ProductResult {
-  id: string;
-  slug: string;
-  name: string;
-  category: { name: string };
-  images: string[];
-  saleUnit: string;
-  variants: { pricePerCube: number | null; pricePerPiece: number | null }[];
-}
-
-type Suggestion =
-  | { kind: "section"; href: string; label: string; group: string; icon: React.ElementType }
-  | { kind: "product"; href: string; label: string; category: string; image: string | null; price: number | null }
-  | { kind: "openPanel"; label: string };
-
-interface Props {
+type Props = {
   role: string;
-  onOpenFullSearch: () => void;
-}
+  onCompactSearch: () => void;
+  disabledModuleIds?: string[];
+};
 
-export function AdminHeaderSearch({ role, onOpenFullSearch }: Props) {
+export function AdminHeaderSearch({ role, onCompactSearch, disabledModuleIds }: Props) {
   const router = useRouter();
-  const { t } = useAdminLang();
-  const [query, setQuery] = useState("");
-  const [focused, setFocused] = useState(false);
-  const [products, setProducts] = useState<ProductResult[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
+  const search = useAdminSmartSearch({ role, open, debounceMs: 140, limit: 10, disabledModuleIds });
+  const {
+    query,
+    setQuery,
+    selected,
+    setSelected,
+    results,
+    quickItems,
+    loading,
+    error,
+    placeholder,
+    activeContextLabel,
+    clearQuery,
+    reset,
+  } = search;
 
-  const isUser = role === "USER";
-
-  // ── Debounced product search ──
   useEffect(() => {
-    if (query.trim().length < 2) {
-      setProducts([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setLoadingProducts(true);
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (res.ok) {
-          const data = await res.json();
-          setProducts((data.results || []).slice(0, 3));
-        }
-      } catch {
-        setProducts([]);
-      } finally {
-        setLoadingProducts(false);
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  // ── Click outside → close ──
-  useEffect(() => {
-    if (!focused) return;
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setFocused(false);
-      }
+    const close = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [focused]);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
 
-  // ── Filtered sections by query (max 4) ──
-  const matchedSections = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    const visible = allNavItems.filter(i => !i.roles || i.roles.includes(role));
-    return visible
-      .filter((i) => {
-        const label = (i.labelKey ? t(i.labelKey) : i.label).toLowerCase();
-        const groupLabel = (GROUP_LABELS[i.group] || "").toLowerCase();
-        return label.includes(q) || groupLabel.includes(q);
-      })
-      .slice(0, 4);
-  }, [query, role, t]);
-
-  // ── Combined suggestions для клавиатурной навигации ──
-  const suggestions = useMemo<Suggestion[]>(() => {
-    const items: Suggestion[] = [];
-    matchedSections.forEach((s) => {
-      items.push({
-        kind: "section",
-        href: s.href,
-        label: s.labelKey ? t(s.labelKey) : s.label,
-        group: GROUP_LABELS[s.group] || s.group,
-        icon: s.icon,
-      });
-    });
-    products.forEach((p) => {
-      const minPrice = p.variants.reduce((min, v) => {
-        const price = v.pricePerCube ?? v.pricePerPiece;
-        return price !== null && price < min ? price : min;
-      }, Infinity);
-      items.push({
-        kind: "product",
-        href: `/product/${p.slug}`,
-        label: p.name,
-        category: p.category.name,
-        image: p.images[0] || null,
-        price: minPrice === Infinity ? null : minPrice,
-      });
-    });
-    items.push({ kind: "openPanel", label: "Открыть расширенный поиск" });
-    return items;
-  }, [matchedSections, products, t]);
-
-  // Reset activeIndex когда меняется query
   useEffect(() => {
-    setActiveIndex(0);
-  }, [query]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (!focused || suggestions.length === 0) return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActiveIndex((i) => Math.min(i + 1, suggestions.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActiveIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        const target = suggestions[activeIndex];
-        if (target.kind === "openPanel") {
-          onOpenFullSearch();
-          setFocused(false);
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        if (window.matchMedia("(min-width: 1280px)").matches) {
+          setOpen(true);
+          window.setTimeout(() => inputRef.current?.focus(), 40);
         } else {
-          router.push(target.href);
-          setFocused(false);
-          setQuery("");
+          onCompactSearch();
         }
-      } else if (e.key === "Escape") {
-        setFocused(false);
-        inputRef.current?.blur();
       }
-    },
-    [focused, suggestions, activeIndex, router, onOpenFullSearch]
-  );
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onCompactSearch]);
 
-  const showDropdown = focused && query.trim().length > 0;
+  const go = (href: string) => {
+    setOpen(false);
+    reset();
+    router.push(href);
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setSelected((value) => Math.min(value + 1, Math.max(results.length - 1, 0)));
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setSelected((value) => Math.max(value - 1, 0));
+    }
+    if (event.key === "Enter" && results[selected]) {
+      event.preventDefault();
+      go(results[selected].href);
+    }
+    if (event.key === "Escape") setOpen(false);
+  };
+
+  const trimmedQuery = query.trim();
+  const showQuick = open && !trimmedQuery && quickItems.length > 0;
+  const showResults = open && trimmedQuery.length > 0;
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-3xl">
-      {/* Input */}
-      <div
-        className={`flex items-center gap-2.5 w-full h-11 px-4 rounded-2xl bg-muted/50 border transition-all
-          ${focused ? "border-primary/50 bg-background ring-2 ring-primary/15" : "border-border"}`}
-      >
-        <Search
-          className={`w-[18px] h-[18px] shrink-0 transition-colors ${focused ? "text-primary" : "text-muted-foreground"}`}
-          strokeWidth={1.75}
-        />
+    <div ref={rootRef} className="relative hidden w-full max-w-[56rem] xl:block">
+      <div className="flex h-10 items-center gap-3 rounded-2xl border border-border bg-card/65 px-4 text-muted-foreground transition-colors focus-within:border-primary/55 focus-within:bg-card hover:border-primary/35 hover:bg-muted/30">
+        <Search className="h-[18px] w-[18px] shrink-0 text-primary" strokeWidth={1.75} />
         <input
           ref={inputRef}
-          type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onKeyDown={handleKeyDown}
-          placeholder={isUser ? "Доска, брус, вагонка…" : "Поиск раздела, товара, заказа, клиента…"}
-          className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground min-w-0"
-          style={{ fontSize: 16 }}
-          aria-label="Поиск"
-          aria-haspopup="listbox"
-          aria-expanded={showDropdown}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+          placeholder={placeholder}
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          autoComplete="off"
+          spellCheck={false}
         />
-        {loadingProducts && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />}
-        {query.length > 0 && !loadingProducts && (
+        {loading ? (
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+        ) : query ? (
           <button
             type="button"
             onClick={() => {
-              setQuery("");
-              setProducts([]);
-              setActiveIndex(0);
+              clearQuery();
               inputRef.current?.focus();
             }}
-            className="w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shrink-0 transition-colors"
+            className="rounded-xl p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Очистить поиск"
-            title="Очистить"
           >
-            <X className="w-3.5 h-3.5" strokeWidth={2} />
+            <X className="h-3.5 w-3.5" />
           </button>
+        ) : (
+          <kbd className="rounded-xl border border-border bg-background/70 px-2 py-1 text-[10px] font-medium text-muted-foreground">
+            Ctrl K
+          </kbd>
         )}
-        <button
-          type="button"
-          onClick={() => {
-            onOpenFullSearch();
-            setFocused(false);
-            inputRef.current?.blur();
-          }}
-          className="hidden md:inline-flex items-center gap-1 text-[10px] text-muted-foreground/70 shrink-0 hover:text-foreground transition-colors"
-          aria-label="Расширенный поиск"
-          title="Расширенный поиск (⌘K)"
-        >
-          <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">⌘</kbd>
-          <kbd className="px-1.5 py-0.5 rounded bg-background border border-border font-mono text-[10px]">K</kbd>
-        </button>
       </div>
 
-      {/* Inline dropdown */}
-      {showDropdown && (
-        <div
-          className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150"
-          role="listbox"
-        >
-          {/* Sections группа */}
-          {matchedSections.length > 0 && (
-            <div>
-              <div className="px-4 pt-3 pb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Разделы
-              </div>
-              <div>
-                {matchedSections.map((s, idx) => {
-                  const SectionIcon = s.icon;
-                  const label = s.labelKey ? t(s.labelKey) : s.label;
-                  const groupLabel = GROUP_LABELS[s.group] || "";
-                  const isActive = idx === activeIndex;
-                  return (
-                    <Link
-                      key={s.href}
-                      href={s.href}
-                      onClick={() => {
-                        setFocused(false);
-                        setQuery("");
-                      }}
-                      onMouseEnter={() => setActiveIndex(idx)}
-                      className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${isActive ? "bg-primary/8" : "hover:bg-muted/40"}`}
-                      role="option"
-                      aria-selected={isActive}
-                    >
-                      <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isActive ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"}`}
-                      >
-                        <SectionIcon className="w-4 h-4" strokeWidth={1.75} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground leading-tight truncate">{label}</p>
-                        {groupLabel && (
-                          <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                            {groupLabel}
-                          </p>
-                        )}
-                      </div>
-                      <ArrowRight
-                        className={`w-3.5 h-3.5 shrink-0 transition-colors ${isActive ? "text-primary" : "text-muted-foreground/40"}`}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Products группа */}
-          {products.length > 0 && (
-            <div className={matchedSections.length > 0 ? "border-t border-border" : ""}>
-              <div className="px-4 pt-3 pb-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Товары
-              </div>
-              <div>
-                {products.map((p, productIdx) => {
-                  const idx = matchedSections.length + productIdx;
-                  const isActive = idx === activeIndex;
-                  const minPrice = p.variants.reduce((min, v) => {
-                    const price = v.pricePerCube ?? v.pricePerPiece;
-                    return price !== null && price < min ? price : min;
-                  }, Infinity);
-                  return (
-                    <Link
-                      key={p.id}
-                      href={`/product/${p.slug}`}
-                      onClick={() => {
-                        setFocused(false);
-                        setQuery("");
-                      }}
-                      onMouseEnter={() => setActiveIndex(idx)}
-                      className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${isActive ? "bg-primary/8" : "hover:bg-muted/40"}`}
-                      role="option"
-                      aria-selected={isActive}
-                    >
-                      <div className="relative w-9 h-9 rounded-lg overflow-hidden bg-muted shrink-0">
-                        {p.images[0] ? (
-                          <Image src={p.images[0]} alt={p.name} fill className="object-cover" sizes="36px" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-4 h-4 text-muted-foreground opacity-50" strokeWidth={1.75} />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground leading-tight line-clamp-1">{p.name}</p>
-                        <p className="text-[11px] text-muted-foreground leading-tight mt-0.5 truncate">
-                          {p.category.name}
-                        </p>
-                      </div>
-                      {minPrice !== Infinity && (
-                        <p className="text-sm font-semibold text-primary shrink-0">от {formatPrice(minPrice)}</p>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Empty state когда нечего показать */}
-          {!loadingProducts && matchedSections.length === 0 && products.length === 0 && query.trim().length >= 2 && (
-            <div className="px-4 py-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                По запросу «{query}» ничего не найдено
+      {(showQuick || showResults) && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[70] overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_70px_hsl(var(--foreground)/0.16)]">
+          {showQuick && (
+            <div className="p-2">
+              <p className="px-2 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                {activeContextLabel}
               </p>
+              <div className="grid grid-cols-2 gap-2">
+                {quickItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      onClick={() => {
+                        setOpen(false);
+                        reset();
+                      }}
+                      className="group flex items-center gap-3 rounded-xl border border-border/70 bg-background/45 p-3 transition-colors hover:border-primary/40 hover:bg-muted/45"
+                    >
+                      <span className={`${ARAY_ICON_TONE} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl`}>
+                        <Icon className="h-4 w-4" strokeWidth={1.8} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-foreground">{item.title}</span>
+                        <span className="block truncate text-xs text-muted-foreground">{item.subtitle}</span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* Footer — Открыть полный поиск */}
-          <button
-            type="button"
-            onClick={() => {
-              onOpenFullSearch();
-              setFocused(false);
-            }}
-            onMouseEnter={() => setActiveIndex(suggestions.length - 1)}
-            className={`w-full flex items-center justify-between gap-3 px-4 py-3 border-t border-border transition-colors ${activeIndex === suggestions.length - 1 ? "bg-primary/8" : "hover:bg-muted/40"}`}
-          >
-            <span className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Command className="w-3.5 h-3.5" strokeWidth={1.75} />
-              Расширенный поиск
-            </span>
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-          </button>
+          {showResults && (
+            <div className="max-h-[430px] overflow-y-auto p-1.5">
+              {results.map((result, index) => {
+                const Icon = result.icon;
+                return (
+                  <button
+                    key={result.key}
+                    type="button"
+                    onMouseEnter={() => setSelected(index)}
+                    onClick={() => go(result.href)}
+                    className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors ${
+                      selected === index ? "bg-muted/60" : "hover:bg-muted/45"
+                    }`}
+                  >
+                    <span className={`${ARAY_ICON_TONE} flex h-9 w-9 shrink-0 items-center justify-center rounded-xl`}>
+                      <Icon className="h-4 w-4" strokeWidth={1.8} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium leading-tight text-foreground">
+                        {result.title}
+                      </span>
+                      {result.subtitle && (
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {result.subtitle}
+                        </span>
+                      )}
+                    </span>
+                    {result.meta && (
+                      <span className="hidden shrink-0 rounded-full border border-border bg-muted/35 px-2 py-1 text-[10px] font-medium text-muted-foreground sm:inline-flex">
+                        {result.meta}
+                      </span>
+                    )}
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground/45 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </button>
+                );
+              })}
+
+              {!loading && results.length === 0 && (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm font-medium text-foreground">Ничего не найдено</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {trimmedQuery.length === 1
+                      ? "Введите еще символ или номер заказа."
+                      : "Попробуйте номер заказа, телефон, имя, товар или раздел."}
+                  </p>
+                </div>
+              )}
+
+              {error && (
+                <div className="mx-2 mb-2 rounded-xl border border-border bg-muted/35 px-3 py-2 text-xs text-muted-foreground">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

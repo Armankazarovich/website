@@ -14,6 +14,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { LayoutGrid, Search, ShoppingCart, Heart, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cart";
@@ -33,11 +34,16 @@ interface RailIconProps {
   onClick?: () => void;
   href?: string;
   badge?: number;
+  active?: boolean;
 }
 
-function RailIcon({ label, icon, onClick, href, badge }: RailIconProps) {
+function RailIcon({ label, icon, onClick, href, badge, active = false }: RailIconProps) {
   const base =
-    "relative w-11 h-11 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/40 active:scale-95 transition-all duration-150";
+    `relative w-11 h-11 rounded-full bg-card border flex items-center justify-center active:scale-95 transition-all duration-150 ${
+      active
+        ? "border-primary/45 text-primary shadow-sm shadow-primary/10"
+        : "border-border text-muted-foreground hover:text-primary hover:border-primary/40"
+    }`;
 
   const handleClick = () => { haptic(); onClick?.(); };
 
@@ -80,11 +86,15 @@ function RailIcon({ label, icon, onClick, href, badge }: RailIconProps) {
 }
 
 export function SideIconRail() {
+  const pathname = usePathname();
   const totalItems = useCartStore((s) => s.items.length);
+  const cartOpen = useCartStore((s) => s.cartOpen);
   const setCartOpen = useCartStore((s) => s.setCartOpen);
   const wishCount = useWishlistStore((s) => s.items.length);
-  const { toggle: toggleAccount } = useAccountDrawer();
-  const { toggle: toggleSearch } = useSearchDrawer();
+  const accountOpen = useAccountDrawer((s) => s.open);
+  const toggleAccount = useAccountDrawer((s) => s.toggle);
+  const searchOpen = useSearchDrawer((s) => s.open);
+  const toggleSearch = useSearchDrawer((s) => s.toggle);
 
   const [mounted, setMounted] = useState(false);
   const [kbOpen, setKbOpen] = useState(false);
@@ -116,28 +126,33 @@ export function SideIconRail() {
             label="Каталог"
             icon={<LayoutGrid className="w-[18px] h-[18px]" strokeWidth={1.75} />}
             href="/catalog"
+            active={pathname.startsWith("/catalog")}
           />
           <RailIcon
             label="Поиск"
             icon={<Search className="w-[18px] h-[18px]" strokeWidth={1.75} />}
             onClick={toggleSearch}
+            active={searchOpen}
           />
           <RailIcon
             label="Корзина"
             icon={<ShoppingCart className="w-[18px] h-[18px]" strokeWidth={1.75} />}
             onClick={() => setCartOpen(true)}
             badge={totalItems}
+            active={cartOpen || pathname === "/cart" || pathname === "/checkout"}
           />
           <RailIcon
             label="Избранное"
             icon={<Heart className="w-[18px] h-[18px]" strokeWidth={1.75} />}
             href="/wishlist"
             badge={wishCount}
+            active={pathname === "/wishlist"}
           />
           <RailIcon
             label="Аккаунт"
             icon={<User className="w-[18px] h-[18px]" strokeWidth={1.75} />}
             onClick={toggleAccount}
+            active={accountOpen || pathname.startsWith("/cabinet")}
           />
         </motion.aside>
       )}

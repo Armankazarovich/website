@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import os from "os";
+import nodemailer from "nodemailer";
 
 async function checkAdmin() {
   const session = await auth();
@@ -39,20 +40,29 @@ export async function GET() {
     name: "Node.js",
     category: "infrastructure",
     status: nodeMajor >= 18 ? "ok" : nodeMajor >= 16 ? "warn" : "error",
-    message: nodeMajor >= 18
-      ? `Версия ${nodeVersion} — актуальная LTS`
-      : `Версия ${nodeVersion} — рекомендуется обновить до v20+`,
+    message:
+      nodeMajor >= 18
+        ? `Версия ${nodeVersion} — актуальная LTS`
+        : `Версия ${nodeVersion} — рекомендуется обновить до v20+`,
     version: nodeVersion,
     versionOk: nodeMajor >= 18,
-    fix: nodeMajor < 18 ? "Обновите Node.js до версии 20 LTS на сервере: `nvm install 20 && nvm use 20`" : undefined,
+    fix:
+      nodeMajor < 18
+        ? "Обновите Node.js до версии 20 LTS на сервере: `nvm install 20 && nvm use 20`"
+        : undefined,
   });
 
   // 2. Next.js version
   let nextVersion = "неизвестно";
   let nextOk = false;
   try {
-    const pkg = await import("../../../../package.json").then(m => m.default).catch(() => null);
-    nextVersion = (pkg?.dependencies as Record<string, string>)?.next || (pkg?.devDependencies as Record<string, string>)?.next || "неизвестно";
+    const pkg = await import("../../../../package.json")
+      .then((m) => m.default)
+      .catch(() => null);
+    nextVersion =
+      (pkg?.dependencies as Record<string, string>)?.next ||
+      (pkg?.devDependencies as Record<string, string>)?.next ||
+      "неизвестно";
     const major = parseInt(nextVersion.replace(/[^\d]/, "").split(".")[0]);
     nextOk = major >= 14;
   } catch {}
@@ -61,7 +71,9 @@ export async function GET() {
     name: "Next.js",
     category: "infrastructure",
     status: nextOk ? "ok" : "warn",
-    message: nextOk ? `Версия ${nextVersion} — актуальная` : `Версия ${nextVersion} — проверьте обновления`,
+    message: nextOk
+      ? `Версия ${nextVersion} — актуальная`
+      : `Версия ${nextVersion} — проверьте обновления`,
     version: nextVersion,
     versionOk: nextOk,
     detail: "Next.js 14+ App Router с Server Components и Server Actions",
@@ -74,25 +86,41 @@ export async function GET() {
   const freeRamMb = Math.round(os.freemem() / 1024 / 1024);
   const usedRamMb = totalRamMb - freeRamMb;
   const ramPercent = Math.round((usedRamMb / totalRamMb) * 100);
+  const isLocalDev = process.env.NODE_ENV !== "production";
+  const memoryStatus: CheckResult["status"] =
+    freeRamMb < 512 || ramPercent >= 96 || rssMb >= 3072
+      ? "error"
+      : freeRamMb < 1024 || ramPercent >= 85 || rssMb >= 1536
+        ? "warn"
+        : "ok";
+  const memoryFix =
+    memoryStatus === "ok"
+      ? undefined
+      : isLocalDev && process.platform === "win32"
+        ? "Локально Windows: закройте тяжёлые вкладки браузера или перезапустите dev-сервер `npm run dev -- -p 3100`. Если RAM снова растёт — проверьте тяжёлые страницы и запросы."
+        : memoryStatus === "error"
+          ? "Прод: перезапустите процесс приложения (`pm2 restart pilo-rus --update-env`) и проверьте тяжёлые запросы/утечки памяти."
+          : "Наблюдайте нагрузку. Если свободной RAM станет меньше 512 МБ — перезапустите процесс и проверьте тяжёлые запросы.";
   checks.push({
     id: "memory",
     name: "Память (RAM)",
     category: "infrastructure",
-    status: ramPercent < 75 ? "ok" : ramPercent < 90 ? "warn" : "error",
-    message: `Сервер: ${usedRamMb} МБ из ${totalRamMb} МБ (${ramPercent}%)`,
-    detail: `Процесс RSS: ${rssMb} МБ · Heap: ${Math.round(mem.heapUsed / 1024 / 1024)} МБ`,
-    fix: ramPercent >= 90 ? "Перезапустите PM2: `pm2 restart pilo-rus --update-env` или оптимизируйте тяжёлые запросы" : undefined,
+    status: memoryStatus,
+    message: `Система: ${usedRamMb} МБ из ${totalRamMb} МБ (${ramPercent}%) · свободно ${freeRamMb} МБ`,
+    detail: `Node RSS: ${rssMb} МБ · Heap: ${Math.round(mem.heapUsed / 1024 / 1024)} МБ`,
+    fix: memoryFix,
   });
 
   // 4. Database connectivity + stats
   try {
     await prisma.$queryRaw`SELECT 1`;
-    const [productCount, orderCount, userCount, variantCount] = await Promise.all([
-      prisma.product.count({ where: { active: true } }),
-      prisma.order.count({ where: { deletedAt: null } }),
-      prisma.user.count(),
-      prisma.productVariant.count(),
-    ]);
+    const [productCount, orderCount, userCount, variantCount] =
+      await Promise.all([
+        prisma.product.count({ where: { active: true } }),
+        prisma.order.count({ where: { deletedAt: null } }),
+        prisma.user.count(),
+        prisma.productVariant.count(),
+      ]);
     checks.push({
       id: "db",
       name: "База данных PostgreSQL",
@@ -116,7 +144,9 @@ export async function GET() {
 
   // 5. SSL certificate check (HEAD request)
   try {
-    const siteUrlRow = await prisma.siteSettings.findUnique({ where: { key: "site_url" } });
+    const siteUrlRow = await prisma.siteSettings.findUnique({
+      where: { key: "site_url" },
+    });
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
     const isHttps = siteUrl.startsWith("https://");
     if (!isHttps) {
@@ -130,14 +160,19 @@ export async function GET() {
         detail: "HTTPS обязателен для SEO и безопасности пользователей",
       });
     } else {
-      const res = await fetch(siteUrl, { method: "HEAD", signal: AbortSignal.timeout(8000) }).catch(() => null);
+      const res = await fetch(siteUrl, {
+        method: "HEAD",
+        signal: AbortSignal.timeout(8000),
+      }).catch(() => null);
       const responseTime = res ? 200 : 0;
       checks.push({
         id: "ssl",
         name: "SSL / HTTPS",
         category: "infrastructure",
         status: res ? "ok" : "warn",
-        message: res ? `Сертификат активен · HTTPS работает` : "Не удалось проверить — сайт может быть недоступен",
+        message: res
+          ? `Сертификат активен · HTTPS работает`
+          : "Не удалось проверить — сайт может быть недоступен",
         detail: `${siteUrl} · ${res ? `HTTP ${res.status}` : "таймаут"}`,
         versionOk: true,
       });
@@ -146,9 +181,13 @@ export async function GET() {
 
   // 6. Sitemap XML
   try {
-    const siteUrlRow = await prisma.siteSettings.findUnique({ where: { key: "site_url" } });
+    const siteUrlRow = await prisma.siteSettings.findUnique({
+      where: { key: "site_url" },
+    });
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
-    const res = await fetch(`${siteUrl}/sitemap.xml`, { signal: AbortSignal.timeout(5000) }).catch(() => null);
+    const res = await fetch(`${siteUrl}/sitemap.xml`, {
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null);
     if (res?.ok) {
       checks.push({
         id: "sitemap",
@@ -156,7 +195,8 @@ export async function GET() {
         category: "seo",
         status: "ok",
         message: "Доступен — поисковые системы индексируют сайт",
-        detail: "Яндекс и Google используют sitemap.xml для обнаружения страниц",
+        detail:
+          "Яндекс и Google используют sitemap.xml для обнаружения страниц",
       });
     } else {
       checks.push({
@@ -164,7 +204,9 @@ export async function GET() {
         name: "Sitemap XML",
         category: "seo",
         status: res ? "error" : "warn",
-        message: res ? `Недоступен (HTTP ${res.status})` : "Не удалось проверить (таймаут 5 сек)",
+        message: res
+          ? `Недоступен (HTTP ${res.status})`
+          : "Не удалось проверить (таймаут 5 сек)",
         fix: "Откройте /sitemap.xml в браузере. Проверьте файл app/sitemap.ts",
       });
     }
@@ -172,10 +214,16 @@ export async function GET() {
 
   // 7. YML feed
   try {
-    const siteUrlRow = await prisma.siteSettings.findUnique({ where: { key: "site_url" } });
+    const siteUrlRow = await prisma.siteSettings.findUnique({
+      where: { key: "site_url" },
+    });
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
-    const res = await fetch(`${siteUrl}/api/yml`, { signal: AbortSignal.timeout(5000) }).catch(() => null);
-    const activeCount = await prisma.product.count({ where: { active: true } }).catch(() => 0);
+    const res = await fetch(`${siteUrl}/api/yml`, {
+      signal: AbortSignal.timeout(5000),
+    }).catch(() => null);
+    const activeCount = await prisma.product
+      .count({ where: { active: true } })
+      .catch(() => 0);
     if (res?.ok) {
       checks.push({
         id: "yml",
@@ -183,7 +231,8 @@ export async function GET() {
         category: "seo",
         status: "ok",
         message: `Фид работает · ${activeCount} активных товаров`,
-        detail: "Используется для выгрузки товаров в Яндекс.Маркет и другие маркетплейсы",
+        detail:
+          "Используется для выгрузки товаров в Яндекс.Маркет и другие маркетплейсы",
       });
     } else {
       checks.push({
@@ -199,7 +248,9 @@ export async function GET() {
 
   // 8. Yandex Metrika
   try {
-    const metrika = await prisma.siteSettings.findUnique({ where: { key: "yandex_metrika_id" } });
+    const metrika = await prisma.siteSettings.findUnique({
+      where: { key: "yandex_metrika_id" },
+    });
     if (!metrika?.value) {
       checks.push({
         id: "metrika",
@@ -208,7 +259,8 @@ export async function GET() {
         status: "warn",
         message: "Счётчик не подключён — статистика посещений не собирается",
         fix: "Аналитика → поле «ID счётчика Яндекс Метрики» → вставьте номер счётчика",
-        detail: "Без Метрики вы не видите откуда приходят клиенты и какие страницы популярны",
+        detail:
+          "Без Метрики вы не видите откуда приходят клиенты и какие страницы популярны",
       });
     } else {
       checks.push({
@@ -224,42 +276,90 @@ export async function GET() {
 
   // 9. SMTP email
   try {
-    const smtpRow = await prisma.siteSettings.findUnique({ where: { key: "smtp_host" } });
-    if (!smtpRow?.value) {
+    const smtpRows = await prisma.siteSettings.findMany({
+      where: {
+        key: {
+          in: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from"],
+        },
+      },
+    });
+    const smtp = Object.fromEntries(
+      smtpRows.map((row) => [row.key, row.value]),
+    );
+    const missing = [
+      !smtp.smtp_host ? "host" : null,
+      !smtp.smtp_user ? "user" : null,
+      !smtp.smtp_pass ? "password" : null,
+    ].filter(Boolean);
+    if (missing.length > 0) {
       checks.push({
         id: "smtp",
         name: "Email / SMTP",
         category: "notifications",
         status: "warn",
-        message: "SMTP не настроен — email-рассылка и уведомления недоступны",
+        message: `SMTP заполнен не полностью: ${missing.join(", ")}`,
         fix: "Email рассылка → SMTP настройки → введите данные smtp.beget.com, port 465",
-        detail: "Без SMTP клиенты не получают письма о заказах, а менеджеры не получают уведомления",
+        detail:
+          "Без полного SMTP клиенты не получают письма о заказах, а менеджеры не получают уведомления",
       });
     } else {
+      const transporter = nodemailer.createTransport({
+        host: smtp.smtp_host,
+        port: parseInt(smtp.smtp_port || "587", 10),
+        secure: smtp.smtp_port === "465",
+        auth: { user: smtp.smtp_user, pass: smtp.smtp_pass },
+      });
+      await Promise.race([
+        transporter.verify(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("таймаут SMTP 5 сек")), 5000),
+        ),
+      ]);
       checks.push({
         id: "smtp",
         name: "Email / SMTP",
         category: "notifications",
         status: "ok",
-        message: `Настроен: ${smtpRow.value}`,
-        detail: "Email-уведомления о заказах и рассылки работают",
+        message: `SMTP отвечает: ${smtp.smtp_host}`,
+        detail: `Порт ${smtp.smtp_port || "587"} · Отправитель ${smtp.smtp_from || smtp.smtp_user}`,
       });
     }
-  } catch {}
+  } catch (e: any) {
+    checks.push({
+      id: "smtp",
+      name: "Email / SMTP",
+      category: "notifications",
+      status: "error",
+      message: `SMTP не прошёл проверку: ${e.message?.slice(0, 120) || "ошибка соединения"}`,
+      fix: "Проверьте host, port, SSL и пароль приложения в разделе Email / SMTP",
+      detail: "Health больше не считает SMTP рабочим только по наличию host",
+    });
+  }
 
   // 10. Push notifications (VAPID)
   try {
-    const vapidRow = await prisma.siteSettings.findUnique({ where: { key: "vapid_public" } });
+    const vapidRow = await prisma.siteSettings.findUnique({
+      where: { key: "vapid_public" },
+    });
     const subCount = await prisma.pushSubscription.count().catch(() => 0);
-    const vapidOk = !!(vapidRow?.value || process.env.VAPID_PUBLIC_KEY || process.env.NEXT_PUBLIC_VAPID_KEY);
+    const vapidOk = !!(
+      vapidRow?.value ||
+      process.env.VAPID_PUBLIC_KEY ||
+      process.env.NEXT_PUBLIC_VAPID_KEY
+    );
     checks.push({
       id: "push",
       name: "Push-уведомления",
       category: "notifications",
       status: vapidOk ? "ok" : "warn",
-      message: vapidOk ? `Активны · Подписчиков: ${subCount}` : "VAPID-ключи не настроены",
-      fix: !vapidOk ? "Уведомления → нажмите «Сгенерировать VAPID ключи» → сохраните" : undefined,
-      detail: "Push-уведомления в браузере — акции, новые поступления, статус заказа",
+      message: vapidOk
+        ? `Активны · Подписчиков: ${subCount}`
+        : "VAPID-ключи не настроены",
+      fix: !vapidOk
+        ? "Уведомления → нажмите «Сгенерировать VAPID ключи» → сохраните"
+        : undefined,
+      detail:
+        "Push-уведомления в браузере — акции, новые поступления, статус заказа",
     });
   } catch {}
 
@@ -275,28 +375,42 @@ export async function GET() {
         status: "warn",
         message: "Бот не настроен — уведомления в Telegram не работают",
         fix: "Уведомления → настройте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env",
-        detail: "Telegram-бот отправляет уведомления о новых заказах и позволяет менять статусы",
+        detail:
+          "Telegram-бот отправляет уведомления о новых заказах и позволяет менять статусы",
       });
     } else {
-      const botRes = await fetch(`https://api.telegram.org/bot${tgToken}/getMe`, {
-        signal: AbortSignal.timeout(5000),
-      }).then(r => r.json()).catch(() => null);
+      const botRes = await fetch(
+        `https://api.telegram.org/bot${tgToken}/getMe`,
+        {
+          signal: AbortSignal.timeout(5000),
+        },
+      )
+        .then((r) => r.json())
+        .catch(() => null);
       const ok = botRes?.ok;
       checks.push({
         id: "telegram",
         name: "Telegram-бот",
         category: "notifications",
         status: ok ? "ok" : "warn",
-        message: ok ? `Бот @${botRes.result?.username} активен` : "Не удалось подключиться к боту",
-        fix: !ok ? "Проверьте правильность TELEGRAM_BOT_TOKEN — создайте нового бота у @BotFather" : undefined,
-        detail: ok ? `Бот: @${botRes.result?.username} · Chat ID: ${tgChat}` : "Бот может быть заблокирован или токен неверный",
+        message: ok
+          ? `Бот @${botRes.result?.username} активен`
+          : "Не удалось подключиться к боту",
+        fix: !ok
+          ? "Проверьте правильность TELEGRAM_BOT_TOKEN — создайте нового бота у @BotFather"
+          : undefined,
+        detail: ok
+          ? `Бот: @${botRes.result?.username} · Chat ID: ${tgChat}`
+          : "Бот может быть заблокирован или токен неверный",
       });
     }
   } catch {}
 
   // 12. Product images coverage
   try {
-    const noImg = await prisma.product.count({ where: { images: { isEmpty: true }, active: true } });
+    const noImg = await prisma.product.count({
+      where: { images: { isEmpty: true }, active: true },
+    });
     const total = await prisma.product.count({ where: { active: true } });
     if (noImg > 0) {
       checks.push({
@@ -322,7 +436,11 @@ export async function GET() {
   // 13. Product prices
   try {
     const noPriceVariants = await prisma.productVariant.count({
-      where: { pricePerCube: null, pricePerPiece: null, product: { active: true } },
+      where: {
+        pricePerCube: null,
+        pricePerPiece: null,
+        product: { active: true },
+      },
     });
     if (noPriceVariants > 0) {
       checks.push({
@@ -349,7 +467,11 @@ export async function GET() {
   try {
     const threeDaysAgo = new Date(Date.now() - 3 * 86400000);
     const stale = await prisma.order.count({
-      where: { status: "NEW", createdAt: { lt: threeDaysAgo }, deletedAt: null },
+      where: {
+        status: "NEW",
+        createdAt: { lt: threeDaysAgo },
+        deletedAt: null,
+      },
     });
     if (stale > 0) {
       checks.push({
@@ -374,7 +496,9 @@ export async function GET() {
 
   // 15. Watermark backup
   try {
-    const backup = await prisma.siteSettings.findUnique({ where: { key: "watermark_backup_date" } });
+    const backup = await prisma.siteSettings.findUnique({
+      where: { key: "watermark_backup_date" },
+    });
     if (!backup?.value) {
       checks.push({
         id: "watermark_backup",
@@ -383,7 +507,8 @@ export async function GET() {
         status: "warn",
         message: "Резервная копия ещё не создавалась",
         fix: "Водяной знак → «Применить ко всем товарам» — бэкап создаётся автоматически",
-        detail: "Бэкап защищает от случайного повреждения оригинальных фотографий",
+        detail:
+          "Бэкап защищает от случайного повреждения оригинальных фотографий",
       });
     } else {
       const d = new Date(backup.value);
@@ -393,7 +518,8 @@ export async function GET() {
         name: "Резервная копия фото",
         category: "media",
         status: "ok",
-        message: daysAgo === 0 ? "Создана сегодня" : `Создана ${daysAgo} дн. назад`,
+        message:
+          daysAgo === 0 ? "Создана сегодня" : `Создана ${daysAgo} дн. назад`,
         detail: `Последний бэкап: ${d.toLocaleDateString("ru-RU")}`,
       });
     }
@@ -402,44 +528,64 @@ export async function GET() {
   // 16. ARAY Token Economy
   try {
     const day30 = new Date(Date.now() - 30 * 86400000);
-    const totalReqs = await (prisma as any).arayTokenLog?.count({ where: { createdAt: { gte: day30 } } }).catch(() => 0) || 0;
+    const totalReqs =
+      (await (prisma as any).arayTokenLog
+        ?.count({ where: { createdAt: { gte: day30 } } })
+        .catch(() => 0)) || 0;
     if (totalReqs > 0) {
-      const costAgg = await (prisma as any).arayTokenLog?.aggregate({
-        where: { createdAt: { gte: day30 } },
-        _sum: { costUsd: true },
-      }).catch(() => null);
+      const costAgg = await (prisma as any).arayTokenLog
+        ?.aggregate({
+          where: { createdAt: { gte: day30 } },
+          _sum: { costUsd: true },
+        })
+        .catch(() => null);
       const totalCost = costAgg?._sum?.costUsd || 0;
       checks.push({
-        id: "aray_economy", name: "ARAY Token Economy", category: "aray",
+        id: "aray_economy",
+        name: "ARAY Token Economy",
+        category: "aray",
         status: totalCost > 50 ? "warn" : "ok",
         message: `${totalReqs} запросов, $${totalCost.toFixed(4)} за 30 дней`,
-        detail: totalCost > 50 ? "Расход выше нормы — проверь маршрутизацию" : "Экономия в норме",
+        detail:
+          totalCost > 50
+            ? "Расход выше нормы — проверь маршрутизацию"
+            : "Экономия в норме",
       });
     } else {
       checks.push({
-        id: "aray_economy", name: "ARAY Token Economy", category: "aray",
-        status: "ok", message: "Нет данных за 30 дней", detail: "Логирование активно после деплоя",
+        id: "aray_economy",
+        name: "ARAY Token Economy",
+        category: "aray",
+        status: "ok",
+        message: "Нет данных за 30 дней",
+        detail: "Логирование активно после деплоя",
       });
     }
   } catch {
     checks.push({
-      id: "aray_economy", name: "ARAY Token Economy", category: "aray",
-      status: "warn", message: "Таблица ArayTokenLog не готова", detail: "Нужен prisma db push",
+      id: "aray_economy",
+      name: "ARAY Token Economy",
+      category: "aray",
+      status: "warn",
+      message: "Таблица ArayTokenLog не готова",
+      detail: "Нужен prisma db push",
     });
   }
 
   // 17. ARAY API Key
   checks.push({
-    id: "aray_api_key", name: "ARAY API ключ", category: "aray",
+    id: "aray_api_key",
+    name: "ARAY API ключ",
+    category: "aray",
     status: process.env.ANTHROPIC_API_KEY ? "ok" : "error",
     message: process.env.ANTHROPIC_API_KEY ? "Настроен" : "ОТСУТСТВУЕТ",
     detail: "ANTHROPIC_API_KEY для Арая",
   });
 
   const summary = {
-    ok:    checks.filter(c => c.status === "ok").length,
-    warn:  checks.filter(c => c.status === "warn").length,
-    error: checks.filter(c => c.status === "error").length,
+    ok: checks.filter((c) => c.status === "ok").length,
+    warn: checks.filter((c) => c.status === "warn").length,
+    error: checks.filter((c) => c.status === "error").length,
   };
 
   return NextResponse.json({

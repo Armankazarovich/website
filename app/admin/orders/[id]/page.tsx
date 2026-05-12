@@ -1,20 +1,21 @@
 export const dynamic = "force-dynamic";
 
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { formatDate, formatPrice, ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from "@/lib/utils";
+import { formatDate, formatPrice, ORDER_STATUS_LABELS } from "@/lib/utils";
 import { OrderStatusSelect } from "@/components/admin/order-status-select";
-import { Phone, Mail, MapPin, CreditCard, MessageSquare, Package, Radio, Target, Link2, Clock } from "lucide-react";
-import { AdminBack } from "@/components/admin/admin-back";
+import { Phone, Mail, MapPin, CreditCard, MessageSquare, Package, Radio, Target, Link2, Clock, Truck, QrCode, ShieldCheck, Smartphone } from "lucide-react";
 import { DeleteOrderButton } from "./delete-button";
 import { OrderEditPanel } from "@/components/admin/order-edit-panel";
 import { TrackingLinkCard } from "@/components/admin/tracking-link-card";
+import { RelatedTasksPanel } from "@/components/admin/related-tasks-panel";
 import { classifySource, humanizeSource } from "@/lib/utm";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
+  const tenantId = getCurrentTenantId();
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, tenantId, deletedAt: null },
     include: {
       items: true,
       user: { select: { id: true, name: true, email: true, phone: true } },
@@ -23,20 +24,77 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
 
   if (!order) notFound();
 
-  const statusColor = ORDER_STATUS_COLORS[order.status] || "bg-muted text-muted-foreground";
+  const statusColor =
+    order.status === "CANCELLED"
+      ? "bg-destructive/10 text-destructive"
+      : order.status === "DELIVERED" || order.status === "COMPLETED"
+        ? "bg-muted text-foreground"
+        : "bg-primary/10 text-primary";
   const statusLabel = ORDER_STATUS_LABELS[order.status] || order.status;
+  const deliveryCost = Number(order.deliveryCost ?? 0);
+  const itemsSubtotal = order.items.reduce(
+    (sum, item) => sum + Number(item.quantity) * Number(item.price),
+    0
+  );
+  const orderTotal = Number(order.totalAmount);
+  const address = order.deliveryAddress?.trim() || "";
+  const isPickup =
+    order.status === "READY_PICKUP" ||
+    order.fulfillmentType === "PICKUP" ||
+    order.fulfillmentType === "TAKEAWAY" ||
+    order.fulfillmentType === "COUNTER" ||
+    address.toLowerCase().startsWith("самовывоз");
+  const fulfillmentLabel = isPickup ? "Самовывоз" : "Доставка";
+  const fulfillmentPlace = isPickup
+    ? address.replace(/^Самовывоз:\s*/i, "").trim() || "Склад"
+    : address || "Адрес уточнить";
+  const terminalWorkMode = order.terminalWorkMode;
+  const receiptMode = order.receiptMode;
+  const paymentStatus = order.paymentStatus;
+  const fiscalStatus = order.fiscalStatus;
+  const workModeLabel =
+    terminalWorkMode === "STATION" ? "Касса" :
+    terminalWorkMode === "FIELD" ? "Выезд" :
+    terminalWorkMode === "MOBILE" ? "Телефон" :
+    "Не указано";
+  const receiptModeLabel =
+    receiptMode === "PRINTER" ? "Принтер" :
+    receiptMode === "LATER" ? "После оплаты" :
+    receiptMode === "ELECTRONIC" ? "Электронный" :
+    "Не указано";
+  const paymentStatusLabel =
+    paymentStatus === "REQUESTED" ? "Запрошена" :
+    paymentStatus === "PAID" ? "Оплачено" :
+    paymentStatus === "FAILED" ? "Ошибка" :
+    "Ожидает";
+  const fiscalStatusLabel =
+    fiscalStatus === "AWAITING_PROVIDER" ? "Ждёт провайдера" :
+    fiscalStatus === "SENT" ? "Отправлен" :
+    fiscalStatus === "FAILED" ? "Ошибка" :
+    "Ожидает";
+  const publicBaseUrl = (
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXTAUTH_URL ||
+    "https://pilo-rus.ru"
+  ).replace(/\/$/, "");
+  const orderTaskLabel = `Заказ #${order.orderNumber}`;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="admin-page-frame admin-page-frame-fluid">
       {/* Шапка */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <AdminBack />
-        <h1 className="font-display font-bold text-2xl">Заказ #{order.orderNumber}</h1>
-        <span className={`ml-2 px-2.5 py-1 rounded-lg text-xs font-semibold ${statusColor}`}>
-          {statusLabel}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <OrderEditPanel order={{
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <h1 className="font-display text-2xl font-bold">Заказ #{order.orderNumber}</h1>
+            <span className={`px-2.5 py-1 rounded-xl text-xs font-semibold ${statusColor}`}>
+              {statusLabel}
+            </span>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center lg:justify-end">
+            <DeleteOrderButton orderId={order.id} />
+          </div>
+        </div>
+        <OrderEditPanel order={{
             id: order.id,
             guestName: order.guestName,
             guestPhone: order.guestPhone,
@@ -55,12 +113,10 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
               quantity: Number(item.quantity),
               price: Number(item.price),
             })),
-          }} />
-          <DeleteOrderButton orderId={order.id} />
-        </div>
+        }} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Информация о клиенте */}
         <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
           <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Клиент</h2>
@@ -95,10 +151,15 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             Создан: {formatDate(order.createdAt)}
           </p>
         </div>
+        <TrackingLinkCard orderId={order.id} baseUrl={publicBaseUrl} />
       </div>
 
-      {/* Ссылка отслеживания */}
-      <TrackingLinkCard orderId={order.id} />
+      <RelatedTasksPanel
+        entityType="ORDER"
+        entityId={order.id}
+        entityLabel={orderTaskLabel}
+        entityHref={`/admin/orders/${order.id}`}
+      />
 
       {/* Источник заказа (UTM attribution) */}
       {(() => {
@@ -167,13 +228,13 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   {attr.gclid && (
                     <div>
                       <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">gclid (Google Ads)</p>
-                      <p className="font-mono text-xs break-all">{attr.gclid.slice(0, 32)}…</p>
+                      <p className="font-mono text-xs break-all">{attr.gclid.length > 32 ? `${attr.gclid.slice(0, 32)}...` : attr.gclid}</p>
                     </div>
                   )}
                   {attr.yclid && (
                     <div>
                       <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide">yclid (Яндекс.Директ)</p>
-                      <p className="font-mono text-xs break-all">{attr.yclid.slice(0, 32)}…</p>
+                      <p className="font-mono text-xs break-all">{attr.yclid.length > 32 ? `${attr.yclid.slice(0, 32)}...` : attr.yclid}</p>
                     </div>
                   )}
                   {attr.referrer && (
@@ -204,19 +265,21 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
         );
       })()}
 
-      {/* Детали доставки */}
+      {/* Детали получения */}
       <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
-        <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Детали</h2>
+        <h2 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Получение и оплата</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          {order.deliveryAddress && (
-            <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2">
+            {isPickup ? (
               <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-              <div>
-                <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Адрес</p>
-                <p>{order.deliveryAddress}</p>
-              </div>
+            ) : (
+              <Truck className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            )}
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">{fulfillmentLabel}</p>
+              <p className="break-words">{fulfillmentPlace}</p>
             </div>
-          )}
+          </div>
           <div className="flex items-start gap-2">
             <CreditCard className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
             <div>
@@ -224,12 +287,33 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
               <p>{order.paymentMethod}</p>
             </div>
           </div>
+          <div className="flex items-start gap-2">
+            <QrCode className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Статус оплаты</p>
+              <p>{paymentStatusLabel}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <ShieldCheck className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Чек</p>
+              <p>{receiptModeLabel} · {fiscalStatusLabel}</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <Smartphone className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Рабочее место</p>
+              <p>{workModeLabel}</p>
+            </div>
+          </div>
           {order.comment && (
             <div className="flex items-start gap-2">
               <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
               <div>
                 <p className="text-[11px] text-muted-foreground mb-0.5 font-medium uppercase tracking-wide">Комментарий</p>
-                <p>{order.comment}</p>
+                <p className="break-words">{order.comment}</p>
               </div>
             </div>
           )}
@@ -254,7 +338,13 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {order.items.map((item) => {
+              {order.items.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-5 py-8 text-center text-sm text-muted-foreground">
+                    В заказе нет товарных позиций.
+                  </td>
+                </tr>
+              ) : order.items.map((item) => {
                 const qty = Number(item.quantity);
                 const price = Number(item.price);
                 const unit = item.unitType === "CUBE" ? "м³" : "шт";
@@ -271,8 +361,18 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
             </tbody>
             <tfoot className="border-t border-border bg-muted/30">
               <tr>
+                <td colSpan={4} className="px-5 py-3 text-right font-semibold">Товары:</td>
+                <td className="px-5 py-3 text-right font-semibold">{formatPrice(itemsSubtotal)}</td>
+              </tr>
+              {deliveryCost > 0 && (
+                <tr>
+                  <td colSpan={4} className="px-5 py-3 text-right font-semibold">Доставка:</td>
+                  <td className="px-5 py-3 text-right font-semibold">{formatPrice(deliveryCost)}</td>
+                </tr>
+              )}
+              <tr className="border-t border-border">
                 <td colSpan={4} className="px-5 py-3 text-right font-semibold">Итого:</td>
-                <td className="px-5 py-3 text-right font-bold text-lg">{formatPrice(Number(order.totalAmount))}</td>
+                <td className="px-5 py-3 text-right font-bold text-lg">{formatPrice(orderTotal)}</td>
               </tr>
             </tfoot>
           </table>

@@ -2,13 +2,14 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireOrdersAdmin, requireOrdersStaff } from "@/lib/orders-auth";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { sendTelegramStatusUpdate, sendTelegramOrderEdited, deleteTelegramMessage, FINAL_STATUSES } from "@/lib/telegram";
 import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { runWorkflows } from "@/lib/workflow-engine";
+import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -32,13 +33,23 @@ const statusDescriptions: Record<string, string> = {
   CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
 };
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const ORDER_STATUSES = new Set([
+  "NEW",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "IN_DELIVERY",
+  "READY_PICKUP",
+  "DELIVERED",
+  "COMPLETED",
+  "CANCELLED",
+]);
+
+const UNIT_TYPES = new Set(["CUBE", "PIECE"]);
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session || !STAFF_ROLES.includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersStaff();
+  if (!access.authorized) return access.response;
 
   const order = await prisma.order.findUnique({
     where: { id: params.id, deletedAt: null },
@@ -53,13 +64,48 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session || !STAFF_ROLES.includes(session.user.role)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersStaff();
+  if (!access.authorized) return access.response;
 
   const body = await req.json();
   const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod, removeItemIds, addItems, totalAmount, deliveryCost } = body;
+
+  if (status !== undefined && !ORDER_STATUSES.has(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
+  if (totalAmount !== undefined) {
+    const value = Number(totalAmount);
+    if (!Number.isFinite(value) || value < 0) {
+      return NextResponse.json({ error: "Invalid totalAmount" }, { status: 400 });
+    }
+  }
+  if (deliveryCost !== undefined) {
+    const value = Number(deliveryCost);
+    if (!Number.isFinite(value) || value < 0) {
+      return NextResponse.json({ error: "Invalid deliveryCost" }, { status: 400 });
+    }
+  }
+  if (removeItemIds !== undefined && !Array.isArray(removeItemIds)) {
+    return NextResponse.json({ error: "Invalid removeItemIds" }, { status: 400 });
+  }
+  if (addItems !== undefined) {
+    if (!Array.isArray(addItems)) {
+      return NextResponse.json({ error: "Invalid addItems" }, { status: 400 });
+    }
+    const hasInvalidItem = addItems.some((item: any) =>
+      !item?.variantId ||
+      !item?.productName ||
+      !item?.variantSize ||
+      !UNIT_TYPES.has(String(item?.unitType || "")) ||
+      !Number.isFinite(Number(item?.quantity)) ||
+      Number(item?.quantity) <= 0 ||
+      !Number.isFinite(Number(item?.price)) ||
+      Number(item?.price) <= 0
+    );
+    if (hasInvalidItem) {
+      return NextResponse.json({ error: "Invalid addItems" }, { status: 400 });
+    }
+  }
 
   const updateData: Record<string, any> = {};
   if (status !== undefined) updateData.status = status;
@@ -69,8 +115,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (deliveryAddress !== undefined) updateData.deliveryAddress = deliveryAddress || null;
   if (comment !== undefined) updateData.comment = comment || null;
   if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
-  if (totalAmount !== undefined) updateData.totalAmount = totalAmount;
-  if (deliveryCost !== undefined) updateData.deliveryCost = deliveryCost;
+  if (totalAmount !== undefined) updateData.totalAmount = Number(totalAmount);
+  if (deliveryCost !== undefined) updateData.deliveryCost = Number(deliveryCost);
 
   // При финальном статусе — получаем telegramMessageId ДО обновления, чтобы удалить сообщение
   let telegramMsgToDelete: string | null = null;
@@ -97,12 +143,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     await prisma.orderItem.createMany({
       data: addItems.map((item: any) => ({
         orderId: params.id,
-        variantId: item.variantId,
-        productName: item.productName,
-        variantSize: item.variantSize,
-        unitType: item.unitType,
-        quantity: item.quantity,
-        price: item.price,
+        variantId: String(item.variantId),
+        productName: String(item.productName),
+        variantSize: String(item.variantSize),
+        unitType: String(item.unitType) as "CUBE" | "PIECE",
+        quantity: Number(item.quantity),
+        price: Number(item.price),
       })),
     });
   }
@@ -112,6 +158,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     data: updateData,
     include: { items: true },
   });
+
+  indexTerminalOrder({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    guestName: order.guestName,
+    guestPhone: order.guestPhone,
+    guestEmail: order.guestEmail,
+    deliveryAddress: order.deliveryAddress,
+    fulfillmentDetail: (order as any).fulfillmentDetail,
+    terminalProfile: (order as any).terminalProfile,
+    status: order.status,
+    paymentStatus: (order as any).paymentStatus,
+    totalAmount: order.totalAmount,
+    updatedAt: order.updatedAt,
+  }).catch(console.error);
 
   // ⚡ Автоворкфлоу при смене статуса
   if (status) {
@@ -125,6 +186,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       totalAmount: Number(order.items?.reduce((s: number, i: any) => s + Number(i.price) * Number(i.quantity), 0) ?? 0),
       paymentMethod: (order as any).paymentMethod,
     }).catch(console.error);
+
+    enqueueTerminalOrderLifecycle({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: (order as any).paymentStatus,
+      paymentMethod: (order as any).paymentMethod,
+      terminalProfile: (order as any).terminalProfile,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      totalAmount: order.totalAmount,
+    }, "order.status_changed").catch(console.error);
   }
 
   // Push клиенту
@@ -163,6 +236,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // Telegram + email при редактировании (без смены статуса)
   const isOrderEdit = !status && (guestName !== undefined || guestPhone !== undefined || removeItemIds?.length || addItems?.length || totalAmount !== undefined || deliveryCost !== undefined);
   if (isOrderEdit) {
+    enqueueTerminalOrderLifecycle({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: (order as any).paymentStatus,
+      paymentMethod: (order as any).paymentMethod,
+      terminalProfile: (order as any).terminalProfile,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      totalAmount: order.totalAmount,
+    }, "order.updated").catch(console.error);
+
     sendTelegramOrderEdited({
       id: order.id,
       orderNumber: order.orderNumber,
@@ -241,11 +326,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  const role = session?.user?.role;
-  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersAdmin();
+  if (!access.authorized) return access.response;
   const { searchParams } = new URL(req.url);
   const permanent = searchParams.get("permanent") === "true";
 
@@ -262,11 +344,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
 // Restore soft-deleted order
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  const role = session?.user?.role;
-  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersAdmin();
+  if (!access.authorized) return access.response;
   await prisma.order.update({
     where: { id: params.id },
     data: { deletedAt: null },

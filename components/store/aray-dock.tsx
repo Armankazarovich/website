@@ -1,23 +1,28 @@
 "use client";
 
 /**
- * ArayDock — Telegram-style чат-бар с Араем.
- * Единый на мобилке и десктопе: слева лицо Арая, центр — textarea, справа — микрофон/отправить.
+ * ArayDock — restored calm glass bottom chat bar.
  *
- * События:
- * - tap орб       → "aray:open"   (открывает фулскрин чат-панель из aray-widget.tsx)
- * - long-press орб → "aray:voice"  (push-to-talk)
- * - send text     → "aray:prompt" (detail.text → widget.sendMessage)
- * - mic button    → локальная диктовка через webkitSpeechRecognition → заполняет input
+ * This is the old PiloRus ARAY entry surface: orb on the left, one textarea,
+ * mic/send on the right. Store/cabinet/admin keep it desktop-only; mobile admin
+ * opens ARAY through the existing bottom-nav orb.
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Mic, Send } from "lucide-react";
+import type { CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { Mic, Send, Square } from "lucide-react";
 import { ArayOrb } from "@/components/shared/aray-orb";
+import { requestArayOpen, requestArayPrompt } from "@/components/store/aray-events";
 
 interface ArayDockProps {
   enabled?: boolean;
 }
+
+type SpeechWindow = Window & {
+  SpeechRecognition?: any;
+  webkitSpeechRecognition?: any;
+};
 
 function haptic(pattern: number | number[] = 8) {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -25,124 +30,223 @@ function haptic(pattern: number | number[] = 8) {
   }
 }
 
+function getSpeechRecognitionCtor() {
+  if (typeof window === "undefined") return null;
+  const speechWindow = window as SpeechWindow;
+  return speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition || null;
+}
+
 export function ArayDock({ enabled = true }: ArayDockProps) {
+  const pathname = usePathname();
+  const isAdminWorkspace = pathname?.startsWith("/admin");
+  const isTerminalWorkspace = pathname?.startsWith("/admin/orders/new");
   const [input, setInput] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   const taRef = useRef<HTMLTextAreaElement | null>(null);
+  const recognitionRef = useRef<any>(null);
   const longPressTimer = useRef<number | null>(null);
   const longPressTriggered = useRef(false);
 
   useEffect(() => setMounted(true), []);
 
-  // Auto-resize textarea
+  useEffect(() => {
+    setSpeechSupported(Boolean(getSpeechRecognitionCtor()));
+  }, []);
+
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    const h = Math.min(120, Math.max(40, ta.scrollHeight));
-    ta.style.height = h + "px";
+    ta.style.height = `${Math.min(120, Math.max(40, ta.scrollHeight))}px`;
   }, [input]);
 
-  // ── Отправка текста в Арая ─────────────────────────────────────────────────
   const handleSend = useCallback(() => {
     const text = input.trim();
     if (!text) return;
     haptic(10);
     setInput("");
     if (taRef.current) taRef.current.style.height = "auto";
-    window.dispatchEvent(new CustomEvent("aray:prompt", { detail: { text } }));
+    requestArayPrompt(text);
   }, [input]);
 
-  // ── Голосовой режим — открываем VoiceModeOverlay (fullscreen) ───────────────
-  // Раньше mic-кнопка делала локальный Web Speech Recognition в textarea — это было
-  // криво (mic не освобождался, конфликт с VoiceModeOverlay). Теперь mic = открыть Voice Mode.
-  const openVoiceMode = useCallback(() => {
-    haptic(8);
-    window.dispatchEvent(new CustomEvent("aray:voice"));
+  const stopRecording = useCallback(() => {
+    try { recognitionRef.current?.stop?.(); } catch {}
+    recognitionRef.current = null;
+    setRecording(false);
   }, []);
 
-  // ── Тап и long-press по орбу ──────────────────────────────────────────────
+  const startRecording = useCallback(() => {
+    const SpeechRecognitionCtor = getSpeechRecognitionCtor();
+    if (!SpeechRecognitionCtor) {
+      requestArayOpen("voice");
+      haptic([10, 30, 10]);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionCtor();
+      let finalText = "";
+      recognitionRef.current = recognition;
+      recognition.lang = "ru-RU";
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (event: any) => {
+        let interimText = "";
+        for (let i = event.resultIndex; i < event.results.length; i += 1) {
+          const result = event.results[i];
+          if (result.isFinal) finalText += result[0]?.transcript || "";
+          else interimText += result[0]?.transcript || "";
+        }
+        setInput(`${finalText} ${interimText}`.replace(/\s+/g, " ").trim());
+      };
+      recognition.onerror = () => {
+        recognitionRef.current = null;
+        setRecording(false);
+      };
+      recognition.onend = () => {
+        recognitionRef.current = null;
+        setRecording(false);
+      };
+      recognition.start();
+      setRecording(true);
+      haptic(8);
+    } catch {
+      recognitionRef.current = null;
+      setRecording(false);
+      requestArayOpen("voice");
+    }
+  }, []);
+
   const onOrbPointerDown = () => {
     longPressTriggered.current = false;
     longPressTimer.current = window.setTimeout(() => {
       longPressTriggered.current = true;
       haptic([12, 40, 12]);
-      window.dispatchEvent(new CustomEvent("aray:voice"));
+      requestArayOpen("voice");
     }, 400);
   };
+
   const onOrbPointerUp = () => {
-    if (longPressTimer.current) { clearTimeout(longPressTimer.current); longPressTimer.current = null; }
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
+
   const onOrbClick = () => {
     if (longPressTriggered.current) return;
     haptic(8);
-    window.dispatchEvent(new CustomEvent("aray:open"));
+    requestArayOpen("open");
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
       handleSend();
     }
   };
 
-  // Cleanup
   useEffect(() => () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    try { recognitionRef.current?.stop?.(); } catch {}
   }, []);
 
   if (!enabled || !mounted) return null;
 
   const hasText = input.trim().length > 0;
-  const showSend = hasText;
+
+  if (isTerminalWorkspace) {
+    return (
+      <div
+        className="fixed z-[55] hidden pointer-events-none lg:block"
+        style={{
+          left: "calc(0.75rem + 3.75rem + 0.75rem)",
+          bottom: "max(1rem, env(safe-area-inset-bottom, 1rem))",
+        }}
+        aria-label="ARAY"
+      >
+        <button
+          type="button"
+          onClick={onOrbClick}
+          onPointerDown={onOrbPointerDown}
+          onPointerUp={onOrbPointerUp}
+          onPointerCancel={onOrbPointerUp}
+          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform duration-150 hover:scale-[1.04] active:scale-[0.96]"
+          aria-label="ARAY - открыть чат"
+          title="ARAY"
+          style={{
+            background: "hsl(var(--background) / 0.86)",
+            borderColor: "hsl(var(--primary) / 0.20)",
+            boxShadow: "0 10px 28px hsl(var(--foreground) / 0.08), 0 0 0 1px hsl(var(--primary) / 0.06) inset",
+            backdropFilter: "blur(18px) saturate(150%)",
+            WebkitBackdropFilter: "blur(18px) saturate(150%)",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          <ArayOrb size={34} pulse={recording ? "listening" : "idle"} />
+        </button>
+      </div>
+    );
+  }
+
+  const rootStyle = {
+    paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    "--aray-dock-bottom": "0px",
+  } as CSSProperties;
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[55] pointer-events-none hidden lg:block"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      aria-label="Арай — чат-бар"
+      className="aray-dock-root fixed left-0 right-0 z-[55] hidden pointer-events-none lg:block"
+      style={rootStyle}
+      aria-label="ARAY — единый чат"
     >
-      <div className="pointer-events-auto mx-auto px-3 pb-3 pt-2 max-w-3xl">
+      <div
+        className="pointer-events-auto mx-auto w-full px-3 pb-2 pt-2 lg:pb-4"
+        style={{ maxWidth: isAdminWorkspace ? "min(820px, calc(100vw - 24px))" : "min(980px, calc(100vw - 32px))" }}
+      >
         <div
-          className="flex items-end gap-2 p-2 rounded-[22px]"
+          className={`aray-dock-glass relative flex items-end gap-2 overflow-hidden rounded-[22px] border p-2 ${
+            isAdminWorkspace ? "admin-liquid-interactive" : ""
+          }`}
           style={{
-            // Liquid Glass — единый стиль с Header магазина
-            background: "hsl(var(--background) / 0.85)",
-            backdropFilter: "blur(20px) saturate(180%)",
-            WebkitBackdropFilter: "blur(20px) saturate(180%)",
-            border: "1px solid hsl(var(--primary) / 0.15)",
+            background: "hsl(var(--background) / 0.94)",
+            borderColor: "hsl(var(--primary) / 0.15)",
             boxShadow:
-              "0 8px 32px hsl(var(--foreground) / 0.08), 0 1px 0 hsl(var(--primary) / 0.1) inset",
+              "0 -6px 22px hsl(var(--foreground) / 0.055), 0 0 0 1px hsl(var(--primary) / 0.045) inset",
+            backdropFilter: "blur(22px) saturate(165%)",
+            WebkitBackdropFilter: "blur(22px) saturate(165%)",
           }}
         >
-          {/* ── Левая часть: лицо Арая (без idle свечения — минимализм) ── */}
+          <div className="aray-dock-line pointer-events-none absolute inset-x-5 top-0 h-px" />
           <button
             type="button"
             onClick={onOrbClick}
             onPointerDown={onOrbPointerDown}
             onPointerUp={onOrbPointerUp}
             onPointerCancel={onOrbPointerUp}
-            className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full transition-transform duration-150 hover:scale-[1.05] active:scale-[0.95]"
-            aria-label="Арай — коснись чтобы открыть, удерживай для голоса"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-transform duration-150 hover:scale-[1.05] active:scale-[0.95]"
+            aria-label="ARAY — открыть чат"
             title="Коснись — открыть чат. Удерживай — голос."
             style={{ WebkitTapHighlightColor: "transparent" }}
           >
-            <ArayOrb size={36} pulse="idle" />
+            <ArayOrb size={36} pulse={recording ? "listening" : "idle"} />
           </button>
 
-          {/* ── Центр: textarea ── */}
-          <div className="flex-1 min-w-0 flex items-center">
+          <div className="flex min-w-0 flex-1 items-center">
             <textarea
               ref={taRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(event) => setInput(event.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="Напишите Араю..."
-              className="w-full resize-none bg-transparent outline-none text-foreground placeholder:text-muted-foreground/60 leading-5 py-2.5 px-1"
+              placeholder={recording ? "Слушаю..." : "Напишите Араю..."}
+              className="w-full resize-none bg-transparent px-1 py-2.5 text-[16px] leading-5 text-foreground outline-none placeholder:text-muted-foreground/60"
               style={{
-                fontSize: "16px", // anti-iOS-zoom
+                fontSize: "16px",
                 maxHeight: "120px",
                 minHeight: "40px",
               }}
@@ -150,40 +254,76 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
             />
           </div>
 
-          {/* ── Правая часть: mic / send ── */}
-          {showSend ? (
+          {hasText && !recording ? (
             <button
               type="button"
               onClick={handleSend}
-              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95"
               aria-label="Отправить"
               title="Отправить"
               style={{
                 background: "hsl(var(--primary))",
                 color: "hsl(var(--primary-foreground))",
-                boxShadow: "0 0 14px hsl(var(--primary) / 0.45)",
+                boxShadow: "0 0 10px hsl(var(--primary) / 0.22)",
               }}
             >
-              <Send className="w-[18px] h-[18px]" strokeWidth={2} />
+              <Send className="h-[18px] w-[18px]" strokeWidth={2} />
+            </button>
+          ) : recording ? (
+            <button
+              type="button"
+              onClick={stopRecording}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-all active:scale-95"
+              aria-label="Остановить запись"
+              title="Остановить"
+              style={{
+                background: "hsl(var(--destructive) / 0.12)",
+                border: "1px solid hsl(var(--destructive) / 0.35)",
+                color: "hsl(var(--destructive))",
+                animation: "arayDockPulse 1.4s ease-in-out infinite",
+              }}
+            >
+              <Square className="h-[14px] w-[14px] fill-current" strokeWidth={0} />
             </button>
           ) : (
             <button
               type="button"
-              onClick={openVoiceMode}
-              className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-foreground/70 hover:text-primary transition-colors active:scale-95"
-              aria-label="Голосовой режим Арая"
-              title="Голосовой режим (fullscreen)"
+              onClick={startRecording}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground/70 transition-colors hover:text-primary active:scale-95"
+              aria-label={speechSupported ? "Голосовой ввод" : "Голосовой режим ARAY"}
+              title="Голос"
             >
-              <Mic className="w-[18px] h-[18px]" strokeWidth={1.75} />
+              <Mic className="h-[18px] w-[18px]" strokeWidth={1.75} />
             </button>
           )}
         </div>
       </div>
 
       <style jsx>{`
+        .aray-dock-root {
+          bottom: var(--aray-dock-bottom);
+        }
+
+        @media (min-width: 1024px) {
+          .aray-dock-root {
+            bottom: 0;
+          }
+        }
+
         @keyframes arayDockPulse {
           0%, 100% { box-shadow: 0 0 12px hsl(var(--destructive) / 0.35); }
-          50%      { box-shadow: 0 0 24px hsl(var(--destructive) / 0.7); }
+          50% { box-shadow: 0 0 24px hsl(var(--destructive) / 0.7); }
+        }
+
+        .aray-dock-line {
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            hsl(var(--primary) / 0.2) 26%,
+            hsl(var(--primary) / 0.45) 50%,
+            hsl(var(--primary) / 0.2) 74%,
+            transparent 100%
+          );
         }
       `}</style>
     </div>

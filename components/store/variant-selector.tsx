@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { Minus, Plus, ShoppingCart, Phone, Check } from "lucide-react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { Minus, Plus, ShoppingCart, Phone, Check, Search } from "lucide-react";
 import { useCartStore, type UnitType } from "@/store/cart";
 import { PHONE_LINK } from "@/lib/phone-constants";
 import { formatPrice } from "@/lib/utils";
@@ -44,6 +44,7 @@ export function VariantSelector({
   const [quantity, setQuantity] = useState(saleUnit === "PIECE" ? 1 : 1);
   const [justAdded, setJustAdded] = useState(false);
   const [addedTotal, setAddedTotal] = useState(0);
+  const [variantQuery, setVariantQuery] = useState("");
   const justAddedTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // Sync unit type with saleUnit
@@ -60,6 +61,17 @@ export function VariantSelector({
       : null;
 
   const totalPrice = currentPrice ? currentPrice * quantity : 0;
+  const visibleVariants = useMemo(() => {
+    const query = variantQuery.trim().toLowerCase();
+    if (!query) return variants;
+    return variants.filter((variant) =>
+      [
+        variant.size,
+        variant.pricePerCube?.toString() || "",
+        variant.pricePerPiece?.toString() || "",
+      ].some((value) => value.toLowerCase().includes(query)),
+    );
+  }, [variantQuery, variants]);
 
   // Calculate equivalent in other unit
   const equivalentInfo = () => {
@@ -108,16 +120,43 @@ export function VariantSelector({
     <div className="space-y-6">
       {/* Size selection */}
       <div>
-        <h3 className="font-medium mb-3">
-          Выберите размер
-          {selectedVariant && (
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {selectedVariant.size}
-            </span>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h3 className="font-medium">
+              Выберите размер
+              {selectedVariant && (
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                  {selectedVariant.size}
+                </span>
+              )}
+            </h3>
+            {variants.length > 10 && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {variants.length} вариантов: можно быстро найти размер или сорт.
+              </p>
+            )}
+          </div>
+        </div>
+        {variants.length > 10 && (
+          <label className="relative mb-3 block">
+            <span className="sr-only">Найти размер</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={variantQuery}
+              onChange={(event) => setVariantQuery(event.target.value)}
+              placeholder="Найти размер, длину или сорт..."
+              className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+            />
+          </label>
+        )}
+        <div
+          className={cn(
+            variants.length > 10
+              ? "grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3"
+              : "flex flex-wrap gap-2",
           )}
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {variants.map((v) => (
+        >
+          {visibleVariants.map((v) => (
             <button
               key={v.id}
               onClick={() => setSelectedVariant(v)}
@@ -133,6 +172,11 @@ export function VariantSelector({
               {v.size}
             </button>
           ))}
+          {visibleVariants.length === 0 && (
+            <p className="col-span-full rounded-xl border border-border bg-muted/30 px-3 py-4 text-center text-sm text-muted-foreground">
+              Такого размера не нашли
+            </p>
+          )}
         </div>
       </div>
 

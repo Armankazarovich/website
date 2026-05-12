@@ -2,14 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
+import { requireOrdersAdmin } from "@/lib/orders-auth";
 
 export async function DELETE() {
-  const session = await auth();
-  const role = session?.user?.role;
-  if (role !== "SUPER_ADMIN" && role !== "ADMIN") {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-  }
+  const access = await requireOrdersAdmin();
+  if (!access.authorized) return access.response;
   const result = await prisma.order.deleteMany({
     where: { deletedAt: { not: null } },
   });

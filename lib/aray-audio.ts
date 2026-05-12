@@ -79,17 +79,29 @@ export async function playAraySpeech(buf: ArrayBuffer): Promise<void> {
  * Browser SpeechSynthesis fallback.
  * Перед этим останавливает любую текущую озвучку.
  */
-export function speakAraySpeechBrowser(text: string, lang = "ru-RU"): void {
+export function speakAraySpeechBrowser(text: string, lang = "ru-RU"): Promise<void> {
   stopAraySpeech();
 
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    return Promise.resolve();
+  }
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = lang;
-  utter.rate = 1.0;
-  utter.pitch = 1.0;
+  utter.rate = 0.94;
+  utter.pitch = 0.98;
 
-  try { window.speechSynthesis.speak(utter); } catch {}
+  try {
+    const voices = window.speechSynthesis.getVoices();
+    const ruVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ru"));
+    if (ruVoice) utter.voice = ruVoice;
+  } catch {}
+
+  return new Promise<void>((resolve) => {
+    utter.onend = () => resolve();
+    utter.onerror = () => resolve();
+    try { window.speechSynthesis.speak(utter); } catch { resolve(); }
+  });
 }
 
 /**

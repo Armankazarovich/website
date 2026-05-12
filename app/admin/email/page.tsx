@@ -38,7 +38,11 @@ import {
 } from "lucide-react";
 
 // ── Email Templates ──────────────────────────────────────────────
-const makeBase = (header: { title: string; sub?: string }, headerBg: string, body: string) => `<!DOCTYPE html>
+const makeBase = (
+  header: { title: string; sub?: string },
+  headerBg: string,
+  body: string,
+) => `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{margin:0;font-family:Arial,sans-serif;background:#f5f5f5}
 .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden}
@@ -54,28 +58,36 @@ const makeBase = (header: { title: string; sub?: string }, headerBg: string, bod
 </style></head>
 <body><div style="padding:20px 0">
 <div class="wrap">
-<div class="header"><h1>${header.title}</h1>${header.sub ? `<p>${header.sub}</p>` : ''}</div>
+<div class="header"><h1>${header.title}</h1>${header.sub ? `<p>${header.sub}</p>` : ""}</div>
 <div class="body">${body}</div>
 <div class="footer"><p>ПилоРус — Пиломатериалы в Химках · <a href="https://pilo-rus.ru" style="color:#e8700a">pilo-rus.ru</a> · ${PHONE_DISPLAY}</p></div>
 </div></div></body></html>`;
 
-const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; desc: string; subject: string; html: () => string }[] = [
+const EMAIL_TEMPLATES: {
+  key: string;
+  icon: React.ElementType;
+  label: string;
+  desc: string;
+  subject: string;
+  html: () => string;
+}[] = [
   {
     key: "promo",
     icon: Tag,
     label: "Акция",
     desc: "Скидка или специальное предложение",
     subject: "Специальное предложение от ПилоРус 🎁",
-    html: () => makeBase(
-      { title: "Специальное предложение", sub: "Только для наших клиентов" },
-      "linear-gradient(135deg,#e8700a,#f59e0b)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        { title: "Специальное предложение", sub: "Только для наших клиентов" },
+        "linear-gradient(135deg,#e8700a,#f59e0b)",
+        `<p>Добрый день!</p>
 <p>Хотим сообщить вам о нашем специальном предложении. В этом месяце мы подготовили для вас выгодные условия на пиломатериалы высшего качества.</p>
 <p><b>🔥 Скидка 10% на доску обрезную</b> при заказе от 3 м³</p>
 <p><b>📞 Доставка по Москве и МО</b> — рассчитаем точную стоимость по вашему адресу</p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Смотреть каталог</a>
-<p>Предложение действует до конца месяца. Свяжитесь с нашим менеджером для расчёта стоимости.</p>`
-    ),
+<p>Предложение действует до конца месяца. Свяжитесь с нашим менеджером для расчёта стоимости.</p>`,
+      ),
   },
   {
     key: "new_product",
@@ -83,10 +95,14 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Новинки",
     desc: "Анонс новых товаров в каталоге",
     subject: "Новые поступления в ПилоРус 📦",
-    html: () => makeBase(
-      { title: "Новые поступления", sub: "Свежая партия прямо с производства" },
-      "linear-gradient(135deg,#059669,#10b981)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        {
+          title: "Новые поступления",
+          sub: "Свежая партия прямо с производства",
+        },
+        "linear-gradient(135deg,#059669,#10b981)",
+        `<p>Добрый день!</p>
 <p>Рады сообщить о новых поступлениях на склад. Мы регулярно обновляем ассортимент и следим за качеством каждой партии.</p>
 <p><b>В наличии:</b></p>
 <ul style="color:#444;line-height:2;padding-left:20px">
@@ -95,8 +111,8 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 <li>Вагонка штиль — ольха, класс A</li>
 </ul>
 <a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог</a>
-<p>Наш склад работает Пн-Сб 09:00–20:00, Вс 09:00–18:00</p>`
-    ),
+<p>Наш склад работает Пн-Сб 09:00–20:00, Вс 09:00–18:00</p>`,
+      ),
   },
   {
     key: "seasonal",
@@ -104,10 +120,14 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Сезонное",
     desc: "Сезонное предложение (весна/лето)",
     subject: "Строительный сезон открыт! Подготовьтесь заранее 🌿",
-    html: () => makeBase(
-      { title: "Строительный сезон открыт!", sub: "Лучшее время для закупки материалов" },
-      "linear-gradient(135deg,#0ea5e9,#38bdf8)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        {
+          title: "Строительный сезон открыт!",
+          sub: "Лучшее время для закупки материалов",
+        },
+        "linear-gradient(135deg,#0ea5e9,#38bdf8)",
+        `<p>Добрый день!</p>
 <p>Строительный сезон набирает обороты. Самое время позаботиться о запасе качественных пиломатериалов для вашего проекта.</p>
 <p>Мы рекомендуем заказывать заранее — спрос растёт, а склад ограничен. Успейте зафиксировать цены!</p>
 <p><b>Почему ПилоРус?</b></p>
@@ -116,8 +136,8 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 <li>Доставка по Москве и МО — от 1 дня</li>
 <li>Официальные документы — счёт, УПД, договор</li>
 </ul>
-<a href="https://pilo-rus.ru/catalog" class="btn">Рассчитать заказ</a>`
-    ),
+<a href="https://pilo-rus.ru/catalog" class="btn">Рассчитать заказ</a>`,
+      ),
   },
   {
     key: "reminder",
@@ -125,16 +145,20 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Напоминание",
     desc: "Клиент не заказывал давно",
     subject: "Скучаем по вам! Пора пополнить запасы 😊",
-    html: () => makeBase(
-      { title: "Давно не виделись!", sub: "Готовы помочь с вашим следующим проектом" },
-      "linear-gradient(135deg,#7c3aed,#a78bfa)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        {
+          title: "Давно не виделись!",
+          sub: "Готовы помочь с вашим следующим проектом",
+        },
+        "linear-gradient(135deg,#7c3aed,#a78bfa)",
+        `<p>Добрый день!</p>
 <p>Заметили, что вы давно не заглядывали в наш каталог. Надеемся, что ваши проекты идут успешно!</p>
 <p>Если вы планируете новое строительство или ремонт — мы здесь и готовы помочь с подбором материалов и расчётом стоимости.</p>
 <p><b>Актуальные цены и ассортимент — на сайте:</b></p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог</a>
-<p>Звоните: <b>${PHONE_DISPLAY}</b> — менеджер ответит и поможет подобрать нужное.</p>`
-    ),
+<p>Звоните: <b>${PHONE_DISPLAY}</b> — менеджер ответит и поможет подобрать нужное.</p>`,
+      ),
   },
   {
     key: "thanks",
@@ -142,16 +166,17 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Спасибо",
     desc: "Благодарность за заказ/сотрудничество",
     subject: "Спасибо, что выбрали ПилоРус! ❤️",
-    html: () => makeBase(
-      { title: "Спасибо за доверие!", sub: "Ваш отзыв очень важен для нас" },
-      "linear-gradient(135deg,#dc2626,#f87171)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        { title: "Спасибо за доверие!", sub: "Ваш отзыв очень важен для нас" },
+        "linear-gradient(135deg,#dc2626,#f87171)",
+        `<p>Добрый день!</p>
 <p>Благодарим вас за сотрудничество с ПилоРус! Надеемся, что наши пиломатериалы полностью оправдали ваши ожидания.</p>
 <p>Если у вас есть пара минут — нам очень важно ваше мнение. Оставьте отзыв о нашей работе:</p>
 <a href="https://pilo-rus.ru" class="btn">Оставить отзыв</a>
 <p>Ваш отзыв поможет другим покупателям сделать правильный выбор. Спасибо!</p>
-<p>Будем рады видеть вас снова 🌲</p>`
-    ),
+<p>Будем рады видеть вас снова 🌲</p>`,
+      ),
   },
   {
     key: "news",
@@ -159,28 +184,34 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Новости",
     desc: "Новости компании / важные изменения",
     subject: "Новости ПилоРус",
-    html: () => makeBase(
-      { title: "Новости компании", sub: "Апрель 2026" },
-      "linear-gradient(135deg,#374151,#6b7280)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        { title: "Новости компании", sub: "Апрель 2026" },
+        "linear-gradient(135deg,#374151,#6b7280)",
+        `<p>Добрый день!</p>
 <p>Делимся важными новостями и обновлениями от ПилоРус.</p>
 <p><b>📢 Расширяем ассортимент</b></p>
 <p>В этом месяце добавили новые позиции в каталог...</p>
 <p><b>🕐 Изменение режима работы</b></p>
 <p>С мая работаем без выходных...</p>
-<a href="https://pilo-rus.ru" class="btn">Подробнее на сайте</a>`
-    ),
+<a href="https://pilo-rus.ru" class="btn">Подробнее на сайте</a>`,
+      ),
   },
   {
     key: "partnership",
     icon: Handshake,
     label: "Партнёрство",
     desc: "B2B приглашение к сотрудничеству",
-    subject: "Предложение о сотрудничестве — ПилоРус (поставщик пиломатериалов)",
-    html: () => makeBase(
-      { title: "Предложение о сотрудничестве", sub: "Оптовые поставки пиломатериалов" },
-      `linear-gradient(135deg, hsl(var(--brand-sidebar)), hsl(var(--primary)))`,
-      `<p>Добрый день!</p>
+    subject:
+      "Предложение о сотрудничестве — ПилоРус (поставщик пиломатериалов)",
+    html: () =>
+      makeBase(
+        {
+          title: "Предложение о сотрудничестве",
+          sub: "Оптовые поставки пиломатериалов",
+        },
+        `linear-gradient(135deg, hsl(var(--brand-sidebar)), hsl(var(--primary)))`,
+        `<p>Добрый день!</p>
 <p>Меня зовут Арман, я представляю компанию <b>ПилоРус</b> — прямого поставщика пиломатериалов из Химок (МО).</p>
 <p>Мы работаем с оптовыми покупателями, строительными компаниями и подрядчиками. Предлагаем:</p>
 <ul style="color:#444;line-height:2;padding-left:20px">
@@ -193,8 +224,8 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 <p>Если вам интересно сотрудничество — я готов выслать актуальный прайс-лист и ответить на вопросы.</p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Посмотреть каталог и цены</a>
 <p style="color:#666;font-size:13px">Если вы не заинтересованы — просто проигнорируйте это письмо. Повторно писать не буду.</p>
-<p><b>Арман Казарович</b><br>ПилоРус — пиломатериалы от производителя<br>📞 ${PHONE_DISPLAY} | 📧 info@pilo-rus.ru</p>`
-    ),
+<p><b>Арман Казарович</b><br>ПилоРус — пиломатериалы от производителя<br>📞 ${PHONE_DISPLAY} | 📧 info@pilo-rus.ru</p>`,
+      ),
   },
   {
     key: "pricelist",
@@ -202,10 +233,11 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Прайс-лист",
     desc: "Актуальные цены на основные позиции",
     subject: "Актуальный прайс-лист ПилоРус — пиломатериалы от производителя",
-    html: () => makeBase(
-      { title: "Актуальный прайс-лист", sub: "Апрель 2026 · Химки, МО" },
-      "linear-gradient(135deg,#065f46,#059669)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        { title: "Актуальный прайс-лист", sub: "Апрель 2026 · Химки, МО" },
+        "linear-gradient(135deg,#065f46,#059669)",
+        `<p>Добрый день!</p>
 <p>Высылаем актуальные цены на основные позиции нашего склада:</p>
 <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:16px 0">
   <thead>
@@ -225,8 +257,8 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
 </table>
 <p style="font-size:12px;color:#666">* Цены указаны за 1 м³ с НДС. Окончательная цена зависит от объёма и условий доставки.</p>
 <a href="https://pilo-rus.ru/catalog" class="btn">Полный каталог с ценами</a>
-<p>Для расчёта стоимости вашего заказа — позвоните или напишите:<br><b>📞 ${PHONE_DISPLAY}</b> | 📧 info@pilo-rus.ru</p>`
-    ),
+<p>Для расчёта стоимости вашего заказа — позвоните или напишите:<br><b>📞 ${PHONE_DISPLAY}</b> | 📧 info@pilo-rus.ru</p>`,
+      ),
   },
   {
     key: "categories",
@@ -234,29 +266,54 @@ const EMAIL_TEMPLATES: { key: string; icon: React.ElementType; label: string; de
     label: "Категории",
     desc: "Обзор всех категорий товаров",
     subject: "Весь ассортимент ПилоРус — доска, брус, вагонка и не только",
-    html: () => makeBase(
-      { title: "Наш ассортимент", sub: "Пиломатериалы на любой проект" },
-      "linear-gradient(135deg,#7c2d12,#ea580c)",
-      `<p>Добрый день!</p>
+    html: () =>
+      makeBase(
+        { title: "Наш ассортимент", sub: "Пиломатериалы на любой проект" },
+        "linear-gradient(135deg,#7c2d12,#ea580c)",
+        `<p>Добрый день!</p>
 <p>Рады напомнить о полном ассортименте нашего склада. Мы предлагаем всё для строительства и отделки:</p>
 <table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0">
   ${[
-    ["🌲 Доска обрезная", "Конструкционный материал для каркасов, перекрытий, заборов", "https://pilo-rus.ru/catalog?category=doska-obreznaya"],
-    ["🏗️ Брус", "Строительный и профилированный брус для домов и бань", "https://pilo-rus.ru/catalog?category=brus"],
-    ["🏠 Вагонка", "Отделочная вагонка из хвои и лиственных пород", "https://pilo-rus.ru/catalog?category=vagonka"],
-    ["🪵 Блок-хаус", "Имитация бревна для фасадов и интерьеров", "https://pilo-rus.ru/catalog?category=blok-haus"],
-    ["📐 Планкен", "Фасадная доска для современного облика", "https://pilo-rus.ru/catalog?category=planken"],
-  ].map(([name, desc, link]) => `<tr>
+    [
+      "🌲 Доска обрезная",
+      "Конструкционный материал для каркасов, перекрытий, заборов",
+      "https://pilo-rus.ru/catalog?category=doska-obreznaya",
+    ],
+    [
+      "🏗️ Брус",
+      "Строительный и профилированный брус для домов и бань",
+      "https://pilo-rus.ru/catalog?category=brus",
+    ],
+    [
+      "🏠 Вагонка",
+      "Отделочная вагонка из хвои и лиственных пород",
+      "https://pilo-rus.ru/catalog?category=vagonka",
+    ],
+    [
+      "🪵 Блок-хаус",
+      "Имитация бревна для фасадов и интерьеров",
+      "https://pilo-rus.ru/catalog?category=blok-haus",
+    ],
+    [
+      "📐 Планкен",
+      "Фасадная доска для современного облика",
+      "https://pilo-rus.ru/catalog?category=planken",
+    ],
+  ]
+    .map(
+      ([name, desc, link]) => `<tr>
     <td style="padding:10px 0;border-bottom:1px solid #f3f4f6;vertical-align:top">
       <p style="margin:0;font-size:15px;font-weight:700;color:#111">${name}</p>
       <p style="margin:4px 0 8px;font-size:13px;color:#666">${desc}</p>
       <a href="${link}" style="font-size:13px;color:#e8700a;font-weight:600;text-decoration:none">Смотреть →</a>
     </td>
-  </tr>`).join("")}
+  </tr>`,
+    )
+    .join("")}
 </table>
 <a href="https://pilo-rus.ru/catalog" class="btn">Весь каталог с ценами</a>
-<p>Склад в Химках работает <b>Пн–Вс 09:00–20:00</b>. Доставка по Москве и МО.</p>`
-    ),
+<p>Склад в Химках работает <b>Пн–Вс 09:00–20:00</b>. Доставка по Москве и МО.</p>`,
+      ),
   },
 ];
 
@@ -300,6 +357,14 @@ const fmt = (d: string | null | undefined) => {
   });
 };
 
+function sourceLabel(source: string) {
+  if (source === "registered") return "Зарегистрирован";
+  if (source === "order") return "Покупатель";
+  if (source === "scanner") return "Сканер";
+  if (source === "site") return "Сайт";
+  return "Импорт";
+}
+
 export default function EmailPage() {
   const [tab, setTab] = useState<Tab>("send");
 
@@ -315,7 +380,10 @@ export default function EmailPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState<{ sent: number; errors: string[] } | null>(null);
+  const [sendResult, setSendResult] = useState<{
+    sent: number;
+    errors: string[];
+  } | null>(null);
   const [sendError, setSendError] = useState("");
 
   // SMTP tab state
@@ -332,10 +400,16 @@ export default function EmailPage() {
   const [smtpSaving, setSmtpSaving] = useState(false);
   const [smtpSaved, setSmtpSaved] = useState(false);
   const [smtpTesting, setSmtpTesting] = useState(false);
-  const [smtpTestResult, setSmtpTestResult] = useState<{ ok?: boolean; message?: string; error?: string } | null>(null);
+  const [smtpTestResult, setSmtpTestResult] = useState<{
+    ok?: boolean;
+    message?: string;
+    error?: string;
+  } | null>(null);
 
   // Preview state
-  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">(
+    "desktop",
+  );
 
   // Test email state
   const [testEmail, setTestEmail] = useState("");
@@ -351,7 +425,10 @@ export default function EmailPage() {
   const [scanUrl, setScanUrl] = useState("");
   const [scanDeep, setScanDeep] = useState(true);
   const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<{ emails: string[]; pages: number } | null>(null);
+  const [scanResult, setScanResult] = useState<{
+    emails: string[];
+    pages: number;
+  } | null>(null);
   const [scanError, setScanError] = useState("");
   const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set());
   const [addingScanned, setAddingScanned] = useState(false);
@@ -359,7 +436,14 @@ export default function EmailPage() {
 
   // Product insert
   const [showProductPicker, setShowProductPicker] = useState(false);
-  const [productList, setProductList] = useState<{ id: string; name: string; slug: string; variants: { pricePerCube: number | null; pricePerPiece: number | null }[] }[]>([]);
+  const [productList, setProductList] = useState<
+    {
+      id: string;
+      name: string;
+      slug: string;
+      variants: { pricePerCube: number | null; pricePerPiece: number | null }[];
+    }[]
+  >([]);
   const [productSearch, setProductSearch] = useState("");
 
   // Load subscribers
@@ -368,10 +452,14 @@ export default function EmailPage() {
     try {
       const res = await fetch("/api/admin/email");
       const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Не удалось загрузить подписчиков");
       if (data.subscribers) {
         setSubscribers(data.subscribers);
         setSubsLoaded(true);
       }
+    } catch (error: any) {
+      setSendError(error.message || "Не удалось загрузить подписчиков");
     } finally {
       setSubsLoading(false);
     }
@@ -383,8 +471,14 @@ export default function EmailPage() {
     try {
       const res = await fetch("/api/admin/email?action=smtp_settings");
       const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Не удалось загрузить SMTP");
       setSmtp((prev) => ({ ...prev, ...data }));
       setSmtpLoaded(true);
+    } catch (error: any) {
+      setSmtpTestResult({
+        ok: false,
+        message: error.message || "Не удалось загрузить SMTP",
+      });
     } finally {
       setSmtpLoading(false);
     }
@@ -402,12 +496,17 @@ export default function EmailPage() {
   const loadProducts = async () => {
     if (productList.length > 0) return;
     const res = await fetch("/api/admin/products").catch(() => null);
-    if (res?.ok) { const d = await res.json(); setProductList(Array.isArray(d) ? d : []); }
+    if (res?.ok) {
+      const d = await res.json();
+      setProductList(Array.isArray(d) ? d : []);
+    }
   };
 
-  const insertProduct = (p: typeof productList[0]) => {
-    const price = p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerPiece ?? 0;
-    const priceStr = price > 0 ? `от ${price.toLocaleString("ru-RU")} ₽` : "Цена по запросу";
+  const insertProduct = (p: (typeof productList)[0]) => {
+    const price =
+      p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerPiece ?? 0;
+    const priceStr =
+      price > 0 ? `от ${price.toLocaleString("ru-RU")} ₽` : "Цена по запросу";
     const block = `\n<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
   <tr>
     <td style="padding:14px 16px;background:#fafafa">
@@ -435,15 +534,21 @@ export default function EmailPage() {
         body: JSON.stringify({
           action: "send",
           subject: `[ТЕСТ] ${subject || "Тест рассылки"}`,
-          html: html + `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">⚡ Тестовое письмо — отправлено из ПилоРус Admin</div>`,
+          html:
+            html +
+            `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">⚡ Тестовое письмо — отправлено из ПилоРус Admin</div>`,
           recipients: [testEmail.trim()],
         }),
       });
       const data = await res.json();
+      if (!res.ok)
+        throw new Error(data.error || "Тестовое письмо не отправлено");
       if (data.sent > 0) {
         setTestSent(true);
         setTimeout(() => setTestSent(false), 4000);
       }
+    } catch (error: any) {
+      setSendError(error.message || "Тестовое письмо не отправлено");
     } finally {
       setTestSending(false);
     }
@@ -461,9 +566,18 @@ export default function EmailPage() {
   const handleSend = async () => {
     setSendError("");
     setSendResult(null);
-    if (!subject.trim()) { setSendError("Укажите тему письма"); return; }
-    if (!html.trim()) { setSendError("Напишите текст письма"); return; }
-    if (recipients.length === 0) { setSendError("Нет получателей в выбранном сегменте"); return; }
+    if (!subject.trim()) {
+      setSendError("Укажите тему письма");
+      return;
+    }
+    if (!html.trim()) {
+      setSendError("Напишите текст письма");
+      return;
+    }
+    if (recipients.length === 0) {
+      setSendError("Нет получателей в выбранном сегменте");
+      return;
+    }
     setSending(true);
     try {
       const res = await fetch("/api/admin/email", {
@@ -496,8 +610,15 @@ export default function EmailPage() {
         body: JSON.stringify({ action: "save_smtp", ...smtp }),
       });
       const data = await res.json();
-      if (data.ok) setSmtpSaved(true);
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "SMTP не сохранен");
+      setSmtpSaved(true);
       setTimeout(() => setSmtpSaved(false), 3000);
+    } catch (error: any) {
+      setSmtpTestResult({
+        ok: false,
+        message: error.message || "SMTP не сохранен",
+      });
     } finally {
       setSmtpSaving(false);
     }
@@ -514,7 +635,16 @@ export default function EmailPage() {
         body: JSON.stringify({ action: "test_smtp" }),
       });
       const data = await res.json();
-      setSmtpTestResult(data);
+      setSmtpTestResult(
+        res.ok
+          ? data
+          : { ok: false, message: data.error || "SMTP проверка не прошла" },
+      );
+    } catch (error: any) {
+      setSmtpTestResult({
+        ok: false,
+        message: error.message || "SMTP проверка не прошла",
+      });
     } finally {
       setSmtpTesting(false);
     }
@@ -548,20 +678,30 @@ export default function EmailPage() {
   const handleAddScanned = async () => {
     if (selectedEmails.size === 0) return;
     setAddingScanned(true);
+    setScanError("");
+    setScanAdded("");
     try {
       const res = await fetch("/api/admin/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "import_emails", emails: [...selectedEmails] }),
+        body: JSON.stringify({
+          action: "import_emails",
+          emails: [...selectedEmails],
+          source: "scanner",
+        }),
       });
       const data = await res.json();
-      if (data.ok) {
-        setScanAdded(`Добавлено: ${data.count}`);
-        setSelectedEmails(new Set());
-        setScanResult(null);
-        setScanUrl("");
-        await loadSubscribers();
-      }
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "Не удалось сохранить найденные email");
+      setScanAdded(
+        `Сохранено: ${data.count} · уже были: ${data.existing}${data.errors?.length ? ` · ошибок: ${data.errors.length}` : ""}`,
+      );
+      setSelectedEmails(new Set());
+      setScanResult(null);
+      setScanUrl("");
+      await loadSubscribers();
+    } catch (error: any) {
+      setScanError(error.message || "Не удалось сохранить найденные email");
     } finally {
       setAddingScanned(false);
     }
@@ -583,25 +723,33 @@ export default function EmailPage() {
         body: JSON.stringify({ action: "import_emails", emails }),
       });
       const data = await res.json();
-      if (data.ok) {
-        setImportResult(`Добавлено адресов: ${data.count}`);
-        setImportText("");
-        await loadSubscribers();
-      }
+      if (!res.ok || !data.ok)
+        throw new Error(data.error || "Не удалось импортировать email");
+      setImportResult(
+        `Добавлено адресов: ${data.count} · уже были: ${data.existing}${data.errors?.length ? ` · ошибок: ${data.errors.length}` : ""}`,
+      );
+      setImportText("");
+      await loadSubscribers();
+    } catch (error: any) {
+      setImportResult(
+        `Ошибка: ${error.message || "Не удалось импортировать email"}`,
+      );
     } finally {
       setImportLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="admin-page-frame admin-page-frame-readable">
       {/* Header */}
       <div className="flex items-center gap-3">
         <Mail className="w-6 h-6 text-primary" />
         <div>
-          <h1 className="font-display text-2xl font-bold">Email рассылка</h1>
+          <h1 className="font-display text-2xl font-bold">
+            Почта и email-рассылки
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Рассылка по клиентам, SMTP настройки и база подписчиков
+            Сейчас доступны отправка писем, SMTP и база адресов; входящие и история переписки готовятся в beta
           </p>
         </div>
       </div>
@@ -621,10 +769,57 @@ export default function EmailPage() {
             <t.icon className="w-4 h-4" />
             {t.label}
             {t.key === "subscribers" && subscribers.length > 0 && (
-              <span className="ml-0.5 text-xs text-primary">({subscribers.length})</span>
+              <span className="ml-0.5 text-xs text-primary">
+                ({subscribers.length})
+              </span>
             )}
           </button>
         ))}
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <Send className="h-4 w-4 text-primary" />
+            Исходящие
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Работает: письма клиентам, тестовая отправка и массовая рассылка через SMTP.
+          </p>
+        </div>
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            Входящие
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+              beta
+            </span>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Концепт: принимать ответы клиентов в админке и связывать их с заказом или клиентом.
+          </p>
+        </div>
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <Settings className="h-4 w-4 text-muted-foreground" />
+            Ящики
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+              beta
+            </span>
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Концепт: подключить несколько адресов, видеть основной ящик и статус синхронизации.
+          </p>
+        </div>
+        <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <FlaskConical className="h-4 w-4 text-muted-foreground" />
+            Без заглушек
+          </div>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Beta-возможности показаны как статус и план, без кнопок, которые обещают неготовое действие.
+          </p>
+        </div>
       </div>
 
       {/* ── Tab: Рассылка ── */}
@@ -668,7 +863,8 @@ export default function EmailPage() {
             </div>
             {subsLoading && (
               <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" /> Загрузка подписчиков...
+                <Loader2 className="w-3 h-3 animate-spin" /> Загрузка
+                подписчиков...
               </p>
             )}
           </div>
@@ -693,7 +889,11 @@ export default function EmailPage() {
             >
               <Sparkles className="w-4 h-4" />
               Шаблоны писем
-              {showTemplates ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showTemplates ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
             </button>
             {showTemplates && (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
@@ -713,7 +913,9 @@ export default function EmailPage() {
                       <Icon className="w-4 h-4 text-primary shrink-0" />
                       <div>
                         <p className="text-xs font-semibold">{t.label}</p>
-                        <p className="text-[10px] text-muted-foreground">{t.desc}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {t.desc}
+                        </p>
                       </div>
                     </button>
                   );
@@ -726,12 +928,19 @@ export default function EmailPage() {
           <div className="relative">
             <button
               type="button"
-              onClick={() => { setShowProductPicker((v) => !v); if (!showProductPicker) loadProducts(); }}
+              onClick={() => {
+                setShowProductPicker((v) => !v);
+                if (!showProductPicker) loadProducts();
+              }}
               className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-2"
             >
               <ShoppingBag className="w-4 h-4" />
               Вставить товар или категорию в письмо
-              {showProductPicker ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              {showProductPicker ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
             </button>
             {showProductPicker && (
               <div className="mb-3 border border-border rounded-xl overflow-hidden bg-card shadow-lg">
@@ -745,22 +954,37 @@ export default function EmailPage() {
                     className="flex-1 bg-transparent text-sm outline-none"
                     autoFocus
                   />
-                  <button onClick={() => { setShowProductPicker(false); setProductSearch(""); }}
-                    className="text-muted-foreground hover:text-foreground">
+                  <button
+                    onClick={() => {
+                      setShowProductPicker(false);
+                      setProductSearch("");
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="max-h-52 overflow-y-auto divide-y divide-border">
                   {productList.length === 0 && (
                     <div className="flex items-center justify-center py-6 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" /> Загрузка...
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />{" "}
+                      Загрузка...
                     </div>
                   )}
                   {productList
-                    .filter((p) => !productSearch || p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                    .filter(
+                      (p) =>
+                        !productSearch ||
+                        p.name
+                          .toLowerCase()
+                          .includes(productSearch.toLowerCase()),
+                    )
                     .slice(0, 20)
                     .map((p) => {
-                      const price = p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerPiece ?? 0;
+                      const price =
+                        p.variants[0]?.pricePerCube ??
+                        p.variants[0]?.pricePerPiece ??
+                        0;
                       return (
                         <button
                           key={p.id}
@@ -770,7 +994,9 @@ export default function EmailPage() {
                         >
                           <div className="flex items-center gap-2">
                             <Package className="w-4 h-4 text-primary shrink-0" />
-                            <span className="text-sm font-medium">{p.name}</span>
+                            <span className="text-sm font-medium">
+                              {p.name}
+                            </span>
                           </div>
                           {price > 0 && (
                             <span className="text-xs text-primary font-semibold shrink-0 ml-3">
@@ -799,7 +1025,8 @@ export default function EmailPage() {
               disabled={sending}
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Поддерживается HTML-форматирование: теги &lt;p&gt;, &lt;b&gt;, &lt;a&gt;, &lt;ul&gt; и др.
+              Поддерживается HTML-форматирование: теги &lt;p&gt;, &lt;b&gt;,
+              &lt;a&gt;, &lt;ul&gt; и др.
             </p>
           </div>
 
@@ -811,13 +1038,22 @@ export default function EmailPage() {
                 onClick={() => setShowPreview((v) => !v)}
                 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
-                {showPreview ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                {showPreview ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
                 {showPreview ? "Скрыть предпросмотр" : "Показать предпросмотр"}
               </button>
               {showPreview && (
                 <div className="mt-2 border border-border rounded-xl overflow-hidden">
                   <div className="bg-muted/40 px-3 py-2 text-xs text-muted-foreground border-b border-border flex items-center justify-between gap-2">
-                    <span>Тема: <span className="font-medium text-foreground">{subject || "(без темы)"}</span></span>
+                    <span>
+                      Тема:{" "}
+                      <span className="font-medium text-foreground">
+                        {subject || "(без темы)"}
+                      </span>
+                    </span>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setPreviewMode("desktop")}
@@ -840,10 +1076,17 @@ export default function EmailPage() {
                       srcDoc={html}
                       sandbox="allow-same-origin"
                       className="bg-white rounded shadow-sm transition-all duration-300"
-                      style={{ width: previewMode === "mobile" ? "375px" : "600px", minHeight: "300px", border: "none" }}
+                      style={{
+                        width: previewMode === "mobile" ? "375px" : "600px",
+                        minHeight: "300px",
+                        border: "none",
+                      }}
                       onLoad={(e) => {
                         const iframe = e.currentTarget;
-                        try { iframe.style.height = iframe.contentDocument?.body.scrollHeight + "px"; } catch {}
+                        try {
+                          iframe.style.height =
+                            iframe.contentDocument?.body.scrollHeight + "px";
+                        } catch {}
                       }}
                     />
                   </div>
@@ -871,7 +1114,11 @@ export default function EmailPage() {
                     : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground disabled:opacity-40"
                 }`}
               >
-                {testSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
+                {testSending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FlaskConical className="w-4 h-4" />
+                )}
                 {testSent ? "Отправлено ✓" : "Тест"}
               </button>
             </div>
@@ -892,7 +1139,9 @@ export default function EmailPage() {
               </div>
               {sendResult.errors.length > 0 && (
                 <div className="text-xs text-muted-foreground space-y-0.5">
-                  <p className="font-medium text-destructive">Ошибки ({sendResult.errors.length}):</p>
+                  <p className="font-medium text-destructive">
+                    Ошибки ({sendResult.errors.length}):
+                  </p>
                   {sendResult.errors.slice(0, 5).map((e, i) => (
                     <p key={i}>{e}</p>
                   ))}
@@ -931,9 +1180,13 @@ export default function EmailPage() {
         <div className="space-y-4">
           <div className="bg-muted/30 rounded-xl p-4 text-sm text-muted-foreground space-y-1">
             <p>
-              <strong>Для Яндекс Почты:</strong> smtp.yandex.ru, порт 587, включите доступ по паролю приложения в настройках почты.
+              <strong>Для Яндекс Почты:</strong> smtp.yandex.ru, порт 587,
+              включите доступ по паролю приложения в настройках почты.
             </p>
-            <p>Пароль приложения генерируется в разделе «Безопасность» аккаунта Яндекс — используйте его вместо обычного пароля.</p>
+            <p>
+              Пароль приложения генерируется в разделе «Безопасность» аккаунта
+              Яндекс — используйте его вместо обычного пароля.
+            </p>
           </div>
 
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
@@ -941,7 +1194,8 @@ export default function EmailPage() {
 
             {smtpLoading ? (
               <div className="flex items-center gap-2 text-muted-foreground py-4">
-                <Loader2 className="w-4 h-4 animate-spin" /> Загрузка настроек...
+                <Loader2 className="w-4 h-4 animate-spin" /> Загрузка
+                настроек...
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -950,7 +1204,9 @@ export default function EmailPage() {
                   <Input
                     placeholder="smtp.yandex.ru"
                     value={smtp.smtp_host}
-                    onChange={(e) => setSmtp((s) => ({ ...s, smtp_host: e.target.value }))}
+                    onChange={(e) =>
+                      setSmtp((s) => ({ ...s, smtp_host: e.target.value }))
+                    }
                   />
                 </div>
                 <div>
@@ -958,7 +1214,9 @@ export default function EmailPage() {
                   <Input
                     placeholder="587"
                     value={smtp.smtp_port}
-                    onChange={(e) => setSmtp((s) => ({ ...s, smtp_port: e.target.value }))}
+                    onChange={(e) =>
+                      setSmtp((s) => ({ ...s, smtp_port: e.target.value }))
+                    }
                   />
                 </div>
                 <div>
@@ -966,7 +1224,9 @@ export default function EmailPage() {
                   <Input
                     placeholder="email@yandex.ru"
                     value={smtp.smtp_user}
-                    onChange={(e) => setSmtp((s) => ({ ...s, smtp_user: e.target.value }))}
+                    onChange={(e) =>
+                      setSmtp((s) => ({ ...s, smtp_user: e.target.value }))
+                    }
                   />
                 </div>
                 <div>
@@ -975,7 +1235,9 @@ export default function EmailPage() {
                     type="password"
                     placeholder="Пароль приложения"
                     value={smtp.smtp_pass}
-                    onChange={(e) => setSmtp((s) => ({ ...s, smtp_pass: e.target.value }))}
+                    onChange={(e) =>
+                      setSmtp((s) => ({ ...s, smtp_pass: e.target.value }))
+                    }
                   />
                 </div>
                 <div>
@@ -983,16 +1245,22 @@ export default function EmailPage() {
                   <Input
                     placeholder="email@yandex.ru"
                     value={smtp.smtp_from}
-                    onChange={(e) => setSmtp((s) => ({ ...s, smtp_from: e.target.value }))}
+                    onChange={(e) =>
+                      setSmtp((s) => ({ ...s, smtp_from: e.target.value }))
+                    }
                   />
-                  <p className="mt-1 text-xs text-muted-foreground">Обычно совпадает с логином</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Обычно совпадает с логином
+                  </p>
                 </div>
                 <div>
                   <Label className="mb-1 block">Имя отправителя</Label>
                   <Input
                     placeholder="ПилоРус"
                     value={smtp.smtp_from_name}
-                    onChange={(e) => setSmtp((s) => ({ ...s, smtp_from_name: e.target.value }))}
+                    onChange={(e) =>
+                      setSmtp((s) => ({ ...s, smtp_from_name: e.target.value }))
+                    }
                   />
                 </div>
               </div>
@@ -1023,9 +1291,15 @@ export default function EmailPage() {
             )}
 
             <div className="flex flex-wrap gap-3 pt-1">
-              <Button onClick={handleSaveSmtp} disabled={smtpSaving || smtpLoading}>
+              <Button
+                onClick={handleSaveSmtp}
+                disabled={smtpSaving || smtpLoading}
+              >
                 {smtpSaving ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Сохранение...</>
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                    Сохранение...
+                  </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" /> Сохранить
@@ -1038,7 +1312,10 @@ export default function EmailPage() {
                 disabled={smtpTesting || smtpLoading}
               >
                 {smtpTesting ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Проверка...</>
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{" "}
+                    Проверка...
+                  </>
                 ) : (
                   <>
                     <TestTube2 className="w-4 h-4 mr-2" /> Проверить подключение
@@ -1058,19 +1335,34 @@ export default function EmailPage() {
             <div className="flex gap-2">
               <div className="bg-card border border-border rounded-xl px-4 py-2 text-sm">
                 <span className="text-muted-foreground">Всего: </span>
-                <span className="font-bold text-primary">{subscribers.length}</span>
+                <span className="font-bold text-primary">
+                  {subscribers.length}
+                </span>
               </div>
               <div className="bg-card border border-border rounded-xl px-4 py-2 text-sm">
                 <span className="text-muted-foreground">Зарег.: </span>
-                <span className="font-bold">{subscribers.filter((s) => s.source === "registered").length}</span>
+                <span className="font-bold">
+                  {subscribers.filter((s) => s.source === "registered").length}
+                </span>
               </div>
               <div className="bg-card border border-border rounded-xl px-4 py-2 text-sm">
                 <span className="text-muted-foreground">Покупатели: </span>
-                <span className="font-bold">{subscribers.filter((s) => s.source === "order").length}</span>
+                <span className="font-bold">
+                  {subscribers.filter((s) => s.source === "order").length}
+                </span>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={loadSubscribers} disabled={subsLoading}>
-              {subsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Обновить"}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadSubscribers}
+              disabled={subsLoading}
+            >
+              {subsLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                "Обновить"
+              )}
             </Button>
           </div>
 
@@ -1085,27 +1377,44 @@ export default function EmailPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left px-4 py-3 font-semibold">Email</th>
-                      <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">Имя</th>
-                      <th className="text-center px-4 py-3 font-semibold">Источник</th>
-                      <th className="text-right px-4 py-3 font-semibold hidden md:table-cell">Дата</th>
+                      <th className="text-left px-4 py-3 font-semibold">
+                        Email
+                      </th>
+                      <th className="text-left px-4 py-3 font-semibold hidden sm:table-cell">
+                        Имя
+                      </th>
+                      <th className="text-center px-4 py-3 font-semibold">
+                        Источник
+                      </th>
+                      <th className="text-right px-4 py-3 font-semibold hidden md:table-cell">
+                        Дата
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
                     {subscribers.map((s) => (
-                      <tr key={s.email} className="hover:bg-primary/[0.04] transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs">{s.email}</td>
+                      <tr
+                        key={s.email}
+                        className="hover:bg-primary/[0.04] transition-colors"
+                      >
+                        <td className="px-4 py-3 font-mono text-xs">
+                          {s.email}
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">
                           {s.name || "—"}
                         </td>
                         <td className="px-4 py-3 text-center">
                           {s.source === "registered" ? (
                             <span className="inline-flex items-center px-2 py-0.5 bg-primary/10 text-primary dark:bg-primary/15 rounded-full text-xs font-medium">
-                              Зарегистрирован
+                              {sourceLabel(s.source)}
+                            </span>
+                          ) : s.source === "order" ? (
+                            <span className="inline-flex items-center px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 rounded-full text-xs font-medium">
+                              {sourceLabel(s.source)}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center px-2 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 rounded-full text-xs font-medium">
-                              Покупатель
+                            <span className="inline-flex items-center px-2 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300 rounded-full text-xs font-medium">
+                              {sourceLabel(s.source)}
                             </span>
                           )}
                         </td>
@@ -1117,7 +1426,9 @@ export default function EmailPage() {
                   </tbody>
                 </table>
                 {subscribers.length === 0 && (
-                  <p className="text-center text-muted-foreground py-10">Нет подписчиков</p>
+                  <p className="text-center text-muted-foreground py-10">
+                    Нет подписчиков
+                  </p>
                 )}
               </div>
             )}
@@ -1131,7 +1442,8 @@ export default function EmailPage() {
               Сканировать сайт — найти emails
             </h3>
             <p className="text-xs text-muted-foreground">
-              Введите URL сайта конкурента или партнёра — система найдёт все email-адреса автоматически
+              Введите URL сайта конкурента или партнёра — система найдёт все
+              email-адреса автоматически
             </p>
             <div className="flex gap-2">
               <Input
@@ -1141,8 +1453,22 @@ export default function EmailPage() {
                 onKeyDown={(e) => e.key === "Enter" && handleScan()}
                 className="flex-1"
               />
-              <Button onClick={handleScan} disabled={scanning || !scanUrl.trim()} className="shrink-0">
-                {scanning ? <><Loader2 className="w-4 h-4 mr-1.5 animate-spin" />Сканирую...</> : <><Globe className="w-4 h-4 mr-1.5" />Сканировать</>}
+              <Button
+                onClick={handleScan}
+                disabled={scanning || !scanUrl.trim()}
+                className="shrink-0"
+              >
+                {scanning ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                    Сканирую...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="w-4 h-4 mr-1.5" />
+                    Сканировать
+                  </>
+                )}
               </Button>
             </div>
             <label className="flex items-center gap-2 cursor-pointer">
@@ -1152,7 +1478,9 @@ export default function EmailPage() {
                 onChange={(e) => setScanDeep(e.target.checked)}
                 className="rounded"
               />
-              <span className="text-xs text-muted-foreground">Глубокое сканирование (до 6 страниц)</span>
+              <span className="text-xs text-muted-foreground">
+                Глубокое сканирование (до 6 страниц)
+              </span>
             </label>
             {scanError && (
               <div className="flex items-center gap-2 text-sm text-destructive">
@@ -1163,26 +1491,46 @@ export default function EmailPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    Найдено {scanResult.emails.length} email{scanResult.emails.length !== 1 ? "ов" : ""} на {scanResult.pages} стр.
+                    Найдено {scanResult.emails.length} email
+                    {scanResult.emails.length !== 1 ? "ов" : ""} на{" "}
+                    {scanResult.pages} стр.
                   </p>
                   <div className="flex gap-2 text-xs">
-                    <button onClick={() => setSelectedEmails(new Set(scanResult.emails))} className="text-primary hover:underline">Выбрать все</button>
+                    <button
+                      onClick={() =>
+                        setSelectedEmails(new Set(scanResult.emails))
+                      }
+                      className="text-primary hover:underline"
+                    >
+                      Выбрать все
+                    </button>
                     <span className="text-muted-foreground">·</span>
-                    <button onClick={() => setSelectedEmails(new Set())} className="text-muted-foreground hover:underline">Снять</button>
+                    <button
+                      onClick={() => setSelectedEmails(new Set())}
+                      className="text-muted-foreground hover:underline"
+                    >
+                      Снять
+                    </button>
                   </div>
                 </div>
                 {scanResult.emails.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Emails не найдены на этом сайте</p>
+                  <p className="text-sm text-muted-foreground">
+                    Emails не найдены на этом сайте
+                  </p>
                 ) : (
                   <div className="max-h-48 overflow-y-auto rounded-xl border border-border divide-y divide-border">
                     {scanResult.emails.map((email) => (
-                      <label key={email} className="flex items-center gap-3 px-3 py-2 hover:bg-primary/[0.06] cursor-pointer">
+                      <label
+                        key={email}
+                        className="flex items-center gap-3 px-3 py-2 hover:bg-primary/[0.06] cursor-pointer"
+                      >
                         <input
                           type="checkbox"
                           checked={selectedEmails.has(email)}
                           onChange={(e) => {
                             const next = new Set(selectedEmails);
-                            if (e.target.checked) next.add(email); else next.delete(email);
+                            if (e.target.checked) next.add(email);
+                            else next.delete(email);
                             setSelectedEmails(next);
                           }}
                         />
@@ -1197,10 +1545,17 @@ export default function EmailPage() {
                     disabled={addingScanned || selectedEmails.size === 0}
                     className="w-full"
                   >
-                    {addingScanned
-                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Добавляю...</>
-                      : <><Upload className="w-4 h-4 mr-2" />Добавить выбранные ({selectedEmails.size})</>
-                    }
+                    {addingScanned ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Добавляю...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Добавить выбранные ({selectedEmails.size})
+                      </>
+                    )}
                   </Button>
                 )}
               </div>
@@ -1211,7 +1566,8 @@ export default function EmailPage() {
               </div>
             )}
             <p className="text-[11px] text-muted-foreground/60 leading-relaxed">
-              ⚠️ Используйте для B2B аутрича — персональные приглашения к сотрудничеству. Массовая рассылка без согласия нарушает ФЗ-38.
+              ⚠️ Используйте для B2B аутрича — персональные приглашения к
+              сотрудничеству. Массовая рассылка без согласия нарушает ФЗ-38.
             </p>
           </div>
 
@@ -1222,23 +1578,38 @@ export default function EmailPage() {
                 <Users className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold">Загрузить клиентов и создать аккаунты</h3>
+                <h3 className="font-semibold">
+                  Загрузить клиентов и создать аккаунты
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Система создаст личный кабинет каждому клиенту и отправит письмо с паролем
+                  Система создаст личный кабинет каждому клиенту и отправит
+                  письмо с паролем
                 </p>
               </div>
             </div>
 
             <div className="bg-primary/5 border border-primary/20 rounded-xl px-4 py-3 text-xs text-muted-foreground space-y-1">
               <p className="font-semibold text-foreground">Формат списка:</p>
-              <p><span className="font-mono bg-muted px-1 rounded">email@mail.ru</span> — только email</p>
-              <p><span className="font-mono bg-muted px-1 rounded">email@mail.ru, Иван Петров</span> — email + имя</p>
+              <p>
+                <span className="font-mono bg-muted px-1 rounded">
+                  email@mail.ru
+                </span>{" "}
+                — только email
+              </p>
+              <p>
+                <span className="font-mono bg-muted px-1 rounded">
+                  email@mail.ru, Иван Петров
+                </span>{" "}
+                — email + имя
+              </p>
               <p>Каждый клиент — отдельная строка. Дубликаты пропускаются.</p>
             </div>
 
             <textarea
               className="w-full h-36 rounded-xl border border-border bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary transition-colors resize-none font-mono"
-              placeholder={"ivan@mail.ru, Иван Петров\ndima@yandex.ru\nstroy@gmail.com, Стройком МО"}
+              placeholder={
+                "ivan@mail.ru, Иван Петров\ndima@yandex.ru\nstroy@gmail.com, Стройком МО"
+              }
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
             />
@@ -1246,7 +1617,12 @@ export default function EmailPage() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>
                 {importText.trim()
-                  ? `${importText.trim().split("\n").filter((l) => l.includes("@")).length} адресов`
+                  ? `${
+                      importText
+                        .trim()
+                        .split("\n")
+                        .filter((l) => l.includes("@")).length
+                    } адресов`
                   : "Введите список"}
               </span>
             </div>
@@ -1259,7 +1635,10 @@ export default function EmailPage() {
 
             <Button
               onClick={async () => {
-                const lines = importText.trim().split("\n").filter((l) => l.includes("@"));
+                const lines = importText
+                  .trim()
+                  .split("\n")
+                  .filter((l) => l.includes("@"));
                 if (!lines.length) return;
                 setImportLoading(true);
                 setImportResult(null);
@@ -1270,15 +1649,21 @@ export default function EmailPage() {
                     body: JSON.stringify({ action: "register_clients", lines }),
                   });
                   const data = await res.json();
-                  if (data.ok) {
+                  if (res.ok && data.ok) {
                     setImportResult(
-                      `✅ Создано аккаунтов: ${data.created} · Уже были: ${data.existing} · Писем отправлено: ${data.emailsSent}${data.errors?.length ? ` · Ошибок: ${data.errors.length}` : ""}`
+                      `✅ Создано аккаунтов: ${data.created} · Уже были: ${data.existing} · Писем отправлено: ${data.emailsSent}${data.errors?.length ? ` · Ошибок: ${data.errors.length}` : ""}`,
                     );
                     setImportText("");
                     await loadSubscribers();
                   } else {
-                    setImportResult(`❌ ${data.error}`);
+                    setImportResult(
+                      `❌ ${data.error || "Не удалось создать аккаунты"}`,
+                    );
                   }
+                } catch (error: any) {
+                  setImportResult(
+                    `❌ ${error.message || "Не удалось создать аккаунты"}`,
+                  );
                 } finally {
                   setImportLoading(false);
                 }
@@ -1287,15 +1672,22 @@ export default function EmailPage() {
               className="w-full"
             >
               {importLoading ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Создаю аккаунты и отправляю пароли...</>
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Создаю
+                  аккаунты и отправляю пароли...
+                </>
               ) : (
-                <><Users className="w-4 h-4 mr-2" /> Создать аккаунты и отправить пароли</>
+                <>
+                  <Users className="w-4 h-4 mr-2" /> Создать аккаунты и
+                  отправить пароли
+                </>
               )}
             </Button>
 
             <p className="text-[11px] text-muted-foreground/60">
-              Клиенты получат письмо «Ваш личный кабинет на pilo-rus.ru» с логином и паролем.
-              Пароль генерируется автоматически в формате «Слово99Слово».
+              Клиенты получат письмо «Ваш личный кабинет на pilo-rus.ru» с
+              логином и паролем. Пароль генерируется автоматически в формате
+              «Слово99Слово».
             </p>
           </div>
         </div>

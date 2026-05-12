@@ -54,7 +54,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
             <Link
               data-active={!currentType ? "true" : undefined}
               href={`/catalog${q ? `?${q}` : ""}`}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap border transition-all shrink-0 ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
                 !currentType
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
                   : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent"
@@ -78,7 +78,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
               key={t.keyword}
               data-active={isActive ? "true" : undefined}
               href={`/catalog${q ? `?${q}` : ""}`}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium whitespace-nowrap border transition-all shrink-0 ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
                 isActive
                   ? "bg-primary text-primary-foreground border-primary shadow-sm"
                   : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent"

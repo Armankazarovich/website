@@ -1,3 +1,5 @@
+import "server-only";
+
 import { PrismaClient, Prisma } from "@prisma/client";
 import { tenantExtension } from "./tenant-prisma";
 import { isTenantFilterEnabled } from "./tenant-context";

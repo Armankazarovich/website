@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
@@ -32,6 +33,18 @@ export function VariantCards({
   variants,
 }: VariantCardsProps) {
   const addItem = useCartStore((s) => s.addItem);
+  const [query, setQuery] = useState("");
+  const visibleVariants = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return variants;
+    return variants.filter((variant) =>
+      [
+        variant.size,
+        variant.pricePerCube?.toString() || "",
+        variant.pricePerPiece?.toString() || "",
+      ].some((value) => value.toLowerCase().includes(normalized)),
+    );
+  }, [query, variants]);
 
   const handleAdd = (e: React.MouseEvent<HTMLDivElement>, v: Variant) => {
     if (!v.inStock) return;
@@ -64,8 +77,21 @@ export function VariantCards({
   const unit = saleUnit === "PIECE" ? "шт" : "м³";
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-      {variants.map((v) => {
+    <div className="space-y-3">
+      {variants.length > 12 && (
+        <label className="relative block">
+          <span className="sr-only">Найти вариант товара</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Быстро найти размер, длину или сорт..."
+            className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
+          />
+        </label>
+      )}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {visibleVariants.map((v) => {
         const price = saleUnit === "PIECE"
           ? v.pricePerPiece
           : (v.pricePerCube ?? v.pricePerPiece);
@@ -134,6 +160,12 @@ export function VariantCards({
           </div>
         );
       })}
+      {visibleVariants.length === 0 && (
+        <div className="col-span-full rounded-2xl border border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
+          По такому размеру вариантов нет
+        </div>
+      )}
+      </div>
     </div>
   );
 }

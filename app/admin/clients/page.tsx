@@ -3,7 +3,9 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { ClientsList } from "./clients-list";
+import { formatPrice } from "@/lib/utils";
 
 export default async function ClientsPage() {
   const session = await auth();
@@ -31,44 +33,107 @@ export default async function ClientsPage() {
           createdAt: true,
         },
         orderBy: { createdAt: "desc" },
+        take: 5,
       },
     },
   });
 
-  const totalClients = clients.length;
-  const totalRevenue = clients.reduce((sum, c) => {
-    return sum + c.orders
-      .filter((o) => o.status !== "CANCELLED")
-      .reduce((s, o) => s + Number(o.totalAmount) + Number(o.deliveryCost ?? 0), 0);
-  }, 0);
-  const withOrders = clients.filter((c) => c.orders.length > 0).length;
+  const orderStatsRows = await prisma.order.findMany({
+    where: {
+      deletedAt: null,
+      userId: { not: null },
+    },
+    select: {
+      userId: true,
+      totalAmount: true,
+      deliveryCost: true,
+      status: true,
+    },
+  });
+
+  const orderStats = new Map<
+    string,
+    { orderCount: number; paidOrderCount: number; activeOrderCount: number; revenue: number }
+  >();
+  for (const order of orderStatsRows) {
+    if (!order.userId) continue;
+    const current =
+      orderStats.get(order.userId) ??
+      { orderCount: 0, paidOrderCount: 0, activeOrderCount: 0, revenue: 0 };
+    current.orderCount += 1;
+    if (order.status !== "CANCELLED") {
+      current.paidOrderCount += 1;
+      current.revenue += Number(order.totalAmount) + Number(order.deliveryCost ?? 0);
+    }
+    if (!["DELIVERED", "COMPLETED", "CANCELLED"].includes(order.status)) {
+      current.activeOrderCount += 1;
+    }
+    orderStats.set(order.userId, current);
+  }
+
+  const clientRows = clients.map((client) => {
+    const stats = orderStats.get(client.id);
+    return {
+      ...client,
+      orderCount: stats?.orderCount ?? 0,
+      paidOrderCount: stats?.paidOrderCount ?? 0,
+      activeOrderCount: stats?.activeOrderCount ?? 0,
+      revenue: stats?.revenue ?? 0,
+      orders: client.orders.map((order) => ({
+        ...order,
+        createdAt: order.createdAt.toISOString(),
+        totalAmount: order.totalAmount.toString(),
+        deliveryCost: order.deliveryCost?.toString() ?? null,
+      })),
+    };
+  });
+
+  const totalClients = clientRows.length;
+  const totalRevenue = clientRows.reduce((sum, client) => sum + client.revenue, 0);
+  const withOrders = clientRows.filter((client) => client.orderCount > 0).length;
+  const repeatClients = clientRows.filter((client) => client.paidOrderCount >= 2).length;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="admin-page-frame admin-page-frame-fluid">
       <div>
         <h1 className="font-display text-2xl font-bold">Клиенты</h1>
         <p className="text-muted-foreground mt-1">
-          Зарегистрированные пользователи сайта — профили, заказы, история
+          База покупателей, сегменты, история заказов и рабочие действия.
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-card border border-border rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold">{totalClients}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Всего клиентов</p>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <div className="rounded-2xl border border-border bg-card/80 p-4">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">База</p>
+          <p className="mt-4 text-2xl font-bold">{totalClients}</p>
+          <p className="mt-1 text-xs text-muted-foreground">всего клиентов</p>
         </div>
-        <div className="bg-card border border-border rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold">{withOrders}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">С заказами</p>
+        <div className="rounded-2xl border border-border bg-card/80 p-4">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Покупали</p>
+          <p className="mt-4 text-2xl font-bold">{withOrders}</p>
+          <p className="mt-1 text-xs text-muted-foreground">есть хотя бы один заказ</p>
         </div>
-        <div className="bg-card border border-border rounded-2xl p-4 text-center">
-          <p className="text-2xl font-bold">{totalRevenue.toLocaleString("ru-RU")} ₽</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Выручка от клиентов</p>
+        <div className="rounded-2xl border border-border bg-card/80 p-4">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Повторные</p>
+          <p className="mt-4 text-2xl font-bold">{repeatClients}</p>
+          <p className="mt-1 text-xs text-muted-foreground">вернулись за покупкой</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card/80 p-4">
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Выручка</p>
+          <p className="mt-4 text-2xl font-bold">{formatPrice(totalRevenue)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">без отменённых заказов</p>
         </div>
       </div>
 
-      <ClientsList clients={clients as any} />
+      <Suspense
+        fallback={
+          <div className="rounded-2xl border border-border bg-card/80 p-8 text-sm text-muted-foreground">
+            Загрузка клиентов...
+          </div>
+        }
+      >
+        <ClientsList clients={clientRows} />
+      </Suspense>
     </div>
   );
 }

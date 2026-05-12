@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ARAY cache reset</title>
+    <style>
+      html,body{height:100%;margin:0;background:#0b1116;color:#f7f7f7;font-family:system-ui,Arial,sans-serif}
+      body{display:grid;place-items:center}
+      main{max-width:360px;padding:24px;text-align:center}
+      .dot{width:36px;height:36px;margin:0 auto 16px;border:3px solid rgba(255,171,24,.25);border-top-color:#ffab18;border-radius:50%;animation:spin .8s linear infinite}
+      p{margin:0;color:#9aa7b3;font-size:14px;line-height:1.5}
+      @keyframes spin{to{transform:rotate(360deg)}}
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="dot" aria-hidden="true"></div>
+      <p>Обновляем локальный кэш ARAY...</p>
+    </main>
+    <script>
+      (function(){
+        var params=new URLSearchParams(location.search);
+        var next=params.get("next")||"/";
+        var key="aray-local-sw-hard-reset-v3";
+        function go(){try{sessionStorage.setItem(key,"done");}catch(e){} location.replace(next);}
+        var jobs=[];
+        if(navigator.serviceWorker){
+          jobs.push(navigator.serviceWorker.getRegistrations().then(function(regs){
+            return Promise.all(regs.map(function(reg){return reg.unregister().catch(function(){return false;});}));
+          }).catch(function(){}));
+        }
+        if(window.caches){
+          jobs.push(caches.keys().then(function(keys){
+            return Promise.all(keys.map(function(name){return caches.delete(name);}));
+          }).catch(function(){}));
+        }
+        Promise.all(jobs).then(function(){setTimeout(go,120);}).catch(go);
+        setTimeout(go,2500);
+      }());
+    </script>
+  </body>
+</html>

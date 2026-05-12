@@ -21,7 +21,7 @@ export async function GET() {
 // Whitelist допустимых ключей настроек
 const ALLOWED_KEYS = new Set([
   // Базовые настройки сайта
-  "site_name", "site_description",
+  "site_name", "site_description", "business_type", "terminal_profile", "terminal_enabled_modules",
   // Контакты
   "phone", "phone_link", "phone2", "phone2_link", "phone3", "phone3_link",
   "email", "min_order",
