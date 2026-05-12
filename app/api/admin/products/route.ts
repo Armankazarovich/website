@@ -5,8 +5,16 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescription } from "@/lib/product-seo";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+
+function revalidateProductsPublicPaths(slug?: string | null) {
+  revalidateTag("store-shell-data");
+  revalidatePath("/catalog");
+  revalidatePath("/sitemap.xml");
+  if (slug) revalidatePath(`/product/${slug}`);
+}
 
 function serializeMoney(value: unknown) {
   if (value === null || value === undefined) return null;
@@ -226,6 +234,7 @@ export async function POST(req: Request) {
       },
       include: { category: true, variants: true },
     });
+    revalidateProductsPublicPaths(product.slug);
     return NextResponse.json(serializeProduct(product), { status: 201 });
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;

@@ -71,6 +71,7 @@ const passwordSchema = z
 type ProfileForm = z.infer<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 type ThemeMode = "light" | "dark" | "system";
+const AVATAR_MAX_SIZE = 10 * 1024 * 1024;
 
 const STAFF_ROLES = [
   "SUPER_ADMIN",
@@ -347,9 +348,15 @@ export default function ProfilePage() {
   const handleAvatarSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Максимум 2MB");
+    setError("");
+    if (!file.type.startsWith("image/")) {
+      setError("Загрузите изображение JPG, PNG, WebP или GIF");
+      e.target.value = "";
+      return;
+    }
+    if (file.size > AVATAR_MAX_SIZE) {
+      setError("Максимум 10MB. После выбора фото автоматически обрежется и сожмется.");
+      e.target.value = "";
       return;
     }
     const reader = new FileReader();
@@ -364,24 +371,39 @@ export default function ProfilePage() {
   const uploadCroppedAvatar = async (blob: Blob) => {
     setUploadingAvatar(true);
     setShowCropModal(false);
-    const fd = new FormData();
-    fd.append("file", blob, "avatar.jpg");
-    const res = await fetch("/api/cabinet/avatar", {
-      method: "POST",
-      body: fd,
-    });
-    if (res.ok) {
-      const data = await res.json();
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", blob, "avatar.jpg");
+      const res = await fetch("/api/cabinet/avatar", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || "Не удалось загрузить аватар");
+      }
       setAvatarUrl(data.avatarUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось загрузить аватар");
+    } finally {
+      setUploadingAvatar(false);
     }
-    setUploadingAvatar(false);
   };
 
   const removeAvatar = async () => {
     setUploadingAvatar(true);
-    const res = await fetch("/api/cabinet/avatar", { method: "DELETE" });
-    if (res.ok) setAvatarUrl(null);
-    setUploadingAvatar(false);
+    setError("");
+    try {
+      const res = await fetch("/api/cabinet/avatar", { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || "Не удалось удалить фото");
+      setAvatarUrl(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось удалить фото");
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   return (
@@ -923,7 +945,7 @@ function AvatarCropModal({
   onClose,
 }: {
   src: string;
-  onSave: (blob: Blob) => void;
+  onSave: (blob: Blob) => void | Promise<void>;
   onClose: () => void;
 }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -938,8 +960,11 @@ function AvatarCropModal({
   useEffect(() => {
     const img = new window.Image();
     img.onload = () => {
+      const initialPos = { x: 0, y: 0 };
       imgRef.current = img;
-      draw(img, pos, scale);
+      setPos(initialPos);
+      setScale(1);
+      draw(img, initialPos, 1);
     };
     img.src = src;
   }, [src]);
@@ -996,7 +1021,11 @@ function AvatarCropModal({
     ctx.drawImage(canvasRef.current!, 0, 0, SIZE, SIZE, 0, 0, 256, 256);
     out.toBlob(
       (blob) => {
-        if (blob) onSave(blob);
+        if (blob) {
+          void onSave(blob);
+        } else {
+          setSaving(false);
+        }
       },
       "image/jpeg",
       0.9,

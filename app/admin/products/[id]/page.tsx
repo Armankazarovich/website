@@ -61,6 +61,7 @@ type Product = {
 };
 
 type Category = { id: string; name: string; slug: string };
+const PRODUCT_PHOTO_MAX_SIZE = 25 * 1024 * 1024;
 
 function getProductId(id: string | string[] | undefined): string | null {
   if (Array.isArray(id)) return id[0] ?? null;
@@ -267,6 +268,10 @@ export default function AdminProductEditPage() {
   const nextId = currentIdx < allProductIds.length - 1 ? allProductIds[currentIdx + 1] : null;
 
   const uploadPhotoFile = async (file: File) => {
+    if (file.size > PRODUCT_PHOTO_MAX_SIZE) {
+      setToast("Фото больше 25MB. Сожмите файл или загрузите другое изображение.");
+      return;
+    }
     setUploadingPhoto(true);
     setPipelineProgress("");
     try {
@@ -276,7 +281,10 @@ export default function AdminProductEditPage() {
       formData.append("folder", "products");
       const res = await fetch("/api/admin/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (!data.url) { alert(data.error || "Ошибка загрузки"); return; }
+      if (!data.url) {
+        setToast(data.error || "Ошибка загрузки");
+        return;
+      }
       let finalUrl = data.url;
 
       if (autoPipeline) {
@@ -307,8 +315,9 @@ export default function AdminProductEditPage() {
       }
       // APPEND to existing images, don't replace — fix for "single image bug"
       setImages(prev => [...prev, finalUrl]);
+      setToast("Фото добавлено. Нажмите «Сохранить», чтобы изменения появились на сайте.");
     } catch {
-      alert("Ошибка загрузки фото");
+      setToast("Ошибка загрузки фото");
     } finally {
       setUploadingPhoto(false);
     }
@@ -322,11 +331,13 @@ export default function AdminProductEditPage() {
       const [picked] = next.splice(idx, 1);
       return [picked, ...next];
     });
+    setToast("Главное фото изменено. Нажмите «Сохранить», чтобы применить.");
   };
 
   // Удалить одно фото из галереи по индексу
   const removeImage = (idx: number) => {
     setImages((prev) => prev.filter((_, i) => i !== idx));
+    setToast("Фото убрано из товара. Нажмите «Сохранить», чтобы применить.");
   };
 
   const handleRemoveBackground = async () => {
@@ -339,7 +350,10 @@ export default function AdminProductEditPage() {
       formData.append("file", new File([blob], "photo.png", { type: blob.type }));
       const res = await fetch("/api/admin/remove-bg", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.url) setImages([data.url]);
+      if (data.url) {
+        setImages((prev) => [data.url, ...prev.slice(1)]);
+        setToast("Фон обработан. Нажмите «Сохранить», чтобы применить.");
+      }
     } catch {}
     finally { setRemovingBg(false); }
   };
@@ -761,7 +775,7 @@ export default function AdminProductEditPage() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground bg-muted/30">
                   <Upload className="w-10 h-10 opacity-40" />
                   <p className="text-sm font-medium">Нажмите или перетащите фото</p>
-                  <p className="text-xs opacity-60">JPG, PNG, WEBP</p>
+                  <p className="text-xs opacity-60">JPG, PNG, WebP до 25MB</p>
                 </div>
               )}
               {uploadingPhoto && (
@@ -798,7 +812,7 @@ export default function AdminProductEditPage() {
                       )}
                       <button
                         onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
-                        className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-destructive/90 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                        className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive/90 text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
                         title="Удалить это фото"
                       >
                         <X className="w-3 h-3" />
@@ -854,7 +868,13 @@ export default function AdminProductEditPage() {
 
               {/* Кнопка удалить фото */}
               {images[0] && (
-                <button onClick={() => setImages([])} className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors">
+                <button
+                  onClick={() => {
+                    setImages([]);
+                    setToast("Все фото убраны из товара. Нажмите «Сохранить», чтобы применить.");
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors"
+                >
                   <X className="w-3.5 h-3.5" /> Удалить фото
                 </button>
               )}
@@ -1265,14 +1285,22 @@ export default function AdminProductEditPage() {
       {photoEditorOpen && images[0] && (
         <PhotoEditor
           imageUrl={images[0]}
-          onSave={(newUrl) => { setImages([newUrl]); setPhotoEditorOpen(false); }}
+          onSave={(newUrl) => {
+            setImages((prev) => [newUrl, ...prev.slice(1)]);
+            setPhotoEditorOpen(false);
+            setToast("Фото отредактировано. Нажмите «Сохранить», чтобы применить.");
+          }}
           onClose={() => setPhotoEditorOpen(false)}
         />
       )}
       <MediaPickerModal
         open={mediaPickerOpen}
         onClose={() => setMediaPickerOpen(false)}
-        onPick={(url) => { setImages([url]); setMediaPickerOpen(false); }}
+        onPick={(url) => {
+          setImages((prev) => [url, ...prev.filter((item) => item !== url)]);
+          setMediaPickerOpen(false);
+          setToast("Фото выбрано из библиотеки. Нажмите «Сохранить», чтобы применить.");
+        }}
       />
       {photoSearchOpen && (
         <PhotoSearch
@@ -1280,6 +1308,7 @@ export default function AdminProductEditPage() {
           productName={name || "товар"}
           onPhotoAdded={(url) => {
             setImages(prev => prev.includes(url) ? prev : [url, ...prev]);
+            setToast("Фото добавлено. Нажмите «Сохранить», чтобы применить.");
           }}
           onClose={() => setPhotoSearchOpen(false)}
         />

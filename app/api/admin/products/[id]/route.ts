@@ -5,8 +5,16 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescription } from "@/lib/product-seo";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+
+function revalidateProductPublicPaths(slug?: string | null) {
+  revalidateTag("store-shell-data");
+  revalidatePath("/catalog");
+  revalidatePath("/sitemap.xml");
+  if (slug) revalidatePath(`/product/${slug}`);
+}
 
 async function checkProductsAccess() {
   const session = await auth();
@@ -66,6 +74,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Авто-описание: если менеджер явно очистил / оставил слишком короткое описание —
   // подставляем шаблон из полей товара (город, размеры, цена, доставка из settings)
+  const previousProduct = await prisma.product.findUnique({
+    where: { id: params.id },
+    select: { slug: true },
+  });
   let finalDescription = description;
   const descProvided = description !== undefined;
   const descTooShort = descProvided && (!description || String(description).trim().length < 40);
@@ -245,6 +257,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       where: { id: params.id },
       include: { category: true, variants: { orderBy: { size: "asc" } } },
     });
+    if (updated) {
+      revalidateProductPublicPaths(updated.slug);
+      if (previousProduct?.slug && previousProduct.slug !== updated.slug) {
+        revalidatePath(`/product/${previousProduct.slug}`);
+      }
+    }
     return NextResponse.json(updated);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Ошибка сохранения";
@@ -271,6 +289,10 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const productForCache = await prisma.product.findUnique({
+      where: { id: params.id },
+      select: { slug: true },
+    });
     // Check if any OrderItem references this product's variants
     const hasOrders = await prisma.orderItem.findFirst({
       where: {
@@ -291,6 +313,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
           data: { inStock: false },
         }),
       ]);
+      revalidateProductPublicPaths(productForCache?.slug);
       return NextResponse.json({
         ok: true,
         softDelete: true,
@@ -301,6 +324,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
 
     // No orders → safe to hard-delete (Prisma cascade handles variants)
     await prisma.product.delete({ where: { id: params.id } });
+    revalidateProductPublicPaths(productForCache?.slug);
     return NextResponse.json({ ok: true, softDelete: false });
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;

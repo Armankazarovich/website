@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { randomUUID } from "crypto";
 import { canUploadGlobalMedia } from "@/lib/media-permissions";
 
 // Максимальные размеры и качество для разных папок
@@ -33,7 +34,7 @@ const ALLOWED_FOLDERS = [
   "videos",
   "default",
 ];
-const IMAGE_MAX_SIZE = 10 * 1024 * 1024; // 10MB for admin images
+const IMAGE_MAX_SIZE = 25 * 1024 * 1024; // 25MB for phone/admin images
 const VIDEO_MAX_SIZE = 80 * 1024 * 1024; // 80MB for admin videos
 
 // Magic number validation
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
   const maxSize = isVideo ? VIDEO_MAX_SIZE : IMAGE_MAX_SIZE;
   if (file.size > maxSize) {
     return NextResponse.json(
-      { error: `Максимальный размер ${isVideo ? "80MB" : "10MB"}` },
+      { error: `Максимальный размер ${isVideo ? "80MB" : "25MB"}` },
       { status: 400 }
     );
   }
@@ -133,13 +134,13 @@ export async function POST(req: Request) {
   }
 
   const cfg = RESIZE_CONFIG[folder] ?? RESIZE_CONFIG.default;
-  const timestamp = Date.now();
+  const uploadId = `${Date.now()}-${randomUUID().slice(0, 8)}`;
   const dir = join(process.cwd(), "public", "images", folder);
 
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 
   if (isVideo) {
-    const filename = `upload-${timestamp}.${extRaw}`;
+    const filename = `upload-${uploadId}.${extRaw}`;
     await writeFile(join(dir, filename), inputBuffer);
     return NextResponse.json({ url: `/images/${folder}/${filename}` });
   }
@@ -152,12 +153,12 @@ export async function POST(req: Request) {
       .webp({ quality: cfg.quality })
       .toBuffer();
 
-    const filename = `upload-${timestamp}.webp`;
+    const filename = `upload-${uploadId}.webp`;
     await writeFile(join(dir, filename), optimized);
     return NextResponse.json({ url: `/images/${folder}/${filename}` });
   } catch {
     // Sharp fallback — save original with VALIDATED extension only
-    const filename = `upload-${timestamp}.${extRaw}`;
+    const filename = `upload-${uploadId}.${extRaw}`;
     await writeFile(join(dir, filename), inputBuffer);
     return NextResponse.json({ url: `/images/${folder}/${filename}` });
   }

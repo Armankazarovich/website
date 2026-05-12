@@ -7,6 +7,7 @@ import { readdir, stat, unlink } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 import { canManageGlobalMedia, canViewGlobalMedia } from "@/lib/media-permissions";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 async function getRole() {
   const session = await auth();
@@ -29,6 +30,22 @@ const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "svg", "gif"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
 const DEFAULT_MEDIA_LIMIT = 500;
 
+function parseAltMap(value?: string | null): Record<string, string> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function revalidateMediaPublicPaths() {
+  revalidateTag("store-shell-data");
+  revalidatePath("/catalog");
+  revalidatePath("/sitemap.xml");
+}
+
 function getMediaKind(filename: string): "image" | "video" | "document" {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   if (IMAGE_EXTENSIONS.has(ext)) return "image";
@@ -45,7 +62,7 @@ export async function GET(req: Request) {
 
   // Load ALT map from SiteSettings
   const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
-  const altMap: Record<string, string> = altRow ? JSON.parse(altRow.value) : {};
+  const altMap = parseAltMap(altRow?.value);
 
   // Load all products to know which images are used where
   const products = await prisma.product.findMany({ select: { id: true, name: true, slug: true, images: true } });
@@ -115,7 +132,7 @@ export async function POST(req: Request) {
     if (!url || !url.startsWith("/images/") || url.includes("..")) return NextResponse.json({ error: "Invalid url" }, { status: 400 });
 
     const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
-    const altMap: Record<string, string> = altRow ? JSON.parse(altRow.value) : {};
+    const altMap = parseAltMap(altRow?.value);
     if (alt) altMap[url] = alt;
     else delete altMap[url];
 
@@ -124,6 +141,7 @@ export async function POST(req: Request) {
       create: { id: "media_alt_map", key: "media_alt_map", value: JSON.stringify(altMap) },
       update: { value: JSON.stringify(altMap) },
     });
+    revalidateMediaPublicPaths();
     return NextResponse.json({ ok: true });
   }
 
@@ -134,7 +152,7 @@ export async function POST(req: Request) {
     const categories = await prisma.category.findMany({ select: { name: true, image: true } });
 
     const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
-    const altMap: Record<string, string> = altRow ? JSON.parse(altRow.value) : {};
+    const altMap = parseAltMap(altRow?.value);
 
     let count = 0;
     for (const p of products) {
@@ -157,6 +175,7 @@ export async function POST(req: Request) {
       create: { id: "media_alt_map", key: "media_alt_map", value: JSON.stringify(altMap) },
       update: { value: JSON.stringify(altMap) },
     });
+    revalidateMediaPublicPaths();
     return NextResponse.json({ ok: true, count });
   }
 
@@ -177,9 +196,18 @@ export async function POST(req: Request) {
     }
 
     // Check if used
-    const products = await prisma.product.findMany({ select: { id: true, images: true } });
-    const isUsed = products.some((p) => p.images.includes(url));
-    if (isUsed) return NextResponse.json({ error: "Файл используется в товарах — сначала удалите его оттуда" }, { status: 400 });
+    const [products, categories] = await Promise.all([
+      prisma.product.findMany({ select: { id: true, images: true } }),
+      prisma.category.findMany({ select: { id: true, image: true } }),
+    ]);
+    const isUsedByProduct = products.some((p) => p.images.includes(url));
+    const isUsedByCategory = categories.some((c) => c.image === url);
+    if (isUsedByProduct || isUsedByCategory) {
+      return NextResponse.json(
+        { error: "Файл используется в каталоге. Сначала уберите его из товара или категории." },
+        { status: 400 }
+      );
+    }
 
     const filePath = resolvedPath;
     if (existsSync(filePath)) await unlink(filePath);
@@ -187,11 +215,12 @@ export async function POST(req: Request) {
     // Remove from ALT map
     const altRow = await prisma.siteSettings.findUnique({ where: { key: "media_alt_map" } });
     if (altRow) {
-      const altMap: Record<string, string> = JSON.parse(altRow.value);
+      const altMap = parseAltMap(altRow.value);
       delete altMap[url];
       await prisma.siteSettings.update({ where: { key: "media_alt_map" }, data: { value: JSON.stringify(altMap) } });
     }
 
+    revalidateMediaPublicPaths();
     return NextResponse.json({ ok: true });
   }
 

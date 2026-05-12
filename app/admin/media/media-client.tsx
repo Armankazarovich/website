@@ -513,7 +513,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
           <p className="text-sm font-medium">
             {uploading ? "Загружаем..." : "Перетащите фото или видео, либо нажмите для выбора"}
           </p>
-          <p className="text-xs">JPG, PNG, WebP, GIF, MP4, WebM · с компьютера или телефона</p>
+          <p className="text-xs">Фото до 25MB · видео MP4/WebM/MOV до 80MB</p>
         </div>
       </div>
 

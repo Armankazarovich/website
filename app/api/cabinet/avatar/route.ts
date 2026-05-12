@@ -9,6 +9,34 @@ import { randomUUID } from "crypto";
 import { rateLimit } from "@/lib/rate-limit";
 
 const limiter = rateLimit("cabinet-avatar", 10, 60_000);
+const AVATAR_MAX_SIZE = 10 * 1024 * 1024;
+const AVATAR_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+function validateImageMagic(buffer: Buffer, mime: string): boolean {
+  if (buffer.length < 12) return false;
+  if (mime === "image/jpeg") return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  if (mime === "image/png") {
+    return buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+  }
+  if (mime === "image/gif") return buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46;
+  if (mime === "image/webp") {
+    return (
+      buffer[0] === 0x52 &&
+      buffer[1] === 0x49 &&
+      buffer[2] === 0x46 &&
+      buffer[3] === 0x46 &&
+      buffer.toString("ascii", 8, 12) === "WEBP"
+    );
+  }
+  return false;
+}
+
+function fallbackExt(mime: string) {
+  if (mime === "image/png") return "png";
+  if (mime === "image/webp") return "webp";
+  if (mime === "image/gif") return "gif";
+  return "jpg";
+}
 
 // POST — upload avatar
 export async function POST(req: NextRequest) {
@@ -32,13 +60,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Файл не найден" }, { status: 400 });
     }
 
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Только изображения" }, { status: 400 });
+    if (!AVATAR_MIME.includes(file.type)) {
+      return NextResponse.json({ error: "Поддерживаются JPG, PNG, WebP или GIF" }, { status: 400 });
     }
 
-    // Max 2MB for avatars
-    if (file.size > 2 * 1024 * 1024) {
-      return NextResponse.json({ error: "Максимальный размер 2MB" }, { status: 400 });
+    if (file.size > AVATAR_MAX_SIZE) {
+      return NextResponse.json({ error: "Максимальный размер 10MB" }, { status: 400 });
     }
 
     const uploadDir = path.join(process.cwd(), "public", "uploads", "avatars");
@@ -46,6 +73,10 @@ export async function POST(req: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    if (!validateImageMagic(buffer, file.type)) {
+      return NextResponse.json({ error: "Файл не похож на корректное изображение" }, { status: 400 });
+    }
 
     // Optimize to WebP (256x256 avatar)
     let filename: string;
@@ -58,7 +89,7 @@ export async function POST(req: NextRequest) {
       filename = `avatar-${session.user.id.slice(0, 8)}-${randomUUID().slice(0, 6)}.webp`;
       await writeFile(path.join(uploadDir, filename), optimized);
     } catch {
-      const ext = file.type === "image/png" ? "png" : "jpg";
+      const ext = fallbackExt(file.type);
       filename = `avatar-${session.user.id.slice(0, 8)}-${randomUUID().slice(0, 6)}.${ext}`;
       await writeFile(path.join(uploadDir, filename), buffer);
     }

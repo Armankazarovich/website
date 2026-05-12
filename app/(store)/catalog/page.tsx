@@ -20,7 +20,6 @@ import { Calculator, ArrowRight, SearchX } from "lucide-react";
 import { getSiteSettings, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
-import { SubscribeButton } from "@/components/store/subscribe-button";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   if (searchParams.search) {
@@ -393,22 +392,12 @@ export default async function CatalogPage({
       />
 
       {/* ── Заголовок ── */}
-      <div className="mb-3 flex items-start justify-between gap-3 flex-wrap">
+      <div className="mb-3">
         <div>
           <h1 className="font-display font-bold text-2xl sm:text-3xl">
             {pageTitle}
           </h1>
-          <p className="mt-1 max-w-4xl text-sm leading-6 text-muted-foreground">
-            {pageDescription}
-          </p>
         </div>
-        {currentCat && (
-          <SubscribeButton
-            targetType="category"
-            targetId={currentCat.id}
-            targetName={currentCat.name}
-          />
-        )}
       </div>
 
       {/* ── Баннер-калькулятор ── */}
@@ -671,6 +660,13 @@ export default async function CatalogPage({
               )}
             </div>
           )}
+
+          <section className="mt-10 border-t border-border pt-6">
+            <h2 className="font-display text-xl font-bold">{pageTitle}</h2>
+            <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
+              {pageDescription}
+            </p>
+          </section>
         </div>
       </div>
     </div>
