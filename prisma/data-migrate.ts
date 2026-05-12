@@ -513,6 +513,18 @@ async function main() {
     console.log("[data-migrate] ⚠ Правки ПилоРус из презентации пропущены:", e.message);
   }
 
+  try {
+    const markerKey = "migration_20260512_whatsapp_hidden";
+    const marker = await prisma.siteSettings.findUnique({ where: { key: markerKey } });
+    if (!marker) {
+      await upsertSetting("whatsapp_enabled", "false");
+      await upsertSetting(markerKey, "done");
+      console.log("[data-migrate] WhatsApp order button disabled by default (2026-05-12)");
+    }
+  } catch (e: any) {
+    console.log("[data-migrate] WhatsApp setting update skipped:", e.message);
+  }
+
   console.log("[data-migrate] Готово.");
   await prisma.$disconnect();
 }

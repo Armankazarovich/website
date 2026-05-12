@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   social_telegram: "",
   social_whatsapp: "+79850670888",
   // Мессенджеры — кнопки заказа
-  whatsapp_enabled: "true",
+  whatsapp_enabled: "false",
   whatsapp_number: "+79850670888",
   whatsapp_message: "Здравствуйте! Хочу сделать заказ.",
   telegram_enabled: "false",

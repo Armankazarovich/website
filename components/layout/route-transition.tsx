@@ -12,7 +12,11 @@ type RouteTransitionProps = {
 export function RouteTransition({
   children,
   surface: _surface,
-  className: _className,
+  className,
 }: RouteTransitionProps) {
+  if (className) {
+    return <div className={className}>{children}</div>;
+  }
+
   return <>{children}</>;
 }

@@ -1,9 +1,9 @@
 // Cabinet uses the same public shell as the store, with an auth guard.
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import React from "react";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Header } from "@/components/layout/header";
@@ -19,56 +19,56 @@ export const metadata: Metadata = {
   },
 };
 
-const ArayGlobalAssistant = dynamic(
+const ArayGlobalAssistant = nextDynamic(
   () =>
     import("@/components/store/aray-global-assistant").then((m) => ({
       default: m.ArayGlobalAssistant,
     })),
   { ssr: false },
 );
-const MobileBottomNav = dynamic(
+const MobileBottomNav = nextDynamic(
   () =>
     import("@/components/store/mobile-bottom-nav").then((m) => ({
       default: m.MobileBottomNav,
     })),
   { ssr: false },
 );
-const SideIconRail = dynamic(
+const SideIconRail = nextDynamic(
   () =>
     import("@/components/store/side-icon-rail").then((m) => ({
       default: m.SideIconRail,
     })),
   { ssr: false },
 );
-const AccountDrawerMount = dynamic(
+const AccountDrawerMount = nextDynamic(
   () =>
     import("@/components/store/account-drawer-mount").then((m) => ({
       default: m.AccountDrawerMount,
     })),
   { ssr: false },
 );
-const FiltersDrawer = dynamic(
+const FiltersDrawer = nextDynamic(
   () =>
     import("@/components/store/filters-drawer").then((m) => ({
       default: m.FiltersDrawer,
     })),
   { ssr: false },
 );
-const SearchDrawer = dynamic(
+const SearchDrawer = nextDynamic(
   () =>
     import("@/components/store/search-drawer").then((m) => ({
       default: m.SearchDrawer,
     })),
   { ssr: false },
 );
-const CartDrawer = dynamic(
+const CartDrawer = nextDynamic(
   () =>
     import("@/components/store/cart-drawer").then((m) => ({
       default: m.CartDrawer,
     })),
   { ssr: false },
 );
-const ScrollToTop = dynamic(
+const ScrollToTop = nextDynamic(
   () =>
     import("@/components/ui/scroll-to-top").then((m) => ({
       default: m.ScrollToTop,
@@ -111,7 +111,7 @@ export default async function CabinetLayout({
           dynamicSizes={megaMenuSizes}
         />
 
-        <main className="store-shell-main flex-1">
+        <main className="store-shell-main flex-1 pb-[calc(5.75rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
           <RouteTransition surface="cabinet" className="container py-6">
             {children}
           </RouteTransition>
