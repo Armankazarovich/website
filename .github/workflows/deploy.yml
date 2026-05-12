@@ -199,6 +199,10 @@ jobs:
             [ -d /tmp/pilorus-preserve/images ] && mkdir -p "$APP_DIR/public/images" && cp -a /tmp/pilorus-preserve/images/. "$APP_DIR/public/images/"
             rm -rf /tmp/pilorus-preserve
 
+            # Legacy next-sitemap files were generated into public/ before.
+            # /sitemap.xml is now served by the Next metadata route from DB.
+            rm -f "$APP_DIR/public/sitemap.xml" "$APP_DIR"/public/sitemap-*.xml "$APP_DIR"/public/server-sitemap*.xml
+
             # ── 6. Apply schema changes + data migrations ──
             echo "🗄️ Applying DB schema + data migrations..."
             # Load .env into shell env so tsx data-migrate sees DATABASE_URL.

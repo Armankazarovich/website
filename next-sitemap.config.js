@@ -5,14 +5,27 @@ module.exports = {
   generateIndexSitemap: false,
   changefreq: 'weekly',
   priority: 0.7,
-  exclude: ['/admin', '/admin/*', '/cabinet', '/cabinet/*', '/api/*'],
+  exclude: [
+    '/admin',
+    '/admin/*',
+    '/cabinet',
+    '/cabinet/*',
+    '/api/*',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/cart',
+    '/checkout',
+    '/wishlist',
+    '/track',
+    '/track/*',
+    '/sitemap.xml',
+  ],
   robotsTxtOptions: {
     policies: [
       { userAgent: '*', allow: '/' },
       { userAgent: '*', disallow: ['/admin', '/cabinet', '/api'] },
-    ],
-    additionalSitemaps: [
-      `${process.env.NEXTAUTH_URL || 'https://pilo-rus.ru'}/sitemap.xml`,
     ],
   },
   additionalPaths: async (config) => [
