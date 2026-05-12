@@ -620,7 +620,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.94 }}
                     transition={{ type: "spring", stiffness: 420, damping: 26 }}
-                    className="absolute top-full right-0 mt-2.5 z-50 whitespace-nowrap pointer-events-none bg-card border border-border rounded-2xl shadow-xl"
+                    className="absolute top-full right-0 mt-2.5 z-50 hidden whitespace-nowrap pointer-events-none bg-card border border-border rounded-2xl shadow-xl sm:block"
                     style={{ padding: "10px 14px" }}
                   >
                     {/* Стрелочка */}

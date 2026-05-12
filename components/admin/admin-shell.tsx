@@ -39,6 +39,7 @@ import {
   Stethoscope,
   Sun,
   Moon,
+  Palette,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { AdminMobileBottomNav } from "@/components/admin/admin-mobile-bottom-nav";
@@ -48,7 +49,6 @@ import { AppHeader } from "@/components/layout/app-header";
 import { RouteTransition } from "@/components/layout/route-transition";
 import { AdminHeaderSearch } from "@/components/admin/admin-header-search";
 import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
-import { AdminPwaInstallButton } from "@/components/admin/admin-pwa-install";
 import { AdminNotificationBell } from "@/components/admin/admin-notification-bell";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
@@ -491,26 +491,13 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               />
             </button>
 
-            <AdminPwaInstallButton />
-
-            {role !== "USER" && !disabledModuleIds.includes("core.notifications") && (
-              <div className="block">
-                <AdminNotificationBell role={role} />
-              </div>
-            )}
-
-            <div className="hidden sm:block">
-              <ArayControlCenter userRole={role} position="header" />
-            </div>
-
-            {/* Переключатель темы (только когда mounted — избегаем SSR mismatch) */}
             {mounted && (
               <button
                 onClick={() => setTheme(isDarkTheme ? "light" : "dark")}
                 type="button"
                 aria-label={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
                 title={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
-                className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground sm:flex"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               >
                 {isDarkTheme ? (
                   <Sun className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -520,13 +507,32 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               </button>
             )}
 
+            {role !== "USER" && !disabledModuleIds.includes("core.notifications") && (
+              <div className="hidden sm:block">
+                <AdminNotificationBell role={role} />
+              </div>
+            )}
+
+            <div className="hidden sm:block">
+              <ArayControlCenter userRole={role} position="header" />
+            </div>
+
+            <Link
+              href="/admin/appearance"
+              aria-label="Оформление"
+              title="Оформление"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground min-[390px]:flex"
+            >
+              <Palette className="w-[18px] h-[18px]" strokeWidth={1.75} />
+            </Link>
+
             {/* Аккаунт — открывает AccountDrawer */}
             <button
               onClick={toggleAccount}
               type="button"
               aria-label="Аккаунт"
               title={userName || email || "Аккаунт"}
-              className="hidden h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition-colors hover:bg-muted/60 sm:flex"
+              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition-colors hover:bg-muted/60"
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-primary/20" />

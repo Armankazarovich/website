@@ -211,6 +211,27 @@ const LATIN_LETTER_NAMES: Record<string, string> = {
   Z: "зэд",
 };
 
+const DIGIT_SPEECH: Record<string, string> = {
+  "0": "ноль",
+  "1": "один",
+  "2": "два",
+  "3": "три",
+  "4": "четыре",
+  "5": "пять",
+  "6": "шесть",
+  "7": "семь",
+  "8": "восемь",
+  "9": "девять",
+};
+
+function spellDigitsForSpeech(raw: string): string {
+  return raw
+    .replace(/\D/g, "")
+    .split("")
+    .map((digit) => DIGIT_SPEECH[digit] || digit)
+    .join(" ");
+}
+
 function spellLatinCodeChunk(chunk: string): string {
   return chunk
     .split("")
@@ -237,7 +258,18 @@ function normalizePhones(text: string): string {
     const digits = match.replace(/\D/g, "");
     if (digits.length < 10 || digits.length > 15) return match;
     const prefix = match.trim().startsWith("+") ? "плюс " : "";
-    return `${prefix}${digits.split("").join(" ")}`;
+    return `${prefix}${spellDigitsForSpeech(digits)}`;
+  });
+}
+
+function normalizeLongIdentifiers(text: string): string {
+  const context = String.raw`(?:сч[её]тчик(?:\s+Метрики)?|номер(?:\s+сч[её]тчика)?|Метрик[аи]|counter(?:\s*id)?|counter_id|client\s*id|ай\s+ди|ID|ym)`;
+  const idNumber = String.raw`([0-9][0-9\s-]{5,}[0-9])`;
+
+  return text.replace(new RegExp(`(${context}[^.!?\\n\\d]{0,80})${idNumber}`, "gi"), (_match: string, before: string, value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 7 || digits.length > 20) return `${before}${value}`;
+    return `${before}${spellDigitsForSpeech(digits)}`;
   });
 }
 
@@ -381,6 +413,7 @@ export function prepareAraySpeechText(text: string, options: AraySpeechOptions =
   s = expandKnownSpeechWords(s);
   s = normalizeCodes(s);
   s = expandSymbols(s);
+  s = normalizeLongIdentifiers(s);
   s = normalizePhones(s);
   s = expandCurrencyAndUnits(s);
   s = normalizeNumbersAndSizes(s);

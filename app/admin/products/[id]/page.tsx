@@ -224,8 +224,12 @@ export default function AdminProductEditPage() {
 
     if (!isNew && productId) {
       fetch(`/api/admin/products/${productId}`)
-        .then((r) => r.json())
+        .then((r) => {
+          if (!r.ok) throw new Error("Product not found");
+          return r.json();
+        })
         .then((p: Product) => {
+          if (p.id && p.id !== productId) router.replace(`/admin/products/${p.id}`);
           setProduct(p);
           setName(p.name);
           setSlug(p.slug);
@@ -249,9 +253,13 @@ export default function AdminProductEditPage() {
               .sort((a, b) => naturalCompare(a.size, b.size))
           );
           setLoading(false);
+        })
+        .catch(() => {
+          setToast("Товар не найден или недоступен");
+          setLoading(false);
         });
     }
-  }, [productId, isNew]);
+  }, [productId, isNew, router]);
 
   // Prev / Next navigation
   const currentIdx = allProductIds.indexOf(productId ?? "");
@@ -735,7 +743,7 @@ export default function AdminProductEditPage() {
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
             <div
               className={cn(
-                "relative aspect-square cursor-pointer transition-all",
+                "relative aspect-[4/3] cursor-pointer transition-all sm:aspect-square",
                 dragOverPhoto && "ring-2 ring-primary ring-inset"
               )}
               onClick={() => !uploadingPhoto && fileInputRef.current?.click()}
@@ -892,12 +900,14 @@ export default function AdminProductEditPage() {
           </div>
 
           {!isNew && productId && (
-            <RelatedTasksPanel
-              entityType="PRODUCT"
-              entityId={productId}
-              entityLabel={name || product?.name || "Товар"}
-              entityHref={`/admin/products/${productId}`}
-            />
+            <div className="hidden lg:block">
+              <RelatedTasksPanel
+                entityType="PRODUCT"
+                entityId={productId}
+                entityLabel={name || product?.name || "Товар"}
+                entityHref={`/admin/products/${productId}`}
+              />
+            </div>
           )}
         </div>
 
@@ -1063,7 +1073,101 @@ export default function AdminProductEditPage() {
                 <button onClick={addVariant} className="text-sm text-primary hover:underline">+ Добавить вариант</button>
               </div>
             ) : (
-              <div className="overflow-x-auto -mx-5 px-5">
+              <>
+              <div className="space-y-2 md:hidden">
+                {variants.map((v, idx) => (
+                  <div
+                    key={v.id || v._tempId}
+                    className="rounded-2xl border border-border bg-background/60 p-3 space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Размер
+                        </label>
+                        <input
+                          value={v.size}
+                          onChange={(e) => updateVariant(idx, "size", e.target.value)}
+                          placeholder="50x150x6000"
+                          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removeVariant(idx)}
+                        className="mt-5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:border-destructive/40 hover:text-destructive"
+                        aria-label="Удалить вариант"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Цена м3
+                        <input
+                          type="number"
+                          value={v.pricePerCube}
+                          onChange={(e) => updateVariant(idx, "pricePerCube", e.target.value)}
+                          placeholder="12000"
+                          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </label>
+                      <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Цена шт
+                        <input
+                          type="number"
+                          value={v.pricePerPiece}
+                          onChange={(e) => updateVariant(idx, "pricePerPiece", e.target.value)}
+                          placeholder="420"
+                          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                      <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        Шт/м3
+                        <div className="relative mt-1">
+                          <input
+                            type="number"
+                            value={v.piecesPerCube}
+                            onChange={(e) => updateVariant(idx, "piecesPerCube", e.target.value)}
+                            placeholder="28"
+                            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 pr-10 text-sm font-normal normal-case tracking-normal text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => recalcPieces(idx)}
+                            title="Авто-расчет из размера"
+                            className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-primary/70 transition-colors hover:bg-primary/15 hover:text-primary"
+                          >
+                            <Calculator className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </label>
+                      <button
+                        onClick={() => updateVariant(idx, "inStock", !v.inStock)}
+                        className={cn(
+                          "flex min-h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors",
+                          v.inStock
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-border bg-muted/40 text-muted-foreground"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-2.5 w-2.5 rounded-full",
+                            v.inStock ? "bg-emerald-400" : "bg-muted-foreground/50"
+                          )}
+                        />
+                        {v.inStock ? "В наличии" : "Скрыт"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="hidden overflow-x-auto -mx-5 px-5 md:block">
               <div className="min-w-[560px] space-y-1">
                 {/* Table header */}
                 <div className="grid grid-cols-[1fr_100px_100px_80px_44px_32px] gap-2 px-2 pb-1">
@@ -1138,6 +1242,7 @@ export default function AdminProductEditPage() {
                 ))}
               </div>
               </div>
+              </>
             )}
           </div>
         </div>

@@ -16,8 +16,10 @@ async function checkProductsAccess() {
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const product = await prisma.product.findUnique({
-    where: { id: params.id },
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [{ id: params.id }, { slug: params.id }],
+    },
     include: { category: true, variants: { orderBy: { size: "asc" } } },
   });
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });

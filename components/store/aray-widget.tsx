@@ -1499,6 +1499,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const startVoiceRef = useRef<(() => void) | null>(null);
   const voiceStartGuardRef = useRef(false);
   const messagesCountRef = useRef(0);
+  const lastPathnameRef = useRef(pathname);
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
   const adminQuickActions = useMemo(
@@ -2217,6 +2218,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     setOpen(false);
     stopAllAray();
   }, [stopAllAray]);
+
+  useEffect(() => {
+    if (lastPathnameRef.current === pathname) return;
+    lastPathnameRef.current = pathname;
+    if (!isMobile || !open) return;
+    setOpen(false);
+    setShowMessages(false);
+    setProactiveBubble(null);
+    stopAllAray();
+  }, [isMobile, open, pathname, stopAllAray]);
 
   useEffect(() => {
     const handler = () => closeArayPanel();

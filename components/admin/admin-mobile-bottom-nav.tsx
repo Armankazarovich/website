@@ -34,7 +34,6 @@ import {
   UserPlus,
   ChevronRight,
   X,
-  Menu,
   BookOpen,
   Megaphone,
   Settings,
@@ -259,7 +258,11 @@ export function AdminMobileBottomNav({
     () => getAdminNavigationMobileCapsule({ pathname, role, t, disabledModuleIds }),
     [disabledModuleIds, pathname, role, t],
   );
-  const tabs = mobileCapsule.items;
+  const isHrefActive = useCallback(
+    (href: string) =>
+      pathname === href || (href !== "/admin" && pathname.startsWith(`${href}/`)),
+    [pathname],
+  );
 
   const totalNavItems = navGroups.reduce(
     (sum, navGroup) => sum + navGroup.items.length,
@@ -434,22 +437,6 @@ export function AdminMobileBottomNav({
     }
   }, [notificationsEnabled]);
 
-  const normalizeHref = (value: string) => {
-    const clean = value.split("?")[0].replace(/\/$/, "");
-    return clean || "/";
-  };
-  const isPathActive = (path: string, exact?: boolean) => {
-    const current = normalizeHref(pathname);
-    const target = normalizeHref(path);
-    if (exact || target === "/") return current === target;
-    return current === target || current.startsWith(`${target}/`);
-  };
-  const isTabActive = (tab: { href: string; exact?: boolean }) => {
-    const activeHref = activeNavItem ? normalizeHref(activeNavItem.href) : null;
-    if (activeHref) return activeHref === normalizeHref(tab.href);
-    return isPathActive(tab.href, tab.exact);
-  };
-  const menuActive = menuOpen;
   const sheetOpen = notifOpen || menuOpen;
   const CapsuleIcon = activeNavItem?.icon || activeNavGroup?.icon || ArayIcon;
 
@@ -916,31 +903,32 @@ export function AdminMobileBottomNav({
           bottom:
             accountOpen || kbOpen || menuOpen || notifOpen || globalOverlayOpen
               ? "calc(-140px - env(safe-area-inset-bottom, 0px))"
-              : "max(10px, env(safe-area-inset-bottom, 10px))",
+              : "0px",
           opacity: accountOpen || kbOpen || menuOpen || notifOpen || globalOverlayOpen ? 0 : 1,
           pointerEvents: accountOpen || kbOpen || menuOpen || notifOpen || globalOverlayOpen ? "none" : "auto",
         }}
         aria-label="Нижняя навигация админки"
         onContextMenu={(event) => event.preventDefault()}
       >
-        <div className="admin-mobile-dock-inner px-1.5 py-1.5">
+        <div className="admin-mobile-dock-inner">
           {/* Левые табы (по роли) */}
-          <div className="flex items-center justify-around flex-1 pt-1">
-            {tabs.map((tab) => (
-              <NavItem
-                key={tab.href}
-                icon={tab.icon}
-                label={tab.compactLabel}
-                href={tab.href}
-                isActive={isTabActive(tab)}
-                badge={
-                  tab.href === "/admin/orders" ||
-                  tab.href === "/admin/orders/new"
-                    ? newOrdersCount
-                    : undefined
-                }
-              />
-            ))}
+          <div className="flex flex-1 items-end justify-around">
+            <NavItem
+              icon={LayoutDashboard}
+              label="Стол"
+              href="/admin"
+              isActive={pathname === "/admin"}
+            />
+            <NavItem
+              icon={Search}
+              label="Поиск"
+              onClick={() => {
+                setNotifOpen(false);
+                setMenuOpen(false);
+                onSearchOpen?.();
+              }}
+              isActive={false}
+            />
           </div>
 
           {/* Центр: ARAY */}
@@ -1007,10 +995,10 @@ export function AdminMobileBottomNav({
               }}
             >
               <ArayOrb
-                size={34}
+                size={52}
                 id="adm-nav"
                 className="admin-mobile-aray-orb"
-                intensity="vivid"
+                intensity="normal"
                 pulse={
                   arayVoiceActive
                     ? "listening"
@@ -1025,31 +1013,29 @@ export function AdminMobileBottomNav({
                   arayVoiceActive ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                {arayVoiceActive ? "Слушаю…" : "ARAY"}
+                {arayVoiceActive ? "Слушаю..." : "Арай"}
               </span>
             </button>
           </div>
 
           {/* Правые: Новое/Аккаунт + карта разделов */}
-          <div className="flex items-center justify-around flex-1 pt-1">
+          <div className="flex flex-1 items-end justify-around">
             <NavItem
-              icon={Search}
-              label="Поиск"
+              icon={ShoppingBag}
+              label="Заказы"
+              href="/admin/orders"
+              isActive={isHrefActive("/admin/orders")}
+              badge={newOrdersCount}
+            />
+            <NavItem
+              icon={UserCircle}
+              label="Кабинет"
               onClick={() => {
                 setNotifOpen(false);
                 setMenuOpen(false);
-                onSearchOpen?.();
+                toggleAccount();
               }}
-              isActive={false}
-            />
-            <NavItem
-              icon={Menu}
-              label="Меню"
-              onClick={() => {
-                setNotifOpen(false);
-                setMenuOpen((open) => !open);
-              }}
-              isActive={menuActive}
+              isActive={accountOpen}
             />
           </div>
         </div>

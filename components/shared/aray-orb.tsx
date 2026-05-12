@@ -855,6 +855,74 @@ export function ArayOrb({
             animation: none !important;
           }
         }
+
+        @keyframes arayOrbMobileBreathe {
+          0%, 100% { transform: scale(0.98); opacity: 0.58; }
+          50% { transform: scale(1.04); opacity: 0.86; }
+        }
+
+        @keyframes arayOrbMobileCore {
+          0%, 100% { transform: scale(0.88); opacity: 0.64; }
+          50% { transform: scale(1.02); opacity: 0.88; }
+        }
+
+        @keyframes arayOrbMobileSun {
+          0%, 100% { transform: scale(0.98) rotate(-1deg); opacity: 0.72; }
+          50% { transform: scale(1.07) rotate(2deg); opacity: 0.9; }
+        }
+
+        @media (hover: none), (pointer: coarse), (max-width: 640px) {
+          .aray-orb-halo.is-active {
+            animation: arayOrbMobileBreathe 4.2s ease-in-out infinite;
+          }
+
+          .aray-orb-shell.is-active {
+            animation: arayOrbPresence 8s ease-in-out infinite;
+          }
+
+          .aray-orb-core {
+            animation: arayOrbMobileCore 4.8s ease-in-out infinite;
+          }
+
+          .aray-orb-sun {
+            animation: arayOrbMobileSun 5.8s ease-in-out infinite;
+          }
+
+          .aray-orb-cosmos,
+          .aray-orb-glass,
+          .aray-orb-glass::before,
+          .aray-orb-rim::before,
+          .aray-field-flow,
+          .aray-signature-backbone,
+          .aray-signature-cross,
+          .aray-signature-tail,
+          .aray-signature-spark,
+          .aray-net-line,
+          .aray-net-node,
+          .aray-orb-orbit::after,
+          .aray-orb-sun::before,
+          .aray-orb-sun::after {
+            animation: none !important;
+          }
+
+          .aray-orb-cosmos,
+          .aray-field-flow,
+          .aray-orb-glass::before,
+          .aray-orb-rim::before {
+            opacity: 0.42;
+          }
+
+          .aray-net-line {
+            stroke-dasharray: none;
+          }
+
+          .aray-signature-backbone,
+          .aray-signature-cross,
+          .aray-signature-tail {
+            stroke-dashoffset: 0;
+            opacity: 0.76;
+          }
+        }
       `}</style>
     </div>
   );

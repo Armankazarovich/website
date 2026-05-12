@@ -92,6 +92,8 @@ const THEME_OPTIONS: {
   { id: "system", label: "Система", icon: Monitor },
 ];
 
+const SHOW_FUTURE_PROFILE_HUB = false;
+
 type ProfileHubItem = {
   title: string;
   desc: string;
@@ -462,6 +464,7 @@ export default function ProfilePage() {
           ))}
         </div>
 
+        {SHOW_FUTURE_PROFILE_HUB && (
         <div className="border-t border-border/70 pt-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div>
@@ -482,13 +485,14 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+        )}
       </div>
 
       {/* Profile form */}
       <form
         id="profile-data"
         onSubmit={handleSubmit(onSaveProfile)}
-        className="bg-card rounded-2xl border border-border p-6 space-y-5"
+        className="scroll-mt-24 bg-card rounded-2xl border border-border p-6 space-y-5"
       >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <User className="w-5 h-5 text-primary" />
@@ -611,7 +615,7 @@ export default function ProfilePage() {
       {/* Interface */}
       <div
         id="interface"
-        className="bg-card rounded-2xl border border-border p-6 space-y-5"
+        className="scroll-mt-24 bg-card rounded-2xl border border-border p-6 space-y-5"
       >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Palette className="w-5 h-5 text-primary" />
@@ -710,7 +714,7 @@ export default function ProfilePage() {
       <form
         id="security"
         onSubmit={handlePw(onChangePassword)}
-        className="bg-card rounded-2xl border border-border p-6 space-y-5"
+        className="scroll-mt-24 bg-card rounded-2xl border border-border p-6 space-y-5"
       >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Lock className="w-5 h-5 text-primary" />
@@ -853,7 +857,7 @@ export default function ProfilePage() {
       {/* Язык интерфейса */}
       <div
         id="language"
-        className="bg-card rounded-2xl border border-border p-6 space-y-4"
+        className="scroll-mt-24 bg-card rounded-2xl border border-border p-6 space-y-4"
       >
         <h2 className="font-display font-semibold text-lg flex items-center gap-2">
           <Globe className="w-5 h-5 text-primary" />
