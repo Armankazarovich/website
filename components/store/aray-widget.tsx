@@ -21,6 +21,7 @@ import {
   subscribeArayHistoryUpdated,
   subscribeArayStop,
 } from "@/lib/aray-sync";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import type { AdminArayNavigationContext, AdminArayPageLink } from "@/components/admin/admin-aray-navigation";
 
 const ARAY_WIDGET_SOURCE = createAraySyncSource("aray-widget");
@@ -887,7 +888,7 @@ function useMic() {
       const resetSilenceTimer = () => {
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
         if (fullText || interimText) {
-          silenceTimer.current = setTimeout(finishWithText, 2200);
+          silenceTimer.current = setTimeout(finishWithText, 1400);
         }
       };
 
@@ -944,7 +945,7 @@ function useMic() {
       };
 
       // Таймаут: максимум 14 сек записи
-      maxTimer.current = setTimeout(() => { if (!resolved) finishWithText(); }, 14000);
+      maxTimer.current = setTimeout(() => { if (!resolved) finishWithText(); }, 9000);
 
       try {
         r.start(); recRef.current = r;
@@ -1475,6 +1476,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   const [voiceMode, setVoiceMode] = useState<"text" | "voice">("voice"); // voice-first по умолчанию!
   const voiceModeRef = useRef<"text" | "voice">("voice");
+  const [voiceStarting, setVoiceStarting] = useState(false);
+  const [voiceNotice, setVoiceNotice] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [hasNew, setHasNew] = useState(false);
@@ -1487,6 +1490,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const [browserOpen, setBrowserOpen] = useState(false);
   const [browserUrl] = useState("/");
   const [browserAction, setBrowserAction] = useState<ArayBrowserAction | null>(null);
+  useAdminOverlayGuard(open && isMobile);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -1498,8 +1502,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const sendMessageRef = useRef<((text?: string, options?: SendMessageOptions) => Promise<void>) | null>(null);
   const startVoiceRef = useRef<(() => void) | null>(null);
   const voiceStartGuardRef = useRef(false);
+  const voiceNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesCountRef = useRef(0);
   const lastPathnameRef = useRef(pathname);
+
+  const showVoiceNotice = useCallback((message: string) => {
+    if (voiceNoticeTimerRef.current) clearTimeout(voiceNoticeTimerRef.current);
+    setVoiceNotice(message);
+    voiceNoticeTimerRef.current = setTimeout(() => setVoiceNotice(null), 3800);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (voiceNoticeTimerRef.current) clearTimeout(voiceNoticeTimerRef.current);
+    },
+    [],
+  );
+
   const cartCount = useCartStore(s => s.totalItems());
   const cartPrice = useCartStore(s => s.totalPrice());
   const adminQuickActions = useMemo(
@@ -1690,14 +1709,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   }, []);
 
   // Body scroll lock при открытом чате (мобилка)
-  useEffect(() => {
-    if (open && isMobile) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => { document.body.style.overflow = prev; };
-    }
-  }, [open, isMobile]);
-
   // Tracker
   const trackerStarted = useRef(false);
   useEffect(() => {
@@ -1737,7 +1748,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         setTimeout(async () => {
           if (!panelOpenRef.current) return;
           if (voiceModeRef.current !== "voice") return;
-          try { const txt = await micListen(); if (txt) sendMessage(txt); } catch {}
+          setVoiceNotice(null);
+          setVoiceStarting(true);
+          try {
+            const txt = await micListen();
+            if (txt) sendMessage(txt);
+            else showVoiceNotice("Не расслышал. Нажми микрофон и скажи ещё раз.");
+          } catch {
+          } finally {
+            setVoiceStarting(false);
+          }
         }, 900);
       }), 400);
     }
@@ -1971,19 +1991,24 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         if (voiceModeRef.current !== "voice") return;
         if (voiceStartGuardRef.current) return;
         voiceStartGuardRef.current = true;
+        setVoiceNotice(null);
+        setVoiceStarting(true);
         try {
           const t = await micListen();
           if (t) {
             haptic("light");
             await sendMessageRef.current?.(t);
+          } else {
+            showVoiceNotice("Не расслышал. Нажми микрофон и скажи ещё раз.");
           }
         } catch {
         } finally {
+          setVoiceStarting(false);
           voiceStartGuardRef.current = false;
         }
       }, 700);
     });
-  }, [micListen, speak]);
+  }, [micListen, showVoiceNotice, speak]);
 
   const sendMessage = useCallback(async (text?: string, options?: SendMessageOptions) => {
     const rawInput = text || input;
@@ -2186,19 +2211,25 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     } catch {}
     stopTTS();
     haptic("medium");
+    setVoiceNotice(null);
+    setVoiceStarting(true);
     try {
       const text = await micListen();
       if (text) {
         haptic("light");
         await sendMessageRef.current?.(text);
+      } else {
+        showVoiceNotice("Не расслышал. Нажми микрофон и скажи ещё раз.");
       }
     } catch {
     } finally {
+      setVoiceStarting(false);
       voiceStartGuardRef.current = false;
     }
-  }, [loading, micActive, micListen, stopTTS]);
+  }, [loading, micActive, micListen, showVoiceNotice, stopTTS]);
   startVoiceRef.current = startVoice;
   const listening = micActive;
+  const voicePreparing = voiceStarting && !listening;
   const stopVoice = micCancel;
 
   const stopAllAray = useCallback(() => {
@@ -2435,7 +2466,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const voiceListeningBorder = "hsl(var(--primary) / 0.34)";
 
   // ── Орб статус для анимации ────────────────────────────────────────────────
-  const orbStatus = listening ? "listening" : speaking ? "speaking" : loading ? "thinking" : "idle";
+  const orbStatus = listening ? "listening" : speaking ? "speaking" : (voicePreparing || loading) ? "thinking" : "idle";
 
   return (
     <>
@@ -2526,7 +2557,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <div>
                     <p className="text-[14px] font-semibold leading-tight" style={{ color: txt }}>Арай</p>
                     <p className="text-[10.5px] leading-tight mt-0.5" style={{ color: txtSub }}>
-                      {speaking ? "Говорю..." : listening ? "Слушаю..." : loading ? "Думаю..." : "Онлайн"}
+                      {speaking ? "Говорю..." : listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : loading ? "Думаю..." : "Онлайн"}
                     </p>
                   </div>
                 </div>
@@ -2540,7 +2571,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       </span>
                     </div>
                   )}
-                  {(speaking || listening) && (
+                  {(speaking || listening || voicePreparing) && (
                     <button
                       onClick={stopAllAray}
                       className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:bg-black/5 dark:hover:bg-white/5"
@@ -2591,11 +2622,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     <p className="text-[13px] font-medium" style={{
                       color: listening ? voiceActiveColor : speaking ? voiceSpeakingColor : txt,
                     }}>
-                      {listening ? "Слушаю..." : speaking ? "Арай говорит..." : "Нажми на орб — говори"}
+                      {listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : speaking ? "Арай говорит..." : "Нажми на орб — говори"}
                     </p>
+                    {voiceNotice && (
+                      <p className="max-w-[240px] text-center text-[12px] leading-snug" style={{ color: txtSub }}>
+                        {voiceNotice}
+                      </p>
+                    )}
 
                     {/* Waveform при говорении */}
-                    {(speaking || listening) && (
+                    {(speaking || listening || voicePreparing) && (
                       <div className="flex gap-1 items-center h-6">
                         {[0,1,2,3,4,5,6].map(i => (
                           <motion.span key={i} className="w-1 rounded-full"
@@ -2607,7 +2643,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       </div>
                     )}
 
-                    {(speaking || listening) && (
+                    {(speaking || listening || voicePreparing) && (
                       <button onClick={stopAllAray} className="text-[11px] px-3 py-1 rounded-full transition-all"
                         style={{ color: txtSub, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }}>
                         {speaking ? "Остановить" : "Стоп"}
@@ -2615,7 +2651,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     )}
 
                     {/* Последний ответ — компактно */}
-                    {messages.length > 0 && !speaking && !listening && (
+                    {messages.length > 0 && !speaking && !listening && !voicePreparing && (
                       <motion.div
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -2774,7 +2810,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     onPaste={handlePaste}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                     onFocus={() => { if (!showMessages) setShowMessages(true); }}
-                    rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
+                    rows={1} placeholder={listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : "Написать Араю..."}
                     className="flex-1 resize-none text-[16px] lg:text-[13px] rounded-2xl px-3.5 py-2 focus:outline-none transition-all"
                     style={{ background: inputBg, border: `1px solid ${listening ? voiceListeningBorder : inputBorder}`, color: txt, maxHeight: "80px" }}
                   />
@@ -2856,7 +2892,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <div>
                     <p className="text-[13px] font-semibold" style={{ color: txt }}>Арай</p>
                     <p className="text-[10px]" style={{ color: txtSub }}>
-                      {speaking ? "Говорю..." : listening ? "Слушаю..." : loading ? "Думаю..." : "Онлайн"}
+                      {speaking ? "Говорю..." : listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : loading ? "Думаю..." : "Онлайн"}
                     </p>
                   </div>
                 </div>
@@ -2868,7 +2904,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--primary))" }}>{formatPrice(cartPrice)}</span>
                     </div>
                   )}
-                  {(speaking || listening) && (
+                  {(speaking || listening || voicePreparing) && (
                     <button
                       onClick={stopAllAray}
                       className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -2916,11 +2952,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     <p className="text-[15px] font-medium" style={{
                       color: listening ? voiceActiveColor : speaking ? voiceSpeakingColor : txt,
                     }}>
-                      {listening ? "Слушаю..." : speaking ? "Арай говорит..." : "Нажми — говори"}
+                      {listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : speaking ? "Арай говорит..." : "Нажми — говори"}
                     </p>
+                    {voiceNotice && (
+                      <p className="max-w-[250px] text-center text-[12px] leading-snug" style={{ color: txtSub }}>
+                        {voiceNotice}
+                      </p>
+                    )}
 
                     {/* Waveform */}
-                    {(speaking || listening) && (
+                    {(speaking || listening || voicePreparing) && (
                       <div className="flex gap-1 items-center h-8">
                         {[0,1,2,3,4,5,6,7,8].map(i => (
                           <motion.span key={i} className="w-1 rounded-full"
@@ -2932,7 +2973,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       </div>
                     )}
 
-                    {(speaking || listening) && (
+                    {(speaking || listening || voicePreparing) && (
                       <button onClick={stopAllAray} className="text-[12px] px-4 py-1.5 rounded-full"
                         style={{ color: txtSub, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }}>
                         {speaking ? "Остановить" : "Стоп"}
@@ -2940,7 +2981,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     )}
 
                     {/* Последний ответ — компактно */}
-                    {messages.length > 0 && !speaking && !listening && (
+                    {messages.length > 0 && !speaking && !listening && !voicePreparing && (
                       <motion.div
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -3134,7 +3175,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       autoCapitalize="sentences"
                       autoCorrect="on"
                       spellCheck
-                      rows={1} placeholder={listening ? "Слушаю..." : "Написать Араю..."}
+                      rows={1} placeholder={listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : "Написать Араю..."}
                       className="flex-1 resize-none text-[16px] rounded-2xl px-3.5 py-2.5 focus:outline-none"
                       style={{ background: inputBg, border: `1px solid ${listening ? voiceListeningBorder : inputBorder}`, color: txt, maxHeight: "100px" }}
                     />

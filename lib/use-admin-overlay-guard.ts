@@ -2,6 +2,52 @@
 
 import { useEffect } from "react";
 
+const LIVE_OVERLAY_SELECTOR = [
+  ".admin-side-panel-root",
+  ".admin-modal-panel",
+  ".admin-mobile-sheet",
+  ".account-drawer-panel",
+  "[data-radix-dialog-content]",
+  '[role="dialog"][aria-modal="true"]',
+].join(", ");
+
+function hasLiveOverlay() {
+  if (typeof document === "undefined") return false;
+  return Boolean(document.querySelector(LIVE_OVERLAY_SELECTOR));
+}
+
+export function resetAdminOverlayLock(force = false) {
+  if (typeof document === "undefined") return;
+  if (!force && hasLiveOverlay()) return;
+
+  const body = document.body;
+  const documentElement = document.documentElement;
+  const previousOverflow = body.dataset.adminOverlayPreviousOverflow;
+  const previousOverscroll = body.dataset.adminOverlayPreviousOverscroll;
+
+  delete body.dataset.adminOverlayCount;
+  delete body.dataset.adminOverlayOpen;
+  delete body.dataset.adminOverlayPreviousOverflow;
+  delete body.dataset.adminOverlayPreviousOverscroll;
+  body.style.overflow = previousOverflow ?? "";
+  documentElement.style.overscrollBehaviorY = previousOverscroll ?? "";
+}
+
+export function useAdminOverlayRecovery(key: unknown) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const recoverSoon = () => window.setTimeout(() => resetAdminOverlayLock(false), 80);
+
+    recoverSoon();
+    window.addEventListener("pageshow", recoverSoon);
+    window.addEventListener("popstate", recoverSoon);
+    return () => {
+      window.removeEventListener("pageshow", recoverSoon);
+      window.removeEventListener("popstate", recoverSoon);
+    };
+  }, [key]);
+}
+
 /**
  * Shared overlay flag for admin/mobile chrome.
  * Any real modal/drawer can set this so sticky docks and launchers step away.

@@ -66,16 +66,13 @@ export function SidePanel({
   const isLeft = side === "left";
   useAdminOverlayGuard(open);
 
-  // Escape + lock body scroll
+  // Escape closes the panel; scroll locking is handled by useAdminOverlayGuard.
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", handler);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", handler);
-      document.body.style.overflow = prev;
     };
   }, [open, onClose]);
 

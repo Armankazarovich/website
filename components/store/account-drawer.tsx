@@ -965,18 +965,15 @@ export function AccountDrawer() {
     setOpen(false);
   }, [pathname, setOpen]);
 
-  // Escape + body scroll lock
+  // Escape closes the drawer; scroll locking is handled by useAdminOverlayGuard.
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
     window.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
     };
   }, [open, setOpen]);
 

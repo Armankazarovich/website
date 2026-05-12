@@ -52,7 +52,7 @@ export default async function TasksPage() {
   }));
 
   return (
-    <div className="h-[calc(100dvh-148px)] lg:h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="flex min-h-[calc(100dvh-148px)] flex-col pb-24 lg:h-[calc(100vh-64px)] lg:min-h-0 lg:overflow-hidden lg:pb-0">
       <TasksKanban initialTasks={serialized as any} initialStaff={staff as any} />
     </div>
   );

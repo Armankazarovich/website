@@ -343,6 +343,11 @@ const COMPACT_INPUT_CLASS = "rounded-xl border border-border bg-background px-3 
 const SOFT_SELECTED_CLASS = "border-primary/45 bg-primary/10 text-primary";
 const TERMINAL_DRAFT_STORAGE_KEY = "aray-terminal-order-draft:v1";
 
+function shouldRestoreTerminalSearchFocus() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(min-width: 768px) and (pointer: fine)").matches;
+}
+
 const ORDER_CHANNELS = [
   { value: "PHONE", label: "Телефон", icon: Phone },
   { value: "WEBSITE", label: "Сайт", icon: ShoppingCart },
@@ -1284,7 +1289,11 @@ export default function NewPhoneOrderPage() {
     setSelectedVariantId("");
     setProductSearch("");
     setQuantity(1);
-    searchRef.current?.focus();
+    if (shouldRestoreTerminalSearchFocus()) {
+      window.requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
+    } else {
+      searchRef.current?.blur();
+    }
   }, [selectedProduct, selectedVariant, selectedVariantId, itemPrice, unitType, quantity]);
 
   const removeItem = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));

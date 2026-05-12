@@ -59,6 +59,7 @@ import { buildAdminArayNavigation } from "@/components/admin/admin-aray-navigati
 import { getAdminNavigationPageMeta } from "@/components/admin/admin-navigation-model";
 import { requestArayOpen as dispatchArayOpen, type ArayOpenMode } from "@/components/store/aray-events";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
+import { useAdminOverlayRecovery } from "@/lib/use-admin-overlay-guard";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { UI_LAYERS } from "@/lib/ui-layers";
 
@@ -187,6 +188,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
   const { theme, resolvedTheme, setTheme } = useTheme();
   const { t } = useAdminLang();
   useClassicMode();
+  useAdminOverlayRecovery(pathname);
   const { toggle: toggleAccount } = useAccountDrawer();
   const pageMeta = usePageMeta();
   const { onRefresh, actions, headerMeta } = useAdminPageActionsState();
@@ -508,7 +510,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
             )}
 
             {role !== "USER" && !disabledModuleIds.includes("core.notifications") && (
-              <div className="hidden sm:block">
+              <div className="block">
                 <AdminNotificationBell role={role} />
               </div>
             )}
@@ -532,7 +534,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               type="button"
               aria-label="Аккаунт"
               title={userName || email || "Аккаунт"}
-              className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition-colors hover:bg-muted/60"
+              className="hidden h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl transition-colors hover:bg-muted/60 sm:flex"
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-primary/20" />

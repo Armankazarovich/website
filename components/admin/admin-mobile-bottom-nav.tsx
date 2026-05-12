@@ -52,6 +52,7 @@ import {
   type AdminNavigationGroup,
 } from "@/components/admin/admin-navigation-model";
 import { buildAdminNavSections } from "@/components/admin/admin-nav-structure";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 
 function haptic(pattern: number | number[] = 6) {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -439,29 +440,7 @@ export function AdminMobileBottomNav({
 
   const sheetOpen = notifOpen || menuOpen;
   const CapsuleIcon = activeNavItem?.icon || activeNavGroup?.icon || ArayIcon;
-
-  useEffect(() => {
-    if (!sheetOpen || typeof document === "undefined") return;
-
-    const { body, documentElement } = document;
-    const previousBodyOverflow = body.style.overflow;
-    const previousDocumentOverscroll = documentElement.style.overscrollBehaviorY;
-    const previousMobileSheetOpen = body.dataset.arayMobileSheetOpen;
-
-    body.style.overflow = "hidden";
-    body.dataset.arayMobileSheetOpen = "true";
-    documentElement.style.overscrollBehaviorY = "none";
-
-    return () => {
-      body.style.overflow = previousBodyOverflow;
-      if (previousMobileSheetOpen === undefined) {
-        delete body.dataset.arayMobileSheetOpen;
-      } else {
-        body.dataset.arayMobileSheetOpen = previousMobileSheetOpen;
-      }
-      documentElement.style.overscrollBehaviorY = previousDocumentOverscroll;
-    };
-  }, [sheetOpen]);
+  useAdminOverlayGuard(sheetOpen);
 
   // Cleanup
   useEffect(
@@ -912,7 +891,7 @@ export function AdminMobileBottomNav({
       >
         <div className="admin-mobile-dock-inner">
           {/* Левые табы (по роли) */}
-          <div className="flex flex-1 items-end justify-around">
+          <div className="flex flex-1 items-center justify-around pt-1">
             <NavItem
               icon={LayoutDashboard}
               label="Стол"
@@ -934,6 +913,7 @@ export function AdminMobileBottomNav({
           {/* Центр: ARAY */}
           <div
             className="admin-mobile-dock-center flex flex-col items-center"
+            style={{ marginTop: "-18px", minWidth: "72px" }}
           >
             <button
               type="button"
@@ -998,7 +978,7 @@ export function AdminMobileBottomNav({
                 size={52}
                 id="adm-nav"
                 className="admin-mobile-aray-orb"
-                intensity="normal"
+                intensity="vivid"
                 pulse={
                   arayVoiceActive
                     ? "listening"
@@ -1019,7 +999,7 @@ export function AdminMobileBottomNav({
           </div>
 
           {/* Правые: Новое/Аккаунт + карта разделов */}
-          <div className="flex flex-1 items-end justify-around">
+          <div className="flex flex-1 items-center justify-around pt-1">
             <NavItem
               icon={ShoppingBag}
               label="Заказы"

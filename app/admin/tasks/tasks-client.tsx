@@ -661,7 +661,7 @@ function Column({
 
   return (
     <div
-      className={`flex flex-col rounded-2xl border border-border/70 transition-colors ${compact ? "min-h-[360px] w-full" : "min-h-[200px] w-72 shrink-0"} ${col.bg} ${isOver ? "ring-2 ring-primary/35" : ""}`}
+      className={`flex flex-col rounded-2xl border border-border/70 transition-colors ${compact ? "min-h-0 w-full" : "min-h-[200px] w-72 shrink-0"} ${col.bg} ${isOver ? "ring-2 ring-primary/35" : ""}`}
       onDragOver={e => { e.preventDefault(); onDragOver(col.id); }}
       onDrop={e => { e.preventDefault(); onDrop(col.id); }}
     >
@@ -685,7 +685,7 @@ function Column({
       </div>
 
       {/* Cards */}
-      <div className={`flex-1 px-3 pb-3 space-y-2.5 overflow-y-auto ${compact ? "max-h-none" : "max-h-[calc(100vh-280px)]"}`}>
+      <div className={`px-3 pb-3 space-y-2.5 ${compact ? "" : "max-h-[calc(100vh-280px)] flex-1 overflow-y-auto"}`}>
         {tasks.map(task => (
           <TaskCard
             key={task.id}
@@ -876,9 +876,9 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
       : null;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex min-h-0 flex-col lg:h-full">
       {/* Compact header row — stats + smart controls */}
-      <div className="px-6 pt-4 pb-3 space-y-3">
+      <div className="space-y-3 px-4 pb-3 pt-4 sm:px-6">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="min-w-0 mr-auto">
             <p className="text-sm font-semibold">Командный поток</p>
@@ -994,7 +994,7 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
       )}
 
       {/* Board */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-5 lg:overflow-x-auto lg:p-6">
+      <div className="p-3 sm:p-5 lg:flex-1 lg:overflow-y-auto lg:overflow-x-auto lg:p-6">
         <div className="lg:hidden">
           <Column
             col={activeMobileColumn}
