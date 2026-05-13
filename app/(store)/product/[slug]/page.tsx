@@ -76,6 +76,7 @@ export default async function ProductPage({ params }: Props) {
   const session = await auth();
   const role = (session?.user as any)?.role;
   const isAdmin = session && ["ADMIN", "MANAGER"].includes(role);
+  const currentUserId = session?.user?.id || null;
 
   const product = await prisma.product.findFirst({
     where: { slug: params.slug, ...getPublicProductsFilter() },
@@ -110,9 +111,15 @@ export default async function ProductPage({ params }: Props) {
   });
 
   // Site settings + Yandex Maps review URL
-  const [siteSettings, yandexMapsSetting] = await Promise.all([
+  const [siteSettings, yandexMapsSetting, currentUserProfile] = await Promise.all([
     getSiteSettings(),
     prisma.siteSettings.findUnique({ where: { key: "yandex_maps_review_url" } }),
+    currentUserId
+      ? prisma.user.findUnique({
+          where: { id: currentUserId },
+          select: { name: true, email: true, avatarUrl: true },
+        })
+      : Promise.resolve(null),
   ]);
   const yandexMapsUrl = yandexMapsSetting?.value || "";
   const showReviewsBlock = (siteSettings.product_page_show_reviews ?? "true") !== "false";
@@ -441,9 +448,9 @@ export default async function ProductPage({ params }: Props) {
           showReviews={showReviewsBlock}
           productId={product.id}
           productName={product.name}
-          userName={session?.user?.name || null}
-          userEmail={session?.user?.email || null}
-          userAvatar={(session?.user as any)?.avatarUrl || null}
+          userName={currentUserProfile?.name || session?.user?.name || null}
+          userEmail={currentUserProfile?.email || session?.user?.email || null}
+          userAvatar={currentUserProfile?.avatarUrl || (session?.user as any)?.avatarUrl || null}
           isLoggedIn={!!session?.user}
         />
       </section>

@@ -1,10 +1,22 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Star, Loader2, AlertCircle, CheckCircle, Camera, X, MessageSquarePlus } from "lucide-react";
+import { useSession } from "next-auth/react";
+
+type CabinetProfile = {
+  name?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+};
 
 export function HomeReviewPopup() {
   const [open, setOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const sessionUser = session?.user as
+    | ({ name?: string | null; email?: string | null; avatarUrl?: string | null; image?: string | null })
+    | undefined;
+  const [profile, setProfile] = useState<CabinetProfile | null>(null);
   const [authorName, setAuthorName] = useState("");
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState(5);
@@ -17,6 +29,31 @@ export function HomeReviewPopup() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const resolvedEmail = profile?.email || sessionUser?.email || "";
+  const resolvedName = profile?.name || sessionUser?.name || (resolvedEmail ? resolvedEmail.split("@")[0] : "");
+  const resolvedAvatar = profile?.avatarUrl || sessionUser?.avatarUrl || sessionUser?.image || null;
+  const resolvedLoggedIn = status === "authenticated" || Boolean(sessionUser);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+
+    let cancelled = false;
+    fetch("/api/cabinet/profile", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setProfile(data);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
+
+  useEffect(() => {
+    if (resolvedName && !authorName) setAuthorName(resolvedName);
+    if (resolvedEmail && !email) setEmail(resolvedEmail);
+  }, [authorName, email, resolvedEmail, resolvedName]);
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -41,7 +78,9 @@ export function HomeReviewPopup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!authorName.trim()) { setError("Пожалуйста, введите ваше имя"); return; }
+    const submitAuthorName = authorName.trim() || (resolvedLoggedIn ? resolvedName || "Покупатель" : "");
+    const submitEmail = email.trim() || resolvedEmail;
+    if (!submitAuthorName) { setError("Пожалуйста, введите ваше имя"); return; }
     if (text.trim().length < 10) { setError("Текст отзыва должен быть минимум 10 символов"); return; }
     setLoading(true);
     try {
@@ -61,8 +100,8 @@ export function HomeReviewPopup() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId: null,
-          authorName: authorName.trim(),
-          email: email.trim() || null,
+          authorName: submitAuthorName,
+          email: submitEmail || null,
           rating,
           text: text.trim(),
           images: uploadedUrls,
@@ -181,31 +220,60 @@ export function HomeReviewPopup() {
                   </div>
                 </div>
 
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Ваше имя *</label>
-                  <input
-                    type="text"
-                    value={authorName}
-                    onChange={(e) => setAuthorName(e.target.value)}
-                    placeholder="Как вас зовут?"
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-border bg-background text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all"
-                    maxLength={100}
-                    required
-                  />
-                </div>
+                {/* Author */}
+                {resolvedLoggedIn ? (
+                  <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3">
+                    {resolvedAvatar ? (
+                      <img
+                        src={resolvedAvatar}
+                        alt={authorName || resolvedName || "Покупатель"}
+                        className="h-10 w-10 rounded-full border border-border object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-bold text-primary">
+                        {(authorName || resolvedName || "П").charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-foreground">
+                        {authorName || resolvedName || "Покупатель"}
+                      </p>
+                      {email || resolvedEmail ? (
+                        <p className="truncate text-xs text-muted-foreground">{email || resolvedEmail}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Отзыв будет привязан к вашему кабинету</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Name */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Ваше имя *</label>
+                      <input
+                        type="text"
+                        value={authorName}
+                        onChange={(e) => setAuthorName(e.target.value)}
+                        placeholder="Как вас зовут?"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-border bg-background text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all"
+                        maxLength={100}
+                        required
+                      />
+                    </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium mb-1.5">Email <span className="text-muted-foreground">(необязательно)</span></label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Для уведомления об ответе"
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-border bg-background text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all"
-                  />
-                </div>
+                    {/* Email */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1.5">Email <span className="text-muted-foreground">(необязательно)</span></label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Для уведомления об ответе"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-border bg-background text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all"
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Review text */}
                 <div>

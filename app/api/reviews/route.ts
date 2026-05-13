@@ -29,11 +29,33 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { productId, authorName, email, rating, text, images } = body;
+    const session = await auth();
+    const userId = session?.user?.id || null;
+
+    const userProfile = userId
+      ? await prisma.user.findUnique({
+          where: { id: userId },
+          select: { name: true, email: true },
+        })
+      : null;
+
+    const submittedEmail = typeof email === "string" ? email.trim() : "";
+    const profileEmail = userProfile?.email || session?.user?.email || "";
+    const resolvedEmail = (profileEmail || submittedEmail).trim();
+    const fallbackName = resolvedEmail ? resolvedEmail.split("@")[0] : "";
+    const resolvedName = (
+      userProfile?.name ||
+      session?.user?.name ||
+      (typeof authorName === "string" ? authorName : "") ||
+      fallbackName
+    ).trim();
+    const finalAuthorName = resolvedName || (userId ? "Покупатель" : "");
+    const cleanText = typeof text === "string" ? text.trim() : "";
 
     // Validation
-    if (!authorName?.trim()) {
+    if (!finalAuthorName) {
       return NextResponse.json(
-        { error: "authorName обязательно" },
+        { error: "Введите имя, чтобы оставить отзыв" },
         { status: 400 }
       );
     }
@@ -46,7 +68,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!text || text.trim().length < 10 || text.trim().length > 2000) {
+    if (cleanText.length < 10 || cleanText.length > 2000) {
       return NextResponse.json(
         { error: "Текст отзыва: от 10 до 2000 символов" },
         { status: 400 }
@@ -54,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Email validation (basic)
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    if (resolvedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(resolvedEmail)) {
       return NextResponse.json(
         { error: "Некорректный email" },
         { status: 400 }
@@ -77,7 +99,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Text quality: reject gibberish (same char repeated, all caps, URLs)
-    const cleanText = text?.trim() || "";
     const hasRepeat = /(.)\1{5,}/.test(cleanText); // aaaaaa
     const hasUrls = /(https?:\/\/|www\.|\.com|\.ru|\.net)/i.test(cleanText);
     const allCaps = cleanText.length > 20 && cleanText === cleanText.toUpperCase();
@@ -103,10 +124,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Rate limiting: use email or IP address
+    // Rate limiting: use account, email or IP address
     const forwardedFor = req.headers.get("x-forwarded-for");
     const clientIp = forwardedFor ? forwardedFor.split(",")[0].trim() : "unknown";
-    const identifier = email?.trim() || clientIp;
+    const identifier = userId ? `user:${userId}` : resolvedEmail || clientIp;
     const key = `review:${productId || "general"}:${identifier}`;
 
     if (!checkRateLimit(key, 1, 86400000)) {
@@ -116,17 +137,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get session — if logged in, attach userId
-    const session = await auth();
-    const userId = session?.user?.id || null;
-
     // Create review (PENDING for moderation)
     const review = await prisma.review.create({
       data: {
         ...(productId ? { productId } : {}),
-        name: authorName.trim(),
+        name: finalAuthorName,
         rating: numRating,
-        text: text.trim(),
+        text: cleanText,
         images: Array.isArray(images) ? images.filter((u: string) => typeof u === "string" && (u.startsWith("http") || u.startsWith("/images/") || u.startsWith("/uploads/"))).slice(0, 5) : [],
         source: "internal",
         approved: false, // Requires admin approval
@@ -140,9 +157,9 @@ export async function POST(req: NextRequest) {
       const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 
       if (telegramBotToken && telegramChatId) {
-        const starsEmoji = "⭐".repeat(Number(rating));
+        const starsEmoji = "⭐".repeat(numRating);
         const productLine = product ? `*Товар:* ${product.name}\n` : `*Тип:* Общий отзыв (с главной)\n`;
-        const message = `🆕 *Новый отзыв на модерации*\n\n${productLine}*Автор:* ${authorName.trim()}\n*Рейтинг:* ${starsEmoji} (${rating}/5)\n\n*Текст:*\n${text.trim()}\n\n📋 [Посмотреть в админке](https://pilo-rus.ru/admin/reviews)`;
+        const message = `🆕 *Новый отзыв на модерации*\n\n${productLine}*Автор:* ${finalAuthorName}\n*Рейтинг:* ${starsEmoji} (${numRating}/5)\n\n*Текст:*\n${cleanText}\n\n📋 [Посмотреть в админке](https://pilo-rus.ru/admin/reviews)`;
 
         await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: "POST",
@@ -162,7 +179,7 @@ export async function POST(req: NextRequest) {
     try {
       await sendPushToStaff({
         title: `Новый отзыв ${numRating}⭐`,
-        body: `${authorName.trim()}: ${text.trim().substring(0, 60)}...`,
+        body: `${finalAuthorName}: ${cleanText.substring(0, 60)}...`,
         url: "/admin/reviews?status=pending",
       });
     } catch {}
