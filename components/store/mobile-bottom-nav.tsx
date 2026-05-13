@@ -258,7 +258,7 @@ export function MobileBottomNav({
         {arayEnabled && (
           <div
             className="flex flex-col items-center"
-            style={{ marginTop: "-18px", minWidth: "72px" }}
+            style={{ marginTop: "-10px", minWidth: "60px" }}
           >
             <button
               type="button"
@@ -273,12 +273,12 @@ export function MobileBottomNav({
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
               <ArayOrb
-                size={52}
+                size={44}
                 id="mob-nav"
                 pulse={arayPulse ? "listening" : "idle"}
                 badgeCount={totalItems > 0 ? totalItems : undefined}
               />
-              <span className="text-[10px] font-semibold mt-0.5 text-muted-foreground tracking-wide">
+              <span className="text-[9px] font-semibold mt-0.5 text-muted-foreground tracking-wide">
                 Арай
               </span>
             </button>

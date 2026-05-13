@@ -57,7 +57,7 @@ export default async function NewsPage() {
   });
 
   return (
-    <div className="container py-10 md:py-14">
+    <div className="container store-mobile-safe-bottom py-10 md:py-14">
       {/* Header */}
       <div className="mb-10">
         <div className="flex items-center gap-2 text-primary mb-3">
@@ -73,9 +73,30 @@ export default async function NewsPage() {
       </div>
 
       {posts.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="text-lg">Статьи скоро появятся</p>
+        <div className="store-empty-action-card rounded-2xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <BookOpen className="h-8 w-8" />
+          </div>
+          <h2 className="font-display text-2xl font-bold">Скоро добавим полезные материалы</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+            Пока база знаний наполняется, быстрее всего выбрать материал через
+            каталог или рассчитать объём в калькуляторе.
+          </p>
+          <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+            <Link
+              href="/catalog"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Перейти в каталог
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/calculator"
+              className="inline-flex items-center justify-center rounded-xl border border-border bg-background/45 px-5 py-3 text-sm font-semibold transition-colors hover:border-primary/40"
+            >
+              Рассчитать объём
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

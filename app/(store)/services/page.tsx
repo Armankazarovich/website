@@ -86,7 +86,7 @@ export default async function ServicesPage() {
   };
 
   return (
-    <div className="container py-10 md:py-14">
+    <div className="container store-mobile-safe-bottom py-10 md:py-14">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }}
@@ -106,9 +106,38 @@ export default async function ServicesPage() {
       </div>
 
       {services.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">
-          <Wrench className="w-12 h-12 mx-auto mb-4 opacity-30" />
-          <p className="text-lg">Услуги скоро появятся</p>
+        <div className="store-empty-action-card rounded-2xl p-6 text-center sm:p-8">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Wrench className="h-8 w-8" />
+          </div>
+          <h2 className="font-display text-2xl font-bold">Поможем с задачей под ваш объект</h2>
+          <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+            Раздел услуг наполняется, но менеджер уже может посчитать распил,
+            обработку, доставку и подобрать материал под размеры.
+          </p>
+          <div className="mt-6 grid gap-2 sm:grid-cols-3">
+            <Link
+              href="/calculator"
+              className="rounded-xl border border-border bg-background/45 p-4 text-left transition-colors hover:border-primary/40"
+            >
+              <span className="text-sm font-semibold text-foreground">Рассчитать объём</span>
+              <p className="mt-1 text-xs text-muted-foreground">м³, штуки и примерная сумма</p>
+            </Link>
+            <Link
+              href="/catalog"
+              className="rounded-xl border border-border bg-background/45 p-4 text-left transition-colors hover:border-primary/40"
+            >
+              <span className="text-sm font-semibold text-foreground">Выбрать материал</span>
+              <p className="mt-1 text-xs text-muted-foreground">доска, брус, вагонка, листы</p>
+            </Link>
+            <Link
+              href="/contacts"
+              className="rounded-xl border border-primary/30 bg-primary text-left text-primary-foreground p-4 transition-colors hover:bg-primary/90"
+            >
+              <span className="text-sm font-semibold">Оставить задачу</span>
+              <p className="mt-1 text-xs opacity-85">ответим и предложим решение</p>
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">

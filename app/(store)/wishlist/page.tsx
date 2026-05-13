@@ -14,7 +14,7 @@ export default function WishlistPage() {
   const [confirmClear, setConfirmClear] = useState(false);
 
   return (
-    <div className="container py-8">
+    <div className="container store-mobile-safe-bottom py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-start gap-3">
@@ -44,7 +44,7 @@ export default function WishlistPage() {
 
       {items.length === 0 ? (
         /* Empty state */
-        <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="store-empty-action-card flex flex-col items-center justify-center rounded-2xl px-6 py-14 text-center sm:py-16">
           <div className="w-24 h-24 rounded-3xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center mb-6">
             <Heart className="w-12 h-12 text-red-200 dark:text-red-800" />
           </div>
@@ -52,11 +52,16 @@ export default function WishlistPage() {
           <p className="text-muted-foreground text-sm mb-8 max-w-xs">
             Нажмите кнопку избранного на любом товаре, чтобы сохранить его здесь и вернуться позже
           </p>
-          <Button asChild>
-            <Link href="/catalog">
-              Перейти в каталог <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button asChild>
+              <Link href="/catalog">
+                Перейти в каталог <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/calculator">Рассчитать объём</Link>
+            </Button>
+          </div>
         </div>
       ) : (
         <>

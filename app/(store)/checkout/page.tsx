@@ -182,7 +182,7 @@ function CheckoutRegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, clearCart } = useCartStore();
+  const { items, totalPrice, clearCart, hasHydrated } = useCartStore();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -288,6 +288,10 @@ export default function CheckoutPage() {
   });
   const { data: session } = useSession();
 
+  useEffect(() => {
+    useCartStore.getState().hydrateCart();
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -388,7 +392,7 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, [session?.user?.id, reset]);
 
-  const shouldRedirectToCart = mounted && items.length === 0 && !success;
+  const shouldRedirectToCart = mounted && hasHydrated && items.length === 0 && !success;
 
   useEffect(() => {
     if (shouldRedirectToCart) {
@@ -397,9 +401,9 @@ export default function CheckoutPage() {
   }, [router, shouldRedirectToCart]);
 
   // Wait for hydration before checking cart (localStorage loads after mount)
-  if (!mounted) {
+  if (!mounted || !hasHydrated) {
     return (
-      <div className="container py-20 flex items-center justify-center">
+      <div className="container store-mobile-safe-bottom py-20 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -527,7 +531,7 @@ export default function CheckoutPage() {
   if (success) {
     const trackUrl = `/track?order=${orderNum}&phone=${encodeURIComponent(orderPhone)}`;
     return (
-      <div className="container py-16 max-w-lg mx-auto">
+      <div className="container store-mobile-safe-bottom py-16 max-w-lg mx-auto">
         {/* Иконка успеха */}
         <div className="text-center mb-8">
           <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-950/40 rounded-full flex items-center justify-center mx-auto mb-5">
@@ -658,7 +662,7 @@ export default function CheckoutPage() {
     Number(checkoutSettings.allowPickup);
 
   return (
-    <div className="container py-8 max-w-4xl">
+    <div className="container store-mobile-safe-bottom py-8 max-w-4xl">
       <div className="flex items-center gap-3 mb-8">
         <BackButton href="/cart" label="Корзина" className="mb-0 shrink-0" />
         <h1 className="font-display font-bold text-3xl">Оформление заказа</h1>
@@ -734,7 +738,7 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="lg:col-span-3 space-y-5"
+          className="lg:col-span-3 space-y-5 pb-10 sm:pb-12 lg:pb-14"
         >
           {/* Client type toggle */}
           <div className="bg-card rounded-2xl border border-border p-5">
@@ -1350,13 +1354,13 @@ export default function CheckoutPage() {
             disabled={submitting}
           >
             {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Отправить заявку
+            {submitting ? "Оформляем заказ..." : "Оформить заказ"}
           </Button>
         </form>
 
         {/* Order summary */}
         <div className="lg:col-span-2">
-          <div className="sticky top-24 bg-card rounded-2xl border border-border p-6 space-y-4">
+          <div className="lg:sticky lg:top-24 bg-card rounded-2xl border border-border p-6 space-y-4">
             <h2 className="font-display font-bold text-xl">Ваш заказ</h2>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {items.map((item) => (
@@ -1389,6 +1393,10 @@ export default function CheckoutPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 Стоимость доставки уточняется менеджером
               </p>
+            </div>
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground">
+              Заявка не списывает оплату автоматически. Мы подтвердим наличие,
+              доставку и удобный способ связи.
             </div>
           </div>
         </div>

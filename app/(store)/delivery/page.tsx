@@ -156,7 +156,7 @@ export default async function DeliveryPage() {
         </div>
 
         <div className="relative grid grid-cols-1 gap-3 md:grid-cols-4">
-          <div className="pointer-events-none absolute left-8 right-8 top-7 hidden h-px bg-primary/25 md:block" />
+          <div className="pointer-events-none absolute left-8 right-8 top-7 z-0 hidden h-px bg-primary/25 md:block" />
           {[
             { icon: Phone, title: "Заявка", text: "Адрес, объем, удобное время и формат получения." },
             { icon: Calculator, title: "Расчет", text: "Материал, доставка, разгрузка и итоговая сумма." },
@@ -165,7 +165,7 @@ export default async function DeliveryPage() {
           ].map((step, index) => (
             <div
               key={step.title}
-              className="relative rounded-xl border border-border/75 bg-background/60 p-4"
+              className="relative z-10 rounded-xl border border-border/75 bg-card p-4"
             >
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="store-icon-tile h-11 w-11 rounded-xl">

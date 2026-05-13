@@ -23,6 +23,13 @@ yarn-debug.log*
 yarn-error.log*
 dev-server*.log
 dev-server*.err.log
+.next-dev-*.log
+.next-dev-*.err.log
+.next-start-*.log
+.next-start-*.err.log
+dev-*.log
+dev-*.err.log
+/tmp/
 
 # local backups / generated visual references
 /backups/

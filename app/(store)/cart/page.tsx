@@ -211,22 +211,54 @@ function ShareBanner() {
 }
 
 // ─── Share Button ─────────────────────────────────────────────────────────────
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard?.writeText && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Some in-app browsers block Clipboard API even after a button click.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  textarea.setSelectionRange(0, text.length);
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
 function ShareCartButton() {
   const { items } = useCartStore();
-  const [copied, setCopied] = useState(false);
+  const [shareState, setShareState] = useState<"idle" | "copied" | "error">("idle");
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     if (items.length === 0) return;
 
     const compact = items.map((i) => ({ v: i.variantId, q: i.quantity, u: i.unitType }));
     const encoded = btoa(JSON.stringify(compact));
     const url = `${window.location.origin}/cart?share=${encoded}`;
 
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    });
+    const copied = await copyTextToClipboard(url);
+    setShareState(copied ? "copied" : "error");
+    window.setTimeout(() => setShareState("idle"), copied ? 3000 : 2200);
   }, [items]);
+
+  const copied = shareState === "copied";
+  const hasError = shareState === "error";
 
   return (
     <button
@@ -234,6 +266,8 @@ function ShareCartButton() {
       className={`flex items-center gap-2 text-sm px-4 py-2 rounded-xl border transition-all ${
         copied
           ? "bg-green-50 dark:bg-green-950/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+          : hasError
+            ? "bg-destructive/10 border-destructive/30 text-destructive"
           : "border-border text-muted-foreground hover:text-primary hover:border-primary/40 hover:bg-primary/10"
       }`}
       title="Скопировать ссылку на корзину"
@@ -243,6 +277,12 @@ function ShareCartButton() {
           <Check className="w-4 h-4" />
           <span className="hidden sm:inline">Ссылка скопирована!</span>
           <span className="sm:hidden">Готово</span>
+        </>
+      ) : hasError ? (
+        <>
+          <X className="w-4 h-4" />
+          <span className="hidden sm:inline">Не удалось скопировать</span>
+          <span className="sm:hidden">Ошибка</span>
         </>
       ) : (
         <>
@@ -257,15 +297,34 @@ function ShareCartButton() {
 
 // ─── Main Cart Page ────────────────────────────────────────────────────────────
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCartStore();
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    totalPrice,
+    clearCart,
+    hasHydrated,
+  } = useCartStore();
+
+  useEffect(() => {
+    useCartStore.getState().hydrateCart();
+  }, []);
+
+  if (!hasHydrated) {
+    return (
+      <div className="container store-mobile-safe-bottom py-20 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
-      <div className="container py-12 sm:py-20">
+      <div className="container store-mobile-safe-bottom py-12 sm:py-20">
         <Suspense>
           <ShareBanner />
         </Suspense>
-        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6 text-center sm:p-8">
+        <div className="store-empty-action-card mx-auto max-w-2xl rounded-2xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <ShoppingCart className="h-8 w-8" />
           </div>
@@ -287,13 +346,27 @@ export default function CartPage() {
               </Link>
             </Button>
           </div>
+          <div className="mt-6 grid gap-2 text-left text-xs text-muted-foreground sm:grid-cols-3">
+            <div className="rounded-xl border border-border/70 bg-background/45 p-3">
+              <span className="font-semibold text-foreground">Цены по размерам</span>
+              <p className="mt-1">В карточках сразу видно м³ или штуки.</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/45 p-3">
+              <span className="font-semibold text-foreground">Быстрый расчёт</span>
+              <p className="mt-1">Калькулятор помогает собрать объём.</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-background/45 p-3">
+              <span className="font-semibold text-foreground">Заявка менеджеру</span>
+              <p className="mt-1">Уточним доставку и наличие.</p>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container py-8">
+    <div className="container store-mobile-safe-bottom pt-8 pb-14 sm:pb-16">
       {/* Share banner — SSR safe */}
       <Suspense fallback={null}>
         <ShareBanner />
@@ -346,32 +419,34 @@ export default function CartPage() {
 
                 <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 mt-3">
                   {/* Quantity */}
-                  <div className="flex items-center border border-border rounded-lg overflow-hidden w-fit">
+                  <div className="store-quantity-control">
                     <button
+                      aria-label="Уменьшить количество"
                       onClick={() =>
                         updateQuantity(
                           item.id,
                           parseFloat((item.quantity - (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
-                        )
+                          )
                       }
-                      className="px-3 py-3 sm:py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
+                      className="store-quantity-button is-minus"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="px-3 py-3 sm:py-1.5 text-sm font-medium min-w-[3rem] text-center">
+                    <span className="store-quantity-value">
                       {item.unitType === "CUBE"
                         ? item.quantity.toFixed(1)
                         : item.quantity}{" "}
                       {item.unitType === "CUBE" ? "м³" : "шт"}
                     </span>
                     <button
+                      aria-label="Увеличить количество"
                       onClick={() =>
                         updateQuantity(
                           item.id,
                           parseFloat((item.quantity + (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
-                        )
+                          )
                       }
-                      className="px-3 py-3 sm:py-1.5 hover:bg-primary/10 hover:text-primary transition-colors"
+                      className="store-quantity-button"
                     >
                       <Plus className="w-3 h-3" />
                     </button>
@@ -434,6 +509,11 @@ export default function CartPage() {
               + стоимость доставки (уточняется менеджером)
             </p>
 
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs leading-relaxed text-muted-foreground">
+              <span className="font-semibold text-foreground">После заявки:</span>{" "}
+              менеджер проверит наличие, рассчитает доставку и подтвердит финальную сумму.
+            </div>
+
             <Button size="lg" className="w-full" asChild>
               <Link href="/checkout">
                 Оформить заказ
@@ -449,14 +529,10 @@ export default function CartPage() {
               </a>
             </div>
 
-            {/* Share shortcut in sidebar */}
-            <div className="border-t border-border pt-4">
-              <p className="text-xs text-muted-foreground mb-2 text-center">Отправить список прорабу:</p>
-              <ShareCartButton />
-            </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 }

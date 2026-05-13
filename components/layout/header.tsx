@@ -188,6 +188,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   const cartPreviewTimer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
+    useCartStore.getState().hydrateCart();
     setMounted(true);
     const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler);

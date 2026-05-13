@@ -501,7 +501,7 @@ export default async function CatalogPage({
   };
 
   return (
-    <div className="container py-6">
+    <div className="container py-3 sm:py-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -513,7 +513,7 @@ export default async function CatalogPage({
       <RoutePrefetcher hrefs={prefetchHrefs} />
 
       {/* ── Заголовок ── */}
-      <div className="mb-3">
+      <div className="mb-3 sm:mb-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
@@ -571,7 +571,7 @@ export default async function CatalogPage({
         />
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         {/* Sidebar */}
         <aside className="hidden lg:block lg:w-64 shrink-0">
           <div className="sticky top-24 space-y-4">
@@ -650,12 +650,12 @@ export default async function CatalogPage({
         {/* Main content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="flex items-center justify-between mb-5 gap-4">
-            <h2 className="font-display font-bold text-2xl">
+          <div className="mb-4 flex flex-col items-start gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <h2 className="font-display text-xl font-bold leading-tight sm:text-2xl">
               {listingTitle}
             </h2>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex w-full shrink-0 items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
               <div className="hidden lg:block">
                 <InstockToggle active={searchParams.instock === "1"} />
               </div>
@@ -745,7 +745,7 @@ export default async function CatalogPage({
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-5">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3">
               {products.map((product) => (
                 <ProductCard
                   key={product.id}

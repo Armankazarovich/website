@@ -203,13 +203,14 @@ export function PwaInstall() {
   return (
     <>
       <button
+        data-admin-pwa-launcher
         type="button"
         onClick={() => {
           refreshInstallState();
           setShowSteps(false);
           setVisible(true);
         }}
-        className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 inline-flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-2.5 py-2 text-sm font-semibold text-foreground shadow-xl shadow-black/10 backdrop-blur transition-colors hover:border-primary/30 hover:bg-card lg:bottom-6"
+        className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 hidden items-center gap-2 rounded-2xl border border-border bg-card/95 px-2.5 py-2 text-sm font-semibold text-foreground shadow-xl shadow-black/10 transition-colors hover:border-primary/30 hover:bg-card sm:inline-flex lg:bottom-6"
         aria-label={context.installTitle}
         title={context.installTitle}
       >
