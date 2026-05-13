@@ -22,12 +22,14 @@ import { PhoneLinks } from "@/components/shared/phone-links";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const robots = getCatalogRobots(searchParams);
   if (searchParams.search) {
     const query = searchParams.search.trim();
     return {
       title: `Поиск «${query}» — каталог ПилоРус`,
       description: `Результаты поиска по каталогу ПилоРус: ${query}. Пиломатериалы от производителя в Химках с доставкой по Москве и МО.`,
       alternates: { canonical: `https://pilo-rus.ru/catalog?search=${encodeURIComponent(query)}` },
+      robots,
     };
   }
   if (searchParams.type) {
@@ -58,6 +60,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
             type: searchParams.type,
           }).toString()}`,
         },
+        robots,
       };
     }
   }
@@ -71,6 +74,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
         title: cat.seoTitle || `${cat.name} — купить от производителя`,
         description: cat.seoDescription || `Купить ${cat.name} от производителя. Широкий ассортимент, доставка по Москве и МО.`,
         alternates: { canonical: `https://pilo-rus.ru/catalog?category=${searchParams.category}` },
+        robots,
       };
     }
   }
@@ -78,6 +82,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     title: "Каталог пиломатериалов — цены от производителя",
     description: "Доска, брус, вагонка, блок-хаус от производителя в Химках. Цены без посредников, доставка по Москве и МО.",
     alternates: { canonical: "https://pilo-rus.ru/catalog" },
+    robots,
   };
 }
 
@@ -93,6 +98,33 @@ interface SearchParams {
   search?: string;
 }
 
+function getCatalogRobots(searchParams: SearchParams): Metadata["robots"] | undefined {
+  const hasUtilityFilters = Boolean(
+    searchParams.search ||
+      searchParams.size ||
+      searchParams.instock ||
+      searchParams.minprice ||
+      searchParams.maxprice ||
+      searchParams.sort ||
+      (searchParams.page && searchParams.page !== "1"),
+  );
+
+  return hasUtilityFilters ? { index: false, follow: true } : undefined;
+}
+
+function absoluteSiteUrl(pathOrUrl: string) {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return `https://pilo-rus.ru${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
+}
+
+function productMinPrice(product: { variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown }> }) {
+  const prices = product.variants
+    .flatMap((variant) => [variant.pricePerPiece, variant.pricePerCube])
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value > 0);
+
+  return prices.length > 0 ? Math.min(...prices) : null;
+}
 
 export default async function CatalogPage({
   searchParams,
@@ -383,12 +415,48 @@ export default async function CatalogPage({
         : [{ "@type": "ListItem", "position": 2, "name": "Каталог" }]),
     ],
   };
+  const catalogItemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": pageTitle,
+    "description": pageDescription,
+    "numberOfItems": totalCount,
+    "itemListElement": products.map((product, index) => {
+      const minPrice = productMinPrice(product);
+      return {
+        "@type": "ListItem",
+        "position": (page - 1) * perPage + index + 1,
+        "url": `https://pilo-rus.ru/product/${product.slug}`,
+        "item": {
+          "@type": "Product",
+          "name": product.name,
+          "image": product.images?.[0] ? absoluteSiteUrl(product.images[0]) : undefined,
+          "category": product.category.name,
+          "offers": minPrice
+            ? {
+                "@type": "AggregateOffer",
+                "priceCurrency": "RUB",
+                "lowPrice": minPrice,
+                "offerCount": product.variants.length,
+                "availability": product.variants.some((variant: any) => variant.inStock)
+                  ? "https://schema.org/InStock"
+                  : "https://schema.org/OutOfStock",
+              }
+            : undefined,
+        },
+      };
+    }),
+  };
 
   return (
     <div className="container py-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogItemListSchema) }}
       />
 
       {/* ── Заголовок ── */}

@@ -17,13 +17,49 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://pilo-rus.ru/delivery" },
 };
 
+const deliveryFaqs = [
+  {
+    q: "Как рассчитывается стоимость доставки?",
+    a: "Стоимость зависит от объёма заказа и адреса доставки. Менеджер рассчитает точную стоимость после подтверждения заказа.",
+  },
+  {
+    q: "Можно ли заказать доставку в другой регион?",
+    a: "Базово работаем по Москве и МО. По вопросам доставки в другие регионы — свяжитесь с менеджером.",
+  },
+  {
+    q: "Можно ли заказать разгрузку?",
+    a: "Да, возможна помощь с разгрузкой. Уточните этот вопрос при оформлении заказа.",
+  },
+  {
+    q: "Как оформить безналичную оплату?",
+    a: "После согласования заказа выставим счёт с реквизитами. Отгрузка — после поступления оплаты.",
+  },
+];
+
 export default async function DeliveryPage() {
   const settings = await getSiteSettings();
   const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
   const phone = getSetting(settings, "phone");
   const phoneLink = getSetting(settings, "phone_link");
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": deliveryFaqs.map((faq) => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a,
+      },
+    })),
+  };
+
   return (
     <div className="container py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
       <div className="flex items-start gap-3 mb-3">
         <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
         <h1 className="font-display font-bold text-4xl">Доставка и оплата</h1>
@@ -95,24 +131,7 @@ export default async function DeliveryPage() {
       <div className="bg-muted/30 rounded-2xl p-8 mb-8">
         <h2 className="font-display font-bold text-2xl mb-6">Часто задаваемые вопросы</h2>
         <div className="space-y-4">
-          {[
-            {
-              q: "Как рассчитывается стоимость доставки?",
-              a: "Стоимость зависит от объёма заказа и адреса доставки. Менеджер рассчитает точную стоимость после подтверждения заказа.",
-            },
-            {
-              q: "Можно ли заказать доставку в другой регион?",
-              a: "Базово работаем по Москве и МО. По вопросам доставки в другие регионы — свяжитесь с менеджером.",
-            },
-            {
-              q: "Можно ли заказать разгрузку?",
-              a: "Да, возможна помощь с разгрузкой. Уточните этот вопрос при оформлении заказа.",
-            },
-            {
-              q: "Как оформить безналичную оплату?",
-              a: "После согласования заказа выставим счёт с реквизитами. Отгрузка — после поступления оплаты.",
-            },
-          ].map((faq) => (
+          {deliveryFaqs.map((faq) => (
             <details key={faq.q} className="group bg-card rounded-xl border border-border overflow-hidden">
               <summary className="flex items-center justify-between p-4 cursor-pointer font-medium">
                 {faq.q}

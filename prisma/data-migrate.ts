@@ -18,6 +18,48 @@ async function upsertSetting(key: string, value: string) {
 }
 
 const PRODUCT_IMAGE_EXTENSIONS = ["webp", "jpg", "jpeg", "png", "gif"] as const;
+const SIX_METER_CATEGORY_SLUGS = new Set(["sosna-el", "listvennitsa", "lipa-osina"]);
+const SIX_METER_PRODUCT_SLUGS = new Set([
+  "doska-stroganaya-suhaya-listv",
+  "imitaciya-brusa-listv",
+  "vagonka-shtil-listv",
+]);
+
+function normalizeSixMeterVariantSize(size: string): string | null {
+  const normalized = size
+    .trim()
+    .replace(/\s*[xхXХ×]\s*/g, "×")
+    .replace(/\s+/g, " ");
+
+  if (/^\d+(?:[.,]\d+)?×\d+(?:[.,]\d+)?×\d+(?:[.,]\d+)?(?:\s|$)/.test(normalized)) {
+    return null;
+  }
+
+  const match = normalized.match(/^(\d+(?:[.,]\d+)?)×(\d+(?:[.,]\d+)?)(.*)$/);
+  if (!match) return null;
+
+  const suffix = (match[3] || "").trim();
+  if (suffix && /^[xхXХ×\d]/.test(suffix)) return null;
+
+  return `${match[1]}×${match[2]}×6000${suffix ? ` ${suffix}` : ""}`;
+}
+
+function mentionsSixMeterLength(description: string | null | undefined) {
+  if (!description) return false;
+  return /(длина|длиной)[^.!?]{0,50}(2\s*[–-]\s*6|6)\s*м/i.test(description);
+}
+
+function normalizeSixMeterDescription(description: string | null) {
+  if (!description) return description;
+  return description.replace(/([Дд]лина)\s+2\s*[–-]\s*6\s*м\.?/g, "$1 6 м.");
+}
+
+function ensureSixMeterDescription(description: string | null) {
+  const normalized = normalizeSixMeterDescription(description);
+  if (!normalized) return normalized;
+  if (mentionsSixMeterLength(normalized)) return normalized;
+  return `${normalized.trim()} Длина 6 м.`;
+}
 
 function findStableProductImage(slug: string): string | null {
   const dir = join(process.cwd(), "public", "images", "products");
@@ -73,7 +115,7 @@ const PRODUCT_DESCRIPTIONS_20260424: Record<string, { name?: string; description
   },
   "doska-stroganaya-suhaya-listv": {
     description:
-      "Строганная сухая доска из лиственницы — плотный и долговечный материал для чистовой отделки, полов, террас и влажных зон. Лиственница почти не впитывает влагу, хорошо держит геометрию и ценится за выразительную текстуру. Доступные размеры и сорт уточняются в карточке товара.",
+      "Строганная сухая доска из лиственницы — плотный и долговечный материал для чистовой отделки, полов, террас и влажных зон. Лиственница почти не впитывает влагу, хорошо держит геометрию и ценится за выразительную текстуру. Длина 6 м. Доступные размеры и сорт уточняются в карточке товара.",
   },
   "terrasnaya-doska-listv": {
     description:
@@ -81,7 +123,7 @@ const PRODUCT_DESCRIPTIONS_20260424: Record<string, { name?: string; description
   },
   "imitaciya-brusa-listv": {
     description:
-      "Имитация бруса из лиственницы, или фальшбрус, — сухой строганый погонаж для внешней и внутренней обшивки стен. Профиль с фасками и соединением шип-паз дает плотное примыкание без сквозных щелей, а вентиляционные борозды на обратной стороне помогают сохранять геометрию. Подходит для фасадов, комнат отдыха, бань и интерьеров в стиле шале.",
+      "Имитация бруса из лиственницы, или фальшбрус, — сухой строганый погонаж для внешней и внутренней обшивки стен. Профиль с фасками и соединением шип-паз дает плотное примыкание без сквозных щелей, а вентиляционные борозды на обратной стороне помогают сохранять геометрию. Длина 6 м. Подходит для фасадов, комнат отдыха, бань и интерьеров в стиле шале.",
   },
   "blok-haus-sosna": {
     description:
@@ -101,7 +143,7 @@ const PRODUCT_DESCRIPTIONS_20260424: Record<string, { name?: string; description
   },
   "vagonka-shtil-listv": {
     description:
-      "Вагонка «Штиль» из лиственницы создает ровную, почти бесшовную поверхность для стен и потолков. Материал прочнее сосны, устойчив к влаге и хорошо подходит для премиальных интерьеров, влажных зон, фасадов, веранд, комнат отдыха и предбанников.",
+      "Вагонка «Штиль» из лиственницы создает ровную, почти бесшовную поверхность для стен и потолков. Материал прочнее сосны, устойчив к влаге и хорошо подходит для премиальных интерьеров, влажных зон, фасадов, веранд, комнат отдыха и предбанников. Длина 6 м.",
   },
   "planken-listv": {
     description:
@@ -509,6 +551,56 @@ async function main() {
       updatedProducts++;
     }
     console.log(`[data-migrate] ✓ Описания товаров ПилоРус обновлены (${updatedProducts}) — шаг 2026-04-24`);
+
+    const productsForSixMeterSizes = await prisma.product.findMany({
+      where: {
+        category: { slug: { in: Array.from(SIX_METER_CATEGORY_SLUGS) } },
+      },
+      select: {
+        id: true,
+        slug: true,
+        description: true,
+        variants: {
+          select: { id: true, size: true },
+          orderBy: { sortOrder: "asc" },
+        },
+      },
+    });
+
+    let normalizedSizes = 0;
+    let normalizedDescriptions = 0;
+    for (const product of productsForSixMeterSizes) {
+      const forceSixMeter = SIX_METER_PRODUCT_SLUGS.has(product.slug);
+      if (!forceSixMeter && !mentionsSixMeterLength(product.description)) continue;
+
+      const usedSizes = new Set(product.variants.map((variant) => variant.size.trim()));
+      for (const variant of product.variants) {
+        const nextSize = normalizeSixMeterVariantSize(variant.size);
+        if (!nextSize || usedSizes.has(nextSize)) continue;
+
+        await prisma.productVariant.update({
+          where: { id: variant.id },
+          data: { size: nextSize },
+        });
+        usedSizes.delete(variant.size.trim());
+        usedSizes.add(nextSize);
+        normalizedSizes++;
+      }
+
+      const nextDescription = forceSixMeter
+        ? ensureSixMeterDescription(product.description)
+        : normalizeSixMeterDescription(product.description);
+      if (nextDescription && nextDescription !== product.description) {
+        await prisma.product.update({
+          where: { id: product.id },
+          data: { description: nextDescription },
+        });
+        normalizedDescriptions++;
+      }
+    }
+    console.log(
+      `[data-migrate] ✓ Размеры 6 м нормализованы (${normalizedSizes} вариантов, ${normalizedDescriptions} описаний) — шаг 2026-05-13`,
+    );
   } catch (e: any) {
     console.log("[data-migrate] ⚠ Правки ПилоРус из презентации пропущены:", e.message);
   }

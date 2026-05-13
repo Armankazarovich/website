@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Star, Loader2, AlertCircle, CheckCircle, Camera, X } from "lucide-react";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 interface ReviewFormProps {
   productId: string;
@@ -25,8 +26,17 @@ export function ReviewForm({
   userAvatar,
   isLoggedIn = false,
 }: ReviewFormProps) {
-  const [authorName, setAuthorName] = useState(userName || "");
-  const [email, setEmail] = useState(userEmail || "");
+  const { data: session } = useSession();
+  const sessionUser = session?.user as
+    | ({ name?: string | null; email?: string | null; avatarUrl?: string | null; image?: string | null })
+    | undefined;
+  const resolvedEmail = userEmail || sessionUser?.email || "";
+  const resolvedName = userName || sessionUser?.name || resolvedEmail.split("@")[0] || "";
+  const resolvedAvatar = userAvatar || sessionUser?.avatarUrl || sessionUser?.image || null;
+  const resolvedLoggedIn = isLoggedIn || Boolean(sessionUser);
+
+  const [authorName, setAuthorName] = useState(resolvedName);
+  const [email, setEmail] = useState(resolvedEmail);
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
   const [honeypot, setHoneypot] = useState(""); // hidden field — bots fill it
@@ -65,15 +75,17 @@ export function ReviewForm({
 
   // Sync if props change (e.g. session loads after hydration)
   useEffect(() => {
-    if (userName && !authorName) setAuthorName(userName);
-    if (userEmail && !email) setEmail(userEmail);
-  }, [userName, userEmail]);
+    if (resolvedName && !authorName) setAuthorName(resolvedName);
+    if (resolvedEmail && !email) setEmail(resolvedEmail);
+  }, [authorName, email, resolvedEmail, resolvedName]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!authorName.trim()) {
+    const submitAuthorName = authorName.trim() || (resolvedLoggedIn ? "Покупатель" : "");
+
+    if (!submitAuthorName) {
       setError("Пожалуйста, введите ваше имя");
       return;
     }
@@ -113,7 +125,7 @@ export function ReviewForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productId,
-          authorName: authorName.trim(),
+          authorName: submitAuthorName,
           email: email.trim() || null,
           rating,
           text: text.trim(),
@@ -206,12 +218,12 @@ export function ReviewForm({
       </div>
 
       {/* Name + Email: hidden for logged-in users, shown for guests */}
-      {isLoggedIn ? (
+      {resolvedLoggedIn ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-xl px-4 py-3 border border-border">
-          {userAvatar ? (
+          {resolvedAvatar ? (
             <img
-              src={userAvatar}
-              alt={authorName || "User"}
+              src={resolvedAvatar}
+              alt={authorName || resolvedName || "User"}
               className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
               onError={(e) => {
                 (e.target as HTMLImageElement).style.display = "none";
@@ -222,16 +234,16 @@ export function ReviewForm({
           ) : null}
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0 ${
-              userAvatar ? "bg-primary/10 hidden" : "bg-primary/10"
+              resolvedAvatar ? "bg-primary/10 hidden" : "bg-primary/10"
             }`}
             style={{
-              display: userAvatar ? "none" : "flex",
+              display: resolvedAvatar ? "none" : "flex",
             }}
           >
-            {authorName?.charAt(0)?.toUpperCase() || "?"}
+            {(authorName || resolvedName || "П").charAt(0).toUpperCase()}
           </div>
           <div>
-            <p className="font-medium text-foreground">{authorName}</p>
+            <p className="font-medium text-foreground">{authorName || resolvedName || "Покупатель"}</p>
             {email && <p className="text-xs text-muted-foreground">{email}</p>}
           </div>
         </div>

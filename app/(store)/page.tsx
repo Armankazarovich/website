@@ -14,7 +14,6 @@ import { ArrowRight, CheckCircle, Phone, Star, MapPin, Search, ClipboardList, Cr
 import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
 import { PromoCards } from "@/components/store/promo-cards";
 import { CategoryCard } from "@/components/store/category-card";
-import { SubscribeSection } from "@/components/store/subscribe-section";
 import { HomeReviewPopup } from "@/components/store/home-review-popup";
 
 const AVATAR_COLORS = [
@@ -901,9 +900,6 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-
-      {/* ===== SUBSCRIBE ===== */}
-      <SubscribeSection />
 
       {/* ===== CTA ===== */}
       <section className="py-24 relative overflow-hidden text-white">

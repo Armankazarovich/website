@@ -212,7 +212,7 @@ export function ProductCard({
     ? "group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300 flex flex-col"
     : isVivid
     ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-primary/25 hover:-translate-y-0.5 transition-all duration-300 flex flex-col vivid-card"
-    : "group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300 flex flex-col";
+    : "store-product-card group relative bg-card rounded-2xl border border-border overflow-hidden hover:shadow-xl hover:shadow-black/8 hover:-translate-y-0.5 hover:border-primary/25 transition-all duration-300 flex flex-col";
 
   // ── Magazine style — completely different layout ──
   if (isMagazine) {
@@ -321,7 +321,7 @@ export function ProductCard({
       )}
 
       {/* ── Изображение ── */}
-      <Link href={`/product/${slug}`} className="block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}>
+      <Link href={`/product/${slug}`} className="store-product-card-media block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}>
         {images[0] && !imgError ? (
           <Image
             src={images[0]}
@@ -397,7 +397,14 @@ export function ProductCard({
       {/* ── Контент ── */}
       <div className={`p-3 sm:p-4 flex-1 flex flex-col ${isVivid ? "bg-card/95 backdrop-blur-sm" : ""}`}>
         {/* Категория */}
-        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-1.5">{category}</p>
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <p className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{category}</p>
+          {variants.length > 1 && (
+            <span className="shrink-0 rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+              {variants.length} разм.
+            </span>
+          )}
+        </div>
 
         {/* Название */}
         <Link href={`/product/${slug}`}>

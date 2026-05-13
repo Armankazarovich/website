@@ -21,8 +21,35 @@ export default async function AboutPage() {
   const phones = getPhones(siteSettings);
   const email = getSetting(siteSettings, "email");
   const inn = getSetting(siteSettings, "inn");
+  const aboutPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "О производстве ПилоРус",
+    "url": "https://pilo-rus.ru/about",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "ПилоРус",
+      "legalName": "ООО «ПИТИ»",
+      "email": email,
+      "telephone": phones.map((phone) => phone.display),
+      "taxID": inn,
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "ул. Заводская 2А, стр.28",
+        "addressLocality": "Химки",
+        "addressRegion": "Московская область",
+        "addressCountry": "RU",
+      },
+      "description": "Производитель пиломатериалов в Химках. Склад 2000 м², ГОСТ, доставка по Москве и Московской области.",
+    },
+  };
+
   return (
     <div className="container py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutPageSchema) }}
+      />
       <div className="flex items-start gap-3 mb-3">
         <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
         <h1 className="font-display font-bold text-4xl">О производстве</h1>

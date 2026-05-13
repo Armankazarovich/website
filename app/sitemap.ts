@@ -84,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const categoryTypeRoutes: MetadataRoute.Sitemap = Array.from(categoryProducts.entries()).flatMap(
     ([slug, data]) =>
       getManagedProductTypes(data.names, productTypeSettings).map((type) => ({
-        url: `${BASE}/catalog?category=${encodeURIComponent(slug)}&amp;type=${encodeURIComponent(type.keyword)}`,
+        url: `${BASE}/catalog?category=${encodeURIComponent(slug)}&type=${encodeURIComponent(type.keyword)}`,
         lastModified: data.updatedAt,
         priority: 0.78,
         changeFrequency: "weekly" as const,

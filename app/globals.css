@@ -42,24 +42,24 @@ button, a, [role="button"], input, select, textarea {
 @layer base {
   :root {
     --mobile-nav-bg: rgba(255, 255, 255, 0.82);
-    --background: 0 0% 100%;
-    --foreground: 20 14% 10%;
-    --card: 0 0% 100%;
-    --card-foreground: 20 14% 10%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 10%;
+    --background: 34 30% 95%;
+    --foreground: 24 22% 9%;
+    --card: 34 38% 98%;
+    --card-foreground: 24 22% 9%;
+    --popover: 34 38% 98%;
+    --popover-foreground: 24 22% 9%;
     --primary: 27 91% 48%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 27 30% 94%;
-    --secondary-foreground: 20 14% 10%;
-    --muted: 27 20% 96%;
-    --muted-foreground: 20 10% 45%;
-    --accent: 27 30% 94%;
-    --accent-foreground: 20 14% 10%;
+    --secondary: 34 28% 91%;
+    --secondary-foreground: 24 22% 9%;
+    --muted: 35 24% 93%;
+    --muted-foreground: 24 12% 39%;
+    --accent: 34 30% 91%;
+    --accent-foreground: 24 22% 9%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 27 20% 88%;
-    --input: 27 20% 88%;
+    --border: 31 22% 82%;
+    --input: 31 22% 82%;
     --ring: 27 91% 48%;
     --radius: 0.625rem;
     /* Brand colors as CSS vars for theme switching */
@@ -87,24 +87,24 @@ button, a, [role="button"], input, select, textarea {
 
   .dark {
     --mobile-nav-bg: rgba(18, 14, 11, 0.82);
-    --background: 20 14% 8%;
-    --foreground: 27 30% 95%;
-    --card: 20 14% 11%;
-    --card-foreground: 27 30% 95%;
-    --popover: 20 14% 11%;
-    --popover-foreground: 27 30% 95%;
+    --background: 24 24% 5%;
+    --foreground: 32 30% 95%;
+    --card: 24 18% 9%;
+    --card-foreground: 32 30% 95%;
+    --popover: 24 18% 9%;
+    --popover-foreground: 32 30% 95%;
     --primary: 27 91% 55%;
     --primary-foreground: 0 0% 100%;
     --secondary: 20 14% 16%;
     --secondary-foreground: 27 30% 95%;
-    --muted: 20 4% 14%;
-    --muted-foreground: 27 20% 60%;
-    --accent: 20 4% 14%;
-    --accent-foreground: 27 30% 95%;
+    --muted: 24 8% 13%;
+    --muted-foreground: 32 18% 66%;
+    --accent: 24 8% 13%;
+    --accent-foreground: 32 30% 95%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 20 14% 20%;
-    --input: 20 14% 20%;
+    --border: 26 20% 22%;
+    --input: 26 20% 22%;
     --ring: 27 91% 55%;
     --brand-sidebar: 20 64% 20%;
     --brand-primary: 27 91% 55%;
@@ -1338,6 +1338,77 @@ button, a, [role="button"], input, select, textarea {
   .store-shell-footer {
     padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)) !important;
   }
+}
+
+.store-shell-main {
+  background:
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(36 26% 94%) 48%, hsl(31 22% 91%) 100%);
+}
+
+.dark .store-shell-main {
+  background:
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(24 24% 6%) 48%, hsl(22 24% 4%) 100%);
+}
+
+.store-shell-main h1,
+.store-shell-main h2,
+.store-shell-main h3 {
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.store-shell-main .bg-card {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.68) inset,
+    0 18px 48px -36px hsl(24 24% 12% / 0.42);
+}
+
+.dark .store-shell-main .bg-card {
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.06) inset,
+    0 22px 56px -34px hsl(0 0% 0% / 0.72);
+}
+
+.store-product-card {
+  background:
+    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.96) 100%);
+  border-color: hsl(var(--border) / 0.9);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.72) inset,
+    0 16px 42px -34px hsl(24 24% 12% / 0.52);
+}
+
+.store-product-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.06) 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.store-product-card:hover::after {
+  opacity: 1;
+}
+
+.store-product-card-media {
+  background:
+    linear-gradient(145deg, hsl(38 40% 96%) 0%, hsl(0 0% 100%) 56%, hsl(35 24% 90%) 100%);
+}
+
+.dark .store-product-card {
+  background:
+    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(24 18% 7%) 100%);
+  border-color: hsl(var(--border) / 0.88);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.06) inset,
+    0 22px 52px -34px hsl(0 0% 0% / 0.78);
+}
+
+.dark .store-product-card-media {
+  background:
+    linear-gradient(145deg, hsl(24 18% 11%) 0%, hsl(24 18% 8%) 58%, hsl(20 22% 5%) 100%);
 }
 
 .admin-rail-shell::before {

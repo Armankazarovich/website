@@ -31,6 +31,11 @@ function productIntro(description?: string | null) {
   return `${text.slice(0, 240).trim()}...`;
 }
 
+function absoluteSiteUrl(pathOrUrl: string) {
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  return `https://pilo-rus.ru${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await prisma.product.findFirst({
     where: { slug: params.slug, ...getPublicProductsFilter() },
@@ -99,7 +104,7 @@ export default async function ProductPage({ params }: Props) {
   // Reviews for aggregateRating + display block
   // NOTE: do NOT include user relation here — avatarUrl may not exist on all deployments
   const reviews = await prisma.review.findMany({
-    where: { approved: true },
+    where: { approved: true, productId: product.id },
     orderBy: { createdAt: "desc" },
     take: 10,
   });
@@ -116,6 +121,7 @@ export default async function ProductPage({ params }: Props) {
   const showBreadcrumbs = (siteSettings.product_page_show_breadcrumbs ?? "true") !== "false";
   const phonesList = getPhones(siteSettings);
   const firstPhoneLink = phonesList[0]?.tel || getSetting(siteSettings, "phone_link");
+  const firstPhoneDisplay = phonesList[0]?.display || getSetting(siteSettings, "phone");
 
   // Messenger settings
   const whatsappEnabled = getSetting(siteSettings, "whatsapp_enabled") === "true";
@@ -156,8 +162,10 @@ export default async function ProductPage({ params }: Props) {
     "@context": "https://schema.org/",
     "@type": "Product",
     "name": product.name,
+    "sku": product.slug,
+    "category": product.category.name,
     "description": product.description || `${product.name} от производителя в Химках`,
-    "image": product.images.length > 0 ? product.images : undefined,
+    "image": product.images.length > 0 ? product.images.map(absoluteSiteUrl) : undefined,
     "brand": { "@type": "Brand", "name": "ПилоРус" },
     "offers": {
       "@type": "AggregateOffer",
@@ -181,6 +189,18 @@ export default async function ProductPage({ params }: Props) {
       "bestRating": "5",
       "worstRating": "1",
     };
+    schemaOrg["review"] = reviews.slice(0, 5).map((review) => ({
+      "@type": "Review",
+      "author": { "@type": "Person", "name": review.name },
+      "datePublished": review.createdAt.toISOString(),
+      "reviewBody": review.text,
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": review.rating,
+        "bestRating": "5",
+        "worstRating": "1",
+      },
+    }));
   }
 
   const breadcrumbSchema = {
@@ -362,9 +382,14 @@ export default async function ProductPage({ params }: Props) {
               </div>
             ))}
             <div className="border-t border-border/50 px-4 py-3 bg-primary/5">
-              <a href={`tel:${getSetting(siteSettings, "phone_link")}`} className="flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors">
-                <Phone className="w-4 h-4" />
-                {getSetting(siteSettings, "phone")} — уточнить наличие и цену
+              <a href={`tel:${firstPhoneLink}`} className="flex items-start gap-2 text-sm font-semibold text-primary hover:text-primary/80 transition-colors">
+                <Phone className="mt-0.5 w-4 h-4 shrink-0" />
+                <span className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2">
+                  <span>{firstPhoneDisplay}</span>
+                  <span className="text-xs font-medium text-muted-foreground sm:text-sm">
+                    Ответим быстро, поможем с расчётом и доставкой
+                  </span>
+                </span>
               </a>
             </div>
           </div>

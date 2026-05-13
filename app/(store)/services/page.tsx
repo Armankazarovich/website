@@ -63,9 +63,34 @@ export default async function ServicesPage() {
     : null;
 
   const phone = getSetting(siteSettings, "phone_link") || "+79850670888";
+  const servicesSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Услуги ПилоРус",
+    "itemListElement": services.map((service, index) => ({
+      "@type": "ListItem",
+      "position": index + 1,
+      "item": {
+        "@type": "Service",
+        "name": service.title,
+        "description": service.description,
+        "provider": {
+          "@type": "Organization",
+          "name": "ПилоРус",
+          "url": "https://pilo-rus.ru",
+        },
+        "areaServed": "Москва и Московская область",
+        "serviceType": "Обработка и доставка пиломатериалов",
+      },
+    })),
+  };
 
   return (
     <div className="container py-10 md:py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(servicesSchema) }}
+      />
       {/* Header */}
       <div className="mb-10">
         <div className="flex items-center gap-2 text-primary mb-3">

@@ -26,8 +26,33 @@ export default async function ContactsPage() {
   const address = getSetting(settings, "address");
   const inn = getSetting(settings, "inn");
   const ogrn = getSetting(settings, "ogrn");
+  const contactPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    "name": "Контакты ПилоРус",
+    "url": "https://pilo-rus.ru/contacts",
+    "mainEntity": {
+      "@type": "LocalBusiness",
+      "name": "ПилоРус",
+      "telephone": phones.map((phone) => phone.display),
+      "email": email,
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": address,
+        "addressLocality": "Химки",
+        "addressRegion": "Московская область",
+        "addressCountry": "RU",
+      },
+      "openingHours": workingHours,
+    },
+  };
+
   return (
     <div className="container py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(contactPageSchema) }}
+      />
       <div className="flex items-start gap-3 mb-3">
         <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
         <h1 className="font-display font-bold text-4xl">Контакты</h1>
