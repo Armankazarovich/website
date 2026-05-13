@@ -408,7 +408,7 @@ export function ProductCard({
 
         {/* Название */}
         <Link href={`/product/${slug}`}>
-          <h3 className={`store-product-card-title font-display leading-snug transition-colors line-clamp-2 mb-3 ${isMinimal ? "text-base" : "text-[15px] sm:text-base"}`}>
+          <h3 className={`store-product-card-title min-h-[2.7rem] font-display leading-[1.22] transition-colors line-clamp-2 mb-3 ${isMinimal ? "text-base sm:text-[17px]" : "text-base sm:text-[17px]"}`}>
             {name}
           </h3>
         </Link>

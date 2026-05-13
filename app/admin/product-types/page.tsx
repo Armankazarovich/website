@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowDown,
   ArrowUp,
   Check,
+  CheckCircle2,
   Eye,
   EyeOff,
   FileText,
@@ -28,6 +30,8 @@ type ProductTypeAdminItem = {
   examples?: string[];
 };
 
+type ViewMode = "all" | "active" | "needs";
+
 function cleanItems(items: ProductTypeAdminItem[]) {
   return [...items].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.label.localeCompare(b.label, "ru"),
@@ -46,6 +50,41 @@ function buildAutoSeo(item: ProductTypeAdminItem): ProductTypeAdminItem {
   };
 }
 
+function hasText(value: string | null | undefined, minLength = 1) {
+  return typeof value === "string" && value.trim().length >= minLength;
+}
+
+function getSeoReadiness(item: ProductTypeAdminItem) {
+  const checks = [
+    {
+      key: "label",
+      ok: hasText(item.label, 3),
+      label: "Заполнено название для фильтра",
+    },
+    {
+      key: "description",
+      ok: hasText(item.description, 160),
+      label: "Есть полезное описание раздела",
+    },
+    {
+      key: "seoTitle",
+      ok: hasText(item.seoTitle, 30) && (item.seoTitle?.length ?? 0) <= 120,
+      label: "SEO title в рабочей длине",
+    },
+    {
+      key: "seoDescription",
+      ok: hasText(item.seoDescription, 70) && (item.seoDescription?.length ?? 0) <= 220,
+      label: "SEO description в рабочей длине",
+    },
+  ];
+
+  const done = checks.filter((check) => check.ok).length;
+  return {
+    score: Math.round((done / checks.length) * 100),
+    missing: checks.filter((check) => !check.ok).map((check) => check.label),
+  };
+}
+
 export default function AdminProductTypesPage() {
   const [items, setItems] = useState<ProductTypeAdminItem[]>([]);
   const [selectedKeyword, setSelectedKeyword] = useState<string>("");
@@ -53,6 +92,8 @@ export default function AdminProductTypesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [query, setQuery] = useState("");
+  const [viewMode, setViewMode] = useState<ViewMode>("all");
 
   const selected = useMemo(
     () => items.find((item) => item.keyword === selectedKeyword) ?? items[0] ?? null,
@@ -62,6 +103,26 @@ export default function AdminProductTypesPage() {
   const visibleCount = items.filter((item) => item.active !== false).length;
   const hiddenCount = items.length - visibleCount;
   const productCount = items.reduce((sum, item) => sum + (item.count ?? 0), 0);
+  const readyCount = items.filter((item) => item.active !== false && getSeoReadiness(item).score === 100).length;
+  const needsCount = items.filter((item) => item.active !== false && getSeoReadiness(item).score < 100).length;
+  const selectedReadiness = selected ? getSeoReadiness(selected) : null;
+
+  const filteredItems = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return cleanItems(items).filter((item) => {
+      const readiness = getSeoReadiness(item);
+      const matchesQuery =
+        !needle ||
+        item.label.toLowerCase().includes(needle) ||
+        item.keyword.toLowerCase().includes(needle) ||
+        (item.examples ?? []).some((example) => example.toLowerCase().includes(needle));
+      const matchesMode =
+        viewMode === "all" ||
+        (viewMode === "active" && item.active !== false) ||
+        (viewMode === "needs" && item.active !== false && readiness.score < 100);
+      return matchesQuery && matchesMode;
+    });
+  }, [items, query, viewMode]);
 
   const load = async () => {
     setLoading(true);
@@ -104,6 +165,25 @@ export default function AdminProductTypesPage() {
       ordered[swapIndex] = { ...current, sortOrder: swapIndex };
       return cleanItems(ordered.map((item, sortOrder) => ({ ...item, sortOrder })));
     });
+  };
+
+  const fillMissingSeo = () => {
+    setSaved(false);
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.active === false || getSeoReadiness(item).score === 100) return item;
+        const auto = buildAutoSeo(item);
+        const titleOk = hasText(item.seoTitle, 30) && (item.seoTitle?.length ?? 0) <= 120;
+        const descriptionOk = hasText(item.description, 160);
+        const seoDescriptionOk = hasText(item.seoDescription, 70) && (item.seoDescription?.length ?? 0) <= 220;
+        return {
+          ...item,
+          description: descriptionOk ? item.description : auto.description,
+          seoTitle: titleOk ? item.seoTitle : auto.seoTitle,
+          seoDescription: seoDescriptionOk ? item.seoDescription : auto.seoDescription,
+        };
+      }),
+    );
   };
 
   const save = async () => {
@@ -163,6 +243,15 @@ export default function AdminProductTypesPage() {
           </button>
           <button
             type="button"
+            onClick={fillMissingSeo}
+            disabled={needsCount === 0}
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" />
+            Заполнить SEO
+          </button>
+          <button
+            type="button"
             onClick={save}
             disabled={saving}
             className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
@@ -173,7 +262,7 @@ export default function AdminProductTypesPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Видимых типов</p>
           <p className="mt-2 text-3xl font-bold text-foreground">{visibleCount}</p>
@@ -185,6 +274,13 @@ export default function AdminProductTypesPage() {
         <div className="rounded-2xl border border-border bg-card p-4">
           <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Товаров распознано</p>
           <p className="mt-2 text-3xl font-bold text-foreground">{productCount}</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Требуют SEO</p>
+          <p className={`mt-2 text-3xl font-bold ${needsCount > 0 ? "text-primary" : "text-emerald-500"}`}>
+            {needsCount}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Готово: {readyCount}</p>
         </div>
       </div>
 
@@ -199,8 +295,8 @@ export default function AdminProductTypesPage() {
         </div>
       )}
 
-      <div className="grid min-h-[620px] gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <section className="rounded-2xl border border-border bg-card">
+      <div className="grid min-h-[620px] min-w-0 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <section className="min-w-0 rounded-2xl border border-border bg-card">
           <div className="border-b border-border p-4">
             <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
               <Tags className="h-4 w-4 text-primary" />
@@ -209,11 +305,41 @@ export default function AdminProductTypesPage() {
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               Скрытые типы не показываются в фильтрах, меню и sitemap.
             </p>
+            <label className="mt-4 flex min-h-[42px] items-center gap-2 rounded-xl border border-border bg-background px-3">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+                placeholder="Найти тип или товар..."
+              />
+            </label>
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {[
+                { value: "all", label: "Все" },
+                { value: "active", label: "Видимые" },
+                { value: "needs", label: "Нужен SEO" },
+              ].map((mode) => (
+                <button
+                  key={mode.value}
+                  type="button"
+                  onClick={() => setViewMode(mode.value as ViewMode)}
+                  className={`min-h-[34px] min-w-0 rounded-xl border px-2 text-xs font-semibold transition-colors ${
+                    viewMode === mode.value
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="max-h-[70dvh] space-y-2 overflow-y-auto p-3">
-            {cleanItems(items).map((item) => {
+            {filteredItems.map((item) => {
               const active = item.active !== false;
               const selectedItem = selected?.keyword === item.keyword;
+              const readiness = getSeoReadiness(item);
               return (
                 <button
                   key={item.keyword}
@@ -237,19 +363,44 @@ export default function AdminProductTypesPage() {
                         {item.keyword} · {item.count ?? 0} тов.
                       </span>
                     </span>
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
+                      !active
+                        ? "border-border bg-muted text-muted-foreground"
+                        : readiness.score === 100
+                        ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                        : "border-primary/25 bg-primary/10 text-primary"
+                    }`}>
+                      {active ? `${readiness.score}%` : "скрыт"}
+                    </span>
                   </span>
                 </button>
               );
             })}
+            {filteredItems.length === 0 && (
+              <div className="rounded-xl border border-dashed border-border p-5 text-center text-xs leading-5 text-muted-foreground">
+                Ничего не найдено. Попробуйте убрать поиск или фильтр.
+              </div>
+            )}
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card">
+        <section className="min-w-0 rounded-2xl border border-border bg-card">
           {selected ? (
             <>
               <div className="flex flex-col gap-3 border-b border-border p-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <h2 className="truncate text-lg font-semibold text-foreground">{selected.label}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="truncate text-lg font-semibold text-foreground">{selected.label}</h2>
+                    {selectedReadiness && (
+                      <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
+                        selectedReadiness.score === 100
+                          ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                          : "border-primary/25 bg-primary/10 text-primary"
+                      }`}>
+                        SEO {selectedReadiness.score}%
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     URL-фильтр: <span className="font-mono">{selected.keyword}</span> · {selected.count ?? 0} товаров
                   </p>
@@ -293,6 +444,50 @@ export default function AdminProductTypesPage() {
                   </button>
                 </div>
               </div>
+
+              {selectedReadiness && (
+                <div className="border-b border-border bg-background/35 p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        {selectedReadiness.score === 100 ? (
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-primary" />
+                        )}
+                        Готовность для SEO и индексации
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Эти поля используются в каталоге, мета-тегах и sitemap для страниц типа товара.
+                      </p>
+                    </div>
+                    <div className="w-full md:w-56">
+                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className={`h-full rounded-full ${selectedReadiness.score === 100 ? "bg-emerald-500" : "bg-primary"}`}
+                          style={{ width: `${selectedReadiness.score}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-right text-xs font-semibold text-muted-foreground">
+                        {selectedReadiness.score}%
+                      </p>
+                    </div>
+                  </div>
+                  {selectedReadiness.missing.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {selectedReadiness.missing.map((item) => (
+                        <span key={item} className="rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+                      Всё заполнено. Тип готов для публикации и индексации.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
                 <div className="space-y-4">
@@ -352,6 +547,28 @@ export default function AdminProductTypesPage() {
                 </div>
 
                 <aside className="space-y-4">
+                  <div className="rounded-2xl border border-border bg-background/45 p-4">
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                      <FileText className="h-4 w-4 text-primary" />
+                      Предпросмотр в поиске
+                    </h3>
+                    <div className="mt-3 rounded-xl border border-border bg-card px-3 py-3">
+                      <p className="line-clamp-2 text-sm font-semibold leading-5 text-primary">
+                        {selected.seoTitle || `${selected.label} — купить в Химках с доставкой`}
+                      </p>
+                      <p className="mt-1 truncate text-[11px] text-emerald-600 dark:text-emerald-300">
+                        pilo-rus.ru/catalog?type={encodeURIComponent(selected.keyword)}
+                      </p>
+                      <p className="mt-2 line-clamp-3 text-xs leading-5 text-muted-foreground">
+                        {selected.seoDescription ||
+                          `${selected.label} от производителя в Химках. Актуальные размеры, цены, наличие и доставка по Москве и МО.`}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                      Меняйте title и description слева — здесь сразу видно, как раздел будет выглядеть в поиске.
+                    </p>
+                  </div>
+
                   <div className="rounded-2xl border border-border bg-background/45 p-4">
                     <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Search className="h-4 w-4 text-primary" />
