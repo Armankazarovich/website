@@ -218,7 +218,7 @@ export default async function ProductPage({ params }: Props) {
   };
 
   return (
-    <div className="container py-8">
+    <div className="container py-6 sm:py-8">
       {/* Schema.org JSON-LD */}
       <script
         type="application/ld+json"
@@ -245,7 +245,7 @@ export default async function ProductPage({ params }: Props) {
       {/* Main product section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 mb-16">
         {/* Gallery */}
-        <div className="lg:sticky lg:top-24 lg:self-start">
+        <div className="store-product-gallery-wrap lg:sticky lg:top-24 lg:self-start">
           <ProductGallery
             images={product.images}
             name={product.name}
@@ -255,27 +255,27 @@ export default async function ProductPage({ params }: Props) {
 
         {/* Product info + variant selector */}
         <div className="space-y-6">
-          <div>
+          <div className="store-product-heading">
             {showBreadcrumbs && (
             <div className="flex items-center gap-2 mb-1">
               <Link
                 href={product.category.sortOrder < 900 ? `/catalog?category=${product.category.slug}` : "/catalog"}
                 aria-label={product.category.sortOrder < 900 ? product.category.name : "Каталог"}
-                className="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-border/40 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-border/55 bg-card/70 text-muted-foreground hover:text-foreground hover:bg-muted transition-all shrink-0"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
               </Link>
               <Link
                 href={product.category.sortOrder < 900 ? `/catalog?category=${product.category.slug}` : "/catalog"}
-                className="text-sm text-primary hover:underline"
+                className="text-sm font-semibold text-primary hover:underline"
               >
                 {product.category.sortOrder < 900 ? product.category.name : "Каталог"}
               </Link>
             </div>
             )}
-            <h1 className="font-display font-bold text-3xl mt-1 mb-2">{product.name}</h1>
+            <h1 className="store-product-title font-display text-3xl sm:text-4xl mt-1 mb-3">{product.name}</h1>
             {intro && (
-              <p className="text-muted-foreground leading-relaxed">{intro}</p>
+              <p className="store-product-intro text-muted-foreground leading-relaxed">{intro}</p>
             )}
           </div>
 
@@ -292,7 +292,7 @@ export default async function ProductPage({ params }: Props) {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/></svg>
               )},
             ].map((f) => (
-              <div key={f.label} className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/40 border border-border/60 gap-2">
+              <div key={f.label} className="store-feature-card flex flex-col items-center text-center p-3 rounded-xl border gap-2">
                 <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                   {f.icon}
                 </div>
@@ -359,7 +359,7 @@ export default async function ProductPage({ params }: Props) {
           )}
 
           {/* Delivery info */}
-          <div className="rounded-2xl border border-border bg-muted/20 overflow-hidden">
+          <div className="store-delivery-panel rounded-2xl border overflow-hidden">
             {[
               { label: "Доставка по Москве и МО", value: "1–3 рабочих дня", icon: (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/></svg>
@@ -400,7 +400,7 @@ export default async function ProductPage({ params }: Props) {
       {product.variants.length > 0 && (
         <section className="mb-16">
           <div className="flex items-center justify-between mb-5">
-            <h2 className="font-display font-bold text-2xl">Цены и размеры</h2>
+            <h2 className="font-display font-extrabold text-2xl">Цены и размеры</h2>
             <span className="text-sm text-muted-foreground">{product.variants.length} вариантов</span>
           </div>
           <VariantCards
@@ -475,7 +475,7 @@ export default async function ProductPage({ params }: Props) {
       {/* Related products */}
       {showRelatedProducts && related.length > 0 && (
         <section>
-          <h2 className="font-display font-bold text-2xl mb-6">Похожие товары</h2>
+          <h2 className="font-display font-extrabold text-2xl mb-6">Похожие товары</h2>
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {related.map((product) => (
               <ProductCard

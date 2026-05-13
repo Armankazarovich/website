@@ -1342,12 +1342,16 @@ button, a, [role="button"], input, select, textarea {
 
 .store-shell-main {
   background:
-    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(36 26% 94%) 48%, hsl(31 22% 91%) 100%);
+    linear-gradient(90deg, hsl(var(--foreground) / 0.018) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(0deg, hsl(var(--foreground) / 0.012) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(38 33% 96%) 44%, hsl(33 26% 92%) 100%);
 }
 
 .dark .store-shell-main {
   background:
-    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(24 24% 6%) 48%, hsl(22 24% 4%) 100%);
+    linear-gradient(90deg, hsl(0 0% 100% / 0.024) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(0deg, hsl(0 0% 100% / 0.016) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(180deg, hsl(var(--background)) 0%, hsl(24 22% 6%) 50%, hsl(22 24% 4%) 100%);
 }
 
 .store-shell-main h1,
@@ -1357,25 +1361,32 @@ button, a, [role="button"], input, select, textarea {
   text-wrap: balance;
 }
 
+.store-shell-main h1,
+.store-shell-main h2 {
+  font-weight: 800;
+}
+
 .store-shell-main .bg-card {
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.68) inset,
-    0 18px 48px -36px hsl(24 24% 12% / 0.42);
+    0 1px 0 hsl(0 0% 100% / 0.72) inset,
+    0 18px 42px -36px hsl(24 20% 12% / 0.34);
 }
 
 .dark .store-shell-main .bg-card {
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.06) inset,
-    0 22px 56px -34px hsl(0 0% 0% / 0.72);
+    0 22px 54px -36px hsl(0 0% 0% / 0.78);
 }
 
 .store-product-card {
   background:
-    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.96) 100%);
-  border-color: hsl(var(--border) / 0.9);
+    linear-gradient(180deg, hsl(0 0% 100% / 0.94) 0%, hsl(var(--card)) 56%, hsl(35 28% 96%) 100%);
+  border-color: hsl(30 24% 78% / 0.82);
   box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.72) inset,
-    0 16px 42px -34px hsl(24 24% 12% / 0.52);
+    0 1px 0 hsl(0 0% 100% / 0.82) inset,
+    0 16px 34px -30px hsl(24 18% 12% / 0.34),
+    0 6px 16px -16px hsl(var(--primary) / 0.22);
+  transform: translateZ(0);
 }
 
 .store-product-card::after {
@@ -1383,9 +1394,19 @@ button, a, [role="button"], input, select, textarea {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.06) 100%);
+  background:
+    linear-gradient(135deg, transparent 0%, hsl(var(--primary) / 0.08) 100%),
+    linear-gradient(180deg, hsl(0 0% 100% / 0.18), transparent 34%);
   opacity: 0;
   transition: opacity 0.25s ease;
+}
+
+.store-product-card:hover {
+  border-color: hsl(var(--primary) / 0.38);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.88) inset,
+    0 22px 40px -34px hsl(24 18% 12% / 0.42),
+    0 10px 22px -18px hsl(var(--primary) / 0.28);
 }
 
 .store-product-card:hover::after {
@@ -1393,22 +1414,111 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .store-product-card-media {
+  isolation: isolate;
   background:
-    linear-gradient(145deg, hsl(38 40% 96%) 0%, hsl(0 0% 100%) 56%, hsl(35 24% 90%) 100%);
+    linear-gradient(145deg, hsl(39 46% 96%) 0%, hsl(0 0% 100%) 54%, hsl(36 28% 90%) 100%);
+}
+
+.store-product-card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 58%, hsl(28 22% 10% / 0.08) 100%);
+}
+
+.store-product-card-title {
+  color: hsl(var(--foreground));
+  font-weight: 800;
+}
+
+.store-product-card:hover .store-product-card-title {
+  color: hsl(var(--primary));
+}
+
+.store-product-gallery-wrap {
+  filter: drop-shadow(0 18px 34px hsl(24 18% 12% / 0.12));
+}
+
+.store-product-heading {
+  padding-bottom: 0.35rem;
+}
+
+.store-product-title {
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.store-product-intro {
+  max-width: 46rem;
+  font-size: 1.03rem;
+}
+
+.store-feature-card {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.9) 0%, hsl(var(--muted) / 0.34) 100%);
+  border-color: hsl(var(--border) / 0.72);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.7) inset,
+    0 12px 28px -28px hsl(24 18% 12% / 0.36);
+}
+
+.store-delivery-panel {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.7) 0%, hsl(var(--muted) / 0.3) 100%);
+  border-color: hsl(var(--border) / 0.78);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.62) inset,
+    0 16px 36px -34px hsl(24 18% 12% / 0.34);
 }
 
 .dark .store-product-card {
   background:
-    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(24 18% 7%) 100%);
+    linear-gradient(180deg, hsl(24 16% 10%) 0%, hsl(var(--card)) 52%, hsl(24 18% 7%) 100%);
   border-color: hsl(var(--border) / 0.88);
   box-shadow:
     0 1px 0 hsl(0 0% 100% / 0.06) inset,
-    0 22px 52px -34px hsl(0 0% 0% / 0.78);
+    0 22px 48px -34px hsl(0 0% 0% / 0.76);
+}
+
+.dark .store-product-card:hover {
+  border-color: hsl(var(--primary) / 0.44);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.07) inset,
+    0 24px 52px -34px hsl(0 0% 0% / 0.86),
+    0 10px 24px -20px hsl(var(--primary) / 0.34);
 }
 
 .dark .store-product-card-media {
   background:
     linear-gradient(145deg, hsl(24 18% 11%) 0%, hsl(24 18% 8%) 58%, hsl(20 22% 5%) 100%);
+}
+
+.dark .store-product-card-media::after {
+  background: linear-gradient(180deg, transparent 58%, hsl(0 0% 0% / 0.16) 100%);
+}
+
+.dark .store-product-gallery-wrap {
+  filter: drop-shadow(0 18px 34px hsl(0 0% 0% / 0.32));
+}
+
+.dark .store-feature-card {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.96) 0%, hsl(24 18% 8% / 0.9) 100%);
+  border-color: hsl(var(--border) / 0.86);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.06) inset,
+    0 16px 34px -28px hsl(0 0% 0% / 0.66);
+}
+
+.dark .store-delivery-panel {
+  background:
+    linear-gradient(180deg, hsl(var(--card) / 0.92) 0%, hsl(24 18% 8% / 0.88) 100%);
+  border-color: hsl(var(--border) / 0.86);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.06) inset,
+    0 18px 40px -32px hsl(0 0% 0% / 0.72);
 }
 
 .admin-rail-shell::before {
