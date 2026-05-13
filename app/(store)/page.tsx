@@ -269,7 +269,10 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       {/* ===== HERO ===== */}
-      <section className="relative min-h-[88vh] lg:min-h-[calc(100vh-8rem)] flex items-center overflow-hidden bg-brand-dark">
+      <section
+        className="store-home-hero relative min-h-[88vh] lg:min-h-[calc(100vh-8rem)] flex items-center overflow-hidden bg-brand-dark"
+        style={{ "--atmo-depth": "24 34% 6%" } as React.CSSProperties}
+      >
 
         {/* Background image — slow Ken Burns zoom */}
         <div className="absolute inset-0 overflow-hidden">

@@ -171,7 +171,7 @@ function NumInput({
             const v = parseFloat(e.target.value);
             if (!isNaN(v) && v > 0) onChange(v);
           }}
-          className="w-full min-h-12 px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 pr-12"
+          className="store-calculator-input w-full min-h-12 px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 pr-12"
         />
         {unit && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none font-medium">
@@ -291,9 +291,9 @@ export default function CalculatorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted/20 pb-20">
+    <div className="store-calculator-page min-h-screen bg-muted/20 pb-20">
       {/* Page header */}
-      <div className="bg-card border-b border-border">
+      <div className="store-calculator-header bg-card border-b border-border">
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-10">
           <nav className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
             <Link href="/" className="hover:text-foreground transition-colors">
@@ -320,7 +320,7 @@ export default function CalculatorPage() {
               {HEADER_FEATURES.map((feature) => (
                 <div
                   key={feature}
-                  className="rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-medium text-foreground"
+                  className="store-calculator-feature rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-medium text-foreground"
                 >
                   {feature}
                 </div>
@@ -335,7 +335,7 @@ export default function CalculatorPage() {
           {/* ── Main calculator card ── */}
           <div className="lg:col-span-2 space-y-5">
             {/* Mode tabs */}
-            <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
+            <div className="store-calculator-card bg-card rounded-2xl border border-border p-5 sm:p-6">
               <div className="flex flex-col gap-1 mb-4">
                 <h2 className="font-display font-semibold text-lg">
                   Режим расчёта
@@ -349,8 +349,9 @@ export default function CalculatorPage() {
                   <button
                     key={id}
                     onClick={() => setMode(id)}
+                    data-active={mode === id ? "true" : undefined}
                     className={cn(
-                      "min-h-24 rounded-xl border p-4 text-left transition-all",
+                      "store-calculator-mode-option min-h-24 rounded-xl border p-4 text-left transition-all",
                       mode === id
                         ? "border-primary/40 bg-primary/10 text-foreground ring-1 ring-primary/10"
                         : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
@@ -379,7 +380,7 @@ export default function CalculatorPage() {
             </div>
 
             {/* Product selector */}
-            <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
+            <div className="store-calculator-card bg-card rounded-2xl border border-border p-5 sm:p-6">
               <div className="flex flex-col gap-1 mb-4">
                 <h2 className="font-display font-semibold text-lg">
                   Выбор товара
@@ -395,7 +396,7 @@ export default function CalculatorPage() {
                 </div>
               ) : products.length > 0 ? (
                 <select
-                  className="w-full min-h-12 px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="store-calculator-input w-full min-h-12 px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   value={selectedProduct?.id ?? ""}
                   onChange={(e) => {
                     const p = products.find((x) => x.id === e.target.value);
@@ -420,15 +421,15 @@ export default function CalculatorPage() {
               )}
               {selectedProduct && (
                 <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+                  <div className="store-calculator-meta rounded-xl bg-muted/40 px-3 py-2.5">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">Товар</p>
                     <p className="mt-1 line-clamp-1 text-sm font-medium">{selectedProduct.name}</p>
                   </div>
-                  <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+                  <div className="store-calculator-meta rounded-xl bg-muted/40 px-3 py-2.5">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">Размер</p>
                     <p className="mt-1 text-sm font-medium">{selectedVariant?.size ?? "можно указать вручную"}</p>
                   </div>
-                  <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+                  <div className="store-calculator-meta rounded-xl bg-muted/40 px-3 py-2.5">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">Цена</p>
                     <p className="mt-1 text-sm font-medium">{formatPrice(pricePerPiece ?? pricePerCube)}</p>
                   </div>
@@ -437,7 +438,7 @@ export default function CalculatorPage() {
             </div>
 
             {/* Inputs */}
-            <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
+            <div className="store-calculator-card bg-card rounded-2xl border border-border p-5 sm:p-6">
               <div className="mb-5 space-y-4">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -459,8 +460,9 @@ export default function CalculatorPage() {
                       key={`${preset.label}-${preset.size}`}
                       type="button"
                       onClick={() => applyPreset(preset)}
+                      data-active={thickness === preset.thickness && width === preset.width && length === preset.length ? "true" : undefined}
                       className={cn(
-                        "rounded-xl border px-3 py-2.5 text-left transition-all",
+                        "store-calculator-preset rounded-xl border px-3 py-2.5 text-left transition-all",
                         thickness === preset.thickness && width === preset.width && length === preset.length
                           ? "border-primary/50 bg-primary/10"
                           : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
@@ -602,13 +604,13 @@ export default function CalculatorPage() {
             </div>
 
             {/* Breakdown table */}
-            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <div className="store-calculator-card bg-card rounded-2xl border border-border overflow-hidden">
               <div className="px-5 py-4 border-b border-border">
                 <h2 className="font-display font-semibold text-lg">Расшифровка расчёта</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/40">
+                  <thead className="store-calculator-table-head bg-muted/40">
                     <tr>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                         Параметр
@@ -662,7 +664,7 @@ export default function CalculatorPage() {
                         <td className="px-4 py-3 text-right font-medium">{row.value}</td>
                       </tr>
                     ))}
-                    <tr className="bg-primary/5">
+                    <tr className="store-calculator-total-row bg-primary/5">
                       <td className="px-4 py-3.5 font-bold text-primary text-base">
                         ИТОГО
                       </td>
@@ -676,7 +678,7 @@ export default function CalculatorPage() {
             </div>
 
             {/* Explanation collapsible */}
-            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+            <div className="store-calculator-card bg-card rounded-2xl border border-border overflow-hidden">
               <button
                 onClick={() => setShowExplain((v) => !v)}
                 className="w-full flex items-center justify-between px-5 py-4 text-sm font-medium hover:bg-muted/40 transition-colors"
@@ -702,7 +704,7 @@ export default function CalculatorPage() {
                     <p className="text-muted-foreground mb-2">
                       Толщина (мм) ÷ 1000 × Ширина (мм) ÷ 1000 × Длина (м)
                     </p>
-                    <div className="font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
+                    <div className="store-calculator-formula font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
                       {thickness}/1000 × {width}/1000 × {length} ={" "}
                       <strong>{formatVolume(volumePerPiece)} м³</strong>
                     </div>
@@ -714,7 +716,7 @@ export default function CalculatorPage() {
                     <p className="text-muted-foreground mb-2">
                       1 ÷ Объём 1 штуки
                     </p>
-                    <div className="font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
+                    <div className="store-calculator-formula font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
                       1 ÷ {formatVolume(volumePerPiece)} ≈{" "}
                       <strong>{piecesPerCubeCalc} шт</strong>
                     </div>
@@ -726,7 +728,7 @@ export default function CalculatorPage() {
                     <p className="text-muted-foreground mb-2">
                       Объём 1 шт × Количество штук
                     </p>
-                    <div className="font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
+                    <div className="store-calculator-formula font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
                       {formatVolume(volumePerPiece)} × {piecesNeeded} ={" "}
                       <strong>{formatVolume(totalVolume)} м³</strong>
                     </div>
@@ -738,7 +740,7 @@ export default function CalculatorPage() {
                     <p className="text-muted-foreground mb-2">
                       Объём (м³) × Цена за м³
                     </p>
-                    <div className="font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
+                    <div className="store-calculator-formula font-mono text-xs bg-background rounded-xl px-4 py-2.5 border border-border">
                       {formatVolume(totalVolume)} × {pricePerCube} ={" "}
                       <strong>{formatPrice(totalPrice)}</strong>
                     </div>
@@ -753,7 +755,7 @@ export default function CalculatorPage() {
             {/* Sticky result card */}
             <div className="lg:sticky lg:top-4 space-y-4">
               {/* Big result */}
-              <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-sm">
+              <div className="store-calculator-card store-calculator-summary bg-card rounded-2xl border border-border p-5 sm:p-6">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
@@ -766,14 +768,14 @@ export default function CalculatorPage() {
                   </span>
                 </div>
 
-                <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 mb-4 text-center">
+                <div className="store-calculator-result-panel rounded-2xl border border-primary/20 p-4 mb-4 text-center">
                   {/* Основной результат зависит от режима */}
                   {mode === "sqm" ? (
                     <>
                       <p className="text-sm text-muted-foreground mb-1">
                         Нужно подготовить
                       </p>
-                      <p className="font-display font-bold text-4xl text-primary leading-none">
+                      <p className="store-calculator-volume font-display font-bold text-4xl text-primary leading-none">
                         {piecesNeeded} шт
                       </p>
                       <div className="flex items-center justify-center gap-3 mt-2 text-sm text-muted-foreground">
@@ -787,7 +789,7 @@ export default function CalculatorPage() {
                       <p className="text-sm text-muted-foreground mb-1">
                         {piecesNeeded} шт × {formatVolume(volumePerPiece)} м³
                       </p>
-                      <p className="font-display font-bold text-4xl text-primary leading-none">
+                      <p className="store-calculator-volume font-display font-bold text-4xl text-primary leading-none">
                         {formatVolume(totalVolume)} м³
                       </p>
                       {totalArea > 0 && (
@@ -798,7 +800,7 @@ export default function CalculatorPage() {
                     </>
                   )}
                   <div className="my-3 h-px bg-primary/20" />
-                  <p className="font-display font-bold text-3xl text-foreground leading-none">
+                  <p className="store-calculator-price font-display font-bold text-3xl text-foreground leading-none">
                     {formatPrice(totalPrice)}
                   </p>
                   {pricePerPiece && (
@@ -809,15 +811,15 @@ export default function CalculatorPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
+                  <div className="store-calculator-stat rounded-xl bg-muted/40 px-3 py-2.5 text-center">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">Штук</p>
                     <p className="mt-1 text-sm font-bold">{piecesNeeded}</p>
                   </div>
-                  <div className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
+                  <div className="store-calculator-stat rounded-xl bg-muted/40 px-3 py-2.5 text-center">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">Объём</p>
                     <p className="mt-1 text-sm font-bold">{formatVolume(totalVolume)} м³</p>
                   </div>
-                  <div className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
+                  <div className="store-calculator-stat rounded-xl bg-muted/40 px-3 py-2.5 text-center">
                     <p className="text-[11px] font-semibold uppercase text-muted-foreground">Площадь</p>
                     <p className="mt-1 text-sm font-bold">{totalArea.toFixed(1)} м²</p>
                   </div>
@@ -854,7 +856,7 @@ export default function CalculatorPage() {
                   )}
                 </button>
 
-                <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
+                <div className="store-calculator-note mt-4 flex items-start gap-2 rounded-xl bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
                   <p>
                     Расчёт помогает быстро собрать заказ. Финальную цену и доставку менеджер подтвердит перед отгрузкой.
@@ -863,7 +865,7 @@ export default function CalculatorPage() {
               </div>
 
               {/* Quick info */}
-              <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+              <div className="store-calculator-card bg-card rounded-2xl border border-border p-5 space-y-3">
                 <p className="flex items-center gap-2 text-sm font-semibold">
                   <ListChecks className="h-4 w-4 text-primary" />
                   Полезно знать
@@ -903,7 +905,7 @@ export default function CalculatorPage() {
               {/* CTA to catalog */}
               <Link
                 href="/catalog"
-                className="flex items-center justify-between gap-2 px-5 py-4 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                className="store-calculator-link flex items-center justify-between gap-2 px-5 py-4 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
               >
                 <div>
                   <p className="font-semibold text-sm">Смотреть каталог</p>
@@ -914,7 +916,7 @@ export default function CalculatorPage() {
 
               <Link
                 href="/delivery"
-                className="flex items-center justify-between gap-2 px-5 py-4 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                className="store-calculator-link flex items-center justify-between gap-2 px-5 py-4 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <Truck className="h-5 w-5 shrink-0 text-primary" />

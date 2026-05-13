@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
@@ -26,6 +27,7 @@ interface CatalogMobileFilterProps {
   currentSize: string;
   currentType: string;
   currentInStock: boolean;
+  variant?: "floating" | "inline";
 }
 
 export function CatalogMobileFilter({
@@ -36,12 +38,18 @@ export function CatalogMobileFilter({
   currentSize,
   currentType,
   currentInStock,
+  variant = "floating",
 }: CatalogMobileFilterProps) {
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(true);
   const [sizeOpen, setSizeOpen] = useState(true);
+  const [portalReady, setPortalReady] = useState(false);
   const dragStartY = useRef(0);
   useAdminOverlayGuard(open);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   const router = useRouter();
   const pathname = usePathname();
@@ -82,21 +90,32 @@ export function CatalogMobileFilter({
       {/* Floating trigger — sticky left side, middle of screen */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed left-0 top-1/2 -translate-y-1/2 z-40 lg:hidden flex flex-col items-center justify-center gap-1 py-3 px-2.5 rounded-r-2xl shadow-xl border-y border-r border-border bg-card/95 backdrop-blur-md transition-all active:scale-95"
+        className={cn(
+          "lg:hidden transition-all active:scale-95",
+          variant === "inline"
+            ? "relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent"
+            : "fixed left-0 top-1/2 -translate-y-1/2 z-40 flex flex-col items-center justify-center gap-1 py-3 px-2.5 rounded-r-2xl shadow-xl border-y border-r border-border bg-card/95"
+        )}
         aria-label="Открыть фильтры"
       >
         <SlidersHorizontal className="w-4 h-4 text-foreground" />
         {activeCount > 0 && (
-          <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center shadow-sm">
+          <span
+            className={cn(
+              "w-5 h-5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center",
+              variant === "inline" && "absolute -right-1 -top-1"
+            )}
+          >
             {activeCount}
           </span>
         )}
       </button>
 
       {/* Spacer — placeholder where inline button was (keeps InstockToggle row intact) */}
-      <div className="shrink-0 w-0" />
+      {variant === "floating" && <div className="shrink-0 w-0" />}
 
-      <AnimatePresence>
+      {portalReady ? createPortal(
+        <AnimatePresence>
         {open && (
           <>
             {/* Backdrop */}
@@ -287,7 +306,9 @@ export function CatalogMobileFilter({
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body,
+      ) : null}
     </>
   );
 }

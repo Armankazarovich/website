@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { MouseEvent, PointerEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -16,9 +16,10 @@ interface CatalogTypeFilterProps {
   types: TypeInfo[];
   /** All current search params to preserve when switching type */
   preserveParams?: Record<string, string>;
+  mobileFilter?: ReactNode;
 }
 
-export function CatalogTypeFilter({ currentType, category, types, preserveParams = {} }: CatalogTypeFilterProps) {
+export function CatalogTypeFilter({ currentType, category, types, preserveParams = {}, mobileFilter }: CatalogTypeFilterProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({
     active: false,
@@ -85,7 +86,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
   };
 
   return (
-    <div className="sticky top-16 lg:static lg:top-auto z-40 -mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pt-1.5 pb-2 lg:py-0 mb-6 bg-background/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none border-b border-border/60 lg:border-none">
+    <div className="store-catalog-type-filter sticky top-16 lg:static lg:top-auto z-[45] -mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pt-1.5 pb-2 lg:py-0 mb-6 bg-background/95 lg:bg-transparent border-b border-border/60 lg:border-none">
       <div
         ref={scrollRef}
         className="flex cursor-grab select-none items-center gap-2 overflow-x-auto scrollbar-none active:cursor-grabbing"
@@ -96,6 +97,8 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
         onPointerCancel={finishPointerDrag}
         onPointerLeave={finishPointerDrag}
       >
+        {mobileFilter}
+
         {category && (
           <Link
             prefetch
