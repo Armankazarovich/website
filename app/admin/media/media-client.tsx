@@ -6,13 +6,41 @@ import {
   Upload, Trash2, Copy, CheckCircle2, Loader2,
   Wand2, X, ExternalLink, FolderOpen, ScanSearch,
   CheckSquare, Square, Smartphone, Video, FileText,
+  Search, ImageIcon,
 } from "lucide-react";
 import { InfoCard } from "@/components/admin/info-popup";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useClassicMode } from "@/lib/use-classic-mode";
 
 type MediaKind = "image" | "video" | "document";
+type QuickFilter = "all" | "missing-alt" | "used" | "unused" | "images" | "videos";
 const MEDIA_BATCH = 96;
+const FOLDER_LABELS: Record<string, string> = {
+  all: "Все",
+  products: "Товары",
+  categories: "Категории",
+  production: "Производство",
+  aray: "Арай",
+  watermarks: "Водяные знаки",
+  banners: "Баннеры",
+  posts: "Новости",
+  videos: "Видео",
+  brand: "Бренд",
+  default: "Разное",
+};
+const FOLDER_ORDER = [
+  "all",
+  "products",
+  "categories",
+  "production",
+  "brand",
+  "banners",
+  "posts",
+  "videos",
+  "aray",
+  "watermarks",
+  "default",
+];
 
 type MediaFile = {
   url: string; folder: string; filename: string; kind: MediaKind;
@@ -28,6 +56,10 @@ function fmtSize(bytes: number) {
 
 function fmtDate(ts: number) {
   return new Date(ts).toLocaleDateString("ru", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function folderLabel(folder: string) {
+  return FOLDER_LABELS[folder] ?? folder;
 }
 
 // ── File card ─────────────────────────────────────────────────────────────────
@@ -124,6 +156,25 @@ function MediaCard({
         {file.usedIn.length > 0 && !bulkMode && (
           <div className="absolute top-1.5 left-1.5 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full">
             {file.usedIn.length}
+          </div>
+        )}
+
+        {!bulkMode && (
+          <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center justify-between gap-1">
+            <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${
+              file.alt.trim()
+                ? "border-primary/30 bg-primary/10 text-primary"
+                : "border-destructive/30 bg-destructive/10 text-destructive"
+            }`}>
+              {file.alt.trim() ? "ALT" : "Нет ALT"}
+            </span>
+            <span className={`rounded-full border px-1.5 py-0.5 text-[10px] font-bold ${
+              file.usedIn.length > 0
+                ? "border-primary/30 bg-card text-primary"
+                : "border-border bg-muted text-muted-foreground"
+            }`}>
+              {file.usedIn.length > 0 ? "В деле" : "Свободно"}
+            </span>
           </div>
         )}
 
@@ -241,7 +292,8 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [search, setSearch] = useState("");
-  const [folder, setFolder] = useState<string>("all");
+  const [folder, setFolder] = useState<string>(pickerMode ? "products" : "all");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [selected, setSelected] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [autoAltLoading, setAutoAltLoading] = useState(false);
@@ -275,23 +327,57 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   useEffect(() => { loadFiles(); }, [loadFiles]);
 
+  const stats = {
+    total: files.length,
+    images: files.filter((file) => file.kind === "image").length,
+    missingAlt: files.filter((file) => file.kind === "image" && !file.alt.trim()).length,
+    used: files.filter((file) => file.usedIn.length > 0).length,
+    unused: files.filter((file) => file.usedIn.length === 0).length,
+  };
+
+  const quickFilters: Array<{ value: QuickFilter; label: string; count: number }> = [
+    { value: "all", label: "Все файлы", count: stats.total },
+    { value: "missing-alt", label: "Без ALT", count: stats.missingAlt },
+    { value: "used", label: "Используются", count: stats.used },
+    { value: "unused", label: "Свободные", count: stats.unused },
+    { value: "images", label: "Фото", count: stats.images },
+    { value: "videos", label: "Видео", count: files.filter((file) => file.kind === "video").length },
+  ];
+
   // Filter
   const filtered = files.filter((f) => {
     if (pickerMode && f.kind !== "image") return false;
+    const needle = search.trim().toLowerCase();
     const matchFolder = folder === "all" || f.folder === folder;
-    const matchSearch = !search || f.filename.toLowerCase().includes(search.toLowerCase()) ||
-      f.alt.toLowerCase().includes(search.toLowerCase()) ||
-      f.usedIn.some((u) => u.name.toLowerCase().includes(search.toLowerCase()));
-    return matchFolder && matchSearch;
+    const matchSearch = !needle || f.filename.toLowerCase().includes(needle) ||
+      f.folder.toLowerCase().includes(needle) ||
+      f.alt.toLowerCase().includes(needle) ||
+      f.usedIn.some((u) => u.name.toLowerCase().includes(needle) || u.slug.toLowerCase().includes(needle));
+    const matchQuick =
+      quickFilter === "all" ||
+      (quickFilter === "missing-alt" && f.kind === "image" && !f.alt.trim()) ||
+      (quickFilter === "used" && f.usedIn.length > 0) ||
+      (quickFilter === "unused" && f.usedIn.length === 0) ||
+      (quickFilter === "images" && f.kind === "image") ||
+      (quickFilter === "videos" && f.kind === "video");
+    return matchFolder && matchSearch && matchQuick;
   });
   const visibleFiles = filtered.slice(0, renderLimit);
   const hasMoreFiles = renderLimit < filtered.length;
 
   useEffect(() => {
     setRenderLimit(MEDIA_BATCH);
-  }, [search, folder, pickerMode]);
+  }, [search, folder, quickFilter, pickerMode]);
 
-  const folders = ["all", ...Array.from(new Set(files.map((f) => f.folder)))];
+  const folders = ["all", ...Array.from(new Set(files.map((f) => f.folder)))]
+    .sort((a, b) => {
+      const ai = FOLDER_ORDER.indexOf(a);
+      const bi = FOLDER_ORDER.indexOf(b);
+      if (ai === -1 && bi === -1) return a.localeCompare(b);
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
 
   // Deletable in bulk = not in use
   const bulkDeletable = filtered.filter(f => f.usedIn.length === 0);
@@ -301,7 +387,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
     return f && f.usedIn.length === 0;
   });
 
-  async function upload(file: File) {
+  async function upload(file: File): Promise<string | null> {
     setUploading(true);
     setUploadError("");
     const fd = new FormData();
@@ -319,9 +405,16 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         const payload = await response.json().catch(() => null);
         throw new Error(payload?.error || "Не удалось загрузить файл");
       }
+      const data = await response.json().catch(() => ({}));
       await loadFiles();
+      if (data?.url) {
+        setSelected(data.url);
+        return data.url;
+      }
+      return null;
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Не удалось загрузить файл");
+      return null;
     } finally {
       setUploading(false);
     }
@@ -329,7 +422,14 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList) return;
-    for (const f of Array.from(fileList)) await upload(f);
+    const list = Array.from(fileList);
+    if (list.length === 0) return;
+    if (pickerMode) {
+      const pickedUrl = await upload(list[0]);
+      if (pickedUrl && onPick) onPick(pickedUrl);
+      return;
+    }
+    for (const f of list) await upload(f);
   }
 
   async function deleteFile(url: string) {
@@ -420,25 +520,27 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-display font-bold">Медиабиблиотека</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{files.length} файлов</p>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {files.length} файлов · {stats.missingAlt} фото без ALT · {stats.unused} свободных
+            </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex w-full gap-2 flex-wrap sm:w-auto">
             <Link
               href="/admin/images/fix"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+              className="flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-900/30 sm:flex-none"
             >
               <ScanSearch className="w-4 h-4" />
               Диагностика фото
             </Link>
             <button onClick={autoGenerateAlt} disabled={autoAltLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-card text-sm hover:bg-primary/[0.08] transition-colors disabled:opacity-50">
+              className="flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-primary/[0.08] disabled:opacity-50 sm:flex-none">
               {autoAltLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 text-primary" />}
               Авто ALT по товарам
             </button>
             {/* Bulk mode toggle */}
             <button
               onClick={() => { setBulkMode(!bulkMode); setBulkSelected(new Set()); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition-colors ${
+              className={`flex min-h-[42px] flex-1 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors sm:flex-none ${
                 bulkMode
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border bg-card hover:bg-primary/[0.08] text-foreground"
@@ -448,6 +550,32 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               {bulkMode ? "Отмена выбора" : "Выбрать несколько"}
             </button>
             {autoAltResult && <span className="text-sm text-emerald-600 self-center">{autoAltResult}</span>}
+          </div>
+        </div>
+      )}
+
+      {!pickerMode && (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="flex items-center gap-1.5 text-xs uppercase tracking-[0.14em] text-muted-foreground">
+              <ImageIcon className="h-3.5 w-3.5" />
+              Фото
+            </p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{stats.images}</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Без ALT</p>
+            <p className={`mt-1 text-2xl font-bold ${stats.missingAlt > 0 ? "text-amber-500" : "text-emerald-500"}`}>
+              {stats.missingAlt}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">В товарах</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{stats.used}</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Свободные</p>
+            <p className="mt-1 text-2xl font-bold text-foreground">{stats.unused}</p>
           </div>
         </div>
       )}
@@ -511,9 +639,15 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
             <Upload className="w-8 h-8 opacity-50" />
           )}
           <p className="text-sm font-medium">
-            {uploading ? "Загружаем..." : "Перетащите фото или видео, либо нажмите для выбора"}
+            {uploading
+              ? "Загружаем..."
+              : pickerMode
+              ? "Перетащите фото сюда — оно сразу добавится к товару"
+              : "Перетащите фото или видео, либо нажмите для выбора"}
           </p>
-          <p className="text-xs">Фото до 25MB · видео MP4/WebM/MOV до 80MB</p>
+          <p className="text-xs">
+            Фото до 25MB · видео MP4/WebM/MOV до 80MB · папка: {folderLabel(folder === "all" ? "products" : folder)}
+          </p>
         </div>
       </div>
 
@@ -540,20 +674,17 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
         </button>
       )}
 
-      {/* Search (в picker-mode всегда видимый для быстрого поиска) */}
-      {pickerMode && (
+      {/* Search */}
+      <div className="rounded-2xl border border-border bg-card p-3">
         <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Поиск по имени файла, ALT или товару…"
+            placeholder={pickerMode ? "Найти фото по товару, ALT или имени файла..." : "Найти файл, товар, категорию или ALT..."}
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-background/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
           />
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
           {search && (
             <button
               type="button"
@@ -565,18 +696,45 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
             </button>
           )}
         </div>
-      )}
+      </div>
 
       {/* Filters */}
-      <div className="flex gap-1 flex-wrap items-center">
-        {folders.map((f) => (
-          <button key={f} onClick={() => setFolder(f)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
-              folder === f ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-muted-foreground"
-            }`}>
-            {f === "all" ? "Все" : f}
-          </button>
-        ))}
+      <div className="space-y-2 rounded-2xl border border-border bg-card p-3">
+        {!pickerMode && (
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {quickFilters.map((item) => (
+              <button
+                key={item.value}
+                onClick={() => setQuickFilter(item.value)}
+                className={`inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-colors ${
+                  quickFilter === item.value
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border bg-background text-muted-foreground hover:bg-primary/[0.08] hover:text-foreground"
+                }`}
+              >
+                {item.label}
+                <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                  quickFilter === item.value ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+                }`}>
+                  {item.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {folders.map((f) => (
+            <button
+              key={f}
+              onClick={() => setFolder(f)}
+              className={`inline-flex min-h-[34px] shrink-0 items-center rounded-xl px-3 text-xs font-medium transition-colors ${
+                folder === f ? "bg-primary/10 text-primary" : "bg-muted hover:bg-muted/80 text-muted-foreground"
+              }`}
+            >
+              {folderLabel(f)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ALT info banner */}
