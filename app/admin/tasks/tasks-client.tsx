@@ -780,11 +780,26 @@ export function TasksKanban({ initialTasks, initialStaff }: { initialTasks: Task
     const onVisibility = () => {
       if (document.visibilityState === "visible") refreshTasks();
     };
+    const onArayRefresh = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail : null;
+      const pathname =
+        typeof detail?.pathname === "string"
+          ? detail.pathname
+          : typeof detail?.page === "string"
+            ? detail.page
+            : "";
+      if (pathname && !pathname.startsWith("/admin/tasks")) return;
+      void refreshTasks(true);
+    };
     window.addEventListener("focus", onFocus);
+    window.addEventListener("aray:refresh", onArayRefresh);
+    window.addEventListener("aray:admin-refresh", onArayRefresh);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("aray:refresh", onArayRefresh);
+      window.removeEventListener("aray:admin-refresh", onArayRefresh);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [refreshTasks]);

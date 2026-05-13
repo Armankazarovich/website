@@ -1063,7 +1063,7 @@ async function handleTool(
         relations: task.relations.map((relation) => relation.label || relation.entityType),
         notified,
         message: `Задача "${task.title}" создана${task.assignee ? ` → ${task.assignee.name}` : ""}${task.order ? ` · заказ #${task.order.orderNumber}` : ""}${task.relations.length ? ` · связи: ${task.relations.length}` : ""}${notified ? ` · уведомил: ${notified}` : ""}`,
-        action: "__ARAY_NAVIGATE:/admin/tasks__",
+        action: "__ARAY_NAVIGATE:/admin/tasks__\n__ARAY_REFRESH__",
       };
     }
 
@@ -1138,6 +1138,7 @@ async function handleTool(
         status: updated.status,
         assignee: updated.assignee?.name || "—",
         message: `Задача "${updated.title}" обновлена`,
+        action: "__ARAY_NAVIGATE:/admin/tasks__\n__ARAY_REFRESH__",
       };
     }
 

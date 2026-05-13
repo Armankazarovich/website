@@ -760,6 +760,13 @@ function normalizeArayNavText(value: string): string {
     .trim();
 }
 
+const ADMIN_MUTATION_INTENT_RE =
+  /(?:^|\s)(создай|создать|добавь|добавить|поручи|поручить|назначь|назначить|поставь|поставить|напомни|напомнить|измени|изменить|обнови|обновить|перенеси|перенести|закрой|закрыть|удали|удалить|отправь|отправить|запусти|запустить|сделай|сделать|create|add|assign|update|delete|send|run)(?=\s|$)/;
+
+function hasAdminMutationIntent(text: string): boolean {
+  return ADMIN_MUTATION_INTENT_RE.test(text);
+}
+
 function getAdminPageSearchTerms(page: AdminArayPageLink): string[] {
   const pathTerms = page.href
     .split(/[/?#=&]+/)
@@ -793,6 +800,7 @@ function findInstantAdminNavigationTarget(
 ): AdminArayPageLink | null {
   const text = normalizeArayNavText(raw);
   if (!text) return null;
+  if (hasAdminMutationIntent(text)) return null;
 
   const pages = navigation?.availablePages ?? [];
   const hasIntent = /\b(арай|покажи|открой|открыть|перейди|перейти|зайди|зайти|выведи|перекинь|show|open)\b/.test(text);
@@ -1930,6 +1938,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     let openedInternal = false;
     let openedEmbedded = false;
     let openedTab = false;
+    const requestedRefresh = rawText.includes("__ARAY_REFRESH__");
 
     const openTarget = (url?: string | null) => {
       if (!url) return;
@@ -1959,13 +1968,23 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       openTarget(showUrl.url);
     }
 
+    if (requestedRefresh) {
+      try {
+        window.dispatchEvent(new CustomEvent("aray:refresh", { detail: { pathname } }));
+        window.dispatchEvent(new CustomEvent("aray:admin-refresh", { detail: { pathname } }));
+      } catch {}
+      window.setTimeout(() => {
+        try { router.refresh(); } catch {}
+      }, openedInternal ? 200 : 0);
+    }
+
     return {
       openedInternal,
       openedEmbedded,
       openedTab,
       openedAny: openedInternal || openedEmbedded || openedTab,
     };
-  }, [openArayTarget]);
+  }, [openArayTarget, pathname, router]);
 
   const buildFinalArayText = useCallback((
     parsedText: string,
