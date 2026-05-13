@@ -440,6 +440,8 @@ export function AdminMobileBottomNav({
 
   const sheetOpen = notifOpen || menuOpen;
   const CapsuleIcon = activeNavItem?.icon || activeNavGroup?.icon || ArayIcon;
+  const dockPrimaryItem = mobileCapsule.items[0];
+  const dockSecondaryItem = mobileCapsule.items[1];
   useAdminOverlayGuard(sheetOpen);
 
   // Cleanup
@@ -467,7 +469,7 @@ export function AdminMobileBottomNav({
         <button
           type="button"
           className="fixed inset-0 z-[55] bg-background/60 backdrop-blur-md lg:hidden"
-          aria-label="Р—Р°РєСЂС‹С‚СЊ РјРµРЅСЋ"
+          aria-label="Закрыть меню"
           onClick={() => {
             setNotifOpen(false);
             setMenuOpen(false);
@@ -892,12 +894,21 @@ export function AdminMobileBottomNav({
         <div className="admin-mobile-dock-inner">
           {/* Левые табы (по роли) */}
           <div className="flex flex-1 items-center justify-around pt-1">
-            <NavItem
-              icon={LayoutDashboard}
-              label="Стол"
-              href="/admin"
-              isActive={pathname === "/admin"}
-            />
+            {dockPrimaryItem ? (
+              <NavItem
+                icon={dockPrimaryItem.icon}
+                label={dockPrimaryItem.compactLabel}
+                href={dockPrimaryItem.href}
+                isActive={isHrefActive(dockPrimaryItem.href)}
+              />
+            ) : (
+              <NavItem
+                icon={LayoutDashboard}
+                label="Стол"
+                href="/admin"
+                isActive={pathname === "/admin"}
+              />
+            )}
             <NavItem
               icon={Search}
               label="Поиск"
@@ -1000,13 +1011,23 @@ export function AdminMobileBottomNav({
 
           {/* Правые: Новое/Аккаунт + карта разделов */}
           <div className="flex flex-1 items-center justify-around pt-1">
-            <NavItem
-              icon={ShoppingBag}
-              label="Заказы"
-              href="/admin/orders"
-              isActive={isHrefActive("/admin/orders")}
-              badge={newOrdersCount}
-            />
+            {dockSecondaryItem ? (
+              <NavItem
+                icon={dockSecondaryItem.icon}
+                label={dockSecondaryItem.compactLabel}
+                href={dockSecondaryItem.href}
+                isActive={isHrefActive(dockSecondaryItem.href)}
+                badge={dockSecondaryItem.href === "/admin/orders" ? newOrdersCount : undefined}
+              />
+            ) : (
+              <NavItem
+                icon={ShoppingBag}
+                label="Заказы"
+                href="/admin/orders"
+                isActive={isHrefActive("/admin/orders")}
+                badge={newOrdersCount}
+              />
+            )}
             <NavItem
               icon={UserCircle}
               label="Кабинет"

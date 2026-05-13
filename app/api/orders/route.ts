@@ -29,7 +29,10 @@ const attributionSchema = z.object({
 const orderSchema = z.object({
   name: z.string().min(2),
   phone: z.string().min(10),
-  email: z.string().email(),
+  email: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? undefined : value),
+    z.string().email().optional(),
+  ),
   address: z.string().min(5),
   paymentMethod: z.enum(["cash", "invoice"]),
   comment: z.string().optional(),
@@ -57,6 +60,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, phone, email, address, paymentMethod, comment, items, totalAmount, attribution } = parsed.data;
+    const normalizedEmail = email?.toLowerCase().trim() || null;
 
     // Парсим firstTouchAt если пришёл как строка
     let firstTouchAt: Date | null = null;
@@ -71,8 +75,8 @@ export async function POST(req: NextRequest) {
 
     // Авто-регистрация гостя: создаём аккаунт если email не зарегистрирован
     let autoCreatedPassword: string | null = null;
-    if (!userId && email) {
-      const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!userId && normalizedEmail) {
+      const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
       if (!existing) {
         // Генерируем пароль и создаём аккаунт
         const chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
         const newUser = await prisma.user.create({
           data: {
             name: name.trim(),
-            email: email.toLowerCase().trim(),
+            email: normalizedEmail,
             phone: normalizePhone(phone) || phone,
             passwordHash,
           },
@@ -97,7 +101,7 @@ export async function POST(req: NextRequest) {
         userId: userId || undefined,
         guestName: name,
         guestPhone: phone,
-        guestEmail: email,
+        guestEmail: normalizedEmail,
         deliveryAddress: address,
         paymentMethod: paymentMethod === "cash" ? "Наличные" : "Безнал по счёту",
         comment: comment || null,
@@ -177,7 +181,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Welcome email с паролем если был создан новый аккаунт
-    if (autoCreatedPassword && email) {
+    if (autoCreatedPassword && normalizedEmail) {
       try {
         const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
         const transporter = nodemailer.createTransport({
@@ -189,7 +193,7 @@ export async function POST(req: NextRequest) {
         });
         await transporter.sendMail({
           from: `"ПилоРус" <${process.env.SMTP_USER}>`,
-          to: email,
+          to: normalizedEmail,
           subject: "Ваш личный кабинет создан — ПилоРус",
           html: `
             <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px">
@@ -199,7 +203,7 @@ export async function POST(req: NextRequest) {
               <p>Теперь вы можете отслеживать заказы, видеть историю покупок и получать персональные предложения.</p>
               <div style="background:#f5f5f5;border:1px solid #ddd;border-radius:8px;padding:16px 24px;margin:16px 0">
                 <p style="margin:0 0 8px;color:#666;font-size:13px">Данные для входа:</p>
-                <p style="margin:4px 0;font-size:14px">📧 <strong>Логин:</strong> ${email}</p>
+                <p style="margin:4px 0;font-size:14px">📧 <strong>Логин:</strong> ${normalizedEmail}</p>
                 <p style="margin:4px 0;font-size:14px">🔑 <strong>Пароль:</strong> <span style="font-family:monospace;font-size:16px;font-weight:bold;letter-spacing:2px">${autoCreatedPassword}</span></p>
               </div>
               <p style="font-size:13px;color:#888">Рекомендуем сменить пароль после первого входа в личном кабинете.</p>
@@ -273,7 +277,7 @@ export async function POST(req: NextRequest) {
       data: {
         name: name,
         phone: phone || null,
-        email: email || null,
+        email: normalizedEmail,
         source: "WEBSITE",
         stage: "NEW",
         value: totalAmount,
@@ -292,7 +296,7 @@ export async function POST(req: NextRequest) {
         totalAmount: Number(totalAmount),
         customerName: name || "Клиент",
         customerPhone: phone || "",
-        customerEmail: email || "",
+        customerEmail: normalizedEmail || "",
       }).catch(console.error);
     }).catch(() => {});
 

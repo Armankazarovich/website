@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescriptionAI, generateProductDescription } from "@/lib/product-seo";
+import { makeShortProductDescription } from "@/lib/product-descriptions";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 
@@ -64,6 +65,7 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
     const aiDescription = await generateProductDescriptionAI(productForSeo, settings);
     return NextResponse.json({
       description: aiDescription,
+      shortDescription: makeShortProductDescription(aiDescription, product.name),
       source: "aray" as const,
     });
   } catch (err) {
@@ -74,6 +76,7 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
     const templateDescription = generateProductDescription(productForSeo, settings);
     return NextResponse.json({
       description: templateDescription,
+      shortDescription: makeShortProductDescription(templateDescription, product.name),
       source: "template" as const,
       fallbackReason: message,
     });

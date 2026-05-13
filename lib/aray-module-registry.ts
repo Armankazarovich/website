@@ -336,7 +336,7 @@ export const arayModuleRegistry = [
     name: "Terminal",
     category: "business",
     status: "beta",
-    routes: ["/admin/terminals", "/admin/terminals/training", "/admin/orders/new", "/api/admin/terminal/*"],
+    routes: ["/admin/terminals", "/admin/terminals/training", "/admin/orders/new", "/admin/exchange", "/api/admin/terminal/*"],
     navItems: ["terminal", "orders.new"],
     permissions: ["terminal.view", "terminal.sell", "terminal.manage"],
     dependencies: ["core.popup-system", "core.notifications", "core.app-identity", "business.orders"],

@@ -50,7 +50,7 @@ export default function WishlistPage() {
           </div>
           <h2 className="font-display font-bold text-xl mb-2">Список избранного пуст</h2>
           <p className="text-muted-foreground text-sm mb-8 max-w-xs">
-            Нажмите ❤️ на любом товаре, чтобы сохранить его здесь и вернуться позже
+            Нажмите кнопку избранного на любом товаре, чтобы сохранить его здесь и вернуться позже
           </p>
           <Button asChild>
             <Link href="/catalog">

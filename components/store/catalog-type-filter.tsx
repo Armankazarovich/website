@@ -35,6 +35,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
       <div ref={scrollRef} className="flex items-center gap-2 overflow-x-auto scrollbar-none">
         {category && (
           <Link
+            prefetch
             href="/catalog"
             aria-label="Все категории"
             className="inline-flex items-center justify-center w-9 h-9 rounded-xl border shrink-0 border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent transition-all"
@@ -52,6 +53,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
           const q = params.toString();
           return (
             <Link
+              prefetch
               data-active={!currentType ? "true" : undefined}
               href={`/catalog${q ? `?${q}` : ""}`}
               className={`inline-flex min-h-11 items-center gap-1.5 rounded-xl border px-3.5 py-2 text-sm font-medium whitespace-nowrap transition-all shrink-0 ${
@@ -75,6 +77,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
           const q = params.toString();
           return (
             <Link
+              prefetch
               key={t.keyword}
               data-active={isActive ? "true" : undefined}
               href={`/catalog${q ? `?${q}` : ""}`}

@@ -4,8 +4,10 @@ import { BackButton } from "@/components/ui/back-button";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
-  title: "Политика конфиденциальности — ПилоРус",
+  title: "Политика конфиденциальности",
   description: "Политика конфиденциальности ООО «ПИТИ» (ПилоРус). Правила обработки персональных данных.",
+  alternates: { canonical: "https://pilo-rus.ru/privacy" },
+  robots: { index: false, follow: true },
 };
 
 export default async function PrivacyPage() {

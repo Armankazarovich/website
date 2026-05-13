@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import {
   Upload, Save, Plus, Loader2, Check, ImageIcon, Trash2,
   Eye, EyeOff, ChevronUp, ChevronDown, Settings2,
+  CornerDownRight, FolderTree,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { AdminModal } from "@/components/admin/admin-modal";
+import { slugify } from "@/lib/slug";
 
 type Category = {
   id: string;
@@ -21,18 +23,68 @@ type Category = {
   showInFooter: boolean;
   seoTitle: string | null;
   seoDescription: string | null;
-  _count: { products: number };
+  parent?: { id: string; name: string; slug: string } | null;
+  children?: Array<{ id: string; name: string; slug: string; sortOrder: number; showInMenu: boolean; showInFooter: boolean }>;
+  _count: { products: number; children?: number };
 };
 
 const HIDDEN_ORDER = 999;
-const isHidden = (cat: Category) => cat.sortOrder >= HIDDEN_ORDER;
+const isHidden = (cat: Category) => cat.sortOrder >= HIDDEN_ORDER || (!cat.showInMenu && !cat.showInFooter);
+
+function getDescendantIds(categories: Category[], id: string) {
+  const ids = new Set<string>();
+  const walk = (parentId: string) => {
+    categories
+      .filter((category) => category.parentId === parentId)
+      .forEach((category) => {
+        ids.add(category.id);
+        walk(category.id);
+      });
+  };
+  walk(id);
+  return ids;
+}
+
+function sortCategories(a: Category, b: Category) {
+  return Number(isHidden(a)) - Number(isHidden(b)) || a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "ru");
+}
+
+function flattenCategoryTree(categories: Category[]) {
+  const byParent = new Map<string, Category[]>();
+  const used = new Set<string>();
+
+  categories.forEach((category) => {
+    const key = category.parentId || "root";
+    byParent.set(key, [...(byParent.get(key) ?? []), category]);
+  });
+
+  const rows: Array<{ category: Category; depth: number }> = [];
+  const walk = (parentId: string, depth: number) => {
+    const list = [...(byParent.get(parentId) ?? [])].sort(sortCategories);
+    list.forEach((category) => {
+      if (used.has(category.id)) return;
+      used.add(category.id);
+      rows.push({ category, depth });
+      walk(category.id, depth + 1);
+    });
+  };
+
+  walk("root", 0);
+  categories
+    .filter((category) => !used.has(category.id))
+    .sort(sortCategories)
+    .forEach((category) => rows.push({ category, depth: 0 }));
+
+  return rows;
+}
 
 // ── Компактная строка категории ───────────────────────────────
 function CategoryRow({
-  cat, isFirst, isLast, allCats,
+  cat, depth, isFirst, isLast, allCats,
   onUpdate, onDelete, onMove,
 }: {
   cat: Category;
+  depth: number;
   isFirst: boolean;
   isLast: boolean;
   allCats: Category[];
@@ -48,13 +100,18 @@ function CategoryRow({
 
   const handleToggle = async () => {
     setToggling(true);
-    await onUpdate(cat.id, { sortOrder: hidden ? undefined : HIDDEN_ORDER });
+    await onUpdate(cat.id, hidden
+      ? { sortOrder: undefined, showInMenu: true, showInFooter: true }
+      : { sortOrder: HIDDEN_ORDER, showInMenu: false, showInFooter: false });
     setToggling(false);
   };
 
   return (
     <>
-      <div className={`bg-card rounded-xl border p-3 flex items-center gap-3 transition-opacity ${hidden ? "opacity-55" : ""}`}>
+      <div
+        className={`bg-card rounded-xl border p-3 flex items-center gap-3 transition-opacity ${hidden ? "opacity-55" : ""} ${depth > 0 ? "border-l-primary/35" : ""}`}
+        style={{ marginLeft: depth ? Math.min(depth, 3) * 18 : 0 }}
+      >
         {/* Стрелки порядка */}
         <div className="flex flex-col items-center gap-0.5 shrink-0">
           <button
@@ -82,10 +139,14 @@ function CategoryRow({
 
         {/* Название + мета */}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">{cat.name}</p>
+          <p className="flex items-center gap-1.5 font-medium text-sm truncate">
+            {depth > 0 && <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-primary" />}
+            <span className="truncate">{cat.name}</span>
+          </p>
           <p className="text-[11px] text-muted-foreground truncate">
             {cat._count.products} товаров · /{cat.slug}
-            {cat.parentId && <span className="ml-1 text-primary/60">↳ подкат.</span>}
+            {(cat._count.children ?? 0) > 0 && <span className="ml-1 text-primary/70">· {cat._count.children} подкат.</span>}
+            {cat.parent?.name && <span className="ml-1 text-primary/60">· в {cat.parent.name}</span>}
           </p>
         </div>
 
@@ -173,6 +234,7 @@ function CategoryModal({
 }) {
   const [name, setName]                     = useState("");
   const [slug, setSlug]                     = useState("");
+  const [slugTouched, setSlugTouched]       = useState(false);
   const [image, setImage]                   = useState("");
   const [parentId, setParentId]             = useState<string>("");
   const [showInMenu, setShowInMenu]         = useState(true);
@@ -192,6 +254,7 @@ function CategoryModal({
     if (open) {
       setName(cat?.name ?? "");
       setSlug(cat?.slug ?? "");
+      setSlugTouched(Boolean(cat?.slug));
       setImage(cat?.image || "");
       setParentId(cat?.parentId || "");
       setShowInMenu(cat?.showInMenu ?? true);
@@ -250,7 +313,18 @@ function CategoryModal({
   };
 
   // Исключаем текущую категорию из списка родителей
-  const parentOptions = allCats.filter(c => c.id !== cat?.id && !isHidden(c));
+  const blockedParents = cat ? getDescendantIds(allCats, cat.id) : new Set<string>();
+  const parentOptions = allCats.filter(c => c.id !== cat?.id && !blockedParents.has(c.id) && !isHidden(c));
+
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (!slugTouched) setSlug(slugify(value));
+  };
+
+  const handleSlugChange = (value: string) => {
+    setSlugTouched(true);
+    setSlug(slugify(value));
+  };
 
   return (
     <AdminModal
@@ -332,10 +406,7 @@ function CategoryModal({
               <label className="block text-xs text-muted-foreground mb-1">Название</label>
               <input
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (!cat) setSlug(e.target.value.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""));
-                }}
+                onChange={(e) => handleNameChange(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 placeholder="Сосна и Ель"
               />
@@ -344,7 +415,7 @@ function CategoryModal({
               <label className="block text-xs text-muted-foreground mb-1">Slug (URL)</label>
               <input
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                onChange={(e) => handleSlugChange(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-border bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
                 placeholder="sosna-el"
               />
@@ -487,7 +558,11 @@ export default function AdminCategoriesPage() {
   };
 
   const handleMove = async (id: string, dir: "up" | "down") => {
-    const sorted = [...visibleCats].sort((a, b) => a.sortOrder - b.sortOrder);
+    const target = categories.find((category) => category.id === id);
+    if (!target) return;
+    const sorted = categories
+      .filter((category) => !isHidden(category) && (category.parentId || "") === (target.parentId || ""))
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "ru"));
     const idx     = sorted.findIndex((c) => c.id === id);
     const swapIdx = dir === "up" ? idx - 1 : idx + 1;
     if (swapIdx < 0 || swapIdx >= sorted.length) return;
@@ -517,7 +592,9 @@ export default function AdminCategoriesPage() {
     setCategories((prev) => [...prev, created]);
   };
 
-  const sortedVisible = [...visibleCats].sort((a, b) => a.sortOrder - b.sortOrder);
+  const categoryRows = flattenCategoryTree(categories);
+  const visibleRows = categoryRows.filter(({ category }) => !isHidden(category));
+  const hiddenRows = categoryRows.filter(({ category }) => isHidden(category));
 
   if (loading)
     return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
@@ -537,7 +614,10 @@ export default function AdminCategoriesPage() {
       </div>
 
       <div className="border border-border rounded-xl px-4 py-3 text-sm text-muted-foreground bg-muted/30">
-        Стрелки ↑↓ — порядок в меню и каталоге. <strong className="text-foreground/70 font-medium">Настройки</strong> — фото, SEO, навигация, подкатегория.
+        <span className="inline-flex items-center gap-2">
+          <FolderTree className="h-4 w-4 text-primary" />
+          Стрелки ↑↓ — порядок внутри дерева. <strong className="text-foreground/70 font-medium">Настройки</strong> — фото, SEO, навигация, родительская категория.
+        </span>
       </div>
 
       {error && (
@@ -548,10 +628,11 @@ export default function AdminCategoriesPage() {
 
       {/* Видимые */}
       <div className="space-y-2">
-        {sortedVisible.map((cat, idx) => (
+        {visibleRows.map(({ category: cat, depth }, idx) => (
           <CategoryRow
             key={cat.id} cat={cat}
-            isFirst={idx === 0} isLast={idx === sortedVisible.length - 1}
+            depth={depth}
+            isFirst={idx === 0} isLast={idx === visibleRows.length - 1}
             allCats={categories}
             onUpdate={handleUpdate} onDelete={handleDelete} onMove={handleMove}
           />
@@ -559,14 +640,15 @@ export default function AdminCategoriesPage() {
       </div>
 
       {/* Скрытые */}
-      {hiddenCats.length > 0 && (
+      {hiddenRows.length > 0 && (
         <div className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
             <EyeOff className="w-3.5 h-3.5" /> Скрытые категории
           </h2>
-          {hiddenCats.map((cat) => (
+          {hiddenRows.map(({ category: cat, depth }) => (
             <CategoryRow
               key={cat.id} cat={cat}
+              depth={depth}
               isFirst isLast
               allCats={categories}
               onUpdate={handleUpdate} onDelete={handleDelete} onMove={handleMove}

@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  robots: {
-    index: false,
-    follow: false,
-    googleBot: {
-      index: false,
-      follow: false,
-    },
-  },
+  title: "Корзина",
+  description: "Корзина ПилоРус: проверьте выбранные пиломатериалы перед оформлением заявки.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "https://pilo-rus.ru/cart" },
 };
 
 export default function CartLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <>{children}</>;
 }

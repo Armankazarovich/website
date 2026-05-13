@@ -67,6 +67,7 @@ model Product {
   tenantId        String         @default("pilorus")
   slug        String           @unique
   name        String
+  shortDescription String?
   description String?
   categoryId  String
   images      String[]

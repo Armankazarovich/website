@@ -19,6 +19,7 @@ import {
   Building2,
   Bell,
   Info,
+  ClipboardList,
 } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useSession, signIn } from "next-auth/react";
@@ -52,8 +53,8 @@ const checkoutSchema = z.object({
   name: z.string().min(2, "Введите имя"),
   phone: z.string().min(10, "Введите корректный номер телефона"),
   email: z
-    .string()
-    .email("Введите корректный email — пришлём подтверждение заказа"),
+    .union([z.string().trim().email("Введите корректный email"), z.literal("")])
+    .optional(),
   address: z.string().min(5, "Введите адрес доставки"),
   paymentMethod: z.enum(["cash", "invoice"]),
   comment: z.string().optional(),
@@ -610,16 +611,18 @@ export default function CheckoutPage() {
 
         {pushState === "done" && (
           <div className="rounded-2xl p-3 mb-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-center">
-            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
-              ✓ Уведомления включены — пришлём статус заказа
+            <p className="inline-flex items-center justify-center gap-2 text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+              <CheckCircle className="h-4 w-4" />
+              Уведомления включены — пришлём статус заказа
             </p>
           </div>
         )}
 
         {/* Как ещё найти заказ */}
         <div className="bg-muted/50 rounded-2xl p-4 mb-6 text-sm text-muted-foreground space-y-2">
-          <p className="font-medium text-foreground text-sm mb-2">
-            📋 Как отслеживать заказ:
+          <p className="inline-flex items-center gap-2 font-medium text-foreground text-sm mb-2">
+            <ClipboardList className="h-4 w-4 text-primary" />
+            Как отслеживать заказ:
           </p>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold shrink-0">1.</span>
@@ -630,7 +633,7 @@ export default function CheckoutPage() {
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold shrink-0">2.</span>
-            <span>В письме на email — придёт когда статус изменится</span>
+            <span>Если оставили email — пришлём письмо при изменении статуса</span>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold shrink-0">3.</span>
@@ -902,9 +905,7 @@ export default function CheckoutPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="email">
-                Email <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -918,7 +919,7 @@ export default function CheckoutPage() {
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Пришлём подтверждение заказа и PDF счёт
+                  Необязательно: пришлём подтверждение заказа и PDF счёт
                 </p>
               )}
             </div>

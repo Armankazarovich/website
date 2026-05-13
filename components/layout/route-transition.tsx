@@ -1,7 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
-import type { RouteMotionSurface } from "@/lib/route-motion";
+import type { CSSProperties, ReactNode } from "react";
+import { getRouteMotionPolicy, type RouteMotionSurface } from "@/lib/route-motion";
 
 type RouteTransitionProps = {
   children: ReactNode;
@@ -11,12 +11,21 @@ type RouteTransitionProps = {
 
 export function RouteTransition({
   children,
-  surface: _surface,
+  surface,
   className,
 }: RouteTransitionProps) {
-  if (className) {
-    return <div className={className}>{children}</div>;
-  }
+  const policy = getRouteMotionPolicy(surface);
+  const shellClassName = [className, "route-transition-shell"].filter(Boolean).join(" ");
+  const style = {
+    "--route-motion-duration": `${policy.durationMs}ms`,
+    "--route-motion-x": `${policy.x}px`,
+    "--route-motion-y": `${policy.y}px`,
+    "--route-motion-scale": String(policy.scale),
+  } as CSSProperties;
 
-  return <>{children}</>;
+  return (
+    <div className={shellClassName} data-route-transition="enter" style={style}>
+      {children}
+    </div>
+  );
 }

@@ -13,6 +13,7 @@ export type StoreShellCategory = {
   slug: string;
   image: string | null;
   _count: { products: number };
+  children?: StoreShellCategory[];
 };
 
 export type StoreShellFooterCategory = {
@@ -73,7 +74,14 @@ export const getStoreShellData = unstable_cache(
       variantSizes,
     ] = await Promise.all([
       prisma.category.findMany({
-        where: { showInMenu: true, products: { some: publicProductFilter } },
+        where: {
+          showInMenu: true,
+          parentId: null,
+          OR: [
+            { products: { some: publicProductFilter } },
+            { children: { some: { showInMenu: true, products: { some: publicProductFilter } } } },
+          ],
+        },
         orderBy: { sortOrder: "asc" },
         select: {
           id: true,
@@ -81,6 +89,17 @@ export const getStoreShellData = unstable_cache(
           slug: true,
           image: true,
           _count: { select: { products: { where: publicProductFilter } } },
+          children: {
+            where: { showInMenu: true, products: { some: publicProductFilter } },
+            orderBy: { sortOrder: "asc" },
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              image: true,
+              _count: { select: { products: { where: publicProductFilter } } },
+            },
+          },
         },
       }),
       prisma.category.findMany({

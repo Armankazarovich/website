@@ -162,14 +162,18 @@ function SearchContent({ onClose }: { onClose: () => void }) {
             <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
               <LayoutGrid className="w-3 h-3" />
               {data.categories.find(c => c.slug === activeCategory)?.name}
-              <button onClick={() => setActiveCategory(null)} className="ml-0.5 hover:text-primary/70">✕</button>
+              <button onClick={() => setActiveCategory(null)} className="ml-0.5 hover:text-primary/70" aria-label="Убрать категорию">
+                <X className="h-3 w-3" />
+              </button>
             </span>
           )}
           {activeSize && (
             <span className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full font-medium">
               <Tag className="w-3 h-3" />
               {activeSize}
-              <button onClick={() => setActiveSize(null)} className="ml-0.5 hover:text-primary/70">✕</button>
+              <button onClick={() => setActiveSize(null)} className="ml-0.5 hover:text-primary/70" aria-label="Убрать размер">
+                <X className="h-3 w-3" />
+              </button>
             </span>
           )}
         </div>
@@ -282,7 +286,7 @@ function SearchContent({ onClose }: { onClose: () => void }) {
             {/* No results */}
             {!loading && !hasResults && (
               <div className="py-10 text-center text-sm text-muted-foreground">
-                <div className="text-4xl mb-3">🔍</div>
+                <Search className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
                 <p>По запросу «{query}» ничего не найдено</p>
                 <Link
                   href={`/catalog?search=${encodeURIComponent(query)}`}

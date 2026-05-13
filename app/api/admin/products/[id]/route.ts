@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescription } from "@/lib/product-seo";
+import { makeShortProductDescription, normalizeProductText } from "@/lib/product-descriptions";
+import { slugify } from "@/lib/slug";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
@@ -20,6 +22,21 @@ async function checkProductsAccess() {
   const session = await auth();
   const role = session?.user?.role as string | undefined;
   return session && role && PRODUCTS_ROLES.includes(role);
+}
+
+async function makeUniqueProductSlug(base: string, currentProductId: string) {
+  const cleanBase = slugify(base) || "product";
+  let candidate = cleanBase;
+  let suffix = 1;
+  while (true) {
+    const existing = await prisma.product.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    });
+    if (!existing || existing.id === currentProductId) return candidate;
+    candidate = `${cleanBase}-${suffix}`;
+    suffix += 1;
+  }
 }
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
@@ -42,10 +59,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   } catch {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
-  const { name, slug, description, categoryId, images, saleUnit, active, featured, variants } =
+  const { name, slug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants } =
     body as {
       name?: string;
       slug?: string;
+      shortDescription?: string;
       description?: string;
       categoryId?: string;
       images?: unknown;
@@ -62,25 +80,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       { status: 400 }
     );
   }
-  // Validate slug format
-  if (slug !== undefined && !/^[a-z0-9-]+$/.test(slug)) {
-    return NextResponse.json(
-      { error: "slug может содержать только a-z, 0-9 и дефис" },
-      { status: 400 }
-    );
-  }
-
   try {
 
   // Авто-описание: если менеджер явно очистил / оставил слишком короткое описание —
   // подставляем шаблон из полей товара (город, размеры, цена, доставка из settings)
   const previousProduct = await prisma.product.findUnique({
     where: { id: params.id },
-    select: { slug: true },
+    select: { slug: true, name: true, description: true, shortDescription: true },
   });
   let finalDescription = description;
   const descProvided = description !== undefined;
-  const descTooShort = descProvided && (!description || String(description).trim().length < 40);
+  const descTooShort = descProvided && (!description || String(description).trim().length < 180);
   if (descTooShort) {
     try {
       const [current, settings] = await Promise.all([
@@ -139,8 +149,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Build update payload explicitly (Prisma-typed)
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
-  if (slug !== undefined) updateData.slug = slug;
+  if (slug !== undefined) updateData.slug = await makeUniqueProductSlug(slug || name || previousProduct?.name || "product", params.id);
   if (descProvided) updateData.description = finalDescription;
+  if (shortDescription !== undefined) {
+    updateData.shortDescription =
+      normalizeProductText(shortDescription) ||
+      makeShortProductDescription(
+        finalDescription ?? previousProduct?.description,
+        name ?? previousProduct?.name
+      );
+  } else if (descProvided) {
+    updateData.shortDescription = makeShortProductDescription(
+      finalDescription ?? previousProduct?.description,
+      name ?? previousProduct?.name
+    );
+  }
   if (categoryId !== undefined) updateData.categoryId = categoryId;
   if (images !== undefined) updateData.images = images as string[];
   if (saleUnit !== undefined) updateData.saleUnit = saleUnit;

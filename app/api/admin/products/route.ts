@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescription } from "@/lib/product-seo";
+import { makeShortProductDescription, normalizeProductText } from "@/lib/product-descriptions";
+import { slugify } from "@/lib/slug";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
@@ -32,6 +34,17 @@ function serializeProduct<T extends { variants?: Array<Record<string, unknown>> 
   };
 }
 
+async function makeUniqueProductSlug(base: string) {
+  const cleanBase = slugify(base) || "product";
+  let candidate = cleanBase;
+  let suffix = 1;
+  while (await prisma.product.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+    candidate = `${cleanBase}-${suffix}`;
+    suffix += 1;
+  }
+  return candidate;
+}
+
 async function checkProductsAccess() {
   const session = await auth();
   const role = session?.user?.role as string | undefined;
@@ -57,9 +70,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  const { name, slug, description, categoryId, images, saleUnit, active, featured, variants } = body as {
+  const { name, slug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants } = body as {
     name?: string;
     slug?: string;
+    shortDescription?: string;
     description?: string;
     categoryId?: string;
     images?: unknown;
@@ -76,18 +90,9 @@ export async function POST(req: Request) {
   if (name.trim().length > 200) {
     return NextResponse.json({ error: "Название не должно превышать 200 символов" }, { status: 400 });
   }
-  if (!slug || typeof slug !== "string" || !slug.trim()) {
-    return NextResponse.json({ error: "Адрес страницы товара обязателен" }, { status: 400 });
-  }
-  if (!/^[a-z0-9-]+$/.test(slug)) {
-    return NextResponse.json(
-      { error: "Адрес страницы может содержать только латинские буквы, цифры и дефис" },
-      { status: 400 }
-    );
-  }
-  if (slug.length > 120) {
-    return NextResponse.json({ error: "Адрес страницы не должен превышать 120 символов" }, { status: 400 });
-  }
+  const finalSlug = await makeUniqueProductSlug(
+    typeof slug === "string" && slug.trim() ? slug : name.trim()
+  );
   if (!categoryId || typeof categoryId !== "string") {
     return NextResponse.json({ error: "Выберите категорию" }, { status: 400 });
   }
@@ -189,7 +194,7 @@ export async function POST(req: Request) {
 
   // Авто-шаблонное описание, если менеджер не заполнил поле
   let finalDescription = description;
-  const isEmptyDesc = !description || !String(description).trim() || String(description).trim().length < 40;
+  const isEmptyDesc = !description || !String(description).trim() || String(description).trim().length < 180;
   if (isEmptyDesc) {
     try {
       const settings = await getSiteSettings();
@@ -207,12 +212,16 @@ export async function POST(req: Request) {
       finalDescription = description;
     }
   }
+  const finalShortDescription =
+    normalizeProductText(shortDescription) ||
+    makeShortProductDescription(finalDescription, name.trim());
 
   try {
     const product = await prisma.product.create({
       data: {
         name: name.trim(),
-        slug: slug.trim(),
+        slug: finalSlug,
+        shortDescription: finalShortDescription,
         description: finalDescription,
         categoryId,
         images: Array.isArray(images) ? (images as string[]) : [],

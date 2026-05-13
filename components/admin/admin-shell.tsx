@@ -523,7 +523,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               href="/admin/appearance"
               aria-label="Оформление"
               title="Оформление"
-              className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground min-[390px]:flex"
+              className="hidden"
             >
               <Palette className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </Link>

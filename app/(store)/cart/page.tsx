@@ -18,6 +18,8 @@ import {
   Users,
   Loader2,
   Package,
+  Calculator,
+  Phone,
 } from "lucide-react";
 
 function CartItemImage({ src, alt }: { src: string; alt: string }) {
@@ -239,12 +241,14 @@ function ShareCartButton() {
       {copied ? (
         <>
           <Check className="w-4 h-4" />
-          Ссылка скопирована!
+          <span className="hidden sm:inline">Ссылка скопирована!</span>
+          <span className="sm:hidden">Готово</span>
         </>
       ) : (
         <>
           <Share2 className="w-4 h-4" />
-          Поделиться корзиной
+          <span className="hidden sm:inline">Поделиться корзиной</span>
+          <span className="sm:hidden">Поделиться</span>
         </>
       )}
     </button>
@@ -257,21 +261,33 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="container py-20 text-center">
+      <div className="container py-12 sm:py-20">
         <Suspense>
           <ShareBanner />
         </Suspense>
-        <ShoppingCart className="w-20 h-20 text-muted-foreground/20 mx-auto mb-6" />
-        <h1 className="font-display font-bold text-3xl mb-4">Корзина пуста</h1>
-        <p className="text-muted-foreground mb-8">
-          Выберите нужные товары из нашего каталога
-        </p>
-        <Button size="lg" asChild>
-          <Link href="/catalog">
-            Перейти в каталог
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Link>
-        </Button>
+        <div className="mx-auto max-w-2xl rounded-2xl border border-border bg-card p-6 text-center sm:p-8">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ShoppingCart className="h-8 w-8" />
+          </div>
+          <h1 className="font-display font-bold text-3xl mb-3">Корзина пуста</h1>
+          <p className="mx-auto mb-6 max-w-md text-sm leading-6 text-muted-foreground">
+            Добавьте товары из каталога или рассчитайте нужный объём в калькуляторе. Корзину можно будет отправить менеджеру или оформить как заявку.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Button size="lg" asChild>
+              <Link href="/catalog">
+                Перейти в каталог
+                <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/calculator">
+                <Calculator className="mr-2 h-5 w-5" />
+                Рассчитать объём
+              </Link>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -283,10 +299,15 @@ export default function CartPage() {
         <ShareBanner />
       </Suspense>
 
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between sm:mb-8">
         <div className="flex items-center gap-3">
           <BackButton href="/catalog" label="Каталог" className="mb-0" />
-          <h1 className="font-display font-bold text-3xl">Корзина</h1>
+          <div>
+            <h1 className="font-display font-bold text-3xl">Корзина</h1>
+            <p className="text-sm text-muted-foreground">
+              {items.length} {items.length === 1 ? "позиция" : items.length < 5 ? "позиции" : "позиций"} к оформлению
+            </p>
+          </div>
         </div>
         <ShareCartButton />
       </div>
@@ -297,10 +318,10 @@ export default function CartPage() {
           {items.map((item) => (
             <div
               key={item.id}
-              className="flex gap-4 p-4 bg-card rounded-2xl border border-border"
+              className="flex gap-3 p-3 sm:gap-4 sm:p-4 bg-card rounded-2xl border border-border"
             >
               {/* Image */}
-              <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted shrink-0">
+              <div className="relative h-[4.5rem] w-[4.5rem] sm:w-20 sm:h-20 rounded-xl overflow-hidden bg-muted shrink-0">
                 {item.productImage ? (
                   <CartItemImage src={item.productImage} alt={item.productName} />
                 ) : (
@@ -314,7 +335,7 @@ export default function CartPage() {
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/product/${item.productSlug}`}
-                  className="font-display font-semibold text-base hover:text-primary transition-colors"
+                  className="font-display font-semibold text-sm leading-snug hover:text-primary transition-colors sm:text-base"
                 >
                   {item.productName}
                 </Link>
@@ -375,12 +396,12 @@ export default function CartPage() {
             </div>
           ))}
 
-          <div className="flex justify-between items-center pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <Button variant="ghost" onClick={() => { clearCart(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-muted-foreground">
               <Trash2 className="w-4 h-4 mr-2" />
               Очистить корзину
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="outline" className="w-full sm:w-auto" asChild>
               <Link href="/catalog">Продолжить покупки</Link>
             </Button>
           </div>
@@ -422,7 +443,10 @@ export default function CartPage() {
 
             <div className="text-center text-sm text-muted-foreground">
               Или позвоните:{" "}
-              <a href={`tel:${PHONE_LINK}`} className="text-primary font-medium hover:underline whitespace-nowrap">{PHONE_DISPLAY}</a>
+              <a href={`tel:${PHONE_LINK}`} className="inline-flex items-center gap-1 text-primary font-medium hover:underline whitespace-nowrap">
+                <Phone className="h-3.5 w-3.5" />
+                {PHONE_DISPLAY}
+              </a>
             </div>
 
             {/* Share shortcut in sidebar */}

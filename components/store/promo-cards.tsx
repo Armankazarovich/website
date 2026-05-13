@@ -2,10 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import {
+  ArrowRight,
+  Layers3,
+  ShieldCheck,
+  Sparkles,
+  Truck,
+  type LucideIcon,
+} from "lucide-react";
 import { PromoQuoteModal } from "./promo-quote-modal";
+import { AdminEditButton } from "@/components/admin/admin-edit-button";
 
-type Promotion = {
+export type PromotionCardData = {
   id: string;
   title: string;
   description: string;
@@ -13,50 +21,63 @@ type Promotion = {
 };
 
 interface Props {
-  promotions: Promotion[];
+  promotions: PromotionCardData[];
   phoneLink?: string;
 }
 
-/* Темы карточек (по индексу) — первая зелёная "Выгода", вторая синяя "Доставка" */
-const THEMES = [
+type Theme = {
+  cardClass: string;
+  iconClass: string;
+  circle1: string;
+  circle2: string;
+  badgeText: string;
+  label: string;
+  Icon: LucideIcon;
+  cta:
+    | { type: "modal"; label: string }
+    | { type: "link"; label: string; href: string };
+};
+
+const THEMES: Theme[] = [
   {
-    gradient: "from-emerald-950 via-emerald-900 to-teal-800",
-    accent: "#10b981",
-    circle1: "bg-emerald-400/10",
-    circle2: "bg-teal-300/8",
-    badgeText: "text-emerald-300",
+    cardClass: "border-primary/20 bg-primary/10",
+    iconClass: "border-primary/25 bg-primary/10 text-primary",
+    circle1: "bg-primary/[0.06]",
+    circle2: "bg-primary/[0.04]",
+    badgeText: "text-primary",
     label: "Выгода",
-    /* Анимированные слои — всплывают по очереди */
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path className="[animation:promoLayer1_2.4s_ease-in-out_infinite]" d="M12 2L2 7l10 5 10-5-10-5z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" style={{ transformOrigin: "12px 7px" }} />
-        <path className="[animation:promoLayer2_2.4s_ease-in-out_0.3s_infinite]" d="M2 12l10 5 10-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transformOrigin: "12px 14.5px" }} />
-        <path className="[animation:promoLayer3_2.4s_ease-in-out_0.6s_infinite]" d="M2 17l10 5 10-5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transformOrigin: "12px 19.5px" }} />
-      </svg>
-    ),
-    /* CTA: открывает попап формы расчёта */
-    cta: { type: "modal", label: "Рассчитать предложение" } as const,
+    Icon: Layers3,
+    cta: { type: "modal", label: "Рассчитать предложение" },
   },
   {
-    gradient: "from-slate-900 via-blue-950 to-indigo-900",
-    accent: "#60a5fa",
-    circle1: "bg-blue-400/10",
-    circle2: "bg-indigo-300/8",
-    badgeText: "text-blue-300",
+    cardClass: "border-border bg-card",
+    iconClass: "border-border bg-muted text-foreground",
+    circle1: "bg-muted/70",
+    circle2: "bg-primary/[0.04]",
+    badgeText: "text-muted-foreground",
     label: "Доставка",
-    /* Грузовик — колёса крутятся */
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M1 4h13v13H1V4z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
-        <path d="M14 9h4.5L22 13v4h-8V9z" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
-        <circle cx="5" cy="19" r="2" stroke="white" strokeWidth="1.5" className="[animation:promoSpin_1.8s_linear_infinite]" style={{ transformOrigin: "5px 19px" }} />
-        <circle cx="18" cy="19" r="2" stroke="white" strokeWidth="1.5" className="[animation:promoSpin_1.8s_linear_infinite]" style={{ transformOrigin: "18px 19px" }} />
-        <circle cx="5" cy="19" r="0.6" fill="white" className="[animation:promoSpin_1.8s_linear_infinite]" style={{ transformOrigin: "5px 19px" }} />
-        <circle cx="18" cy="19" r="0.6" fill="white" className="[animation:promoSpin_1.8s_linear_infinite]" style={{ transformOrigin: "18px 19px" }} />
-      </svg>
-    ),
-    /* CTA: ссылка на страницу доставки */
-    cta: { type: "link", label: "Подробнее о доставке", href: "/delivery" } as const,
+    Icon: Truck,
+    cta: { type: "link", label: "Подробнее о доставке", href: "/delivery" },
+  },
+  {
+    cardClass: "border-primary/25 bg-primary/[0.08]",
+    iconClass: "border-primary/30 bg-primary/10 text-primary",
+    circle1: "bg-primary/[0.07]",
+    circle2: "bg-muted/60",
+    badgeText: "text-primary",
+    label: "Спецпредложение",
+    Icon: Sparkles,
+    cta: { type: "modal", label: "Получить условия" },
+  },
+  {
+    cardClass: "border-border bg-background/70",
+    iconClass: "border-primary/20 bg-primary/[0.06] text-primary",
+    circle1: "bg-muted/70",
+    circle2: "bg-primary/[0.04]",
+    badgeText: "text-muted-foreground",
+    label: "Гарантия",
+    Icon: ShieldCheck,
+    cta: { type: "modal", label: "Обсудить заказ" },
   },
 ];
 
@@ -67,57 +88,54 @@ export function PromoCards({ promotions, phoneLink }: Props) {
     <>
       {promotions.map((promo, i) => {
         const theme = THEMES[i % THEMES.length];
+        const Icon = theme.Icon;
+
         return (
           <div
             key={promo.id}
-            className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${theme.gradient} text-white p-6 flex flex-col min-h-[280px]`}
+            className={`group relative flex min-h-[280px] flex-col overflow-hidden rounded-2xl border ${theme.cardClass} p-6 text-foreground`}
           >
-            {/* Декоративные круги */}
-            <div className={`absolute top-0 right-0 w-44 h-44 rounded-full ${theme.circle1} -translate-y-1/2 translate-x-1/2 pointer-events-none`} />
-            <div className={`absolute bottom-0 left-0 w-28 h-28 rounded-full ${theme.circle2} translate-y-1/2 -translate-x-1/2 pointer-events-none`} />
+            <AdminEditButton href="/admin/promotions" mode="overlay" label="Изменить акцию" />
+            <div className={`pointer-events-none absolute right-0 top-0 h-44 w-44 translate-x-1/2 -translate-y-1/2 rounded-full ${theme.circle1}`} />
+            <div className={`pointer-events-none absolute bottom-0 left-0 h-28 w-28 -translate-x-1/2 translate-y-1/2 rounded-full ${theme.circle2}`} />
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background/[0.05]" />
 
-            {/* Бейдж с анимированной иконкой */}
-            <div className="flex items-center gap-2 mb-4 relative z-10">
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: theme.accent + "25", border: `1px solid ${theme.accent}40` }}
-              >
-                {theme.icon}
+            <div className="relative z-10 mb-4 flex items-center gap-2">
+              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${theme.iconClass}`}>
+                <Icon className="h-5 w-5" />
               </div>
               <span className={`text-xs font-semibold uppercase tracking-widest ${theme.badgeText}`}>
                 {theme.label}
               </span>
             </div>
 
-            {/* Контент */}
-            <div className="relative z-10 flex-1 flex flex-col">
-              <h3 className="font-display font-bold text-xl mb-2 leading-tight">{promo.title}</h3>
-              <p className="text-white/70 text-sm leading-relaxed">{promo.description}</p>
+            <div className="relative z-10 flex flex-1 flex-col">
+              <h3 className="mb-2 font-display text-xl font-bold leading-tight">{promo.title}</h3>
+              <p className="flex-1 text-sm leading-relaxed text-muted-foreground">{promo.description}</p>
 
-              {/* CTA-кнопка — основной призыв к действию */}
               <div className="mt-5">
                 {theme.cta.type === "modal" ? (
                   <button
                     type="button"
                     onClick={() => setModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-white text-emerald-900 text-sm font-semibold hover:bg-white/90 active:scale-[0.98] transition-all shadow-lg"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
                   >
                     {theme.cta.label}
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </button>
                 ) : (
                   <Link
                     href={theme.cta.href}
-                    className="inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-white/15 hover:bg-white/25 active:scale-[0.98] border border-white/25 hover:border-white/45 text-white text-sm font-semibold backdrop-blur-sm transition-all shadow-lg"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-5 py-3 text-sm font-semibold text-primary transition hover:border-primary/45 hover:bg-primary/15"
                   >
                     {theme.cta.label}
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="h-4 w-4" />
                   </Link>
                 )}
               </div>
 
               {promo.validUntil && (
-                <p className="text-xs text-white/40 mt-4 pt-3 border-t border-white/10">
+                <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
                   Акция до {new Date(promo.validUntil).toLocaleDateString("ru-RU")}
                 </p>
               )}
@@ -126,7 +144,6 @@ export function PromoCards({ promotions, phoneLink }: Props) {
         );
       })}
 
-      {/* Попап заявки — боковая панель */}
       <PromoQuoteModal open={modalOpen} onClose={() => setModalOpen(false)} phoneLink={phoneLink} />
     </>
   );

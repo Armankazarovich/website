@@ -10,6 +10,10 @@ import {
   Info,
   ArrowRight,
   CheckCircle2,
+  Ruler,
+  PackageCheck,
+  Truck,
+  ListChecks,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
@@ -32,6 +36,79 @@ interface Product {
   images: string[];
   variants: ProductVariant[];
 }
+
+type CalculatorMode = "pieces" | "cube" | "sqm";
+
+const MODE_OPTIONS: Array<{
+  id: CalculatorMode;
+  label: string;
+  title: string;
+  description: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}> = [
+  {
+    id: "pieces",
+    label: "Штуки → м³",
+    title: "Знаю количество",
+    description: "Переводим доску или брус в кубатуру и сумму.",
+    Icon: PackageCheck,
+  },
+  {
+    id: "cube",
+    label: "Нужно м³",
+    title: "Знаю объём",
+    description: "Покажем, сколько штук понадобится под заказ.",
+    Icon: Calculator,
+  },
+  {
+    id: "sqm",
+    label: "Нужно м²",
+    title: "Знаю площадь",
+    description: "Удобно для пола, стен, потолка и отделки.",
+    Icon: Ruler,
+  },
+];
+
+const QUICK_PRESETS = [
+  {
+    label: "Доска",
+    size: "50×150×6000",
+    note: "стропила, лаги",
+    thickness: 50,
+    width: 150,
+    length: 6,
+  },
+  {
+    label: "Доска",
+    size: "25×100×6000",
+    note: "обрешётка",
+    thickness: 25,
+    width: 100,
+    length: 6,
+  },
+  {
+    label: "Брус",
+    size: "100×100×6000",
+    note: "каркас",
+    thickness: 100,
+    width: 100,
+    length: 6,
+  },
+  {
+    label: "Вагонка",
+    size: "14×96×6000",
+    note: "отделка",
+    thickness: 14,
+    width: 96,
+    length: 6,
+  },
+];
+
+const HEADER_FEATURES = [
+  "цены из каталога",
+  "м³, м² и штуки",
+  "добавление в корзину",
+];
 
 /* ── Math helpers ───────────────────────────────────── */
 function parseDimensions(size: string) {
@@ -94,7 +171,7 @@ function NumInput({
             const v = parseFloat(e.target.value);
             if (!isNaN(v) && v > 0) onChange(v);
           }}
-          className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 pr-12"
+          className="w-full min-h-12 px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 pr-12"
         />
         {unit && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none font-medium">
@@ -122,7 +199,7 @@ export default function CalculatorPage() {
   const [sqmNeed, setSqmNeed] = useState(10);
 
   /* UI state */
-  const [mode, setMode] = useState<"pieces" | "cube" | "sqm">("pieces");
+  const [mode, setMode] = useState<CalculatorMode>("pieces");
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showExplain, setShowExplain] = useState(false);
@@ -182,10 +259,18 @@ export default function CalculatorPage() {
     : totalVolume * pricePerCube;
 
   const piecesPerCubeCalc = volumePerPiece > 0 ? Math.round(1 / volumePerPiece) : 0;
+  const selectedVariant = selectedProduct?.variants[0];
+  const currentMode = MODE_OPTIONS.find((item) => item.id === mode) ?? MODE_OPTIONS[0];
+
+  const applyPreset = (preset: (typeof QUICK_PRESETS)[number]) => {
+    setThickness(preset.thickness);
+    setWidth(preset.width);
+    setLength(preset.length);
+  };
 
   const handleAddToCart = () => {
     if (!selectedProduct) return;
-    const v = selectedProduct.variants[0];
+    const v = selectedVariant;
     if (!v) return;
 
     const usePiece = pricePerPiece && (mode === "sqm" || selectedProduct.saleUnit === "PIECE");
@@ -209,7 +294,7 @@ export default function CalculatorPage() {
     <div className="min-h-screen bg-muted/20 pb-20">
       {/* Page header */}
       <div className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-8 sm:py-10">
+        <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-10">
           <nav className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
             <Link href="/" className="hover:text-foreground transition-colors">
               Главная
@@ -217,44 +302,77 @@ export default function CalculatorPage() {
             <span>/</span>
             <span className="text-foreground">Калькулятор пиломатериалов</span>
           </nav>
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Calculator className="w-7 h-7 text-primary" />
+          <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Calculator className="w-7 h-7 text-primary" />
+              </div>
+              <div>
+                <h1 className="font-display font-bold text-3xl sm:text-4xl leading-tight">
+                  Калькулятор пиломатериалов
+                </h1>
+                <p className="text-muted-foreground mt-1.5 text-base sm:text-lg max-w-2xl">
+                  Подберите товар, введите размер или площадь, и сразу увидите кубатуру, количество и стоимость заказа.
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="font-display font-bold text-3xl sm:text-4xl leading-tight">
-                Калькулятор пиломатериалов
-              </h1>
-              <p className="text-muted-foreground mt-1.5 text-base sm:text-lg">
-                Рассчитайте точное количество и стоимость за 30 секунд
-              </p>
+            <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
+              {HEADER_FEATURES.map((feature) => (
+                <div
+                  key={feature}
+                  className="rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-medium text-foreground"
+                >
+                  {feature}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 pt-8">
+      <div className="container mx-auto px-4 pt-6 sm:pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {/* ── Main calculator card ── */}
           <div className="lg:col-span-2 space-y-5">
             {/* Mode tabs */}
             <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-              <h2 className="font-display font-semibold text-lg mb-4">
-                Режим расчёта
-              </h2>
-              <div className="flex rounded-xl bg-muted/60 p-1 gap-1">
-                {(["pieces", "cube", "sqm"] as const).map((m) => (
+              <div className="flex flex-col gap-1 mb-4">
+                <h2 className="font-display font-semibold text-lg">
+                  Режим расчёта
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Выберите, от чего вам удобнее считать заказ.
+                </p>
+              </div>
+              <div className="grid gap-2 md:grid-cols-3">
+                {MODE_OPTIONS.map(({ id, label, title, description, Icon }) => (
                   <button
-                    key={m}
-                    onClick={() => setMode(m)}
+                    key={id}
+                    onClick={() => setMode(id)}
                     className={cn(
-                      "flex-1 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
-                      mode === m
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                      "min-h-24 rounded-xl border p-4 text-left transition-all",
+                      mode === id
+                        ? "border-primary/40 bg-primary/10 text-foreground ring-1 ring-primary/10"
+                        : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
                     )}
                   >
-                    {m === "pieces" ? "Штуки → м³" : m === "cube" ? "Нужно м³" : "Нужно м²"}
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <span
+                        className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-xl border",
+                          mode === id
+                            ? "border-primary/25 bg-primary/10 text-primary"
+                            : "border-border bg-muted text-muted-foreground"
+                        )}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      {label}
+                    </span>
+                    <span className="mt-3 block text-sm font-semibold">{title}</span>
+                    <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                      {description}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -262,14 +380,22 @@ export default function CalculatorPage() {
 
             {/* Product selector */}
             <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-              <h2 className="font-display font-semibold text-lg mb-4">
-                Выбор товара
-              </h2>
+              <div className="flex flex-col gap-1 mb-4">
+                <h2 className="font-display font-semibold text-lg">
+                  Выбор товара
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Цены и размеры подтянутся из каталога, но параметры можно менять вручную.
+                </p>
+              </div>
               {loadingProducts ? (
-                <div className="h-11 rounded-xl bg-muted/60 animate-pulse" />
+                <div className="flex min-h-12 items-center gap-3 rounded-xl border border-border bg-background px-4 text-sm text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
+                  Загружаем товары из каталога...
+                </div>
               ) : products.length > 0 ? (
                 <select
-                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full min-h-12 px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                   value={selectedProduct?.id ?? ""}
                   onChange={(e) => {
                     const p = products.find((x) => x.id === e.target.value);
@@ -293,18 +419,63 @@ export default function CalculatorPage() {
                 </p>
               )}
               {selectedProduct && (
-                <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
-                  Параметры загружены из выбранного товара
-                </p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">Товар</p>
+                    <p className="mt-1 line-clamp-1 text-sm font-medium">{selectedProduct.name}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">Размер</p>
+                    <p className="mt-1 text-sm font-medium">{selectedVariant?.size ?? "можно указать вручную"}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/40 px-3 py-2.5">
+                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">Цена</p>
+                    <p className="mt-1 text-sm font-medium">{formatPrice(pricePerPiece ?? pricePerCube)}</p>
+                  </div>
+                </div>
               )}
             </div>
 
             {/* Inputs */}
             <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-              <h2 className="font-display font-semibold text-lg mb-4">
-                {mode === "pieces" ? "Размеры и количество" : mode === "cube" ? "Нужный объём" : "Нужная площадь"}
-              </h2>
+              <div className="mb-5 space-y-4">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="font-display font-semibold text-lg">
+                      {mode === "pieces" ? "Размеры и количество" : mode === "cube" ? "Нужный объём" : "Нужная площадь"}
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Аккуратно поправьте размер, цену или объём под ваш проект.
+                    </p>
+                  </div>
+                  <div className="text-xs font-medium text-muted-foreground">
+                    Текущий размер: {thickness}×{width}×{(length * 1000).toFixed(0)} мм
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-2">
+                  {QUICK_PRESETS.map((preset) => (
+                    <button
+                      key={`${preset.label}-${preset.size}`}
+                      type="button"
+                      onClick={() => applyPreset(preset)}
+                      className={cn(
+                        "rounded-xl border px-3 py-2.5 text-left transition-all",
+                        thickness === preset.thickness && width === preset.width && length === preset.length
+                          ? "border-primary/50 bg-primary/10"
+                          : "border-border bg-background hover:border-primary/30 hover:bg-primary/5"
+                      )}
+                    >
+                      <span className="block text-xs font-semibold text-foreground">
+                        {preset.label} {preset.size}
+                      </span>
+                      <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                        {preset.note}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               {mode === "pieces" ? (
                 <>
@@ -510,10 +681,10 @@ export default function CalculatorPage() {
                 onClick={() => setShowExplain((v) => !v)}
                 className="w-full flex items-center justify-between px-5 py-4 text-sm font-medium hover:bg-muted/40 transition-colors"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex min-w-0 items-center gap-2">
                   <Info className="w-4 h-4 text-primary/70" />
                   <span className="font-semibold">Как считается?</span>
-                  <span className="text-muted-foreground font-normal">Формулы расчёта</span>
+                  <span className="hidden xs:inline text-muted-foreground font-normal">Формулы расчёта</span>
                 </span>
                 {showExplain ? (
                   <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -583,14 +754,25 @@ export default function CalculatorPage() {
             <div className="lg:sticky lg:top-4 space-y-4">
               {/* Big result */}
               <div className="bg-card rounded-2xl border border-border p-5 sm:p-6 shadow-sm">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">
-                  Результат
-                </p>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                      Итог к заказу
+                    </p>
+                    <p className="mt-1 text-sm font-medium text-foreground">{currentMode.title}</p>
+                  </div>
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                    {currentMode.label}
+                  </span>
+                </div>
 
                 <div className="rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20 p-4 mb-4 text-center">
                   {/* Основной результат зависит от режима */}
                   {mode === "sqm" ? (
                     <>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Нужно подготовить
+                      </p>
                       <p className="font-display font-bold text-4xl text-primary leading-none">
                         {piecesNeeded} шт
                       </p>
@@ -626,15 +808,30 @@ export default function CalculatorPage() {
                   )}
                 </div>
 
+                <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
+                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">Штук</p>
+                    <p className="mt-1 text-sm font-bold">{piecesNeeded}</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
+                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">Объём</p>
+                    <p className="mt-1 text-sm font-bold">{formatVolume(totalVolume)} м³</p>
+                  </div>
+                  <div className="rounded-xl bg-muted/40 px-3 py-2.5 text-center">
+                    <p className="text-[11px] font-semibold uppercase text-muted-foreground">Площадь</p>
+                    <p className="mt-1 text-sm font-bold">{totalArea.toFixed(1)} м²</p>
+                  </div>
+                </div>
+
                 {/* Add to cart button */}
                 <button
                   onClick={handleAddToCart}
-                  disabled={!selectedProduct}
+                  disabled={!selectedProduct || !selectedVariant}
                   className={cn(
                     "w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl font-bold text-base transition-all",
                     added
                       ? "bg-primary/80 text-primary-foreground"
-                      : selectedProduct
+                      : selectedProduct && selectedVariant
                       ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 active:scale-98"
                       : "bg-muted text-muted-foreground cursor-not-allowed"
                   )}
@@ -642,26 +839,35 @@ export default function CalculatorPage() {
                   {added ? (
                     <>
                       <CheckCircle2 className="w-5 h-5 shrink-0" />
-                      Добавлено в корзину!
+                      Добавлено в корзину
                     </>
-                  ) : (
+                  ) : selectedProduct && selectedVariant ? (
                     <>
                       <ShoppingCart className="w-5 h-5 shrink-0" />
                       Добавить в корзину
                     </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="w-5 h-5 shrink-0" />
+                      Выберите товар
+                    </>
                   )}
                 </button>
 
-                {!selectedProduct && (
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    Выберите товар из каталога чтобы добавить в корзину
+                <div className="mt-4 flex items-start gap-2 rounded-xl bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                  <p>
+                    Расчёт помогает быстро собрать заказ. Финальную цену и доставку менеджер подтвердит перед отгрузкой.
                   </p>
-                )}
+                </div>
               </div>
 
               {/* Quick info */}
               <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-                <p className="text-sm font-semibold">Полезно знать</p>
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <ListChecks className="h-4 w-4 text-primary" />
+                  Полезно знать
+                </p>
                 {[
                   {
                     label: "Доска 50×150×6000",
@@ -702,6 +908,20 @@ export default function CalculatorPage() {
                 <div>
                   <p className="font-semibold text-sm">Смотреть каталог</p>
                   <p className="text-xs text-muted-foreground">Все виды пиломатериалов</p>
+                </div>
+                <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+              </Link>
+
+              <Link
+                href="/delivery"
+                className="flex items-center justify-between gap-2 px-5 py-4 bg-card border border-border rounded-2xl hover:border-primary/40 hover:bg-primary/5 transition-all group"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Truck className="h-5 w-5 shrink-0 text-primary" />
+                  <div>
+                    <p className="font-semibold text-sm">Доставка и оплата</p>
+                    <p className="text-xs text-muted-foreground">Москва, область и самовывоз</p>
+                  </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
               </Link>

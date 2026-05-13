@@ -128,7 +128,7 @@ function TrackForm() {
                   {result.status === "CONFIRMED" && "Подтверждён"}
                   {result.status === "PROCESSING" && "Комплектация"}
                   {result.status === "SHIPPED" && "В пути"}
-                  {result.status === "DELIVERED" && "Доставлен ✓"}
+                  {result.status === "DELIVERED" && "Доставлен"}
                 </span>
               )}
               {isCancelled && (

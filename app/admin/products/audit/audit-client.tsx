@@ -55,6 +55,7 @@ interface Product {
   id: string;
   slug: string;
   name: string;
+  shortDescription: string | null;
   description: string | null;
   images: string[];
   active: boolean;
@@ -89,13 +90,15 @@ export function AuditClient({ products, emptyCategories }: Props) {
     const variantsOutOfStock: Array<{ product: Product; variant: Variant }> = [];
     // 3) Товары без фото
     const productsNoImage: Product[] = [];
-    // 4) Товары без описания
+    // 4) Товары без короткого описания для карточек
+    const productsNoShortDescription: Product[] = [];
+    // 5) Товары без полного SEO-описания
     const productsNoDescription: Product[] = [];
-    // 5) Товары у которых ВСЕ варианты скрыты (без цены / не в наличии)
+    // 6) Товары у которых ВСЕ варианты скрыты (без цены / не в наличии)
     const productsAllHidden: Product[] = [];
-    // 6) Товары без вариантов
+    // 7) Товары без вариантов
     const productsNoVariants: Product[] = [];
-    // 7) Потенциальные дубли по нормализованному имени
+    // 8) Потенциальные дубли по нормализованному имени
     const nameMap = new Map<string, Product[]>();
     for (const p of products) {
       const norm = p.name.toLowerCase().replace(/\s+/g, " ").trim();
@@ -110,7 +113,9 @@ export function AuditClient({ products, emptyCategories }: Props) {
     for (const p of products) {
       if (p.variants.length === 0) productsNoVariants.push(p);
       if (!p.images || p.images.length === 0) productsNoImage.push(p);
-      if (!p.description || p.description.trim().length < 20) productsNoDescription.push(p);
+      const shortLength = p.shortDescription?.trim().length ?? 0;
+      if (shortLength < 55 || shortLength > 155) productsNoShortDescription.push(p);
+      if (!p.description || p.description.trim().length < 180) productsNoDescription.push(p);
 
       let usableVariants = 0;
       for (const v of p.variants) {
@@ -128,6 +133,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
       variantsNoPrice,
       variantsOutOfStock,
       productsNoImage,
+      productsNoShortDescription,
       productsNoDescription,
       productsAllHidden,
       productsNoVariants,
@@ -139,6 +145,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
     checks.variantsNoPrice.length +
     checks.variantsOutOfStock.length +
     checks.productsNoImage.length +
+    checks.productsNoShortDescription.length +
     checks.productsNoDescription.length +
     checks.productsAllHidden.length +
     checks.productsNoVariants.length +
@@ -416,12 +423,44 @@ export function AuditClient({ products, emptyCategories }: Props) {
         </ProblemSection>
       )}
 
-      {/* 4. Товары без описания */}
+      {/* 4. Товары без короткого описания */}
+      {checks.productsNoShortDescription.length > 0 && (
+        <ProblemSection
+          icon={FileText}
+          title={`Товары без короткого описания (${checks.productsNoShortDescription.length})`}
+          subtitle="Короткое описание должно быть 55–155 символов. Оно показывается в карточке каталога и держит визуальный ритм эталона."
+          color="amber"
+        >
+          <Table
+            headers={["Товар", "Категория", "Длина", "Действие"]}
+            rows={checks.productsNoShortDescription.map((p) => [
+              <Link
+                key="n"
+                href={`/admin/products/${p.id}`}
+                className="text-primary hover:underline"
+              >
+                {p.name}
+              </Link>,
+              p.category?.name || "—",
+              p.shortDescription?.trim().length ?? 0,
+              <Link
+                key="edit"
+                href={`/admin/products/${p.id}`}
+                className="inline-flex items-center rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-primary/[0.06]"
+              >
+                Исправить
+              </Link>,
+            ])}
+          />
+        </ProblemSection>
+      )}
+
+      {/* 5. Товары без полного SEO-описания */}
       {checks.productsNoDescription.length > 0 && (
         <ProblemSection
           icon={FileText}
-          title={`Товары без описания (${checks.productsNoDescription.length})`}
-          subtitle="Описание короче 20 символов или отсутствует. SEO страдает, в Директе низкое качество объявления."
+          title={`Товары с коротким SEO-описанием (${checks.productsNoDescription.length})`}
+          subtitle="Описание короче 180 символов или отсутствует. Для SEO и рекламы нужен понятный текст: применение, материал, размеры, доставка и выгода."
           color="amber"
         >
           <Table

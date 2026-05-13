@@ -41,6 +41,7 @@ export default async function ProductsAuditPage() {
     id: p.id,
     slug: p.slug,
     name: p.name,
+    shortDescription: p.shortDescription,
     description: p.description,
     images: p.images,
     active: p.active,

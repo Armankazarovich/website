@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slug";
 
 const CATEGORY_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
@@ -17,6 +18,22 @@ async function checkAdmin() {
   const session = await auth();
   const role = session?.user?.role as string | undefined;
   return session && (role === "ADMIN" || role === "SUPER_ADMIN");
+}
+
+async function makeUniqueCategorySlug(baseValue: string, currentCategoryId: string) {
+  const base = slugify(baseValue) || "category";
+  let candidate = base;
+  let suffix = 1;
+
+  while (true) {
+    const existing = await prisma.category.findUnique({
+      where: { slug: candidate },
+      select: { id: true },
+    });
+    if (!existing || existing.id === currentCategoryId) return candidate;
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
 }
 
 // Detect cycle: check if candidateParent is in children tree of category
@@ -49,17 +66,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  // Validate slug format if provided
-  if (body.slug !== undefined) {
-    const slug = String(body.slug).trim();
-    if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
-      return NextResponse.json(
-        { error: "slug может содержать только латиницу, цифры и дефис" },
-        { status: 400 }
-      );
-    }
-  }
-
   // Validate name length
   if (body.name !== undefined) {
     const name = String(body.name).trim();
@@ -69,6 +75,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         { status: 400 }
       );
     }
+  }
+
+  const currentCategory = await prisma.category.findUnique({
+    where: { id: params.id },
+    select: { id: true, name: true, slug: true },
+  });
+  if (!currentCategory) {
+    return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
   }
 
   // Cycle prevention — if setting parentId, ensure no loop
@@ -82,12 +96,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
+  const nextSlug =
+    body.slug !== undefined
+      ? await makeUniqueCategorySlug(String(body.slug || body.name || currentCategory.name), params.id)
+      : undefined;
+
   try {
     const category = await prisma.category.update({
       where: { id: params.id },
       data: {
         ...(body.name !== undefined && { name: String(body.name).trim() }),
-        ...(body.slug !== undefined && { slug: String(body.slug).trim() }),
+        ...(nextSlug !== undefined && { slug: nextSlug }),
         ...(body.image !== undefined && { image: body.image as string | null }),
         ...(body.sortOrder !== undefined && { sortOrder: Number(body.sortOrder) }),
         ...(body.parentId !== undefined && { parentId: body.parentId ? String(body.parentId) : null }),
@@ -96,7 +115,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         ...(body.showInMenu !== undefined && { showInMenu: !!body.showInMenu }),
         ...(body.showInFooter !== undefined && { showInFooter: !!body.showInFooter }),
       },
-      include: { _count: { select: { products: true } } },
+      include: {
+        parent: { select: { id: true, name: true, slug: true } },
+        children: {
+          select: { id: true, name: true, slug: true, sortOrder: true, showInMenu: true, showInFooter: true },
+          orderBy: { sortOrder: "asc" },
+        },
+        _count: { select: { products: true, children: true } },
+      },
     });
     revalidateTag("store-shell-data");
     revalidatePath("/catalog");

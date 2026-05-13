@@ -34,6 +34,7 @@ export interface HeaderCategory {
   slug: string;
   image?: string | null;
   _count?: { products: number };
+  children?: HeaderCategory[];
 }
 
 // v3 - 2 phones (phone2 removed 20.04.2026 per client request)
@@ -61,6 +62,10 @@ const infoLinks = [
   { label: "О производстве", href: "/about" },
   { label: "Контакты", href: "/contacts" },
 ];
+
+function getHeaderCategoryCount(category: HeaderCategory) {
+  return (category._count?.products ?? 0) + (category.children ?? []).reduce((sum, child) => sum + (child._count?.products ?? 0), 0);
+}
 
 /* ── Монохромные SVG-иконки категорий ─────────────────────── */
 const CAT_ICONS: Record<string, React.ReactNode> = {
@@ -307,7 +312,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-0.5 flex-1 justify-center">
+          <nav className="hidden 2xl:flex items-center gap-0.5 flex-1 justify-center">
             {/* Catalog with mega-dropdown */}
             <div
               ref={catalogRef}
@@ -350,22 +355,34 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-3">Порода дерева</p>
                           <div className="space-y-0.5">
                             {categories.map((cat) => (
-                              <Link
-                                key={cat.id}
-                                href={`/catalog?category=${cat.slug}`}
-                                onClick={() => { setCatalogOpen(false); }}
-                                className="group flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-accent transition-all duration-150"
-                              >
-                                <div className="w-7 h-7 rounded-lg bg-muted border border-border/60 flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all shrink-0">
-                                  {CAT_ICONS[cat.slug] ?? (
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg>
-                                  )}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-[13px] font-medium line-clamp-1 group-hover:text-primary transition-colors">{cat.name}</p>
-                                </div>
-                                <span className="text-[10px] text-muted-foreground/50 shrink-0">{cat._count?.products ?? 0}</span>
-                              </Link>
+                              <div key={cat.id}>
+                                <Link
+                                  href={`/catalog?category=${cat.slug}`}
+                                  onClick={() => { setCatalogOpen(false); }}
+                                  className="group flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-accent transition-all duration-150"
+                                >
+                                  <div className="w-7 h-7 rounded-xl bg-muted border border-border/60 flex items-center justify-center text-muted-foreground group-hover:text-primary group-hover:border-primary/30 group-hover:bg-primary/5 transition-all shrink-0">
+                                    {CAT_ICONS[cat.slug] ?? (
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="2" y="14" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg>
+                                    )}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-[13px] font-medium line-clamp-1 group-hover:text-primary transition-colors">{cat.name}</p>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground/50 shrink-0">{getHeaderCategoryCount(cat)}</span>
+                                </Link>
+                                {(cat.children ?? []).map((child) => (
+                                  <Link
+                                    key={child.id}
+                                    href={`/catalog?category=${child.slug}`}
+                                    onClick={() => { setCatalogOpen(false); }}
+                                    className="group ml-9 flex items-center justify-between gap-2 rounded-xl px-2 py-1.5 text-[12px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                  >
+                                    <span className="line-clamp-1">{child.name}</span>
+                                    <span className="text-[10px] text-muted-foreground/50">{child._count?.products ?? 0}</span>
+                                  </Link>
+                                ))}
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -459,7 +476,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                       {/* ── Нижняя полоса ── */}
                       <div className="border-t border-border/40 px-5 py-2 bg-muted/20 flex items-center justify-between">
                         <span className="text-[11px] text-muted-foreground">
-                          {categories.reduce((s, c) => s + (c._count?.products ?? 0), 0)} товаров в каталоге
+                          {categories.reduce((s, c) => s + getHeaderCategoryCount(c), 0)} товаров в каталоге
                         </span>
                         <Link
                           href="/catalog"
@@ -509,7 +526,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
           </nav>
 
           {/* Tablet nav (md only — between logo and actions) */}
-          <nav className="hidden md:flex lg:hidden items-center gap-0.5 flex-1 justify-center">
+          <nav className="hidden md:flex 2xl:hidden items-center gap-0.5 flex-1 justify-center">
             <Link
               href="/catalog"
               className={cn(
@@ -562,7 +579,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {phones[0] && (
               <a
                 href={`tel:${phones[0].tel}`}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all mr-1"
+                className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all mr-1"
               >
                 <Phone className="w-3.5 h-3.5 text-primary" />
                 {phones[0].display}
@@ -654,7 +671,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {/* Partnership — md only */}
             <button
               onClick={() => setPartnershipOpen(true)}
-              className="hidden md:flex lg:hidden min-h-11 items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
+              className="hidden md:flex 2xl:hidden min-h-11 items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
             >
               <Handshake className="w-3.5 h-3.5" />
               Партнёрство
@@ -801,20 +818,32 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                               Все товары
                             </Link>
                             {categories.map((cat) => (
-                              <Link
-                                key={cat.id}
-                                href={`/catalog?category=${cat.slug}`}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="flex items-center gap-2 px-3 py-2.5 rounded-lg hover:bg-accent text-sm transition-colors"
-                              >
-                                <span className="text-muted-foreground/60 shrink-0">
-                                  {CAT_ICONS[cat.slug] ?? (
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg>
-                                  )}
-                                </span>
-                                <span className="flex-1 line-clamp-1">{cat.name}</span>
-                                {cat._count && <span className="text-[10px] text-muted-foreground/50 shrink-0">{cat._count.products}</span>}
-                              </Link>
+                              <div key={cat.id}>
+                                <Link
+                                  href={`/catalog?category=${cat.slug}`}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-accent text-sm transition-colors"
+                                >
+                                  <span className="text-muted-foreground/60 shrink-0">
+                                    {CAT_ICONS[cat.slug] ?? (
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg>
+                                    )}
+                                  </span>
+                                  <span className="flex-1 line-clamp-1">{cat.name}</span>
+                                  <span className="text-[10px] text-muted-foreground/50 shrink-0">{getHeaderCategoryCount(cat)}</span>
+                                </Link>
+                                {(cat.children ?? []).map((child) => (
+                                  <Link
+                                    key={child.id}
+                                    href={`/catalog?category=${child.slug}`}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="ml-7 flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                  >
+                                    <span className="line-clamp-1">{child.name}</span>
+                                    <span className="text-[10px] text-muted-foreground/50 shrink-0">{child._count?.products ?? 0}</span>
+                                  </Link>
+                                ))}
+                              </div>
                             ))}
                           </div>
                         </motion.div>

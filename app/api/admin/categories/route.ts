@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slug";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 const CATEGORY_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
@@ -20,10 +21,30 @@ async function checkCategoryWrite() {
   return session && role && CATEGORY_WRITE_ROLES.includes(role);
 }
 
+async function makeUniqueCategorySlug(baseValue: string) {
+  const base = slugify(baseValue) || "category";
+  let candidate = base;
+  let suffix = 1;
+
+  while (await prisma.category.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
 export async function GET() {
   if (!(await checkCategoryRead())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const categories = await prisma.category.findMany({
-    include: { _count: { select: { products: true } } },
+    include: {
+      parent: { select: { id: true, name: true, slug: true } },
+      children: {
+        select: { id: true, name: true, slug: true, sortOrder: true, showInMenu: true, showInFooter: true },
+        orderBy: { sortOrder: "asc" },
+      },
+      _count: { select: { products: true, children: true } },
+    },
     orderBy: { sortOrder: "asc" },
   });
   return NextResponse.json(categories);
@@ -32,10 +53,21 @@ export async function GET() {
 export async function POST(req: Request) {
   if (!(await checkCategoryWrite())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { name, slug, image, sortOrder, parentId, seoTitle, seoDescription, showInMenu, showInFooter } = await req.json();
+  const cleanName = typeof name === "string" ? name.trim() : "";
+  if (!cleanName || cleanName.length > 120) {
+    return NextResponse.json({ error: "Название должно быть от 1 до 120 символов" }, { status: 400 });
+  }
+
+  if (parentId) {
+    const parent = await prisma.category.findUnique({ where: { id: String(parentId) }, select: { id: true } });
+    if (!parent) return NextResponse.json({ error: "Родительская категория не найдена" }, { status: 400 });
+  }
+
+  const finalSlug = await makeUniqueCategorySlug(String(slug || cleanName));
   const category = await prisma.category.create({
     data: {
-      name,
-      slug,
+      name: cleanName,
+      slug: finalSlug,
       image: image || null,
       sortOrder: sortOrder ?? 0,
       parentId: parentId || null,
@@ -44,7 +76,14 @@ export async function POST(req: Request) {
       showInMenu: showInMenu !== false,
       showInFooter: showInFooter !== false,
     },
-    include: { _count: { select: { products: true } } },
+    include: {
+      parent: { select: { id: true, name: true, slug: true } },
+      children: {
+        select: { id: true, name: true, slug: true, sortOrder: true, showInMenu: true, showInFooter: true },
+        orderBy: { sortOrder: "asc" },
+      },
+      _count: { select: { products: true, children: true } },
+    },
   });
   revalidateTag("store-shell-data");
   revalidatePath("/catalog");

@@ -12,9 +12,11 @@ import {
   Calculator, Copy, Sparkles, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { slugify } from "@/lib/slug";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ActionToast } from "@/components/admin/action-toast";
 import { RelatedTasksPanel } from "@/components/admin/related-tasks-panel";
+import { AdminModal } from "@/components/admin/admin-modal";
 
 // Lazy-load heavy modals — загружаются только при первом открытии
 const PhotoEditor = dynamic(
@@ -44,6 +46,7 @@ type Product = {
   id: string;
   name: string;
   slug: string;
+  shortDescription: string | null;
   description: string | null;
   categoryId: string;
   images: string[];
@@ -60,7 +63,7 @@ type Product = {
   }>;
 };
 
-type Category = { id: string; name: string; slug: string };
+type Category = { id: string; name: string; slug: string; parentId?: string | null };
 const PRODUCT_PHOTO_MAX_SIZE = 25 * 1024 * 1024;
 
 function getProductId(id: string | string[] | undefined): string | null {
@@ -130,6 +133,11 @@ function naturalCompare(a: string, b: string): number {
   return 0;
 }
 
+function formatCategoryOption(category: Category, categories: Category[]) {
+  const parent = category.parentId ? categories.find((item) => item.id === category.parentId) : null;
+  return parent ? `${parent.name} / ${category.name}` : category.name;
+}
+
 /** Парсит "25×100×6000" (3 размерных числа в мм) и считает piecesPerCube.
  *  Возвращает null если формат не похож на "толщина×ширина×длина" — например для
  *  "6мм · 1/1" (фанера — там нет трёх размерных чисел).
@@ -160,13 +168,15 @@ function calcReadiness(p: {
   slug: string;
   images: string[];
   variants: Array<{ size: string; pricePerCube: string; pricePerPiece: string }>;
+  shortDescription: string;
   description: string;
 }): { percent: number; missing: string[] } {
   const checks: Array<{ ok: boolean; label: string }> = [
     { ok: !!p.name?.trim() && !!p.categoryId && !!p.slug?.trim(), label: "Название, категория, URL" },
     { ok: (p.images?.length ?? 0) > 0, label: "Хотя бы одно фото" },
     { ok: (p.variants?.length ?? 0) > 0 && p.variants.every(v => v.size && (v.pricePerCube || v.pricePerPiece)), label: "Размеры и цены" },
-    { ok: (p.description?.trim().length ?? 0) >= 40, label: "Описание (от 40 символов)" },
+    { ok: (p.shortDescription?.trim().length ?? 0) >= 55 && (p.shortDescription?.trim().length ?? 0) <= 155, label: "Короткое описание (55–155 символов)" },
+    { ok: (p.description?.trim().length ?? 0) >= 180, label: "SEO-описание (от 180 символов)" },
     { ok: p.variants.some(v => !!v.pricePerPiece), label: "Цена за штуку (нужно для Директа)" },
   ];
   const done = checks.filter(c => c.ok).length;
@@ -184,6 +194,10 @@ export default function AdminProductEditPage() {
 
   const [product, setProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryCreateOpen, setCategoryCreateOpen] = useState(false);
+  const [quickCategoryName, setQuickCategoryName] = useState("");
+  const [quickCategoryParentId, setQuickCategoryParentId] = useState("");
+  const [creatingCategory, setCreatingCategory] = useState(false);
   const [allProductIds, setAllProductIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -208,6 +222,8 @@ export default function AdminProductEditPage() {
   // Form state
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [shortDescription, setShortDescription] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [images, setImages] = useState<string[]>([]);
@@ -216,8 +232,26 @@ export default function AdminProductEditPage() {
   const [featured, setFeatured] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
 
+  const handleNameChange = (value: string) => {
+    setName(value);
+    if (!slugTouched || !slug.trim()) {
+      setSlug(slugify(value));
+    }
+  };
+
+  const handleSlugChange = (value: string) => {
+    setSlugTouched(true);
+    setSlug(slugify(value));
+  };
+
+  const loadCategories = useCallback(async () => {
+    const res = await fetch("/api/admin/categories", { cache: "no-store" });
+    const data = await res.json().catch(() => []);
+    if (Array.isArray(data)) setCategories(data);
+  }, []);
+
   useEffect(() => {
-    fetch("/api/admin/categories").then((r) => r.json()).then(setCategories);
+    void loadCategories();
     // Get all product IDs for prev/next navigation
     fetch("/api/admin/products?ids=1").then((r) => r.json()).then((data) => {
       if (Array.isArray(data)) setAllProductIds(data.map((p: any) => p.id));
@@ -234,6 +268,8 @@ export default function AdminProductEditPage() {
           setProduct(p);
           setName(p.name);
           setSlug(p.slug);
+          setSlugTouched(false);
+          setShortDescription(p.shortDescription || "");
           setDescription(p.description || "");
           setCategoryId(p.categoryId);
           setImages(p.images);
@@ -260,7 +296,7 @@ export default function AdminProductEditPage() {
           setLoading(false);
         });
     }
-  }, [productId, isNew, router]);
+  }, [productId, isNew, router, loadCategories]);
 
   // Prev / Next navigation
   const currentIdx = allProductIds.indexOf(productId ?? "");
@@ -370,10 +406,7 @@ export default function AdminProductEditPage() {
       alert("Выберите категорию");
       return;
     }
-    if (!slug?.trim() || !/^[a-z0-9-]+$/.test(slug)) {
-      alert("URL (slug) обязателен и может содержать только латиницу, цифры и дефис");
-      return;
-    }
+    const finalSlug = slugify(slug || name);
     if (!variants || variants.length === 0) {
       alert("Добавьте хотя бы один вариант с ценой");
       return;
@@ -392,7 +425,7 @@ export default function AdminProductEditPage() {
     }
 
     setSaving(true);
-    const payload = { name, slug, description, categoryId, images, saleUnit, active, featured, variants };
+    const payload = { name, slug: finalSlug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants };
     let res: Response;
     try {
       if (isNew) {
@@ -424,7 +457,7 @@ export default function AdminProductEditPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
     if (isNew && data.id) router.replace(`/admin/products/${data.id}`);
-  }, [saving, name, slug, description, categoryId, images, saleUnit, active, featured, variants, isNew, productId, router]);
+  }, [saving, name, slug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants, isNew, productId, router]);
 
   // Ctrl+S save
   useEffect(() => {
@@ -532,14 +565,54 @@ export default function AdminProductEditPage() {
         setImproveError(data.error || `Ошибка ${res.status}`);
         return;
       }
+      if (data.shortDescription) setShortDescription(data.shortDescription);
       if (data.description) {
         setDescription(data.description);
-        setToast("Описание обновлено ARAY");
+        setToast("ARAY обновил короткое и полное SEO-описание");
       }
     } catch {
       setImproveError("Сервер недоступен, попробуй ещё раз");
     } finally {
       setImprovingDesc(false);
+    }
+  };
+
+  const createQuickCategory = async () => {
+    const cleanName = quickCategoryName.trim();
+    if (!cleanName) {
+      setToast("Введите название категории");
+      return;
+    }
+
+    setCreatingCategory(true);
+    try {
+      const res = await fetch("/api/admin/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: cleanName,
+          slug: slugify(cleanName),
+          parentId: quickCategoryParentId || null,
+          showInMenu: true,
+          showInFooter: true,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setToast(data?.error || `Ошибка ${res.status}: категорию не удалось создать`);
+        return;
+      }
+
+      await loadCategories();
+      if (data?.id) setCategoryId(data.id);
+      setQuickCategoryName("");
+      setQuickCategoryParentId("");
+      setCategoryCreateOpen(false);
+      setToast("Категория создана и выбрана для товара");
+    } catch {
+      setToast("Сервер недоступен, категорию не удалось создать");
+    } finally {
+      setCreatingCategory(false);
     }
   };
 
@@ -554,6 +627,7 @@ export default function AdminProductEditPage() {
       const payload = {
         name: `${name} (копия)`,
         slug: newSlug,
+        shortDescription,
         description,
         categoryId,
         images: [...images],
@@ -589,7 +663,7 @@ export default function AdminProductEditPage() {
   };
 
   // Прогресс готовности товара
-  const readiness = calcReadiness({ name, categoryId, slug, images, variants, description });
+  const readiness = calcReadiness({ name, categoryId, slug, images, variants, shortDescription, description });
   const saveStatus = saved ? (
     <>
       <Check className="mr-1 inline h-3.5 w-3.5 text-primary" />
@@ -942,7 +1016,7 @@ export default function AdminProductEditPage() {
               <label className="block text-sm font-medium mb-1.5">Название товара *</label>
               <input
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Доска строганная сосна 1 сорт"
                 className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
@@ -950,7 +1024,17 @@ export default function AdminProductEditPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium mb-1.5">Категория *</label>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-sm font-medium">Категория *</label>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryCreateOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-xl border border-primary/25 bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/15"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Новая
+                  </button>
+                </div>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
@@ -958,7 +1042,7 @@ export default function AdminProductEditPage() {
                 >
                   <option value="">— Выберите —</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>{formatCategoryOption(c, categories)}</option>
                   ))}
                 </select>
               </div>
@@ -966,37 +1050,62 @@ export default function AdminProductEditPage() {
                 <label className="block text-sm font-medium mb-1.5">Slug (URL)</label>
                 <input
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
+                  onChange={(e) => handleSlugChange(e.target.value)}
                   placeholder="doska-stroganaya-sosna"
                   className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-mono"
                 />
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-sm font-medium">Описание</label>
-                <button
-                  type="button"
-                  onClick={improveDescription}
-                  disabled={improvingDesc || isNew}
-                  title={isNew ? "Сначала сохраните товар" : "ARAY перепишет описание под SEO"}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {improvingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  {improvingDesc ? "ARAY думает…" : "Улучшить"}
-                </button>
+            <div className="space-y-3">
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-3">
+                  <label className="block text-sm font-medium">Короткое описание для карточек</label>
+                  <span className="text-[11px] text-muted-foreground">{shortDescription.trim().length}/155</span>
+                </div>
+                <textarea
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  rows={2}
+                  placeholder="Одна короткая продающая фраза: что это, для чего подходит и ключевая польза."
+                  className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  Эталон: 55–155 символов. Показывается в карточках каталога и под названием товара, поэтому без списков и длинных SEO-фраз.
+                </p>
               </div>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="Характеристики, особенности, применение..."
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-              />
-              {improveError && (
-                <p className="mt-1.5 text-[11px] text-destructive">{improveError}</p>
-              )}
+
+              <div>
+                <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <label className="block text-sm font-medium">Полное SEO-описание товара</label>
+                  <div className="flex items-center gap-2">
+                    <span className="hidden text-[11px] text-muted-foreground sm:inline">{description.trim().length}/450</span>
+                    <button
+                      type="button"
+                      onClick={improveDescription}
+                      disabled={improvingDesc || isNew}
+                      title={isNew ? "Сначала сохраните товар" : "ARAY заполнит короткое и полное описание по эталону"}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {improvingDesc ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {improvingDesc ? "ARAY думает…" : "ARAY SEO"}
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={5}
+                  placeholder="Полное описание: применение, материал/порода, сорт, размеры, доставка, кому подойдет. Пишите естественно, без набивки ключей."
+                  className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                />
+                <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
+                  Эталон: 180–450 символов пользы для покупателя. Этот текст идет в карточку товара, SEO и описание характеристик.
+                </p>
+                {improveError && (
+                  <p className="mt-1.5 text-[11px] text-destructive">{improveError}</p>
+                )}
+              </div>
             </div>
 
             <div>
@@ -1280,6 +1389,54 @@ export default function AdminProductEditPage() {
 
       {/* Toast (фидбек админских действий: сортировка, авто-расчёт и т.п.) */}
       <ActionToast message={toast} onDismiss={() => setToast(null)} />
+
+      <AdminModal
+        open={categoryCreateOpen}
+        onClose={() => setCategoryCreateOpen(false)}
+        title="Новая категория"
+        subtitle="Создайте категорию и сразу выберите её для товара"
+        size="sm"
+        bodyClassName="space-y-4 px-5 py-4"
+        footer={(
+          <>
+            <Button variant="ghost" onClick={() => setCategoryCreateOpen(false)} disabled={creatingCategory}>
+              Отмена
+            </Button>
+            <Button onClick={createQuickCategory} disabled={creatingCategory || !quickCategoryName.trim()}>
+              {creatingCategory ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+              Создать
+            </Button>
+          </>
+        )}
+      >
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Название</span>
+          <input
+            value={quickCategoryName}
+            onChange={(e) => setQuickCategoryName(e.target.value)}
+            placeholder="Например: Кедр"
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          />
+          <span className="mt-1 block text-[11px] text-muted-foreground">
+            URL будет создан автоматически: {slugify(quickCategoryName) || "category"}
+          </span>
+        </label>
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium">Родительская категория</span>
+          <select
+            value={quickCategoryParentId}
+            onChange={(e) => setQuickCategoryParentId(e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+          >
+            <option value="">Нет — основная категория</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {formatCategoryOption(category, categories)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </AdminModal>
 
       {/* Modals */}
       {photoEditorOpen && images[0] && (

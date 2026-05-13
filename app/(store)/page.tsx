@@ -130,9 +130,12 @@ async function getData() {
       take: 8,
     }),
     prisma.promotion.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+      },
       orderBy: { createdAt: "asc" },
-      take: 3,
+      take: 2,
     }),
     prisma.review.findMany({
       where: { approved: true },
@@ -266,7 +269,7 @@ export default async function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       {/* ===== HERO ===== */}
-      <section className="relative min-h-[92vh] lg:min-h-screen flex items-center overflow-hidden bg-brand-dark">
+      <section className="relative min-h-[88vh] lg:min-h-[calc(100vh-8rem)] flex items-center overflow-hidden bg-brand-dark">
 
         {/* Background image — slow Ken Burns zoom */}
         <div className="absolute inset-0 overflow-hidden">
@@ -280,13 +283,25 @@ export default async function HomePage() {
           />
         </div>
 
-        {/* Layered overlays — ~65% darkening для читабельности */}
-        <div className="absolute inset-0 bg-black/65" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+        {/* Layered overlays: keep text readable while preserving the real production image. */}
+        <div className="absolute inset-0" style={{ background: "hsl(var(--atmo-depth) / 0.30)" }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(90deg, hsl(var(--atmo-depth) / 0.82) 0%, hsl(var(--atmo-depth) / 0.62) 38%, hsl(var(--atmo-depth) / 0.22) 72%, hsl(var(--atmo-depth) / 0.10) 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(0deg, hsl(var(--atmo-depth) / 0.62) 0%, hsl(var(--atmo-depth) / 0.12) 42%, hsl(var(--atmo-depth) / 0.18) 100%)",
+          }}
+        />
 
         {/* Content */}
-        <div className="container relative z-10 pt-28 pb-20 lg:pt-32 lg:pb-24">
+        <div className="container relative z-10 pt-24 pb-16 lg:pt-24 lg:pb-14">
           <div className="max-w-2xl xl:max-w-[700px]">
 
             {/* Badge — glassmorphism */}
@@ -367,7 +382,7 @@ export default async function HomePage() {
             </div>
 
             {/* Stats row */}
-            <div className="flex flex-wrap gap-x-8 gap-y-4 mt-10">
+            <div className="grid grid-cols-4 gap-3 pr-16 mt-8 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-4 sm:pr-0 sm:mt-10">
               {[
                 { value: "2000 м²", label: "Площадь склада" },
                 { value: "1–3 дня", label: "Срок доставки" },
@@ -375,8 +390,8 @@ export default async function HomePage() {
                 { value: "500+", label: "Клиентов" },
               ].map((stat) => (
                 <div key={stat.label}>
-                  <p className="font-display font-bold text-3xl text-brand-orange leading-none">{stat.value}</p>
-                  <p className="text-xs text-white/50 mt-1.5 tracking-wide uppercase">{stat.label}</p>
+                  <p className="font-display font-bold text-2xl text-brand-orange leading-none sm:text-3xl">{stat.value}</p>
+                  <p className="text-[10px] text-primary-foreground/60 mt-1.5 uppercase sm:text-xs sm:tracking-wide">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -563,6 +578,7 @@ export default async function HomePage() {
                     slug={product.slug}
                     name={product.name}
                     category={product.category.name}
+                    shortDescription={product.shortDescription}
                     description={product.description}
                     images={product.images}
                     saleUnit={product.saleUnit}

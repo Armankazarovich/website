@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, RotateCcw, Maximize2, Minimize2, ExternalLink } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, RotateCcw, Maximize2, Minimize2, ExternalLink, MousePointer2 } from "lucide-react";
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { isArayExternalTabOnly } from "@/lib/aray-navigation";
 
@@ -87,7 +87,7 @@ function ArayPointer({ x, y, hint }: { x: number; y: number; hint?: string }) {
             boxShadow: "0 0 20px rgba(232,112,10,0.7)",
           }}
         >
-          👆
+          <MousePointer2 className="h-4 w-4 text-primary-foreground" />
         </div>
       </motion.div>
 
@@ -127,20 +127,6 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
     window.setTimeout(onClose, 0);
   }, [onClose, tabOnlyMessage, url]);
 
-  // Обрабатываем входящие действия от Арай
-  useEffect(() => {
-    if (!pendingAction) return;
-    if (pendingAction.type === "navigate" && pendingAction.url) {
-      navigateTo(pendingAction.url);
-    }
-    if ((pendingAction.type === "spotlight" || pendingAction.type === "highlight") &&
-      pendingAction.spotX !== undefined && pendingAction.spotY !== undefined) {
-      setPointer({ x: pendingAction.spotX, y: pendingAction.spotY, hint: pendingAction.hint });
-      // Убираем указатель через 5 сек
-      setTimeout(() => setPointer(null), 5000);
-    }
-  }, [pendingAction]);
-
   const navigateTo = useCallback((newUrl: string) => {
     if (isArayExternalTabOnly(newUrl)) {
       window.open(newUrl, "_blank", "noopener,noreferrer");
@@ -155,6 +141,20 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
     setHistIdx(newHistory.length - 1);
     if (iframeRef.current) iframeRef.current.src = newUrl;
   }, [history, histIdx]);
+
+  // Обрабатываем входящие действия от Арай
+  useEffect(() => {
+    if (!pendingAction) return;
+    if (pendingAction.type === "navigate" && pendingAction.url) {
+      navigateTo(pendingAction.url);
+    }
+    if ((pendingAction.type === "spotlight" || pendingAction.type === "highlight") &&
+      pendingAction.spotX !== undefined && pendingAction.spotY !== undefined) {
+      setPointer({ x: pendingAction.spotX, y: pendingAction.spotY, hint: pendingAction.hint });
+      // Убираем указатель через 5 сек
+      setTimeout(() => setPointer(null), 5000);
+    }
+  }, [navigateTo, pendingAction]);
 
   const goBack = () => {
     if (histIdx <= 0) return;

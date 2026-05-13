@@ -4,9 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ShoppingCart, ChevronRight, Minus, Plus, Boxes, Package, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCartStore, type UnitType } from "@/store/cart";
-import { formatPrice } from "@/lib/utils";
+import { cn, formatPrice } from "@/lib/utils";
 import { WishlistButton } from "@/components/store/wishlist-button";
 import { flyToCart } from "@/lib/cart-fly";
 import { useToast } from "@/components/ui/use-toast";
@@ -49,6 +49,7 @@ interface ProductCardProps {
   slug: string;
   name: string;
   category: string;
+  shortDescription?: string | null;
   description?: string | null;
   images: string[];
   saleUnit: "CUBE" | "PIECE" | "BOTH";
@@ -67,7 +68,7 @@ function shortCardDescription(description?: string | null) {
 }
 
 export function ProductCard({
-  id, slug, name, category, description, images, saleUnit, variants, featured,
+  id, slug, name, category, shortDescription, description, images, saleUnit, variants, featured,
 }: ProductCardProps) {
   const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
@@ -76,7 +77,7 @@ export function ProductCard({
 
   const activeVariants = variants.filter((v) => v.inStock);
   const hasStock = activeVariants.length > 0;
-  const teaser = shortCardDescription(description);
+  const teaser = shortCardDescription(shortDescription || description);
 
   const defaultVariant = activeVariants[0] || variants[0];
 
@@ -89,20 +90,28 @@ export function ProductCard({
   // Expand all sizes on "+N" click
   const [showAllSizes, setShowAllSizes] = useState(false);
 
-  // Unit type — BOTH: null (покажет пикер), CUBE/PIECE: сразу выбран → 1 тап
-  const defaultUnit: UnitType | null = saleUnit === "BOTH" ? null : saleUnit === "PIECE" ? "PIECE" : "CUBE";
-  const [selectedUnit, setSelectedUnit] = useState<UnitType | null>(defaultUnit);
+  // Unit type: catalog cards must add to cart in one tap.
+  const defaultUnit: UnitType =
+    saleUnit === "PIECE" ? "PIECE" : selectedVariant?.pricePerCube ? "CUBE" : "PIECE";
+  const [selectedUnit, setSelectedUnit] = useState<UnitType>(defaultUnit);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
-
-  const effectiveUnit: UnitType = selectedUnit ?? "CUBE";
+  const effectiveUnit: UnitType =
+    selectedUnit === "CUBE" && !selectedVariant?.pricePerCube && selectedVariant?.pricePerPiece
+      ? "PIECE"
+      : selectedUnit === "PIECE" && !selectedVariant?.pricePerPiece && selectedVariant?.pricePerCube
+      ? "CUBE"
+      : selectedUnit;
   const unit = effectiveUnit === "PIECE" ? "шт" : "м³";
 
-  const selectedPrice = selectedVariant
-    ? Number(effectiveUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
+  const displayUnit: UnitType = effectiveUnit;
+  const displayUnitLabel = displayUnit === "PIECE" ? "шт" : "м³";
+  const displayPrice = selectedVariant
+    ? Number(displayUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
     : null;
+  const canSwitchUnit = !!selectedVariant?.pricePerCube && !!selectedVariant?.pricePerPiece;
 
   // Live quantity from cart store
-  const cartItemId = selectedVariant ? `${selectedVariant.id}-${selectedUnit}` : null;
+  const cartItemId = selectedVariant ? `${selectedVariant.id}-${effectiveUnit}` : null;
   const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
 
   // Core add logic — reused by direct add and unit picker
@@ -144,7 +153,7 @@ export function ProductCard({
               altText="Включить уведомления"
               onClick={async () => {
                 const ok = await enablePushFromToast();
-                if (ok) toast({ title: "✓ Уведомления включены!", duration: 3000 });
+                if (ok) toast({ title: "Уведомления включены", duration: 3000 });
               }}
             >
               Включить
@@ -158,29 +167,24 @@ export function ProductCard({
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!selectedVariant || !hasStock) return;
-    // BOTH products: show unit picker so user chooses куб/шт
-    if (saleUnit === "BOTH" && selectedUnit === null) {
-      setShowUnitPicker(true);
+    if (canSwitchUnit) {
+      setShowUnitPicker((open) => !open);
       return;
     }
     doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
   };
 
-  const handleUnitPick = (unit: UnitType, e: React.MouseEvent) => {
+  const handleUnitPick = (unit: UnitType, e: React.MouseEvent, add = false) => {
     e.preventDefault();
+    e.stopPropagation();
     setSelectedUnit(unit);
     setShowUnitPicker(false);
-    doAddToCart(unit, e.currentTarget as HTMLElement);
+    if (add) doAddToCart(unit, e.currentTarget as HTMLElement);
   };
 
   const handleIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
     if (cartQty === 0) {
-      // Same logic as handleAdd for first item
-      if (saleUnit === "BOTH" && selectedUnit === null) {
-        setShowUnitPicker(true);
-        return;
-      }
       doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
     } else if (cartItemId) {
       updateQuantity(cartItemId, parseFloat((cartQty + 1).toFixed(1)));
@@ -195,7 +199,7 @@ export function ProductCard({
 
   /* Responsive: mobile → 2 pills (compact), desktop → 3 pills */
   const MOBILE_LIMIT = 2;
-  const DESKTOP_LIMIT = 3;
+  const DESKTOP_LIMIT = 2;
   const shownSizes = showAllSizes ? variants : variants.slice(0, DESKTOP_LIMIT);
   const mobileExtra = showAllSizes ? 0 : Math.max(0, variants.length - MOBILE_LIMIT);
   const desktopExtra = showAllSizes ? 0 : Math.max(0, variants.length - DESKTOP_LIMIT);
@@ -207,12 +211,12 @@ export function ProductCard({
   const isMagazine = cardStyle === "magazine";
 
   const wrapperClass = isMagazine
-    ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 hover:-translate-y-0.5 transition-all duration-300 flex flex-col min-h-[280px]"
+    ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 transition-shadow duration-200 flex flex-col min-h-[280px]"
     : isMinimal
-    ? "group relative overflow-hidden hover:-translate-y-0.5 transition-all duration-300 flex flex-col"
+    ? "group relative overflow-hidden transition-colors duration-200 flex flex-col"
     : isVivid
-    ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-primary/25 hover:-translate-y-0.5 transition-all duration-300 flex flex-col vivid-card"
-    : "store-product-card group relative bg-card rounded-2xl border border-border overflow-hidden hover:-translate-y-0.5 transition-all duration-300 flex flex-col";
+    ? "group relative rounded-2xl overflow-hidden hover:ring-1 hover:ring-primary/15 transition-colors duration-200 flex flex-col vivid-card"
+    : "store-product-card group relative bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/25 transition-colors duration-200 flex flex-col";
 
   // ── Magazine style — completely different layout ──
   if (isMagazine) {
@@ -220,10 +224,10 @@ export function ProductCard({
       <div className={wrapperClass}>
         <AdminEditButton href={`/admin/products/${id}`} mode="overlay" label="Изменить товар" />
         {/* Full-bleed image */}
-        <Link href={`/product/${slug}`} className="absolute inset-0">
+        <Link prefetch href={`/product/${slug}`} className="absolute inset-0">
           {images[0] && !imgError ? (
             <Image src={images[0]} alt={name} fill loading="lazy"
-              className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
+              className="object-cover transition-opacity duration-200 group-hover:opacity-95"
               sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px" unoptimized
               onError={() => setImgError(true)} />
           ) : (
@@ -238,8 +242,8 @@ export function ProductCard({
             {featured && (
               <span className="inline-flex items-center gap-1 h-6 bg-brand-orange text-white text-[10px] font-bold px-2 rounded-lg shadow-md uppercase tracking-wide">Хит</span>
             )}
-            <span className={`inline-flex items-center gap-1 h-6 text-[10px] font-semibold px-2 rounded-lg shadow-md backdrop-blur-sm ${hasStock ? "bg-emerald-500/90 text-white" : "bg-black/50 text-white/70"}`}>
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "bg-white animate-pulse" : "bg-white/40"}`} />
+            <span className={`store-stock-badge pointer-events-none inline-flex items-center gap-1 h-6 text-[10px] font-semibold px-2 rounded-xl ${hasStock ? "is-in-stock" : "is-out-of-stock"}`}>
+              <span className={`store-stock-dot w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "" : "opacity-50"}`} />
               {hasStock ? "В наличии" : "Нет"}
             </span>
           </div>
@@ -249,7 +253,7 @@ export function ProductCard({
         {/* Bottom overlay content */}
         <div className="absolute bottom-0 left-0 right-0 z-10 p-3">
           <p className="text-[10px] text-white/50 uppercase tracking-wider mb-0.5">{category}</p>
-          <Link href={`/product/${slug}`}>
+          <Link prefetch href={`/product/${slug}`}>
             <h3 className="font-display font-semibold text-sm text-white leading-snug line-clamp-2 mb-2 hover:text-white/80 transition-colors">
               {name}
             </h3>
@@ -262,17 +266,27 @@ export function ProductCard({
 
           {/* Sizes */}
           {variants.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-2">
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {variants.slice(0, 3).map((v) => (
-                <button key={v.id} onClick={(e) => { e.preventDefault(); if (v.inStock) setSelectedId(v.id); }}
+                <button
+                  key={v.id}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (v.inStock) {
+                      setSelectedId(v.id);
+                      setSelectedUnit(v.pricePerCube ? "CUBE" : "PIECE");
+                      setShowUnitPicker(false);
+                    }
+                  }}
                   disabled={!v.inStock}
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md border transition-all ${
-                    selectedVariant?.id === v.id && v.inStock
-                      ? "border-white bg-white text-black"
-                      : v.inStock
-                      ? "border-white/40 bg-white/10 text-white/80 hover:border-white/70"
-                      : "border-white/20 bg-transparent text-white/30 line-through cursor-not-allowed"
-                  }`}>{v.size}</button>
+                  className={cn(
+                    "store-size-chip is-overlay",
+                    selectedVariant?.id === v.id && v.inStock && "is-selected",
+                    !v.inStock && "is-disabled"
+                  )}
+                >
+                  {v.size}
+                </button>
               ))}
             </div>
           )}
@@ -298,9 +312,12 @@ export function ProductCard({
                   !hasStock ? "bg-white/10 text-white/40 cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90 shadow-lg"
                 }`}>
                 <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-                <span className="flex items-baseline gap-0.5">
-                  {selectedPrice && selectedUnit ? (
-                    <><span className="font-display font-bold">{formatPrice(selectedPrice)}</span><span className="text-[10px] opacity-80">/ {unit}</span></>
+                <span className="store-card-price-wrap">
+                  {displayPrice ? (
+                    <>
+                      <span className="store-card-price">{formatPrice(displayPrice)}</span>
+                      <span className="store-card-price-unit">/ {displayUnitLabel}</span>
+                    </>
                   ) : <span>В корзину</span>}
                 </span>
                 <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
@@ -321,14 +338,14 @@ export function ProductCard({
       )}
 
       {/* ── Изображение ── */}
-      <Link href={`/product/${slug}`} className="store-product-card-media block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}>
+      <Link prefetch href={`/product/${slug}`} className="store-product-card-media block relative overflow-hidden" style={{ aspectRatio: "var(--photo-aspect, 3/4)" }}>
         {images[0] && !imgError ? (
           <Image
             src={images[0]}
             alt={name}
             fill
             loading="lazy"
-            className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
+            className="object-cover transition-opacity duration-200 group-hover:opacity-95"
             sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px"
             unoptimized
             onError={() => setImgError(true)}
@@ -349,9 +366,9 @@ export function ProductCard({
         {isShowcase && (
           <>
             <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 to-transparent pointer-events-none z-[1]" />
-            {selectedPrice && selectedUnit && (
+            {displayPrice && (
               <div className="absolute top-2 right-10 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-md">
-                {formatPrice(selectedPrice)}/{unit}
+                {formatPrice(displayPrice)}/{displayUnitLabel}
               </div>
             )}
           </>
@@ -369,12 +386,8 @@ export function ProductCard({
                 Хит
               </span>
             )}
-            <span className={`inline-flex items-center gap-1 h-7 text-[10px] font-semibold px-2.5 rounded-xl shadow-md backdrop-blur-sm ${
-              hasStock
-                ? "bg-emerald-500/90 text-white"
-                : "bg-black/50 text-white/70"
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "bg-white animate-pulse" : "bg-white/40"}`} />
+            <span className={`store-stock-badge pointer-events-none inline-flex items-center gap-1 h-7 text-[10px] font-semibold px-2.5 rounded-xl ${hasStock ? "is-in-stock" : "is-out-of-stock"}`}>
+              <span className={`store-stock-dot w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "" : "opacity-50"}`} />
               {hasStock ? "В наличии" : "Нет"}
             </span>
           </div>
@@ -386,16 +399,10 @@ export function ProductCard({
           />
         </div>
 
-        {/* Hover overlay с кнопкой "Подробнее" */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
-          <span className="bg-card/95 text-foreground text-xs font-semibold px-4 py-2 rounded-xl shadow-lg translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-            Подробнее →
-          </span>
-        </div>
       </Link>
 
       {/* ── Контент ── */}
-      <div className={`p-3 sm:p-4 flex-1 flex flex-col ${isVivid ? "bg-card/95 backdrop-blur-sm" : ""}`}>
+      <div className={`flex flex-1 flex-col p-4 ${isVivid ? "bg-card/95" : ""}`}>
         {/* Категория */}
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <p className="truncate text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{category}</p>
@@ -407,37 +414,48 @@ export function ProductCard({
         </div>
 
         {/* Название */}
-        <Link href={`/product/${slug}`}>
-          <h3 className={`store-product-card-title min-h-[2.7rem] font-display leading-[1.22] transition-colors line-clamp-2 mb-3 ${isMinimal ? "text-base sm:text-[17px]" : "text-base sm:text-[17px]"}`}>
+        <Link prefetch href={`/product/${slug}`}>
+          <h3 className="store-product-card-title mb-3 min-h-[2.35rem] font-display text-[15px] leading-[1.16] transition-colors line-clamp-2 sm:min-h-[2.6rem] sm:text-[18px]">
             {name}
           </h3>
         </Link>
 
-        {teaser && (
-          <p className="mb-3 hidden text-xs leading-relaxed text-muted-foreground sm:line-clamp-2">
-            {teaser}
-          </p>
-        )}
+        <p
+          aria-hidden={!teaser}
+          className={cn(
+            "mb-3 hidden min-h-[2.65rem] text-xs leading-relaxed text-muted-foreground sm:line-clamp-2",
+            !teaser && "opacity-0"
+          )}
+        >
+          {teaser || "Описание товара"}
+        </p>
 
         {/* Размеры-пилюли — кликабельные */}
         {variants.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
+          <div
+            className={cn(
+              "mb-3 flex flex-wrap content-start gap-1.5",
+              !showAllSizes && "min-h-[55px] max-h-[55px] overflow-hidden"
+            )}
+          >
             {shownSizes.map((v, idx) => (
               <button
                 key={v.id}
-                onClick={(e) => { e.preventDefault(); if (v.inStock) { setSelectedId(v.id); setShowUnitPicker(false); } }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (v.inStock) {
+                    setSelectedId(v.id);
+                    setSelectedUnit(v.pricePerCube ? "CUBE" : "PIECE");
+                    setShowUnitPicker(false);
+                  }
+                }}
                 disabled={!v.inStock}
-                className={`font-medium border transition-all leading-none whitespace-nowrap ${
-                  idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex"
-                } items-center justify-center
-                  text-[10px] px-2 py-0.5 rounded-lg
-                  sm:text-[10px] sm:px-2 sm:py-0.5 sm:rounded-lg ${
-                  selectedVariant?.id === v.id && v.inStock
-                    ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                    : v.inStock
-                    ? "border-border/50 bg-muted/60 text-foreground/65 hover:border-primary/50 hover:text-primary"
-                    : "border-border/25 bg-transparent text-muted-foreground/30 line-through cursor-not-allowed"
-                }`}
+                className={cn(
+                  "store-size-chip",
+                  idx === DESKTOP_LIMIT - 1 ? "hidden sm:inline-flex" : "inline-flex",
+                  selectedVariant?.id === v.id && v.inStock && "is-selected",
+                  !v.inStock && "is-disabled"
+                )}
               >
                 {v.size}
               </button>
@@ -446,7 +464,7 @@ export function ProductCard({
             {mobileExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="sm:hidden text-[10px] font-semibold px-2 py-0.5 rounded-lg border border-primary/40 bg-primary/8 text-primary transition-colors active:scale-95 inline-flex items-center justify-center whitespace-nowrap"
+                className="store-size-chip is-extra sm:hidden"
               >
                 +{mobileExtra}
               </button>
@@ -455,7 +473,7 @@ export function ProductCard({
             {desktopExtra > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="hidden sm:inline-flex text-[10px] font-semibold px-1.5 py-0.5 rounded-md border border-primary/40 bg-primary/8 text-primary hover:bg-primary/15 hover:border-primary/60 transition-colors active:scale-95 items-center justify-center"
+                className="store-size-chip is-extra hidden sm:inline-flex"
               >
                 +{desktopExtra}
               </button>
@@ -492,18 +510,18 @@ export function ProductCard({
             <button
               onClick={handleAdd}
               disabled={!hasStock}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-95 ${
+              className={`store-card-cta w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-95 ${
                 !hasStock
                   ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-primary/30 hover:shadow-md"
+                  : "bg-primary text-primary-foreground hover:bg-primary/92"
               }`}
             >
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
-              <span className="flex items-baseline gap-0.5 whitespace-nowrap">
-                {selectedPrice && selectedUnit ? (
+              <span className="store-card-price-wrap">
+                {displayPrice ? (
                   <>
-                    <span className="font-display font-bold text-sm">{formatPrice(selectedPrice)}</span>
-                    <span className="text-[10px] opacity-80">/ {unit}</span>
+                    <span className="store-card-price">{formatPrice(displayPrice)}</span>
+                    <span className="store-card-price-unit">/ {displayUnitLabel}</span>
                   </>
                 ) : (
                   <span className="text-sm">В корзину</span>
@@ -513,71 +531,58 @@ export function ProductCard({
             </button>
           )}
 
-          {/* ── Пикер единицы (для товаров с saleUnit=BOTH) ── */}
           <AnimatePresence>
-            {showUnitPicker && (
+            {showUnitPicker && canSwitchUnit && selectedVariant && (
               <>
-                {/* Backdrop — закрывает пикер при клике мимо */}
                 <div
                   className="fixed inset-0 z-10"
-                  onClick={(e) => { e.preventDefault(); setShowUnitPicker(false); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowUnitPicker(false);
+                  }}
                 />
-
                 <motion.div
                   initial={{ opacity: 0, y: 6, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                  transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="absolute bottom-full left-0 right-0 mb-2 z-20 bg-card border border-border rounded-xl shadow-xl p-2.5"
+                  transition={{ duration: 0.16, ease: "easeOut" }}
+                  className="store-unit-picker absolute bottom-full left-0 right-0 z-20 mb-2 rounded-xl border border-border bg-card p-2.5 shadow-xl"
                 >
-                  {/* Заголовок */}
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                      Как считать?
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Купить как
                     </p>
                     <button
-                      onClick={(e) => { e.preventDefault(); setShowUnitPicker(false); }}
-                      className="w-4 h-4 flex items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors"
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowUnitPicker(false);
+                      }}
+                      className="flex h-5 w-5 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </div>
-
-                  {/* Две опции */}
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {/* Кубометры */}
+                  <div className="store-unit-picker-grid grid grid-cols-2 gap-1.5">
                     <button
-                      onClick={(e) => handleUnitPick("CUBE", e)}
-                      className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border border-border bg-muted/50 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all active:scale-95"
+                      type="button"
+                      onClick={(e) => handleUnitPick("CUBE", e, true)}
+                      className="store-unit-option"
                     >
-                      <Boxes className="w-5 h-5 text-primary/70" />
-                      <span className="font-bold text-sm leading-none">м³</span>
-                      <span className="text-[9px] text-muted-foreground leading-none">кубометр</span>
-                      {selectedVariant?.pricePerCube ? (
-                        <span className="text-[10px] font-semibold text-primary leading-none mt-0.5">
-                          {formatPrice(Number(selectedVariant.pricePerCube))}
-                        </span>
-                      ) : null}
+                      <Boxes className="h-4 w-4" />
+                      <span>м³</span>
+                      <strong>{formatPrice(Number(selectedVariant.pricePerCube))}</strong>
                     </button>
-
-                    {/* Штуки */}
                     <button
-                      onClick={(e) => handleUnitPick("PIECE", e)}
-                      className="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border border-border bg-muted/50 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all active:scale-95"
+                      type="button"
+                      onClick={(e) => handleUnitPick("PIECE", e, true)}
+                      className="store-unit-option"
                     >
-                      <Package className="w-5 h-5 text-primary/70" />
-                      <span className="font-bold text-sm leading-none">шт</span>
-                      <span className="text-[9px] text-muted-foreground leading-none">штука</span>
-                      {selectedVariant?.pricePerPiece ? (
-                        <span className="text-[10px] font-semibold text-primary leading-none mt-0.5">
-                          {formatPrice(Number(selectedVariant.pricePerPiece))}
-                        </span>
-                      ) : null}
+                      <Package className="h-4 w-4" />
+                      <span>шт</span>
+                      <strong>{formatPrice(Number(selectedVariant.pricePerPiece))}</strong>
                     </button>
                   </div>
-
-                  {/* Треугольник-указатель вниз */}
-                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-card border-r border-b border-border rotate-45" />
                 </motion.div>
               </>
             )}

@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import React from "react";
+import React, { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
@@ -31,16 +31,29 @@ function productIntro(description?: string | null) {
   return `${text.slice(0, 240).trim()}...`;
 }
 
+function compactMetaDescription(...parts: Array<string | null | undefined>) {
+  const text = parts.filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  if (text.length <= 170) return text;
+  return `${text.slice(0, 167).trim()}...`;
+}
+
 function absoluteSiteUrl(pathOrUrl: string) {
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
   return `https://pilo-rus.ru${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
 }
 
+const getProductBySlug = cache(async (slug: string) =>
+  prisma.product.findFirst({
+    where: { slug, ...getPublicProductsFilter() },
+    include: {
+      category: true,
+      variants: { where: getPublicVariantsFilter(), orderBy: { size: "asc" } },
+    },
+  })
+);
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await prisma.product.findFirst({
-    where: { slug: params.slug, ...getPublicProductsFilter() },
-    include: { category: true, variants: { where: getPublicVariantsFilter() } },
-  });
+  const product = await getProductBySlug(params.slug);
 
   if (!product) return { title: "Товар не найден" };
 
@@ -53,14 +66,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : cbs.length > 0
       ? `от ${Math.min(...cbs).toLocaleString('ru-RU')} ₽/м³`
       : '';
+  const intro = productIntro(product.shortDescription || product.description);
+  const seoDescription = compactMetaDescription(
+    intro || `${product.name} от производителя в Химках.`,
+    minPrice ? `${minPrice}.` : "",
+    "Доставка по Москве и МО за 1-3 дня. ГОСТ, помощь с расчетом."
+  );
 
   return {
     title: `${product.name} ${minPrice} — купить в Химках с доставкой`,
-    description: `${product.name} от производителя ООО ПИТИ в Химках. ${minPrice}. Доставка по Москве и МО за 1-3 дня. Гарантия качества, ГОСТ. Тел: ${DEFAULT_SETTINGS.phone}`,
+    description: seoDescription,
     keywords: `${product.name}, купить ${product.name}, ${product.name} цена, ${product.name} Москва, ${product.name} Химки, пиломатериалы от производителя`,
     openGraph: {
       title: `${product.name} — ПилоРус`,
-      description: product.description || `Купить ${product.name} от производителя`,
+      description: seoDescription,
+      url: `https://pilo-rus.ru/product/${params.slug}`,
       images: product.images[0] ? [{ url: product.images[0], width: 800, height: 600, alt: product.name }] : [],
       type: 'website',
       locale: 'ru_RU',
@@ -72,24 +92,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  // Check if admin is viewing — to show edit button
-  const session = await auth();
-  const role = (session?.user as any)?.role;
-  const isAdmin = session && ["ADMIN", "MANAGER"].includes(role);
-  const currentUserId = session?.user?.id || null;
+  const sessionPromise = auth();
+  const productPromise = getProductBySlug(params.slug);
+  const siteSettingsPromise = getSiteSettings();
+  const yandexMapsSettingPromise = prisma.siteSettings.findUnique({ where: { key: "yandex_maps_review_url" } });
 
-  const product = await prisma.product.findFirst({
-    where: { slug: params.slug, ...getPublicProductsFilter() },
-    include: {
-      category: true,
-      variants: { where: getPublicVariantsFilter(), orderBy: { size: "asc" } },
-    },
-  });
+  const product = await productPromise;
 
   if (!product) notFound();
 
-  // Related products — только публичные (с фото, ценой, в наличии)
-  const related = await prisma.product.findMany({
+  const relatedPromise = prisma.product.findMany({
     where: {
       ...getPublicProductsFilter(),
       categoryId: product.categoryId,
@@ -104,23 +116,32 @@ export default async function ProductPage({ params }: Props) {
 
   // Reviews for aggregateRating + display block
   // NOTE: do NOT include user relation here — avatarUrl may not exist on all deployments
-  const reviews = await prisma.review.findMany({
+  const reviewsPromise = prisma.review.findMany({
     where: { approved: true, productId: product.id },
     orderBy: { createdAt: "desc" },
     take: 10,
   });
 
-  // Site settings + Yandex Maps review URL
-  const [siteSettings, yandexMapsSetting, currentUserProfile] = await Promise.all([
-    getSiteSettings(),
-    prisma.siteSettings.findUnique({ where: { key: "yandex_maps_review_url" } }),
-    currentUserId
+  const currentUserProfilePromise = sessionPromise.then((session) => {
+    const currentUserId = session?.user?.id || null;
+    return currentUserId
       ? prisma.user.findUnique({
           where: { id: currentUserId },
           select: { name: true, email: true, avatarUrl: true },
         })
-      : Promise.resolve(null),
+      : Promise.resolve(null);
+  });
+
+  const [session, siteSettings, yandexMapsSetting, related, reviews, currentUserProfile] = await Promise.all([
+    sessionPromise,
+    siteSettingsPromise,
+    yandexMapsSettingPromise,
+    relatedPromise,
+    reviewsPromise,
+    currentUserProfilePromise,
   ]);
+  const role = (session?.user as any)?.role;
+  const isAdmin = session && ["ADMIN", "MANAGER"].includes(role);
   const yandexMapsUrl = yandexMapsSetting?.value || "";
   const showReviewsBlock = (siteSettings.product_page_show_reviews ?? "true") !== "false";
   const showRelatedProducts = (siteSettings.product_page_show_related ?? "true") !== "false";
@@ -140,7 +161,7 @@ export default async function ProductPage({ params }: Props) {
   const telegramLink = telegramUsername
     ? `https://t.me/${telegramUsername.replace("@", "")}?text=${encodeURIComponent(tgMessage)}`
     : null;
-  const intro = productIntro(product.description);
+  const intro = productIntro(product.shortDescription || product.description);
 
   // Build schema.org structured data
   // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
@@ -171,7 +192,7 @@ export default async function ProductPage({ params }: Props) {
     "name": product.name,
     "sku": product.slug,
     "category": product.category.name,
-    "description": product.description || `${product.name} от производителя в Химках`,
+    "description": product.description || product.shortDescription || `${product.name} от производителя в Химках`,
     "image": product.images.length > 0 ? product.images.map(absoluteSiteUrl) : undefined,
     "brand": { "@type": "Brand", "name": "ПилоРус" },
     "offers": {
@@ -236,19 +257,6 @@ export default async function ProductPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
-      {/* ── Admin floating edit button ── */}
-      {isAdmin && (
-        <Link
-          href={`/admin/products/${product.id}`}
-          className="fixed z-50 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-3 rounded-2xl shadow-xl hover:bg-primary/90 hover:shadow-2xl transition-all duration-200 font-semibold text-sm group"
-          style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom, 0px))", right: "1.5rem" }}
-          title="Редактировать товар в админке"
-        >
-          <Pencil className="w-4 h-4 group-hover:rotate-12 transition-transform" />
-          <span>Редактировать</span>
-        </Link>
-      )}
-
       {/* Main product section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 mb-16">
         {/* Gallery */}
@@ -284,6 +292,16 @@ export default async function ProductPage({ params }: Props) {
             {intro && (
               <p className="store-product-intro text-muted-foreground leading-relaxed">{intro}</p>
             )}
+            {isAdmin && (
+              <Link
+                href={`/admin/products/${product.id}`}
+                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+                title="Редактировать товар в админке"
+              >
+                <Pencil className="h-4 w-4" />
+                <span>Редактировать товар</span>
+              </Link>
+            )}
           </div>
 
           {/* Quick features */}
@@ -300,7 +318,7 @@ export default async function ProductPage({ params }: Props) {
               )},
             ].map((f) => (
               <div key={f.label} className="store-feature-card flex flex-col items-center text-center p-3 rounded-xl border gap-2">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+                <div className="store-icon-tile w-9 h-9 rounded-xl shrink-0">
                   {f.icon}
                 </div>
                 <div>
@@ -379,7 +397,7 @@ export default async function ProductPage({ params }: Props) {
               )},
             ].map((item, i) => (
               <div key={item.label} className={`flex items-center gap-3 px-4 py-3 text-sm ${i > 0 ? "border-t border-border/50" : ""}`}>
-                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <div className="store-icon-tile w-7 h-7 rounded-xl shrink-0">
                   {item.icon}
                 </div>
                 <div className="min-w-0">
@@ -433,6 +451,7 @@ export default async function ProductPage({ params }: Props) {
         <DescriptionAccordion
           name={product.name}
           category={product.category.name}
+          categorySlug={product.category.slug}
           description={product.description}
           reviews={reviews.map((r) => ({
             id: r.id,
@@ -491,6 +510,7 @@ export default async function ProductPage({ params }: Props) {
                 slug={product.slug}
                 name={product.name}
                 category={product.category.name}
+                shortDescription={product.shortDescription}
                 description={product.description}
                 images={product.images}
                 saleUnit={product.saleUnit}

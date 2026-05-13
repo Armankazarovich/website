@@ -16,9 +16,10 @@ import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
-import { Calculator, ArrowRight, SearchX } from "lucide-react";
+import { Calculator, ArrowRight, SearchX, PackageCheck, BadgeCheck, Truck } from "lucide-react";
 import { getSiteSettings, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
+import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
@@ -162,9 +163,26 @@ export default async function CatalogPage({
     ? { AND: [publicVariantSome, variantWhere] }
     : publicVariantSome;
 
-  // Build where clause (always filter hidden categories + public safety)
-  const categoryFilter = searchParams.category
-    ? { slug: searchParams.category, showInMenu: true }
+  let scopedCategorySlugs: string[] | null = null;
+  if (searchParams.category) {
+    const scopedCategory = await prisma.category.findFirst({
+      where: { slug: searchParams.category, showInMenu: true },
+      select: {
+        slug: true,
+        children: {
+          where: { showInMenu: true },
+          select: { slug: true },
+        },
+      },
+    });
+    if (!scopedCategory) redirect("/catalog");
+    scopedCategorySlugs = [scopedCategory.slug, ...scopedCategory.children.map((child) => child.slug)];
+  }
+
+  // Build where clause (always filter hidden categories + public safety).
+  // Parent category pages include direct child categories, so menu hierarchy works as one landing page.
+  const categoryFilter: Prisma.CategoryWhereInput = scopedCategorySlugs
+    ? { slug: { in: scopedCategorySlugs }, showInMenu: true }
     : { showInMenu: true };
 
   const searchFilter: Prisma.ProductWhereInput = currentSearch
@@ -219,9 +237,7 @@ export default async function CatalogPage({
   const whereForTypes: Prisma.ProductWhereInput = {
     active: true,
     images: { isEmpty: false },
-    category: searchParams.category
-      ? { slug: searchParams.category, showInMenu: true }
-      : { showInMenu: true },
+    category: categoryFilter,
     ...searchFilter,
     variants: { some: combinedTypesVariantSome },
   };
@@ -278,11 +294,6 @@ export default async function CatalogPage({
   } catch (err) {
     console.error("Catalog query error:", err);
     // Продолжаем с пустыми данными — страница покажет "нет товаров" вместо 500
-  }
-
-  // Если запрошена скрытая или несуществующая категория — редирект в каталог
-  if (searchParams.category && !categories.find((c) => c.slug === searchParams.category)) {
-    redirect("/catalog");
   }
 
   // Price sort (JS post-fetch since Prisma can't orderBy on has-many aggregate)
@@ -402,6 +413,47 @@ export default async function CatalogPage({
     currentTypeInfo?.description ||
     currentCat?.seoDescription ||
     (currentCat ? "Узнавайте первыми о поступлениях и скидках" : "Все пиломатериалы в наличии");
+  const listingTitle = currentSearch
+    ? `Поиск: ${currentSearch}`
+    : searchParams.category
+    ? categories.find((c) => c.slug === searchParams.category)?.name || "Каталог"
+    : "Все пиломатериалы";
+  const heroDescription =
+    currentSearch
+      ? `Нашли позиции по запросу «${currentSearch}». Можно уточнить тип, размер, наличие и сразу перейти в карточку товара.`
+      : currentTypeInfo?.description ||
+        currentCat?.seoDescription ||
+        "Доска, брус, вагонка и другие пиломатериалы от производителя в Химках. Смотрите фото, размеры, цены и наличие без лишних шагов.";
+  const catalogStats = [
+    {
+      label: `${totalCount} позиций`,
+      sub: currentInStock ? "по текущим фильтрам" : "готовых к заказу",
+      Icon: PackageCheck,
+      href: currentInStock ? buildFilterUrl({}) : buildFilterUrl({ instock: "1" }),
+    },
+    {
+      label: "Цены из каталога",
+      sub: "по размерам и единицам",
+      Icon: BadgeCheck,
+      href: "/calculator",
+    },
+    {
+      label: "Доставка 1–3 дня",
+      sub: "Москва и область",
+      Icon: Truck,
+      href: "/delivery",
+    },
+  ];
+  const prefetchHrefs = [
+    ...categories
+      .filter((cat) => cat.slug !== searchParams.category)
+      .map((cat) => `/catalog?category=${cat.slug}`),
+    ...dynamicTypes
+      .filter((type) => type.keyword !== currentType)
+      .slice(0, 6)
+      .map((type) => buildFilterUrl({ type: type.keyword })),
+    page < totalPages ? buildPageUrl(page + 1) : null,
+  ];
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -458,25 +510,38 @@ export default async function CatalogPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogItemListSchema) }}
       />
+      <RoutePrefetcher hrefs={prefetchHrefs} />
 
       {/* ── Заголовок ── */}
       <div className="mb-3">
-        <div>
-          <h1 className="font-display font-bold text-2xl sm:text-3xl">
-            {pageTitle}
-          </h1>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
+              Каталог ПилоРус
+            </p>
+            <h1 className="font-display font-bold text-2xl sm:text-3xl leading-tight">
+              {pageTitle}
+            </h1>
+          </div>
+          <p className="text-xs font-semibold text-muted-foreground sm:pb-1">
+            {totalCount} позиций в подборке
+          </p>
         </div>
-      </div>
 
-      {/* ── Баннер-калькулятор ── */}
-      <Link href="/calculator" className="flex items-center gap-3 px-4 py-3 mb-4 bg-primary/5 border border-primary/20 rounded-2xl hover:bg-primary/10 transition-colors">
-        <Calculator className="w-5 h-5 text-primary shrink-0" />
-        <div className="flex-1">
-          <p className="text-sm font-semibold">Не знаете сколько нужно?</p>
-          <p className="text-xs text-muted-foreground">Калькулятор рассчитает м³ и стоимость за 30 секунд</p>
-        </div>
-        <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
-      </Link>
+        <Link
+          href="/calculator"
+          className="mt-3 flex items-center gap-3 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2.5 transition-colors hover:bg-primary/15"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Calculator className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Не знаете, сколько нужно?</p>
+            <p className="hidden xs:block text-xs text-muted-foreground">Калькулятор рассчитает м³, штуки и стоимость</p>
+          </div>
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </Link>
+      </div>
 
       {/* ── Sticky фильтр-полоса ── */}
       <CatalogTypeFilter
@@ -521,6 +586,7 @@ export default async function CatalogPage({
               <ul className="space-y-1">
                 <li>
                   <Link
+                    prefetch
                     href="/catalog"
                     className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
                       !searchParams.category
@@ -534,6 +600,7 @@ export default async function CatalogPage({
                 {categories.map((cat) => (
                   <li key={cat.id}>
                     <Link
+                      prefetch
                       href={`/catalog?category=${cat.slug}`}
                       className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                         searchParams.category === cat.slug
@@ -585,11 +652,7 @@ export default async function CatalogPage({
           {/* Header */}
           <div className="flex items-center justify-between mb-5 gap-4">
             <h2 className="font-display font-bold text-2xl">
-              {currentSearch
-                ? `Поиск: ${currentSearch}`
-                : searchParams.category
-                ? categories.find((c) => c.slug === searchParams.category)?.name || "Каталог"
-                : "Все пиломатериалы"}
+              {listingTitle}
             </h2>
 
             <div className="flex items-center gap-2 shrink-0">
@@ -690,6 +753,7 @@ export default async function CatalogPage({
                   slug={product.slug}
                   name={product.name}
                   category={product.category.name}
+                  shortDescription={product.shortDescription}
                   description={product.description}
                   images={product.images}
                   saleUnit={product.saleUnit}
@@ -710,30 +774,58 @@ export default async function CatalogPage({
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-10">
               {page > 1 && (
-                <Link href={buildPageUrl(page - 1)} className="px-4 h-11 rounded-lg flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">←</Link>
+                <Link prefetch href={buildPageUrl(page - 1)} className="px-4 h-11 rounded-xl flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">←</Link>
               )}
               {Array.from({ length: Math.min(totalPages, 7) }).map((_, i) => (
                 <Link
+                  prefetch
                   key={i + 1}
                   href={buildPageUrl(i + 1)}
-                  className={`w-11 h-11 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
-                    page === i + 1 ? "bg-primary text-primary-foreground" : "border border-border hover:bg-accent"
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-medium transition-colors ${
+                    page === i + 1 ? "border border-primary/35 bg-primary/10 text-primary" : "border border-border hover:bg-accent"
                   }`}
                 >
                   {i + 1}
                 </Link>
               ))}
               {page < totalPages && (
-                <Link href={buildPageUrl(page + 1)} className="px-4 h-11 rounded-lg flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">→</Link>
+                <Link prefetch href={buildPageUrl(page + 1)} className="px-4 h-11 rounded-xl flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">→</Link>
               )}
             </div>
           )}
 
           <section className="mt-10 border-t border-border pt-6">
-            <h2 className="font-display text-xl font-bold">{pageTitle}</h2>
-            <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
-              {pageDescription}
-            </p>
+            <div>
+              <h2 className="font-display text-xl font-bold">{pageTitle}</h2>
+              <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
+                {heroDescription}
+              </p>
+              {pageDescription !== heroDescription && (
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-muted-foreground">
+                  {pageDescription}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {catalogStats.map(({ label, sub, Icon, href }) => (
+                <Link
+                  prefetch
+                  key={label}
+                  href={href}
+                  className="group flex min-h-[82px] items-center gap-3 rounded-xl border border-border bg-card/70 px-3.5 py-3 transition hover:border-primary/45 hover:bg-card"
+                >
+                  <div className="store-icon-tile h-9 w-9 shrink-0 rounded-xl">
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold leading-tight text-foreground">{label}</p>
+                    <p className="mt-1 text-[11px] leading-snug text-muted-foreground">{sub}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                </Link>
+              ))}
+            </div>
           </section>
         </div>
       </div>

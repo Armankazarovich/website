@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 
 /**
  * /catalog/[category] → перенаправляет на /catalog?category=[slug]
@@ -9,5 +9,5 @@ export default function CategoryPage({
 }: {
   params: { category: string };
 }) {
-  redirect(`/catalog?category=${params.category}`);
+  permanentRedirect(`/catalog?category=${params.category}`);
 }

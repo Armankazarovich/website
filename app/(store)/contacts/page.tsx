@@ -59,6 +59,26 @@ export default async function ContactsPage() {
       </div>
       <p className="text-muted-foreground text-lg mb-10">Мы всегда рады помочь вам с выбором</p>
 
+      <div className="store-landing-band rounded-2xl border p-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[
+            { icon: Phone, title: "Быстрый ответ", text: "Перезвоним и уточним задачу без долгой переписки." },
+            { icon: MapPin, title: "Склад в Химках", text: "Можно забрать самовывозом после подтверждения заказа." },
+            { icon: Clock, title: "Рабочий график", text: "Подскажем наличие, цену и ближайшую отгрузку." },
+          ].map((item) => (
+            <div key={item.title} className="flex gap-3">
+              <div className="store-icon-tile w-10 h-10 rounded-xl shrink-0">
+                <item.icon className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-semibold leading-tight">{item.title}</h2>
+                <p className="text-sm text-muted-foreground mt-1">{item.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* Contact cards */}
         <div className="space-y-5">
@@ -93,8 +113,8 @@ export default async function ContactsPage() {
             },
           ].map((block) => (
             <div key={block.title} className="flex gap-4 p-5 bg-card rounded-2xl border border-border">
-              <div className={`w-12 h-12 ${block.bg} rounded-xl flex items-center justify-center shrink-0`}>
-                <block.icon className={`w-6 h-6 ${block.color}`} />
+              <div className="store-icon-tile w-12 h-12 rounded-xl shrink-0">
+                <block.icon className="w-6 h-6" />
               </div>
               <div>
                 <p className="font-semibold mb-1">{block.title}</p>

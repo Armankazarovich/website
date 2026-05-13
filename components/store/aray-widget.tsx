@@ -1733,7 +1733,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     if (isAdmin && name) {
       greeting = `${t}, ${name.split(" ")[0]}! Чем помочь?`;
     } else if (name) {
-      greeting = `${t}, ${name}! 👋 ${productName ? `Смотришь «${productName}»?` : "Чем могу помочь?"} Спрашивай.`;
+      greeting = `${t}, ${name}! ${productName ? `Смотришь «${productName}»?` : "Чем могу помочь?"} Спрашивай.`;
     } else {
       const isReturning = typeof document !== "undefined" && document.cookie.includes("aray_visited=1");
       greeting = buildArayGreeting({ page: pathname, productName, cartTotal, isReturning });
@@ -1855,8 +1855,8 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     if (!visible) return;
     const t = setTimeout(() => {
       if (!open) {
-        const msg = userName ? `${userName}, помочь? 👋`
-          : productName ? `Смотришь «${productName}»? 👋` : "Если есть вопросы — я рядом 😊";
+        const msg = userName ? `${userName}, помочь?`
+          : productName ? `Смотришь «${productName}»?` : "Если есть вопросы — я рядом";
         setProactiveBubble(msg);
         setTimeout(() => setProactiveBubble(null), 5000);
       }

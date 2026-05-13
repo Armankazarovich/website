@@ -409,6 +409,9 @@ export function resolvePwaInstallContext(
   const safePathname = pathname || "/";
   const params = new URLSearchParams(normalizeSearch(search));
 
+  if (params.get("mode") === "market" || startsWithAny(safePathname, ["/admin/exchange"])) {
+    return PWA_INSTALL_CONTEXTS["aray-market"];
+  }
   if (safePathname.startsWith("/admin/orders/new")) return PWA_INSTALL_CONTEXTS["aray-terminal"];
   if (startsWithAny(safePathname, ["/admin/terminals"])) return PWA_INSTALL_CONTEXTS["aray-terminal"];
   if (startsWithAny(safePathname, ["/admin/orders"])) return PWA_INSTALL_CONTEXTS["aray-orders"];

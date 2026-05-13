@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { CheckCircle, Truck, MapPin, Clock, FileText, Phone } from "lucide-react";
+import Link from "next/link";
+import { Calculator, CheckCircle, Truck, MapPin, Clock, FileText, Phone } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
-  title: "Доставка и оплата пиломатериалов — ПилоРус | Москва и МО",
+  title: "Доставка и оплата пиломатериалов по Москве и МО",
   description: "Доставка пиломатериалов по Москве и МО за 1-3 дня от 2500 руб. Самовывоз со склада в Химках бесплатно. Оплата: наличные, карта, безналичный расчёт для юрлиц.",
   keywords: ["доставка пиломатериалов Москва", "доставка досок МО", "самовывоз пиломатериалы Химки", "оплата пиломатериалы безнал"],
   openGraph: {
@@ -110,9 +111,9 @@ export default async function DeliveryPage() {
             ],
           },
         ].map((block) => (
-          <div key={block.title} className="bg-card rounded-2xl border border-border p-6">
-            <div className={`w-12 h-12 ${block.bg} rounded-xl flex items-center justify-center mb-4`}>
-              <block.icon className={`w-6 h-6 ${block.color}`} />
+          <div key={block.title} className="store-feature-card bg-card rounded-2xl border border-border p-6">
+            <div className="store-icon-tile w-12 h-12 rounded-xl mb-4">
+              <block.icon className="w-6 h-6" />
             </div>
             <h3 className="font-display font-bold text-xl mb-4">{block.title}</h3>
             <ul className="space-y-2">
@@ -125,6 +126,60 @@ export default async function DeliveryPage() {
             </ul>
           </div>
         ))}
+      </div>
+
+      <div className="store-landing-band mb-12 rounded-2xl border p-5 sm:p-6">
+        <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div>
+            <h2 className="font-display font-bold text-2xl">Как проходит заказ</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              Понятный маршрут от заявки до отгрузки: фиксируем детали, считаем стоимость,
+              согласуем дату и передаем документы вместе с заказом.
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:w-[360px]">
+            <Link
+              href="/calculator"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+            >
+              Рассчитать заказ
+              <Calculator className="h-4 w-4" />
+            </Link>
+            <a
+              href={`tel:${phoneLink}`}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-border bg-background/45 px-4 text-sm font-semibold transition hover:border-primary/50 hover:text-primary"
+            >
+              <Phone className="h-4 w-4" />
+              Позвонить
+            </a>
+          </div>
+        </div>
+
+        <div className="relative grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div className="pointer-events-none absolute left-8 right-8 top-7 hidden h-px bg-primary/25 md:block" />
+          {[
+            { icon: Phone, title: "Заявка", text: "Адрес, объем, удобное время и формат получения." },
+            { icon: Calculator, title: "Расчет", text: "Материал, доставка, разгрузка и итоговая сумма." },
+            { icon: Clock, title: "Согласование", text: "Дата, оплата, резерв товара и документы." },
+            { icon: Truck, title: "Отгрузка", text: "Привозим заказ и передаем закрывающие документы." },
+          ].map((step, index) => (
+            <div
+              key={step.title}
+              className="relative rounded-xl border border-border/75 bg-background/60 p-4"
+            >
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="store-icon-tile h-11 w-11 rounded-xl">
+                  <step.icon className="h-5 w-5" />
+                </div>
+                <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-1 text-xs font-bold text-primary">
+                  0{index + 1}
+                </span>
+              </div>
+              <h3 className="font-semibold leading-tight">{step.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{step.text}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* FAQ */}
