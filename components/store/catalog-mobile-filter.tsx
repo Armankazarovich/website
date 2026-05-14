@@ -89,18 +89,18 @@ export function CatalogMobileFilter({
       <button
         onClick={() => setOpen(true)}
         className={cn(
-          "relative lg:hidden transition-all active:scale-95",
+          "lg:hidden transition-all active:scale-95",
           variant === "inline"
             ? "relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent"
-            : "fixed left-0 top-1/2 z-[60] flex h-11 w-8 -translate-y-1/2 flex-col items-center justify-center gap-1 rounded-r-xl border-y border-r border-border bg-card px-1.5 py-2 text-foreground hover:translate-x-0.5 hover:border-primary/45"
+            : "fixed left-0 top-[calc(50dvh-22px)] z-[60] flex h-11 w-8 flex-col items-center justify-center gap-1 rounded-r-xl border-y border-r border-primary bg-primary px-1.5 py-2 text-primary-foreground"
         )}
         aria-label="Открыть фильтры"
       >
-        <SlidersHorizontal className="w-4 h-4 text-foreground" />
+        <SlidersHorizontal className="h-4 w-4 text-current" />
         {activeCount > 0 && (
           <span
             className={cn(
-              "flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-primary-foreground",
+              "flex h-4 w-4 items-center justify-center rounded-full bg-card text-[8px] font-bold text-primary",
               "absolute -right-1 -top-1"
             )}
           >
