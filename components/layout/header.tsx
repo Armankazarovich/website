@@ -238,6 +238,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
           "sticky top-0 z-50 transition-all duration-500",
         )}
         style={{
+          paddingTop: "env(safe-area-inset-top, 0px)",
           backdropFilter: "blur(32px) saturate(200%)",
           WebkitBackdropFilter: "blur(32px) saturate(200%)",
           background: scrolled
@@ -272,7 +273,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 ПилоРус
               </p>
               {/* Кнопка "Работаем" с popup расписания — только десктоп */}
-              <div className="relative mt-0.5 hidden lg:block" ref={scheduleRef}>
+              <div className="relative mt-0.5 hidden xl:block" ref={scheduleRef}>
                 <button
                   onClick={() => setScheduleOpen((v) => !v)}
                   className="flex items-center gap-1.5 group cursor-pointer min-h-0 py-0"
@@ -527,7 +528,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
           </nav>
 
           {/* Tablet nav (md only — between logo and actions) */}
-          <nav className="hidden md:flex 2xl:hidden items-center gap-0.5 flex-1 justify-center">
+          <nav className="hidden xl:flex 2xl:hidden items-center gap-0.5 flex-1 justify-center">
             <Link
               href="/catalog"
               className={cn(
@@ -664,7 +665,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleAccount}
               aria-label="Личный кабинет"
-              className="hidden lg:flex w-11 h-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="hidden xl:flex w-11 h-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
             >
               <User className="w-4 h-4" />
             </button>
@@ -672,7 +673,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {/* Partnership — md only */}
             <button
               onClick={() => setPartnershipOpen(true)}
-              className="hidden md:flex 2xl:hidden min-h-11 items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
+              className="hidden xl:flex 2xl:hidden min-h-11 items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
             >
               <Handshake className="w-3.5 h-3.5" />
               Партнёрство
@@ -681,7 +682,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {/* Hamburger (mobile only) — animates to X */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden flex flex-col items-center justify-center w-11 h-11 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
+              className="xl:hidden flex flex-col items-center justify-center w-11 h-11 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
               aria-label={mobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
             >
               <motion.span
@@ -724,7 +725,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm lg:hidden"
+              className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm xl:hidden"
               onClick={() => setMobileMenuOpen(false)}
             />
 
@@ -734,7 +735,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed left-0 top-0 h-dvh w-[300px] max-w-[85vw] z-[201] lg:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
+              className="fixed left-0 top-0 h-dvh w-[300px] max-w-[85vw] z-[201] xl:hidden flex flex-col bg-background/95 backdrop-blur-xl border-r border-border/60 shadow-2xl"
             >
               {/* ── Шапка ── */}
               <div

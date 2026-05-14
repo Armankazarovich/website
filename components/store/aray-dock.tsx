@@ -44,6 +44,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
   const [recording, setRecording] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [cookieVisible, setCookieVisible] = useState(false);
 
   const taRef = useRef<HTMLTextAreaElement | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -51,6 +52,20 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
   const longPressTriggered = useRef(false);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const sync = () => {
+      setCookieVisible(document.body.dataset.storeCookieVisible === "true");
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-store-cookie-visible"],
+    });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     setSpeechSupported(Boolean(getSpeechRecognitionCtor()));
@@ -156,6 +171,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
   }, []);
 
   if (!enabled || !mounted) return null;
+  if (!isAdminWorkspace && cookieVisible) return null;
 
   const hasText = input.trim().length > 0;
 

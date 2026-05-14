@@ -189,6 +189,8 @@ export function PwaInstall() {
   if (platform === "installed" || platform === null) return null;
 
   const canNativeInstall = !alreadyInstalled && hasNativePrompt && installState !== "installing";
+  if (!visible && !installPrompt) return null;
+
   const statusText = (() => {
     if (alreadyInstalled) return "Если значок уже есть, откройте его с экрана устройства или из списка приложений.";
     if (installState === "installing") return "Жду ответ браузера. Обычно это занимает пару секунд.";

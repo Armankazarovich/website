@@ -14,6 +14,19 @@ export function CookieConsent() {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (visible) {
+      document.body.dataset.storeCookieVisible = "true";
+    } else {
+      delete document.body.dataset.storeCookieVisible;
+    }
+
+    return () => {
+      delete document.body.dataset.storeCookieVisible;
+    };
+  }, [visible]);
+
   const accept = () => {
     localStorage.setItem("cookies-accepted", "1");
     setVisible(false);
@@ -28,7 +41,7 @@ export function CookieConsent() {
         opacity: 1,
         animation: "slideUp 0.3s ease forwards",
       }}
-      className="fixed bottom-[72px] left-0 right-0 z-[90] px-3 pb-1 lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm lg:px-0 lg:pb-0"
+      className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-[90] px-3 pb-1 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[520px] sm:px-0 sm:pb-0 lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm"
     >
       <div className="bg-background/95 backdrop-blur-xl border border-border/60 rounded-2xl shadow-2xl p-4 flex flex-col gap-3">
 

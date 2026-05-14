@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Search, Package, Clock, CheckCircle, Truck, XCircle, Phone, ArrowRight } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
-import { PHONE_LINK } from "@/lib/phone-constants";
+import { PHONE_DISPLAY, PHONE_LINK } from "@/lib/phone-constants";
 import { Button } from "@/components/ui/button";
 
 type OrderStatus = "NEW" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
@@ -71,7 +71,7 @@ function TrackForm() {
   return (
     <div className="space-y-6">
       {/* Search form */}
-      <div className="bg-card rounded-2xl border border-border p-6">
+      <div className="bg-card rounded-2xl border border-border p-4 sm:p-6">
         <form onSubmit={handleTrack} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -80,7 +80,7 @@ function TrackForm() {
                 value={orderNum}
                 onChange={e => setOrderNum(e.target.value)}
                 placeholder="Например: 42"
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-11 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 required
               />
             </div>
@@ -90,7 +90,7 @@ function TrackForm() {
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
                 placeholder="+7 (985) 067-08-88"
-                className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="h-11 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                 required
               />
             </div>
@@ -100,7 +100,7 @@ function TrackForm() {
               {error}
             </div>
           )}
-          <Button type="submit" disabled={loading} className="gap-2">
+          <Button type="submit" disabled={loading} className="h-11 w-full gap-2 sm:w-auto">
             {loading ? "Ищем..." : <><Search className="w-4 h-4" /> Отследить заказ</>}
           </Button>
         </form>
@@ -223,12 +223,12 @@ function TrackForm() {
           )}
 
           {/* Contact */}
-          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center justify-between">
+          <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-medium text-sm">Вопросы по заказу?</p>
               <p className="text-muted-foreground text-xs mt-0.5">Менеджер ответит на все вопросы</p>
             </div>
-            <a href={`tel:${PHONE_LINK}`} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+            <a href={`tel:${PHONE_LINK}`} className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
               <Phone className="w-4 h-4" />
               Позвонить
             </a>
@@ -239,23 +239,68 @@ function TrackForm() {
   );
 }
 
+function TrackHelpAside() {
+  return (
+    <aside className="space-y-4 lg:sticky lg:top-24">
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+          <Package className="h-5 w-5" />
+        </div>
+        <h2 className="font-display text-xl font-bold">Где найти номер?</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Номер заказа приходит после оформления заявки. Обычно он есть в сообщении от менеджера или в личном кабинете.
+        </p>
+        <Link
+          href="/cabinet/orders"
+          className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary/80"
+        >
+          Открыть мои заказы
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-background text-primary">
+          <Phone className="h-5 w-5" />
+        </div>
+        <h2 className="font-display text-xl font-bold">Нет номера?</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Позвоните менеджеру: найдём заявку по телефону, имени или адресу доставки.
+        </p>
+        <a
+          href={`tel:${PHONE_LINK}`}
+          className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+        >
+          <Phone className="h-4 w-4" />
+          {PHONE_DISPLAY}
+        </a>
+      </div>
+    </aside>
+  );
+}
+
 export default function TrackPage() {
   return (
-    <div className="container py-10 max-w-2xl">
-      <div className="mb-8">
-        <div className="flex items-start gap-3 mb-1">
-          <BackButton href="/cabinet" label="Мои заказы" className="mt-0.5 mb-0 shrink-0" />
-          <div>
-            <h1 className="font-display font-bold text-3xl">Отслеживание заказа</h1>
-            <p className="text-muted-foreground mt-1">
-              Введите номер заказа и телефон, который указали при оформлении
-            </p>
+    <div className="container py-8 sm:py-10">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8 max-w-2xl">
+          <div className="flex items-start gap-3 mb-1">
+            <BackButton href="/cabinet" label="Мои заказы" className="mt-0.5 mb-0 shrink-0" />
+            <div>
+              <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl">Отслеживание заказа</h1>
+              <p className="mt-2 text-muted-foreground">
+                Введите номер заказа и телефон, который указали при оформлении
+              </p>
+            </div>
           </div>
         </div>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+          <Suspense>
+            <TrackForm />
+          </Suspense>
+          <TrackHelpAside />
+        </div>
       </div>
-      <Suspense>
-        <TrackForm />
-      </Suspense>
     </div>
   );
 }

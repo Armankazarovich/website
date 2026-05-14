@@ -56,18 +56,35 @@ export default async function DeliveryPage() {
   };
 
   return (
-    <div className="container py-12">
+    <div className="container py-8 sm:py-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <div className="flex items-start gap-3 mb-3">
         <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
-        <h1 className="font-display font-bold text-4xl">Доставка и оплата</h1>
+        <h1 className="font-display font-bold text-3xl leading-tight sm:text-4xl">Доставка и оплата</h1>
       </div>
-      <p className="text-muted-foreground text-lg mb-10">
+      <p className="max-w-2xl text-muted-foreground text-base leading-relaxed sm:text-lg">
         Работаем честно — без скрытых наценок на доставку
       </p>
+
+      <div className="my-6 grid gap-3 sm:my-8 sm:max-w-xl sm:grid-cols-2">
+        <Link
+          href="/calculator"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition hover:bg-primary/90 active:scale-[0.98]"
+        >
+          Рассчитать доставку
+          <Calculator className="h-4 w-4" />
+        </Link>
+        <a
+          href={`tel:${phoneLink}`}
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-5 text-sm font-semibold transition hover:border-primary/50 hover:text-primary active:scale-[0.98]"
+        >
+          <Phone className="h-4 w-4" />
+          Позвонить менеджеру
+        </a>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
         {[
