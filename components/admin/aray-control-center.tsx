@@ -46,7 +46,7 @@ export function ArayControlCenter({
       onClick={handleClick}
       aria-label={isAppearancePage ? "Вернуться из оформления" : "Оформление"}
       title={isAppearancePage ? "Вернуться назад" : "Оформление"}
-      className={`relative flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${ARAY_FOCUS_RING} ${
+      className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors ${ARAY_FOCUS_RING} ${
         isAppearancePage
           ? "bg-primary/10 text-primary hover:bg-primary/15"
           : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"

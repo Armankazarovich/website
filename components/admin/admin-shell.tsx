@@ -499,7 +499,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
                 type="button"
                 aria-label={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
                 title={isDarkTheme ? "Светлая тема" : "Тёмная тема"}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground sm:flex"
               >
                 {isDarkTheme ? (
                   <Sun className="w-[18px] h-[18px]" strokeWidth={1.75} />
@@ -515,7 +515,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               </div>
             )}
 
-            <div className="hidden sm:block">
+            <div className="block">
               <ArayControlCenter userRole={role} position="header" />
             </div>
 

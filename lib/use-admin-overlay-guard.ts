@@ -6,6 +6,7 @@ const LIVE_OVERLAY_SELECTOR = [
   ".admin-side-panel-root",
   ".admin-modal-panel",
   ".admin-mobile-sheet",
+  ".admin-mobile-popup-sheet",
   ".account-drawer-panel",
   "[data-radix-dialog-content]",
   '[role="dialog"][aria-modal="true"]',

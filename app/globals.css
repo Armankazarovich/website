@@ -887,12 +887,26 @@ button, a, [role="button"], input, select, textarea {
 
   @media (max-width: 639px) {
     .admin-modal-panel {
-      inset: auto max(0.5rem, env(safe-area-inset-right, 0px)) max(0.5rem, env(safe-area-inset-bottom, 0px)) max(0.5rem, env(safe-area-inset-left, 0px));
-      max-height: min(86dvh, 44rem);
+      inset:
+        max(0.5rem, env(safe-area-inset-top, 0px))
+        max(0.5rem, env(safe-area-inset-right, 0px))
+        max(0.5rem, env(safe-area-inset-bottom, 0px))
+        max(0.5rem, env(safe-area-inset-left, 0px));
+      max-height: none;
+      min-height: 0;
       width: auto;
       border-radius: 1.5rem;
       border-width: 1px;
       animation-name: adminPopupSlideFromBottom;
+    }
+
+    .admin-modal-header {
+      padding: 0.875rem;
+    }
+
+    .admin-modal-body {
+      min-height: 0;
+      padding: 0.875rem;
     }
 
     .admin-modal-footer {
@@ -2673,6 +2687,24 @@ button.admin-rail-icon:not(.admin-rail-orb-button):focus-visible {
 
 .admin-mobile-sheet-body::-webkit-scrollbar {
   display: none;
+}
+
+.admin-mobile-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  background: hsl(var(--background) / 0.48);
+  backdrop-filter: blur(8px) saturate(112%);
+}
+
+.admin-mobile-popup-sheet {
+  position: fixed;
+  right: max(0.5rem, env(safe-area-inset-right, 0px));
+  bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  left: max(0.5rem, env(safe-area-inset-left, 0px));
+  z-index: 330;
+  max-height: calc(100dvh - max(0.75rem, env(safe-area-inset-top, 0px)) - max(0.5rem, env(safe-area-inset-bottom, 0px)));
+  border-radius: 1.5rem;
 }
 
 body[data-aray-mobile-sheet-open="true"] [data-admin-pwa-launcher] {

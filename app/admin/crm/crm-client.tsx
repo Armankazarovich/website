@@ -1023,30 +1023,27 @@ function OrderDetailPanel({
   const updatedStr = order.updatedAt ? new Date(order.updatedAt).toLocaleString("ru-RU", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : null;
 
   return (
-    <aside className="fixed inset-x-3 bottom-[calc(92px+env(safe-area-inset-bottom,0px))] top-[104px] z-40 flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl sm:left-auto sm:right-4 sm:w-[440px] lg:right-6">
-          <div className="flex flex-shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
-            <div className="min-w-0 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-                <ShoppingBag className="w-5 h-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-bold text-foreground text-base">Заказ #{order.orderNumber}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{order.guestName || "Клиент"}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <Link href={`/admin/orders/${order.id}`}
-                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-primary arayglass-icon">
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-              <button onClick={onClose}
-                className="w-10 h-10 rounded-xl hover:bg-primary/[0.05] flex items-center justify-center transition-colors text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+    <AdminModal
+      open
+      onClose={onClose}
+      title={`Заказ #${order.orderNumber}`}
+      subtitle={order.guestName || "Клиент"}
+      size="md"
+      bodyClassName="space-y-4 p-4 sm:p-5"
+      headerActions={(
+        <Link href={`/admin/orders/${order.id}`} className="admin-modal-action" aria-label="Открыть полную карточку">
+          <ExternalLink className="h-4 w-4" />
+          <span>Открыть</span>
+        </Link>
+      )}
+      footer={(
+        <Link href={`/admin/orders/${order.id}`}
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+          <ExternalLink className="w-4 h-4" />
+          Открыть полную карточку
+        </Link>
+      )}
+    >
             {/* Status selector */}
             <div>
               <label className="text-sm font-medium text-muted-foreground mb-2 block">Статус заказа</label>
@@ -1158,16 +1155,7 @@ function OrderDetailPanel({
                 )}
               </div>
             </div>
-          </div>
-
-          <div className="flex-shrink-0 border-t border-border p-4">
-            <Link href={`/admin/orders/${order.id}`}
-              className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_16px_hsl(var(--primary)/0.3)] hover:brightness-110 active:scale-[0.98] transition-all duration-200">
-              <ExternalLink className="w-4 h-4" />
-              Открыть полную карточку
-            </Link>
-          </div>
-    </aside>
+    </AdminModal>
   );
 }
 

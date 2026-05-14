@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Plus, Minus, Loader2, Phone, Search, Calculator,
@@ -21,6 +21,7 @@ import {
 } from "@/lib/terminal-capabilities";
 import { DEFAULT_TERMINAL_PROFILE, type TerminalProfile, type TerminalProfileKey } from "@/lib/terminal-profiles";
 import { AdminModal } from "@/components/admin/admin-modal";
+import { PopupPortal } from "@/components/ui/popup-portal";
 import { useAdminPageHeader } from "@/components/admin/admin-page-actions";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { buildMarketPriceIntelligence, type MarketPricePoint } from "@/lib/market-price-intelligence";
@@ -342,6 +343,10 @@ const INPUT_CLASS = "w-full rounded-xl border border-border bg-background px-3 p
 const COMPACT_INPUT_CLASS = "rounded-xl border border-border bg-background px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20";
 const SOFT_SELECTED_CLASS = "border-primary/45 bg-primary/10 text-primary";
 const TERMINAL_DRAFT_STORAGE_KEY = "aray-terminal-order-draft:v1";
+
+function TerminalPortal({ active, children }: { active: boolean; children: ReactNode }) {
+  return active ? <PopupPortal>{children}</PopupPortal> : <>{children}</>;
+}
 
 function shouldRestoreTerminalSearchFocus() {
   if (typeof window === "undefined") return false;
@@ -1255,6 +1260,7 @@ export default function NewPhoneOrderPage() {
   const addItem = useCallback(() => {
     if (!selectedProduct || !selectedVariant || !selectedVariant.inStock || !itemPrice || quantity <= 0) return;
     const name = selectedProduct.name;
+    const shouldOpenMobileCart = typeof window !== "undefined" && window.innerWidth < 768;
     setItems((prev) => {
       const existingIndex = prev.findIndex((item) =>
         item.variantId === selectedVariantId &&
@@ -1289,7 +1295,10 @@ export default function NewPhoneOrderPage() {
     setSelectedVariantId("");
     setProductSearch("");
     setQuantity(1);
-    if (shouldRestoreTerminalSearchFocus()) {
+    if (shouldOpenMobileCart) {
+      setShowMobileCart(true);
+      searchRef.current?.blur();
+    } else if (shouldRestoreTerminalSearchFocus()) {
       window.requestAnimationFrame(() => searchRef.current?.focus({ preventScroll: true }));
     } else {
       searchRef.current?.blur();
@@ -2552,17 +2561,18 @@ export default function NewPhoneOrderPage() {
         </div>
 
         {/* ── RIGHT: Order Panel ── */}
-        {showMobileCart && (
-          <button
-            type="button"
-            aria-label="Закрыть корзину"
-            onClick={() => setShowMobileCart(false)}
-            className="fixed inset-0 z-[320] bg-background/35 md:hidden"
-          />
-        )}
+        <TerminalPortal active={showMobileCart}>
+          {showMobileCart && (
+            <button
+              type="button"
+              aria-label="Закрыть корзину"
+              onClick={() => setShowMobileCart(false)}
+              className="admin-mobile-popup-backdrop md:hidden"
+            />
+          )}
         <div className={`
           ${showMobileCart
-             ? "admin-popup-liquid fixed inset-x-2 bottom-0 z-[330] flex max-h-[calc(100dvh-4.75rem)] flex-col rounded-t-3xl border border-border bg-card shadow-2xl md:hidden"
+             ? "admin-popup-liquid admin-mobile-popup-sheet flex flex-col border border-border bg-card shadow-2xl md:hidden"
              : "hidden md:relative md:flex md:w-80 md:flex-col md:border-l md:border-border xl:w-[22rem]"
            }
           overflow-hidden shrink-0
@@ -3298,6 +3308,7 @@ export default function NewPhoneOrderPage() {
           </>
           )}
         </div>
+        </TerminalPortal>
 
         {terminalMode === "MARKET" && (
           <AdminModal
@@ -4044,9 +4055,14 @@ export default function NewPhoneOrderPage() {
 
         {/* ── MOBILE: Variant Bottom Sheet ── */}
         {selectedProduct && (
-          <div className="fixed inset-0 z-[330] flex flex-col justify-end md:hidden">
-            <div className="absolute inset-0 bg-background/35" onClick={() => setSelectedProductId("")} />
-            <div className="admin-popup-liquid relative flex max-h-[calc(100dvh-4.75rem)] flex-col rounded-t-3xl border border-border bg-card shadow-2xl">
+          <PopupPortal>
+            <button
+              type="button"
+              aria-label="Закрыть выбор варианта"
+              className="admin-mobile-popup-backdrop md:hidden"
+              onClick={() => setSelectedProductId("")}
+            />
+            <div className="admin-popup-liquid admin-mobile-popup-sheet flex flex-col border border-border bg-card shadow-2xl md:hidden">
             <div className="flex justify-center pt-2">
               <span className="admin-mobile-sheet-handle" />
             </div>
@@ -4140,8 +4156,8 @@ export default function NewPhoneOrderPage() {
                 В заказ {selectedVariant && itemPrice > 0 ? `· ${fmt(itemPrice * quantity)}` : ""}
               </button>
             </div>
-          </div>
-        </div>
+            </div>
+          </PopupPortal>
       )}
 
       {/* Added flash */}
