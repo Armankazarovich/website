@@ -11,6 +11,8 @@ import {
   Sun,
   Moon,
   Phone,
+  MapPin,
+  Clock,
   Search,
   ChevronDown,
   ArrowRight,
@@ -162,6 +164,8 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   // selectedType/selectedSize removed — mega menu is now pure navigation
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const scheduleRef = useRef<HTMLDivElement>(null);
+  const [contactsOpen, setContactsOpen] = useState(false);
+  const contactsRef = useRef<HTMLDivElement>(null);
 
   // Закрыть popup расписания по клику снаружи
   useEffect(() => {
@@ -174,6 +178,17 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [scheduleOpen]);
+
+  useEffect(() => {
+    if (!contactsOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (contactsRef.current && !contactsRef.current.contains(e.target as Node)) {
+        setContactsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [contactsOpen]);
   const catalogRef = useRef<HTMLDivElement>(null);
   const closeTimeout = useRef<ReturnType<typeof setTimeout>>();
   const { theme, setTheme } = useTheme();
@@ -579,13 +594,82 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
           <div className="flex items-center gap-1 shrink-0">
             {/* Телефон — только на широких экранах */}
             {phones[0] && (
-              <a
-                href={`tel:${phones[0].tel}`}
-                className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all mr-1"
+              <div
+                ref={contactsRef}
+                className="relative mr-1 hidden 2xl:block"
+                onMouseEnter={() => setContactsOpen(true)}
+                onMouseLeave={() => setContactsOpen(false)}
               >
-                <Phone className="w-3.5 h-3.5 text-primary" />
-                {phones[0].display}
-              </a>
+                <a
+                  href={`tel:${phones[0].tel}`}
+                  onFocus={() => setContactsOpen(true)}
+                  aria-expanded={contactsOpen}
+                  className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+                >
+                  <Phone className="h-3.5 w-3.5 text-primary" />
+                  {phones[0].display}
+                  <ChevronDown className={cn("h-3 w-3 transition-transform", contactsOpen && "rotate-180")} />
+                </a>
+
+                <AnimatePresence>
+                  {contactsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                      transition={{ duration: 0.14, ease: "easeOut" }}
+                      className="absolute right-0 top-full z-[220] mt-2 w-[21rem] overflow-hidden rounded-2xl border border-border/80 bg-card/95 p-3 text-card-foreground shadow-2xl shadow-foreground/10 backdrop-blur-xl"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="space-y-1">
+                        {phones.map((phone, index) => (
+                          <a
+                            key={phone.tel}
+                            href={`tel:${phone.tel}`}
+                            className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-primary/10"
+                          >
+                            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                              <Phone className="h-4 w-4" />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block font-display text-sm font-bold leading-tight text-foreground">{phone.display}</span>
+                              <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                                {index === 0 ? "Основной номер" : "Дополнительный номер"}
+                              </span>
+                            </span>
+                          </a>
+                        ))}
+                      </div>
+
+                      <div className="mt-2 space-y-2 border-t border-border/70 pt-3">
+                        <div className="flex gap-3 rounded-xl bg-muted/35 px-3 py-2.5">
+                          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Адрес</p>
+                            <p className="mt-1 text-sm leading-snug text-foreground">Химки, ул. Заводская 2А, стр.28</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 rounded-xl bg-muted/35 px-3 py-2.5">
+                          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">График</p>
+                            <p className="mt-1 text-sm leading-snug text-foreground">{workingHours || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00"}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Link
+                        href="/contacts"
+                        onClick={() => setContactsOpen(false)}
+                        className="mt-3 flex h-10 items-center justify-center gap-2 rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                      >
+                        Заказать звонок
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
             {/* Search */}
             <button

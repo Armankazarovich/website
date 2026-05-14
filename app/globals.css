@@ -1162,16 +1162,20 @@ button, a, [role="button"], input, select, textarea {
 .admin-shell-root {
   isolation: isolate;
   background:
-    linear-gradient(135deg, hsl(var(--primary) / 0.065) 0%, transparent 30%),
-    linear-gradient(215deg, hsl(var(--accent) / 0.12) 0%, transparent 34%),
-    linear-gradient(180deg, hsl(var(--background)), hsl(var(--secondary) / 0.20) 52%, hsl(var(--background)));
+    linear-gradient(90deg, hsl(var(--foreground) / 0.016) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(0deg, hsl(var(--foreground) / 0.011) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(135deg, hsl(var(--primary) / 0.055) 0%, transparent 30%),
+    linear-gradient(215deg, hsl(var(--accent) / 0.09) 0%, transparent 34%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--secondary) / 0.18) 52%, hsl(var(--background)));
 }
 
 .dark .admin-shell-root {
   background:
-    linear-gradient(135deg, hsl(var(--primary) / 0.105) 0%, transparent 30%),
-    linear-gradient(215deg, hsl(var(--accent) / 0.13) 0%, transparent 34%),
-    linear-gradient(180deg, hsl(var(--background)), hsl(var(--secondary) / 0.24) 52%, hsl(var(--background)));
+    linear-gradient(90deg, hsl(0 0% 100% / 0.022) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(0deg, hsl(0 0% 100% / 0.015) 1px, transparent 1px) 0 0 / 30px 30px,
+    linear-gradient(135deg, hsl(var(--primary) / 0.085) 0%, transparent 30%),
+    linear-gradient(215deg, hsl(var(--accent) / 0.105) 0%, transparent 34%),
+    linear-gradient(180deg, hsl(var(--background)), hsl(var(--secondary) / 0.22) 52%, hsl(var(--background)));
 }
 
 .admin-chrome-liquid {
