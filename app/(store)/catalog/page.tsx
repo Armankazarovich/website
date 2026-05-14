@@ -543,23 +543,22 @@ export default async function CatalogPage({
         </Link>
       </div>
 
+      <CatalogMobileFilter
+        categories={categories}
+        sizes={fullSizes}
+        types={dynamicTypes}
+        currentCategory={searchParams.category}
+        currentSize={currentSize}
+        currentType={currentType}
+        currentInStock={searchParams.instock === "1"}
+        variant="floating"
+      />
+
       {/* ── Sticky фильтр-полоса ── */}
       <CatalogTypeFilter
         currentType={currentType}
         category={searchParams.category}
         types={dynamicTypes}
-        mobileFilter={
-          <CatalogMobileFilter
-            categories={categories}
-            sizes={fullSizes}
-            types={dynamicTypes}
-            currentCategory={searchParams.category}
-            currentSize={currentSize}
-            currentType={currentType}
-            currentInStock={searchParams.instock === "1"}
-            variant="inline"
-          />
-        }
         preserveParams={{
           ...(searchParams.sort ? { sort: searchParams.sort } : {}),
           ...(searchParams.search ? { search: searchParams.search } : {}),

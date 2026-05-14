@@ -2048,42 +2048,51 @@ button, a, [role="button"], input, select, textarea {
 @media (max-width: 639px) {
   .store-product-card .store-product-card-title {
     display: -webkit-box;
-    min-height: 3.1rem;
+    min-height: 2.12rem;
     overflow: hidden;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    font-size: 0.9rem;
-    line-height: 1.15;
+    -webkit-line-clamp: 2;
+    font-size: 0.86rem;
+    line-height: 1.2;
     text-wrap: auto;
   }
 
   .store-product-card .store-size-chip {
-    min-height: 27px;
+    min-height: 22px;
     max-width: 100%;
-    padding: 0.24rem 0.36rem;
-    border-radius: 0.52rem;
-    font-size: 9px;
+    border-radius: 0.46rem;
+    padding: 0.1rem 0.18rem;
+    font-size: 7.95px;
     letter-spacing: 0;
   }
 
   .store-product-card .store-size-chip.is-extra {
-    min-width: 26px;
-    padding-inline: 0.38rem;
-    font-size: 9px;
+    min-width: 22px;
+    padding-inline: 0.2rem;
+    font-size: 8.2px;
   }
 
   .store-product-card .store-card-cta {
     min-height: 38px;
-    padding-inline: 0.58rem;
-    padding-block: 0.5rem;
+    padding-inline: 0.48rem;
+    padding-block: 0.44rem;
+  }
+
+  .store-product-card .store-card-price-wrap {
+    flex: 0 0 auto;
+    gap: 0.08rem;
+    overflow: visible;
   }
 
   .store-product-card .store-card-price {
-    font-size: 0.9rem;
+    flex-shrink: 0;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 0.86rem;
   }
 
   .store-product-card .store-card-price-unit {
-    font-size: 0.55rem;
+    font-size: 0.5rem;
   }
 }
 
