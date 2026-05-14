@@ -106,9 +106,9 @@ const QUICK_PRESETS = [
 ];
 
 const HEADER_FEATURES = [
-  "цены из каталога",
-  "м³, м² и штуки",
-  "добавление в корзину",
+  { label: "Цены из каталога", Icon: ListChecks },
+  { label: "м³, м² и штуки", Icon: Ruler },
+  { label: "Добавление в корзину", Icon: ShoppingCart },
 ];
 
 /* ── Math helpers ───────────────────────────────────── */
@@ -296,13 +296,6 @@ export default function CalculatorPage() {
       {/* Page header */}
       <div className="store-calculator-header bg-card border-b border-border">
         <div className="container mx-auto max-w-6xl px-4 py-8 sm:py-10">
-          <nav className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
-            <Link href="/" className="hover:text-foreground transition-colors">
-              Главная
-            </Link>
-            <span>/</span>
-            <span className="text-foreground">Калькулятор пиломатериалов</span>
-          </nav>
           <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
             <div className="flex items-start gap-3 sm:gap-4">
               <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
@@ -321,10 +314,13 @@ export default function CalculatorPage() {
             <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
               {HEADER_FEATURES.map((feature) => (
                 <div
-                  key={feature}
-                  className="store-calculator-feature rounded-xl border border-border bg-background/60 px-3 py-2 text-xs font-medium text-foreground"
+                  key={feature.label}
+                  className="store-calculator-feature flex min-h-12 items-center gap-2.5 rounded-2xl border border-primary/20 bg-background/55 px-3 py-2 text-xs font-semibold text-foreground shadow-sm shadow-foreground/5"
                 >
-                  {feature}
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <feature.Icon className="h-4 w-4" />
+                  </span>
+                  <span className="leading-tight">{feature.label}</span>
                 </div>
               ))}
             </div>
