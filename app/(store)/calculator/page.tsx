@@ -18,6 +18,7 @@ import {
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { BackButton } from "@/components/ui/back-button";
 
 /* ── Types ─────────────────────────────────────────── */
 interface ProductVariant {
@@ -303,8 +304,9 @@ export default function CalculatorPage() {
             <span className="text-foreground">Калькулятор пиломатериалов</span>
           </nav>
           <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
+              <div className="hidden w-14 h-14 rounded-2xl bg-primary/10 sm:flex items-center justify-center shrink-0">
                 <Calculator className="w-7 h-7 text-primary" />
               </div>
               <div>
