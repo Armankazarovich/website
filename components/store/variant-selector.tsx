@@ -117,7 +117,7 @@ export function VariantSelector({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24 sm:pb-0">
       {/* Size selection */}
       <div>
         <div className="mb-3 flex items-end justify-between gap-3">
@@ -152,7 +152,7 @@ export function VariantSelector({
         <div
           className={cn(
             variants.length > 10
-              ? "grid max-h-64 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3"
+              ? "grid grid-cols-2 gap-2 overflow-visible sm:max-h-64 sm:grid-cols-3 sm:overflow-y-auto sm:pr-1"
               : "flex flex-wrap gap-2",
           )}
         >
