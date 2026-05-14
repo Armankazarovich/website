@@ -477,7 +477,7 @@ export function ProductCard({
       </Link>
 
       {/* ── Контент ── */}
-      <div className={`flex flex-1 flex-col p-2.5 sm:p-4 ${isVivid ? "bg-card/95" : ""}`}>
+      <div className={`flex flex-1 flex-col p-4 ${isVivid ? "bg-card/95" : ""}`}>
         {/* Категория */}
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <p className="truncate text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{category}</p>
@@ -492,7 +492,7 @@ export function ProductCard({
         <Link prefetch href={`/product/${slug}`}>
           <h3
             title={name}
-            className="store-product-card-title mb-2 min-h-[2.15rem] font-display text-[15px] leading-[1.16] transition-colors line-clamp-2 sm:mb-3 sm:min-h-[2.6rem] sm:text-[18px]"
+            className="store-product-card-title mb-3 min-h-[2.35rem] font-display text-[15px] leading-[1.16] transition-colors line-clamp-2 sm:min-h-[2.6rem] sm:text-[18px]"
           >
             {name}
           </h3>
@@ -512,10 +512,10 @@ export function ProductCard({
         {variants.length > 0 && (
           <div
             className={cn(
-              "store-size-strip scrollbar-none mb-2 content-start gap-0.5 sm:mb-3 sm:gap-1.5",
+              "store-size-strip scrollbar-none mb-3 content-start gap-1.5",
               showAllSizes
                 ? "flex flex-wrap overflow-visible sm:max-h-[92px] sm:overflow-y-auto sm:pr-1"
-                : "grid h-[22px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(22px,auto)] overflow-hidden sm:flex sm:h-[55px] sm:flex-wrap"
+                : "grid h-[29px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] overflow-hidden sm:flex sm:h-[55px] sm:flex-wrap"
             )}
           >
             {mobileSizes.map((v) => (
@@ -588,7 +588,7 @@ export function ProductCard({
         )}
 
         {/* Кнопка / степпер */}
-        <div className={`mt-auto relative ${isMinimal ? "pt-2" : "pt-2 sm:pt-3 border-t border-border/60"}`}>
+        <div className={`mt-auto relative ${isMinimal ? "pt-2" : "pt-3 border-t border-border/60"}`}>
           {cartQty > 0 ? (
             /* ── Степпер количества ── */
             <div className="flex items-center gap-2">
@@ -622,7 +622,7 @@ export function ProductCard({
                   : "bg-primary text-primary-foreground hover:bg-primary/92"
               }`}
             >
-              <ShoppingCart className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
+              <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
               <span className="store-card-price-wrap">
                 {displayPrice ? (
                   <>
@@ -633,7 +633,7 @@ export function ProductCard({
                   <span className="text-sm">В корзину</span>
                 )}
               </span>
-              <ChevronRight className="h-3 w-3 shrink-0 opacity-60 sm:h-3.5 sm:w-3.5" />
+              <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
             </button>
           )}
 

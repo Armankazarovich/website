@@ -37,7 +37,7 @@ export function AdminPageHeader({
   };
 
   return (
-    <header className="sticky top-0 z-20 -mx-2.5 lg:-mx-6 px-2.5 lg:px-6 py-3 mb-4 bg-background border-b border-border">
+    <header className="sticky top-[calc(4rem+env(safe-area-inset-top,0px))] z-20 -mx-2.5 lg:-mx-6 px-2.5 lg:px-6 py-3 mb-4 bg-background border-b border-border">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg lg:text-xl font-semibold text-foreground leading-tight truncate">

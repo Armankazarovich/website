@@ -548,18 +548,6 @@ export default async function CatalogPage({
         currentType={currentType}
         category={searchParams.category}
         types={dynamicTypes}
-        mobileFilter={
-          <CatalogMobileFilter
-            categories={categories}
-            sizes={fullSizes}
-            types={dynamicTypes}
-            currentCategory={searchParams.category}
-            currentSize={currentSize}
-            currentType={currentType}
-            currentInStock={searchParams.instock === "1"}
-            variant="inline"
-          />
-        }
         preserveParams={{
           ...(searchParams.sort ? { sort: searchParams.sort } : {}),
           ...(searchParams.search ? { search: searchParams.search } : {}),
@@ -569,6 +557,19 @@ export default async function CatalogPage({
           ...(searchParams.maxprice ? { maxprice: searchParams.maxprice } : {}),
         }}
       />
+
+      {/* ── Мобильная строка фильтров (только на мобильном) ── */}
+      <div className="flex lg:hidden items-center gap-2 mb-4 pb-1 scrollbar-hide" style={{ overflowX: "auto", overflowY: "visible" }}>
+        <CatalogMobileFilter
+          categories={categories}
+          sizes={fullSizes}
+          types={dynamicTypes}
+          currentCategory={searchParams.category}
+          currentSize={currentSize}
+          currentType={currentType}
+          currentInStock={searchParams.instock === "1"}
+        />
+      </div>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         {/* Sidebar */}

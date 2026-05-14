@@ -245,6 +245,10 @@ export function FiltersDrawer() {
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
             className="admin-popup-liquid relative w-[88vw] max-w-[360px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            style={{
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
@@ -278,7 +282,10 @@ export function FiltersDrawer() {
             </div>
 
             {/* Footer — back button (filters apply instantly on click) */}
-            <div className="px-5 pb-8 pt-3 border-t border-border shrink-0">
+            <div
+              className="px-5 pt-3 border-t border-border shrink-0"
+              style={{ paddingBottom: "max(2rem, env(safe-area-inset-bottom, 0px))" }}
+            >
               <button
                 onClick={() => setOpen(false)}
                 className="w-full flex items-center justify-center gap-2 border border-border hover:bg-muted text-foreground font-semibold py-3 rounded-xl transition-colors"

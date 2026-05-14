@@ -71,6 +71,7 @@ export function AppHeader({
         mounted ? "transition-[background,border-color,box-shadow] duration-300" : ""
       )}
       style={{
+        paddingTop: noSticky ? undefined : "env(safe-area-inset-top, 0px)",
         backdropFilter: "none",
         WebkitBackdropFilter: "none",
         background: isScrolled

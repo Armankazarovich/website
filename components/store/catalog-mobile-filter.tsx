@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,7 +27,6 @@ interface CatalogMobileFilterProps {
   currentSize: string;
   currentType: string;
   currentInStock: boolean;
-  variant?: "floating" | "inline";
 }
 
 export function CatalogMobileFilter({
@@ -38,22 +37,23 @@ export function CatalogMobileFilter({
   currentSize,
   currentType,
   currentInStock,
-  variant = "floating",
 }: CatalogMobileFilterProps) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [catOpen, setCatOpen] = useState(true);
   const [sizeOpen, setSizeOpen] = useState(true);
-  const [portalReady, setPortalReady] = useState(false);
+  const dragStartY = useRef(0);
   useAdminOverlayGuard(open);
 
   useEffect(() => {
-    setPortalReady(true);
+    setMounted(true);
   }, []);
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Count active filters controlled by this mobile drawer.
   const activeCount = [currentCategory, currentSize, currentType, currentInStock ? "instock" : ""].filter(Boolean).length;
 
   const setParam = (key: string, value: string | null) => {
@@ -83,42 +83,28 @@ export function CatalogMobileFilter({
     setOpen(false);
   };
 
-  return (
+  const filterLayer = (
     <>
-      {/* Floating trigger — fixed left side on mobile */}
+      {/* Floating trigger — sticky left side, middle of screen */}
       <button
         onClick={() => setOpen(true)}
-        className={cn(
-          "lg:hidden transition-all active:scale-95",
-          variant === "inline"
-            ? "relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent"
-            : "fixed left-0 top-[calc(50dvh-22px)] z-[60] flex h-11 w-8 flex-col items-center justify-center gap-1 rounded-r-xl border-y border-r border-primary bg-primary px-1.5 py-2 text-primary-foreground"
-        )}
+        className="fixed left-0 top-1/2 -translate-y-1/2 z-[55] lg:hidden flex flex-col items-center justify-center gap-1 py-3 px-2.5 rounded-r-2xl shadow-xl border-y border-r border-border bg-card/95 backdrop-blur-md transition-all active:scale-95"
         aria-label="Открыть фильтры"
       >
-        <SlidersHorizontal className="h-4 w-4 text-current" />
+        <SlidersHorizontal className="w-4 h-4 text-foreground" />
         {activeCount > 0 && (
-          <span
-            className={cn(
-              "flex h-4 w-4 items-center justify-center rounded-full bg-card text-[8px] font-bold text-primary",
-              "absolute -right-1 -top-1"
-            )}
-          >
+          <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center shadow-sm">
             {activeCount}
           </span>
         )}
       </button>
 
-      {/* Spacer — placeholder where inline button was (keeps InstockToggle row intact) */}
-      {variant === "floating" && <div className="shrink-0 w-0" />}
-
-      {portalReady ? createPortal(
-        <AnimatePresence>
+      <AnimatePresence>
         {open && (
           <>
             {/* Backdrop */}
             <motion.div
-              className="fixed inset-0 z-[210] bg-background/65"
+              className="fixed inset-0 z-[210] bg-black/50 backdrop-blur-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -127,28 +113,37 @@ export function CatalogMobileFilter({
 
             {/* Drawer */}
             <motion.div
-              className="fixed inset-y-0 left-0 z-[220] flex w-[min(88vw,380px)] max-w-[380px] flex-col overflow-hidden border-r border-border bg-card shadow-2xl shadow-black/35"
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 34, stiffness: 360 }}
+              className="fixed bottom-0 left-0 right-0 z-[220] bg-card rounded-t-3xl overflow-hidden"
+              style={{ maxHeight: "82dvh", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
             >
+              {/* Handle — свайп вниз = закрыть */}
+              <div
+                className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing"
+                onTouchStart={(e) => { dragStartY.current = e.touches[0].clientY; }}
+                onTouchEnd={(e) => {
+                  const dy = e.changedTouches[0].clientY - dragStartY.current;
+                  if (dy > 60) setOpen(false);
+                }}
+              >
+                <div className="w-12 h-1.5 rounded-full bg-muted-foreground/25 active:bg-muted-foreground/50 transition-colors" />
+              </div>
+
               {/* Header */}
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="font-display text-lg font-bold leading-tight">Фильтры</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">Категория, размер, наличие</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
+              <div className="flex items-center justify-between px-5 py-3 border-b border-border/50">
+                <p className="font-semibold text-base">Фильтры</p>
+                <div className="flex items-center gap-3">
                   {activeCount > 0 && (
-                    <button onClick={resetAll} className="rounded-xl border border-primary/25 px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/10">
-                      Сбросить
+                    <button onClick={resetAll} className="text-xs text-primary hover:underline">
+                      Сбросить всё
                     </button>
                   )}
                   <button
                     onClick={() => setOpen(false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    aria-label="Закрыть фильтры"
+                    className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-muted transition-colors text-muted-foreground"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -156,8 +151,8 @@ export function CatalogMobileFilter({
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto overscroll-contain">
-                <div className="space-y-5 px-4 py-4">
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(82dvh - 160px)" }}>
+                <div className="px-5 py-4 space-y-5">
 
                   {/* В наличии toggle */}
                   <button
@@ -284,10 +279,10 @@ export function CatalogMobileFilter({
               </div>
 
               {/* Footer */}
-              <div className="shrink-0 border-t border-border/60 bg-card/95 px-4 py-3">
+              <div className="px-5 py-4 border-t border-border/50 bg-card">
                 <button
                   onClick={() => setOpen(false)}
-                  className="h-12 w-full rounded-2xl bg-primary text-sm font-bold text-primary-foreground transition-transform active:scale-[0.98]"
+                  className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm active:scale-[0.98] transition-transform"
                 >
                   Показать товары
                 </button>
@@ -295,9 +290,14 @@ export function CatalogMobileFilter({
             </motion.div>
           </>
         )}
-        </AnimatePresence>,
-        document.body,
-      ) : null}
+      </AnimatePresence>
+    </>
+  );
+
+  return (
+    <>
+      <div className="shrink-0 w-0" />
+      {mounted ? createPortal(filterLayer, document.body) : null}
     </>
   );
 }

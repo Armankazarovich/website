@@ -30,6 +30,7 @@ export function SheetContent({
   className,
   children,
   side = "left",
+  style,
   ...props
 }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
   side?: "left" | "right";
@@ -46,6 +47,11 @@ export function SheetContent({
             : "right-0 data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
           className
         )}
+        style={{
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          ...style,
+        }}
         {...props}
       >
         <DialogPrimitive.Title className="sr-only">Меню</DialogPrimitive.Title>

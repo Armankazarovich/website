@@ -99,7 +99,11 @@ export function SidePanel({
             exit={{ x: isLeft ? "-100%" : "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
             className={`admin-side-panel-panel relative w-full sm:w-[92vw] h-full ${isLeft ? "border-r" : "border-l"} flex flex-col overflow-hidden ${panelClassName ?? "admin-popup-liquid bg-card border-border shadow-2xl"}`}
-            style={{ maxWidth }}
+            style={{
+              maxWidth,
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

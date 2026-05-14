@@ -1003,6 +1003,10 @@ export function AccountDrawer() {
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
             className={`account-drawer-panel ${isAdminWorkspace ? "admin-popup-liquid admin-account-drawer border-l" : "border-l"} relative w-full sm:w-[420px] max-w-full h-full bg-background border-border shadow-2xl flex flex-col overflow-hidden`}
+            style={{
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
