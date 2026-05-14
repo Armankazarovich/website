@@ -28,6 +28,7 @@
     "design:check": "node scripts/validate-design-system.js",
     "nav:check": "node scripts/validate-admin-navigation-model.js",
     "modules:check": "node scripts/validate-aray-modules.js",
+    "popups:check": "node scripts/validate-popup-portals.js",
     "module-nav:check": "node scripts/validate-aray-module-navigation-contract.js",
     "aray:assistant": "node scripts/validate-aray-assistant.js",
     "aray:tts": "tsx scripts/validate-aray-tts-pronunciation.ts",

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Star, Loader2, AlertCircle, CheckCircle, Camera, X, MessageSquarePlus } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 type CabinetProfile = {
   name?: string | null;
@@ -149,6 +150,7 @@ export function HomeReviewPopup() {
       </button>
 
       {open && (
+        <PopupPortal>
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
           {/* Backdrop */}
           <div
@@ -361,6 +363,7 @@ export function HomeReviewPopup() {
             )}
           </div>
         </div>
+        </PopupPortal>
       )}
     </>
   );

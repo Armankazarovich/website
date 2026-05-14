@@ -56,6 +56,7 @@ import { Button } from "@/components/ui/button";
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { usePathname, useRouter } from "next/navigation";
+import { PopupPortal } from "@/components/ui/popup-portal";
 import {
   buildAdminNavigationGroups,
   getAdminNavItemLabel,
@@ -978,7 +979,8 @@ export function AccountDrawer() {
   }, [open, setOpen]);
 
   return (
-    <AnimatePresence>
+    <PopupPortal>
+      <AnimatePresence>
       {open && (
         <div
           className={`fixed inset-0 ${UI_LAYERS.overlay} flex justify-end`}
@@ -1045,6 +1047,7 @@ export function AccountDrawer() {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </PopupPortal>
   );
 }

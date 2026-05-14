@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 interface Props {
   open: boolean;
@@ -77,7 +78,8 @@ export function SidePanel({
   }, [open, onClose]);
 
   return (
-    <AnimatePresence>
+    <PopupPortal>
+      <AnimatePresence>
       {open && (
         <div
           className={`admin-side-panel-root fixed inset-0 ${zIndex} flex ${isLeft ? "justify-start" : "justify-end"}`}
@@ -105,6 +107,9 @@ export function SidePanel({
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
             }}
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={typeof title === "string" ? title : "Панель"}
           >
             {/* Header */}
             {customHeader ? (
@@ -154,6 +159,7 @@ export function SidePanel({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </PopupPortal>
   );
 }

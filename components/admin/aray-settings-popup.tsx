@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { ARAY_ICON_TONE } from "@/lib/aray-design-tokens";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 export type AraySettingsData = {
   todayCostRub: number;
@@ -79,7 +80,11 @@ export function AraySettingsTrigger({ data }: { data: AraySettingsData }) {
       >
         <Settings className="w-4 h-4" />
       </button>
-      {open && <AraySettingsPopup data={data} onClose={() => setOpen(false)} />}
+      {open && (
+        <PopupPortal>
+          <AraySettingsPopup data={data} onClose={() => setOpen(false)} />
+        </PopupPortal>
+      )}
     </>
   );
 }

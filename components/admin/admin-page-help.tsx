@@ -8,6 +8,7 @@ import {
   BookOpen, Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 /* ─── Типы ──────────────────────────────────────────────────────── */
 type Role = "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "COURIER" | "ACCOUNTANT" | "WAREHOUSE" | "SELLER" | "USER";
@@ -532,7 +533,8 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
       </button>
 
       {/* Боковая панель */}
-      <AnimatePresence>
+      <PopupPortal>
+        <AnimatePresence>
         {open && (
           <>
             {/* Backdrop */}
@@ -686,7 +688,8 @@ export function AdminPageHelp({ userRole }: AdminPageHelpProps) {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </PopupPortal>
     </>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { X } from "lucide-react";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 type PwaPlatform = "android" | "ios" | "desktop";
 
@@ -138,7 +139,8 @@ export function PwaFooterBadges() {
 
       {/* Modal */}
       {open && (
-        <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
+        <PopupPortal>
+          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4">
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/65 backdrop-blur-sm"
@@ -191,7 +193,8 @@ export function PwaFooterBadges() {
               </button>
             </div>
           </div>
-        </div>
+          </div>
+        </PopupPortal>
       )}
     </>
   );

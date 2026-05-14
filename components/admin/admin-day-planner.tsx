@@ -6,6 +6,7 @@ import {
   Check, Clock, ChevronDown, ChevronUp, Sunrise, Sun, Moon,
 } from "lucide-react";
 import { useClassicMode } from "@/lib/use-classic-mode";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 // ─── Типы ────────────────────────────────────────────────────────────────────
 type Priority = "low" | "medium" | "high";
@@ -220,7 +221,8 @@ export function AdminDayPlanner() {
 
       {/* ── Боковая панель ── */}
       {open && (
-        <>
+        <PopupPortal>
+          <>
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-[70] bg-black/50 backdrop-blur-sm"
@@ -421,7 +423,8 @@ export function AdminDayPlanner() {
               </button>
             </div>
           </div>
-        </>
+          </>
+        </PopupPortal>
       )}
     </>
   );

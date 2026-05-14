@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { X, SlidersHorizontal, Filter, ChevronDown, LayoutGrid, Ruler, ArrowLeft } from "lucide-react";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useFiltersDrawer } from "@/store/filters-drawer";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 type ProductTypeOption = { label: string; keyword: string };
 
@@ -233,7 +234,8 @@ export function FiltersDrawer() {
   useAdminOverlayGuard(open);
 
   return (
-    <AnimatePresence>
+    <PopupPortal>
+      <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[200] flex justify-end" onClick={() => setOpen(false)}>
           <motion.div
@@ -297,6 +299,7 @@ export function FiltersDrawer() {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </PopupPortal>
   );
 }

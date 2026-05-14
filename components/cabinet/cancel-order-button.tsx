@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { XCircle, Loader2 } from "lucide-react";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 export function CancelOrderButton({ orderId, orderNumber }: { orderId: string; orderNumber: number }) {
   const [loading, setLoading] = useState(false);
@@ -46,7 +47,8 @@ export function CancelOrderButton({ orderId, orderNumber }: { orderId: string; o
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !loading && setShowConfirm(false)}>
+    <PopupPortal>
+      <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => !loading && setShowConfirm(false)}>
       <div className="bg-card rounded-t-2xl sm:rounded-2xl border border-border p-5 w-full max-w-sm space-y-4" onClick={(e) => e.stopPropagation()}>
         <div>
           <h3 className="font-semibold text-base">Отменить заказ #{orderNumber}?</h3>
@@ -89,6 +91,7 @@ export function CancelOrderButton({ orderId, orderNumber }: { orderId: string; o
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </PopupPortal>
   );
 }

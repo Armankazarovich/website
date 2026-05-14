@@ -8,6 +8,7 @@ import { X, ShoppingCart, Minus, Plus, Trash2, Package, ArrowRight } from "lucid
 import { useCartStore } from "@/store/cart";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { formatPrice } from "@/lib/utils";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 function CartImage({ src, alt }: { src: string; alt: string }) {
   const [error, setError] = useState(false);
@@ -41,7 +42,8 @@ export function CartDrawer() {
   const count = totalItems();
 
   return (
-    <AnimatePresence>
+    <PopupPortal>
+      <AnimatePresence>
       {cartOpen && (
         <div className="fixed inset-0 z-[200] flex justify-end" onClick={() => setCartOpen(false)}>
           <motion.div
@@ -190,6 +192,7 @@ export function CartDrawer() {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </PopupPortal>
   );
 }

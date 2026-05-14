@@ -7,6 +7,7 @@ import {
   AlertCircle, CheckCircle2, Bell, CalendarClock,
 } from "lucide-react";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 // ── Типы ─────────────────────────────────────────────────────────────────────
 type Summary = {
@@ -908,7 +909,8 @@ function SubscriptionForm({
   };
 
   return (
-    <div
+    <PopupPortal>
+      <div
       className="fixed inset-0 z-[220] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}
     >
@@ -1074,6 +1076,7 @@ function SubscriptionForm({
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </PopupPortal>
   );
 }

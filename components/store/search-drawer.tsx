@@ -8,6 +8,7 @@ import { Search, X, Package, Loader2, ChevronRight, Tag, LayoutGrid } from "luci
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { formatPrice } from "@/lib/utils";
 import { useSearchDrawer } from "@/store/search-drawer";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 interface Variant { pricePerCube: number | null; pricePerPiece: number | null; size?: string; }
 interface Product {
@@ -364,7 +365,8 @@ export function SearchDrawer() {
   useAdminOverlayGuard(open);
 
   return (
-    <AnimatePresence>
+    <PopupPortal>
+      <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[200] flex justify-end" onClick={() => setOpen(false)}>
           <motion.div
@@ -399,6 +401,7 @@ export function SearchDrawer() {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+      </AnimatePresence>
+    </PopupPortal>
   );
 }

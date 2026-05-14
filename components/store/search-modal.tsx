@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, X, Package, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { PopupPortal } from "@/components/ui/popup-portal";
 
 interface SearchResult {
   id: string;
@@ -62,7 +63,8 @@ export function SearchModal({ onClose }: SearchModalProps) {
   }, [query]);
 
   return (
-    <div
+    <PopupPortal>
+      <div
       className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-start justify-center pt-16 px-4"
       onClick={onClose}
     >
@@ -188,6 +190,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </PopupPortal>
   );
 }
