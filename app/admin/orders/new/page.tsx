@@ -1981,25 +1981,35 @@ export default function NewPhoneOrderPage() {
 
       </div>
 
-      {activeShift && cashCloseOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-background/80 p-3 sm:items-center">
-          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-            <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-base font-semibold">Закрыть смену</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Проверьте наличные. Система сохранит отчёт, расхождение и журнал действий.
-                </p>
-              </div>
+      {activeShift && (
+        <AdminModal
+          open={cashCloseOpen}
+          onClose={() => setCashCloseOpen(false)}
+          title="Закрыть смену"
+          subtitle="Проверьте наличные, отчёт и расхождение перед закрытием."
+          size="md"
+          bodyClassName="space-y-3 p-4 sm:p-5"
+          footer={(
+            <>
               <button
                 type="button"
                 onClick={() => setCashCloseOpen(false)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-foreground"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
               >
-                <X className="h-4 w-4" />
+                Отмена
               </button>
-            </div>
-            <div className="space-y-3 px-4 py-4">
+              <button
+                type="button"
+                onClick={closeCashShift}
+                disabled={shiftBusy === "close"}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/45 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+              >
+                {shiftBusy === "close" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Закрыть
+              </button>
+            </>
+          )}
+        >
               <div className="grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-xl border border-border bg-background px-3 py-2">
                   <p className="text-muted-foreground">Старт</p>
@@ -2028,55 +2038,50 @@ export default function NewPhoneOrderPage() {
                   Карта, онлайн-оплата и QR будут сверяться отдельными платежными статусами.
                 </p>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/10 px-4 py-3">
-              <button
-                type="button"
-                onClick={() => setCashCloseOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                onClick={closeCashShift}
-                disabled={shiftBusy === "close"}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/45 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
-              >
-                {shiftBusy === "close" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                Закрыть
-              </button>
-            </div>
-          </div>
-        </div>
+        </AdminModal>
       )}
 
       {cashCenterOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-background/80 p-3 sm:items-center">
-          <div className="flex max-h-[88dvh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
-            <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <Banknote className="h-4 w-4 text-primary" />
-                  <p className="text-base font-semibold">Кассовая смена</p>
-                  <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
-                    activeShift ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
-                  }`}>
-                    {activeShift ? "открыта" : "закрыта"}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Открытие, закрытие, отчёты и журнал действий без выхода из терминала.
-                </p>
-              </div>
+        <AdminModal
+          open
+          onClose={() => setCashCenterOpen(false)}
+          title="Кассовая смена"
+          subtitle="Открытие, закрытие, отчёты и журнал действий без выхода из терминала."
+          size="lg"
+          bodyClassName="p-0"
+          headerActions={(
+            <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${
+              activeShift ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground"
+            }`}>
+              {activeShift ? "открыта" : "закрыта"}
+            </span>
+          )}
+          footer={(
+            <>
+              {activeShift && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClosingCash(String(activeShiftExpectedCash || ""));
+                    setCashCenterOpen(false);
+                    setCashCloseOpen(true);
+                  }}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/45 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Закрыть смену
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setCashCenterOpen(false)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-foreground"
+                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
               >
-                <X className="h-4 w-4" />
+                Готово
               </button>
-            </div>
+            </>
+          )}
+        >
 
             <div className="flex gap-2 overflow-x-auto border-b border-border px-4 py-3 scrollbar-hide">
               {[
@@ -2198,30 +2203,7 @@ export default function NewPhoneOrderPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-2 border-t border-border bg-muted/10 px-4 py-3 sm:flex-row sm:justify-end">
-              {activeShift && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setClosingCash(String(activeShiftExpectedCash || ""));
-                    setCashCloseOpen(true);
-                  }}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary/45 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Закрыть смену
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setCashCenterOpen(false)}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
-              >
-                Готово
-              </button>
-            </div>
-          </div>
-        </div>
+        </AdminModal>
       )}
 
       {/* ── Main POS Layout ── */}
