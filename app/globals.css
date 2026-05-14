@@ -1678,6 +1678,14 @@ button, a, [role="button"], input, select, textarea {
     transform 0.08s ease;
 }
 
+.store-size-chip-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .store-size-strip {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.34) transparent;
@@ -2058,18 +2066,19 @@ button, a, [role="button"], input, select, textarea {
   }
 
   .store-product-card .store-size-chip {
-    min-height: 27px;
+    min-height: 29px;
     max-width: 100%;
-    padding: 0.24rem 0.36rem;
+    padding: 0.22rem 0.24rem;
     border-radius: 0.52rem;
-    font-size: 9px;
+    font-size: 8.5px;
+    line-height: 1;
     letter-spacing: 0;
   }
 
   .store-product-card .store-size-chip.is-extra {
-    min-width: 26px;
-    padding-inline: 0.38rem;
-    font-size: 9px;
+    min-width: 23px;
+    padding-inline: 0.2rem;
+    font-size: 8.5px;
   }
 
   .store-product-card .store-card-cta {

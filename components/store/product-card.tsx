@@ -70,10 +70,39 @@ function shortCardDescription(description?: string | null) {
 
 function compactMobileSize(size: string) {
   const normalized = size.replace(/[xх*]/gi, "×").replace(/\s+/g, " ").trim();
+  const compactGrade = (grade: string) => {
+    const clean = grade.trim();
+    if (!clean) return "";
+
+    const lower = clean.toLowerCase();
+    if (/^(ав|ab)$/i.test(clean)) return clean.toUpperCase();
+    if (lower.startsWith("экстр") || lower.startsWith("эстр")) return "Экс";
+    if (lower.startsWith("прим")) return "Пр";
+    if (lower.startsWith("сорт")) return "сорт";
+
+    return clean.length > 4 ? clean.slice(0, 4) : clean;
+  };
+
   const rangeMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*×\s*(\d+(?:[.,]\d+)?)\s+до\s+(\d+(?:[.,]\d+)?)/i);
 
   if (rangeMatch) {
-    return `${rangeMatch[1]}×${rangeMatch[2]} до ${rangeMatch[3]}м`;
+    return `${rangeMatch[1]}x${rangeMatch[2]} до${rangeMatch[3]}`;
+  }
+
+  const millimeterGradeMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*мм\s*\(([^)]*)\)/i);
+  if (millimeterGradeMatch) {
+    const grade = millimeterGradeMatch[2]
+      .replace(/^4\/4\s*/i, "")
+      .replace(/гост/i, "ГОСТ")
+      .replace(/стр\.?/i, "стр.")
+      .trim();
+    return `${millimeterGradeMatch[1]}мм${grade ? ` ${grade}` : ""}`;
+  }
+
+  const twoDimensionalMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*×\s*(\d+(?:[.,]\d+)?)(?:\s+(.+))?$/i);
+  if (twoDimensionalMatch) {
+    const grade = compactGrade(twoDimensionalMatch[3] || "");
+    return `${twoDimensionalMatch[1]}x${twoDimensionalMatch[2]}${grade ? ` ${grade}` : ""}`;
   }
 
   const parts = normalized
@@ -86,8 +115,8 @@ function compactMobileSize(size: string) {
   if (!Number.isFinite(length) || length <= 0) return size;
 
   const meters = length >= 1000 ? length / 1000 : length;
-  const lengthLabel = Number.isInteger(meters) ? `${meters}м` : `${meters.toFixed(1)}м`;
-  return `${parts[0]}×${parts[1]}×${lengthLabel}`;
+  const lengthLabel = Number.isInteger(meters) ? `${meters}` : `${meters.toFixed(1)}`;
+  return `${parts[0]}x${parts[1]}x${lengthLabel}`;
 }
 
 export function ProductCard({
@@ -477,7 +506,7 @@ export function ProductCard({
       </Link>
 
       {/* ── Контент ── */}
-      <div className={`flex flex-1 flex-col p-4 ${isVivid ? "bg-card/95" : ""}`}>
+      <div className={`flex flex-1 flex-col p-3 sm:p-4 ${isVivid ? "bg-card/95" : ""}`}>
         {/* Категория */}
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <p className="truncate text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{category}</p>
@@ -512,10 +541,10 @@ export function ProductCard({
         {variants.length > 0 && (
           <div
             className={cn(
-              "store-size-strip scrollbar-none mb-3 content-start gap-1.5",
+              "store-size-strip scrollbar-none mb-3 content-start gap-1",
               showAllSizes
                 ? "flex flex-wrap overflow-visible sm:max-h-[92px] sm:overflow-y-auto sm:pr-1"
-                : "grid h-[29px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] overflow-hidden sm:flex sm:h-[55px] sm:flex-wrap"
+                : "grid min-h-[32px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] overflow-visible sm:flex sm:h-[55px] sm:flex-wrap"
             )}
           >
             {mobileSizes.map((v) => (
@@ -532,7 +561,7 @@ export function ProductCard({
                   !v.inStock && "is-disabled"
                 )}
               >
-                {compactMobileSize(v.size)}
+                <span className="store-size-chip-label">{compactMobileSize(v.size)}</span>
               </button>
             ))}
             {desktopSizes.map((v) => (
@@ -549,7 +578,7 @@ export function ProductCard({
                   !v.inStock && "is-disabled"
                 )}
               >
-                {v.size}
+                <span className="store-size-chip-label">{v.size}</span>
               </button>
             ))}
             {/* Mobile: compact +N stays in the same row */}
