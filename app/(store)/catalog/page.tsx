@@ -16,7 +16,7 @@ import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
-import { Calculator, ArrowRight, SearchX, PackageCheck, BadgeCheck, Truck } from "lucide-react";
+import { Calculator, ArrowRight, SearchX, PackageCheck, BadgeCheck, Truck, SlidersHorizontal } from "lucide-react";
 import { getSiteSettings, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
@@ -500,8 +500,16 @@ export default async function CatalogPage({
     }),
   };
 
+  const sortOptions = [
+    { value: "", label: "Новые" },
+    { value: "name", label: "А–Я" },
+    { value: "price_asc", label: "Цена ↑" },
+    { value: "price_desc", label: "Цена ↓" },
+  ];
+  const currentSortLabel = sortOptions.find((option) => option.value === (searchParams.sort || ""))?.label || "Новые";
+
   return (
-    <div className="container py-3 sm:py-6">
+    <div className="container max-w-[100vw] overflow-x-hidden py-3 sm:py-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -513,33 +521,45 @@ export default async function CatalogPage({
       <RoutePrefetcher hrefs={prefetchHrefs} />
 
       {/* ── Заголовок ── */}
-      <div className="mb-3 sm:mb-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">
-              Каталог ПилоРус
-            </p>
-            <h1 className="font-display font-bold text-2xl sm:text-3xl leading-tight">
-              {pageTitle}
-            </h1>
+      <div className="mb-4 overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-3 shadow-[0_18px_45px_-38px_hsl(var(--foreground)/0.45)] sm:mb-5 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-primary/28 bg-primary/10 text-primary sm:inline-flex">
+              <PackageCheck className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
+                <BadgeCheck className="h-3.5 w-3.5" />
+                Каталог ПилоРус
+              </p>
+              <h1 className="font-display text-2xl font-bold leading-tight sm:text-3xl">
+                {pageTitle}
+              </h1>
+              <p className="mt-1 text-xs font-semibold text-muted-foreground">
+                {totalCount} позиций в подборке
+              </p>
+            </div>
           </div>
-          <p className="text-xs font-semibold text-muted-foreground sm:pb-1">
-            {totalCount} позиций в подборке
-          </p>
+
+          <div className="flex min-w-0 flex-wrap gap-1.5 text-[10px] font-semibold text-muted-foreground sm:w-[360px] sm:justify-end">
+            <span className="min-w-0 flex-1 rounded-xl border border-border/70 bg-background/55 px-2.5 py-2 text-center sm:flex-none">В наличии</span>
+            <span className="min-w-0 flex-1 rounded-xl border border-border/70 bg-background/55 px-2.5 py-2 text-center sm:flex-none">Доставка 1-3 дня</span>
+            <span className="min-w-0 flex-1 rounded-xl border border-border/70 bg-background/55 px-2.5 py-2 text-center sm:flex-none">Расчет м³</span>
+          </div>
         </div>
 
         <Link
           href="/calculator"
-          className="mt-3 flex items-center gap-3 rounded-xl border border-primary/25 bg-primary/10 px-3 py-2.5 transition-colors hover:bg-primary/15"
+          className="mt-3 flex items-center gap-3 rounded-2xl border border-primary/28 bg-primary/10 px-3 py-2.5 transition-colors hover:bg-primary/15 sm:px-4"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Calculator className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">Не знаете, сколько нужно?</p>
-            <p className="hidden xs:block text-xs text-muted-foreground">Калькулятор рассчитает м³, штуки и стоимость</p>
+            <p className="hidden text-xs text-muted-foreground xs:block">Калькулятор рассчитает м³, штуки и стоимость</p>
           </div>
-          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
         </Link>
       </div>
 
@@ -650,36 +670,52 @@ export default async function CatalogPage({
         {/* Main content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
-          <div className="mb-4 flex flex-col items-start gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="mb-3 flex w-[calc(100vw-2rem)] max-w-full items-start justify-between gap-3 sm:mb-5 sm:w-full sm:items-center sm:gap-4">
             <h2 className="font-display text-xl font-bold leading-tight sm:text-2xl">
               {listingTitle}
             </h2>
 
-            <div className="flex w-full shrink-0 items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
+            <div className="flex shrink-0 items-center gap-2 sm:w-auto">
               <div className="hidden lg:block">
                 <InstockToggle active={searchParams.instock === "1"} />
               </div>
-              <span className="text-sm text-muted-foreground hidden sm:block mr-1">Сортировка:</span>
-              {[
-                { value: "", label: "Новые" },
-                { value: "name", label: "А–Я" },
-                { value: "price_asc", label: "Цена ↑", mobileHide: true },
-                { value: "price_desc", label: "Цена ↓", mobileHide: true },
-              ].map((opt) => (
-                <Link
-                  key={opt.value}
-                  href={buildSortUrl(opt.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    (opt as any).mobileHide ? "hidden sm:block" : ""
-                  } ${
-                    (searchParams.sort || "") === opt.value
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border hover:bg-accent text-muted-foreground"
-                  }`}
-                >
-                  {opt.label}
-                </Link>
-              ))}
+              <details className="relative sm:hidden">
+                <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground [&::-webkit-details-marker]:hidden">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
+                  {currentSortLabel}
+                </summary>
+                <div className="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-44 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 shadow-xl">
+                  {sortOptions.map((opt) => (
+                    <Link
+                      key={opt.value}
+                      href={buildSortUrl(opt.value)}
+                      className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                        (searchParams.sort || "") === opt.value
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      }`}
+                    >
+                      {opt.label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+              <div className="hidden items-center gap-2 sm:flex">
+                <span className="mr-1 text-sm text-muted-foreground">Сортировка:</span>
+                {sortOptions.map((opt) => (
+                  <Link
+                    key={opt.value}
+                    href={buildSortUrl(opt.value)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                      (searchParams.sort || "") === opt.value
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    {opt.label}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -756,6 +792,7 @@ export default async function CatalogPage({
                   shortDescription={product.shortDescription}
                   description={product.description}
                   images={product.images}
+                  cardTags={product.cardTags}
                   saleUnit={product.saleUnit}
                   variants={product.variants.map((v: any) => ({
                     id: v.id,

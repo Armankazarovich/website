@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescription } from "@/lib/product-seo";
 import { makeShortProductDescription, normalizeProductText } from "@/lib/product-descriptions";
+import { normalizeProductCardTags } from "@/lib/product-insights";
 import { slugify } from "@/lib/slug";
 import { revalidatePath, revalidateTag } from "next/cache";
 
@@ -59,7 +60,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   } catch {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
-  const { name, slug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants } =
+  const { name, slug, shortDescription, description, categoryId, images, cardTags, saleUnit, active, featured, variants } =
     body as {
       name?: string;
       slug?: string;
@@ -67,6 +68,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       description?: string;
       categoryId?: string;
       images?: unknown;
+      cardTags?: unknown;
       saleUnit?: string;
       active?: boolean;
       featured?: boolean;
@@ -166,6 +168,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
   if (categoryId !== undefined) updateData.categoryId = categoryId;
   if (images !== undefined) updateData.images = images as string[];
+  if (cardTags !== undefined) updateData.cardTags = normalizeProductCardTags(Array.isArray(cardTags) ? (cardTags as string[]) : []);
   if (saleUnit !== undefined) updateData.saleUnit = saleUnit;
   if (active !== undefined) updateData.active = active;
   if (featured !== undefined) updateData.featured = featured;

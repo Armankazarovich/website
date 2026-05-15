@@ -71,6 +71,7 @@ model Product {
   description String?
   categoryId  String
   images      String[]
+  cardTags    String[]         @default([])
   saleUnit    SaleUnit         @default(BOTH)
   active      Boolean          @default(true)
   featured    Boolean          @default(false)

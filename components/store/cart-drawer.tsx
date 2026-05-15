@@ -45,7 +45,7 @@ export function CartDrawer() {
     <PopupPortal>
       <AnimatePresence>
       {cartOpen && (
-        <div className="fixed inset-0 z-[200] flex justify-end" onClick={() => setCartOpen(false)}>
+        <div className="fixed inset-0 z-[200] flex justify-end overflow-hidden" onClick={() => setCartOpen(false)}>
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
@@ -54,8 +54,15 @@ export function CartDrawer() {
           <motion.div
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 400, damping: 40 }}
-            className="admin-popup-liquid relative w-[92vw] max-w-[420px] h-full bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            className="admin-popup-liquid relative h-[100dvh] max-h-[100dvh] w-[92vw] max-w-[420px] bg-background border-l border-border shadow-2xl flex flex-col overflow-hidden"
+            style={{
+              paddingTop: "env(safe-area-inset-top, 0px)",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}
             onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Корзина"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">

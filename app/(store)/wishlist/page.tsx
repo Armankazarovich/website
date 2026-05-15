@@ -75,6 +75,7 @@ export default function WishlistPage() {
                 name={item.name}
                 category={item.category}
                 images={item.images}
+                cardTags={item.cardTags}
                 saleUnit={item.saleUnit}
                 variants={item.variants}
               />

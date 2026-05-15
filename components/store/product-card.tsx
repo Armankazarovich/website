@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronRight, Minus, Plus, Boxes, Package, X } from "lucide-react";
+import { ShoppingCart, ChevronRight, Minus, Plus, Boxes, Package, X, CheckCircle, Ruler } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCartStore, type UnitType } from "@/store/cart";
 import { cn, formatPrice } from "@/lib/utils";
@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
+import { buildProductInsightTags } from "@/lib/product-insights";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -55,6 +56,7 @@ interface ProductCardProps {
   images: string[];
   saleUnit: "CUBE" | "PIECE" | "BOTH";
   variants: Variant[];
+  cardTags?: string[] | null;
   featured?: boolean;
 }
 
@@ -68,59 +70,8 @@ function shortCardDescription(description?: string | null) {
   return text.length > 118 ? `${text.slice(0, 115).trim()}...` : text;
 }
 
-function compactMobileSize(size: string) {
-  const normalized = size.replace(/[xх*]/gi, "×").replace(/\s+/g, " ").trim();
-  const compactGrade = (grade: string) => {
-    const clean = grade.trim();
-    if (!clean) return "";
-
-    const lower = clean.toLowerCase();
-    if (/^(ав|ab)$/i.test(clean)) return clean.toUpperCase();
-    if (lower.startsWith("экстр") || lower.startsWith("эстр")) return "Экс";
-    if (lower.startsWith("прим")) return "Пр";
-    if (lower.startsWith("сорт")) return "сорт";
-
-    return clean.length > 4 ? clean.slice(0, 4) : clean;
-  };
-
-  const rangeMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*×\s*(\d+(?:[.,]\d+)?)\s+до\s+(\d+(?:[.,]\d+)?)/i);
-
-  if (rangeMatch) {
-    return `${rangeMatch[1]}x${rangeMatch[2]} до${rangeMatch[3]}`;
-  }
-
-  const millimeterGradeMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*мм\s*\(([^)]*)\)/i);
-  if (millimeterGradeMatch) {
-    const grade = millimeterGradeMatch[2]
-      .replace(/^4\/4\s*/i, "")
-      .replace(/гост/i, "ГОСТ")
-      .replace(/стр\.?/i, "стр.")
-      .trim();
-    return `${millimeterGradeMatch[1]}мм${grade ? ` ${grade}` : ""}`;
-  }
-
-  const twoDimensionalMatch = normalized.match(/^(\d+(?:[.,]\d+)?)\s*×\s*(\d+(?:[.,]\d+)?)(?:\s+(.+))?$/i);
-  if (twoDimensionalMatch) {
-    const grade = compactGrade(twoDimensionalMatch[3] || "");
-    return `${twoDimensionalMatch[1]}x${twoDimensionalMatch[2]}${grade ? ` ${grade}` : ""}`;
-  }
-
-  const parts = normalized
-    .split("×")
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (parts.length < 3) return size;
-
-  const length = Number(parts[2].replace(/[^\d.]/g, ""));
-  if (!Number.isFinite(length) || length <= 0) return size;
-
-  const meters = length >= 1000 ? length / 1000 : length;
-  const lengthLabel = Number.isInteger(meters) ? `${meters}` : `${meters.toFixed(1)}`;
-  return `${parts[0]}x${parts[1]}x${lengthLabel}`;
-}
-
 export function ProductCard({
-  id, slug, name, category, shortDescription, description, images, saleUnit, variants, featured,
+  id, slug, name, category, shortDescription, description, images, saleUnit, variants, cardTags, featured,
 }: ProductCardProps) {
   const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
@@ -130,6 +81,7 @@ export function ProductCard({
   const activeVariants = variants.filter((v) => v.inStock);
   const hasStock = activeVariants.length > 0;
   const teaser = shortCardDescription(shortDescription || description);
+  const insightTags = buildProductInsightTags({ name, category, shortDescription, description, saleUnit, variants, cardTags });
 
   const defaultVariant = activeVariants[0] || variants[0];
 
@@ -296,20 +248,8 @@ export function ProductCard({
   };
 
   /* Responsive: mobile stays compact and opens a bottom picker; desktop can expand inline */
-  const MOBILE_LIMIT = 2;
   const DESKTOP_LIMIT = 2;
-  const defaultMobileSizes = variants.slice(0, MOBILE_LIMIT);
-  const mobileSizes =
-    selectedVariant && !defaultMobileSizes.some((variant) => variant.id === selectedVariant.id)
-      ? [
-          selectedVariant,
-          ...defaultMobileSizes
-            .filter((variant) => variant.id !== selectedVariant.id)
-            .slice(0, MOBILE_LIMIT - 1),
-        ]
-      : defaultMobileSizes;
   const desktopSizes = showAllSizes ? variants : variants.slice(0, DESKTOP_LIMIT);
-  const mobileExtra = Math.max(0, variants.length - mobileSizes.length);
   const desktopExtra = showAllSizes ? 0 : Math.max(0, variants.length - DESKTOP_LIMIT);
 
   // ── Style helpers ──
@@ -355,7 +295,7 @@ export function ProductCard({
               {hasStock ? "В наличии" : "Нет"}
             </span>
           </div>
-          <WishlistButton size="sm" item={{ id, slug, name, category, images, saleUnit, variants }} />
+          <WishlistButton size="sm" item={{ id, slug, name, category, images, cardTags, saleUnit, variants }} />
         </div>
 
         {/* Bottom overlay content */}
@@ -499,7 +439,7 @@ export function ProductCard({
           {/* Wishlist — та же высота h-7 */}
           <WishlistButton
             size="sm"
-            item={{ id, slug, name, category, images, saleUnit, variants }}
+            item={{ id, slug, name, category, images, cardTags, saleUnit, variants }}
           />
         </div>
 
@@ -527,6 +467,15 @@ export function ProductCard({
           </h3>
         </Link>
 
+        <div className="store-smart-tags mb-3" aria-label="Подсказки по товару">
+          {insightTags.map((tag) => (
+            <span key={tag} className="store-smart-tag">
+              <CheckCircle className="store-smart-tag-icon" strokeWidth={2} aria-hidden="true" />
+              <span>{tag}</span>
+            </span>
+          ))}
+        </div>
+
         <p
           aria-hidden={!teaser}
           className={cn(
@@ -544,26 +493,32 @@ export function ProductCard({
               "store-size-strip scrollbar-none mb-3 content-start gap-1",
               showAllSizes
                 ? "flex flex-wrap overflow-visible sm:max-h-[92px] sm:overflow-y-auto sm:pr-1"
-                : "grid min-h-[32px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] overflow-visible sm:flex sm:h-[55px] sm:flex-wrap"
+                : "flex min-h-[28px] flex-nowrap overflow-x-auto overflow-y-hidden sm:h-[55px] sm:flex-wrap sm:overflow-visible"
             )}
           >
-            {mobileSizes.map((v) => (
-              <button
-                key={v.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  pickVariant(v);
-                }}
-                disabled={!v.inStock}
-                className={cn(
-                  "store-size-chip inline-flex sm:hidden",
-                  selectedVariant?.id === v.id && v.inStock && "is-selected",
-                  !v.inStock && "is-disabled"
-                )}
-              >
-                <span className="store-size-chip-label">{compactMobileSize(v.size)}</span>
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setVariantPickerOpen(true);
+              }}
+              className="store-mobile-size-trigger sm:hidden"
+              aria-haspopup="dialog"
+            >
+              <span className="store-mobile-size-trigger-main">
+                <span className="store-mobile-size-trigger-icon">
+                  <Ruler className="h-3.5 w-3.5 shrink-0" />
+                </span>
+                <span className="store-mobile-size-trigger-copy">
+                  <span className="store-mobile-size-trigger-title">Выбрать размер</span>
+                  {selectedVariant && (
+                    <span className="store-mobile-size-trigger-value">{selectedVariant.size}</span>
+                  )}
+                </span>
+              </span>
+              <ChevronRight className="store-mobile-size-trigger-arrow h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            </button>
             {desktopSizes.map((v) => (
               <button
                 key={`desktop-${v.id}`}
@@ -581,20 +536,6 @@ export function ProductCard({
                 <span className="store-size-chip-label">{v.size}</span>
               </button>
             ))}
-            {/* Mobile: compact +N stays in the same row */}
-            {mobileExtra > 0 && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setVariantPickerOpen(true);
-                }}
-                className="store-size-chip is-extra sm:hidden"
-                aria-label={`Показать еще ${mobileExtra} размеров`}
-              >
-                +{mobileExtra}
-              </button>
-            )}
             {/* Desktop: shows from position 3 onwards */}
             {desktopExtra > 0 && (
               <button
@@ -803,7 +744,7 @@ export function ProductCard({
                               !variant.inStock && "is-disabled",
                             )}
                           >
-                            <span className="store-variant-option-size">{compactMobileSize(variant.size)}</span>
+                            <span className="store-variant-option-size">{variant.size}</span>
                             {priceInfo && (
                               <span className="store-variant-option-price">
                                 {formatPrice(priceInfo.price)} / {priceInfo.unit}

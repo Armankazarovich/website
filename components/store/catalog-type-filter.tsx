@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import type { MouseEvent, PointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { MouseEvent, PointerEvent, WheelEvent } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
@@ -20,13 +20,61 @@ interface CatalogTypeFilterProps {
 
 export function CatalogTypeFilter({ currentType, category, types, preserveParams = {} }: CatalogTypeFilterProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const canScrollLeftRef = useRef(false);
+  const canScrollRightRef = useRef(false);
+  const scrollStateFrame = useRef<number | null>(null);
   const dragState = useRef({
     active: false,
+    dragging: false,
     pointerId: -1,
     startX: 0,
+    startY: 0,
     scrollLeft: 0,
   });
   const suppressClickRef = useRef(false);
+
+  const applyScrollState = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const maxLeft = container.scrollWidth - container.clientWidth;
+    const nextLeft = container.scrollLeft > 6;
+    const nextRight = container.scrollLeft < maxLeft - 6;
+
+    if (nextLeft !== canScrollLeftRef.current) {
+      canScrollLeftRef.current = nextLeft;
+      setCanScrollLeft(nextLeft);
+    }
+    if (nextRight !== canScrollRightRef.current) {
+      canScrollRightRef.current = nextRight;
+      setCanScrollRight(nextRight);
+    }
+  }, []);
+
+  const updateScrollState = useCallback(() => {
+    if (scrollStateFrame.current !== null) return;
+    scrollStateFrame.current = window.requestAnimationFrame(() => {
+      scrollStateFrame.current = null;
+      applyScrollState();
+    });
+  }, [applyScrollState]);
+
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    updateScrollState();
+    container.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      container.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+      if (scrollStateFrame.current !== null) {
+        window.cancelAnimationFrame(scrollStateFrame.current);
+        scrollStateFrame.current = null;
+      }
+    };
+  }, [types.length, updateScrollState]);
 
   // Auto-scroll active pill to center on mobile
   useEffect(() => {
@@ -36,72 +84,112 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
     if (!active) return;
     const offset = active.offsetLeft - container.offsetWidth / 2 + active.offsetWidth / 2;
     container.scrollTo({ left: Math.max(0, offset), behavior: "smooth" });
-  }, [currentType, category]);
+    window.setTimeout(updateScrollState, 260);
+  }, [currentType, category, updateScrollState]);
+
+  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
+    const container = scrollRef.current;
+    if (!container) return;
+    if (container.scrollWidth <= container.clientWidth) return;
+
+    event.preventDefault();
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    container.scrollLeft += delta;
+    updateScrollState();
+  };
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || event.button !== 0) return;
     const container = scrollRef.current;
-    if (!container) return;
+    if (!container || container.scrollWidth <= container.clientWidth) return;
 
     dragState.current = {
       active: true,
+      dragging: false,
       pointerId: event.pointerId,
       startX: event.clientX,
+      startY: event.clientY,
       scrollLeft: container.scrollLeft,
     };
     suppressClickRef.current = false;
-    container.setPointerCapture?.(event.pointerId);
   };
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    const state = dragState.current;
     const container = scrollRef.current;
-    if (!state.active || !container || state.pointerId !== event.pointerId) return;
+    const state = dragState.current;
+    if (!container || !state.active || state.pointerId !== event.pointerId) return;
 
     const deltaX = event.clientX - state.startX;
-    if (Math.abs(deltaX) > 4) {
+    const deltaY = event.clientY - state.startY;
+
+    if (!state.dragging) {
+      const movedFarEnough = Math.abs(deltaX) > 14;
+      const isHorizontalIntent = Math.abs(deltaX) > Math.abs(deltaY) * 1.35;
+      if (!movedFarEnough || !isHorizontalIntent) return;
+
+      state.dragging = true;
       suppressClickRef.current = true;
-      event.preventDefault();
+      container.setPointerCapture?.(event.pointerId);
     }
+
+    event.preventDefault();
     container.scrollLeft = state.scrollLeft - deltaX;
+    updateScrollState();
   };
 
   const finishPointerDrag = (event: PointerEvent<HTMLDivElement>) => {
     const container = scrollRef.current;
-    if (container && dragState.current.pointerId === event.pointerId) {
+    const wasDragging = dragState.current.dragging;
+
+    if (container && wasDragging && dragState.current.pointerId === event.pointerId) {
       container.releasePointerCapture?.(event.pointerId);
     }
-    dragState.current.active = false;
+
+    dragState.current = {
+      active: false,
+      dragging: false,
+      pointerId: -1,
+      startX: 0,
+      startY: 0,
+      scrollLeft: 0,
+    };
+
     window.setTimeout(() => {
       suppressClickRef.current = false;
-    }, 0);
+    }, wasDragging ? 100 : 0);
   };
 
   const handleClickCapture = (event: MouseEvent<HTMLDivElement>) => {
     if (!suppressClickRef.current) return;
     event.preventDefault();
     event.stopPropagation();
-    suppressClickRef.current = false;
   };
 
   return (
     <div className="sticky top-16 lg:static lg:top-auto z-40 -mx-4 sm:-mx-6 lg:mx-0 px-4 sm:px-6 lg:px-0 pt-1.5 pb-2 lg:py-0 mb-6 bg-background/95 backdrop-blur-xl lg:bg-transparent lg:backdrop-blur-none border-b border-border/60 lg:border-none">
       <div
-        ref={scrollRef}
-        className="flex cursor-grab select-none items-center gap-2 overflow-x-auto scrollbar-none active:cursor-grabbing"
-        onClickCapture={handleClickCapture}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={finishPointerDrag}
-        onPointerCancel={finishPointerDrag}
-        onPointerLeave={finishPointerDrag}
+        className="catalog-type-rail-wrap relative"
+        data-can-scroll-left={canScrollLeft || undefined}
+        data-can-scroll-right={canScrollRight || undefined}
       >
+        <div
+          ref={scrollRef}
+          className="catalog-type-rail flex select-none items-center gap-2 overflow-x-auto scrollbar-none"
+          onClickCapture={handleClickCapture}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishPointerDrag}
+          onPointerCancel={finishPointerDrag}
+          onPointerLeave={finishPointerDrag}
+          onWheel={handleWheel}
+          onDragStart={(event) => event.preventDefault()}
+        >
         {category && (
           <Link
             prefetch
             href="/catalog"
             aria-label="Все категории"
-            className="inline-flex items-center justify-center w-9 h-9 rounded-xl border shrink-0 border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground hover:bg-accent transition-all"
+            className="inline-flex min-h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-all hover:border-primary/40 hover:bg-accent hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -154,6 +242,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
             </Link>
           );
         })}
+        </div>
       </div>
     </div>
   );

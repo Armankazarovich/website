@@ -7,12 +7,13 @@ import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import {
   Save, Trash2, Plus, Upload, ImageIcon,
-  Check, Loader2, Wand2, PenTool, Images, ExternalLink,
+  Check, CheckCircle, Loader2, Wand2, PenTool, Images, ExternalLink,
   ChevronLeft, ChevronRight, ChevronDown, X, GripVertical, Search, Star, Keyboard,
   Calculator, Copy, Sparkles, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { slugify } from "@/lib/slug";
+import { buildProductInsightSuggestions, normalizeProductCardTags } from "@/lib/product-insights";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ActionToast } from "@/components/admin/action-toast";
 import { RelatedTasksPanel } from "@/components/admin/related-tasks-panel";
@@ -50,6 +51,7 @@ type Product = {
   description: string | null;
   categoryId: string;
   images: string[];
+  cardTags: string[];
   saleUnit: string;
   active: boolean;
   featured: boolean;
@@ -225,6 +227,7 @@ export default function AdminProductEditPage() {
   const [slugTouched, setSlugTouched] = useState(false);
   const [shortDescription, setShortDescription] = useState("");
   const [description, setDescription] = useState("");
+  const [cardTags, setCardTags] = useState<string[]>([]);
   const [categoryId, setCategoryId] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [saleUnit, setSaleUnit] = useState("BOTH");
@@ -271,6 +274,7 @@ export default function AdminProductEditPage() {
           setSlugTouched(false);
           setShortDescription(p.shortDescription || "");
           setDescription(p.description || "");
+          setCardTags(Array.isArray(p.cardTags) ? p.cardTags.slice(0, 3) : []);
           setCategoryId(p.categoryId);
           setImages(p.images);
           setSaleUnit(p.saleUnit);
@@ -425,7 +429,19 @@ export default function AdminProductEditPage() {
     }
 
     setSaving(true);
-    const payload = { name, slug: finalSlug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants };
+    const payload = {
+      name,
+      slug: finalSlug,
+      shortDescription,
+      description,
+      categoryId,
+      images,
+      cardTags: normalizeProductCardTags(cardTags),
+      saleUnit,
+      active,
+      featured,
+      variants,
+    };
     let res: Response;
     try {
       if (isNew) {
@@ -457,7 +473,7 @@ export default function AdminProductEditPage() {
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
     if (isNew && data.id) router.replace(`/admin/products/${data.id}`);
-  }, [saving, name, slug, shortDescription, description, categoryId, images, saleUnit, active, featured, variants, isNew, productId, router]);
+  }, [saving, name, slug, shortDescription, description, categoryId, images, cardTags, saleUnit, active, featured, variants, isNew, productId, router]);
 
   // Ctrl+S save
   useEffect(() => {
@@ -631,6 +647,7 @@ export default function AdminProductEditPage() {
         description,
         categoryId,
         images: [...images],
+        cardTags: normalizeProductCardTags(cardTags),
         saleUnit,
         active: false, // дубликат создаётся в "скрытых" — менеджер проверяет и публикует
         featured: false,
@@ -663,6 +680,43 @@ export default function AdminProductEditPage() {
   };
 
   // Прогресс готовности товара
+  const selectedCategoryName = categories.find((category) => category.id === categoryId)?.name || "";
+  const insightSuggestions = buildProductInsightSuggestions({
+    name,
+    category: selectedCategoryName,
+    shortDescription,
+    description,
+    saleUnit,
+    variants: variants.map((variant) => ({ size: variant.size, inStock: variant.inStock })),
+  }).slice(0, 6);
+  const normalizedCardTags = normalizeProductCardTags(cardTags);
+  const previewCardTags = normalizedCardTags.length > 0 ? normalizedCardTags : insightSuggestions.slice(0, 3);
+
+  const setCardTagSlot = (index: number, value: string) => {
+    setCardTags((prev) => {
+      const next = [...prev].slice(0, 3);
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const addInsightSuggestion = (tag: string) => {
+    setCardTags((prev) => {
+      const next = [...prev].slice(0, 3);
+      const exists = normalizeProductCardTags(next).some((item) => item.toLowerCase() === tag.toLowerCase());
+      if (exists) return next;
+
+      const emptyIndex = next.findIndex((item) => !item?.trim());
+      if (emptyIndex >= 0) {
+        next[emptyIndex] = tag;
+        return next;
+      }
+
+      next[2] = tag;
+      return next;
+    });
+  };
+
   const readiness = calcReadiness({ name, categoryId, slug, images, variants, shortDescription, description });
   const saveStatus = saved ? (
     <>
@@ -1105,6 +1159,65 @@ export default function AdminProductEditPage() {
                 {improveError && (
                   <p className="mt-1.5 text-[11px] text-destructive">{improveError}</p>
                 )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-background/55 p-3 sm:p-4">
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <label className="block text-sm font-medium">Подсказки в карточке</label>
+                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                    Пустые поля работают автоматически. Если нужно, выберите или напишите до 3 продающих пунктов.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCardTags([])}
+                  className="inline-flex h-8 shrink-0 items-center justify-center rounded-xl border border-border px-3 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  Авто
+                </button>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-3">
+                {[0, 1, 2].map((slot) => (
+                  <input
+                    key={slot}
+                    value={cardTags[slot] || ""}
+                    onChange={(e) => setCardTagSlot(slot, e.target.value)}
+                    maxLength={34}
+                    placeholder={insightSuggestions[slot] || `Подсказка ${slot + 1}`}
+                    className="h-10 rounded-xl border border-border bg-card px-3 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                ))}
+              </div>
+
+              {insightSuggestions.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {insightSuggestions.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => addInsightSuggestion(tag)}
+                      className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/15"
+                    >
+                      <Plus className="h-3 w-3" />
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 rounded-xl border border-border/70 bg-card/70 p-3">
+                <p className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground">Предпросмотр</p>
+                <div className="grid gap-1.5">
+                  {previewCardTags.map((tag) => (
+                    <span key={tag} className="inline-flex min-w-0 items-center gap-1.5 text-xs font-semibold text-foreground/80">
+                      <CheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <span className="truncate">{tag}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 

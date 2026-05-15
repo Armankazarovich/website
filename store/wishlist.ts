@@ -7,6 +7,7 @@ export type WishlistItem = {
   name: string;
   category: string;
   images: string[];
+  cardTags?: string[] | null;
   saleUnit: "CUBE" | "PIECE" | "BOTH";
   variants: Array<{
     id: string;

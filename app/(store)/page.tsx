@@ -584,6 +584,7 @@ export default async function HomePage() {
                     shortDescription={product.shortDescription}
                     description={product.description}
                     images={product.images}
+                    cardTags={product.cardTags}
                     saleUnit={product.saleUnit}
                     variants={product.variants.map((v) => ({
                       id: v.id,

@@ -223,6 +223,8 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   // Закрываем мобильное меню при смене страницы
   useEffect(() => {
     setMobileMenuOpen(false);
+    setCatalogOpen(false);
+    setContactsOpen(false);
   }, [pathname]);
 
 
@@ -477,16 +479,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                             <span className="text-xs font-medium">Доставка</span>
                           </Link>
 
-                          {/* Телефон */}
-                          {phones[0] && (
-                            <a
-                              href={`tel:${phones[0].tel}`}
-                              className="mt-auto flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 hover:bg-muted transition-colors"
-                            >
-                              <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
-                              <span className="text-xs font-medium text-muted-foreground">{phones[0].display}</span>
-                            </a>
-                          )}
                         </div>
                       </div>
 
