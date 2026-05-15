@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useTransition, useState, useMemo } from "react";
-import { Filter, X, ChevronDown, Ruler } from "lucide-react";
+import { useCallback, useEffect, useTransition, useState, useMemo } from "react";
+import { Banknote, Filter, X, ChevronDown, Ruler } from "lucide-react";
 
 interface TypeInfo {
   label: string;
@@ -15,6 +15,9 @@ interface CatalogFiltersProps {
   sizes: string[];
   currentType?: string;
   types?: TypeInfo[];
+  currentMinPrice?: number | null;
+  currentMaxPrice?: number | null;
+  priceRange?: { min: number; max: number };
   onClose?: () => void;
 }
 
@@ -45,6 +48,9 @@ export function CatalogFilters({
   sizes,
   currentType = "",
   types = [],
+  currentMinPrice = null,
+  currentMaxPrice = null,
+  priceRange = { min: 0, max: 0 },
   onClose,
 }: CatalogFiltersProps) {
   const router = useRouter();
@@ -52,7 +58,10 @@ export function CatalogFilters({
   const [isPending, startTransition] = useTransition();
   const [typeOpen, setTypeOpen] = useState(false);
   const [sizeOpen, setSizeOpen] = useState(false);
+  const [priceOpen, setPriceOpen] = useState(false);
   const [expandedCS, setExpandedCS] = useState<string | null>(null);
+  const [draftMinPrice, setDraftMinPrice] = useState<number | null>(null);
+  const [draftMaxPrice, setDraftMaxPrice] = useState<number | null>(null);
 
   // Определяем формат размеров: сечение (25×100) или листовые (18 мм)
   const hasCrossSections = useMemo(
@@ -105,6 +114,36 @@ export function CatalogFilters({
 
   const currentTypeLabel = types.find(t => t.keyword === currentType)?.label || currentType;
 
+  const hasPriceRange = priceRange.max > priceRange.min && priceRange.max > 0;
+  const selectedMinPrice = currentMinPrice ?? priceRange.min;
+  const selectedMaxPrice = currentMaxPrice ?? priceRange.max;
+  const effectiveMinPrice = draftMinPrice ?? selectedMinPrice;
+  const effectiveMaxPrice = draftMaxPrice ?? selectedMaxPrice;
+  const priceSpread = Math.max(1, priceRange.max - priceRange.min);
+  const minPricePercent = Math.min(100, Math.max(0, ((effectiveMinPrice - priceRange.min) / priceSpread) * 100));
+  const maxPricePercent = Math.min(100, Math.max(0, ((effectiveMaxPrice - priceRange.min) / priceSpread) * 100));
+  const hasActivePrice =
+    currentMinPrice !== null ||
+    currentMaxPrice !== null ||
+    draftMinPrice !== null ||
+    draftMaxPrice !== null;
+  const priceStep = Math.max(100, Math.round(priceSpread / 80 / 100) * 100);
+  const formatRub = (value: number) => `${Math.round(value).toLocaleString("ru-RU")} ₽`;
+
+  useEffect(() => {
+    setDraftMinPrice(null);
+    setDraftMaxPrice(null);
+  }, [currentMinPrice, currentMaxPrice, priceRange.min, priceRange.max]);
+
+  const applyPrice = (min: number, max: number) => {
+    navigate(
+      createUrl({
+        minprice: min > priceRange.min ? String(Math.round(min)) : null,
+        maxprice: max < priceRange.max ? String(Math.round(max)) : null,
+      }),
+    );
+  };
+
   // Порог: группировка только если есть сечения (×) И размеров много
   const useGroups = hasCrossSections && sizes.length > 12;
 
@@ -148,7 +187,7 @@ export function CatalogFilters({
                   Сбросить ({currentTypeLabel})
                 </button>
               )}
-              <div className={`flex flex-wrap gap-2 ${currentType ? "" : "mt-3"}`}>
+              <div className={`flex max-h-[260px] flex-wrap gap-2 overflow-y-auto pr-1 ${currentType ? "" : "mt-3"}`}>
                 {types.map((t) => (
                   <button
                     key={t.keyword}
@@ -266,7 +305,7 @@ export function CatalogFilters({
                 </div>
               ) : (
                 /* ── Flat mode: мало размеров — простой список ── */
-                <div className={`flex flex-wrap gap-2 ${currentSize ? "" : "mt-3"}`}>
+                <div className={`flex max-h-[260px] flex-wrap gap-2 overflow-y-auto pr-1 ${currentSize ? "" : "mt-3"}`}>
                   {sizes.map((size) => (
                     <button
                       key={size}
@@ -282,6 +321,111 @@ export function CatalogFilters({
                   ))}
                 </div>
               )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasPriceRange && (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setPriceOpen(!priceOpen)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/50 transition-colors text-left"
+          >
+            <h3 className="font-display font-semibold text-sm flex items-center gap-2">
+              <Banknote className="w-3.5 h-3.5 text-primary shrink-0" />
+              Цена
+            </h3>
+            <div className="flex items-center gap-2 shrink-0">
+              {hasActivePrice && (
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+                  1
+                </span>
+              )}
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${
+                  priceOpen ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+          </button>
+
+          {priceOpen && (
+            <div className="space-y-3 border-t border-border px-5 pb-5 pt-4">
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Диапазон
+                  </span>
+                  <strong className="text-right text-sm font-semibold">
+                    {formatRub(effectiveMinPrice)} – {formatRub(effectiveMaxPrice)}
+                  </strong>
+                </div>
+
+                <div className="relative mt-3 h-8">
+                  <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-border" />
+                  <div
+                    className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary"
+                    style={{
+                      left: `${minPricePercent}%`,
+                      right: `${100 - maxPricePercent}%`,
+                    }}
+                  />
+                  <input
+                    aria-label="Минимальная цена"
+                    className="catalog-price-range absolute inset-0"
+                    type="range"
+                    min={priceRange.min}
+                    max={priceRange.max}
+                    step={priceStep}
+                    value={effectiveMinPrice}
+                    onChange={(event) => {
+                      const next = Math.min(Number(event.currentTarget.value), effectiveMaxPrice);
+                      setDraftMinPrice(next);
+                    }}
+                  />
+                  <input
+                    aria-label="Максимальная цена"
+                    className="catalog-price-range absolute inset-0"
+                    type="range"
+                    min={priceRange.min}
+                    max={priceRange.max}
+                    step={priceStep}
+                    value={effectiveMaxPrice}
+                    onChange={(event) => {
+                      const next = Math.max(Number(event.currentTarget.value), effectiveMinPrice);
+                      setDraftMaxPrice(next);
+                    }}
+                  />
+                </div>
+
+                <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>{formatRub(priceRange.min)}</span>
+                  <span>{formatRub(priceRange.max)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => applyPrice(effectiveMinPrice, effectiveMaxPrice)}
+                  className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Применить
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftMinPrice(null);
+                    setDraftMaxPrice(null);
+                    navigate(createUrl({ minprice: null, maxprice: null }));
+                  }}
+                  className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  Сбросить
+                </button>
+              </div>
             </div>
           )}
         </div>

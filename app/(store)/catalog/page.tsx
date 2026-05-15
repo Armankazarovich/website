@@ -24,6 +24,7 @@ import {
   BadgeCheck,
   Truck,
   SlidersHorizontal,
+  Monitor,
   LayoutList,
   Columns2,
   Grid3x3,
@@ -112,10 +113,10 @@ interface SearchParams {
   search?: string;
 }
 
-type CatalogView = "list" | "2" | "3" | "4" | "5";
+type CatalogView = "auto" | "list" | "2" | "3" | "4" | "5";
 
 function getCatalogView(value?: string): CatalogView {
-  return value === "list" || value === "2" || value === "3" || value === "5" ? value : "4";
+  return value === "list" || value === "2" || value === "3" || value === "4" || value === "5" ? value : "auto";
 }
 
 function getCatalogRobots(searchParams: SearchParams): Metadata["robots"] | undefined {
@@ -126,7 +127,7 @@ function getCatalogRobots(searchParams: SearchParams): Metadata["robots"] | unde
       searchParams.minprice ||
       searchParams.maxprice ||
       searchParams.sort ||
-      (searchParams.view && searchParams.view !== "4") ||
+      (searchParams.view && searchParams.view !== "auto") ||
       (searchParams.page && searchParams.page !== "1"),
   );
 
@@ -167,10 +168,14 @@ export default async function CatalogPage({
   if (currentSize) variantWhere.size = { contains: currentSize };
   if (currentInStock) variantWhere.inStock = true;
   if (currentMinPrice !== null || currentMaxPrice !== null) {
-    variantWhere.pricePerCube = {
+    const priceBounds = {
       ...(currentMinPrice !== null ? { gte: currentMinPrice } : {}),
       ...(currentMaxPrice !== null ? { lte: currentMaxPrice } : {}),
     };
+    variantWhere.OR = [
+      { pricePerCube: { not: null, ...priceBounds } },
+      { pricePerPiece: { not: null, ...priceBounds } },
+    ];
   }
 
   // Public safety filter — не показываем в каталоге товары без фото/цены/остатка.
@@ -263,6 +268,15 @@ export default async function CatalogPage({
     variants: { some: combinedTypesVariantSome },
   };
 
+  const whereForPriceRange: Prisma.ProductWhereInput = {
+    active: true,
+    images: { isEmpty: false },
+    category: categoryFilter,
+    ...searchFilter,
+    ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
+    variants: { some: combinedTypesVariantSome },
+  };
+
   const [settings, productTypeSettings] = await Promise.all([
     getSiteSettings(),
     getProductTypeSettings(),
@@ -270,8 +284,12 @@ export default async function CatalogPage({
   const phones = getPhones(settings);
 
   let categories: any[] = [], productsRaw: any[] = [], totalCount = 0, allVariantSizes: any[] = [], productsForTypes: any[] = [];
+  let priceRangeResult: {
+    _min: { pricePerCube: unknown; pricePerPiece: unknown };
+    _max: { pricePerCube: unknown; pricePerPiece: unknown };
+  } | null = null;
   try {
-    [categories, productsRaw, totalCount, allVariantSizes, productsForTypes] = await Promise.all([
+    [categories, productsRaw, totalCount, allVariantSizes, productsForTypes, priceRangeResult] = await Promise.all([
       prisma.category.findMany({
         where: { showInMenu: true },
         orderBy: { sortOrder: "asc" },
@@ -311,6 +329,18 @@ export default async function CatalogPage({
         where: whereForTypes,
         select: { name: true },
       }),
+      prisma.productVariant.aggregate({
+        where: {
+          product: whereForPriceRange,
+          inStock: true,
+          OR: [
+            { pricePerCube: { not: null, gt: 0 } },
+            { pricePerPiece: { not: null, gt: 0 } },
+          ],
+        },
+        _min: { pricePerCube: true, pricePerPiece: true },
+        _max: { pricePerCube: true, pricePerPiece: true },
+      }),
     ]);
   } catch (err) {
     console.error("Catalog query error:", err);
@@ -330,6 +360,18 @@ export default async function CatalogPage({
   // Доступные типы — ДИНАМИЧЕСКИ из реальных названий товаров
   const productNames = productsForTypes.map((p) => p.name);
   const dynamicTypes = applyProductTypeSettings(getAvailableTypes(productNames), productTypeSettings);
+  const minPriceCandidates = [priceRangeResult?._min.pricePerCube, priceRangeResult?._min.pricePerPiece]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const maxPriceCandidates = [priceRangeResult?._max.pricePerCube, priceRangeResult?._max.pricePerPiece]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const rawPriceMin = minPriceCandidates.length > 0 ? Math.min(...minPriceCandidates) : 0;
+  const rawPriceMax = maxPriceCandidates.length > 0 ? Math.max(...maxPriceCandidates) : 0;
+  const priceRange = {
+    min: Math.max(0, Math.floor((Number.isFinite(rawPriceMin) ? rawPriceMin : 0) / 500) * 500),
+    max: Math.max(0, Math.ceil((Number.isFinite(rawPriceMax) ? rawPriceMax : 0) / 500) * 500),
+  };
 
   // Находим текущий тип по keyword для отображения label
   const currentTypeInfo = currentType
@@ -346,7 +388,7 @@ export default async function CatalogPage({
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
-    if (catalogView !== "4") params.set("view", catalogView);
+    if (catalogView !== "auto") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.instock) params.set("instock", searchParams.instock);
     if (searchParams.minprice) params.set("minprice", searchParams.minprice);
@@ -378,7 +420,7 @@ export default async function CatalogPage({
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
-    if (catalogView !== "4") params.set("view", catalogView);
+    if (catalogView !== "auto") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
@@ -399,6 +441,7 @@ export default async function CatalogPage({
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
+    if (catalogView !== "auto") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
@@ -412,7 +455,7 @@ export default async function CatalogPage({
     const params = new URLSearchParams();
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
-    if (catalogView !== "4") params.set("view", catalogView);
+    if (catalogView !== "auto") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
@@ -433,7 +476,7 @@ export default async function CatalogPage({
     if (searchParams.instock) params.set("instock", searchParams.instock);
     if (searchParams.minprice) params.set("minprice", searchParams.minprice);
     if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
-    if (view !== "4") params.set("view", view);
+    if (view !== "auto") params.set("view", view);
     const q = params.toString();
     return `/catalog${q ? `?${q}` : ""}`;
   };
@@ -548,6 +591,7 @@ export default async function CatalogPage({
   ];
   const currentSortLabel = sortOptions.find((option) => option.value === (searchParams.sort || ""))?.label || "Новые";
   const viewOptions: Array<{ value: CatalogView; label: string; title: string; Icon: typeof LayoutGrid }> = [
+    { value: "auto", label: "Авто", title: "Автоматически по ширине экрана", Icon: Monitor },
     { value: "list", label: "Прайс", title: "Список как прайс", Icon: LayoutList },
     { value: "2", label: "2", title: "Две карточки в ряд", Icon: Columns2 },
     { value: "3", label: "3", title: "Три карточки в ряд", Icon: Grid3x3 },
@@ -627,7 +671,7 @@ export default async function CatalogPage({
         types={dynamicTypes}
         preserveParams={{
           ...(searchParams.sort ? { sort: searchParams.sort } : {}),
-          ...(catalogView !== "4" ? { view: catalogView } : {}),
+          ...(catalogView !== "auto" ? { view: catalogView } : {}),
           ...(searchParams.search ? { search: searchParams.search } : {}),
           ...(searchParams.size ? { size: searchParams.size } : {}),
           ...(searchParams.instock ? { instock: searchParams.instock } : {}),
@@ -646,13 +690,16 @@ export default async function CatalogPage({
           currentSize={currentSize}
           currentType={currentType}
           currentInStock={searchParams.instock === "1"}
+          currentMinPrice={currentMinPrice}
+          currentMaxPrice={currentMaxPrice}
+          priceRange={priceRange}
         />
       </div>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
         {/* Sidebar */}
         <aside className="hidden lg:block lg:w-64 shrink-0">
-          <div className="sticky top-24 space-y-4">
+          <div className="catalog-filter-scroll sticky top-24 space-y-4 pr-1">
             {/* Categories */}
             <div className="bg-card rounded-2xl border border-border p-5">
               <h3 className="font-display font-semibold text-base mb-4 flex items-center gap-2">
@@ -711,6 +758,9 @@ export default async function CatalogPage({
                 sizes={fullSizes}
                 currentType={currentType}
                 types={dynamicTypes}
+                currentMinPrice={currentMinPrice}
+                currentMaxPrice={currentMaxPrice}
+                priceRange={priceRange}
               />
             </Suspense>
 
@@ -795,7 +845,7 @@ export default async function CatalogPage({
           </div>
 
           {/* Active filters */}
-          {(currentSearch || currentSize || currentType) && (
+          {(currentSearch || currentSize || currentType || currentMinPrice !== null || currentMaxPrice !== null) && (
             <div className="flex flex-wrap gap-2 mb-4">
               {currentSearch && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
@@ -824,6 +874,19 @@ export default async function CatalogPage({
                   Размер: {currentSize}
                   <Link
                     href={buildFilterUrl({ size: null })}
+                    className="ml-0.5 hover:text-destructive"
+                  >
+                    ×
+                  </Link>
+                </span>
+              )}
+              {(currentMinPrice !== null || currentMaxPrice !== null) && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20">
+                  Цена: {currentMinPrice !== null ? `от ${currentMinPrice.toLocaleString("ru-RU")}` : "от минимума"}
+                  {" "}
+                  {currentMaxPrice !== null ? `до ${currentMaxPrice.toLocaleString("ru-RU")}` : "до максимума"}
+                  <Link
+                    href={buildFilterUrl({ minprice: null, maxprice: null })}
                     className="ml-0.5 hover:text-destructive"
                   >
                     ×

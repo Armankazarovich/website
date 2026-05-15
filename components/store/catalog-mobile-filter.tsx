@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Banknote, SlidersHorizontal, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,9 @@ interface CatalogMobileFilterProps {
   currentSize: string;
   currentType: string;
   currentInStock: boolean;
+  currentMinPrice?: number | null;
+  currentMaxPrice?: number | null;
+  priceRange?: { min: number; max: number };
 }
 
 export function CatalogMobileFilter({
@@ -37,11 +40,17 @@ export function CatalogMobileFilter({
   currentSize,
   currentType,
   currentInStock,
+  currentMinPrice = null,
+  currentMaxPrice = null,
+  priceRange = { min: 0, max: 0 },
 }: CatalogMobileFilterProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [catOpen, setCatOpen] = useState(true);
   const [sizeOpen, setSizeOpen] = useState(true);
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [draftMinPrice, setDraftMinPrice] = useState<number | null>(null);
+  const [draftMaxPrice, setDraftMaxPrice] = useState<number | null>(null);
   const dragStartY = useRef(0);
   useAdminOverlayGuard(open);
 
@@ -54,7 +63,28 @@ export function CatalogMobileFilter({
   const searchParams = useSearchParams();
 
   // Count active filters controlled by this mobile drawer.
-  const activeCount = [currentCategory, currentSize, currentType, currentInStock ? "instock" : ""].filter(Boolean).length;
+  const activeCount = [
+    currentCategory,
+    currentSize,
+    currentType,
+    currentInStock ? "instock" : "",
+    currentMinPrice !== null || currentMaxPrice !== null ? "price" : "",
+  ].filter(Boolean).length;
+  const hasPriceRange = priceRange.max > priceRange.min && priceRange.max > 0;
+  const selectedMinPrice = currentMinPrice ?? priceRange.min;
+  const selectedMaxPrice = currentMaxPrice ?? priceRange.max;
+  const effectiveMinPrice = draftMinPrice ?? selectedMinPrice;
+  const effectiveMaxPrice = draftMaxPrice ?? selectedMaxPrice;
+  const priceSpread = Math.max(1, priceRange.max - priceRange.min);
+  const minPricePercent = Math.min(100, Math.max(0, ((effectiveMinPrice - priceRange.min) / priceSpread) * 100));
+  const maxPricePercent = Math.min(100, Math.max(0, ((effectiveMaxPrice - priceRange.min) / priceSpread) * 100));
+  const priceStep = Math.max(100, Math.round(priceSpread / 80 / 100) * 100);
+  const formatRub = (value: number) => `${Math.round(value).toLocaleString("ru-RU")} ₽`;
+
+  useEffect(() => {
+    setDraftMinPrice(null);
+    setDraftMaxPrice(null);
+  }, [currentMinPrice, currentMaxPrice, priceRange.min, priceRange.max]);
 
   const setParam = (key: string, value: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -64,7 +94,8 @@ export function CatalogMobileFilter({
       params.set(key, value);
     }
     params.delete("page");
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   };
 
   const toggleInstock = () => {
@@ -75,7 +106,30 @@ export function CatalogMobileFilter({
       params.set("instock", "1");
     }
     params.delete("page");
-    router.push(`${pathname}?${params.toString()}`);
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const applyPrice = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (effectiveMinPrice > priceRange.min) params.set("minprice", String(Math.round(effectiveMinPrice)));
+    else params.delete("minprice");
+    if (effectiveMaxPrice < priceRange.max) params.set("maxprice", String(Math.round(effectiveMaxPrice)));
+    else params.delete("maxprice");
+    params.delete("page");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
+  };
+
+  const resetPrice = () => {
+    setDraftMinPrice(null);
+    setDraftMaxPrice(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("minprice");
+    params.delete("maxprice");
+    params.delete("page");
+    const query = params.toString();
+    router.push(query ? `${pathname}?${query}` : pathname);
   };
 
   const resetAll = () => {
@@ -248,6 +302,87 @@ export function CatalogMobileFilter({
                               {size}
                             </button>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {hasPriceRange && (
+                    <div>
+                      <button
+                        onClick={() => setPriceOpen(!priceOpen)}
+                        className="w-full flex items-center justify-between py-2 text-sm font-semibold text-muted-foreground uppercase tracking-wider"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Banknote className="h-4 w-4 text-primary" />
+                          Цена
+                        </span>
+                        {priceOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                      {priceOpen && (
+                        <div className="mt-2 space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-xs text-muted-foreground">Диапазон</span>
+                            <strong className="text-right text-sm">
+                              {formatRub(effectiveMinPrice)} – {formatRub(effectiveMaxPrice)}
+                            </strong>
+                          </div>
+                          <div className="relative h-8">
+                            <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-border" />
+                            <div
+                              className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary"
+                              style={{
+                                left: `${minPricePercent}%`,
+                                right: `${100 - maxPricePercent}%`,
+                              }}
+                            />
+                            <input
+                              aria-label="Минимальная цена"
+                              className="catalog-price-range absolute inset-0"
+                              type="range"
+                              min={priceRange.min}
+                              max={priceRange.max}
+                              step={priceStep}
+                              value={effectiveMinPrice}
+                              onChange={(event) => {
+                                const next = Math.min(Number(event.currentTarget.value), effectiveMaxPrice);
+                                setDraftMinPrice(next);
+                              }}
+                            />
+                            <input
+                              aria-label="Максимальная цена"
+                              className="catalog-price-range absolute inset-0"
+                              type="range"
+                              min={priceRange.min}
+                              max={priceRange.max}
+                              step={priceStep}
+                              value={effectiveMaxPrice}
+                              onChange={(event) => {
+                                const next = Math.max(Number(event.currentTarget.value), effectiveMinPrice);
+                                setDraftMaxPrice(next);
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                            <span>{formatRub(priceRange.min)}</span>
+                            <span>{formatRub(priceRange.max)}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={applyPrice}
+                              className="rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                            >
+                              Применить
+                            </button>
+                            <button
+                              type="button"
+                              onClick={resetPrice}
+                              className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-muted-foreground"
+                            >
+                              Сбросить
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
