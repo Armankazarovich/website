@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -50,6 +51,7 @@ import { AdminLangPickerInline } from "@/components/admin/admin-lang-picker";
 import { AdminLangProvider } from "@/lib/admin-lang-context";
 import { usePalette } from "@/components/palette-provider";
 import { PALETTES } from "@/lib/palettes";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
@@ -948,6 +950,8 @@ function AvatarCropModal({
   onSave: (blob: Blob) => void | Promise<void>;
   onClose: () => void;
 }) {
+  useAdminOverlayGuard(true);
+  const [portalReady, setPortalReady] = useState(false);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const imgRef = React.useRef<HTMLImageElement | null>(null);
   const [scale, setScale] = useState(1);
@@ -956,6 +960,10 @@ function AvatarCropModal({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [saving, setSaving] = useState(false);
   const SIZE = 280;
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     const img = new window.Image();
@@ -1032,13 +1040,20 @@ function AvatarCropModal({
     );
   };
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+      style={{
+        paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
+        paddingBottom: "max(6.5rem, calc(env(safe-area-inset-bottom, 0px) + 6rem))",
+      }}
       onClick={onClose}
     >
       <div
-        className="bg-card rounded-2xl border border-border p-5 w-full max-w-sm space-y-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Обрезать фото"
+        className="admin-popup-liquid admin-modal-panel max-h-[calc(100dvh-8rem)] w-full max-w-sm space-y-4 overflow-y-auto rounded-2xl border border-border bg-card p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="font-semibold text-base text-center">Обрезать фото</h3>
@@ -1086,4 +1101,7 @@ function AvatarCropModal({
       </div>
     </div>
   );
+
+  if (!portalReady) return null;
+  return createPortal(modal, document.body);
 }

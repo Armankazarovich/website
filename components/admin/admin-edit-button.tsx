@@ -46,6 +46,7 @@ export function AdminEditButton({
           "bg-black/70 backdrop-blur-sm text-white text-[11px] font-medium",
           "hover:bg-primary transition-all duration-150 shadow-md",
           "opacity-0 group-hover:opacity-100 translate-y-0.5 group-hover:translate-y-0",
+          "pointer-events-none group-hover:pointer-events-auto focus:pointer-events-auto",
           className
         )}
       >

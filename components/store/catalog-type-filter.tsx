@@ -166,7 +166,7 @@ export function CatalogTypeFilter({ currentType, category, types, preserveParams
   };
 
   return (
-    <div className="sticky top-16 z-40 -mx-4 mb-6 border-b border-border/60 bg-background/95 px-4 pb-2 pt-1.5 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:top-[4.25rem] lg:-mx-0 lg:px-0 lg:pb-3 lg:pt-2">
+    <div className="catalog-type-sticky sticky top-[calc(4rem+env(safe-area-inset-top,0px))] z-40 -mx-4 mb-6 border-b border-border/55 bg-background/84 px-4 pb-2 pt-1.5 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:static lg:z-auto lg:-mx-0 lg:bg-transparent lg:px-0 lg:pb-3 lg:pt-2 lg:backdrop-blur-none">
       <div
         className="catalog-type-rail-wrap relative"
         data-can-scroll-left={canScrollLeft || undefined}

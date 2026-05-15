@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Upload, Trash2, Copy, CheckCircle2, Loader2,
@@ -848,11 +849,26 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
     border: "1px solid rgba(255,255,255,0.14)",
     boxShadow: "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
   };
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center p-4">
+  if (!open || typeof document === "undefined") return null;
+  const overlayStyle = {
+    paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
+    paddingBottom: "max(6.5rem, calc(env(safe-area-inset-bottom, 0px) + 6rem))",
+  };
+  const modalStyle = {
+    ...popupStyle,
+    maxHeight: "calc(100dvh - 8rem)",
+  };
+
+  const modal = (
+    <div className="fixed inset-0 z-[220] flex items-center justify-center px-3 sm:px-4" style={overlayStyle}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="admin-popup-liquid relative rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden" style={popupStyle}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Выбрать из медиабиблиотеки"
+        className="admin-popup-liquid admin-modal-panel relative flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl"
+        style={modalStyle}
+      >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
@@ -865,4 +881,6 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

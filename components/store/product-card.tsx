@@ -101,6 +101,7 @@ export function ProductCard({
   const [selectedUnit, setSelectedUnit] = useState<UnitType>(defaultUnit);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
+  const [sheetQuantity, setSheetQuantity] = useState(1);
   const [portalReady, setPortalReady] = useState(false);
 
   React.useEffect(() => {
@@ -109,6 +110,7 @@ export function ProductCard({
 
   React.useEffect(() => {
     if (!variantPickerOpen || typeof window === "undefined") return;
+    setSheetQuantity(1);
 
     const media = window.matchMedia("(min-width: 640px)");
     const closeOnDesktop = () => {
@@ -129,7 +131,11 @@ export function ProductCard({
   const pickVariant = (variant: Variant, closePicker = false) => {
     if (!variant.inStock) return;
     setSelectedId(variant.id);
-    setSelectedUnit(variant.pricePerCube ? "CUBE" : "PIECE");
+    setSelectedUnit((current) => {
+      if (current === "PIECE" && variant.pricePerPiece) return "PIECE";
+      if (current === "CUBE" && variant.pricePerCube) return "CUBE";
+      return variant.pricePerCube ? "CUBE" : "PIECE";
+    });
     setShowUnitPicker(false);
     if (closePicker) setVariantPickerOpen(false);
   };
@@ -148,18 +154,22 @@ export function ProductCard({
     ? Number(displayUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
     : null;
   const canSwitchUnit = !!selectedVariant?.pricePerCube && !!selectedVariant?.pricePerPiece;
-  const getVariantPriceDisplay = (variant: Variant) => {
-    const preferredPrice = selectedUnit === "PIECE" ? variant.pricePerPiece : variant.pricePerCube;
-    if (preferredPrice) {
-      return {
-        price: Number(preferredPrice),
-        unit: selectedUnit === "PIECE" ? "шт" : "м³",
-      };
-    }
-    if (variant.pricePerCube) return { price: Number(variant.pricePerCube), unit: "м³" };
-    if (variant.pricePerPiece) return { price: Number(variant.pricePerPiece), unit: "шт" };
-    return null;
+  const getUnitLabel = (unitType: UnitType) => (unitType === "PIECE" ? "шт" : "м³");
+  const getUnitPrice = (variant: Variant | null | undefined, unitType: UnitType) => {
+    if (!variant) return null;
+    const rawPrice = unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
+    return Number(rawPrice) || null;
   };
+  const getVariantUnitOptions = (variant: Variant) => {
+    const options: Array<{ unit: UnitType; label: string; price: number }> = [];
+    const cubePrice = getUnitPrice(variant, "CUBE");
+    const piecePrice = getUnitPrice(variant, "PIECE");
+    if (cubePrice) options.push({ unit: "CUBE", label: getUnitLabel("CUBE"), price: cubePrice });
+    if (piecePrice) options.push({ unit: "PIECE", label: getUnitLabel("PIECE"), price: piecePrice });
+    return options;
+  };
+  const selectedSheetPrice = getUnitPrice(selectedVariant, effectiveUnit);
+  const sheetTotal = selectedSheetPrice ? selectedSheetPrice * sheetQuantity : null;
 
   // Live quantity from cart store
   const cartItemId = selectedVariant ? `${selectedVariant.id}-${effectiveUnit}` : null;
@@ -217,8 +227,13 @@ export function ProductCard({
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!selectedVariant || !hasStock) return;
     if (canSwitchUnit) {
+      if (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches) {
+        setVariantPickerOpen(true);
+        return;
+      }
       setShowUnitPicker((open) => !open);
       return;
     }
@@ -235,6 +250,7 @@ export function ProductCard({
 
   const handleIncrement = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (cartQty === 0) {
       doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
     } else if (cartItemId) {
@@ -244,8 +260,32 @@ export function ProductCard({
 
   const handleDecrement = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!cartItemId) return;
     updateQuantity(cartItemId, parseFloat((cartQty - 1).toFixed(1)));
+  };
+
+  const handleSheetAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!selectedVariant || !selectedSheetPrice || sheetQuantity <= 0) return;
+
+    flyToCart(e.currentTarget, images[0] ?? null);
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+
+    addItem({
+      variantId: selectedVariant.id,
+      productId: id,
+      productName: name,
+      productSlug: slug,
+      variantSize: selectedVariant.size,
+      productImage: images[0],
+      unitType: effectiveUnit,
+      quantity: sheetQuantity,
+      price: Number(selectedSheetPrice),
+    });
+
+    setVariantPickerOpen(false);
   };
 
   /* Responsive: mobile stays compact and opens a bottom picker; desktop can expand inline */
@@ -729,10 +769,47 @@ export function ProductCard({
                       </div>
                     )}
 
+                    {canSwitchUnit && selectedVariant && (
+                      <div className="store-variant-unit-choice mt-3 grid grid-cols-2 gap-2">
+                        {getVariantUnitOptions(selectedVariant).map((option) => (
+                          <button
+                            key={option.unit}
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedUnit(option.unit);
+                            }}
+                            className={cn(
+                              "store-variant-unit-option",
+                              effectiveUnit === option.unit && "is-selected",
+                            )}
+                          >
+                            {option.unit === "CUBE" ? (
+                              <Boxes className="h-4 w-4" aria-hidden="true" />
+                            ) : (
+                              <Package className="h-4 w-4" aria-hidden="true" />
+                            )}
+                            <span className="store-variant-unit-copy">
+                              <span className="store-variant-unit-label">за {option.label}</span>
+                              <strong>{formatPrice(option.price)} / {option.label}</strong>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="store-variant-sheet-grid mt-3 grid grid-cols-2 gap-2 overflow-y-auto pr-1">
                       {variants.map((variant) => {
-                        const priceInfo = getVariantPriceDisplay(variant);
                         const selected = selectedVariant?.id === variant.id;
+                        const fallbackUnit: UnitType = effectiveUnit === "CUBE" ? "PIECE" : "CUBE";
+                        const primaryPrice = getUnitPrice(variant, effectiveUnit);
+                        const fallbackPrice = getUnitPrice(variant, fallbackUnit);
+                        const priceInfo = primaryPrice
+                          ? { price: primaryPrice, label: getUnitLabel(effectiveUnit) }
+                          : fallbackPrice
+                          ? { price: fallbackPrice, label: getUnitLabel(fallbackUnit) }
+                          : null;
 
                         return (
                           <button
@@ -741,7 +818,8 @@ export function ProductCard({
                             disabled={!variant.inStock}
                             onClick={(e) => {
                               e.preventDefault();
-                              pickVariant(variant, true);
+                              e.stopPropagation();
+                              pickVariant(variant, false);
                             }}
                             className={cn(
                               "store-variant-option",
@@ -751,8 +829,10 @@ export function ProductCard({
                           >
                             <span className="store-variant-option-size">{variant.size}</span>
                             {priceInfo && (
-                              <span className="store-variant-option-price">
-                                {formatPrice(priceInfo.price)} / {priceInfo.unit}
+                              <span className="store-variant-option-prices">
+                                <span className={cn("store-variant-option-price", selected && "is-active")}>
+                                  {formatPrice(priceInfo.price)} / {priceInfo.label}
+                                </span>
                               </span>
                             )}
                           </button>
@@ -760,16 +840,66 @@ export function ProductCard({
                       })}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setVariantPickerOpen(false);
-                      }}
-                      className="store-variant-sheet-done mt-3 flex h-12 w-full items-center justify-center rounded-2xl bg-primary text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/92"
-                    >
-                      Готово
-                    </button>
+                    <div className="store-variant-sheet-buy mt-3">
+                      {selectedSheetPrice && (
+                        <div className="store-variant-price-summary">
+                          <div className="store-variant-price-row">
+                            <span>Цена за {getUnitLabel(effectiveUnit)}</span>
+                            <strong>{formatPrice(selectedSheetPrice)}</strong>
+                          </div>
+                          <div className="store-variant-price-row">
+                            <span>Количество</span>
+                            <strong>
+                              {sheetQuantity} {getUnitLabel(effectiveUnit)}
+                            </strong>
+                          </div>
+                          <div className="store-variant-price-row is-total">
+                            <span>Итого</span>
+                            <strong>{formatPrice(sheetTotal ?? selectedSheetPrice)}</strong>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="store-variant-buy-row">
+                        <div className="store-variant-quantity" aria-label="Количество">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSheetQuantity((value) => Math.max(1, Number((value - 1).toFixed(1))));
+                            }}
+                            aria-label="Уменьшить количество"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span>
+                            <strong>{sheetQuantity}</strong>
+                            <small>{getUnitLabel(effectiveUnit)}</small>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSheetQuantity((value) => Number((value + 1).toFixed(1)));
+                            }}
+                            aria-label="Увеличить количество"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleSheetAdd}
+                          disabled={!selectedVariant || !selectedSheetPrice}
+                          className="store-variant-sheet-done flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/92 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <ShoppingCart className="h-4 w-4 shrink-0" aria-hidden="true" />
+                          <span className="truncate">Добавить</span>
+                        </button>
+                      </div>
+                    </div>
                   </motion.div>
                 </>
               )}

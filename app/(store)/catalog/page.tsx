@@ -15,6 +15,7 @@ import { ProductCard } from "@/components/store/product-card";
 import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
+import { CatalogViewMemory } from "@/components/store/catalog-view-memory";
 import { InstockToggle } from "@/components/store/instock-toggle";
 import {
   Calculator,
@@ -476,7 +477,7 @@ export default async function CatalogPage({
     if (searchParams.instock) params.set("instock", searchParams.instock);
     if (searchParams.minprice) params.set("minprice", searchParams.minprice);
     if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
-    if (view !== "auto") params.set("view", view);
+    params.set("view", view);
     const q = params.toString();
     return `/catalog${q ? `?${q}` : ""}`;
   };
@@ -610,7 +611,7 @@ export default async function CatalogPage({
       : "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4";
 
   return (
-    <div className="container max-w-[100vw] overflow-x-hidden py-3 sm:py-6">
+    <div className="container max-w-[100vw] overflow-x-clip py-3 sm:py-6">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -620,6 +621,7 @@ export default async function CatalogPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogItemListSchema) }}
       />
       <RoutePrefetcher hrefs={prefetchHrefs} />
+      <CatalogViewMemory currentView={catalogView} hasViewParam={Boolean(searchParams.view)} />
 
       {/* ── Заголовок ── */}
       <div className="mb-4 overflow-hidden rounded-2xl border border-border/70 bg-card/70 p-3 shadow-[0_18px_45px_-38px_hsl(var(--foreground)/0.45)] sm:mb-5 sm:p-5">
@@ -642,7 +644,7 @@ export default async function CatalogPage({
             </div>
           </div>
 
-          <div className="flex min-w-0 flex-wrap gap-1.5 text-[10px] font-semibold text-muted-foreground sm:w-[360px] sm:justify-end">
+          <div className="hidden min-w-0 flex-wrap gap-1.5 text-[10px] font-semibold text-muted-foreground sm:flex sm:w-[360px] sm:justify-end">
             <span className="min-w-0 flex-1 rounded-xl border border-border/70 bg-background/55 px-2.5 py-2 text-center sm:flex-none">В наличии</span>
             <span className="min-w-0 flex-1 rounded-xl border border-border/70 bg-background/55 px-2.5 py-2 text-center sm:flex-none">Доставка 1-3 дня</span>
             <span className="min-w-0 flex-1 rounded-xl border border-border/70 bg-background/55 px-2.5 py-2 text-center sm:flex-none">Расчет м³</span>
@@ -696,9 +698,9 @@ export default async function CatalogPage({
         />
       </div>
 
-      <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:gap-6 xl:gap-8">
         {/* Sidebar */}
-        <aside className="hidden lg:block lg:w-64 shrink-0">
+        <aside className="hidden shrink-0 lg:block lg:w-[17rem] xl:w-[18rem] 2xl:w-[19rem]">
           <div className="catalog-filter-scroll sticky top-24 space-y-4 pr-1">
             {/* Categories */}
             <div className="bg-card rounded-2xl border border-border p-5">

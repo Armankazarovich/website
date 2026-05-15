@@ -187,7 +187,7 @@ export function CatalogFilters({
                   Сбросить ({currentTypeLabel})
                 </button>
               )}
-              <div className={`flex max-h-[260px] flex-wrap gap-2 overflow-y-auto pr-1 ${currentType ? "" : "mt-3"}`}>
+              <div className={`catalog-filter-inner-scroll flex max-h-[260px] flex-wrap gap-2 overflow-y-auto pr-1 ${currentType ? "" : "mt-3"}`}>
                 {types.map((t) => (
                   <button
                     key={t.keyword}
@@ -251,7 +251,7 @@ export function CatalogFilters({
                 /* ── Grouped mode: сечения → раскрытие полных размеров ── */
                 <div className="mt-3 space-y-2.5">
                   {/* Сечения (первые 2 числа) */}
-                  <div className="flex flex-wrap gap-1.5 max-h-[200px] overflow-y-auto scrollbar-thin pr-1">
+                  <div className="catalog-filter-inner-scroll flex max-h-[200px] flex-wrap gap-1.5 overflow-y-auto pr-1">
                     {crossSections.map((cs) => {
                       const isExpanded = visibleCS === cs;
                       const hasActive = activeCS === cs;
@@ -305,7 +305,7 @@ export function CatalogFilters({
                 </div>
               ) : (
                 /* ── Flat mode: мало размеров — простой список ── */
-                <div className={`flex max-h-[260px] flex-wrap gap-2 overflow-y-auto pr-1 ${currentSize ? "" : "mt-3"}`}>
+                <div className={`catalog-filter-inner-scroll flex max-h-[260px] flex-wrap gap-2 overflow-y-auto pr-1 ${currentSize ? "" : "mt-3"}`}>
                   {sizes.map((size) => (
                     <button
                       key={size}
@@ -353,17 +353,17 @@ export function CatalogFilters({
 
           {priceOpen && (
             <div className="space-y-3 border-t border-border px-5 pb-5 pt-4">
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-3">
+              <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
                     Диапазон
                   </span>
-                  <strong className="text-right text-sm font-semibold">
+                  <strong className="text-right text-base font-semibold leading-tight">
                     {formatRub(effectiveMinPrice)} – {formatRub(effectiveMaxPrice)}
                   </strong>
                 </div>
 
-                <div className="relative mt-3 h-8">
+                <div className="relative mt-4 h-8">
                   <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-border" />
                   <div
                     className="absolute top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary"
