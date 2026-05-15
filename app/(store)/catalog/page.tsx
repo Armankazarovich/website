@@ -16,7 +16,19 @@ import { CatalogFilters } from "@/components/store/catalog-filters";
 import { CatalogTypeFilter } from "@/components/store/catalog-type-filter";
 import { CatalogMobileFilter } from "@/components/store/catalog-mobile-filter";
 import { InstockToggle } from "@/components/store/instock-toggle";
-import { Calculator, ArrowRight, SearchX, PackageCheck, BadgeCheck, Truck, SlidersHorizontal } from "lucide-react";
+import {
+  Calculator,
+  ArrowRight,
+  SearchX,
+  PackageCheck,
+  BadgeCheck,
+  Truck,
+  SlidersHorizontal,
+  LayoutList,
+  Columns2,
+  Grid3x3,
+  LayoutGrid,
+} from "lucide-react";
 import { getSiteSettings, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
@@ -90,6 +102,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 interface SearchParams {
   category?: string;
   sort?: string;
+  view?: string;
   page?: string;
   size?: string;
   type?: string;
@@ -97,6 +110,12 @@ interface SearchParams {
   minprice?: string;
   maxprice?: string;
   search?: string;
+}
+
+type CatalogView = "list" | "2" | "3" | "4" | "5";
+
+function getCatalogView(value?: string): CatalogView {
+  return value === "list" || value === "2" || value === "3" || value === "5" ? value : "4";
 }
 
 function getCatalogRobots(searchParams: SearchParams): Metadata["robots"] | undefined {
@@ -107,6 +126,7 @@ function getCatalogRobots(searchParams: SearchParams): Metadata["robots"] | unde
       searchParams.minprice ||
       searchParams.maxprice ||
       searchParams.sort ||
+      (searchParams.view && searchParams.view !== "4") ||
       (searchParams.page && searchParams.page !== "1"),
   );
 
@@ -140,6 +160,7 @@ export default async function CatalogPage({
   const currentMinPrice = searchParams.minprice ? Number(searchParams.minprice) : null;
   const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
   const currentSearch = (searchParams.search || "").trim();
+  const catalogView = getCatalogView(searchParams.view);
 
   // Build variant sub-filter (user-driven: size, instock, price)
   const variantWhere: Prisma.ProductVariantWhereInput = {};
@@ -325,6 +346,7 @@ export default async function CatalogPage({
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
+    if (catalogView !== "4") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.instock) params.set("instock", searchParams.instock);
     if (searchParams.minprice) params.set("minprice", searchParams.minprice);
@@ -356,6 +378,7 @@ export default async function CatalogPage({
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
     if (searchParams.sort) params.set("sort", searchParams.sort);
+    if (catalogView !== "4") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
@@ -389,13 +412,30 @@ export default async function CatalogPage({
     const params = new URLSearchParams();
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.search) params.set("search", searchParams.search);
+    if (catalogView !== "4") params.set("view", catalogView);
     if (searchParams.size) params.set("size", searchParams.size);
     if (searchParams.type) params.set("type", searchParams.type);
     if (searchParams.instock) params.set("instock", searchParams.instock);
     if (searchParams.minprice) params.set("minprice", searchParams.minprice);
     if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
     if (sort) params.set("sort", sort);
-    return `/catalog?${params.toString()}`;
+    const q = params.toString();
+    return `/catalog${q ? `?${q}` : ""}`;
+  };
+
+  const buildViewUrl = (view: CatalogView) => {
+    const params = new URLSearchParams();
+    if (searchParams.category) params.set("category", searchParams.category);
+    if (searchParams.search) params.set("search", searchParams.search);
+    if (searchParams.sort) params.set("sort", searchParams.sort);
+    if (searchParams.size) params.set("size", searchParams.size);
+    if (searchParams.type) params.set("type", searchParams.type);
+    if (searchParams.instock) params.set("instock", searchParams.instock);
+    if (searchParams.minprice) params.set("minprice", searchParams.minprice);
+    if (searchParams.maxprice) params.set("maxprice", searchParams.maxprice);
+    if (view !== "4") params.set("view", view);
+    const q = params.toString();
+    return `/catalog${q ? `?${q}` : ""}`;
   };
 
   // BreadcrumbList schema
@@ -507,6 +547,23 @@ export default async function CatalogPage({
     { value: "price_desc", label: "Цена ↓" },
   ];
   const currentSortLabel = sortOptions.find((option) => option.value === (searchParams.sort || ""))?.label || "Новые";
+  const viewOptions: Array<{ value: CatalogView; label: string; title: string; Icon: typeof LayoutGrid }> = [
+    { value: "list", label: "Прайс", title: "Список как прайс", Icon: LayoutList },
+    { value: "2", label: "2", title: "Две карточки в ряд", Icon: Columns2 },
+    { value: "3", label: "3", title: "Три карточки в ряд", Icon: Grid3x3 },
+    { value: "4", label: "4", title: "Четыре карточки в ряд", Icon: LayoutGrid },
+    { value: "5", label: "5", title: "Пять карточек в ряд", Icon: LayoutGrid },
+  ];
+  const productGridClass =
+    catalogView === "list"
+      ? "grid grid-cols-1 gap-3"
+      : catalogView === "2"
+      ? "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-2"
+      : catalogView === "3"
+      ? "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3"
+      : catalogView === "5"
+      ? "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-4 xl:grid-cols-4 2xl:grid-cols-5"
+      : "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4";
 
   return (
     <div className="container max-w-[100vw] overflow-x-hidden py-3 sm:py-6">
@@ -570,6 +627,7 @@ export default async function CatalogPage({
         types={dynamicTypes}
         preserveParams={{
           ...(searchParams.sort ? { sort: searchParams.sort } : {}),
+          ...(catalogView !== "4" ? { view: catalogView } : {}),
           ...(searchParams.search ? { search: searchParams.search } : {}),
           ...(searchParams.size ? { size: searchParams.size } : {}),
           ...(searchParams.instock ? { instock: searchParams.instock } : {}),
@@ -684,7 +742,7 @@ export default async function CatalogPage({
                   <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
                   {currentSortLabel}
                 </summary>
-                <div className="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-44 overflow-hidden rounded-2xl border border-border bg-popover p-1.5 shadow-xl">
+                <div className="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-44 overflow-hidden rounded-2xl border border-border bg-card/95 p-1.5 shadow-2xl ring-1 ring-primary/10 backdrop-blur-xl">
                   {sortOptions.map((opt) => (
                     <Link
                       key={opt.value}
@@ -700,6 +758,23 @@ export default async function CatalogPage({
                   ))}
                 </div>
               </details>
+              <div className="hidden items-center gap-1 rounded-xl border border-border/70 bg-card/70 p-1 shadow-sm xl:flex" aria-label="Вид каталога">
+                {viewOptions.map(({ value, label, title, Icon }) => (
+                  <Link
+                    key={value}
+                    href={buildViewUrl(value)}
+                    title={title}
+                    className={`inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-lg px-2 text-xs font-bold transition-colors ${
+                      catalogView === value
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{label}</span>
+                  </Link>
+                ))}
+              </div>
               <div className="hidden items-center gap-2 sm:flex">
                 <span className="mr-1 text-sm text-muted-foreground">Сортировка:</span>
                 {sortOptions.map((opt) => (
@@ -781,7 +856,7 @@ export default async function CatalogPage({
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3">
+            <div className={productGridClass}>
               {products.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -794,6 +869,7 @@ export default async function CatalogPage({
                   images={product.images}
                   cardTags={product.cardTags}
                   saleUnit={product.saleUnit}
+                  viewMode={catalogView === "list" ? "list" : "grid"}
                   variants={product.variants.map((v: any) => ({
                     id: v.id,
                     size: v.size,

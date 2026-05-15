@@ -57,6 +57,7 @@ interface ProductCardProps {
   saleUnit: "CUBE" | "PIECE" | "BOTH";
   variants: Variant[];
   cardTags?: string[] | null;
+  viewMode?: "grid" | "list";
   featured?: boolean;
 }
 
@@ -71,7 +72,7 @@ function shortCardDescription(description?: string | null) {
 }
 
 export function ProductCard({
-  id, slug, name, category, shortDescription, description, images, saleUnit, variants, cardTags, featured,
+  id, slug, name, category, shortDescription, description, images, saleUnit, variants, cardTags, viewMode = "grid", featured,
 }: ProductCardProps) {
   const { addItem, updateQuantity, items } = useCartStore();
   const { toast } = useToast();
@@ -257,14 +258,18 @@ export function ProductCard({
   const isShowcase = cardStyle === "showcase";
   const isVivid    = cardStyle === "vivid";
   const isMagazine = cardStyle === "magazine";
+  const isListView = viewMode === "list" && !isMagazine;
 
-  const wrapperClass = isMagazine
-    ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 transition-shadow duration-200 flex flex-col min-h-[280px]"
-    : isMinimal
-    ? "group relative overflow-hidden transition-colors duration-200 flex flex-col"
-    : isVivid
-    ? "group relative rounded-2xl overflow-hidden hover:ring-1 hover:ring-primary/15 transition-colors duration-200 flex flex-col vivid-card"
-    : "store-product-card group relative bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/25 transition-colors duration-200 flex flex-col";
+  const wrapperClass = cn(
+    isMagazine
+      ? "group relative rounded-2xl overflow-hidden hover:shadow-xl hover:shadow-black/10 transition-shadow duration-200 flex flex-col min-h-[280px]"
+      : isMinimal
+      ? "group relative overflow-hidden transition-colors duration-200 flex flex-col"
+      : isVivid
+      ? "group relative rounded-2xl overflow-hidden hover:ring-1 hover:ring-primary/15 transition-colors duration-200 flex flex-col vivid-card"
+      : "store-product-card group relative bg-card rounded-2xl border border-border overflow-hidden hover:border-primary/25 transition-colors duration-200 flex flex-col",
+    isListView && "store-product-card-list"
+  );
 
   // ── Magazine style — completely different layout ──
   if (isMagazine) {

@@ -272,7 +272,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
           style={{ background: "linear-gradient(90deg, transparent 0%, hsl(var(--primary)/0.5) 30%, hsl(var(--primary)/0.8) 50%, hsl(var(--primary)/0.5) 70%, transparent 100%)" }}
         />
 
-        <div className="container flex items-center justify-between h-[64px] gap-3">
+        <div className="mx-auto flex h-[64px] w-full max-w-[1920px] items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 2xl:px-10">
           {/* Logo + статус */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="relative w-11 h-11 shrink-0">
