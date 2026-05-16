@@ -2308,6 +2308,7 @@ button, a, [role="button"], input, select, textarea {
   flex: 1 1 auto;
   min-height: 0;
   max-height: clamp(11rem, 30dvh, 18rem);
+  grid-template-columns: repeat(auto-fit, minmax(min(9.6rem, 100%), 1fr));
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.42) transparent;
 }
@@ -2431,7 +2432,7 @@ button, a, [role="button"], input, select, textarea {
 
 .store-variant-option {
   display: flex;
-  min-height: 3.8rem;
+  min-height: 4.05rem;
   min-width: 0;
   flex-direction: column;
   align-items: flex-start;
@@ -2441,7 +2442,7 @@ button, a, [role="button"], input, select, textarea {
   border-radius: 1rem;
   background:
     linear-gradient(180deg, hsl(var(--muted) / 0.38), hsl(var(--background) / 0.34));
-  padding: 0.62rem 0.72rem;
+  padding: 0.58rem 0.66rem;
   color: hsl(var(--foreground));
   text-align: left;
   transition:
@@ -2493,10 +2494,14 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .store-variant-option-size {
+  display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   font-size: 0.84rem;
   font-weight: 800;
   line-height: 1.08;
@@ -2523,6 +2528,22 @@ button, a, [role="button"], input, select, textarea {
 .store-variant-option-prices {
   display: block;
   max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 374px) {
+  .store-variant-sheet {
+    padding-inline: 0.75rem !important;
+  }
+
+  .store-variant-sheet-grid {
+    grid-template-columns: 1fr !important;
+    max-height: clamp(12rem, 34dvh, 20rem);
+  }
+
+  .store-variant-option {
+    min-height: 3.85rem;
+  }
 }
 
 .store-variant-sheet-done {
@@ -3615,6 +3636,61 @@ button, a, [role="button"], input, select, textarea {
   border-color: hsl(var(--border) / 0.54);
   background:
     linear-gradient(180deg, hsl(var(--muted) / 0.26), hsl(24 18% 7% / 0.42));
+}
+
+.dark .store-card-variant-popover {
+  border-color: hsl(var(--border) / 0.74);
+  background:
+    linear-gradient(180deg, hsl(24 18% 12% / 0.98), hsl(24 18% 7% / 0.98));
+  box-shadow:
+    0 22px 44px -28px hsl(0 0% 0% / 0.74),
+    inset 0 1px 0 hsl(0 0% 100% / 0.07);
+}
+
+.dark .store-card-variant-popover::after {
+  border-right-color: hsl(var(--border) / 0.74);
+  border-bottom-color: hsl(var(--border) / 0.74);
+  background: hsl(24 18% 8% / 0.98);
+}
+
+.dark .store-card-variant-head {
+  border-bottom-color: hsl(var(--border) / 0.56);
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .store-card-variant-head-copy small {
+  color: hsl(var(--muted-foreground) / 0.82);
+}
+
+.dark .store-card-variant-head > strong {
+  border-color: hsl(var(--border) / 0.58);
+  background: hsl(var(--muted) / 0.24);
+  color: hsl(var(--muted-foreground));
+}
+
+.dark .store-card-variant-head button {
+  border-color: hsl(var(--border) / 0.58);
+  background: hsl(var(--muted) / 0.18);
+}
+
+.dark .store-card-variant-option {
+  border-color: hsl(var(--border) / 0.58);
+  background: hsl(24 18% 10% / 0.92);
+}
+
+.dark .store-card-variant-option:hover {
+  border-color: hsl(var(--primary) / 0.44);
+  background: hsl(var(--primary) / 0.08);
+}
+
+.dark .store-card-variant-option.is-selected {
+  border-color: hsl(var(--primary) / 0.76);
+  background: hsl(var(--primary) / 0.12);
+  box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.08);
+}
+
+.dark .store-card-variant-size {
+  color: hsl(var(--foreground) / 0.94);
 }
 
 .dark .store-smart-tag.is-accent {
