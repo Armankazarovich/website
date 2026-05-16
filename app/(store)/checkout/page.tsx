@@ -65,6 +65,9 @@ const checkoutSchema = z.object({
   orgName: z.string().optional(),
   inn: z.string().optional(),
   kpp: z.string().optional(),
+  legalConsent: z
+    .boolean()
+    .refine((value) => value, "Подтвердите согласие перед оформлением заказа"),
 });
 
 type CheckoutForm = z.infer<typeof checkoutSchema>;
@@ -193,6 +196,10 @@ export default function CheckoutPage() {
   >("idle");
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (!success) return;
     if (
       !("Notification" in window) ||
@@ -301,7 +308,7 @@ export default function CheckoutPage() {
     formState: { errors },
   } = useForm<CheckoutForm>({
     resolver: zodResolver(checkoutSchema),
-    defaultValues: { paymentMethod: "cash" },
+    defaultValues: { paymentMethod: "cash", legalConsent: false },
   });
 
   const contactMethod = watch("contactMethod");
@@ -387,6 +394,7 @@ export default function CheckoutPage() {
           email: user.email || "",
           address: user.address || "",
           paymentMethod: "cash",
+          legalConsent: false,
         });
       })
       .catch(() => {});
@@ -482,12 +490,14 @@ export default function CheckoutPage() {
       }
 
       const attribution = loadAttribution();
+      const { legalConsent, ...orderData } = data;
+      void legalConsent;
 
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...data,
+          ...orderData,
           comment,
           items: items.map((item) => ({
             variantId: item.variantId,
@@ -1346,6 +1356,41 @@ export default function CheckoutPage() {
               {...register("comment")}
             />
           </div>
+
+          <label className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4 text-sm leading-relaxed transition-colors hover:border-primary/35">
+            <input
+              type="checkbox"
+              aria-invalid={Boolean(errors.legalConsent)}
+              className="mt-1 h-4 w-4 shrink-0 rounded border-border text-primary accent-primary focus:ring-2 focus:ring-primary/30"
+              {...register("legalConsent")}
+            />
+            <span className="text-muted-foreground">
+              Я соглашаюсь на обработку персональных данных и принимаю{" "}
+              <a
+                href="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+              >
+                политику конфиденциальности
+              </a>{" "}
+              и{" "}
+              <a
+                href="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-foreground underline-offset-4 hover:text-primary hover:underline"
+              >
+                условия сайта
+              </a>
+              .
+              {errors.legalConsent && (
+                <span className="mt-1 block text-xs font-medium text-destructive">
+                  {errors.legalConsent.message}
+                </span>
+              )}
+            </span>
+          </label>
 
           <Button
             type="submit"

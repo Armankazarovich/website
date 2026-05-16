@@ -119,7 +119,7 @@ export function SideIconRail() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 24 }}
           transition={{ type: "spring", damping: 26, stiffness: 320 }}
-          className="fixed right-3 top-1/2 -translate-y-1/2 z-[60] hidden sm:flex lg:hidden flex-col gap-2"
+          className="store-side-icon-rail fixed right-3 top-1/2 -translate-y-1/2 z-[60] hidden sm:flex lg:hidden flex-col gap-2"
           aria-label="Быстрая навигация"
         >
           <RailIcon

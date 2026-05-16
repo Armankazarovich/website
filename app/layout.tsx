@@ -255,6 +255,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   var isWorkspace=location.pathname.indexOf('/admin')===0||location.pathname.indexOf('/cabinet')===0;
   var stored=isWorkspace?localStorage.getItem(adminKey):null;
   var legacy=isWorkspace?localStorage.getItem(legacyKey):null;
+  var themeKey='theme';
+  var storedTheme=localStorage.getItem(themeKey);
+  if(isWorkspace&&!storedTheme){
+    localStorage.setItem(themeKey,'dark');
+    storedTheme='dark';
+  }
+  var paintDark=storedTheme==='dark'||(storedTheme==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+  if(paintDark)document.documentElement.classList.add('dark');
+  else document.documentElement.classList.remove('dark');
+  document.documentElement.style.backgroundColor='hsl(var(--background))';
+  document.documentElement.style.colorScheme=paintDark?'dark':'light';
   if(isWorkspace&&!stored&&valid.indexOf(legacy)!==-1){
     localStorage.setItem(adminKey,legacy);
     stored=legacy;

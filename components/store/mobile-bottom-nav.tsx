@@ -211,7 +211,7 @@ export function MobileBottomNav({
   return (
     <nav
       data-store-mobile-dock
-      className="fixed left-0 right-0 z-50 sm:hidden transition-all duration-300"
+      className="store-mobile-bottom-nav fixed left-0 right-0 z-50 sm:hidden transition-all duration-300"
       style={{
         bottom: hiddenByOverlay ? "-120px" : "0",
         opacity: hiddenByOverlay ? 0 : 1,
