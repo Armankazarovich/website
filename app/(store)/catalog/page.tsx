@@ -602,13 +602,13 @@ export default async function CatalogPage({
   const productGridClass =
     catalogView === "list"
       ? "grid grid-cols-1 gap-3"
-      : catalogView === "2"
-      ? "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-2"
-      : catalogView === "3"
-      ? "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3"
-      : catalogView === "5"
-      ? "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-4 xl:grid-cols-4 2xl:grid-cols-5"
-      : "grid grid-cols-2 gap-x-2 gap-y-3 xs:gap-3 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4";
+    : catalogView === "2"
+      ? "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-2"
+    : catalogView === "3"
+      ? "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3"
+    : catalogView === "5"
+      ? "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4 2xl:grid-cols-5"
+      : "grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3 2xl:grid-cols-4";
 
   return (
     <div className="container max-w-[100vw] overflow-x-clip py-3 sm:py-6">

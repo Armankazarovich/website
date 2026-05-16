@@ -4,7 +4,25 @@ import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, ChevronRight, Minus, Plus, Boxes, Package, X, CheckCircle, Ruler } from "lucide-react";
+import {
+  BadgeCheck,
+  Boxes,
+  ChevronRight,
+  Droplets,
+  Hammer,
+  Layers3,
+  Package,
+  PackageCheck,
+  Ruler,
+  ShieldCheck,
+  ShoppingCart,
+  Sparkles,
+  Truck,
+  X,
+  type LucideIcon,
+  Minus,
+  Plus,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useCartStore, type UnitType } from "@/store/cart";
 import { cn, formatPrice } from "@/lib/utils";
@@ -65,10 +83,69 @@ interface ProductCardProps {
 const FALLBACK_GRADIENT =
   "bg-gradient-to-br from-amber-900/80 via-amber-800/60 to-brand-brown/80 dark:from-amber-950/90 dark:via-amber-900/70 dark:to-brand-brown/90";
 
-function shortCardDescription(description?: string | null) {
-  const text = (description || "").replace(/\s+/g, " ").trim();
-  if (!text) return "";
-  return text.length > 118 ? `${text.slice(0, 115).trim()}...` : text;
+function fallbackCardDescription(name: string, category: string) {
+  const value = `${name} ${category}`.toLowerCase();
+  if (value.includes("фанер")) return `${name} для строительных, мебельных и отделочных задач.`;
+  if (value.includes("плинтус")) return `${name} для аккуратной отделки стен и помещений.`;
+  if (value.includes("вагонк")) return `${name} для ровной внутренней и декоративной отделки.`;
+  if (value.includes("террас")) return `${name} для настилов, террас и открытых площадок.`;
+  if (value.includes("имитац")) return `${name} для выразительной отделки под натуральный брус.`;
+  if (value.includes("брус")) return `${name} для прочных каркасных и строительных работ.`;
+  if (value.includes("доск")) return `${name} для строительства, отделки и столярных задач.`;
+  return `${name} для строительных и отделочных задач.`;
+}
+
+function cleanCardDescription(value: string | null | undefined) {
+  const text = (value || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/(?:^|\s)(?:Доступн(?:ые|о)\s+(?:\d+\s+)?размер(?:ов|а|ы)?|Размеры)\s*:\s*.*?(?=(?:\s+(?:Категория|Цена|Купить)\b)|$)/gi, " ")
+    .replace(/(?:^|\s)Категория\s*:\s*.*?(?=(?:\s+(?:Цена|Доступн|Размеры|Купить)\b)|$)/gi, " ")
+    .replace(/(?:^|\s)Цена\s+(?:от|за)?\s*.*?(?=(?:\s+(?:Категория|Доступн|Размеры|Купить)\b)|$)/gi, " ")
+    .replace(/^\s*Купить\s+.+?\s+от\s+производителя\s+в\s+[^.]+\.?\s*/i, " ")
+    .replace(/\s*(?:\.{2,}|[,;:])\s*$/g, "")
+    .replace(/^\s*(?:\.{2,}|[,;:])\s*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const letterCount = (text.match(/[A-Za-zА-Яа-яЁё]/g) || []).length;
+  return letterCount >= 18 ? text : "";
+}
+
+function shortCardDescription(
+  description: string | null | undefined,
+  fallback: { name: string; category: string; backup?: string | null },
+) {
+  const source =
+    [cleanCardDescription(description), cleanCardDescription(fallback.backup)].find(Boolean) ||
+    fallbackCardDescription(fallback.name, fallback.category);
+  if (!source) return "";
+  if (source.length <= 86) return source;
+  const clipped = source.slice(0, 86).replace(/\s+\S*$/, "").trim();
+  return `${clipped || source.slice(0, 83).trim()}...`;
+}
+
+function getInsightIcon(tag: string): LucideIcon {
+  const text = tag.toLowerCase();
+  if (text.includes("стро") || text.includes("каркас")) return Hammer;
+  if (text.includes("сух")) return Droplets;
+  if (text.includes("размер")) return Ruler;
+  if (text.includes("достав")) return Truck;
+  if (text.includes("сорт")) return BadgeCheck;
+  if (text.includes("фасад") || text.includes("отдел")) return Layers3;
+  if (text.includes("заказ")) return PackageCheck;
+  if (text.includes("строг")) return Sparkles;
+  return ShieldCheck;
+}
+
+function getInsightHint(tag: string) {
+  const text = tag.toLowerCase();
+  if (text.includes("размер")) return `${tag}: размер можно выбрать прямо в ценовом блоке.`;
+  if (text.includes("сух")) return `${tag}: материал готов к более стабильной работе после сушки.`;
+  if (text.includes("стро") || text.includes("каркас")) return `${tag}: подходит для строительных задач этого товара.`;
+  if (text.includes("достав")) return `${tag}: ориентир по срокам указан для быстрой покупки.`;
+  if (text.includes("сорт")) return `${tag}: сортность помогает быстро понять качество позиции.`;
+  if (text.includes("заказ")) return `${tag}: позиция доступна по оформлению заказа.`;
+  return tag;
 }
 
 export function ProductCard({
@@ -81,7 +158,7 @@ export function ProductCard({
 
   const activeVariants = variants.filter((v) => v.inStock);
   const hasStock = activeVariants.length > 0;
-  const teaser = shortCardDescription(shortDescription || description);
+  const teaser = shortCardDescription(shortDescription, { name, category, backup: description });
   const insightTags = buildProductInsightTags({ name, category, shortDescription, description, saleUnit, variants, cardTags });
 
   const defaultVariant = activeVariants[0] || variants[0];
@@ -93,13 +170,11 @@ export function ProductCard({
     : defaultVariant;
 
   // Expand all sizes on "+N" click
-  const [showAllSizes, setShowAllSizes] = useState(false);
-
   // Unit type: catalog cards must add to cart in one tap.
   const defaultUnit: UnitType =
     saleUnit === "PIECE" ? "PIECE" : selectedVariant?.pricePerCube ? "CUBE" : "PIECE";
   const [selectedUnit, setSelectedUnit] = useState<UnitType>(defaultUnit);
-  const [showUnitPicker, setShowUnitPicker] = useState(false);
+  const [cardVariantPickerOpen, setCardVariantPickerOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
   const [sheetQuantity, setSheetQuantity] = useState(1);
   const [portalReady, setPortalReady] = useState(false);
@@ -136,7 +211,7 @@ export function ProductCard({
       if (current === "CUBE" && variant.pricePerCube) return "CUBE";
       return variant.pricePerCube ? "CUBE" : "PIECE";
     });
-    setShowUnitPicker(false);
+    setCardVariantPickerOpen(false);
     if (closePicker) setVariantPickerOpen(false);
   };
 
@@ -167,6 +242,20 @@ export function ProductCard({
     if (cubePrice) options.push({ unit: "CUBE", label: getUnitLabel("CUBE"), price: cubePrice });
     if (piecePrice) options.push({ unit: "PIECE", label: getUnitLabel("PIECE"), price: piecePrice });
     return options;
+  };
+  const formatPiecesPerCube = (value: number | null | undefined) => {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number <= 0) return null;
+    return Number.isInteger(number)
+      ? number.toLocaleString("ru-RU")
+      : number.toLocaleString("ru-RU", { maximumFractionDigits: 1 });
+  };
+  const getUnitCaption = (variant: Variant | null | undefined, unitType: UnitType) => {
+    if (unitType === "CUBE") {
+      const pieces = formatPiecesPerCube(variant?.piecesPerCube);
+      return pieces ? `≈ ${pieces} шт` : "за м³";
+    }
+    return "за штуку";
   };
   const selectedSheetPrice = getUnitPrice(selectedVariant, effectiveUnit);
   const sheetTotal = selectedSheetPrice ? selectedSheetPrice * sheetQuantity : null;
@@ -234,18 +323,21 @@ export function ProductCard({
         setVariantPickerOpen(true);
         return;
       }
-      setShowUnitPicker((open) => !open);
+      doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
       return;
     }
     doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
   };
 
-  const handleUnitPick = (unit: UnitType, e: React.MouseEvent, add = false) => {
+  const handleCardSizeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setSelectedUnit(unit);
-    setShowUnitPicker(false);
-    if (add) doAddToCart(unit, e.currentTarget as HTMLElement);
+    if (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches) {
+      setCardVariantPickerOpen(false);
+      setVariantPickerOpen(true);
+      return;
+    }
+    setCardVariantPickerOpen((open) => !open);
   };
 
   const handleIncrement = (e: React.MouseEvent) => {
@@ -287,11 +379,6 @@ export function ProductCard({
 
     setVariantPickerOpen(false);
   };
-
-  /* Responsive: mobile stays compact and opens a bottom picker; desktop can expand inline */
-  const DESKTOP_LIMIT = 2;
-  const desktopSizes = showAllSizes ? variants : variants.slice(0, DESKTOP_LIMIT);
-  const desktopExtra = showAllSizes ? 0 : Math.max(0, variants.length - DESKTOP_LIMIT);
 
   // ── Style helpers ──
   const isMinimal  = cardStyle === "minimal";
@@ -491,12 +578,12 @@ export function ProductCard({
       </Link>
 
       {/* ── Контент ── */}
-      <div className={`flex flex-1 flex-col p-3 sm:p-4 ${isVivid ? "bg-card/95" : ""}`}>
+      <div className={`store-card-content flex flex-1 flex-col p-3 sm:p-4 ${isVivid ? "bg-card/95" : ""}`}>
         {/* Категория */}
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <p className="truncate text-[10px] font-semibold uppercase tracking-normal text-muted-foreground">{category}</p>
+        <div className="store-card-meta mb-2">
+          <p className="store-card-category truncate">{category}</p>
           {variants.length > 1 && (
-            <span className="shrink-0 rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            <span className="store-card-variant-count">
               {variants.length} разм.
             </span>
           )}
@@ -506,104 +593,181 @@ export function ProductCard({
         <Link prefetch href={`/product/${slug}`}>
           <h3
             title={name}
-            className="store-product-card-title mb-3 min-h-[2.35rem] font-display text-[15px] leading-[1.16] transition-colors line-clamp-2 sm:min-h-[2.6rem] sm:text-[18px]"
+            className="store-product-card-title mb-1 min-h-[1.9rem] font-display text-[15px] leading-[1.16] transition-colors line-clamp-2 sm:min-h-[2.1rem] sm:text-[18px]"
           >
             {name}
           </h3>
         </Link>
 
-        <div className="store-smart-tags mb-3" aria-label="Подсказки по товару">
-          {insightTags.map((tag) => (
-            <span key={tag} className="store-smart-tag">
-              <CheckCircle className="store-smart-tag-icon" strokeWidth={2} aria-hidden="true" />
-              <span>{tag}</span>
-            </span>
-          ))}
-        </div>
-
         <p
           aria-hidden={!teaser}
           className={cn(
-            "mb-3 hidden min-h-[2.65rem] text-xs leading-relaxed text-muted-foreground sm:line-clamp-2",
+            "store-card-teaser store-card-teaser-under-title mb-3 min-h-[2.75rem] text-xs leading-relaxed text-muted-foreground line-clamp-2",
             !teaser && "opacity-0"
           )}
         >
           {teaser || "Описание товара"}
         </p>
 
-        {/* Размеры-пилюли — кликабельные */}
-        {variants.length > 0 && (
-          <div
-            className={cn(
-              "store-size-strip scrollbar-none mb-3 content-start gap-1",
-              showAllSizes
-                ? "flex flex-wrap overflow-visible sm:max-h-[92px] sm:overflow-y-auto sm:pr-1"
-                : "flex min-h-[28px] flex-nowrap overflow-x-auto overflow-y-hidden sm:h-[55px] sm:flex-wrap sm:overflow-visible"
-            )}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setVariantPickerOpen(true);
-              }}
-              className="store-mobile-size-trigger sm:hidden"
-              aria-haspopup="dialog"
-            >
-              <span className="store-mobile-size-trigger-main">
-                <span className="store-mobile-size-trigger-icon">
-                  <Ruler className="h-3.5 w-3.5 shrink-0" />
-                </span>
-                <span className="store-mobile-size-trigger-copy">
-                  <span className="store-mobile-size-trigger-title">Выбрать размер</span>
-                  {selectedVariant && (
-                    <span className="store-mobile-size-trigger-value">{selectedVariant.size}</span>
-                  )}
-                </span>
+        <div className="store-smart-tags mb-3" aria-label="Преимущества товара">
+          {insightTags.map((tag) => {
+            const Icon = getInsightIcon(tag);
+            return (
+              <span
+                key={tag}
+                className="store-smart-tag"
+                tabIndex={0}
+                aria-label={getInsightHint(tag)}
+              >
+                <Icon className="store-smart-tag-icon" strokeWidth={2.2} aria-hidden="true" />
+                <span className="store-smart-tag-label">{tag}</span>
               </span>
-              <ChevronRight className="store-mobile-size-trigger-arrow h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            </button>
-            {desktopSizes.map((v) => (
-              <button
-                key={`desktop-${v.id}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  pickVariant(v);
-                }}
-                disabled={!v.inStock}
-                className={cn(
-                  "store-size-chip hidden sm:inline-flex",
-                  selectedVariant?.id === v.id && v.inStock && "is-selected",
-                  !v.inStock && "is-disabled"
-                )}
-              >
-                <span className="store-size-chip-label">{v.size}</span>
-              </button>
-            ))}
-            {/* Desktop: shows from position 3 onwards */}
-            {desktopExtra > 0 && (
-              <button
-                onClick={(e) => { e.preventDefault(); setShowAllSizes(true); }}
-                className="store-size-chip is-extra hidden sm:inline-flex"
-              >
-                +{desktopExtra}
-              </button>
-            )}
-            {showAllSizes && (
-              <button
-                onClick={(e) => { e.preventDefault(); setShowAllSizes(false); }}
-                className="store-size-chip is-extra hidden sm:inline-flex"
-                aria-label="Свернуть размеры"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        )}
+            );
+          })}
+        </div>
 
         {/* Кнопка / степпер */}
-        <div className={`mt-auto relative ${isMinimal ? "pt-2" : "pt-3 border-t border-border/60"}`}>
+        <div className={`store-card-buy-zone mt-auto relative ${isMinimal ? "pt-2" : "pt-3"}`}>
+          {displayPrice && (
+            <div className="store-card-price-panel store-card-price-panel-inline store-card-price-panel-cta" aria-label="Цена и единица покупки">
+              {selectedVariant && (
+                variants.length > 1 ? (
+                  <button
+                    type="button"
+                    className="store-card-price-size-row store-card-price-size-button"
+                    aria-haspopup="dialog"
+                    aria-expanded={cardVariantPickerOpen || variantPickerOpen}
+                    aria-label="Выбрать размер"
+                    onClick={handleCardSizeClick}
+                  >
+                    <span className="store-card-price-size-label">Размер</span>
+                    <span className="store-card-price-size">
+                      <span>{selectedVariant.size}</span>
+                      <ChevronRight className="h-3 w-3" aria-hidden="true" />
+                    </span>
+                  </button>
+                ) : (
+                  <div className="store-card-price-size-row">
+                    <span className="store-card-price-size-label">Размер</span>
+                    <span className="store-card-price-size">{selectedVariant.size}</span>
+                  </div>
+                )
+              )}
+
+              <div className="store-card-price-body">
+                <div className="store-card-price-main">
+                  <span className="store-card-price-kicker">Цена за {displayUnitLabel}</span>
+                  <strong>{formatPrice(displayPrice)}</strong>
+                  <small>{getUnitCaption(selectedVariant, effectiveUnit)}</small>
+                </div>
+
+                <div className="store-card-price-side">
+                  {canSwitchUnit && selectedVariant ? (
+                    <div className="store-card-unit-switch" aria-label="Единица цены">
+                      {getVariantUnitOptions(selectedVariant).map((option) => (
+                        <button
+                          key={option.unit}
+                          type="button"
+                          title={`Цена за ${option.label}: ${formatPrice(option.price)}`}
+                          aria-pressed={effectiveUnit === option.unit}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedUnit(option.unit);
+                          }}
+                          className={cn(
+                            "store-card-unit-toggle",
+                            effectiveUnit === option.unit && "is-selected",
+                          )}
+                        >
+                          <span>{option.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="store-card-unit-chip">{displayUnitLabel}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <AnimatePresence>
+            {cardVariantPickerOpen && variants.length > 1 && (
+              <motion.div
+                role="dialog"
+                aria-label="Выбор размера"
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                transition={{ duration: 0.16, ease: "easeOut" }}
+                className="store-card-variant-popover"
+              >
+                <div className="store-card-variant-head">
+                  <div className="store-card-variant-head-copy">
+                    <span>Выберите размер</span>
+                    <small>Цена за {displayUnitLabel}</small>
+                  </div>
+                  <strong>{variants.length} разм.</strong>
+                  <button
+                    type="button"
+                    aria-label="Закрыть выбор размера"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setCardVariantPickerOpen(false);
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+
+                <div className="store-card-variant-grid">
+                  {variants.map((variant) => {
+                    const selected = selectedVariant?.id === variant.id;
+                    const fallbackUnit: UnitType = effectiveUnit === "CUBE" ? "PIECE" : "CUBE";
+                    const primaryPrice = getUnitPrice(variant, effectiveUnit);
+                    const fallbackPrice = getUnitPrice(variant, fallbackUnit);
+                    const priceInfo = primaryPrice
+                      ? { price: primaryPrice, label: getUnitLabel(effectiveUnit), unit: effectiveUnit }
+                      : fallbackPrice
+                      ? { price: fallbackPrice, label: getUnitLabel(fallbackUnit), unit: fallbackUnit }
+                      : null;
+
+                    return (
+                      <button
+                        key={`card-picker-${variant.id}`}
+                        type="button"
+                        disabled={!variant.inStock || !priceInfo}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          pickVariant(variant);
+                        }}
+                        className={cn(
+                          "store-card-variant-option",
+                          selected && variant.inStock && "is-selected",
+                          (!variant.inStock || !priceInfo) && "is-disabled",
+                        )}
+                      >
+                        <span className="store-card-variant-size">{variant.size}</span>
+                        {priceInfo && (
+                          <span className="store-card-variant-price">
+                            {formatPrice(priceInfo.price)}
+                            <small>/{priceInfo.label}</small>
+                          </span>
+                        )}
+                        {priceInfo?.unit === "CUBE" && (
+                          <small className="store-card-variant-caption">{getUnitCaption(variant, "CUBE")}</small>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {cartQty > 0 ? (
             /* ── Степпер количества ── */
             <div className="flex items-center gap-2">
@@ -639,75 +803,12 @@ export function ProductCard({
             >
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
               <span className="store-card-price-wrap">
-                {displayPrice ? (
-                  <>
-                    <span className="store-card-price">{formatPrice(displayPrice)}</span>
-                    <span className="store-card-price-unit">/ {displayUnitLabel}</span>
-                  </>
-                ) : (
-                  <span className="text-sm">В корзину</span>
-                )}
+                <span className="text-sm">В корзину</span>
               </span>
               <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
             </button>
           )}
 
-          <AnimatePresence>
-            {showUnitPicker && canSwitchUnit && selectedVariant && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowUnitPicker(false);
-                  }}
-                />
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                  transition={{ duration: 0.16, ease: "easeOut" }}
-                  className="store-unit-picker absolute bottom-full left-0 right-0 z-20 mb-2 rounded-xl border border-border bg-card p-2.5 shadow-xl"
-                >
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Купить как
-                    </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setShowUnitPicker(false);
-                      }}
-                      className="flex h-5 w-5 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                  <div className="store-unit-picker-grid grid grid-cols-2 gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => handleUnitPick("CUBE", e, true)}
-                      className="store-unit-option"
-                    >
-                      <Boxes className="h-4 w-4" />
-                      <span>м³</span>
-                      <strong>{formatPrice(Number(selectedVariant.pricePerCube))}</strong>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleUnitPick("PIECE", e, true)}
-                      className="store-unit-option"
-                    >
-                      <Package className="h-4 w-4" />
-                      <span>шт</span>
-                      <strong>{formatPrice(Number(selectedVariant.pricePerPiece))}</strong>
-                    </button>
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
         </div>
       </div>
       {portalReady
@@ -762,44 +863,12 @@ export function ProductCard({
                       </button>
                     </div>
 
-                    {selectedVariant && (
-                      <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-muted-foreground">
-                        <span>Выбрано</span>
-                        <strong className="truncate text-sm text-foreground">{selectedVariant.size}</strong>
-                      </div>
-                    )}
+                    <div className="store-variant-section-label mt-3">
+                      <span>Размер</span>
+                      <strong>{variants.length}</strong>
+                    </div>
 
-                    {canSwitchUnit && selectedVariant && (
-                      <div className="store-variant-unit-choice mt-3 grid grid-cols-2 gap-2">
-                        {getVariantUnitOptions(selectedVariant).map((option) => (
-                          <button
-                            key={option.unit}
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedUnit(option.unit);
-                            }}
-                            className={cn(
-                              "store-variant-unit-option",
-                              effectiveUnit === option.unit && "is-selected",
-                            )}
-                          >
-                            {option.unit === "CUBE" ? (
-                              <Boxes className="h-4 w-4" aria-hidden="true" />
-                            ) : (
-                              <Package className="h-4 w-4" aria-hidden="true" />
-                            )}
-                            <span className="store-variant-unit-copy">
-                              <span className="store-variant-unit-label">за {option.label}</span>
-                              <strong>{formatPrice(option.price)} / {option.label}</strong>
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="store-variant-sheet-grid mt-3 grid grid-cols-2 gap-2 overflow-y-auto pr-1">
+                    <div className="store-variant-sheet-grid mt-2 grid grid-cols-2 gap-2 overflow-y-auto pr-1">
                       {variants.map((variant) => {
                         const selected = selectedVariant?.id === variant.id;
                         const fallbackUnit: UnitType = effectiveUnit === "CUBE" ? "PIECE" : "CUBE";
@@ -839,6 +908,41 @@ export function ProductCard({
                         );
                       })}
                     </div>
+
+                    {canSwitchUnit && selectedVariant && (
+                      <>
+                        <div className="store-variant-section-label mt-3">
+                          <span>Единица</span>
+                        </div>
+                        <div className="store-variant-unit-choice mt-2 grid grid-cols-2 gap-2">
+                          {getVariantUnitOptions(selectedVariant).map((option) => (
+                            <button
+                              key={option.unit}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setSelectedUnit(option.unit);
+                              }}
+                              className={cn(
+                                "store-variant-unit-option",
+                                effectiveUnit === option.unit && "is-selected",
+                              )}
+                            >
+                              {option.unit === "CUBE" ? (
+                                <Boxes className="h-4 w-4" aria-hidden="true" />
+                              ) : (
+                                <Package className="h-4 w-4" aria-hidden="true" />
+                              )}
+                              <span className="store-variant-unit-copy">
+                                <span className="store-variant-unit-label">{option.label}</span>
+                                <strong>{formatPrice(option.price)}</strong>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
 
                     <div className="store-variant-sheet-buy mt-3">
                       {selectedSheetPrice && (

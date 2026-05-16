@@ -33,18 +33,6 @@ export function normalizeProductCardTags(tags?: string[] | null) {
     .slice(0, MAX_CARD_TAGS);
 }
 
-function pluralSizeLabel(count: number) {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  const word = mod10 === 1 && mod100 !== 11
-    ? "размер"
-    : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-    ? "размера"
-    : "размеров";
-
-  return `${count} ${word}`;
-}
-
 export function buildProductInsightTags(input: ProductInsightInput) {
   const manualTags = normalizeProductCardTags(input.cardTags);
   if (manualTags.length > 0) return manualTags;
@@ -60,23 +48,30 @@ export function buildProductInsightSuggestions(input: ProductInsightInput) {
   const add = (label: string) => {
     if (!tags.includes(label)) tags.push(label);
   };
+  const has = (pattern: RegExp) => pattern.test(source);
 
-  if (/террас|палуб/.test(source)) add("Для террасы");
-  else if (/доска пола|пола|пол\b/.test(source)) add("Для пола");
-  else if (/планкен|вагонк|имитац|блок-хаус|фасад/.test(source)) add("Для фасада");
-  else if (/брус/.test(source)) add("Для каркаса");
-  else if (/фанер|дсп|мдф|осб|лист/.test(source)) add("Листовой материал");
-  else if (/доск/.test(source)) add("Для строительства");
+  if (has(/террас|палуб/)) add("Для террасы");
+  else if (has(/доска пола|пола|пол\b/)) add("Для пола");
+  else if (has(/планкен|вагонк|имитац|блок-хаус|фасад/)) add("Для фасада");
+  else if (has(/плинтус|наличник|уголок|галтел|штапик/)) add("Для отделки");
+  else if (has(/брус/)) add("Для каркаса");
+  else if (has(/фанер|дсп|мдф|осб|лист/)) add("Листовой материал");
+  else if (has(/доск/)) add("Для строительства");
   else add("Для заказа");
 
-  if (/гост/.test(source)) add("ГОСТ");
-  else if (/1\s*сорт|перв/.test(source)) add("1 сорт");
-  else if (/\b(ab|ав)\b/.test(source)) add("AB");
-  else if (/прима/.test(source)) add("Прима");
-  else if (/камер|сух/.test(source)) add("Сухая");
-  else if (/строган|планкен|вагонк|имитац/.test(source)) add("Строганая");
+  if (has(/гост/)) add("ГОСТ");
+  else if (has(/1\s*сорт|перв/)) add("1 сорт");
+  else if (has(/\b(ab|ав)\b/)) add("AB");
+  else if (has(/прима/)) add("Прима");
+  else if (has(/камер|сух/)) add("Сухая");
+  else if (has(/строган|планкен|вагонк|имитац/)) add("Строганая");
 
-  if (input.variants.length >= 3) add(pluralSizeLabel(input.variants.length));
+  if (tags.length < MAX_CARD_TAGS) {
+    if (has(/внутрен|интерьер|помещ|стен/)) add("Для интерьера");
+    else if (has(/липа|осина|сосна|ель|листвен|хвоя|дерев/)) add("Массив дерева");
+    else if (has(/строител|мебел|отделоч/)) add("Для работ");
+  }
+
   add("Доставка 1-3 дня");
 
   return tags;
