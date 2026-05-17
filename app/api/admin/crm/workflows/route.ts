@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
 import { LUMBER_PRESET_WORKFLOWS } from "@/lib/workflow-engine";
+import { cleanWorkflowDisplayText, sanitizeWorkflowForDisplay } from "@/lib/workflow-text";
 
 export const dynamic = "force-dynamic";
 
@@ -50,15 +51,17 @@ export async function GET(req: Request) {
       ]);
     }
 
+    const safeWorkflows = workflows.map(sanitizeWorkflowForDisplay);
+
     return NextResponse.json({
-      workflows,
+      workflows: safeWorkflows,
       stats: {
         total: workflows.length,
         active: workflows.filter((w) => w.active).length,
         logsToday: totalLogs,
         errorsToday: errorLogs,
       },
-      ...(includePresets ? { presets: LUMBER_PRESET_WORKFLOWS } : {}),
+      ...(includePresets ? { presets: LUMBER_PRESET_WORKFLOWS.map(sanitizeWorkflowForDisplay) } : {}),
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -78,13 +81,14 @@ export async function POST(req: Request) {
       const created = [];
       for (const preset of presets) {
         // Проверяем дубликат по имени
-        const existing = await prisma.workflow.findFirst({ where: { name: preset.name } });
+        const safeName = cleanWorkflowDisplayText(preset.name);
+        const existing = await prisma.workflow.findFirst({ where: { name: safeName } });
         if (existing) continue;
 
         const wf = await prisma.workflow.create({
           data: {
-            name: preset.name,
-            description: preset.description,
+            name: safeName,
+            description: cleanWorkflowDisplayText(preset.description),
             trigger: preset.trigger,
             category: preset.category,
             conditions: preset.conditions,
@@ -100,14 +104,16 @@ export async function POST(req: Request) {
     // Создать один workflow
     const { name, description, trigger, conditions, actions, category, delayMinutes, nicheTag } = body;
 
-    if (!name || !trigger) {
+    const safeName = cleanWorkflowDisplayText(name);
+
+    if (!safeName || !trigger) {
       return NextResponse.json({ error: "Название и триггер обязательны" }, { status: 400 });
     }
 
     const wf = await prisma.workflow.create({
       data: {
-        name,
-        description: description || null,
+        name: safeName,
+        description: cleanWorkflowDisplayText(description) || null,
         trigger,
         conditions: conditions || {},
         actions: actions || [],

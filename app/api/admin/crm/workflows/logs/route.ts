@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
+import { sanitizeWorkflowForDisplay } from "@/lib/workflow-text";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,12 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json({ logs });
+    return NextResponse.json({
+      logs: logs.map((log) => ({
+        ...log,
+        workflow: log.workflow ? sanitizeWorkflowForDisplay(log.workflow) : log.workflow,
+      })),
+    });
   } catch (e: any) {
     return NextResponse.json({ logs: [] });
   }

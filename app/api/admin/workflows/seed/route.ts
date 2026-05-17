@@ -109,7 +109,7 @@ const DEFAULT_WORKFLOWS = [
   },
 ];
 
-const VISIBLE_EMOJI_PATTERN = /[\u{1f300}-\u{1faff}\u{2600}-\u{27bf}\ufe0f]/gu;
+const VISIBLE_EMOJI_PATTERN = /[\u{1f1e6}-\u{1faff}\u{2600}-\u{27bf}\u{2b00}-\u{2bff}\ufe0f]/gu;
 
 function cleanWorkflowText(value: string) {
   return value.replace(VISIBLE_EMOJI_PATTERN, "").replace(/\s{2,}/g, " ").trim();

@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
+import { cleanWorkflowDisplayText, sanitizeWorkflowForDisplay } from "@/lib/workflow-text";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
     const data: any = {};
     if ("active" in body) data.active = body.active;
-    if ("name" in body) data.name = body.name;
-    if ("description" in body) data.description = body.description;
+    if ("name" in body) data.name = cleanWorkflowDisplayText(body.name);
+    if ("description" in body) data.description = cleanWorkflowDisplayText(body.description) || null;
     if ("trigger" in body) data.trigger = body.trigger;
     if ("conditions" in body) data.conditions = body.conditions;
     if ("actions" in body) data.actions = body.actions;
@@ -28,7 +29,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if ("sortOrder" in body) data.sortOrder = body.sortOrder;
 
     const wf = await prisma.workflow.update({ where: { id }, data });
-    return NextResponse.json({ ok: true, workflow: wf });
+    return NextResponse.json({ ok: true, workflow: sanitizeWorkflowForDisplay(wf) });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

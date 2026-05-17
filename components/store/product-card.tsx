@@ -738,6 +738,7 @@ export function ProductCard({
                       <button
                         key={`card-picker-${variant.id}`}
                         type="button"
+                        title={variant.size}
                         disabled={!variant.inStock || !priceInfo}
                         onClick={(e) => {
                           e.preventDefault();
@@ -884,6 +885,7 @@ export function ProductCard({
                           <button
                             key={`picker-${variant.id}`}
                             type="button"
+                            title={variant.size}
                             disabled={!variant.inStock}
                             onClick={(e) => {
                               e.preventDefault();

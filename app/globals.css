@@ -2326,9 +2326,13 @@ button, a, [role="button"], input, select, textarea {
   flex: 1 1 auto;
   min-height: 0;
   max-height: clamp(12rem, 36dvh, 20rem);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(11.25rem, 100%), 1fr)) !important;
+  grid-auto-rows: minmax(4.75rem, auto);
   gap: 0.5rem;
+  align-items: stretch;
   padding-right: 0.18rem;
+  padding-bottom: 0.32rem;
+  scroll-padding-block: 0.32rem;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.42) transparent;
 }
@@ -2464,6 +2468,7 @@ button, a, [role="button"], input, select, textarea {
     linear-gradient(180deg, hsl(var(--muted) / 0.38), hsl(var(--background) / 0.34));
   padding: 0.68rem 0.76rem;
   color: hsl(var(--foreground));
+  overflow: hidden;
   text-align: left;
   transition:
     border-color 0.16s ease,
@@ -2520,21 +2525,21 @@ button, a, [role="button"], input, select, textarea {
   text-overflow: ellipsis;
   white-space: normal;
   overflow-wrap: anywhere;
+  word-break: normal;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 800;
   line-height: 1.12;
   letter-spacing: 0;
 }
 
 .store-variant-option-price {
-  display: block;
+  display: inline-block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.12;
@@ -2552,14 +2557,14 @@ button, a, [role="button"], input, select, textarea {
   min-width: 0;
 }
 
-@media (max-width: 374px) {
+@media (max-width: 390px) {
   .store-variant-sheet {
-    padding-inline: 0.75rem !important;
+    padding-inline: 0.72rem !important;
   }
 
   .store-variant-sheet-grid {
     grid-template-columns: 1fr !important;
-    max-height: clamp(12rem, 34dvh, 20rem);
+    max-height: clamp(12rem, 36dvh, 21rem);
   }
 
   .store-variant-option {
@@ -3210,10 +3215,14 @@ button, a, [role="button"], input, select, textarea {
 .store-card-variant-grid {
   display: grid;
   max-height: clamp(8.2rem, 28dvh, 13.5rem);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(10.5rem, 100%), 1fr));
+  grid-auto-rows: minmax(4rem, auto);
   gap: 0.42rem;
+  align-items: stretch;
   overflow-y: auto;
   padding-right: 0.12rem;
+  padding-bottom: 0.28rem;
+  scroll-padding-block: 0.28rem;
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--primary) / 0.42) transparent;
 }
@@ -3237,6 +3246,7 @@ button, a, [role="button"], input, select, textarea {
   border-radius: 0.78rem;
   background: hsl(0 0% 100% / 0.38);
   padding: 0.52rem 0.56rem;
+  overflow: hidden;
   text-align: left;
   transition:
     border-color 0.16s ease,
@@ -3272,6 +3282,7 @@ button, a, [role="button"], input, select, textarea {
   display: -webkit-box;
   white-space: normal;
   overflow-wrap: anywhere;
+  word-break: normal;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: hsl(var(--foreground));
@@ -3282,6 +3293,7 @@ button, a, [role="button"], input, select, textarea {
 
 .store-card-variant-price {
   white-space: nowrap;
+  max-width: 100%;
   color: hsl(var(--primary));
   font-family: var(--font-oswald), var(--font-inter), system-ui, sans-serif;
   font-size: 0.94rem;

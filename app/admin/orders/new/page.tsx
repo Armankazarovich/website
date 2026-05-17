@@ -2222,13 +2222,13 @@ export default function NewPhoneOrderPage() {
                   cashRegisterLocked
                     ? "Откройте кассу, чтобы начать продажу"
                     : terminalMode === "MARKET"
-                      ? "Категория, магазин, товар или услуга..."
-                      : "Добавить в заказ: товар, материал или услуга..."
+                      ? "Категория, магазин или товар..."
+                      : "Найти товар, материал или услугу..."
                 }
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 disabled={cashRegisterLocked}
-                className="h-11 w-full rounded-xl border border-primary/20 bg-background py-2 pl-9 pr-8 text-base focus:border-primary/45 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70 sm:text-sm"
+                className="h-11 w-full rounded-xl border border-primary/20 bg-background py-2 pl-9 pr-8 text-sm focus:border-primary/45 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
               />
               {productSearch && (
                 <button type="button" onClick={() => setProductSearch("")} className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground">
