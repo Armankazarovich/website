@@ -4,12 +4,13 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { yandexOAuthCallbackUri } from "@/lib/yandex-oauth-redirect";
 
 function oauthRedirectUri(req: Request) {
-  const requestUrl = new URL(req.url);
-  return (
-    process.env.YANDEX_METRIKA_REDIRECT_URI ||
-    `${requestUrl.protocol}//${requestUrl.host}/api/admin/metrika/oauth/callback`
+  return yandexOAuthCallbackUri(
+    req,
+    "YANDEX_METRIKA_REDIRECT_URI",
+    "/api/admin/metrika/oauth/callback",
   );
 }
 

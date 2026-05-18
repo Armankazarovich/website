@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { encryptSettingValue } from "@/lib/secure-settings";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { yandexOAuthCallbackUri } from "@/lib/yandex-oauth-redirect";
 
 type YandexTokenResponse = {
   access_token?: string;
@@ -16,10 +17,10 @@ type YandexTokenResponse = {
 };
 
 function oauthRedirectUri(req: Request) {
-  const requestUrl = new URL(req.url);
-  return (
-    process.env.YANDEX_DIRECT_REDIRECT_URI ||
-    `${requestUrl.protocol}//${requestUrl.host}/api/admin/direct/oauth/callback`
+  return yandexOAuthCallbackUri(
+    req,
+    "YANDEX_DIRECT_REDIRECT_URI",
+    "/api/admin/direct/oauth/callback",
   );
 }
 

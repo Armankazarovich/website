@@ -290,6 +290,7 @@ type CopyKey =
   | "negative"
   | "aray"
   | "aray-edit"
+  | "direct-callback"
   | `group-${number}`;
 type DirectPreviewMode = "groups" | "ads" | "keywords" | "negative";
 
@@ -638,6 +639,17 @@ function normalizeDomain(value?: string | null) {
     .replace(/^www\./i, "")
     .split(/[/?#]/)[0]
     .toLowerCase();
+}
+
+function normalizeOriginValue(value?: string | null) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return "";
+  }
 }
 
 function metrikaCounterMatchesPublicSite(
@@ -1620,6 +1632,9 @@ function AdvertisingModule() {
   const publicBaseUrl = draft?.publicBaseUrl;
   const publicBaseUrlReady = draft?.publicBaseUrlReady !== false;
   const publicBaseUrlLabel = publicBaseUrl || "домен бизнеса";
+  const directOAuthCallbackUrl = `${
+    normalizeOriginValue(publicBaseUrl) || "https://pilo-rus.ru"
+  }/api/admin/direct/oauth/callback`;
   const directRegionIds = draft?.directRegionIds ?? [];
   const directRegionError = draft?.directRegionError || "";
   const directRegionReady = Boolean(directRegionIds.length && !directRegionError);
@@ -2113,6 +2128,35 @@ function AdvertisingModule() {
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {directHelpText}
                 </p>
+                {!directReady ? (
+                  <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.08] p-2.5 text-xs leading-relaxed">
+                    <div className="font-semibold text-foreground">
+                      Адрес возврата для Яндекса
+                    </div>
+                    <p className="mt-1 text-muted-foreground">
+                      В OAuth-приложении Яндекса должен быть указан этот Callback
+                      URI. Если там стоит localhost:3000, Яндекс вернет владельца
+                      в пустую страницу.
+                    </p>
+                    <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <code className="min-w-0 flex-1 break-all rounded-xl border border-border bg-background/70 px-2.5 py-2 text-[11px] text-foreground">
+                        {directOAuthCallbackUrl}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          copyText("direct-callback", directOAuthCallbackUrl)
+                        }
+                        className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-primary/[0.08]"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        {copyKey === "direct-callback"
+                          ? "Скопировано"
+                          : "Скопировать"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {activeDirectCampaigns.length ? (
                   <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs leading-relaxed text-amber-700 dark:text-amber-300">
                     В Direct уже есть активная кампания:{" "}

@@ -4,12 +4,13 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { yandexOAuthCallbackUri } from "@/lib/yandex-oauth-redirect";
 
 function oauthRedirectUri(req: Request) {
-  const requestUrl = new URL(req.url);
-  return (
-    process.env.YANDEX_DIRECT_REDIRECT_URI ||
-    `${requestUrl.protocol}//${requestUrl.host}/api/admin/direct/oauth/callback`
+  return yandexOAuthCallbackUri(
+    req,
+    "YANDEX_DIRECT_REDIRECT_URI",
+    "/api/admin/direct/oauth/callback",
   );
 }
 
@@ -30,6 +31,7 @@ export async function GET(req: Request) {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", oauthRedirectUri(req));
+  url.searchParams.set("scope", "direct:api");
   url.searchParams.set("state", state);
   url.searchParams.set("force_confirm", "yes");
 
