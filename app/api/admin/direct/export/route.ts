@@ -22,6 +22,7 @@ async function readExportRequest(req: Request) {
   const rawParts = (body?.parts || {}) as Record<string, unknown>;
   return {
     confirmed: body?.confirm === true,
+    allowDuplicateCampaign: body?.allowDuplicateCampaign === true,
     options: normalizeDirectDraftOptions(
       (body?.options || body) as Record<string, unknown>,
     ),
@@ -32,6 +33,15 @@ async function readExportRequest(req: Request) {
       callouts: rawParts.callouts !== false,
     } satisfies YandexDirectExportParts,
   };
+}
+
+function activeCampaignNames(
+  campaigns: Array<{ name: string; state: string; status: string }>,
+) {
+  return campaigns
+    .filter((campaign) => campaign.state.toUpperCase() === "ON")
+    .map((campaign) => campaign.name)
+    .filter(Boolean);
 }
 
 async function buildTenantDraft(req: Request, options: DirectDraftOptions) {
@@ -77,7 +87,8 @@ export async function POST(req: Request) {
   if (!auth.authorized) return auth.response;
 
   try {
-    const { confirmed, options, parts } = await readExportRequest(req);
+    const { confirmed, allowDuplicateCampaign, options, parts } =
+      await readExportRequest(req);
     if (!confirmed) {
       return NextResponse.json(
         {
@@ -99,6 +110,16 @@ export async function POST(req: Request) {
             "Yandex Direct API не подключен для текущего бизнеса",
         },
         { status: 400 },
+      );
+    }
+    const activeNames = activeCampaignNames(direct.campaigns);
+    if (activeNames.length && !allowDuplicateCampaign) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `В Direct уже есть включенная кампания: ${activeNames.join(", ")}. Я не создаю дубль без отдельного подтверждения, чтобы не смешать статистику и не потратить бюджет лишний раз.`,
+        },
+        { status: 409 },
       );
     }
 
