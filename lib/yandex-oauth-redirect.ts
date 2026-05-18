@@ -17,6 +17,14 @@ function isLocalHost(hostname: string) {
   return LOCAL_HOSTS.has(hostname.toLowerCase());
 }
 
+function originIsLocal(origin: string) {
+  try {
+    return isLocalHost(new URL(origin).hostname);
+  } catch {
+    return false;
+  }
+}
+
 function requestOrigin(req: Request) {
   const requestUrl = new URL(req.url);
   return {
@@ -25,11 +33,16 @@ function requestOrigin(req: Request) {
   };
 }
 
-function publicSiteOrigin() {
+function publicSiteOrigin({ allowLocal = false }: { allowLocal?: boolean } = {}) {
+  const candidates = [
+    normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL),
+    normalizeOrigin(process.env.NEXTAUTH_URL),
+    normalizeOrigin(process.env.AUTH_URL),
+  ];
+
   return (
-    normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL) ||
-    normalizeOrigin(process.env.NEXTAUTH_URL) ||
-    normalizeOrigin(process.env.AUTH_URL)
+    candidates.find((origin) => origin && (allowLocal || !originIsLocal(origin))) ||
+    ""
   );
 }
 
@@ -41,7 +54,7 @@ export function yandexOAuthCallbackUri(
   const request = requestOrigin(req);
   const fallbackOrigin = request.isLocal
     ? request.origin
-    : publicSiteOrigin() || request.origin;
+    : publicSiteOrigin({ allowLocal: false }) || request.origin;
   const fallback = new URL(callbackPath, fallbackOrigin).toString();
   const configured = String(process.env[envKey] || "").trim();
 
@@ -50,6 +63,9 @@ export function yandexOAuthCallbackUri(
   try {
     const configuredUrl = new URL(configured);
     const fallbackUrl = new URL(fallback);
+    if (!request.isLocal && isLocalHost(configuredUrl.hostname)) {
+      return fallback;
+    }
     if (
       isLocalHost(configuredUrl.hostname) &&
       configuredUrl.host !== fallbackUrl.host
