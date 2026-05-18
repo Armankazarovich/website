@@ -1914,7 +1914,7 @@ function AdvertisingModule() {
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                 >
                   <ShieldCheck className="h-4 w-4" />
-                  Боевой черновик за 1 клик
+                  Черновик без запуска
                 </button>
                 <button
                   type="button"
@@ -1938,6 +1938,18 @@ function AdvertisingModule() {
                   <ExternalLink className="h-4 w-4" />
                   Открыть YML фид
                 </a>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs leading-relaxed text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-emerald-700 dark:text-emerald-300">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  Создаю остановленный черновик, бюджет не запускаю
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/70 px-3 py-1">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  {directPackage?.goalsReady
+                    ? "Цели Метрики готовы для оптимизации"
+                    : "Для максимального запуска нужны цели Метрики"}
+                </span>
               </div>
 
               <div className="mt-5 grid grid-cols-1 gap-2 min-[520px]:grid-cols-2 xl:grid-cols-4">
