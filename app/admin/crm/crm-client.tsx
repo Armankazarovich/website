@@ -19,26 +19,26 @@ import { useToast } from "@/components/ui/use-toast";
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 
 const STAGES = [
-  { key: "NEW",         label: "Новая заявка",  dot: "bg-blue-400" },
-  { key: "CONTACTED",   label: "Связались",     dot: "bg-cyan-400" },
-  { key: "PROPOSAL",    label: "Предложение",   dot: "bg-violet-400" },
-  { key: "NEGOTIATION", label: "Обсуждаем",     dot: "bg-amber-400" },
-  { key: "WON",         label: "Продано",       dot: "bg-emerald-400" },
-  { key: "LOST",        label: "Отказ",         dot: "bg-red-400/50" },
-  { key: "DEFERRED",    label: "Позже",         dot: "bg-orange-400" },
-  { key: "RECURRING",   label: "Повторный клиент", dot: "bg-purple-400" },
+  { key: "NEW",         label: "Новая заявка",  mobileLabel: "Новые", dot: "bg-blue-400" },
+  { key: "CONTACTED",   label: "Связались",     mobileLabel: "Связь", dot: "bg-cyan-400" },
+  { key: "PROPOSAL",    label: "Предложение",   mobileLabel: "КП", dot: "bg-violet-400" },
+  { key: "NEGOTIATION", label: "Обсуждаем",     mobileLabel: "Диалог", dot: "bg-amber-400" },
+  { key: "WON",         label: "Продано",       mobileLabel: "Продано", dot: "bg-emerald-400" },
+  { key: "LOST",        label: "Отказ",         mobileLabel: "Отказ", dot: "bg-red-400/50" },
+  { key: "DEFERRED",    label: "Позже",         mobileLabel: "Позже", dot: "bg-orange-400" },
+  { key: "RECURRING",   label: "Повторный клиент", mobileLabel: "Повтор", dot: "bg-purple-400" },
 ];
 
 const ORDER_STAGES = [
-  { key: "NEW",          label: "Новый",          dot: "bg-blue-400",     icon: Inbox },
-  { key: "CONFIRMED",    label: "Подтверждён",    dot: "bg-teal-400",     icon: CheckCircle2 },
-  { key: "PROCESSING",   label: "В комплектации", dot: "bg-violet-400",   icon: Settings2 },
-  { key: "SHIPPED",      label: "Отгружен",       dot: "bg-amber-400",    icon: Truck },
-  { key: "IN_DELIVERY",  label: "Доставляется",   dot: "bg-orange-400",   icon: Navigation },
-  { key: "READY_PICKUP", label: "Готов к выдаче", dot: "bg-cyan-400",     icon: Package },
-  { key: "DELIVERED",    label: "Доставлен",      dot: "bg-emerald-400",  icon: Home },
-  { key: "COMPLETED",    label: "Завершён",       dot: "bg-green-500",    icon: Flag },
-  { key: "CANCELLED",    label: "Отменён",        dot: "bg-red-400/50",   icon: XCircle },
+  { key: "NEW",          label: "Новый",          mobileLabel: "Новый", dot: "bg-blue-400",     icon: Inbox },
+  { key: "CONFIRMED",    label: "Подтверждён",    mobileLabel: "Подтв.", dot: "bg-teal-400",     icon: CheckCircle2 },
+  { key: "PROCESSING",   label: "В комплектации", mobileLabel: "Комплект", dot: "bg-violet-400",   icon: Settings2 },
+  { key: "SHIPPED",      label: "Отгружен",       mobileLabel: "Отгружен", dot: "bg-amber-400",    icon: Truck },
+  { key: "IN_DELIVERY",  label: "Доставляется",   mobileLabel: "В пути", dot: "bg-orange-400",   icon: Navigation },
+  { key: "READY_PICKUP", label: "Готов к выдаче", mobileLabel: "Выдача", dot: "bg-cyan-400",     icon: Package },
+  { key: "DELIVERED",    label: "Доставлен",      mobileLabel: "Доставлен", dot: "bg-emerald-400",  icon: Home },
+  { key: "COMPLETED",    label: "Завершён",       mobileLabel: "Готово", dot: "bg-green-500",    icon: Flag },
+  { key: "CANCELLED",    label: "Отменён",        mobileLabel: "Отмена", dot: "bg-red-400/50",   icon: XCircle },
 ];
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -777,9 +777,9 @@ function CrmStats({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="border-b border-primary/[0.08] px-4 py-2.5 sm:px-5 sm:py-3 flex-shrink-0">
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 lg:hidden scrollbar-hide">
+      <div className="grid grid-cols-2 gap-2 lg:hidden">
         {stats.map(stat => (
-          <div key={stat.label} className="min-w-[132px] rounded-2xl border border-primary/15 bg-card/70 p-3">
+          <div key={stat.label} className="min-w-0 rounded-2xl border border-primary/15 bg-card/70 p-3">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
               <span className="rounded-lg border border-primary/10 bg-primary/[0.08] p-1.5">
@@ -1353,7 +1353,7 @@ function OrdersKanban({ search }: { search: string }) {
                 <button key={s.key} onClick={() => setMobileOrderStage(s.key)}
                   className={`admin-pill-btn shrink-0 min-h-11 ${mobileOrderStage === s.key ? "admin-pill-btn-active" : ""}`}>
                   <s.icon className="w-3.5 h-3.5" />
-                  {s.label}
+                  {s.mobileLabel}
                   {cnt > 0 && <span className={`px-1.5 rounded-md text-[10px] font-bold ${mobileOrderStage === s.key ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>{cnt}</span>}
                 </button>
               );
@@ -1361,7 +1361,7 @@ function OrdersKanban({ search }: { search: string }) {
           </div>
 
           {/* Мобильный вид — одна колонка */}
-          <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+          <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] space-y-2.5">
             {(ordersByStatus[mobileOrderStage] || []).map(order => (
               <OrderKanbanCard key={order.id} order={order} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onClick={setSelectedOrder} />
             ))}
@@ -1743,7 +1743,7 @@ export function CrmClient() {
                       className={`admin-pill-btn shrink-0 min-h-11 ${mobileStage === s.key ? "admin-pill-btn-active" : ""}`}
                     >
                       <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.dot}`} />
-                      {s.label}
+                      {s.mobileLabel}
                       {cnt > 0 && <span className={`px-1.5 rounded-md text-[10px] font-bold ${mobileStage === s.key ? "bg-white/20 text-white" : "bg-primary/10 text-primary"}`}>{cnt}</span>}
                     </button>
                   );

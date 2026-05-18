@@ -391,6 +391,29 @@ const QUICK_LINK_PRESETS = [
   },
 ];
 
+const DIRECT_FAST_LAUNCH_NEGATIVE_WORDS = [
+  "авито",
+  "бесплатно",
+  "бу",
+  "б/у",
+  "даром",
+  "скачать",
+  "фото",
+  "картинка",
+  "чертеж",
+  "своими руками",
+  "вакансия",
+  "работа",
+  "реферат",
+  "форум",
+  "отзывы сотрудников",
+  "обучение",
+  "инструкция",
+];
+
+const DIRECT_FAST_LAUNCH_QUICK_LINKS =
+  "Каталог|/catalog|Все товары и актуальные цены\nДоставка|/delivery|Сроки, зоны и стоимость\nКонтакты|/contacts|Телефон, адрес и мессенджеры\nАкции|/promotions|Выгодные предложения";
+
 const METRIKA_GOAL_FIELDS = [
   {
     key: "order",
@@ -835,6 +858,7 @@ function AdvertisingModule() {
   const [exportSitelinks, setExportSitelinks] = useState(true);
   const [exportCallouts, setExportCallouts] = useState(true);
   const [ownerConfirmed, setOwnerConfirmed] = useState(false);
+  const [fastLaunchPending, setFastLaunchPending] = useState(false);
   const metrikaAutoSetupKeyRef = useRef<string | null>(null);
 
   const generatorOptions = () => ({
@@ -1606,6 +1630,60 @@ function AdvertisingModule() {
       );
     }
   };
+  const applyDirectFastLaunchPreset = () => {
+    const productGroups = Math.min(
+      40,
+      Math.max(8, selectedProductCount || productOptions.length || 24),
+    );
+    const safeNegativeWords = Array.from(
+      new Set([
+        ...splitSelectionText(excludedKeywordsText),
+        ...DIRECT_FAST_LAUNCH_NEGATIVE_WORDS,
+      ]),
+    );
+
+    setWizardOpen(true);
+    setGeneratorMode("product");
+    setCampaignKind("text");
+    setPlacement("search");
+    setFeedSource("catalog");
+    setFeedOnlyInStock(true);
+    setFeedOnlyWithPrice(true);
+    setFeedCategoryFilter("");
+    setSelectedCategoriesText("");
+    setSelectedProductsText("");
+    setRecommendationMode(true);
+    setMinPrice(0);
+    setMaxPrice(0);
+    setMaxGroups(productGroups);
+    setMaxAds(2);
+    setMaxKeywords(12);
+    setIncludeImages(true);
+    setDailyBudget(700);
+    setSearchBid(35);
+    setSchedule("business_hours");
+    setTimeFrom("09:00");
+    setTimeTo("19:00");
+    setWeekdays("Пн-Пт");
+    setAudienceMode("search");
+    setPromoText("В наличии, доставка, подбор");
+    setQuickLinksText(DIRECT_FAST_LAUNCH_QUICK_LINKS);
+    setExcludedKeywordsText(safeNegativeWords.join("\n"));
+    setExportAds(true);
+    setExportKeywords(true);
+    setExportSitelinks(true);
+    setExportCallouts(true);
+    setOwnerConfirmed(false);
+    setSelectionOpen(false);
+    setDirectProOpen(false);
+    setFastLaunchPending(true);
+    toast({
+      title: "Боевой черновик готовится",
+      description:
+        "Собираю товарные группы по всему каталогу, только поиск, без автозапуска бюджета.",
+      duration: 5000,
+    });
+  };
   const toggleCategorySelection = (name: string) => {
     const allNames = categoryOptions.map((category) => category.name);
     const next = new Set(effectiveCategorySet);
@@ -1645,6 +1723,12 @@ function AdvertisingModule() {
     await loadDraft();
     setSelectionOpen(false);
   };
+
+  useEffect(() => {
+    if (!fastLaunchPending) return;
+    setFastLaunchPending(false);
+    void loadDraft();
+  }, [fastLaunchPending]);
 
   return (
     <section>
@@ -1707,6 +1791,15 @@ function AdvertisingModule() {
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
+                  onClick={applyDirectFastLaunchPreset}
+                  disabled={loading && !draft}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  Боевой черновик за 1 клик
+                </button>
+                <button
+                  type="button"
                   onClick={startArayBuild}
                   disabled={loading}
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
@@ -1752,6 +1845,7 @@ function AdvertisingModule() {
               <div className="mt-3 space-y-2">
                 {[
                   "беру весь каталог без ручного выбора товаров",
+                  "делаю товарные группы до 40 позиций для быстрого старта",
                   "отсекаю позиции без цены и наличия",
                   "собираю группы, объявления, ключи и быстрые ссылки",
                   "не запускаю бюджет без подтверждения владельца",
