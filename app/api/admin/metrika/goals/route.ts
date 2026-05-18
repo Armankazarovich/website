@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { getCurrentTenantId } from "@/lib/tenant-context";
+import { DEFAULT_TENANT_ID, getCurrentTenantId } from "@/lib/tenant-context";
+import { mergeTenantSettings, settingsRecord } from "@/lib/tenant-settings";
 import {
   ARAY_METRIKA_GOAL_SPECS,
   ensureArayMetrikaGoals,
@@ -18,13 +19,30 @@ async function saveSetting(tenantId: string, key: string, value: string) {
   });
 }
 
+async function saveTenantSettings(tenantId: string, patch: Record<string, string>) {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: tenantId } });
+  if (!tenant) return;
+  await prisma.tenant.update({
+    where: { slug: tenantId },
+    data: {
+      settings: {
+        ...settingsRecord(tenant.settings),
+        ...patch,
+      },
+    },
+  });
+}
+
 export async function POST(req: Request) {
   const auth = await requireAdmin();
   if (!auth.authorized) return auth.response;
 
   const tenantId = getCurrentTenantId();
-  const settingsRows = await prisma.siteSettings.findMany({ where: { tenantId } });
-  const settings = Object.fromEntries(settingsRows.map((row) => [row.key, row.value]));
+  const [settingsRows, tenant] = await Promise.all([
+    prisma.siteSettings.findMany({ where: { tenantId } }),
+    prisma.tenant.findUnique({ where: { slug: tenantId } }).catch(() => null),
+  ]);
+  const settings = mergeTenantSettings(tenant, settingsRows);
   const body = (await req.json().catch(() => ({}))) as { counterId?: string | number };
   const requestedCounterId = Number(String(body.counterId || "").replace(/[^\d]/g, ""));
   const counterId = requestedCounterId || getStoredMetrikaCounterId(settings);
@@ -38,10 +56,18 @@ export async function POST(req: Request) {
 
   try {
     const result = await ensureArayMetrikaGoals({ settings, counterId });
-    await saveSetting(tenantId, "yandex_metrika_id", String(result.counterId));
+    const patch: Record<string, string> = {
+      yandex_metrika_id: String(result.counterId),
+    };
     for (const spec of ARAY_METRIKA_GOAL_SPECS) {
       const goalId = result.goals[spec.key];
-      if (goalId) await saveSetting(tenantId, spec.settingKey, goalId);
+      if (goalId) patch[spec.settingKey] = goalId;
+    }
+    await saveTenantSettings(tenantId, patch);
+    if (tenantId === DEFAULT_TENANT_ID) {
+      for (const [key, value] of Object.entries(patch)) {
+        await saveSetting(tenantId, key, value);
+      }
     }
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

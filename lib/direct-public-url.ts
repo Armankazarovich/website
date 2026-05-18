@@ -47,9 +47,9 @@ export function resolveDirectPublicBaseUrl({
   const candidates = [
     settingValue(settings, ["yandex_direct_public_url", "direct_public_url", "public_site_url", "site_url", "canonical_url"]),
     tenant?.domain || "",
+    `${request.protocol}//${request.host}`,
     process.env.NEXT_PUBLIC_SITE_URL || "",
     process.env.NEXTAUTH_URL || "",
-    `${request.protocol}//${request.host}`,
   ];
 
   for (const candidate of candidates) {

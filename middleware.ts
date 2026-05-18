@@ -16,9 +16,46 @@ import type { NextRequest } from "next/server";
 const DEFAULT_TENANT = "pilorus";
 const ROOT_DOMAIN = "pilo-rus.ru";
 
+function normalizeHostname(value: string): string {
+  return value
+    .split(":")[0]
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\/.*$/, "");
+}
+
+function domainMatches(hostname: string, domain: string): boolean {
+  const clean = normalizeHostname(domain);
+  if (!clean) return false;
+  return hostname === clean || hostname === `www.${clean}` || `www.${hostname}` === clean;
+}
+
+function tenantFromDomainMap(hostname: string): string | null {
+  const raw = process.env.TENANT_DOMAIN_MAP || process.env.NEXT_PUBLIC_TENANT_DOMAIN_MAP || "";
+  if (!raw.trim()) return null;
+
+  for (const entry of raw.split(/[;\n]+/g)) {
+    const [slugRaw, domainsRaw] = entry.split("=");
+    const slug = (slugRaw || "").trim().toLowerCase();
+    if (!/^[a-z0-9-]{2,40}$/.test(slug) || !domainsRaw) continue;
+
+    const domains = domainsRaw
+      .split(/[,|]+/g)
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    if (domains.some((domain) => domainMatches(hostname, domain))) {
+      return slug;
+    }
+  }
+
+  return null;
+}
+
 function detectTenant(host: string): string {
   if (!host) return DEFAULT_TENANT;
-  const hostname = host.split(":")[0].toLowerCase();
+  const hostname = normalizeHostname(host);
 
   // Dev / localhost / IP
   if (
@@ -46,6 +83,9 @@ function detectTenant(host: string): string {
   }
 
   // Custom domain (в будущем будет lookup в БД). Пока — дефолт.
+  const mappedTenant = tenantFromDomainMap(hostname);
+  if (mappedTenant) return mappedTenant;
+
   return DEFAULT_TENANT;
 }
 

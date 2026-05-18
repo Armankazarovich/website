@@ -15,6 +15,7 @@ import { getYandexDirectStatus } from "@/lib/yandex-direct";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { resolveDirectPublicBaseUrl } from "@/lib/direct-public-url";
+import { mergeTenantSettings } from "@/lib/tenant-settings";
 
 async function readExportRequest(req: Request) {
   const body = await req.json().catch(() => ({}));
@@ -44,9 +45,7 @@ async function buildTenantDraft(req: Request, options: DirectDraftOptions) {
     prisma.siteSettings.findMany({ where: { tenantId } }),
     prisma.tenant.findUnique({ where: { slug: tenantId } }).catch(() => null),
   ]);
-  const settings = Object.fromEntries(
-    settingsRows.map((row) => [row.key, row.value]),
-  );
+  const settings = mergeTenantSettings(tenant, settingsRows);
   const requestUrl = new URL(req.url);
   const { baseUrl, isPublic } = resolveDirectPublicBaseUrl({
     settings,
