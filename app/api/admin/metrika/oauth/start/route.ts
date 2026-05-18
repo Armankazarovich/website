@@ -19,9 +19,8 @@ export async function GET(req: Request) {
 
   const clientId = process.env.YANDEX_METRIKA_CLIENT_ID;
   if (!clientId) {
-    return NextResponse.json(
-      { ok: false, error: "YANDEX_METRIKA_CLIENT_ID не настроен для OAuth-подключения Метрики" },
-      { status: 400 },
+    return NextResponse.redirect(
+      new URL("/admin/promotion?metrika_oauth=missing_app", req.url),
     );
   }
 

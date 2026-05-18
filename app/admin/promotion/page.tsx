@@ -655,6 +655,88 @@ function metrikaCounterMatchesPublicSite(
   );
 }
 
+type ParsedMetrikaGoalMatch = {
+  key: keyof DirectMetrikaGoals;
+  id: string;
+  label: string;
+};
+
+const METRIKA_GOAL_DETECTORS = [
+  {
+    key: "order",
+    patterns: [/заказ/i, /оплат/i, /успешн/i, /спасибо/i, /order/i],
+  },
+  {
+    key: "lead",
+    patterns: [/заявк/i, /форм/i, /контактн/i, /лид/i, /lead/i],
+  },
+  {
+    key: "phone",
+    patterns: [/телефон/i, /номер/i, /звон/i, /phone/i, /call/i],
+  },
+  {
+    key: "messenger",
+    patterns: [/мессендж/i, /whats/i, /telegram/i, /wa\.me/i, /t\.me/i],
+  },
+  {
+    key: "cart",
+    patterns: [/корзин/i, /добав/i, /cart/i],
+  },
+  {
+    key: "checkout",
+    patterns: [/checkout/i, /оформлен/i, /оформление/i],
+  },
+  {
+    key: "engaged",
+    patterns: [/просмотр/i, /продолж/i, /вовлеч/i, /страниц/i, /мин/i],
+  },
+] satisfies Array<{
+  key: keyof DirectMetrikaGoals;
+  patterns: RegExp[];
+}>;
+
+function metrikaGoalLabel(key: keyof DirectMetrikaGoals) {
+  return METRIKA_GOAL_FIELDS.find((field) => field.key === key)?.label || key;
+}
+
+function detectMetrikaGoalKey(line: string): keyof DirectMetrikaGoals | null {
+  const normalized = line.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+  const detector = METRIKA_GOAL_DETECTORS.find((item) =>
+    item.patterns.some((pattern) => pattern.test(normalized)),
+  );
+  return detector?.key || null;
+}
+
+function parseMetrikaGoalsText(value: string): {
+  goals: DirectMetrikaGoals;
+  matches: ParsedMetrikaGoalMatch[];
+  skipped: number;
+} {
+  const goals: DirectMetrikaGoals = {};
+  const matches: ParsedMetrikaGoalMatch[] = [];
+  let skipped = 0;
+
+  for (const line of value.split(/\r?\n/g)) {
+    const ids = line.match(/\b\d{5,}\b/g);
+    if (!ids?.length) continue;
+
+    const key = detectMetrikaGoalKey(line);
+    if (!key) {
+      skipped += 1;
+      continue;
+    }
+
+    if (goals[key]) continue;
+    const id = ids[ids.length - 1].replace(/[^\d]/g, "");
+    if (!id) continue;
+    goals[key] = id;
+    matches.push({ key, id, label: metrikaGoalLabel(key) });
+  }
+
+  return { goals, matches, skipped };
+}
+
 function generatorModeLabel(mode: DirectGeneratorMode) {
   return mode === "product" ? "по товарам" : "по категориям";
 }
@@ -903,6 +985,7 @@ function AdvertisingModule() {
   const [setupCounterId, setSetupCounterId] = useState("");
   const [setupBusinessProfileId, setSetupBusinessProfileId] = useState("");
   const [setupGoals, setSetupGoals] = useState<DirectMetrikaGoals>({});
+  const [metrikaGoalsPaste, setMetrikaGoalsPaste] = useState("");
   const [metrikaStatus, setMetrikaStatus] = useState<MetrikaStatus | null>(null);
   const [metrikaLoading, setMetrikaLoading] = useState(false);
   const [metrikaGoalsCreating, setMetrikaGoalsCreating] = useState(false);
@@ -919,6 +1002,7 @@ function AdvertisingModule() {
   const [externalAuditError, setExternalAuditError] = useState<string | null>(
     null,
   );
+  const parsedMetrikaGoals = parseMetrikaGoalsText(metrikaGoalsPaste);
   const generatorOptions = () => ({
     grouping: generatorMode,
     campaignKind,
@@ -1071,6 +1155,27 @@ function AdvertisingModule() {
       ...current,
       [key]: value.replace(/[^\d]/g, ""),
     }));
+  };
+
+  const applyParsedMetrikaGoals = () => {
+    const parsed = parseMetrikaGoalsText(metrikaGoalsPaste);
+    if (!parsed.matches.length) {
+      toast({
+        title: "Цели не распознаны",
+        description:
+          "Вставьте строки из Метрики с названием цели и числовым ID. Я возьму только цифры.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSetupGoals((current) => ({ ...current, ...parsed.goals }));
+    toast({
+      title: "Цели разложены по полям",
+      description: parsed.matches
+        .map((match) => `${match.label}: ${match.id}`)
+        .join(" · "),
+    });
   };
 
   const saveReadinessSetup = async () => {
@@ -1266,6 +1371,52 @@ function AdvertisingModule() {
 
   const openMetrikaNavigator = () => {
     askArayAboutMetrika("https://metrika.yandex.ru/list");
+  };
+
+  const askArayAboutOrganization = () => {
+    const context = [
+      "ARAY, помоги владельцу подключить организацию Яндекс Бизнес для рекламы.",
+      `Домен: ${setupPublicBaseUrl || publicBaseUrlLabel}.`,
+      `Текущий ID организации: ${setupBusinessProfileId || businessProfileId || "не указан"}.`,
+      "Сначала нужно найти существующий профиль организации в Яндекс Бизнес или Картах по названию, домену, телефону и адресу.",
+      "Если профиль найден: попроси владельца подтвердить, что это его организация, и вставить только числовой ID в поле на этой странице.",
+      "Если профиля нет: предложи создать организацию в Яндекс Бизнес, но не отправляй данные без явного подтверждения владельца.",
+      "Объясни, что организация не обязательна для первого запуска Direct, но полезна для контактов, доверия и карт.",
+      "Стиль ответа: коротко, один шаг за раз. Не проси пароль Яндекса и не включай бюджет.",
+    ].join("\n");
+
+    window.dispatchEvent(
+      new CustomEvent("aray:prompt", {
+        detail: {
+          text: "организация яндекс",
+          displayText: "организация",
+          context,
+          openUrl: "https://business.yandex.ru/",
+          openTitle: "Яндекс Бизнес",
+          actions: [
+            {
+              type: "navigate",
+              url: "https://business.yandex.ru/",
+              label: "Яндекс Бизнес",
+              icon: "external",
+              hint: "Открою кабинет, где можно найти или добавить организацию.",
+            },
+            {
+              type: "navigate",
+              url: "/admin/settings",
+              label: "Данные компании",
+              icon: "settings",
+              hint: "Открою настройки, где обычно лежат телефон, адрес и контакты.",
+            },
+          ],
+        },
+      }),
+    );
+    toast({
+      title: "Я помогу с организацией",
+      description:
+        "Сначала найдем профиль, потом сохраним ID только после подтверждения владельца.",
+    });
   };
 
   const askArayAboutSeoIndexing = () => {
@@ -4994,6 +5145,41 @@ function AdvertisingModule() {
                   className="mt-1 h-11 w-full rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground outline-none focus:border-primary"
                 />
               </label>
+              <div className="mt-3 rounded-xl border border-border bg-card/80 p-3 text-xs leading-relaxed">
+                <div className="font-semibold text-foreground">
+                  Поиск и добавление через подтверждение
+                </div>
+                <p className="mt-1 text-muted-foreground">
+                  Я помогу найти профиль по домену, телефону и адресу. Если
+                  организация найдена, сохраняем только ее ID. Если профиля нет,
+                  сначала показываю владельцу, что будет добавлено, и только
+                  потом отправляем в Яндекс Бизнес.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={askArayAboutOrganization}
+                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-primary/[0.08]"
+                  >
+                    <MapPin className="h-3.5 w-3.5" />
+                    Найти и подтвердить
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(
+                        "https://business.yandex.ru/",
+                        "_blank",
+                        "noopener,noreferrer",
+                      )
+                    }
+                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-primary/[0.08]"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Открыть Яндекс Бизнес
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-border bg-background/60 p-4">
@@ -5039,6 +5225,53 @@ function AdvertisingModule() {
                   вставляется только этот номер, без названия цели и без ссылки.
                   Если цели еще нет, поле можно оставить пустым.
                 </p>
+              </div>
+              <div className="mt-3 rounded-xl border border-border bg-card/80 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-xs font-semibold text-foreground">
+                      Быстро из списка целей
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      Можно вставить сюда таблицу или строки из Метрики. Я сам
+                      найду названия и числовые ID, а потом разложу их по полям.
+                    </p>
+                  </div>
+                  {parsedMetrikaGoals.matches.length ? (
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">
+                      найдено {parsedMetrikaGoals.matches.length}
+                    </span>
+                  ) : null}
+                </div>
+                <textarea
+                  value={metrikaGoalsPaste}
+                  onChange={(event) => setMetrikaGoalsPaste(event.target.value)}
+                  rows={4}
+                  placeholder={"Например:\nЗаявки 544858769\nПо номеру 544858691\nАвтоцель: переход в мессенджер 553647385"}
+                  className="mt-3 min-h-24 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-xs leading-relaxed text-foreground outline-none focus:border-primary"
+                />
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={applyParsedMetrikaGoals}
+                    disabled={!metrikaGoalsPaste.trim()}
+                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-primary/[0.08] disabled:opacity-60"
+                  >
+                    <Target className="h-3.5 w-3.5" />
+                    Разобрать и заполнить
+                  </button>
+                  {parsedMetrikaGoals.matches.length ? (
+                    <span className="text-[11px] leading-relaxed text-muted-foreground">
+                      {parsedMetrikaGoals.matches
+                        .map((match) => `${match.label}: ${match.id}`)
+                        .join(" · ")}
+                    </span>
+                  ) : (
+                    <span className="text-[11px] leading-relaxed text-muted-foreground">
+                      Сохраняем только после кнопки “Сохранить готовность”.
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {METRIKA_GOAL_FIELDS.map((field) => (
