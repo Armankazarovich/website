@@ -19,9 +19,8 @@ export async function GET(req: Request) {
 
   const clientId = process.env.YANDEX_DIRECT_CLIENT_ID;
   if (!clientId) {
-    return NextResponse.json(
-      { ok: false, error: "YANDEX_DIRECT_CLIENT_ID не настроен для OAuth-подключения Direct" },
-      { status: 400 },
+    return NextResponse.redirect(
+      new URL("/admin/promotion?direct_oauth=missing_app", req.url),
     );
   }
 

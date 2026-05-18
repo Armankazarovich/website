@@ -201,6 +201,29 @@ type MetrikaStatus = {
   error: string | null;
 };
 
+type DirectPackagePlan = {
+  id: string;
+  title: string;
+  channel: string;
+  status: string;
+  canExportNow: boolean;
+  implementedExport: boolean;
+  budgetShare: number;
+  why: string;
+  needs: string[];
+};
+
+type DirectPackage = {
+  readyScore: number;
+  readyMax: number;
+  nextAction: string;
+  feedReady: boolean;
+  metrikaReady: boolean;
+  goalsReady: boolean;
+  searchDraftReady: boolean;
+  campaigns: DirectPackagePlan[];
+};
+
 type DirectDraftResponse = {
   ok: boolean;
   mode: string;
@@ -217,7 +240,27 @@ type DirectDraftResponse = {
     categories: DirectSelectionCategory[];
     products: DirectSelectionProduct[];
   };
+  directPackage?: DirectPackage;
   safety: string;
+};
+
+type ExternalDirectPackageResponse = {
+  ok: boolean;
+  domain: string;
+  page?: {
+    title?: string;
+    description?: string;
+    phones?: string[];
+    metrikaCounterIds?: number[];
+  };
+  feed?: {
+    url: string;
+    productCount: number;
+    productsWithPrice: number;
+    productsInStock: number;
+    productsWithImages: number;
+  };
+  directPackage: DirectPackage;
 };
 
 type DirectExportResult = {
@@ -553,6 +596,14 @@ function buildArayEditPrompt(
     .join("\n");
 }
 
+function arayDirectCampaignTitle(id: string, fallback: string) {
+  if (id === "search_text_hot_demand") return "Поиск: горячий спрос";
+  if (id === "product_gallery_upc") return "Товарная галерея / ЕПК";
+  if (id === "network_retargeting") return "РСЯ и ретаргетинг";
+  if (id === "media_reach") return "Медийная реклама";
+  return fallback;
+}
+
 function clampControlNumber(
   value: string,
   min: number,
@@ -861,6 +912,13 @@ function AdvertisingModule() {
   const [exportCallouts, setExportCallouts] = useState(true);
   const [ownerConfirmed, setOwnerConfirmed] = useState(false);
   const [fastLaunchPending, setFastLaunchPending] = useState(false);
+  const [externalDomain, setExternalDomain] = useState("");
+  const [externalAudit, setExternalAudit] =
+    useState<ExternalDirectPackageResponse | null>(null);
+  const [externalAuditLoading, setExternalAuditLoading] = useState(false);
+  const [externalAuditError, setExternalAuditError] = useState<string | null>(
+    null,
+  );
   const metrikaAutoSetupKeyRef = useRef<string | null>(null);
 
   const generatorOptions = () => ({
@@ -1056,6 +1114,47 @@ function AdvertisingModule() {
       return false;
     } finally {
       setReadinessSaving(false);
+    }
+  };
+
+  const analyzeExternalDomain = async () => {
+    const domain = externalDomain.trim();
+    if (!domain) {
+      setExternalAuditError("Укажите домен сайта");
+      return;
+    }
+
+    setExternalAuditLoading(true);
+    setExternalAuditError(null);
+    try {
+      const response = await fetch(
+        `/api/admin/direct/package?domain=${encodeURIComponent(domain)}`,
+        { cache: "no-store" },
+      );
+      const payload = (await response.json()) as
+        | ExternalDirectPackageResponse
+        | { error?: string };
+      if (!response.ok || !("ok" in payload) || !payload.ok) {
+        throw new Error(
+          ("error" in payload && payload.error) || "Не удалось проверить домен",
+        );
+      }
+      setExternalAudit(payload);
+      toast({
+        title: "Домен проверен",
+        description: "ARAY собрал первичный рекламный пакет для сайта клиента.",
+      });
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Не удалось проверить домен";
+      setExternalAuditError(message);
+      toast({
+        title: "Домен не проверен",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setExternalAuditLoading(false);
     }
   };
 
@@ -1390,6 +1489,8 @@ function AdvertisingModule() {
       metrikaGoals.engaged,
   );
   const goalsReady = coreGoalReady && microGoalReady;
+  const directPackage = draft?.directPackage;
+  const directPackageCampaigns = directPackage?.campaigns ?? [];
   const metrikaLabel = metrikaCounterIds.length
     ? `счетчик #${metrikaCounterIds.join(", #")}`
     : "счетчик не указан";
@@ -1925,6 +2026,134 @@ function AdvertisingModule() {
                       </p>
                     ) : null}
                   </div>
+                </div>
+                {directPackage ? (
+                  <div className="mt-3 rounded-xl border border-border bg-background/60 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase text-muted-foreground">
+                          ARAY Ads пакет
+                        </div>
+                        <div className="mt-1 text-sm font-semibold">
+                          {directPackage.readyScore}/{directPackage.readyMax} готово
+                        </div>
+                      </div>
+                      <div className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold text-primary">
+                        {directPackage.searchDraftReady ? "поиск готов" : "нужна проверка"}
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                      {directPackage.nextAction}
+                    </p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {directPackageCampaigns.map((campaign) => (
+                        <div
+                          key={campaign.id}
+                          className="rounded-xl border border-border/80 bg-card/80 p-2.5"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="truncate text-xs font-semibold">
+                                {arayDirectCampaignTitle(
+                                  campaign.id,
+                                  campaign.title,
+                                )}
+                              </div>
+                              <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                                {campaign.channel}
+                              </div>
+                            </div>
+                            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                              {campaign.budgetShare}%
+                            </span>
+                          </div>
+                          <div className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                            {campaign.canExportNow
+                              ? "можно выгружать черновик"
+                              : campaign.implementedExport
+                                ? "защищено от дубля"
+                                : campaign.needs[0] || "следующий этап"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                <div className="mt-3 rounded-xl border border-border bg-background/60 p-3">
+                  <div className="flex items-start gap-2">
+                    <Globe className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold">
+                        Анализ любого домена
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                        ARAY проверит публичный домен проекта, найдет фид,
+                        Метрику и признаки бизнеса. Выгрузка в Direct
+                        появится после подтверждения доступа владельца.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <input
+                      value={externalDomain}
+                      onChange={(event) => setExternalDomain(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") void analyzeExternalDomain();
+                      }}
+                      placeholder="example.ru"
+                      className="min-h-10 min-w-0 flex-1 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:border-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void analyzeExternalDomain()}
+                      disabled={externalAuditLoading}
+                      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                    >
+                      {externalAuditLoading ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Search className="h-3.5 w-3.5" />
+                      )}
+                      Проверить
+                    </button>
+                  </div>
+                  {externalAuditError ? (
+                    <p className="mt-2 text-xs font-medium text-amber-600">
+                      {externalAuditError}
+                    </p>
+                  ) : null}
+                  {externalAudit ? (
+                    <div className="mt-3 rounded-xl border border-border/80 bg-card/80 p-2.5">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-semibold">
+                            {externalAudit.page?.title || externalAudit.domain}
+                          </div>
+                          <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                            {externalAudit.domain}
+                          </div>
+                        </div>
+                        <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
+                          {externalAudit.directPackage.readyScore}/
+                          {externalAudit.directPackage.readyMax} готово
+                        </span>
+                      </div>
+                      <div className="mt-2 grid gap-1.5 text-[11px] text-muted-foreground sm:grid-cols-2">
+                        <span>
+                          Фид:{" "}
+                          {externalAudit.feed?.url
+                            ? `${externalAudit.feed.productCount} товаров`
+                            : "не найден"}
+                        </span>
+                        <span>
+                          Метрика:{" "}
+                          {externalAudit.page?.metrikaCounterIds?.length
+                            ? `#${externalAudit.page.metrikaCounterIds.join(", #")}`
+                            : "не найдена"}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>

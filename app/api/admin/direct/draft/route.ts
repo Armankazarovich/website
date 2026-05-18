@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { resolveDirectPublicBaseUrl } from "@/lib/direct-public-url";
 import { mergeTenantSettings } from "@/lib/tenant-settings";
+import { buildArayDirectPackage } from "@/lib/aray-direct-package";
 
 async function readDraftOptions(req: Request) {
   const requestUrl = new URL(req.url);
@@ -84,6 +85,7 @@ type DraftSelectionProduct = {
   id: string;
   name: string;
   slug?: string | null;
+  images?: string[];
   active?: boolean | null;
   category?: { name?: string | null; slug?: string | null } | null;
   variants?: Array<{ pricePerCube?: unknown; pricePerPiece?: unknown; inStock?: boolean | null }>;
@@ -100,6 +102,16 @@ function getSelectionProductPrice(product: DraftSelectionProduct) {
 function getSelectionProductInStock(product: DraftSelectionProduct) {
   const variants = product.variants || [];
   return !variants.length || variants.some((variant) => variant.inStock !== false);
+}
+
+function getProductReadiness(products: DraftSelectionProduct[]) {
+  const activeProducts = products.filter((product) => product.active !== false);
+  return {
+    productCount: activeProducts.length,
+    productsWithPrice: activeProducts.filter((product) => getSelectionProductPrice(product)).length,
+    productsInStock: activeProducts.filter(getSelectionProductInStock).length,
+    productsWithImages: activeProducts.filter((product) => (product.images || []).length > 0).length,
+  };
 }
 
 function buildDraftSelection(products: DraftSelectionProduct[]) {
@@ -145,6 +157,7 @@ async function buildDraftPayload(req: Request) {
   const direct = await getYandexDirectStatus(settings);
   const requestUrl = new URL(req.url);
   const { baseUrl, isPublic } = resolveDirectPublicBaseUrl({ settings, tenant, requestUrl });
+  const productReadiness = getProductReadiness(products);
   const draft = buildYandexDirectDraft({
     products,
     settings,
@@ -153,6 +166,24 @@ async function buildDraftPayload(req: Request) {
     options,
   });
   const directRegion = resolveDraftRegionIds(settings, draft);
+  const metrikaCounterIds = resolveMetrikaCounterIds(settings);
+  const metrikaGoals = resolveMetrikaGoals(settings);
+  const businessName = tenant?.name || settings.site_name || settings.company_name || "PiloRus";
+  const directPackage = buildArayDirectPackage({
+    siteMode: "owned-site",
+    domain: baseUrl,
+    businessName,
+    directConnected: direct.connected,
+    publicBaseUrlReady: isPublic,
+    regionIds: directRegion.ids,
+    ...productReadiness,
+    ymlUrl: isPublic ? `${baseUrl.replace(/\/+$/, "")}/api/yml` : "",
+    metrikaCounterIds,
+    metrikaGoals,
+    activeCampaignNames: direct.campaigns
+      .filter((campaign) => campaign.state.toUpperCase() === "ON")
+      .map((campaign) => campaign.name),
+  });
 
   return {
     ok: true,
@@ -164,9 +195,10 @@ async function buildDraftPayload(req: Request) {
     publicBaseUrlReady: isPublic,
     directRegionIds: directRegion.ids,
     directRegionError: directRegion.error,
-    metrikaCounterIds: resolveMetrikaCounterIds(settings),
-    metrikaGoals: resolveMetrikaGoals(settings),
+    metrikaCounterIds,
+    metrikaGoals,
     businessProfileId: resolveBusinessProfileId(settings),
+    directPackage,
     safety: isPublic
       ? "ARAY готовит структуру и тексты. Создание/запуск платной рекламы требует отдельного подтверждения владельца."
       : "ARAY готовит черновик, но для выгрузки в Direct нужен публичный домен сайта вместо localhost.",
