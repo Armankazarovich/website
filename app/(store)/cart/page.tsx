@@ -40,6 +40,7 @@ import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { PHONE_LINK, PHONE_DISPLAY } from "@/lib/phone-constants";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 // ─── Share Banner (detects ?share= param) ─────────────────────────────────────
 function ShareBanner() {
@@ -515,7 +516,16 @@ export default function CartPage() {
             </div>
 
             <Button size="lg" className="w-full" asChild>
-              <Link href="/checkout">
+              <Link
+                href="/checkout"
+                onClick={() =>
+                  trackArayMetrikaGoal("aray_checkout_start", {
+                    source: "cart_page",
+                    total: totalPrice(),
+                    count: items.length,
+                  })
+                }
+              >
                 Оформить заказ
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Link>

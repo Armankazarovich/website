@@ -34,6 +34,10 @@ export function Analytics({ yandexMetrikaId, googleAnalyticsId }: AnalyticsProps
                 if (!goal || typeof ym !== "function") return;
                 ym(${yandexMetrikaId}, "reachGoal", goal, params || {});
               };
+              (window.arayMetrikaGoalQueue || []).forEach(function(item) {
+                window.arayMetrikaGoal(item.goal, item.params || {});
+              });
+              window.arayMetrikaGoalQueue = [];
               window.addEventListener("aray:metrika-goal", function(event) {
                 var detail = event && event.detail ? event.detail : {};
                 window.arayMetrikaGoal(detail.goal || detail.name, detail.params || {});

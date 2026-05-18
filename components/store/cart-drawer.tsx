@@ -9,6 +9,7 @@ import { useCartStore } from "@/store/cart";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { formatPrice } from "@/lib/utils";
 import { PopupPortal } from "@/components/ui/popup-portal";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 function CartImage({ src, alt }: { src: string; alt: string }) {
   const [error, setError] = useState(false);
@@ -181,7 +182,14 @@ export function CartDrawer() {
                 </div>
                 <Link
                   href="/checkout"
-                  onClick={() => setCartOpen(false)}
+                  onClick={() => {
+                    trackArayMetrikaGoal("aray_checkout_start", {
+                      source: "cart_drawer",
+                      total,
+                      count,
+                    });
+                    setCartOpen(false);
+                  }}
                   className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3.5 rounded-xl transition-colors"
                 >
                   Оформить заказ

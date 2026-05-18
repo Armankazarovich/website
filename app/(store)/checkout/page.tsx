@@ -24,6 +24,7 @@ import {
 import { BackButton } from "@/components/ui/back-button";
 import { useSession, signIn } from "next-auth/react";
 import { loadAttribution } from "@/lib/utm";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 type ClientType = "individual" | "company";
 type CheckoutSettings = {
@@ -215,11 +216,7 @@ export default function CheckoutPage() {
   }, [success]);
 
   useEffect(() => {
-    window.dispatchEvent(
-      new CustomEvent("aray:metrika-goal", {
-        detail: { goal: "aray_checkout_start" },
-      }),
-    );
+    trackArayMetrikaGoal("aray_checkout_start", { source: "checkout_page" });
   }, []);
 
   const handleEnablePush = async () => {
@@ -517,14 +514,10 @@ export default function CheckoutPage() {
 
       setOrderNum(json.orderNumber);
       setOrderPhone(data.phone);
-      window.dispatchEvent(
-        new CustomEvent("aray:metrika-goal", {
-          detail: {
-            goal: "aray_order_success",
-            params: { orderNumber: json.orderNumber, total: totalPrice() },
-          },
-        }),
-      );
+      trackArayMetrikaGoal("aray_order_success", {
+        orderNumber: json.orderNumber,
+        total: totalPrice(),
+      });
       clearCart();
       setSuccess(true);
     } catch (err: any) {

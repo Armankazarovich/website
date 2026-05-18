@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SidePanel } from "./side-panel";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 interface Props {
   open: boolean;
@@ -58,6 +59,10 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
         }),
       });
       if (!res.ok) throw new Error();
+      trackArayMetrikaGoal("aray_lead_sent", {
+        source: "promo_quote",
+        volume: form.volume.trim(),
+      });
       setSuccess(true);
       setTimeout(() => handleClose(), 4000);
     } catch {

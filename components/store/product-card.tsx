@@ -33,6 +33,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { buildProductInsightTags } from "@/lib/product-insights";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -284,6 +285,16 @@ export function ProductCard({
       quantity: 1,
       price: Number(price),
     });
+    trackArayMetrikaGoal("aray_cart_add", {
+      source: "catalog_card",
+      productId: id,
+      variantId: selectedVariant.id,
+      productName: name,
+      variantSize: selectedVariant.size,
+      unit,
+      quantity: 1,
+      price: Number(price),
+    });
 
     // Push-тост — один раз за сессию
     if (
@@ -373,6 +384,16 @@ export function ProductCard({
       variantSize: selectedVariant.size,
       productImage: images[0],
       unitType: effectiveUnit,
+      quantity: sheetQuantity,
+      price: Number(selectedSheetPrice),
+    });
+    trackArayMetrikaGoal("aray_cart_add", {
+      source: "catalog_size_sheet",
+      productId: id,
+      variantId: selectedVariant.id,
+      productName: name,
+      variantSize: selectedVariant.size,
+      unit: effectiveUnit,
       quantity: sheetQuantity,
       price: Number(selectedSheetPrice),
     });

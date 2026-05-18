@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   Download,
@@ -919,8 +919,6 @@ function AdvertisingModule() {
   const [externalAuditError, setExternalAuditError] = useState<string | null>(
     null,
   );
-  const metrikaAutoSetupKeyRef = useRef<string | null>(null);
-
   const generatorOptions = () => ({
     grouping: generatorMode,
     campaignKind,
@@ -1601,44 +1599,6 @@ function AdvertisingModule() {
     if (setupCounterId === matchedCounterId) return;
     setSetupCounterId(matchedCounterId);
   }, [matchedMetrikaCounter?.id, setupCounterId]);
-
-  useEffect(() => {
-    if (!metrikaConnected || metrikaLoading || readinessSaving || metrikaGoalsCreating) {
-      return;
-    }
-    if (!setupCounterIdDigits) return;
-    if (counterReadyInDraft && goalsReady) return;
-
-    const canAutoUseCounter =
-      counterReadyInDraft ||
-      Boolean(matchedMetrikaCounter?.id) ||
-      metrikaCounterOptions.length === 1;
-    if (!canAutoUseCounter) return;
-
-    const autoKey = [
-      setupCounterIdDigits,
-      counterReadyInDraft ? "saved" : "new",
-      goalsReady ? "goals" : "missing",
-    ].join(":");
-    if (metrikaAutoSetupKeyRef.current === autoKey) return;
-    metrikaAutoSetupKeyRef.current = autoKey;
-
-    void (async () => {
-      const saved = await saveReadinessSetup();
-      if (!saved) return;
-      await createArayMetrikaGoals();
-    })();
-  }, [
-    counterReadyInDraft,
-    goalsReady,
-    matchedMetrikaCounter?.id,
-    metrikaConnected,
-    metrikaCounterOptions.length,
-    metrikaGoalsCreating,
-    metrikaLoading,
-    readinessSaving,
-    setupCounterIdDigits,
-  ]);
 
   const analyticsFlowSteps = [
     ["1", "Direct", "показы, клики, расходы и статусы из реального кабинета"],

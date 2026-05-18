@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Phone, Check } from "lucide-react";
 import { PHONE_LINK } from "@/lib/phone-constants";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
   const effectivePhone = phoneLink || PHONE_LINK;
@@ -26,6 +27,7 @@ export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
         body: JSON.stringify({ name: name.trim(), phone: phone.trim(), message: message.trim() }),
       });
       if (!res.ok) throw new Error();
+      trackArayMetrikaGoal("aray_lead_sent", { source: "contact_form" });
       setDone(true);
     } catch {
       setError("Ошибка отправки. Позвоните нам напрямую.");

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
 import { haptic } from "@/lib/haptic";
+import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 interface Variant {
   id: string;
@@ -99,6 +100,16 @@ export function VariantSelector({
       variantSize: selectedVariant.size,
       productImage,
       unitType,
+      quantity,
+      price: Number(currentPrice),
+    });
+    trackArayMetrikaGoal("aray_cart_add", {
+      source: "product_page",
+      productId,
+      variantId: selectedVariant.id,
+      productName,
+      variantSize: selectedVariant.size,
+      unit: unitType,
       quantity,
       price: Number(currentPrice),
     });
