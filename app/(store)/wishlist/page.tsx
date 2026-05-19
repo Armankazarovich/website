@@ -1,30 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, ShoppingBag, Trash2, ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Heart, ShoppingBag, Trash2, ArrowRight, GitCompareArrows } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { useWishlistStore } from "@/store/wishlist";
+import { useCompareStore } from "@/store/compare";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 export default function WishlistPage() {
-  const { items, remove, clear } = useWishlistStore();
+  const { items, remove, clear, hydrateWishlist } = useWishlistStore();
+  const addToCompare = useCompareStore((state) => state.add);
+  const router = useRouter();
   const [confirmClear, setConfirmClear] = useState(false);
 
+  useEffect(() => {
+    hydrateWishlist();
+  }, [hydrateWishlist]);
+
+  const compareSavedItems = () => {
+    items.slice(0, 6).forEach((item) => addToCompare(item));
+    router.push("/compare");
+  };
+
   return (
-    <div className="container store-mobile-safe-bottom py-8">
+    <div className="container store-mobile-safe-bottom py-6 md:py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
-          <BackButton href="/catalog" label="Каталог" className="mt-1 mb-0 shrink-0" />
+          <BackButton href="/catalog" label="Каталог" className="mb-0 mt-1 shrink-0" />
           <div>
-            <h1 className="font-display font-bold text-3xl flex items-center gap-3">
-              <Heart className="w-7 h-7 text-red-500 fill-red-500" />
+            <h1 className="flex items-center gap-3 font-display text-2xl font-bold md:text-3xl">
+              <Heart className="h-6 w-6 fill-red-500 text-red-500 md:h-7 md:w-7" />
               Избранное
             </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="mt-1 text-sm text-muted-foreground">
               {items.length > 0
                 ? `${items.length} товар${items.length === 1 ? "" : items.length < 5 ? "а" : "ов"} сохранено`
                 : "Пока ничего нет"}
@@ -34,9 +47,9 @@ export default function WishlistPage() {
         {items.length > 0 && (
           <button
             onClick={() => setConfirmClear(true)}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-destructive"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="h-4 w-4" />
             Очистить всё
           </button>
         )}
@@ -44,18 +57,18 @@ export default function WishlistPage() {
 
       {items.length === 0 ? (
         /* Empty state */
-        <div className="store-empty-action-card flex flex-col items-center justify-center rounded-2xl px-6 py-14 text-center sm:py-16">
-          <div className="w-24 h-24 rounded-3xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center mb-6">
-            <Heart className="w-12 h-12 text-red-200 dark:text-red-800" />
+        <div className="store-empty-action-card mx-auto flex max-w-3xl flex-col items-center justify-center rounded-2xl p-6 text-center sm:p-8">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 text-red-500">
+            <Heart className="h-8 w-8" />
           </div>
-          <h2 className="font-display font-bold text-xl mb-2">Список избранного пуст</h2>
-          <p className="text-muted-foreground text-sm mb-8 max-w-xs">
+          <h2 className="mb-2 font-display text-xl font-bold">Список избранного пуст</h2>
+          <p className="mb-6 max-w-sm text-sm text-muted-foreground">
             Нажмите кнопку избранного на любом товаре, чтобы сохранить его здесь и вернуться позже
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button asChild>
               <Link href="/catalog">
-                Перейти в каталог <ArrowRight className="w-4 h-4 ml-2" />
+                Перейти в каталог <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button variant="outline" asChild>
@@ -65,6 +78,26 @@ export default function WishlistPage() {
         </div>
       ) : (
         <>
+          <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-semibold">Сохранённые товары готовы к выбору</p>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Сравните избранное по цене, размерам и единицам, а затем добавьте нужное в корзину.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              {items.length > 1 && (
+                <Button type="button" variant="outline" onClick={compareSavedItems}>
+                  <GitCompareArrows className="mr-2 h-4 w-4" />
+                  Сравнить
+                </Button>
+              )}
+              <Button asChild>
+                <Link href="/catalog">Продолжить выбор</Link>
+              </Button>
+            </div>
+          </div>
+
           {/* Products grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {items.map((item) => (

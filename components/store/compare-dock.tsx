@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight, GitCompareArrows } from "lucide-react";
@@ -8,6 +9,11 @@ import { useCompareStore } from "@/store/compare";
 export function CompareDock() {
   const pathname = usePathname();
   const count = useCompareStore((state) => state.items.length);
+  const hydrateCompare = useCompareStore((state) => state.hydrateCompare);
+
+  useEffect(() => {
+    hydrateCompare();
+  }, [hydrateCompare]);
 
   if (count === 0 || pathname === "/compare") return null;
 

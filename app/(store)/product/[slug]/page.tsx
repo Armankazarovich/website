@@ -13,6 +13,7 @@ import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react
 import { ProductGallery } from "@/components/store/product-gallery";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { CompareButton } from "@/components/store/compare-button";
+import { WishlistButton } from "@/components/store/wishlist-button";
 import type { CompareItem } from "@/store/compare";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
@@ -319,6 +320,7 @@ export default async function ProductPage({ params }: Props) {
             )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <CompareButton item={compareItem} mode="inline" />
+              <WishlistButton item={compareItem} mode="inline" />
               {isAdmin && (
                 <Link
                   href={productEditTarget.adminHref}

@@ -1,40 +1,73 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import { Heart } from "lucide-react";
-import { useWishlistStore, WishlistItem } from "@/store/wishlist";
+import { cn } from "@/lib/utils";
+import { useWishlistStore, type WishlistItem } from "@/store/wishlist";
 
 interface WishlistButtonProps {
   item: WishlistItem;
   className?: string;
   size?: "sm" | "md";
+  mode?: "floating" | "inline";
 }
 
-export function WishlistButton({ item, className = "", size = "md" }: WishlistButtonProps) {
+export function WishlistButton({
+  item,
+  className = "",
+  size = "md",
+  mode = "floating",
+}: WishlistButtonProps) {
   const { toggle, has } = useWishlistStore();
   const isSaved = has(item.id);
 
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggle(item);
+  };
+
+  if (mode === "inline") {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-pressed={isSaved}
+        className={cn(
+          "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors",
+          isSaved
+            ? "border-red-500/45 bg-red-500/10 text-red-500 hover:bg-red-500/15"
+            : "border-border/70 bg-card/70 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.08] hover:text-primary",
+          className
+        )}
+      >
+        <Heart className={cn("h-4 w-4", isSaved && "fill-current")} />
+        {isSaved ? "В избранном" : "В избранное"}
+      </button>
+    );
+  }
+
   return (
     <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggle(item);
-      }}
+      type="button"
+      onClick={handleClick}
       aria-label={isSaved ? "Удалить из избранного" : "Добавить в избранное"}
-      className={`group flex items-center justify-center rounded-xl transition-all duration-200 backdrop-blur-sm active:scale-90 ${
-        size === "sm" ? "w-7 h-7" : "w-9 h-9"
-      } ${
+      aria-pressed={isSaved}
+      className={cn(
+        "group flex items-center justify-center rounded-xl border transition-colors duration-200 active:scale-90",
+        size === "sm" ? "h-7 w-7" : "h-9 w-9",
         isSaved
-          ? "bg-red-500 border border-red-400/60 hover:bg-red-600 shadow-md shadow-red-500/30"
-          : "bg-black/45 border border-white/25 hover:bg-black/65 hover:border-white/40 shadow-sm"
-      } ${className}`}
+          ? "border-red-500/45 bg-red-500/12 text-red-500 hover:bg-red-500/16"
+          : "border-border/70 bg-card/[0.88] text-muted-foreground hover:border-red-500/30 hover:bg-card hover:text-red-500",
+        className
+      )}
     >
       <Heart
-        className={`transition-all duration-200 drop-shadow-sm ${size === "sm" ? "w-3.5 h-3.5" : "w-4 h-4"} ${
-          isSaved
-            ? "fill-white text-white scale-110"
-            : "text-white/90 group-hover:text-white group-hover:scale-110"
-        }`}
+        className={cn(
+          "transition-transform duration-200 group-hover:scale-110",
+          size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4",
+          isSaved && "fill-current"
+        )}
       />
     </button>
   );

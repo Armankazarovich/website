@@ -464,7 +464,7 @@ export function ProductCard({
               {hasStock ? "В наличии" : "Нет"}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-2xl border border-border/60 bg-background/55 p-0.5">
             <CompareButton size="sm" item={compareItem} />
             <WishlistButton size="sm" item={compareItem} />
           </div>
@@ -609,7 +609,7 @@ export function ProductCard({
           </div>
 
           {/* Wishlist — та же высота h-7 */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-2xl border border-border/60 bg-background/55 p-0.5">
             <CompareButton size="sm" item={compareItem} />
             <WishlistButton
               size="sm"

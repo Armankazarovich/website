@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { GitCompareArrows } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,6 +8,11 @@ import { useCompareStore } from "@/store/compare";
 
 export function CompareCount({ className }: { className?: string }) {
   const count = useCompareStore((state) => state.items.length);
+  const hydrateCompare = useCompareStore((state) => state.hydrateCompare);
+
+  useEffect(() => {
+    hydrateCompare();
+  }, [hydrateCompare]);
 
   return (
     <Link

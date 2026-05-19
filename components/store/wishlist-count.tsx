@@ -1,11 +1,17 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
 import { useWishlistStore } from "@/store/wishlist";
 
 export function WishlistCount() {
   const count = useWishlistStore((s) => s.items.length);
+  const hydrateWishlist = useWishlistStore((s) => s.hydrateWishlist);
+
+  useEffect(() => {
+    hydrateWishlist();
+  }, [hydrateWishlist]);
 
   return (
     <Link
