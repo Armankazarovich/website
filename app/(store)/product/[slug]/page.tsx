@@ -11,6 +11,7 @@ import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
 import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
 import { ProductGallery } from "@/components/store/product-gallery";
+import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
@@ -141,7 +142,7 @@ export default async function ProductPage({ params }: Props) {
     currentUserProfilePromise,
   ]);
   const role = (session?.user as any)?.role;
-  const isAdmin = session && ["ADMIN", "MANAGER"].includes(role);
+  const isAdmin = session && ["ADMIN", "SUPER_ADMIN", "MANAGER", "SELLER"].includes(role);
   const yandexMapsUrl = yandexMapsSetting?.value || "";
   const showReviewsBlock = (siteSettings.product_page_show_reviews ?? "true") !== "false";
   const showRelatedProducts = (siteSettings.product_page_show_related ?? "true") !== "false";
@@ -500,9 +501,17 @@ export default async function ProductPage({ params }: Props) {
 
       {/* Related products */}
       {showRelatedProducts && related.length > 0 && (
-        <section>
-          <h2 className="font-display font-extrabold text-2xl mb-6">Похожие товары</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <section className="group/related">
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <h2 className="font-display text-2xl font-extrabold">Похожие товары</h2>
+            <AdminEditButton
+              href="/admin/appearance"
+              mode="inline"
+              label="Настроить"
+              className="hidden shrink-0 sm:inline-flex"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {related.map((product) => (
               <ProductCard
                 key={product.id}
