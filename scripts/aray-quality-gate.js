@@ -123,6 +123,7 @@ run("Architecture automation guard", "node", ["scripts/aray-architecture-audit.j
 run("Section approval protocol guard", "node", ["scripts/validate-section-approval-protocol.js"]);
 run("Public edit target registry guard", "node", ["scripts/validate-public-edit-targets.js"]);
 run("ARAY service package guard", "node", ["scripts/validate-aray-service-packages.js"]);
+run("Store capability registry guard", "node", ["scripts/validate-store-capabilities.js"]);
 run("Module registry validation", "node", ["scripts/validate-aray-modules.js"]);
 run("Module navigation foundation check", "node", ["scripts/validate-aray-module-navigation-contract.js"]);
 run("Dynamic role OS guard", "node", ["scripts/validate-dynamic-role-os.js"]);
