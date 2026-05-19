@@ -113,6 +113,15 @@ Gamification should be useful, not manipulative:
 - no fake urgency, no hidden paid traps, no promise of income;
 - owner always sees what costs ARC now, what is included, and what will renew automatically.
 
+Technical source of truth for the first package model: `lib/aray-service-packages.ts`.
+
+Quality gate protects this foundation through `scripts/validate-aray-service-packages.js`:
+
+- launch rate stays explicit: `1 ARC = 50 RUB`;
+- package levels exist: Start, Growth, Pro, Partner, Enterprise;
+- paid package ARC prices grow by level;
+- risky public wording like "coin", "token" and income promises does not enter the service package registry.
+
 ## Phase 3: partner rewards and payouts
 
 ARC can track partner rewards, but ruble payouts must be separate:
