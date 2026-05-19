@@ -476,8 +476,12 @@ export async function getYandexDirectStatus(
 ): Promise<YandexDirectStatus> {
   const token = getDirectToken(settings);
   const hasOauthApp = Boolean(
-    process.env.YANDEX_DIRECT_CLIENT_ID &&
-    process.env.YANDEX_DIRECT_CLIENT_SECRET,
+    (process.env.YANDEX_DIRECT_CLIENT_ID &&
+      process.env.YANDEX_DIRECT_CLIENT_SECRET) ||
+      (process.env.YANDEX_OAUTH_CLIENT_ID &&
+        process.env.YANDEX_OAUTH_CLIENT_SECRET) ||
+      (process.env.YANDEX_LOGIN_CLIENT_ID &&
+        process.env.YANDEX_LOGIN_CLIENT_SECRET),
   );
 
   if (!token) {

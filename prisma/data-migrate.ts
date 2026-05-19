@@ -75,6 +75,19 @@ function findStableProductImage(slug: string): string | null {
   return null;
 }
 
+function resolvePublicFilePath(url: string | null | undefined): string | null {
+  if (!url || !url.startsWith("/")) return null;
+  if (url.includes("..") || url.includes("\\") || url.includes("//")) return null;
+
+  const publicUrl = url.startsWith("/api/uploads/")
+    ? url.replace(/^\/api\/uploads\//, "/uploads/")
+    : url;
+
+  if (!publicUrl.startsWith("/images/") && !publicUrl.startsWith("/uploads/")) return null;
+
+  return join(process.cwd(), "public", publicUrl.replace(/^\/+/, ""));
+}
+
 const CATEGORY_SEO_20260424: Record<string, { seoTitle: string; seoDescription: string; name?: string }> = {
   "sosna-el": {
     seoTitle: "Сосна и ель — купить пиломатериалы от производителя в Химках",
@@ -263,8 +276,8 @@ async function main() {
       needsRestore = true;
     } else if (cat.image.includes("upload-")) {
       // Есть upload-* URL — проверяем существует ли файл физически
-      const filePath = join(process.cwd(), "public", cat.image);
-      if (!existsSync(filePath)) {
+      const filePath = resolvePublicFilePath(cat.image);
+      if (!filePath || !existsSync(filePath)) {
         // Файл потерян (новый сервер или удалён) → восстановить
         needsRestore = true;
       }
@@ -483,7 +496,6 @@ async function main() {
         update: {
           name: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].name,
           description: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].description,
-          images: ["/images/products/doska-stroganaya-antisept-sosna.webp"],
           saleUnit: "BOTH",
           active: true,
         },
@@ -491,6 +503,13 @@ async function main() {
 
       const dryBoard = await prisma.product.findUnique({ where: { slug: "doska-stroganaya-suhaya-sosna" } });
       const dryBeam = await prisma.product.findUnique({ where: { slug: "brus-strogannyy-suhoy-sosna" } });
+      if (dryBoard && dryBoard.images.length === 0) {
+        await prisma.product.update({
+          where: { id: dryBoard.id },
+          data: { images: ["/images/products/doska-stroganaya-antisept-sosna.webp"] },
+        });
+        console.log("[data-migrate] ✓ Фото сухой строганной доски заполнено, потому что было пусто");
+      }
       if (dryBoard && dryBeam) {
         const moved = await prisma.productVariant.updateMany({
           where: {

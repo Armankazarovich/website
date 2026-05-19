@@ -28,6 +28,7 @@ import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PartnershipModal } from "@/components/store/partnership-modal";
 import { WishlistCount } from "@/components/store/wishlist-count";
+import { CompareCount } from "@/components/store/compare-count";
 import { PhoneLinks, type PhoneItem } from "@/components/shared/phone-links";
 
 export interface HeaderCategory {
@@ -674,6 +675,9 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
 
             {/* Wishlist */}
             <WishlistCount />
+
+            {/* Compare */}
+            <CompareCount className="hidden sm:flex" />
 
             {/* Theme toggle */}
             <button

@@ -344,7 +344,18 @@ export function resolveRegionIds(settings: DirectSettings, draft: DirectDraft) {
     if (ids.length) return ids;
   }
 
-  if (/москв/i.test(draft.region)) return [1];
+  const regionContext = [
+    draft.region,
+    settingValue(settings, [
+      "delivery_region",
+      "service_region",
+      "company_city",
+      "city",
+      "address",
+    ]),
+  ].join(" ");
+
+  if (/москв|московск|химк/i.test(regionContext)) return [1];
 
   throw new Error(
     "Yandex Direct region is not configured. Set yandex_direct_region_ids in site settings before export.",

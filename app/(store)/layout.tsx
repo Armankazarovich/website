@@ -31,6 +31,13 @@ const MobileBottomNav = dynamic(
     })),
   { ssr: false },
 );
+const CompareDock = dynamic(
+  () =>
+    import("@/components/store/compare-dock").then((m) => ({
+      default: m.CompareDock,
+    })),
+  { ssr: false },
+);
 const AccountDrawerMount = dynamic(
   () =>
     import("@/components/store/account-drawer-mount").then((m) => ({
@@ -124,6 +131,7 @@ export default async function StoreLayout({
           - ArayGlobalAssistant (≥1024px dock + panel) — один ARAY UI для всех зон
           - Header мега-меню (≥1024px) — в шапке */}
         <MobileBottomNav arayEnabled={arayEnabled} />
+        <CompareDock />
         <SideIconRail />
         <ArayGlobalAssistant enabled={arayEnabled} />
 

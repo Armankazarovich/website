@@ -15,12 +15,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Search, ShoppingCart, Heart, User } from "lucide-react";
+import { GitCompareArrows, LayoutGrid, Search, ShoppingCart, Heart, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cart";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { useSearchDrawer } from "@/store/search-drawer";
 import { useWishlistStore } from "@/store/wishlist";
+import { useCompareStore } from "@/store/compare";
 
 function haptic() {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
@@ -91,6 +92,7 @@ export function SideIconRail() {
   const cartOpen = useCartStore((s) => s.cartOpen);
   const setCartOpen = useCartStore((s) => s.setCartOpen);
   const wishCount = useWishlistStore((s) => s.items.length);
+  const compareCount = useCompareStore((s) => s.items.length);
   const accountOpen = useAccountDrawer((s) => s.open);
   const toggleAccount = useAccountDrawer((s) => s.toggle);
   const searchOpen = useSearchDrawer((s) => s.open);
@@ -147,6 +149,13 @@ export function SideIconRail() {
             href="/wishlist"
             badge={wishCount}
             active={pathname === "/wishlist"}
+          />
+          <RailIcon
+            label="Сравнение"
+            icon={<GitCompareArrows className="w-[18px] h-[18px]" strokeWidth={1.75} />}
+            href="/compare"
+            badge={compareCount}
+            active={pathname === "/compare"}
           />
           <RailIcon
             label="Аккаунт"

@@ -32,6 +32,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
+import { CompareButton } from "@/components/store/compare-button";
+import type { CompareItem } from "@/store/compare";
 import { buildProductInsightTags } from "@/lib/product-insights";
 import { getProductEditTarget } from "@/lib/public-edit-targets";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
@@ -409,6 +411,18 @@ export function ProductCard({
   const isMagazine = cardStyle === "magazine";
   const isListView = viewMode === "list" && !isMagazine;
   const productEditTarget = getProductEditTarget(id);
+  const compareItem: CompareItem = {
+    id,
+    slug,
+    name,
+    category,
+    shortDescription,
+    description,
+    images,
+    cardTags,
+    saleUnit,
+    variants,
+  };
 
   const wrapperClass = cn(
     isMagazine
@@ -450,7 +464,10 @@ export function ProductCard({
               {hasStock ? "В наличии" : "Нет"}
             </span>
           </div>
-          <WishlistButton size="sm" item={{ id, slug, name, category, images, cardTags, saleUnit, variants }} />
+          <div className="flex items-center gap-1.5">
+            <CompareButton size="sm" item={compareItem} />
+            <WishlistButton size="sm" item={compareItem} />
+          </div>
         </div>
 
         {/* Bottom overlay content */}
@@ -592,10 +609,13 @@ export function ProductCard({
           </div>
 
           {/* Wishlist — та же высота h-7 */}
-          <WishlistButton
-            size="sm"
-            item={{ id, slug, name, category, images, cardTags, saleUnit, variants }}
-          />
+          <div className="flex items-center gap-1.5">
+            <CompareButton size="sm" item={compareItem} />
+            <WishlistButton
+              size="sm"
+              item={compareItem}
+            />
+          </div>
         </div>
 
       </Link>

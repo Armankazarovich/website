@@ -12,6 +12,8 @@ import { DescriptionAccordion } from "@/components/store/description-accordion";
 import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
+import { CompareButton } from "@/components/store/compare-button";
+import type { CompareItem } from "@/store/compare";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
@@ -166,6 +168,25 @@ export default async function ProductPage({ params }: Props) {
   const intro = productIntro(product.shortDescription || product.description);
   const productEditTarget = getProductEditTarget(product.id);
   const relatedEditTarget = getPublicEditTarget("product.related");
+  const compareItem: CompareItem = {
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    category: product.category.name,
+    shortDescription: product.shortDescription,
+    description: product.description,
+    images: product.images,
+    cardTags: product.cardTags,
+    saleUnit: product.saleUnit as CompareItem["saleUnit"],
+    variants: product.variants.map((variant) => ({
+      id: variant.id,
+      size: variant.size,
+      pricePerCube: variant.pricePerCube ? Number(variant.pricePerCube) : null,
+      pricePerPiece: variant.pricePerPiece ? Number(variant.pricePerPiece) : null,
+      piecesPerCube: variant.piecesPerCube,
+      inStock: variant.inStock,
+    })),
+  };
 
   // Build schema.org structured data
   // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
@@ -296,16 +317,19 @@ export default async function ProductPage({ params }: Props) {
             {intro && (
               <p className="store-product-intro text-muted-foreground leading-relaxed">{intro}</p>
             )}
-            {isAdmin && (
-              <Link
-                href={productEditTarget.adminHref}
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
-                title="Редактировать товар в админке"
-              >
-                <Pencil className="h-4 w-4" />
-                <span>{productEditTarget.adminLabel}</span>
-              </Link>
-            )}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <CompareButton item={compareItem} mode="inline" />
+              {isAdmin && (
+                <Link
+                  href={productEditTarget.adminHref}
+                  className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+                  title="Редактировать товар в админке"
+                >
+                  <Pencil className="h-4 w-4" />
+                  <span>{productEditTarget.adminLabel}</span>
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Quick features */}

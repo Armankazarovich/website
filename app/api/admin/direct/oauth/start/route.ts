@@ -14,14 +14,27 @@ function oauthRedirectUri(req: Request) {
   );
 }
 
+function directClientId() {
+  return (
+    process.env.YANDEX_DIRECT_CLIENT_ID ||
+    process.env.YANDEX_OAUTH_CLIENT_ID ||
+    process.env.YANDEX_LOGIN_CLIENT_ID ||
+    ""
+  ).trim();
+}
+
+function adminReturnUrl(req: Request, path: string) {
+  return new URL(path, new URL(oauthRedirectUri(req)).origin);
+}
+
 export async function GET(req: Request) {
   const auth = await requireAdmin();
   if (!auth.authorized) return auth.response;
 
-  const clientId = process.env.YANDEX_DIRECT_CLIENT_ID;
+  const clientId = directClientId();
   if (!clientId) {
     return NextResponse.redirect(
-      new URL("/admin/promotion?direct_oauth=missing_app", req.url),
+      adminReturnUrl(req, "/admin/promotion?direct_oauth=missing_app"),
     );
   }
 

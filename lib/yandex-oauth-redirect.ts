@@ -25,11 +25,43 @@ function originIsLocal(origin: string) {
   }
 }
 
+function firstHeaderValue(value?: string | null) {
+  return String(value || "")
+    .split(",")[0]
+    .trim();
+}
+
+function forwardedOrigin(req: Request) {
+  const requestUrl = new URL(req.url);
+  const proto =
+    firstHeaderValue(req.headers.get("x-forwarded-proto")) ||
+    firstHeaderValue(req.headers.get("x-forwarded-protocol")) ||
+    firstHeaderValue(req.headers.get("x-url-scheme")) ||
+    requestUrl.protocol.replace(/:$/, "");
+  const host =
+    firstHeaderValue(req.headers.get("x-forwarded-host")) ||
+    firstHeaderValue(req.headers.get("x-original-host")) ||
+    firstHeaderValue(req.headers.get("host"));
+
+  return normalizeOrigin(host ? `${proto}://${host}` : "");
+}
+
 function requestOrigin(req: Request) {
   const requestUrl = new URL(req.url);
+  const directOrigin = `${requestUrl.protocol}//${requestUrl.host}`;
+  const forwarded = forwardedOrigin(req);
+  const publicOrigin = publicSiteOrigin({ allowLocal: false });
+  const origin = !originIsLocal(forwarded)
+    ? forwarded
+    : !originIsLocal(directOrigin)
+      ? directOrigin
+      : process.env.NODE_ENV === "production" && publicOrigin
+        ? publicOrigin
+        : directOrigin;
+
   return {
-    origin: `${requestUrl.protocol}//${requestUrl.host}`,
-    isLocal: isLocalHost(requestUrl.hostname),
+    origin,
+    isLocal: originIsLocal(origin),
   };
 }
 
@@ -63,12 +95,12 @@ export function yandexOAuthCallbackUri(
   try {
     const configuredUrl = new URL(configured);
     const fallbackUrl = new URL(fallback);
-    if (!request.isLocal && isLocalHost(configuredUrl.hostname)) {
-      return fallback;
-    }
+    const configuredIsLocal = isLocalHost(configuredUrl.hostname);
     if (
-      isLocalHost(configuredUrl.hostname) &&
-      configuredUrl.host !== fallbackUrl.host
+      configuredIsLocal &&
+      (process.env.NODE_ENV === "production" ||
+        !request.isLocal ||
+        configuredUrl.host !== fallbackUrl.host)
     ) {
       return fallback;
     }

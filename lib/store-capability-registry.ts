@@ -18,7 +18,7 @@ export const STORE_CAPABILITY_REGISTRY: StoreCapability[] = [
   {
     id: "product-comparison",
     title: "Product comparison",
-    status: "planned",
+    status: "foundation",
     publicValue: "Buyer compares sizes, units, price, availability, delivery and use cases before ordering.",
     adminRoutes: ["/admin/products", "/admin/product-types"],
     dependencies: ["catalog", "product-variants", "public-edit-targets"],
@@ -134,4 +134,3 @@ export function getStoreCapability(id: string) {
 export function getStoreCapabilitiesByStatus(status: StoreCapabilityStatus) {
   return STORE_CAPABILITY_REGISTRY.filter((item) => item.status === status);
 }
-
