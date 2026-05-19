@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { PromoQuoteModal } from "./promo-quote-modal";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
+import { getPublicEditTarget } from "@/lib/public-edit-targets";
 
 export type PromotionCardData = {
   id: string;
@@ -83,6 +84,7 @@ const THEMES: Theme[] = [
 
 export function PromoCards({ promotions, phoneLink }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
+  const promotionsEditTarget = getPublicEditTarget("marketing.promotions");
 
   return (
     <>
@@ -95,7 +97,7 @@ export function PromoCards({ promotions, phoneLink }: Props) {
             key={promo.id}
             className={`group relative flex min-h-[280px] flex-col overflow-hidden rounded-2xl border ${theme.cardClass} p-6 text-foreground`}
           >
-            <AdminEditButton href="/admin/promotions" mode="overlay" label="Изменить акцию" />
+            <AdminEditButton href={promotionsEditTarget.adminHref} mode="overlay" label={promotionsEditTarget.adminLabel} />
             <div className={`pointer-events-none absolute right-0 top-0 h-44 w-44 translate-x-1/2 -translate-y-1/2 rounded-full ${theme.circle1}`} />
             <div className={`pointer-events-none absolute bottom-0 left-0 h-28 w-28 -translate-x-1/2 translate-y-1/2 rounded-full ${theme.circle2}`} />
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-background/[0.05]" />

@@ -15,6 +15,7 @@ import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import { getProductEditTarget, getPublicEditTarget } from "@/lib/public-edit-targets";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -163,6 +164,8 @@ export default async function ProductPage({ params }: Props) {
     ? `https://t.me/${telegramUsername.replace("@", "")}?text=${encodeURIComponent(tgMessage)}`
     : null;
   const intro = productIntro(product.shortDescription || product.description);
+  const productEditTarget = getProductEditTarget(product.id);
+  const relatedEditTarget = getPublicEditTarget("product.related");
 
   // Build schema.org structured data
   // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
@@ -295,12 +298,12 @@ export default async function ProductPage({ params }: Props) {
             )}
             {isAdmin && (
               <Link
-                href={`/admin/products/${product.id}`}
+                href={productEditTarget.adminHref}
                 className="mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
                 title="Редактировать товар в админке"
               >
                 <Pencil className="h-4 w-4" />
-                <span>Редактировать товар</span>
+                <span>{productEditTarget.adminLabel}</span>
               </Link>
             )}
           </div>
@@ -505,9 +508,9 @@ export default async function ProductPage({ params }: Props) {
           <div className="mb-5 flex items-center justify-between gap-3">
             <h2 className="font-display text-2xl font-extrabold">Похожие товары</h2>
             <AdminEditButton
-              href="/admin/appearance"
+              href={relatedEditTarget.adminHref}
               mode="inline"
-              label="Настроить"
+              label={relatedEditTarget.adminLabel}
               className="hidden shrink-0 sm:inline-flex"
             />
           </div>

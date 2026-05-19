@@ -33,6 +33,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useStoreSettings } from "@/lib/store-settings-context";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { buildProductInsightTags } from "@/lib/product-insights";
+import { getProductEditTarget } from "@/lib/public-edit-targets";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
@@ -407,6 +408,7 @@ export function ProductCard({
   const isVivid    = cardStyle === "vivid";
   const isMagazine = cardStyle === "magazine";
   const isListView = viewMode === "list" && !isMagazine;
+  const productEditTarget = getProductEditTarget(id);
 
   const wrapperClass = cn(
     isMagazine
@@ -423,7 +425,7 @@ export function ProductCard({
   if (isMagazine) {
     return (
       <div className={wrapperClass}>
-        <AdminEditButton href={`/admin/products/${id}`} mode="overlay" label="Изменить товар" />
+        <AdminEditButton href={productEditTarget.adminHref} mode="overlay" label={productEditTarget.adminLabel} />
         {/* Full-bleed image */}
         <Link prefetch href={`/product/${slug}`} className="absolute inset-0">
           {images[0] && !imgError ? (
@@ -528,7 +530,7 @@ export function ProductCard({
 
   return (
     <div className={wrapperClass}>
-      <AdminEditButton href={`/admin/products/${id}`} mode="overlay" label="Изменить товар" />
+      <AdminEditButton href={productEditTarget.adminHref} mode="overlay" label={productEditTarget.adminLabel} />
       {/* Vivid animated bg — only shown for vivid style */}
       {isVivid && (
         <div className="absolute inset-0 vivid-bg" aria-hidden />
