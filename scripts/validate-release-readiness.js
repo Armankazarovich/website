@@ -200,6 +200,7 @@ const productPage = read("app/(store)/product/[slug]/page.tsx");
 const productActions = read("components/store/product-page-actions.tsx");
 const contactRoute = read("app/api/contact/route.ts");
 const arayWidget = read("components/store/aray-widget.tsx");
+const arayNavigation = read("lib/aray-navigation.ts");
 check(
   "Product page has smart seller controls",
   includesAll(productPage, ["ProductSellerPanel", "ProductSmartSummary", "ProductShareButton", "productSku", "smartTags"]) &&
@@ -219,6 +220,12 @@ check(
     "/admin/notifications",
   ]),
   "AR Phone should expose Telegram, WhatsApp, Zangi, email, mailings, and video entry points in one panel.",
+);
+check(
+  "External login channels use browser fallback",
+  includesAll(arayNavigation, ["telegram.org", "whatsapp.com", "zangi.com"]) &&
+    includesAll(read("components/store/aray-browser.tsx"), ["isArayExternalTabOnly(parsed.href)", "открывается во вкладке браузера"]),
+  "External messengers that block iframe login must open in the real browser tab instead of showing a broken embedded page.",
 );
 
 const embeddedMessenger = read("components/store/aray-embedded-messenger.tsx");

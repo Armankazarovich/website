@@ -34,6 +34,9 @@ function getExternalTabOnlyMessage(rawUrl: string): string | null {
     if (host === "google.com" || host.endsWith(".google.com")) {
       return "Кабинет Google открывается во вкладке.";
     }
+    if (isArayExternalTabOnly(parsed.href)) {
+      return "Этот сервис защищает вход и открывается во вкладке браузера.";
+    }
   } catch {
     return null;
   }

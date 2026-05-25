@@ -124,6 +124,13 @@ check(
 );
 
 check(
+  "External messenger login fallback is protected",
+  includesAll("lib/aray-navigation.ts", ["telegram.org", "whatsapp.com", "zangi.com"]) &&
+    includesAll("components/store/aray-browser.tsx", ["isArayExternalTabOnly(parsed.href)", "открывается во вкладке браузера"]),
+  "Telegram, WhatsApp, and Zangi should not render broken iframe login pages inside ARAY.",
+);
+
+check(
   "Text encoding guard is in quality",
   Boolean(packageJson.scripts?.["text:check"]) &&
     qualityGate.includes("validate-text-encoding-guard.js") &&

@@ -964,8 +964,9 @@ function ArayPhoneShortcutPad({
   ];
   const externalChannels = [
     {
+      key: "telegram",
       label: "Telegram",
-      hint: "web",
+      hint: "браузер",
       logo: "TG",
       accent: "hsl(200 92% 55%)",
       onClick: () => {
@@ -974,8 +975,9 @@ function ArayPhoneShortcutPad({
       },
     },
     {
+      key: "whatsapp",
       label: "WhatsApp",
-      hint: "web",
+      hint: "браузер",
       logo: "WA",
       accent: "hsl(142 70% 45%)",
       onClick: () => {
@@ -984,8 +986,9 @@ function ArayPhoneShortcutPad({
       },
     },
     {
+      key: "zangi",
       label: "Zangi",
-      hint: "app",
+      hint: "сайт",
       logo: "ZA",
       accent: "hsl(258 86% 66%)",
       onClick: () => {
@@ -994,8 +997,9 @@ function ArayPhoneShortcutPad({
       },
     },
     {
+      key: "email",
       label: "Почта",
-      hint: "email",
+      hint: "центр",
       logo: "@",
       accent: primaryColor,
       onClick: () => {
@@ -1004,8 +1008,9 @@ function ArayPhoneShortcutPad({
       },
     },
     {
+      key: "mailings",
       label: "Рассылки",
-      hint: "push",
+      hint: "центр",
       logo: "RS",
       accent: "hsl(32 95% 52%)",
       onClick: () => {
@@ -1014,8 +1019,9 @@ function ArayPhoneShortcutPad({
       },
     },
     {
+      key: "meet",
       label: "Meet",
-      hint: "video",
+      hint: "попап",
       logo: "JV",
       accent: "hsl(184 78% 44%)",
       onClick: () => {
@@ -1085,23 +1091,39 @@ function ArayPhoneShortcutPad({
             </button>
           ))}
         </div>
-        <div data-aray-phone-integrations className="mt-2 grid grid-cols-6 gap-1">
+        <div data-aray-phone-integrations className="mt-2 grid grid-cols-2 gap-1">
           {externalChannels.map((item) => (
             <button
-              key={item.label}
+              key={item.key}
               type="button"
-              data-aray-phone-channel={item.label.toLowerCase()}
+              data-aray-phone-channel={item.key}
               onClick={item.onClick}
-              className="flex h-9 min-w-0 items-center justify-center rounded-2xl text-[9px] font-black tracking-normal transition hover:scale-[1.03] active:scale-[0.97]"
+              className="flex min-h-10 min-w-0 items-center gap-2 rounded-2xl px-2 text-left transition hover:scale-[1.015] active:scale-[0.98]"
               style={{
-                color: item.accent,
                 background: "hsl(var(--background) / 0.48)",
                 border: `1px solid ${primaryBorder}`,
               }}
               aria-label={`Открыть ${item.label}`}
               title={`${item.label} · ${item.hint}`}
             >
-              {item.logo}
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-2xl text-[9px] font-black"
+                style={{
+                  color: item.accent,
+                  background: "hsl(var(--foreground) / 0.045)",
+                  boxShadow: `inset 0 0 0 1px ${item.accent}`,
+                }}
+              >
+                {item.logo}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[10px] font-bold leading-none" style={{ color: txt }}>
+                  {item.label}
+                </span>
+                <span className="mt-1 block truncate text-[8.5px] font-semibold leading-none" style={{ color: txtSub }}>
+                  {item.hint}
+                </span>
+              </span>
             </button>
           ))}
         </div>
@@ -1284,14 +1306,14 @@ function ArayPhoneShortcutPad({
             через Арай
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
+        <div className="grid grid-cols-2 gap-1.5">
           {externalChannels.map((item) => (
             <button
-              key={item.label}
+              key={item.key}
               type="button"
-              data-aray-phone-channel={item.label.toLowerCase()}
+              data-aray-phone-channel={item.key}
               onClick={item.onClick}
-              className="group flex min-h-11 min-w-0 items-center gap-2 rounded-[16px] px-2 text-left transition hover:bg-muted/40 active:scale-[0.98]"
+              className="group flex min-h-12 min-w-0 items-center gap-2 rounded-[16px] px-2.5 text-left transition hover:bg-muted/40 active:scale-[0.98]"
               style={{ border: "1px solid hsl(var(--foreground) / 0.055)" }}
               aria-label={`Открыть ${item.label}`}
               title={`${item.label} · ${item.hint}`}
