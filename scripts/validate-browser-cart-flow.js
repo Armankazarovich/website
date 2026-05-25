@@ -412,8 +412,6 @@ async function runBrowserFlow(browserPath) {
     await waitForCondition(client, "document.querySelector('[data-product-seller-panel]') !== null", 20000);
     const productPageState = await client.evaluate(`(${() => ({
       sellerPanel: Boolean(document.querySelector("[data-product-seller-panel]")),
-      smartSummary: Boolean(document.querySelector("[data-product-smart-summary]")),
-      sku: document.querySelector("[data-product-sku]")?.textContent?.trim() || "",
       shareButton: Boolean(document.querySelector("[data-product-share]")),
       channels: Array.from(document.querySelectorAll("[data-product-channel]"))
         .map((node) => node.getAttribute("data-product-channel"))
@@ -426,13 +424,11 @@ async function runBrowserFlow(browserPath) {
     check(
       "Product page has seller and sharing controls",
       productPageState.sellerPanel &&
-        productPageState.smartSummary &&
-        productPageState.sku.startsWith("PR-") &&
         productPageState.shareButton &&
         productPageState.requestMessage &&
         productPageState.requestContact &&
         productPageState.requestSubmit,
-      `seller: ${productPageState.sellerPanel}, sku: ${productPageState.sku}, share: ${productPageState.shareButton}, form: ${productPageState.requestMessage}/${productPageState.requestContact}/${productPageState.requestSubmit}`,
+      `seller: ${productPageState.sellerPanel}, share: ${productPageState.shareButton}, form: ${productPageState.requestMessage}/${productPageState.requestContact}/${productPageState.requestSubmit}`,
     );
     check(
       "Product page exposes omnichannel choices",

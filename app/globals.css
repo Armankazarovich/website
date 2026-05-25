@@ -3959,7 +3959,12 @@ button, a, [role="button"], input, select, textarea {
     0 16px 36px -34px hsl(24 18% 12% / 0.34);
 }
 
-.store-product-smart-summary,
+.store-product-smart-summary {
+  background: hsl(var(--card) / 0.34);
+  border-color: hsl(var(--border) / 0.52);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.32) inset;
+}
+
 .store-product-seller-panel {
   background:
     linear-gradient(180deg, hsl(var(--card) / 0.92) 0%, hsl(var(--muted) / 0.36) 100%);
@@ -3969,18 +3974,39 @@ button, a, [role="button"], input, select, textarea {
     0 16px 36px -34px hsl(24 18% 12% / 0.34);
 }
 
+.store-product-smart-id {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 1.9rem;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  border: 1px solid hsl(var(--border) / 0.58);
+  background: hsl(var(--background) / 0.5);
+  padding: 0 0.7rem;
+  white-space: nowrap;
+}
+
 .store-product-smart-chip {
   display: inline-flex;
-  min-height: 1.85rem;
+  min-height: 1.75rem;
   align-items: center;
+  gap: 0.35rem;
   border-radius: 999px;
-  border: 1px solid hsl(var(--primary) / 0.18);
-  background: hsl(var(--primary) / 0.08);
-  color: hsl(var(--foreground) / 0.82);
-  padding: 0 0.7rem;
-  font-size: 0.75rem;
+  border: 1px solid hsl(var(--primary) / 0.16);
+  background: hsl(var(--primary) / 0.06);
+  color: hsl(var(--foreground) / 0.78);
+  padding: 0 0.62rem;
+  font-size: 0.72rem;
   font-weight: 650;
   white-space: nowrap;
+}
+
+.store-product-smart-chip-muted {
+  border-color: hsl(var(--border) / 0.58);
+  background: hsl(var(--background) / 0.48);
+  color: hsl(var(--foreground) / 0.72);
 }
 
 .store-product-seller-tool {
@@ -4442,7 +4468,12 @@ button, a, [role="button"], input, select, textarea {
     0 18px 40px -32px hsl(0 0% 0% / 0.72);
 }
 
-.dark .store-product-smart-summary,
+.dark .store-product-smart-summary {
+  background: hsl(var(--card) / 0.36);
+  border-color: hsl(var(--border) / 0.64);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.05) inset;
+}
+
 .dark .store-product-seller-panel {
   background:
     linear-gradient(180deg, hsl(var(--card) / 0.92) 0%, hsl(24 18% 8% / 0.88) 100%);
@@ -4452,10 +4483,21 @@ button, a, [role="button"], input, select, textarea {
     0 18px 40px -32px hsl(0 0% 0% / 0.72);
 }
 
+.dark .store-product-smart-id {
+  background: hsl(var(--background) / 0.42);
+  border-color: hsl(var(--border) / 0.68);
+}
+
 .dark .store-product-smart-chip {
-  border-color: hsl(var(--primary) / 0.24);
-  background: hsl(var(--primary) / 0.1);
-  color: hsl(var(--foreground) / 0.9);
+  border-color: hsl(var(--primary) / 0.2);
+  background: hsl(var(--primary) / 0.075);
+  color: hsl(var(--foreground) / 0.84);
+}
+
+.dark .store-product-smart-chip-muted {
+  border-color: hsl(var(--border) / 0.66);
+  background: hsl(var(--background) / 0.42);
+  color: hsl(var(--foreground) / 0.76);
 }
 
 .dark .store-product-seller-tool,

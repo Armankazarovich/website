@@ -91,9 +91,14 @@ Goal: привести систему к показу и деплою без п�
 
 15. `todo` ARAY omnichannel center:
     - ARAY is not a separate social messenger. It is one work center for external channels.
-    - Channels to organize under one style: Telegram, WhatsApp, Zangi, phone, video, email, mailings/newsletters, site forms.
+    - Channels to organize under one style: Telegram, WhatsApp, Zangi, MAX, VK, phone, video, email, mailings/newsletters, site forms.
     - User command model: "find who", "show where", "write through which channel", "save to CRM", "create task/follow-up".
     - Every channel action must show source/channel, keep consent/confirmation before sending, and save the conversation context in CRM.
+
+15a. `queued` Product card constructor reference:
+    - Hide the SKU/tags meta strip from live product pages for now.
+    - Later bring it back as an optional Woodmart-style compact product meta template inside the site/card constructor.
+    - The live product page should stay quiet, focused on the product, price, cart and seller actions.
 
 16. `todo` Cart performance:
     - проверить открытие/закрытие корзины на mobile;

@@ -13,14 +13,13 @@ import { ProductGallery } from "@/components/store/product-gallery";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { CompareButton } from "@/components/store/compare-button";
 import { WishlistButton } from "@/components/store/wishlist-button";
-import { ProductSellerPanel, ProductShareButton, ProductSmartSummary } from "@/components/store/product-page-actions";
+import { ProductSellerPanel, ProductShareButton } from "@/components/store/product-page-actions";
 import type { CompareItem } from "@/store/compare";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getProductEditTarget, getPublicEditTarget } from "@/lib/public-edit-targets";
 import { getProductAvailability } from "@/lib/product-availability";
-import { buildProductInsightTags } from "@/lib/product-insights";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -56,19 +55,6 @@ function productSku(slug: string, id: string) {
     .replace(/^-+|-+$/g, "")
     .slice(0, 34);
   return `PR-${cleanSlug || id.slice(-6).toUpperCase()}`;
-}
-
-function uniqueTags(tags: string[]) {
-  const seen = new Set<string>();
-  return tags
-    .map((tag) => tag.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .filter((tag) => {
-      const key = tag.toLowerCase().replace(/ё/g, "е");
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
 }
 
 const getProductBySlug = cache(async (slug: string) =>
@@ -216,18 +202,6 @@ export default async function ProductPage({ params }: Props) {
   };
   const productUrl = `/product/${product.slug}`;
   const sku = productSku(product.slug, product.id);
-  const insightTags = buildProductInsightTags({
-    name: product.name,
-    category: product.category.name,
-    shortDescription: product.shortDescription,
-    description: product.description,
-    saleUnit: product.saleUnit,
-    variants: product.variants.map((variant) => ({
-      size: variant.size,
-      inStock: variant.inStock,
-    })),
-    cardTags: product.cardTags,
-  });
 
   // Build schema.org structured data
   // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
@@ -237,14 +211,6 @@ export default async function ProductPage({ params }: Props) {
   // Логика: если есть ХОТЯ БЫ ОДИН вариант с pricePerPiece — используем ТОЛЬКО piece-цены.
   // Иначе — используем cube-цены.
   const productAvailability = getProductAvailability(product.variants);
-  const smartTags = uniqueTags([
-    productAvailability.label,
-    product.saleUnit === "CUBE" ? "Продажа в м³" : product.saleUnit === "PIECE" ? "Продажа поштучно" : "м³ или штуки",
-    product.variants.length > 1 ? `${product.variants.length} размеров` : "Один размер",
-    "Доставка 1-3 дня",
-    "Самовывоз Химки",
-    ...insightTags,
-  ]).slice(0, 6);
   const pricesPiece = product.variants
     .filter(v => v.pricePerPiece)
     .map(v => Number(v.pricePerPiece));
@@ -364,7 +330,6 @@ export default async function ProductPage({ params }: Props) {
             {intro && (
               <p className="store-product-intro text-muted-foreground leading-relaxed">{intro}</p>
             )}
-            <ProductSmartSummary sku={sku} category={product.category.name} tags={smartTags} />
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <CompareButton item={compareItem} mode="inline" />
               <WishlistButton item={compareItem} mode="inline" />

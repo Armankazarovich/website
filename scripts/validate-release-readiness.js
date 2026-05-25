@@ -203,10 +203,10 @@ const arayWidget = read("components/store/aray-widget.tsx");
 const arayNavigation = read("lib/aray-navigation.ts");
 check(
   "Product page has smart seller controls",
-  includesAll(productPage, ["ProductSellerPanel", "ProductSmartSummary", "ProductShareButton", "productSku", "smartTags"]) &&
-    includesAll(productActions, ["ProductShareButton", "ProductSellerPanel", "ProductSmartSummary", "CHANNELS", "Telegram", "WhatsApp", "Zangi", "Почта", "data-product-seller-panel"]) &&
+  includesAll(productPage, ["ProductSellerPanel", "ProductShareButton", "productSku"]) &&
+    includesAll(productActions, ["ProductShareButton", "ProductSellerPanel", "CHANNELS", "Telegram", "WhatsApp", "Zangi", "Почта", "data-product-seller-panel"]) &&
     includesAll(contactRoute, ["source === \"PRODUCT\"", "productTitle", "productSku", "Укажите телефон, email или вопрос"]),
-  "Product pages need share, SKU, smart tags, CRM lead capture, and a first omnichannel ARAY entry.",
+  "Product pages need share, CRM lead capture, and a first omnichannel ARAY entry. The SKU/tag strip is queued for the constructor, not shown live.",
 );
 check(
   "AR Phone has external channel hub",
@@ -216,16 +216,20 @@ check(
     "https://web.telegram.org/a/",
     "https://web.whatsapp.com/",
     "https://zangi.com/",
+    "https://web.max.ru/",
+    "https://vk.com/im",
+    "integrationHighlights",
     "/admin/email",
     "/admin/notifications",
   ]),
-  "AR Phone should expose Telegram, WhatsApp, Zangi, email, mailings, and video entry points in one panel.",
+  "AR Phone should expose Telegram, WhatsApp, Zangi, MAX, VK, email, mailings, and video entry points in one panel.",
 );
 check(
   "External login channels use browser fallback",
-  includesAll(arayNavigation, ["telegram.org", "whatsapp.com", "zangi.com"]) &&
-    includesAll(read("components/store/aray-browser.tsx"), ["isArayExternalTabOnly(parsed.href)", "открывается во вкладке браузера"]),
-  "External messengers that block iframe login must open in the real browser tab instead of showing a broken embedded page.",
+  includesAll(arayNavigation, ["telegram.org", "whatsapp.com", "zangi.com", "max.ru", "vk.com"]) &&
+    includesAll(arayNavigation, ["openArayExternalPopup", "popup=yes", "width=", "height="]) &&
+    includesAll(read("components/store/aray-browser.tsx"), ["openArayExternalPopup", "открывается в отдельном окне браузера"]),
+  "External messengers that block iframe login must open in a real browser popup window instead of showing a broken embedded page.",
 );
 
 const embeddedMessenger = read("components/store/aray-embedded-messenger.tsx");
@@ -273,6 +277,7 @@ check(
   includesAll(queue, [
     "ARAY omnichannel center",
     "Telegram, WhatsApp, Zangi",
+    "MAX, VK",
     "email, mailings/newsletters",
     "find who",
     "save to CRM",

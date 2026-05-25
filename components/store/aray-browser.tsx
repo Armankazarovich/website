@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronLeft, ChevronRight, RotateCcw, Maximize2, Minimize2, ExternalLink, MousePointer2 } from "lucide-react";
 import { UI_LAYERS } from "@/lib/ui-layers";
-import { isArayExternalTabOnly } from "@/lib/aray-navigation";
+import { isArayExternalTabOnly, openArayExternalPopup } from "@/lib/aray-navigation";
 
 export interface ArayBrowserAction {
   type: "navigate" | "spotlight" | "highlight";
@@ -32,10 +32,10 @@ function getExternalTabOnlyMessage(rawUrl: string): string | null {
       return "Кабинет Яндекса открывается во вкладке.";
     }
     if (host === "google.com" || host.endsWith(".google.com")) {
-      return "Кабинет Google открывается во вкладке.";
+      return "Кабинет Google открывается в окне браузера.";
     }
     if (isArayExternalTabOnly(parsed.href)) {
-      return "Этот сервис защищает вход и открывается во вкладке браузера.";
+      return "Этот сервис защищает вход и открывается в отдельном окне браузера.";
     }
   } catch {
     return null;
@@ -126,13 +126,13 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
   useEffect(() => {
     if (!tabOnlyMessage) return;
     setLoading(false);
-    window.open(url, "_blank", "noopener,noreferrer");
+    openArayExternalPopup(url);
     window.setTimeout(onClose, 0);
   }, [onClose, tabOnlyMessage, url]);
 
   const navigateTo = useCallback((newUrl: string) => {
     if (isArayExternalTabOnly(newUrl)) {
-      window.open(newUrl, "_blank", "noopener,noreferrer");
+      openArayExternalPopup(newUrl);
       return;
     }
     setUrl(newUrl);

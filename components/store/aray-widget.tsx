@@ -45,7 +45,7 @@ import {
   type ArayEmbeddedMessengerContext,
   type ArayEmbeddedMessengerPrompt,
 } from "@/components/store/aray-embedded-messenger";
-import { isArayExternalTabOnly } from "@/lib/aray-navigation";
+import { isArayExternalTabOnly, openArayExternalPopup } from "@/lib/aray-navigation";
 import { createArayMeetingUrl, createStableArayNumber, formatArayPublicNumber } from "@/lib/aray-communication-identity";
 
 const ARAY_WIDGET_SOURCE = createAraySyncSource("aray-widget");
@@ -997,6 +997,28 @@ function ArayPhoneShortcutPad({
       },
     },
     {
+      key: "max",
+      label: "MAX",
+      hint: "браузер",
+      logo: "MX",
+      accent: "hsl(214 94% 58%)",
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "https://web.max.ru/", label: "MAX", icon: "chat" });
+      },
+    },
+    {
+      key: "vk",
+      label: "VK",
+      hint: "браузер",
+      logo: "VK",
+      accent: "hsl(212 88% 56%)",
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "https://vk.com/im", label: "VK", icon: "chat" });
+      },
+    },
+    {
       key: "email",
       label: "Почта",
       hint: "центр",
@@ -1029,6 +1051,11 @@ function ArayPhoneShortcutPad({
         onStartOwnVideo();
       },
     },
+  ];
+  const integrationHighlights = [
+    { label: "CRM", hint: "диалоги и лиды", icon: <Target className="h-3.5 w-3.5" /> },
+    { label: "AI", hint: "ответ и шаг", icon: <Bot className="h-3.5 w-3.5" /> },
+    { label: "Задачи", hint: "контроль", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
   ];
 
   if (compact) {
@@ -1125,6 +1152,23 @@ function ArayPhoneShortcutPad({
                 </span>
               </span>
             </button>
+          ))}
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-1">
+          {integrationHighlights.map((item) => (
+            <div
+              key={item.label}
+              className="min-w-0 rounded-2xl px-2 py-1.5"
+              style={{ background: "hsl(var(--foreground) / 0.035)", border: "1px solid hsl(var(--foreground) / 0.05)" }}
+            >
+              <span className="flex items-center gap-1 text-[9px] font-bold leading-none" style={{ color: txt }}>
+                {item.icon}
+                <span className="truncate">{item.label}</span>
+              </span>
+              <span className="mt-1 block truncate text-[8px] font-semibold leading-none" style={{ color: txtSub }}>
+                {item.hint}
+              </span>
+            </div>
           ))}
         </div>
         {dialOpen && (
@@ -1337,6 +1381,26 @@ function ArayPhoneShortcutPad({
                 </span>
               </span>
             </button>
+          ))}
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-1.5">
+          {integrationHighlights.map((item) => (
+            <div
+              key={item.label}
+              className="min-w-0 rounded-[15px] px-2 py-2"
+              style={{
+                background: "linear-gradient(180deg, hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.02))",
+                border: "1px solid hsl(var(--foreground) / 0.055)",
+              }}
+            >
+              <span className="flex items-center gap-1.5 text-[9.5px] font-bold leading-none" style={{ color: txt }}>
+                {item.icon}
+                <span className="truncate">{item.label}</span>
+              </span>
+              <span className="mt-1 block truncate text-[8.5px] font-semibold leading-none" style={{ color: txtSub }}>
+                {item.hint}
+              </span>
+            </div>
           ))}
         </div>
       </div>
@@ -3778,10 +3842,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       return "embedded";
     }
 
-    const opened = window.open(target, "_blank", "noopener,noreferrer");
+    const opened = openArayExternalPopup(target);
     if (!opened) return null;
-    try { opened.opener = null; } catch {}
-    pushLiveAction("Открыл внешнюю вкладку", target, "open");
+    pushLiveAction("Открыл внешнее окно", target, "open");
     return "tab";
   }, [pushLiveAction, router]);
 

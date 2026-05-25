@@ -117,6 +117,9 @@ check(
     "https://web.telegram.org/a/",
     "https://web.whatsapp.com/",
     "https://zangi.com/",
+    "https://web.max.ru/",
+    "https://vk.com/im",
+    "integrationHighlights",
     "/admin/email",
     "/admin/notifications",
   ]),
@@ -125,9 +128,10 @@ check(
 
 check(
   "External messenger login fallback is protected",
-  includesAll("lib/aray-navigation.ts", ["telegram.org", "whatsapp.com", "zangi.com"]) &&
-    includesAll("components/store/aray-browser.tsx", ["isArayExternalTabOnly(parsed.href)", "открывается во вкладке браузера"]),
-  "Telegram, WhatsApp, and Zangi should not render broken iframe login pages inside ARAY.",
+  includesAll("lib/aray-navigation.ts", ["telegram.org", "whatsapp.com", "zangi.com", "max.ru", "vk.com"]) &&
+    includesAll("lib/aray-navigation.ts", ["openArayExternalPopup", "popup=yes", "width=", "height="]) &&
+    includesAll("components/store/aray-browser.tsx", ["openArayExternalPopup", "открывается в отдельном окне браузера"]),
+  "Telegram, WhatsApp, Zangi, MAX, and VK should open as browser popup windows instead of broken iframe login pages.",
 );
 
 check(
