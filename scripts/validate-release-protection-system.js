@@ -110,6 +110,20 @@ check(
 );
 
 check(
+  "AR Phone external channel hub is protected",
+  includesAll("components/store/aray-widget.tsx", [
+    "data-aray-phone-integrations",
+    "data-aray-phone-channel",
+    "https://web.telegram.org/a/",
+    "https://web.whatsapp.com/",
+    "https://zangi.com/",
+    "/admin/email",
+    "/admin/notifications",
+  ]),
+  "AR Phone must keep the external channel launcher in release checks.",
+);
+
+check(
   "Text encoding guard is in quality",
   Boolean(packageJson.scripts?.["text:check"]) &&
     qualityGate.includes("validate-text-encoding-guard.js") &&

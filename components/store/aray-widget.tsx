@@ -962,6 +962,68 @@ function ArayPhoneShortcutPad({
       onClick: () => onAction(ARAY_PHONE_ACCOUNT_ACTION),
     },
   ];
+  const externalChannels = [
+    {
+      label: "Telegram",
+      hint: "web",
+      logo: "TG",
+      accent: "hsl(200 92% 55%)",
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "https://web.telegram.org/a/", label: "Telegram", icon: "chat" });
+      },
+    },
+    {
+      label: "WhatsApp",
+      hint: "web",
+      logo: "WA",
+      accent: "hsl(142 70% 45%)",
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "https://web.whatsapp.com/", label: "WhatsApp", icon: "chat" });
+      },
+    },
+    {
+      label: "Zangi",
+      hint: "app",
+      logo: "ZA",
+      accent: "hsl(258 86% 66%)",
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "https://zangi.com/", label: "Zangi", icon: "chat" });
+      },
+    },
+    {
+      label: "Почта",
+      hint: "email",
+      logo: "@",
+      accent: primaryColor,
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "/admin/email", label: "Почта", icon: "direct" });
+      },
+    },
+    {
+      label: "Рассылки",
+      hint: "push",
+      logo: "RS",
+      accent: "hsl(32 95% 52%)",
+      onClick: () => {
+        setDialOpen(false);
+        onAction({ type: "navigate", url: "/admin/notifications", label: "Рассылки", icon: "direct" });
+      },
+    },
+    {
+      label: "Meet",
+      hint: "video",
+      logo: "JV",
+      accent: "hsl(184 78% 44%)",
+      onClick: () => {
+        setDialOpen(false);
+        onStartOwnVideo();
+      },
+    },
+  ];
 
   if (compact) {
     return (
@@ -1020,6 +1082,26 @@ function ArayPhoneShortcutPad({
             >
               {item.icon}
               <span className="truncate">{item.label}</span>
+            </button>
+          ))}
+        </div>
+        <div data-aray-phone-integrations className="mt-2 grid grid-cols-6 gap-1">
+          {externalChannels.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              data-aray-phone-channel={item.label.toLowerCase()}
+              onClick={item.onClick}
+              className="flex h-9 min-w-0 items-center justify-center rounded-2xl text-[9px] font-black tracking-normal transition hover:scale-[1.03] active:scale-[0.97]"
+              style={{
+                color: item.accent,
+                background: "hsl(var(--background) / 0.48)",
+                border: `1px solid ${primaryBorder}`,
+              }}
+              aria-label={`Открыть ${item.label}`}
+              title={`${item.label} · ${item.hint}`}
+            >
+              {item.logo}
             </button>
           ))}
         </div>
@@ -1185,6 +1267,56 @@ function ArayPhoneShortcutPad({
             <span className="truncate">{item.label}</span>
           </button>
         ))}
+      </div>
+      <div
+        data-aray-phone-integrations
+        className="mt-2 rounded-[20px] p-2"
+        style={{
+          background: "hsl(var(--background) / 0.48)",
+          border: `1px solid ${primaryBorder}`,
+        }}
+      >
+        <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em]" style={{ color: txtSub }}>
+            Внешние каналы
+          </span>
+          <span className="truncate text-[9.5px] font-semibold" style={{ color: primaryColor }}>
+            через Арай
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {externalChannels.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              data-aray-phone-channel={item.label.toLowerCase()}
+              onClick={item.onClick}
+              className="group flex min-h-11 min-w-0 items-center gap-2 rounded-[16px] px-2 text-left transition hover:bg-muted/40 active:scale-[0.98]"
+              style={{ border: "1px solid hsl(var(--foreground) / 0.055)" }}
+              aria-label={`Открыть ${item.label}`}
+              title={`${item.label} · ${item.hint}`}
+            >
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-2xl text-[9px] font-black tracking-normal transition group-hover:scale-105"
+                style={{
+                  color: item.accent,
+                  background: "hsl(var(--foreground) / 0.045)",
+                  boxShadow: `inset 0 0 0 1px ${item.accent}`,
+                }}
+              >
+                {item.logo}
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[10.5px] font-bold leading-none" style={{ color: txt }}>
+                  {item.label}
+                </span>
+                <span className="mt-1 block truncate text-[9px] font-semibold leading-none" style={{ color: txtSub }}>
+                  {item.hint}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
       {dialOpen && (
         <div

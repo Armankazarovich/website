@@ -199,12 +199,26 @@ check(
 const productPage = read("app/(store)/product/[slug]/page.tsx");
 const productActions = read("components/store/product-page-actions.tsx");
 const contactRoute = read("app/api/contact/route.ts");
+const arayWidget = read("components/store/aray-widget.tsx");
 check(
   "Product page has smart seller controls",
   includesAll(productPage, ["ProductSellerPanel", "ProductSmartSummary", "ProductShareButton", "productSku", "smartTags"]) &&
     includesAll(productActions, ["ProductShareButton", "ProductSellerPanel", "ProductSmartSummary", "CHANNELS", "Telegram", "WhatsApp", "Zangi", "Почта", "data-product-seller-panel"]) &&
     includesAll(contactRoute, ["source === \"PRODUCT\"", "productTitle", "productSku", "Укажите телефон, email или вопрос"]),
   "Product pages need share, SKU, smart tags, CRM lead capture, and a first omnichannel ARAY entry.",
+);
+check(
+  "AR Phone has external channel hub",
+  includesAll(arayWidget, [
+    "data-aray-phone-integrations",
+    "data-aray-phone-channel",
+    "https://web.telegram.org/a/",
+    "https://web.whatsapp.com/",
+    "https://zangi.com/",
+    "/admin/email",
+    "/admin/notifications",
+  ]),
+  "AR Phone should expose Telegram, WhatsApp, Zangi, email, mailings, and video entry points in one panel.",
 );
 
 const embeddedMessenger = read("components/store/aray-embedded-messenger.tsx");
@@ -225,7 +239,6 @@ check(
   "Long AI/search links must not break the chat bubble.",
 );
 
-const arayWidget = read("components/store/aray-widget.tsx");
 check(
   "ARAY widget routes phone and video into workspace",
   includesAll(arayWidget, [
