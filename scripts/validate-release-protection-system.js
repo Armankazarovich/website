@@ -67,6 +67,17 @@ check(
 );
 
 check(
+  "Safe build releases all local Next runtimes",
+  includesAll("scripts/next-build-safe.js", [
+    "next\\\\dist\\\\bin\\\\next",
+    "next\\\\dist\\\\server\\\\lib\\\\start-server\\.js",
+    "scripts\\\\next-dev-stable\\.js",
+    "Stop-Process",
+  ]),
+  "Windows builds must stop dev/start Next processes before Prisma generate.",
+);
+
+check(
   "Architecture levels guard is in quality",
   qualityGate.includes("validate-system-architecture-levels.js") &&
     Boolean(packageJson.scripts?.["architecture:levels"]),

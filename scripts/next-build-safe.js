@@ -77,6 +77,7 @@ function localNextProcesses() {
       const isThisProject = normalizedCommand.includes(normalizedRoot);
       const isNextRuntime =
         /next\\dist\\bin\\next/i.test(normalizedCommand) ||
+        /next\\dist\\server\\lib\\start-server\.js/i.test(normalizedCommand) ||
         /scripts\\next-dev-stable\.js/i.test(normalizedCommand);
       return processInfo.pid && isThisProject && isNextRuntime;
     })
