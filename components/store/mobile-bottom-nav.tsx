@@ -43,6 +43,7 @@ interface NavItemProps {
   customLabel?: string; // например, totalPrice вместо "Корзина"
   onClick?: () => void;
   href?: string;
+  dataCartIcon?: boolean;
 }
 
 function NavItem({
@@ -53,9 +54,11 @@ function NavItem({
   customLabel,
   onClick,
   href,
+  dataCartIcon,
 }: NavItemProps) {
   const content = (
     <motion.div
+      data-cart-icon={dataCartIcon ? "true" : undefined}
       whileTap={{ scale: 0.92 }}
       transition={{ type: "spring", stiffness: 500, damping: 18 }}
       className={`relative flex flex-col items-center gap-0.5 min-w-[52px] px-2 py-1.5 ${
@@ -295,6 +298,7 @@ export function MobileBottomNav({
               cartOpen || pathname === "/cart" || pathname === "/checkout"
             }
             badge={mounted ? totalItems : undefined}
+            dataCartIcon
             customLabel={
               mounted && totalItems > 0 ? formatPrice(totalPrice) : undefined
             }

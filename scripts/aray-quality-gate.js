@@ -118,8 +118,10 @@ function scanSecrets() {
 
 run("Diff whitespace check", "git", ["diff", "--check"]);
 run("Design system guard", "node", ["scripts/validate-design-system.js"]);
+run("Release protection system guard", "node", ["scripts/validate-release-protection-system.js"]);
 run("Agent registry validation", "node", ["scripts/validate-aray-agent-registry.js"]);
 run("Architecture automation guard", "node", ["scripts/aray-architecture-audit.js"]);
+run("System architecture level guard", "node", ["scripts/validate-system-architecture-levels.js"]);
 run("Section approval protocol guard", "node", ["scripts/validate-section-approval-protocol.js"]);
 run("Public edit target registry guard", "node", ["scripts/validate-public-edit-targets.js"]);
 run("ARAY service package guard", "node", ["scripts/validate-aray-service-packages.js"]);
@@ -131,6 +133,8 @@ run("Admin navigation model validation", "node", ["scripts/validate-admin-naviga
 run("Admin UI integrity guard", "node", ["scripts/validate-admin-ui-integrity.js"]);
 run("Admin responsive guard", "node", ["scripts/validate-admin-responsive.js"]);
 run("Admin performance guard", "node", ["scripts/validate-admin-performance.js"]);
+run("Cart and checkout flow guard", "node", ["scripts/validate-cart-checkout-flow.js"]);
+run("Release readiness guard", "node", ["scripts/validate-release-readiness.js"]);
 run("Store stories guard", "node", ["scripts/validate-store-stories.js"]);
 run("Content tools guard", "node", ["scripts/validate-content-tools.js"]);
 run("TypeScript check", "npx", ["tsc", "--noEmit"]);

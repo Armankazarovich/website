@@ -6,8 +6,10 @@ import { clampArayPwaIconSize } from "@/lib/aray-pwa-icon";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 
-const DEFAULT_SITE_LOGO = "/logo.png";
+const DEFAULT_SITE_LOGO = "/icons/icon-512x512.png";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+const PILORUS_PWA_APPS = new Set(["", "pilorus-site", "pilorus-catalog"]);
+const PILORUS_HOST_PARTS = ["pilo-rus", "pilorus"];
 
 function cleanLogoUrl(value: unknown) {
   if (typeof value !== "string") return "";
@@ -47,14 +49,30 @@ async function resolveTenantLogoUrl(req: NextRequest) {
 }
 
 async function resolveSiteLogoUrl(req: NextRequest) {
+  const appId = req.nextUrl.searchParams.get("app")?.trim() || "";
+  const explicitTenant = req.nextUrl.searchParams.get("tenant")?.trim();
+  const host = getRequestHost(req);
+  const isPilorusHost = !host || LOCAL_HOSTS.has(host) || PILORUS_HOST_PARTS.some((part) => host.includes(part));
+
+  if (!explicitTenant && PILORUS_PWA_APPS.has(appId) && isPilorusHost) {
+    return DEFAULT_SITE_LOGO;
+  }
+
   const settings = await getSiteSettings();
   return (
-    cleanLogoUrl(settings.pwa_logo_url) ||
-    cleanLogoUrl(settings.site_logo_url) ||
-    cleanLogoUrl(settings.logo_url) ||
+    normalizePwaLogoUrl(settings.pwa_logo_url) ||
+    normalizePwaLogoUrl(settings.site_logo_url) ||
+    normalizePwaLogoUrl(settings.logo_url) ||
     (await resolveTenantLogoUrl(req)) ||
     DEFAULT_SITE_LOGO
   );
+}
+
+function normalizePwaLogoUrl(value: unknown) {
+  const logoUrl = cleanLogoUrl(value);
+  if (!logoUrl) return "";
+  if (logoUrl === "/logo.png") return DEFAULT_SITE_LOGO;
+  return logoUrl;
 }
 
 function resolvePublicFilePath(src: string) {

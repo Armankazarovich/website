@@ -20,12 +20,12 @@ import {
   MicOff,
   MessageCircle,
   MessageSquare,
-  Paperclip,
   PhoneCall,
   Reply,
   RefreshCw,
   Search,
   Send,
+  Settings,
   Share2,
   SlidersHorizontal,
   Trash2,
@@ -75,6 +75,24 @@ type PrivateArayMessage = {
   createdAt: string;
   streaming?: boolean;
   actions?: InlineArayAction[];
+};
+
+type MessengerActionTileProps = {
+  icon: ReactNode;
+  label: string;
+  helper?: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+};
+
+type SmartMessengerAction = {
+  id: string;
+  label: string;
+  helper: string;
+  icon: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
 };
 
 type MessengerThread = {
@@ -218,6 +236,149 @@ function stripPrivateArayControlText(raw: string) {
     .replace(/Важные действия[^.]*\./gi, "")
     .replace(/\*\*(.*?)\*\*/g, "$1")
     .trim();
+}
+
+function safeMessengerHref(value: string) {
+  const href = value.trim();
+  if (!href) return null;
+  if (href.startsWith("/") && !href.startsWith("//")) return href;
+  try {
+    const parsed = new URL(href);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.toString();
+  } catch {}
+  return null;
+}
+
+function trimUrlToken(value: string) {
+  let href = value;
+  let suffix = "";
+  while (/[.,!?;:\]]$/.test(href)) {
+    suffix = `${href.slice(-1)}${suffix}`;
+    href = href.slice(0, -1);
+  }
+  return { href, suffix };
+}
+
+function compactMessengerUrlLabel(href: string) {
+  try {
+    const parsed = new URL(href, "https://pilorus.local");
+    if (href.startsWith("/")) return parsed.pathname.slice(0, 42) || "/";
+    const host = parsed.hostname.replace(/^www\./i, "");
+    return `Открыть ${host}`;
+  } catch {
+    return "Открыть ссылку";
+  }
+}
+
+function renderMessengerInline(text: string, keyPrefix: string): ReactNode[] {
+  const tokenPattern = /(\*\*[^*\n]+\*\*|`[^`\n]+`|\[[^\]\n]{1,140}\]\((?:https?:\/\/|\/)[^\s)]+\)|https?:\/\/[^\s<>()]+|\/[A-Za-z0-9][^\s<>()]*)/g;
+  const nodes: ReactNode[] = [];
+  let cursor = 0;
+  let index = 0;
+
+  for (const match of text.matchAll(tokenPattern)) {
+    const raw = match[0];
+    const start = match.index ?? 0;
+    if (start > cursor) nodes.push(text.slice(cursor, start));
+
+    const markdownLink = raw.match(/^\[([^\]\n]+)\]\(([^)]+)\)$/);
+    if (markdownLink) {
+      const href = safeMessengerHref(markdownLink[2]);
+      const label = markdownLink[1].trim().slice(0, 80) || compactMessengerUrlLabel(markdownLink[2]);
+      nodes.push(
+        href ? (
+          <a
+            key={`${keyPrefix}-link-${index}`}
+            href={href}
+            target={href.startsWith("/") ? undefined : "_blank"}
+            rel={href.startsWith("/") ? undefined : "noopener noreferrer"}
+            className="font-semibold text-primary underline decoration-primary/35 underline-offset-2 transition-colors hover:decoration-primary"
+          >
+            {label}
+          </a>
+        ) : label,
+      );
+    } else if (raw.startsWith("**") && raw.endsWith("**")) {
+      nodes.push(<strong key={`${keyPrefix}-strong-${index}`} className="font-semibold">{raw.slice(2, -2)}</strong>);
+    } else if (raw.startsWith("`") && raw.endsWith("`")) {
+      nodes.push(
+        <code key={`${keyPrefix}-code-${index}`} className="rounded bg-muted/45 px-1 py-0.5 font-mono text-[11px] text-primary">
+          {raw.slice(1, -1)}
+        </code>,
+      );
+    } else {
+      const { href: rawHref, suffix } = trimUrlToken(raw);
+      const href = safeMessengerHref(rawHref);
+      nodes.push(
+        href ? (
+          <a
+            key={`${keyPrefix}-url-${index}`}
+            href={href}
+            target={href.startsWith("/") ? undefined : "_blank"}
+            rel={href.startsWith("/") ? undefined : "noopener noreferrer"}
+            className="font-semibold text-primary underline decoration-primary/35 underline-offset-2 transition-colors hover:decoration-primary"
+          >
+            {compactMessengerUrlLabel(rawHref)}
+          </a>
+        ) : raw,
+      );
+      if (suffix) nodes.push(suffix);
+    }
+
+    cursor = start + raw.length;
+    index += 1;
+  }
+
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return nodes;
+}
+
+function MessengerMessageText({ text, fallback = "" }: { text: string; fallback?: string }) {
+  const value = text || fallback;
+  if (!value) return null;
+  const lines = value.split("\n");
+
+  return (
+    <span className="whitespace-pre-wrap break-words" style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}>
+      {lines.map((line, index) => (
+        <span key={`line-${index}`}>
+          {renderMessengerInline(line, `line-${index}`)}
+          {index < lines.length - 1 ? <br /> : null}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function MessengerActionTile({
+  icon,
+  label,
+  helper,
+  onClick,
+  disabled,
+  danger,
+}: MessengerActionTileProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex min-h-11 items-center gap-2 rounded-xl border px-2.5 text-left transition disabled:opacity-45",
+        danger
+          ? "border-destructive/25 bg-background/65 text-destructive hover:bg-destructive/10"
+          : "border-transparent bg-muted/20 text-foreground hover:bg-primary/10 hover:text-primary",
+      )}
+    >
+      <span className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl", danger ? "bg-destructive/10" : "bg-primary/10 text-primary")}>
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[11px] font-bold">{label}</span>
+        {helper ? <span className="block truncate text-[9.5px] font-normal text-muted-foreground">{helper}</span> : null}
+      </span>
+    </button>
+  );
 }
 
 function parseShowUrlPayload(raw: string): { url: string; title?: string } | null {
@@ -1535,6 +1696,69 @@ export function ArayEmbeddedMessenger({
   const meetingStatusText = selectedCallHref
     ? "Телефон, видео и приглашение без лишнего шума"
     : "Видео и приглашение готовы. Телефон клиента не указан.";
+  const smartMessengerActions = useMemo<SmartMessengerAction[]>(() => {
+    if (!selected) return [];
+    const actions: SmartMessengerAction[] = [
+      {
+        id: "next",
+        label: "Следующий шаг",
+        helper: "Арай решит",
+        icon: <ArayIcon size={18} id={`smart-next-${selected.id}`} />,
+        onClick: askArayForNextStep,
+        disabled: sending || privateArayBusy,
+      },
+      {
+        id: "reply",
+        label: draft.trim() ? "Улучшить ответ" : "Оформить ответ",
+        helper: draft.trim() ? "коротко и чисто" : "без воды",
+        icon: <MessageSquare className="h-3.5 w-3.5" />,
+        onClick: polishDraft,
+        disabled: sending || privateArayBusy,
+      },
+    ];
+
+    if ((selected.commerce?.pendingAmount || 0) > 0 || (selected.commerce?.unpaidOrderCount || 0) > 0) {
+      actions.splice(1, 0, {
+        id: "payment",
+        label: "Оплата",
+        helper: "счет и QR",
+        icon: <CreditCard className="h-3.5 w-3.5" />,
+        onClick: preparePaymentRequest,
+        disabled: sending || privateArayBusy,
+      });
+    } else if (selected.activityCount > 0) {
+      actions.push({
+        id: "history",
+        label: "История",
+        helper: `${selected.activityCount} событий`,
+        icon: <History className="h-3.5 w-3.5" />,
+        onClick: askArayForThreadSummary,
+        disabled: privateArayBusy,
+      });
+    }
+
+    actions.push({
+      id: "phone",
+      label: "AR Phone",
+      helper: selectedCallHref ? "звонок и видео" : "приглашение",
+      icon: <PhoneCall className="h-3.5 w-3.5" />,
+      onClick: openArayNumberPanel,
+      disabled: sending || privateArayBusy,
+    });
+
+    return actions.slice(0, 4);
+  }, [
+    askArayForNextStep,
+    askArayForThreadSummary,
+    draft,
+    openArayNumberPanel,
+    polishDraft,
+    preparePaymentRequest,
+    privateArayBusy,
+    selected,
+    selectedCallHref,
+    sending,
+  ]);
 
   useEffect(() => {
     if (showList || !selected) {
@@ -1906,8 +2130,8 @@ export function ArayEmbeddedMessenger({
                   <div className="mt-3 rounded-2xl border border-border/70 bg-background/80 p-2 shadow-[0_12px_34px_rgba(0,0,0,0.18)]">
                     <div className="mb-2 flex items-center justify-between gap-2 px-1">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-bold text-foreground">Управление диалогом</p>
-                        <p className="truncate text-[10px] text-muted-foreground">История, документы, CRM и безопасная очистка</p>
+                        <p className="text-[11px] font-bold text-foreground">Центр действий</p>
+                        <p className="truncate text-[10px] text-muted-foreground">Ответы, документы, CRM, связь и порядок в одном месте</p>
                       </div>
                       <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
                         {selected.activityCount} событий
@@ -1972,6 +2196,106 @@ export function ArayEmbeddedMessenger({
                         <Trash2 className="h-3.5 w-3.5 shrink-0" />
                         <span className="min-w-0 truncate">Удалить диалог</span>
                       </button>
+                    </div>
+                    <div className="-mx-0.5 mt-2 flex gap-1.5 overflow-x-auto px-0.5 pb-1">
+                      {QUICK_DRAFTS.map((item) => (
+                        <button
+                          key={item.label}
+                          type="button"
+                          onClick={() => {
+                            setDraft(item.text);
+                            setComposerRoute("person");
+                            setThreadSettingsOpen(false);
+                          }}
+                          className="shrink-0 rounded-full border border-border bg-muted/15 px-3 py-1.5 text-[10.5px] font-semibold text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-2 rounded-xl bg-muted/12 p-1.5">
+                      <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-semibold text-muted-foreground">
+                        <Settings className="h-3 w-3" />
+                        Продажи и работа
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <MessengerActionTile
+                          icon={<Wallet className="h-3.5 w-3.5" />}
+                          label="Кошелек"
+                          helper="оплаты и бонусы"
+                          onClick={explainWalletAndBonuses}
+                          disabled={sending || privateArayBusy}
+                        />
+                        <MessengerActionTile
+                          icon={<CreditCard className="h-3.5 w-3.5" />}
+                          label="Оплата"
+                          helper="счет, банк, QR"
+                          onClick={preparePaymentRequest}
+                          disabled={sending || privateArayBusy}
+                        />
+                        <MessengerActionTile
+                          icon={<ArayIcon size={18} id={`polish-center-${selected.id}`} />}
+                          label="Оформить ответ"
+                          helper="коротко и чисто"
+                          onClick={polishDraft}
+                          disabled={sending || privateArayBusy}
+                        />
+                        <MessengerActionTile
+                          icon={<CheckSquare className="h-3.5 w-3.5" />}
+                          label="В задачу"
+                          helper="поставить контроль"
+                          onClick={createTask}
+                          disabled={sending || privateArayBusy}
+                        />
+                        <MessengerActionTile
+                          icon={<MessageSquare className="h-3.5 w-3.5" />}
+                          label="Входящее"
+                          helper="со слов клиента"
+                          onClick={saveClientMessage}
+                          disabled={sending || privateArayBusy || !draft.trim()}
+                        />
+                        <MessengerActionTile
+                          icon={<FileText className="h-3.5 w-3.5" />}
+                          label="Смета"
+                          helper="в корзину после проверки"
+                          onClick={requestEstimateCart}
+                          disabled={sending || privateArayBusy}
+                        />
+                        <MessengerActionTile
+                          icon={<ExternalLink className="h-3.5 w-3.5" />}
+                          label="CRM"
+                          helper="карточка клиента"
+                          onClick={() => openArayTarget(`/admin/crm?leadId=${selected.id}`)}
+                          disabled={sending || privateArayBusy}
+                        />
+                        <MessengerActionTile
+                          icon={<ExternalLink className="h-3.5 w-3.5" />}
+                          label="Файлы"
+                          helper="медиа и PDF"
+                          onClick={() => openArayTarget("/admin/media")}
+                          disabled={sending || privateArayBusy}
+                        />
+                      </div>
+                    </div>
+                    <div className="mt-2 rounded-xl bg-muted/12 p-1.5">
+                      <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-semibold text-muted-foreground">
+                        <FileText className="h-3 w-3" />
+                        Документы
+                      </div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {DOCUMENT_DRAFTS.map((item) => (
+                          <button
+                            key={item.type}
+                            type="button"
+                            onClick={() => requestDocumentDraft(item.type)}
+                            disabled={sending || privateArayBusy}
+                            className="min-h-10 rounded-xl bg-background/65 px-2 text-left text-[11px] font-bold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
+                          >
+                            <span className="block truncate">{item.label}</span>
+                            <span className="block truncate text-[9px] font-normal text-muted-foreground">{item.hint}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     {deleteConfirmOpen && (
                       <div className="mt-2 rounded-xl border border-destructive/20 bg-background/75 p-2">
@@ -2081,16 +2405,16 @@ export function ArayEmbeddedMessenger({
                         </span>
                       )}
                       {assistant && <ArayIcon size={30} id={`messenger-${activity.id}`} />}
-                      <div className={cn("group/message flex max-w-[82%] flex-col gap-1", assistant && "max-w-[88%]")}>
+                      <div className={cn("group/message flex min-w-0 max-w-[82%] flex-col gap-1", assistant && "max-w-[88%]")}>
                         <div
                           className={cn(
-                            "rounded-2xl border px-3.5 py-2.5 text-[13px] leading-5 shadow-none",
+                            "min-w-0 rounded-2xl border px-3.5 py-2.5 text-[13px] leading-5 shadow-none",
                             fromClient && "rounded-tl-[5px] border-border bg-background/80 text-foreground",
                             direction === "manager" && "rounded-tr-[5px] border-primary/55 bg-primary/45 text-foreground",
                             assistant && "rounded-tl-[5px] border-border bg-muted/25 text-foreground",
                           )}
                         >
-                          <p className="whitespace-pre-wrap break-words">{stripPrefix(activity.text)}</p>
+                          <MessengerMessageText text={stripPrefix(activity.text)} />
                         </div>
                         <div className={cn(
                           "flex items-center gap-1",
@@ -2149,18 +2473,16 @@ export function ArayEmbeddedMessenger({
                       className={cn("flex items-end gap-2", fromUser ? "justify-end" : "justify-start")}
                     >
                       {!fromUser && <ArayIcon size={30} id={`private-inline-${message.id}`} />}
-                      <div className={cn("group/message flex max-w-[82%] flex-col gap-1", !fromUser && "max-w-[88%]")}>
+                      <div className={cn("group/message flex min-w-0 max-w-[82%] flex-col gap-1", !fromUser && "max-w-[88%]")}>
                         <div
                           className={cn(
-                            "rounded-2xl border px-3.5 py-2.5 text-[13px] leading-5 shadow-none",
+                            "min-w-0 rounded-2xl border px-3.5 py-2.5 text-[13px] leading-5 shadow-none",
                             fromUser
                               ? "rounded-tr-[5px] border-primary/55 bg-primary/45 text-foreground"
                               : "rounded-tl-[5px] border-border bg-muted/25 text-foreground",
                           )}
                         >
-                          <p className="whitespace-pre-wrap break-words">
-                            {message.text || (message.streaming ? "Думаю..." : "")}
-                          </p>
+                          <MessengerMessageText text={message.text} fallback={message.streaming ? "Думаю..." : ""} />
                           {!fromUser && message.actions?.length ? (
                             <div className="mt-2 flex flex-wrap gap-1.5">
                               {message.actions.map((action, index) => (
@@ -2483,9 +2805,7 @@ export function ArayEmbeddedMessenger({
                                 <span>{message.role === "user" ? "Вопрос" : "Приватный Арай"}</span>
                                 <span>{formatShortTime(message.createdAt)}</span>
                               </div>
-                              <p className="whitespace-pre-wrap break-words">
-                                {message.text || (message.streaming ? "Думаю..." : "")}
-                              </p>
+                              <MessengerMessageText text={message.text} fallback={message.streaming ? "Думаю..." : ""} />
                             </div>
                           </div>
                         ))}
@@ -2495,6 +2815,45 @@ export function ArayEmbeddedMessenger({
                 </motion.div>
               )}
             </AnimatePresence>
+            {smartMessengerActions.length > 0 && !threadSettingsOpen && !callStudioOpen && (
+              <div className="mb-2 rounded-2xl border border-primary/15 bg-primary/[0.045] p-2">
+                <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
+                  <span className="inline-flex min-w-0 items-center gap-1.5 text-[10.5px] font-bold text-foreground">
+                    <ArayIcon size={15} id={`smart-strip-${selected.id}`} />
+                    <span className="truncate">Арай предложил</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setThreadSettingsOpen(true);
+                      setToolsOpen(false);
+                    }}
+                    className="shrink-0 rounded-full bg-background/55 px-2 py-1 text-[10px] font-semibold text-muted-foreground transition hover:text-primary"
+                  >
+                    Все
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {smartMessengerActions.map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={action.onClick}
+                      disabled={action.disabled}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-background/60 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
+                    >
+                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                        {action.icon}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate">{action.label}</span>
+                        <span className="block truncate text-[9px] font-normal text-muted-foreground">{action.helper}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <button
                 type="button"
@@ -2529,15 +2888,19 @@ export function ArayEmbeddedMessenger({
               />
               <button
                 type="button"
-                onClick={() => setToolsOpen((value) => !value)}
+                onClick={() => {
+                  setThreadSettingsOpen((value) => !value);
+                  setToolsOpen(false);
+                }}
                 className={cn(
                   "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted/15 text-muted-foreground transition hover:border-primary/45 hover:text-primary disabled:opacity-45",
-                  toolsOpen && "border-primary/55 bg-primary/10 text-primary",
+                  threadSettingsOpen && "border-primary/55 bg-primary/10 text-primary",
                 )}
-                aria-label="Действия, документы и быстрые ответы"
+                aria-label="Центр действий диалога"
+                title="Центр действий"
                 disabled={sending || privateArayBusy}
               >
-                <Paperclip className="h-4 w-4" />
+                <Settings className="h-4 w-4" />
               </button>
               <button
                 type="button"

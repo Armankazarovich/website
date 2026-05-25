@@ -340,7 +340,8 @@ export function ArayBrowser({ initialUrl, title, onClose, pendingAction, isMobil
           className="w-full h-full border-0"
           onLoad={() => setLoading(false)}
           title="Арай — просмотр страницы"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-navigation"
+          allow="camera; microphone; fullscreen; display-capture; autoplay; clipboard-write"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-navigation allow-popups allow-presentation allow-modals"
         />
 
         {/* Указатель "Нажми сюда" */}

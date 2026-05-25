@@ -1298,6 +1298,15 @@ function OrdersKanban({ search }: { search: string }) {
     return acc;
   }, {} as Record<string, OrderCard[]>);
 
+  useEffect(() => {
+    if (orders.length === 0) return;
+    if (orders.some((order) => order.status === mobileOrderStage)) return;
+    const firstStageWithOrders = ORDER_STAGES.find((stage) => orders.some((order) => order.status === stage.key));
+    if (firstStageWithOrders && firstStageWithOrders.key !== mobileOrderStage) {
+      setMobileOrderStage(firstStageWithOrders.key);
+    }
+  }, [orders, mobileOrderStage]);
+
   const totalRevenue = orders
     .filter(o => ["DELIVERED", "COMPLETED"].includes(o.status))
     .reduce((s, o) => s + Number(o.totalAmount), 0);
@@ -1307,7 +1316,7 @@ function OrdersKanban({ search }: { search: string }) {
   return (
     <div className="flex flex-col h-full">
       {/* Статистика */}
-      <div className="arayglass-grid-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
+      <div className="arayglass-grid-metrics crm-mobile-metrics px-4 sm:px-5 py-3 border-b border-primary/[0.08] flex-shrink-0">
         {[
           { label: "Всего заказов", value: orders.length.toString(), icon: ShoppingBag },
           { label: "В работе", value: activeOrders.toString(), icon: TrendingUp },
@@ -1332,7 +1341,8 @@ function OrdersKanban({ search }: { search: string }) {
           className="flex min-h-11 max-w-full items-center justify-center gap-2 rounded-xl border border-primary/15 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05] disabled:opacity-50"
         >
           {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4 arayglass-icon" />}
-          Обновить лиды из заказов
+          <span className="sm:hidden">Обновить лиды</span>
+          <span className="hidden sm:inline">Обновить лиды из заказов</span>
         </button>
         {syncResult && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-500 dark:text-emerald-400 font-medium"><CheckCircle2 className="w-4 h-4 shrink-0" /> {syncResult}</span>
@@ -1354,7 +1364,7 @@ function OrdersKanban({ search }: { search: string }) {
       ) : (
         <>
           {/* Мобильный переключатель этапов заказов */}
-          <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
+          <div className="crm-mobile-stage-strip sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
             {ORDER_STAGES.map(s => {
               const cnt = (ordersByStatus[s.key] || []).length;
               return (
@@ -1369,7 +1379,7 @@ function OrdersKanban({ search }: { search: string }) {
           </div>
 
           {/* Мобильный вид — одна колонка */}
-          <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] space-y-2.5">
+          <div className="crm-mobile-scroll-area sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))] space-y-2.5">
             {(ordersByStatus[mobileOrderStage] || []).map(order => (
               <OrderKanbanCard key={order.id} order={order} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onClick={setSelectedOrder} />
             ))}
@@ -1633,7 +1643,7 @@ export function CrmClient() {
   };
 
   return (
-    <div className="crm-admin-scope flex flex-col h-[calc(100dvh-148px)] lg:h-[calc(100vh-64px)] overflow-hidden">
+    <div className="crm-admin-scope flex flex-col h-[calc(100dvh-172px)] sm:h-[calc(100dvh-148px)] lg:h-[calc(100vh-64px)] overflow-hidden">
       {/* Топ-бар */}
       <div className="px-4 pt-4 pb-0 flex-shrink-0">
         <div className="mb-3 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -1729,7 +1739,7 @@ export function CrmClient() {
           )}
 
           {/* Фильтр по источнику */}
-          <div className="flex items-center gap-1.5 px-4 py-2 border-b border-primary/[0.08] overflow-x-auto scrollbar-hide flex-shrink-0">
+          <div className="crm-mobile-stage-strip flex items-center gap-1.5 px-4 py-2 border-b border-primary/[0.08] overflow-x-auto scrollbar-hide flex-shrink-0">
             {[{ key: "ALL", label: "Все" }, ...Object.entries(SOURCE_LABELS).map(([k, v]) => ({ key: k, label: v }))].map(s => {
               const isActive = sourceFilter === s.key;
               return (
@@ -1753,7 +1763,7 @@ export function CrmClient() {
           ) : (
             <>
               {/* Мобильный переключатель этапов */}
-              <div className="sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
+              <div className="crm-mobile-stage-strip sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
                 {STAGES.map(s => {
                   const cnt = (leadsByStage[s.key] || []).length;
                   return (
@@ -1771,7 +1781,7 @@ export function CrmClient() {
               </div>
 
               {/* Мобильный вид — одна колонка */}
-              <div className="sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
+              <div className="crm-mobile-scroll-area sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
                 {STAGES.filter(s => s.key === mobileStage).map(stage => {
                   const stageleads = leadsByStage[stage.key] || [];
                   const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);

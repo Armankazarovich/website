@@ -18,7 +18,6 @@ export function PwaLaunchSplash() {
   const searchParams = useSearchParams();
   const context = resolvePwaInstallContext(pathname || "/", searchParams);
   const iconSrc = getPwaIconSrc(context, 192);
-  const splashSessionKey = `${SPLASH_SESSION_KEY}:${context.id}`;
   const subtitle = context.iconKind === "aray"
     ? "бизнес-платформа"
     : context.id.includes("catalog")
@@ -29,16 +28,16 @@ export function PwaLaunchSplash() {
     if (!isStandaloneApp()) return;
 
     try {
-      if (window.sessionStorage.getItem(splashSessionKey) === "1") return;
-      window.sessionStorage.setItem(splashSessionKey, "1");
+      if (window.sessionStorage.getItem(SPLASH_SESSION_KEY) === "1") return;
+      window.sessionStorage.setItem(SPLASH_SESSION_KEY, "1");
     } catch {
       // The launch screen is decorative; storage failures should not block the app.
     }
 
     setVisible(true);
-    const hideTimer = window.setTimeout(() => setVisible(false), 1150);
+    const hideTimer = window.setTimeout(() => setVisible(false), 720);
     return () => window.clearTimeout(hideTimer);
-  }, [splashSessionKey]);
+  }, []);
 
   if (!visible) return null;
 

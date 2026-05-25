@@ -139,6 +139,8 @@ type ArayLiveAction = {
   kind: "open" | "show" | "write" | "confirm" | "voice" | "file";
 };
 
+const SILENT_LIVE_ACTION_LABELS = new Set(["ARAY открыт", "AR Phone открыт"]);
+
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -2656,6 +2658,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     detail?: string,
     kind: ArayLiveAction["kind"] = "show",
   ) => {
+    if (SILENT_LIVE_ACTION_LABELS.has(label)) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     setLiveActions((current) => [...current.slice(-3), { id, label, detail, kind }]);
     window.setTimeout(() => {
@@ -3293,7 +3296,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
 
   const openEmbeddedMessenger = useCallback((query?: string) => {
     const cleanQuery = query?.trim() || "";
-    setEmbeddedMessengerQuery(cleanQuery);
+    setEmbeddedMessengerQuery((current) => {
+      if (cleanQuery && current === cleanQuery) {
+        window.setTimeout(() => setEmbeddedMessengerQuery(cleanQuery), 0);
+        return "";
+      }
+      return cleanQuery;
+    });
     setArayWorkspaceView("messenger");
     setVisible(true);
     openArayPanel();
@@ -3309,9 +3318,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       openEmbeddedMessenger();
       return;
     }
+    const digits = clean.replace(/\D/g, "");
+    const dial = clean.startsWith("AR") || digits.length < 8
+      ? clean
+      : `AR ${digits.slice(-8, -4)} ${digits.slice(-4, -2)} ${digits.slice(-2)}`;
     openArayPhoneHome();
-    openEmbeddedMessenger(`__aray_dial__:${clean}`);
-    pushLiveAction("Набираю внутренний номер", clean, "open");
+    openEmbeddedMessenger(`__aray_dial__:${dial}`);
+    pushLiveAction("Набираю внутренний номер", dial, "open");
   }, [openArayPhoneHome, openEmbeddedMessenger, pushLiveAction]);
 
   useEffect(() => {
@@ -3394,10 +3407,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     try {
       await writeArayClipboardText(`Номер: ${publicNumber}\nВидео: ${meetingUrl}`);
     } catch {}
-    if (typeof window !== "undefined") {
-      window.open(meetingUrl, "_blank", "noopener,noreferrer");
-    }
-    showVoiceNotice("Открыл личную видеовстречу AR Phone");
+    setBrowserAction(null);
+    setBrowserUrl(meetingUrl);
+    setBrowserOpen(true);
+    showVoiceNotice("Открыл видеошлюз AR Phone");
     pushLiveAction("Открыл видео AR Phone", publicNumber, "open");
   }, [arayPhoneOwnerNumber, arayPhoneOwnerNumberReady, openArayPhoneHome, pushLiveAction, showVoiceNotice]);
 

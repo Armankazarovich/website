@@ -286,8 +286,8 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 priority
               />
             </div>
-            <div className="hidden min-[560px]:flex flex-col gap-0">
-              <p className="font-display font-bold text-lg leading-none text-foreground tracking-wide">
+            <div className="flex min-w-0 flex-col gap-0">
+              <p className="font-display text-base font-bold leading-none tracking-wide text-foreground sm:text-lg">
                 ПилоРус
               </p>
               {/* Кнопка "Работаем" с popup расписания — только десктоп */}

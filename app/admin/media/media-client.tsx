@@ -309,7 +309,7 @@ export function MediaClient({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [search, setSearch] = useState("");
-  const [folder, setFolder] = useState<string>(pickerMode ? (initialFolder ?? "products") : "all");
+  const [folder, setFolder] = useState<string>("all");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [selected, setSelected] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
@@ -361,13 +361,23 @@ export function MediaClient({
     { value: "videos", label: "Видео", count: files.filter((file) => file.kind === "video").length },
   ];
 
+  function acceptsPickerKind(file: MediaFile) {
+    if (pickerMode) {
+      if (pickerKind === "image" && file.kind !== "image") return false;
+      if (pickerKind === "video" && file.kind !== "video") return false;
+      if (pickerKind === "all" && file.kind !== "image" && file.kind !== "video") return false;
+    }
+    return true;
+  }
+
+  function resolveUploadFolder(fileType = "") {
+    if (folder !== "all") return folder;
+    return initialFolder ?? (fileType.startsWith("video/") || pickerKind === "video" ? "videos" : "products");
+  }
+
   // Filter
   const filtered = files.filter((f) => {
-    if (pickerMode) {
-      if (pickerKind === "image" && f.kind !== "image") return false;
-      if (pickerKind === "video" && f.kind !== "video") return false;
-      if (pickerKind === "all" && f.kind !== "image" && f.kind !== "video") return false;
-    }
+    if (!acceptsPickerKind(f)) return false;
     const needle = search.trim().toLowerCase();
     const matchFolder = folder === "all" || f.folder === folder;
     const matchSearch = !needle || f.filename.toLowerCase().includes(needle) ||
@@ -382,9 +392,17 @@ export function MediaClient({
       (quickFilter === "images" && f.kind === "image") ||
       (quickFilter === "videos" && f.kind === "video");
     return matchFolder && matchSearch && matchQuick;
+  }).sort((a, b) => {
+    if (pickerMode && folder === "all" && initialFolder) {
+      const preferredFolderDiff = Number(b.folder === initialFolder) - Number(a.folder === initialFolder);
+      if (preferredFolderDiff !== 0) return preferredFolderDiff;
+    }
+    return b.mtime - a.mtime;
   });
   const visibleFiles = filtered.slice(0, renderLimit);
   const hasMoreFiles = renderLimit < filtered.length;
+  const uploadTargetFolder = resolveUploadFolder();
+  const canResetMediaFilters = folder !== "all" || quickFilter !== "all" || search.trim().length > 0;
 
   useEffect(() => {
     setRenderLimit(MEDIA_BATCH);
@@ -392,6 +410,12 @@ export function MediaClient({
 
   const folders = Array.from(new Set(["all", initialFolder, ...files.map((f) => f.folder)].filter(Boolean) as string[]))
     .sort((a, b) => {
+      if (a === "all") return -1;
+      if (b === "all") return 1;
+      if (pickerMode && initialFolder) {
+        if (a === initialFolder) return -1;
+        if (b === initialFolder) return 1;
+      }
       const ai = FOLDER_ORDER.indexOf(a);
       const bi = FOLDER_ORDER.indexOf(b);
       if (ai === -1 && bi === -1) return a.localeCompare(b);
@@ -413,10 +437,7 @@ export function MediaClient({
     setUploadError("");
     const fd = new FormData();
     fd.append("file", file);
-    const targetFolder = folder === "all"
-      ? initialFolder ?? (file.type.startsWith("video/") ? "videos" : "products")
-      : folder;
-    fd.append("folder", targetFolder);
+    fd.append("folder", resolveUploadFolder(file.type));
 
     try {
       const response = await fetch("/api/admin/upload", { method: "POST", body: fd });
@@ -661,11 +682,11 @@ export function MediaClient({
             {uploading
               ? "Загружаем..."
               : pickerMode
-              ? "Перетащите фото сюда — оно сразу добавится к товару"
+              ? "Перетащите медиа сюда — оно сразу попадёт в нужную папку"
               : "Перетащите фото или видео, либо нажмите для выбора"}
           </p>
           <p className="text-xs">
-            Фото до 25MB · видео MP4/WebM/MOV до 80MB · папка: {folderLabel(folder === "all" ? "products" : folder)}
+            Фото до 25MB · видео MP4/WebM/MOV до 80MB · папка: {folderLabel(uploadTargetFolder)}
           </p>
         </div>
       </div>
@@ -701,7 +722,7 @@ export function MediaClient({
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder={pickerMode ? "Найти фото по товару, ALT или имени файла..." : "Найти файл, товар, категорию или ALT..."}
+            placeholder={pickerMode ? "Найти медиа по товару, ALT или имени файла..." : "Найти файл, товар, категорию или ALT..."}
             className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border bg-background/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-colors"
           />
           {search && (
@@ -720,7 +741,7 @@ export function MediaClient({
       {/* Filters */}
       <div className="space-y-2 rounded-2xl border border-border bg-card p-3">
         {!pickerMode && (
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="scrollbar-none flex gap-1.5 overflow-x-auto">
             {quickFilters.map((item) => (
               <button
                 key={item.value}
@@ -741,7 +762,7 @@ export function MediaClient({
             ))}
           </div>
         )}
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
+        <div className="scrollbar-none flex gap-1.5 overflow-x-auto">
           {folders.map((f) => (
             <button
               key={f}
@@ -771,9 +792,33 @@ export function MediaClient({
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
           <FolderOpen className="w-10 h-10 mx-auto mb-3 opacity-30" />
-          <p>{search ? "Ничего не найдено" : "Нет файлов"}</p>
+          <p className="text-sm font-semibold text-foreground">
+            {search
+              ? "Ничего не найдено"
+              : folder !== "all"
+              ? `В папке «${folderLabel(folder)}» пока пусто`
+              : "Нет файлов"}
+          </p>
+          {pickerMode && folder === "all" && initialFolder && (
+            <p className="mt-1 max-w-sm text-xs">
+              Новые файлы загрузятся в папку «{folderLabel(initialFolder)}», а список показывает подходящие фото и видео из всей библиотеки.
+            </p>
+          )}
+          {canResetMediaFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setFolder("all");
+                setQuickFilter("all");
+                setSearch("");
+              }}
+              className="mt-4 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-primary/30 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+            >
+              Показать все медиа
+            </button>
+          )}
         </div>
       ) : (
         <div className={`grid gap-3 ${pickerMode ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-4" : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"}`}>
@@ -805,7 +850,7 @@ export function MediaClient({
           </p>
           <button
             onClick={() => setRenderLimit((value) => value + MEDIA_BATCH)}
-            className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
           >
             Показать ещё {Math.min(MEDIA_BATCH, filtered.length - visibleFiles.length)}
           </button>

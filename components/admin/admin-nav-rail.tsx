@@ -133,6 +133,7 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [arayWorkspaceOpen, setArayWorkspaceOpen] = useState(false);
   const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingHrefRef = useRef<string | null>(null);
   const shiftedGroup = pinnedGroup;
 
   // ── Фильтрация по роли + группировка ──
@@ -155,6 +156,10 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
       .sort((a, b) => b.href.length - a.href.length)[0] || null;
   }, [groups, pathname]);
   const activeGroupKey = activeItem?.group || null;
+
+  useEffect(() => {
+    pendingHrefRef.current = pendingHref;
+  }, [pendingHref]);
 
   // Закрываем меню только после того, как целевая страница уже сменилась.
   useEffect(() => {
@@ -182,8 +187,10 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
   }, []);
 
   const scheduleHoverClose = useCallback(() => {
+    if (pendingHrefRef.current) return;
     clearHoverClose();
     hoverCloseTimerRef.current = setTimeout(() => {
+      if (pendingHrefRef.current) return;
       setPinnedGroup(null);
       hoverCloseTimerRef.current = null;
     }, 260);

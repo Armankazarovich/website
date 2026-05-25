@@ -1,21 +1,31 @@
 "use client";
 
 export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
-  flyToTarget(fromElement, "[data-cart-icon]", "cart");
+  flyToTarget(fromElement, "[data-cart-icon]", "cart", _imageUrl);
 }
 
 export function flyToCompare(fromElement: HTMLElement) {
   flyToTarget(fromElement, "[data-compare-icon]", "compare");
 }
 
-function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "cart" | "compare") {
+function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "cart" | "compare", imageUrl?: string | null) {
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
-  const targetIcon = document.querySelector(targetSelector) as HTMLElement;
-  if (!targetIcon) return;
+  const targetIcon = Array.from(document.querySelectorAll(targetSelector))
+    .map((node) => node as HTMLElement)
+    .find((node) => {
+      const rect = node.getBoundingClientRect();
+      const style = window.getComputedStyle(node);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none" && style.opacity !== "0";
+    }) || null;
 
   const fromRect = fromElement.getBoundingClientRect();
-  const toRect = targetIcon.getBoundingClientRect();
+  const toRect = targetIcon?.getBoundingClientRect() || new DOMRect(
+    Math.max(16, window.innerWidth - 58),
+    Math.max(16, window.innerHeight - 82),
+    42,
+    42,
+  );
   if (toRect.width <= 0 || toRect.height <= 0) return;
 
   // Read current brand color from CSS variable (supports theme switching)
@@ -46,11 +56,23 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   `;
-  el.innerHTML =
-    icon === "compare"
-      ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h12"/><path d="M14 17H4"/><path d="M18 5l2 2-2 2"/><path d="M6 15l-2 2 2 2"/></svg>`
-      : `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`;
+
+  const safeImageUrl = icon === "cart" ? sanitizeImageUrl(imageUrl) : "";
+  if (safeImageUrl) {
+    const image = document.createElement("img");
+    image.src = safeImageUrl;
+    image.alt = "";
+    image.decoding = "async";
+    image.style.cssText = "width: 100%; height: 100%; object-fit: cover; border-radius: inherit;";
+    el.appendChild(image);
+  } else {
+    el.innerHTML =
+      icon === "compare"
+        ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h12"/><path d="M14 17H4"/><path d="M18 5l2 2-2 2"/><path d="M6 15l-2 2 2 2"/></svg>`
+        : `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`;
+  }
   document.body.appendChild(el);
 
   const duration = 600;
@@ -81,7 +103,7 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
     } else {
       el.remove();
       spawnBurst(toRect);
-      targetIcon.animate(
+      targetIcon?.animate(
         [
           { transform: "scale(1)" },
           { transform: "scale(1.5)" },
@@ -95,6 +117,14 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
   }
 
   requestAnimationFrame(animate);
+}
+
+function sanitizeImageUrl(value?: string | null) {
+  if (!value) return "";
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("/") || trimmed.startsWith("https://") || trimmed.startsWith("http://")) return trimmed;
+  return "";
 }
 
 function spawnBurst(toRect: DOMRect) {

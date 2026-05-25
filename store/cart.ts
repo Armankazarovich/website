@@ -27,6 +27,7 @@ interface CartStore {
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
+  persistCart: () => void;
   loadItems: (items: CartItem[]) => void;
   totalItems: () => number;
   totalPrice: () => number;
@@ -127,6 +128,13 @@ export const useCartStore = create<CartStore>()((set, get) => ({
   setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
   hydrateCart: () => {
+    const currentItems = normalizeCartItems(get().items);
+    if (currentItems.length > 0) {
+      writeCartItemsToStorage(currentItems);
+      set({ items: currentItems, hasHydrated: true });
+      return;
+    }
+
     set({
       items: readCartItemsFromStorage(),
       hasHydrated: true,
@@ -201,6 +209,10 @@ export const useCartStore = create<CartStore>()((set, get) => ({
   clearCart: () => {
     set({ items: [] });
     writeCartItemsToStorage([]);
+  },
+
+  persistCart: () => {
+    writeCartItemsToStorage(normalizeCartItems(get().items));
   },
 
   loadItems: (items) => {

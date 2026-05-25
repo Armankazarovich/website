@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPublicVariantsFilter } from "@/lib/product-seo";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        images: { isEmpty: false },
+      },
       select: {
         id: true,
         name: true,
@@ -14,7 +18,7 @@ export async function GET() {
         saleUnit: true,
         images: true,
         variants: {
-          where: { inStock: true },
+          where: getPublicVariantsFilter(),
           select: {
             id: true,
             size: true,

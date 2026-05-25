@@ -24,6 +24,8 @@ type InstallStep = {
   text: string;
 };
 
+export const STORE_PWA_INSTALL_BRAND_LOCK = "simple-launcher-clean-logo";
+
 function getStoreInstallSteps(platform: PwaPlatform, shortName: string, hasNativePrompt: boolean): InstallStep[] {
   if (platform === "ios-safari") {
     return [
@@ -86,6 +88,7 @@ export function PwaInstall() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const context = resolvePwaInstallContext(pathname || "/", searchParams);
+  const installIntent = searchParams.get("install") === "1" || searchParams.get("pwa") === "1";
   const [platform, setPlatform] = useState<PwaPlatform>(null);
   const [visible, setVisible] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -101,11 +104,22 @@ export function PwaInstall() {
     setInstallPrompt(getStoredPwaInstallPrompt());
   }, []);
 
+  const openInstallPanel = useCallback(() => {
+    refreshInstallState();
+    setShowSteps(false);
+    setInstallState("idle");
+    setVisible(true);
+  }, [refreshInstallState]);
+
   useEffect(() => {
     writePreferredPwaStart(context.id, context.startUrl);
     setInstallState("idle");
     setShowSteps(false);
   }, [context.id, context.startUrl]);
+
+  useEffect(() => {
+    if (installIntent) openInstallPanel();
+  }, [installIntent, openInstallPanel]);
 
   useEffect(() => {
     refreshInstallState();
@@ -130,6 +144,11 @@ export function PwaInstall() {
       rememberPwaInstallPrompt(event as BeforeInstallPromptEvent);
       setInstallPrompt(event as BeforeInstallPromptEvent);
     };
+    const openHandler = (event: Event) => {
+      const detail = (event as CustomEvent<{ appId?: string }>).detail;
+      if (detail?.appId && detail.appId !== context.id) return;
+      openInstallPanel();
+    };
     const installedHandler = () => {
       clearStoredPwaInstallPrompt();
       setInstallPrompt(null);
@@ -138,15 +157,17 @@ export function PwaInstall() {
     };
 
     window.addEventListener("aray:pwa-install-ready", readyHandler);
+    window.addEventListener("aray:pwa-install:open", openHandler as EventListener);
     window.addEventListener("beforeinstallprompt", installHandler);
     window.addEventListener("appinstalled", installedHandler);
 
     return () => {
       window.removeEventListener("aray:pwa-install-ready", readyHandler);
+      window.removeEventListener("aray:pwa-install:open", openHandler as EventListener);
       window.removeEventListener("beforeinstallprompt", installHandler);
       window.removeEventListener("appinstalled", installedHandler);
     };
-  }, [refreshInstallState]);
+  }, [context.id, openInstallPanel, refreshInstallState]);
 
   const dismiss = () => {
     setVisible(false);
@@ -211,21 +232,23 @@ export function PwaInstall() {
       {!visible && !floatingChromeHidden && (
         <button
           data-admin-pwa-launcher
+          data-store-pwa-launcher
           type="button"
-          onClick={() => {
-            refreshInstallState();
-            setShowSteps(false);
-            setVisible(true);
-          }}
-          className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 inline-flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-2.5 py-2 text-sm font-semibold text-foreground shadow-xl shadow-black/10 transition-colors hover:border-primary/30 hover:bg-card lg:bottom-6"
+          onClick={openInstallPanel}
+          className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 grid h-14 w-14 place-items-center rounded-full border border-brand-orange/40 bg-background/95 p-1.5 text-foreground shadow-[0_16px_36px_rgba(249,115,22,0.24)] transition hover:scale-[1.03] hover:border-brand-orange/70 hover:bg-background lg:bottom-6"
           aria-label={context.installTitle}
           title={context.installTitle}
         >
-          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-border/40 bg-background">
-            <img src={iconSrc} alt="" width={24} height={24} className="object-contain" />
+          <span className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full bg-transparent">
+            <img src={iconSrc} alt="" width={44} height={44} className="h-11 w-11 object-contain" />
+            <span className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-inset ring-white/20" aria-hidden="true" />
           </span>
-          <span className="hidden sm:inline">Приложение</span>
-          {installPrompt && <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />}
+          {installPrompt && (
+            <span
+              className="absolute right-1 top-1 h-3 w-3 rounded-full border-2 border-background bg-brand-orange"
+              aria-hidden="true"
+            />
+          )}
         </button>
       )}
 

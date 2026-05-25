@@ -36,10 +36,11 @@ interface RailIconProps {
   href?: string;
   badge?: number;
   active?: boolean;
+  cartTarget?: boolean;
   compareTarget?: boolean;
 }
 
-function RailIcon({ label, icon, onClick, href, badge, active = false, compareTarget = false }: RailIconProps) {
+function RailIcon({ label, icon, onClick, href, badge, active = false, cartTarget = false, compareTarget = false }: RailIconProps) {
   const base =
     `relative w-11 h-11 rounded-full bg-card border flex items-center justify-center active:scale-95 transition-all duration-150 ${
       active
@@ -67,6 +68,7 @@ function RailIcon({ label, icon, onClick, href, badge, active = false, compareTa
         aria-label={label}
         title={label}
         onClick={handleClick}
+        data-cart-icon={cartTarget ? true : undefined}
         data-compare-icon={compareTarget ? true : undefined}
         className={base}
       >
@@ -81,6 +83,7 @@ function RailIcon({ label, icon, onClick, href, badge, active = false, compareTa
       aria-label={label}
       title={label}
       onClick={handleClick}
+      data-cart-icon={cartTarget ? true : undefined}
       className={base}
     >
       {content}
@@ -144,6 +147,7 @@ export function SideIconRail() {
             onClick={() => setCartOpen(true)}
             badge={totalItems}
             active={cartOpen || pathname === "/cart" || pathname === "/checkout"}
+            cartTarget
           />
           <RailIcon
             label="Избранное"
