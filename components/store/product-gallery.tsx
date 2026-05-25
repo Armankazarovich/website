@@ -4,14 +4,16 @@ import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ProductAvailability } from "@/lib/product-availability";
 
 interface ProductGalleryProps {
   images: string[];
   name: string;
   inStock?: boolean;
+  availability?: ProductAvailability;
 }
 
-export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
+export function ProductGallery({ images, name, inStock, availability }: ProductGalleryProps) {
   const [active, setActive]     = useState(0);
   const [dir, setDir]           = useState<"left" | "right" | null>(null);
   const [animating, setAnimating] = useState(false);
@@ -100,11 +102,10 @@ export function ProductGallery({ images, name, inStock }: ProductGalleryProps) {
               />
             </div>
 
-            {/* В наличии */}
-            {inStock && (
-              <span className="absolute top-3 left-3 z-10 inline-flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-2.5 py-1.5 rounded-xl shadow-lg">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                В наличии
+            {(availability || inStock) && (
+              <span className={`store-stock-badge absolute top-3 left-3 z-10 inline-flex h-7 items-center gap-1.5 rounded-xl px-2.5 text-[10px] font-semibold ${availability?.className ?? "is-in-stock"}`}>
+                <span className="store-stock-dot h-1.5 w-1.5 shrink-0 rounded-full" />
+                {availability?.label ?? "В наличии"}
               </span>
             )}
 

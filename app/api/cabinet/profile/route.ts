@@ -14,6 +14,8 @@ const patchSchema = z.object({
   name: z.string().trim().min(2, "Имя слишком короткое").max(100, "Имя слишком длинное").optional(),
   phone: z.string().trim().max(30).optional().nullable(),
   address: z.string().trim().max(500, "Адрес слишком длинный").optional().nullable(),
+  phoneVisibility: z.enum(["public", "contacts", "private"]).optional(),
+  arayPhoneVisibility: z.enum(["public", "contacts", "private"]).optional(),
 });
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
@@ -32,7 +34,15 @@ export async function GET() {
   const [user, activeOrders, finishedOrders, totalSpentAgg, reviewsCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true, phone: true, address: true, avatarUrl: true },
+      select: {
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        avatarUrl: true,
+        phoneVisibility: true,
+        arayPhoneVisibility: true,
+      },
     }),
     prisma.order.count({
       where: { userId, deletedAt: null, status: { in: ACTIVE_STATUSES } },
@@ -101,7 +111,7 @@ export async function PATCH(req: Request) {
     );
   }
 
-  const { name, phone, address } = parsed.data;
+  const { name, phone, address, phoneVisibility, arayPhoneVisibility } = parsed.data;
 
   // Нормализация телефона
   let normalizedPhone: string | null | undefined = undefined;
@@ -122,11 +132,13 @@ export async function PATCH(req: Request) {
   if (name !== undefined) data.name = name;
   if (normalizedPhone !== undefined) data.phone = normalizedPhone;
   if (address !== undefined) data.address = address === null ? null : address;
+  if (phoneVisibility !== undefined) data.phoneVisibility = phoneVisibility;
+  if (arayPhoneVisibility !== undefined) data.arayPhoneVisibility = arayPhoneVisibility;
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data,
-    select: { name: true, phone: true, address: true },
+    select: { name: true, phone: true, address: true, phoneVisibility: true, arayPhoneVisibility: true },
   });
 
   return NextResponse.json({ ok: true, ...user });

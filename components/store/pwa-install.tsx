@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Chrome, Download, ExternalLink, Plus, Share, X } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { resolvePwaInstallContext } from "@/lib/pwa-install-context";
+import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
+import { useFloatingChromeHidden } from "@/lib/use-floating-ui";
+import { getPwaIconSrc, resolvePwaInstallContext } from "@/lib/pwa-install-context";
 import {
   clearStoredPwaInstallPrompt,
   detectPwaPlatform,
@@ -90,6 +92,8 @@ export function PwaInstall() {
   const [showSteps, setShowSteps] = useState(false);
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
   const [installState, setInstallState] = useState<InstallState>("idle");
+  const floatingChromeHidden = useFloatingChromeHidden();
+  useAdminOverlayGuard(visible);
 
   const refreshInstallState = useCallback(() => {
     const detected = detectPwaPlatform();
@@ -181,6 +185,7 @@ export function PwaInstall() {
   };
 
   const hasNativePrompt = Boolean(installPrompt) && (platform === "android" || platform === "desktop-chrome");
+  const iconSrc = useMemo(() => getPwaIconSrc(context, 96), [context]);
   const manualSteps = useMemo(
     () => getStoreInstallSteps(platform, context.shortName, hasNativePrompt),
     [context.shortName, hasNativePrompt, platform],
@@ -189,7 +194,6 @@ export function PwaInstall() {
   if (platform === "installed" || platform === null) return null;
 
   const canNativeInstall = !alreadyInstalled && hasNativePrompt && installState !== "installing";
-  if (!visible && !installPrompt) return null;
 
   const statusText = (() => {
     if (alreadyInstalled) return "Если значок уже есть, откройте его с экрана устройства или из списка приложений.";
@@ -204,24 +208,26 @@ export function PwaInstall() {
 
   return (
     <>
-      <button
-        data-admin-pwa-launcher
-        type="button"
-        onClick={() => {
-          refreshInstallState();
-          setShowSteps(false);
-          setVisible(true);
-        }}
-        className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 hidden items-center gap-2 rounded-2xl border border-border bg-card/95 px-2.5 py-2 text-sm font-semibold text-foreground shadow-xl shadow-black/10 transition-colors hover:border-primary/30 hover:bg-card sm:inline-flex lg:bottom-6"
-        aria-label={context.installTitle}
-        title={context.installTitle}
-      >
-        <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-border/40 bg-white shadow-sm">
-          <img src="/logo.png" alt="" width={24} height={24} className="object-contain" />
-        </span>
-        <span className="hidden sm:inline">Приложение</span>
-        {installPrompt && <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />}
-      </button>
+      {!visible && !floatingChromeHidden && (
+        <button
+          data-admin-pwa-launcher
+          type="button"
+          onClick={() => {
+            refreshInstallState();
+            setShowSteps(false);
+            setVisible(true);
+          }}
+          className="fixed right-[max(0.75rem,env(safe-area-inset-right,0px))] bottom-[calc(5.85rem+env(safe-area-inset-bottom,0px))] z-40 inline-flex items-center gap-2 rounded-2xl border border-border bg-card/95 px-2.5 py-2 text-sm font-semibold text-foreground shadow-xl shadow-black/10 transition-colors hover:border-primary/30 hover:bg-card lg:bottom-6"
+          aria-label={context.installTitle}
+          title={context.installTitle}
+        >
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl border border-border/40 bg-background">
+            <img src={iconSrc} alt="" width={24} height={24} className="object-contain" />
+          </span>
+          <span className="hidden sm:inline">Приложение</span>
+          {installPrompt && <span className="h-2 w-2 rounded-full bg-primary" aria-hidden="true" />}
+        </button>
+      )}
 
       <AnimatePresence>
         {visible && (
@@ -239,8 +245,8 @@ export function PwaInstall() {
                 <div className="flex items-start gap-3">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/40 bg-white shadow-sm">
                     <img
-                      src="/logo.png"
-                      alt="ПилоРус"
+                      src={iconSrc}
+                      alt={context.shortName}
                       width={32}
                       height={32}
                       className="object-contain"

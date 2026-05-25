@@ -7,6 +7,7 @@
 
 export type Section =
   | "dashboard"
+  | "director"
   | "orders"
   | "delivery"
   | "products"
@@ -26,6 +27,7 @@ export type Section =
   | "promotions"
   | "promotion"
   | "services"
+  | "stories"
   | "posts"
   | "site"
   | "business_settings"
@@ -54,6 +56,7 @@ type Role = string;
 /** Map of section → allowed roles. SUPER_ADMIN and ADMIN always have implicit access. */
 const SECTION_ROLES: Record<Section, Role[]> = {
   dashboard: ["MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
+  director: ["MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"],
   orders: ["MANAGER", "SELLER", "COURIER", "WAREHOUSE"],
   delivery: ["MANAGER", "COURIER", "WAREHOUSE"],
   products: ["MANAGER", "WAREHOUSE", "SELLER"],
@@ -73,6 +76,7 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   promotions: ["MANAGER"],
   promotion: ["MANAGER"],
   services: ["MANAGER"],
+  stories: ["MANAGER", "SELLER"],
   posts: ["MANAGER"],
   site: [], // ADMIN only
   business_settings: ["MANAGER"],
@@ -121,6 +125,7 @@ export function getAccessibleSections(role: string): Section[] {
 export function pathToSection(path: string): Section | null {
   const map: Record<string, Section> = {
     "/admin": "dashboard",
+    "/admin/director": "director",
     "/admin/orders": "orders",
     "/admin/delivery": "delivery",
     "/admin/products": "products",
@@ -140,6 +145,7 @@ export function pathToSection(path: string): Section | null {
     "/admin/promotions": "promotions",
     "/admin/promotion": "promotion",
     "/admin/services": "services",
+    "/admin/stories": "stories",
     "/admin/posts": "posts",
     "/admin/site": "site",
     "/admin/business/settings": "business_settings",

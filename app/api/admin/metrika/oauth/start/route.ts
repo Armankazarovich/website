@@ -14,14 +14,27 @@ function oauthRedirectUri(req: Request) {
   );
 }
 
+function adminReturnUrl(req: Request, path: string) {
+  return new URL(path, new URL(oauthRedirectUri(req)).origin);
+}
+
+function metrikaClientId() {
+  return (
+    process.env.YANDEX_METRIKA_CLIENT_ID ||
+    process.env.YANDEX_OAUTH_CLIENT_ID ||
+    process.env.YANDEX_LOGIN_CLIENT_ID ||
+    ""
+  ).trim();
+}
+
 export async function GET(req: Request) {
   const auth = await requireAdmin();
   if (!auth.authorized) return auth.response;
 
-  const clientId = process.env.YANDEX_METRIKA_CLIENT_ID;
+  const clientId = metrikaClientId();
   if (!clientId) {
     return NextResponse.redirect(
-      new URL("/admin/promotion?metrika_oauth=missing_app", req.url),
+      adminReturnUrl(req, "/admin/promotion?metrika_oauth=missing_app"),
     );
   }
 

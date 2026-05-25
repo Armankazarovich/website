@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWishlistStore, type WishlistItem } from "@/store/wishlist";
@@ -19,7 +19,9 @@ export function WishlistButton({
   mode = "floating",
 }: WishlistButtonProps) {
   const { toggle, has } = useWishlistStore();
-  const isSaved = has(item.id);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isSaved = mounted && has(item.id);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
@@ -34,14 +36,12 @@ export function WishlistButton({
         onClick={handleClick}
         aria-pressed={isSaved}
         className={cn(
-          "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors",
-          isSaved
-            ? "border-red-500/45 bg-red-500/10 text-red-500 hover:bg-red-500/15"
-            : "border-border/70 bg-card/70 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.08] hover:text-primary",
+          "store-action-button store-action-button-inline",
+          isSaved && "is-selected",
           className
         )}
       >
-        <Heart className={cn("h-4 w-4", isSaved && "fill-current")} />
+        <Heart className={cn("h-4 w-4 store-wishlist-heart", isSaved && "is-active")} strokeWidth={1.9} fill={isSaved ? "currentColor" : "none"} />
         {isSaved ? "В избранном" : "В избранное"}
       </button>
     );
@@ -54,20 +54,20 @@ export function WishlistButton({
       aria-label={isSaved ? "Удалить из избранного" : "Добавить в избранное"}
       aria-pressed={isSaved}
       className={cn(
-        "group flex items-center justify-center rounded-xl border transition-colors duration-200 active:scale-90",
-        size === "sm" ? "h-7 w-7" : "h-9 w-9",
-        isSaved
-          ? "border-red-500/45 bg-red-500/12 text-red-500 hover:bg-red-500/16"
-          : "border-border/70 bg-card/[0.88] text-muted-foreground hover:border-red-500/30 hover:bg-card hover:text-red-500",
+        "store-action-button store-action-button-floating",
+        size === "sm" ? "h-8 w-8" : "h-9 w-9",
+        isSaved && "is-selected",
         className
       )}
     >
       <Heart
         className={cn(
-          "transition-transform duration-200 group-hover:scale-110",
-          size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4",
-          isSaved && "fill-current"
+          "store-wishlist-heart transition-colors duration-200",
+          size === "sm" ? "h-4 w-4" : "h-4 w-4",
+          isSaved && "is-active",
         )}
+        strokeWidth={2.15}
+        fill={isSaved ? "currentColor" : "none"}
       />
     </button>
   );

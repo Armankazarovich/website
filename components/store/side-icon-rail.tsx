@@ -36,9 +36,10 @@ interface RailIconProps {
   href?: string;
   badge?: number;
   active?: boolean;
+  compareTarget?: boolean;
 }
 
-function RailIcon({ label, icon, onClick, href, badge, active = false }: RailIconProps) {
+function RailIcon({ label, icon, onClick, href, badge, active = false, compareTarget = false }: RailIconProps) {
   const base =
     `relative w-11 h-11 rounded-full bg-card border flex items-center justify-center active:scale-95 transition-all duration-150 ${
       active
@@ -66,6 +67,7 @@ function RailIcon({ label, icon, onClick, href, badge, active = false }: RailIco
         aria-label={label}
         title={label}
         onClick={handleClick}
+        data-compare-icon={compareTarget ? true : undefined}
         className={base}
       >
         {content}
@@ -156,6 +158,7 @@ export function SideIconRail() {
             href="/compare"
             badge={compareCount}
             active={pathname === "/compare"}
+            compareTarget
           />
           <RailIcon
             label="Аккаунт"

@@ -22,6 +22,8 @@ const MEDIA_DIRS = [
   "watermarks",
   "banners",
   "posts",
+  "services",
+  "stories",
   "videos",
   "brand",
   "default",
@@ -29,6 +31,12 @@ const MEDIA_DIRS = [
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "svg", "gif"]);
 const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
 const DEFAULT_MEDIA_LIMIT = 500;
+type MediaUsage = {
+  type: "product" | "category" | "service" | "post" | "story";
+  id: string;
+  name: string;
+  slug: string;
+};
 
 function parseAltMap(value?: string | null): Record<string, string> {
   if (!value) return {};
@@ -65,21 +73,45 @@ export async function GET(req: Request) {
   const altMap = parseAltMap(altRow?.value);
 
   // Load all products to know which images are used where
-  const products = await prisma.product.findMany({ select: { id: true, name: true, slug: true, images: true } });
-  const categories = await prisma.category.findMany({ select: { id: true, name: true, slug: true, image: true } });
+  const [products, categories, services, posts, stories] = await Promise.all([
+    prisma.product.findMany({ select: { id: true, name: true, slug: true, images: true } }),
+    prisma.category.findMany({ select: { id: true, name: true, slug: true, image: true } }),
+    prisma.service.findMany({ select: { id: true, title: true, slug: true, image: true } }),
+    prisma.post.findMany({ select: { id: true, title: true, slug: true, coverImage: true } }),
+    prisma.storeStory.findMany({ select: { id: true, title: true, mediaUrl: true, posterUrl: true, relations: true } }),
+  ]);
 
   // Build usage map: url → [{type, id, name, slug}]
-  const usageMap: Record<string, { type: "product" | "category"; id: string; name: string; slug: string }[]> = {};
+  const usageMap: Record<string, MediaUsage[]> = {};
+  const pushUsage = (url: string | null | undefined, usage: MediaUsage) => {
+    const cleanUrl = url?.trim();
+    if (!cleanUrl) return;
+    if (!usageMap[cleanUrl]) usageMap[cleanUrl] = [];
+    usageMap[cleanUrl].push(usage);
+  };
   for (const p of products) {
     for (const img of p.images) {
-      if (!usageMap[img]) usageMap[img] = [];
-      usageMap[img].push({ type: "product", id: p.id, name: p.name, slug: p.slug });
+      pushUsage(img, { type: "product", id: p.id, name: p.name, slug: p.slug });
     }
   }
   for (const c of categories) {
-    if (c.image) {
-      if (!usageMap[c.image]) usageMap[c.image] = [];
-      usageMap[c.image].push({ type: "category", id: c.id, name: c.name, slug: c.slug });
+    pushUsage(c.image, { type: "category", id: c.id, name: c.name, slug: c.slug });
+  }
+  for (const service of services) {
+    for (const url of (service.image ?? "").split(/\r?\n/)) {
+      pushUsage(url, { type: "service", id: service.id, name: service.title, slug: service.slug });
+    }
+  }
+  for (const post of posts) {
+    pushUsage(post.coverImage, { type: "post", id: post.id, name: post.title, slug: post.slug });
+  }
+  for (const story of stories) {
+    pushUsage(story.mediaUrl, { type: "story", id: story.id, name: story.title, slug: story.id });
+    pushUsage(story.posterUrl, { type: "story", id: story.id, name: story.title, slug: story.id });
+    for (const relation of story.relations || []) {
+      const relationRecord = relation as { image?: unknown } | null;
+      const image = relationRecord && typeof relationRecord === "object" ? String(relationRecord.image || "") : "";
+      pushUsage(image, { type: "story", id: story.id, name: story.title, slug: story.id });
     }
   }
 
@@ -87,7 +119,7 @@ export async function GET(req: Request) {
   const files: {
     url: string; folder: string; filename: string; kind: "image" | "video" | "document";
     size: number; mtime: number; alt: string;
-    usedIn: { type: "product" | "category"; id: string; name: string; slug: string }[];
+    usedIn: MediaUsage[];
   }[] = [];
 
   for (const folder of MEDIA_DIRS) {
@@ -196,15 +228,27 @@ export async function POST(req: Request) {
     }
 
     // Check if used
-    const [products, categories] = await Promise.all([
+    const [products, categories, services, posts, stories] = await Promise.all([
       prisma.product.findMany({ select: { id: true, images: true } }),
       prisma.category.findMany({ select: { id: true, image: true } }),
+      prisma.service.findMany({ select: { id: true, image: true } }),
+      prisma.post.findMany({ select: { id: true, coverImage: true } }),
+      prisma.storeStory.findMany({ select: { id: true, mediaUrl: true, posterUrl: true, relations: true } }),
     ]);
     const isUsedByProduct = products.some((p) => p.images.includes(url));
     const isUsedByCategory = categories.some((c) => c.image === url);
-    if (isUsedByProduct || isUsedByCategory) {
+    const isUsedByService = services.some((service) => (service.image ?? "").split(/\r?\n/).map((item) => item.trim()).includes(url));
+    const isUsedByPost = posts.some((post) => post.coverImage === url);
+    const isUsedByStory = stories.some((story) => {
+      if (story.mediaUrl === url || story.posterUrl === url) return true;
+      return (story.relations || []).some((relation) => {
+        const relationRecord = relation as { image?: unknown } | null;
+        return Boolean(relationRecord && typeof relationRecord === "object" && relationRecord.image === url);
+      });
+    });
+    if (isUsedByProduct || isUsedByCategory || isUsedByService || isUsedByPost || isUsedByStory) {
       return NextResponse.json(
-        { error: "Файл используется в каталоге. Сначала уберите его из товара или категории." },
+        { error: "Файл используется на сайте. Сначала уберите его из товара, услуги, статьи или сторис." },
         { status: 400 }
       );
     }

@@ -24,7 +24,7 @@
  * arayglass-glow/shimmer. Палитра-aware через text-primary.
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -46,7 +46,7 @@ import {
 import { UI_LAYERS } from "@/lib/ui-layers";
 import { AdminWeatherChip } from "@/components/admin/admin-weather";
 import { ArayIcon, ArayOrb } from "@/components/shared/aray-orb";
-import { requestArayClose, requestArayOpen } from "@/components/store/aray-events";
+import { requestArayOpen } from "@/components/store/aray-events";
 
 // ── Иконка для каждой группы (главная иконка раздела) ──
 const GROUP_ICONS: Record<string, React.ElementType> = {
@@ -102,6 +102,7 @@ const SUBTITLE_BY_HREF: Record<string, string> = {
   "/admin/aray/costs": "Токены и подписки",
   "/admin/posts": "Блог и новости",
   "/admin/services": "Сервисы",
+  "/admin/stories": "Видео, live и отзывы",
 };
 
 type Group = {
@@ -131,6 +132,7 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
   const [pinnedGroup, setPinnedGroup] = useState<string | null>(null);
   const [pendingHref, setPendingHref] = useState<string | null>(null);
   const [arayWorkspaceOpen, setArayWorkspaceOpen] = useState(false);
+  const hoverCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const shiftedGroup = pinnedGroup;
 
   // ── Фильтрация по роли + группировка ──
@@ -164,9 +166,28 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
   }, [pathname, pendingHref]);
 
   const closePanels = useCallback(() => {
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
     setPinnedGroup(null);
     setPendingHref(null);
   }, []);
+
+  const clearHoverClose = useCallback(() => {
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleHoverClose = useCallback(() => {
+    clearHoverClose();
+    hoverCloseTimerRef.current = setTimeout(() => {
+      setPinnedGroup(null);
+      hoverCloseTimerRef.current = null;
+    }, 260);
+  }, [clearHoverClose]);
 
   const handlePanelNavigate = useCallback((href: string) => {
     const nextPath = href.split("?")[0];
@@ -177,14 +198,26 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
     setPendingHref(nextPath);
   }, [closePanels, pathname]);
 
-  const closeArayWorkspace = useCallback(() => {
-    requestArayClose();
-  }, []);
+  const handleWorkspaceNavigate = useCallback((href: string) => {
+    handlePanelNavigate(href);
+  }, [handlePanelNavigate]);
 
   const openArayWorkspace = useCallback(() => {
     closePanels();
     requestArayOpen("open");
   }, [closePanels]);
+
+  const openGroupByHover = useCallback((group: Group) => {
+    clearHoverClose();
+    if (group.items.length <= 1) return;
+    setPinnedGroup(group.key);
+  }, [clearHoverClose]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverCloseTimerRef.current) clearTimeout(hoverCloseTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!shiftedGroup) {
@@ -236,6 +269,8 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
     <aside
       data-admin-nav-rail
       className={`admin-rail-liquid admin-rail-shell hidden lg:flex ${UI_LAYERS.navRail} flex-col items-center py-4 px-2.5 gap-2`}
+      onMouseEnter={clearHoverClose}
+      onMouseLeave={scheduleHoverClose}
     >
       <div className="shrink-0 pb-2">
         <button
@@ -272,6 +307,7 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
             <div
               key={g.key}
               className="relative"
+              onMouseEnter={() => openGroupByHover(g)}
             >
               <button
                 type="button"
@@ -286,7 +322,6 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
                     return;
                   }
                   const nextPinned = pinnedGroup === g.key ? null : g.key;
-                  if (nextPinned) closeArayWorkspace();
                   setPinnedGroup(nextPinned);
                 }}
                 aria-controls={isOpen ? `admin-nav-panel-${g.key}` : undefined}
@@ -300,7 +335,7 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
                   pathname={pathname}
                   t={t}
                   onClose={closePanels}
-                  onNavigate={handlePanelNavigate}
+                  onNavigate={handleWorkspaceNavigate}
                   activeHref={activeItem?.href}
                 />
               )}
@@ -320,7 +355,9 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
             className="admin-rail-icon"
             aria-label="На сайт"
             title="На сайт"
-            onClick={closePanels}
+            onClick={() => {
+              closePanels();
+            }}
           >
             <ExternalLink className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </Link>

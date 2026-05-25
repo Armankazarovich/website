@@ -12,6 +12,21 @@ export type AraySpeechOptions = {
 };
 
 const DEFAULT_MAX_LENGTH = 900;
+const MOSCOW_TIME_ZONE = "Europe/Moscow";
+const RU_MONTHS_GENITIVE = [
+  "января",
+  "февраля",
+  "марта",
+  "апреля",
+  "мая",
+  "июня",
+  "июля",
+  "августа",
+  "сентября",
+  "октября",
+  "ноября",
+  "декабря",
+];
 
 function stripModelMarkers(text: string): string {
   return text
@@ -258,7 +273,7 @@ function normalizePhones(text: string): string {
     const digits = match.replace(/\D/g, "");
     if (digits.length < 10 || digits.length > 15) return match;
     const prefix = match.trim().startsWith("+") ? "плюс " : "";
-    return `${prefix}${spellDigitsForSpeech(digits)}`;
+    return `${prefix}${digits.split("").join(" ")}`;
   });
 }
 
@@ -361,6 +376,53 @@ function normalizeDecimalNumbers(text: string): string {
     .replace(/(?<![\d.])(\d+\.\d+)(?!\.\d)/g, (match) => amountSpeechValue(match));
 }
 
+function formatDateForSpeech(date: Date, withTime = false): string {
+  if (Number.isNaN(date.getTime())) return "";
+
+  const parts = new Intl.DateTimeFormat("ru-RU", {
+    timeZone: MOSCOW_TIME_ZONE,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: withTime ? "2-digit" : undefined,
+    minute: withTime ? "2-digit" : undefined,
+    hour12: false,
+  }).formatToParts(date);
+  const value = (type: string) => parts.find((part) => part.type === type)?.value || "";
+  const day = Number(value("day"));
+  const month = Number(value("month"));
+  const year = Number(value("year"));
+  const hour = Number(value("hour"));
+  const minute = Number(value("minute"));
+
+  if (!day || !month || !year) return "";
+  const dateText = `${day} ${RU_MONTHS_GENITIVE[month - 1] || ""} ${year} года`.trim();
+  if (!withTime) return dateText;
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return dateText;
+  const minuteText = minute === 0 ? "" : ` ${minute} ${wordByAmount(String(minute), ["минута", "минуты", "минут"])}`;
+  return `${dateText} в ${hour} ${wordByAmount(String(hour), ["час", "часа", "часов"])}${minuteText} по Москве`;
+}
+
+function normalizeDatesAndTimes(text: string): string {
+  let s = text;
+
+  s = s.replace(/\b(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?(Z|[+-]\d{2}:?\d{2})?\b/g,
+    (match: string) => {
+      const date = new Date(match);
+      const spoken = formatDateForSpeech(date, true);
+      return spoken || match;
+    });
+
+  s = s.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_match: string, year: string, month: string, day: string) => {
+    const monthIndex = Number(month) - 1;
+    const monthText = RU_MONTHS_GENITIVE[monthIndex];
+    if (!monthText) return `${day}.${month}.${year}`;
+    return `${Number(day)} ${monthText} ${Number(year)} года`;
+  });
+
+  return s;
+}
+
 function normalizePunctuation(text: string, ensureSentenceEnd: boolean): string {
   let s = text
     .replace(/\r\n/g, "\n")
@@ -416,6 +478,7 @@ export function prepareAraySpeechText(text: string, options: AraySpeechOptions =
   s = normalizeLongIdentifiers(s);
   s = normalizePhones(s);
   s = expandCurrencyAndUnits(s);
+  s = normalizeDatesAndTimes(s);
   s = normalizeNumbersAndSizes(s);
   s = normalizeDecimalNumbers(s);
   s = normalizePunctuation(s, ensureSentenceEnd);

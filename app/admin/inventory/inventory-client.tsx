@@ -10,6 +10,7 @@ import {
   History, Zap, Upload,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/admin-modal";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type Variant = {
   id: string;
@@ -219,6 +220,8 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
   const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(new Set(DEFAULT_COLS));
   const [thresholdModal, setThresholdModal] = useState<{ variant: Variant; value: string } | null>(null);
   const [thresholdSaving, setThresholdSaving] = useState(false);
+  const [pendingStatusToggle, setPendingStatusToggle] = useState<Variant | null>(null);
+  const [statusToggleSaving, setStatusToggleSaving] = useState(false);
   const [renderLimit, setRenderLimit] = useState(ROW_BATCH);
   const [isCompact, setIsCompact] = useState(false);
   const deferredSearch = useDeferredValue(search);
@@ -385,7 +388,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
   }, [editing, variants, patchVariant, showToast]);
 
   /* ── status toggle ── */
-  const toggleStatus = useCallback(async (v: Variant) => {
+  const applyStatusToggle = useCallback(async (v: Variant) => {
     if (v.stockQty !== null) {
       if (v.stockQty === 0 && v.inStock) {
         setVariants(vs => vs.map(x => x.id === v.id ? { ...x, inStock: false } : x));
@@ -406,6 +409,30 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
     const ok = await patchVariant(v.id, { inStock: newInStock }, newInStock ? "В наличии" : "Нет в наличии");
     if (!ok) setVariants(vs => vs.map(x => x.id === v.id ? v : x));
   }, [patchVariant, showToast]);
+
+  const requestStatusToggle = useCallback((v: Variant) => {
+    if (v.stockQty !== null && !(v.stockQty === 0 && v.inStock)) {
+      showToast(
+        v.stockQty === 0
+          ? "Остаток 0: сначала увеличьте количество"
+          : "Статус считается по остатку. Чтобы снять наличие, поставьте 0",
+        "err"
+      );
+      return;
+    }
+    setPendingStatusToggle(v);
+  }, [showToast]);
+
+  const confirmStatusToggle = useCallback(async () => {
+    if (!pendingStatusToggle) return;
+    setStatusToggleSaving(true);
+    try {
+      await applyStatusToggle(pendingStatusToggle);
+      setPendingStatusToggle(null);
+    } finally {
+      setStatusToggleSaving(false);
+    }
+  }, [applyStatusToggle, pendingStatusToggle]);
 
   /* ── threshold save ── */
   const saveThreshold = useCallback(async () => {
@@ -641,7 +668,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                     <p className="font-medium text-sm line-clamp-1">{v.product.name}</p>
                     <p className="text-xs text-muted-foreground">{v.product.category.name} · <span className="font-mono">{v.size}</span></p>
                   </div>
-                  <StockBadge v={v} onToggle={() => toggleStatus(v)} />
+                  <StockBadge v={v} onToggle={() => requestStatusToggle(v)} />
                 </div>
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   {col("pricePerCube") && (
@@ -702,7 +729,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                       </Link>
                       <p className="mt-1 text-xs text-muted-foreground">{v.product.category.name} · <span className="font-mono">{v.size}</span></p>
                     </div>
-                    <StockBadge v={v} onToggle={() => toggleStatus(v)} />
+                    <StockBadge v={v} onToggle={() => requestStatusToggle(v)} />
                   </div>
 
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
@@ -793,7 +820,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                       )}
                       {col("status") && (
                         <td className="px-4 py-3 text-center print-hide">
-                          <StockBadge v={v} onToggle={() => toggleStatus(v)} />
+                          <StockBadge v={v} onToggle={() => requestStatusToggle(v)} />
                         </td>
                       )}
                       <td className="px-4 py-3 no-print">
@@ -916,6 +943,20 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(pendingStatusToggle)}
+        onClose={() => { if (!statusToggleSaving) setPendingStatusToggle(null); }}
+        onConfirm={confirmStatusToggle}
+        title={pendingStatusToggle?.inStock ? "Снять позицию с наличия?" : "Вернуть позицию в наличие?"}
+        description={pendingStatusToggle
+          ? `${pendingStatusToggle.product.name} · ${pendingStatusToggle.size}. После подтверждения статус изменится сразу.`
+          : undefined}
+        confirmLabel={pendingStatusToggle?.inStock ? "Снять с наличия" : "Вернуть в наличие"}
+        cancelLabel="Оставить как есть"
+        variant="warning"
+        loading={statusToggleSaving}
+      />
 
       <AdminModal
         open={Boolean(thresholdModal)}

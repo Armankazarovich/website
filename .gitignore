@@ -34,6 +34,8 @@ dev-*.err.log
 # local backups / generated visual references
 /backups/
 /docs/aray-platform-background-contact-sheet.jpg
+/.codex-chrome*/
+/.codex-screenshots/
 
 # local env files
 .env

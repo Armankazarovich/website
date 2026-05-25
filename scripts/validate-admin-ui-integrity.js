@@ -309,6 +309,7 @@ function assertAppIdentityBaseline() {
   const installSource = read("components/admin/admin-pwa-install.tsx");
   const railSource = read("components/admin/admin-nav-rail.tsx");
   const iconSource = read("lib/aray-pwa-icon.ts");
+  const siteIconSource = read("lib/site-pwa-icon.ts");
   const manifestRouteSource = read("app/api/pwa/manifest/route.ts");
   const adminLayoutSource = read("app/admin/layout.tsx");
   const adminManifestSource = read("public/admin-manifest.json");
@@ -355,20 +356,25 @@ function assertAppIdentityBaseline() {
     contextSource.includes("getPwaIconSrc") &&
       contextSource.includes('context.iconKind === "aray"') &&
       contextSource.includes('/api/pwa/icon?s=') &&
-      contextSource.includes('/icons/icon-${size}x${size}.png') &&
+      contextSource.includes('/api/pwa/site-icon?') &&
+      contextSource.includes("PWA_SITE_ICON_VERSION") &&
       contextSource.includes('"pilorus-site"') &&
       contextSource.includes('"pilorus-catalog"'),
-    "PWA icon resolution must keep ARAY Production icons for admin/modules and site icons for PiloRus storefront contexts",
+    "PWA icon resolution must keep ARAY Production icons for admin/modules and dynamic client logo icons for storefront contexts",
   );
   assert(
-    manifestRouteSource.includes('if (iconKind === "aray")') &&
-      manifestRouteSource.includes('/api/pwa/icon?s=${size}&v=${ARAY_ICON_VERSION}') &&
-      manifestRouteSource.includes('/icons/icon-${size}x${size}.png') &&
+    manifestRouteSource.includes("getPwaIconSrc(context, size)") &&
+      manifestRouteSource.includes("ARAY_ICON_SIZES") &&
+      manifestRouteSource.includes("SITE_ICON_SIZES") &&
+      siteIconSource.includes("createSitePwaIconResponse") &&
+      siteIconSource.includes("getSiteSettings") &&
+      siteIconSource.includes("tenant") &&
+      siteIconSource.includes("DEFAULT_SITE_LOGO") &&
       adminLayoutSource.includes('/api/pwa/icon?s=192&v=aray-production-20260508') &&
       adminManifestSource.includes('"name": "ARAY Production"') &&
       adminManifestSource.includes('"/api/pwa/icon?s=512&v=aray-production-20260508"') &&
       !adminManifestSource.includes("Pilo"),
-    "Admin favicon, static manifest and install preview must use the ARAY Production icon, not the PiloRus storefront icon",
+    "Admin identity must stay on ARAY icons while storefront PWA icons are generated from the client logo layer",
   );
   assert(
     swSource.includes("'/api/pwa/icon?s=192&v=aray-production-20260508'") &&

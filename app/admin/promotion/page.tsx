@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   TrendingUp,
   Download,
@@ -26,6 +26,7 @@ import {
   MessageSquare,
   Megaphone,
   Search,
+  Settings2,
   ShieldCheck,
   Target,
   UploadCloud,
@@ -243,6 +244,16 @@ type DirectDraftResponse = {
   directPackage?: DirectPackage;
   safety: string;
 };
+
+function countDirectProductOptions(draft: DirectDraftResponse | null) {
+  if (!draft) return 0;
+  if (draft.selection?.products?.length) return draft.selection.products.length;
+  return new Set(
+    draft.draft.groups.flatMap((group) =>
+      (group.products || []).map((product) => product.id),
+    ),
+  ).size;
+}
 
 type ExternalDirectPackageResponse = {
   ok: boolean;
@@ -1014,8 +1025,10 @@ function AdvertisingModule() {
   const [externalAuditError, setExternalAuditError] = useState<string | null>(
     null,
   );
+  const initialLoadRef = useRef(false);
   const parsedMetrikaGoals = parseMetrikaGoalsText(metrikaGoalsPaste);
-  const generatorOptions = () => ({
+  const productOptionsCount = countDirectProductOptions(draft);
+  const generatorOptions = useCallback(() => ({
     grouping: generatorMode,
     campaignKind,
     placement,
@@ -1036,7 +1049,7 @@ function AdvertisingModule() {
               1,
               selectedProductsText
                 ? splitSelectionText(selectedProductsText).length
-                : productOptions.length || maxGroups,
+                : productOptionsCount || maxGroups,
             ),
           )
         : maxGroups,
@@ -1053,9 +1066,37 @@ function AdvertisingModule() {
     promoText,
     quickLinksText,
     excludedKeywordsText,
-  });
+  }), [
+    audienceMode,
+    campaignKind,
+    dailyBudget,
+    excludedKeywordsText,
+    feedCategoryFilter,
+    feedOnlyInStock,
+    feedOnlyWithPrice,
+    feedSource,
+    generatorMode,
+    includeImages,
+    maxAds,
+    maxGroups,
+    maxKeywords,
+    maxPrice,
+    minPrice,
+    placement,
+    productOptionsCount,
+    promoText,
+    quickLinksText,
+    recommendationMode,
+    schedule,
+    searchBid,
+    selectedCategoriesText,
+    selectedProductsText,
+    timeFrom,
+    timeTo,
+    weekdays,
+  ]);
 
-  const draftUrl = () => {
+  const draftUrl = useCallback(() => {
     const params = new URLSearchParams();
     const options = generatorOptions();
     params.set("grouping", options.grouping);
@@ -1085,9 +1126,9 @@ function AdvertisingModule() {
     params.set("quickLinksText", options.quickLinksText);
     params.set("excludedKeywordsText", options.excludedKeywordsText);
     return `/api/admin/direct/draft?${params.toString()}`;
-  };
+  }, [generatorOptions]);
 
-  const loadDraft = async ({
+  const loadDraft = useCallback(async ({
     preserveExportResult = false,
   }: { preserveExportResult?: boolean } = {}) => {
     setLoading(true);
@@ -1109,9 +1150,9 @@ function AdvertisingModule() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [draftUrl]);
 
-  const loadMetrikaStatus = async () => {
+  const loadMetrikaStatus = useCallback(async () => {
     setMetrikaLoading(true);
     try {
       const response = await fetch("/api/admin/metrika/status", {
@@ -1120,8 +1161,8 @@ function AdvertisingModule() {
       if (!response.ok) throw new Error("Не удалось проверить Метрику");
       const payload = (await response.json()) as MetrikaStatus;
       setMetrikaStatus(payload);
-      if (!setupCounterId && payload.selectedCounterId) {
-        setSetupCounterId(String(payload.selectedCounterId));
+      if (payload.selectedCounterId) {
+        setSetupCounterId((current) => current || String(payload.selectedCounterId));
       }
       if (payload.storedGoals && Object.keys(payload.storedGoals).length) {
         setSetupGoals((current) => ({ ...payload.storedGoals, ...current }));
@@ -1131,12 +1172,14 @@ function AdvertisingModule() {
     } finally {
       setMetrikaLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    if (initialLoadRef.current) return;
+    initialLoadRef.current = true;
     loadDraft();
     loadMetrikaStatus();
-  }, []);
+  }, [loadDraft, loadMetrikaStatus]);
 
   useEffect(() => {
     if (!draft) return;
@@ -1147,13 +1190,7 @@ function AdvertisingModule() {
     setSetupCounterId((draft.metrikaCounterIds?.[0] || "").toString());
     setSetupBusinessProfileId((draft.businessProfileId || "").toString());
     setSetupGoals(draft.metrikaGoals || {});
-  }, [
-    draft?.businessProfileId,
-    draft?.publicBaseUrl,
-    draft?.directRegionIds?.join(","),
-    draft?.metrikaCounterIds?.join(","),
-    JSON.stringify(draft?.metrikaGoals || {}),
-  ]);
+  }, [draft]);
 
   const copyText = async (key: CopyKey, text: string) => {
     if (!text) return;
@@ -1972,7 +2009,7 @@ function AdvertisingModule() {
     if (!fastLaunchPending) return;
     setFastLaunchPending(false);
     void loadDraft();
-  }, [fastLaunchPending]);
+  }, [fastLaunchPending, loadDraft]);
 
   return (
     <section>
@@ -2128,6 +2165,37 @@ function AdvertisingModule() {
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   {directHelpText}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {!directReady ? (
+                    <a
+                      href="/api/admin/direct/oauth/start"
+                      className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Войти в Direct
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setWizardOpen(true);
+                        setDirectProOpen(true);
+                      }}
+                      className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                    >
+                      <UploadCloud className="h-3.5 w-3.5" />
+                      Готовить выгрузку
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setReadinessOpen(true)}
+                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-primary/[0.08]"
+                  >
+                    <Settings2 className="h-3.5 w-3.5" />
+                    Донастроить
+                  </button>
+                </div>
                 {!directReady ? (
                   <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/[0.08] p-2.5 text-xs leading-relaxed">
                     <div className="font-semibold text-foreground">

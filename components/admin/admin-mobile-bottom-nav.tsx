@@ -9,7 +9,7 @@
  * Пункты слева адаптируются под роль (warehouse → Товары вместо Заказы и т.д.)
  *
  * ARAY в центре:
- *  - Tap        → onArayOpen() (открывает единый чат)
+ *  - Tap        → onArayOpen("phone") (открывает центр связи AR Phone)
  *  - Long-press → aray:voice (открывает единый чат сразу в голосовом режиме)
  *
  * Колокольчик: открывает popup с уведомлениями (новые заказы, отзывы, заявки сотрудников).
@@ -24,6 +24,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   ShoppingBag,
+  ShoppingCart,
   Package,
   Bell,
   Search,
@@ -91,6 +92,15 @@ const NOTIF_ITEM_META: Record<NotifItemKind, { icon: React.ElementType; classNam
   notification_issue: { icon: AlertTriangle, className: "text-destructive" },
   task_assigned: { icon: ClipboardList, className: "text-muted-foreground" },
 };
+
+type TerminalCartSnapshot = {
+  items?: number;
+  total?: number;
+  visible?: boolean;
+};
+
+const TERMINAL_CART_EVENT = "aray:terminal-cart";
+const TERMINAL_CART_OPEN_EVENT = "aray:terminal-cart-open";
 
 function formatNotifDate(value: string) {
   const date = new Date(value);
@@ -178,7 +188,7 @@ interface Props {
   /** @deprecated теперь menuOpen приходит из useAccountDrawer().open */
   menuOpen?: boolean;
   newOrdersCount?: number;
-  onArayOpen?: (mode?: "open" | "voice") => void;
+  onArayOpen?: (mode?: "open" | "voice" | "phone") => void;
   onSearchOpen?: () => void;
   arayListening?: boolean;
   arayHasNew?: boolean;
@@ -219,6 +229,11 @@ export function AdminMobileBottomNav({
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null);
   const [globalOverlayOpen, setGlobalOverlayOpen] = useState(false);
+  const [terminalCart, setTerminalCart] = useState({
+    items: 0,
+    total: 0,
+    visible: false,
+  });
 
   // Единый AccountDrawer (тот же что в магазине)
   const { open: accountOpen, toggle: toggleAccount } = useAccountDrawer();
@@ -337,6 +352,31 @@ export function AdminMobileBottomNav({
     return () => query.removeListener(sync);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleTerminalCart = (event: Event) => {
+      const detail = (event as CustomEvent<TerminalCartSnapshot>).detail || {};
+      const items = Math.max(0, Number(detail.items) || 0);
+      const total = Math.max(0, Number(detail.total) || 0);
+
+      setTerminalCart({
+        items,
+        total,
+        visible: Boolean(detail.visible) && items > 0,
+      });
+    };
+
+    window.addEventListener(TERMINAL_CART_EVENT, handleTerminalCart);
+    return () => window.removeEventListener(TERMINAL_CART_EVENT, handleTerminalCart);
+  }, []);
+
+  useEffect(() => {
+    if (!pathname.startsWith("/admin/orders/new")) {
+      setTerminalCart({ items: 0, total: 0, visible: false });
+    }
+  }, [pathname]);
+
   // Polling уведомлений (60s — для экономии батареи; chime при увеличении)
   useEffect(() => {
     if (!notificationsEnabled) {
@@ -442,6 +482,8 @@ export function AdminMobileBottomNav({
   const CapsuleIcon = activeNavItem?.icon || activeNavGroup?.icon || ArayIcon;
   const dockPrimaryItem = mobileCapsule.items[0];
   const dockSecondaryItem = mobileCapsule.items[1];
+  const terminalCartActive =
+    pathname.startsWith("/admin/orders/new") && terminalCart.visible && terminalCart.items > 0;
   useAdminOverlayGuard(sheetOpen);
 
   // Cleanup
@@ -929,8 +971,8 @@ export function AdminMobileBottomNav({
             <button
               type="button"
               disabled={!arayEnabled}
-              aria-label={arayEnabled ? "ARAY — открыть чат" : "ARAY недоступен для роли или модуля"}
-              title={arayEnabled ? "ARAY" : "ARAY недоступен для роли или модуля"}
+              aria-label={arayEnabled ? "ARAY — открыть центр связи" : "ARAY недоступен для роли или модуля"}
+              title={arayEnabled ? "ARAY Phone" : "ARAY недоступен для роли или модуля"}
               onPointerDown={() => {
                 if (!arayEnabled) return;
                 arayLongPressFiredRef.current = false;
@@ -974,7 +1016,7 @@ export function AdminMobileBottomNav({
                   return;
                 }
                 haptic(8);
-                onArayOpen?.("open");
+                onArayOpen?.("phone");
               }}
               onContextMenu={(e) => e.preventDefault()}
               className={`flex flex-col items-center transition-transform duration-150 focus:outline-none ${
@@ -1011,7 +1053,19 @@ export function AdminMobileBottomNav({
 
           {/* Правые: Новое/Аккаунт + карта разделов */}
           <div className="flex flex-1 items-center justify-around pt-1">
-            {dockSecondaryItem ? (
+            {terminalCartActive ? (
+              <NavItem
+                icon={ShoppingCart}
+                label="Корзина"
+                onClick={() => {
+                  setNotifOpen(false);
+                  setMenuOpen(false);
+                  window.dispatchEvent(new CustomEvent(TERMINAL_CART_OPEN_EVENT));
+                }}
+                isActive={pathname.startsWith("/admin/orders/new")}
+                badge={terminalCart.items}
+              />
+            ) : dockSecondaryItem ? (
               <NavItem
                 icon={dockSecondaryItem.icon}
                 label={dockSecondaryItem.compactLabel}

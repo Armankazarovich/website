@@ -9,12 +9,14 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Copy,
   Download,
   Ellipsis,
   KeyRound,
   Loader2,
   Mail,
   Pencil,
+  PhoneCall,
   Search,
   ShoppingBag,
   Trash2,
@@ -36,6 +38,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAdminPageActions } from "@/components/admin/admin-page-actions";
 import { RelatedTasksPanel } from "@/components/admin/related-tasks-panel";
 import { ARAY_ICON_TONE, ARAY_ICON_TONE_DANGER, ARAY_ICON_TONE_MUTED } from "@/lib/aray-design-tokens";
+import { createStableArayNumber, formatArayPublicNumber } from "@/lib/aray-communication-identity";
 import { cn, formatPrice, ORDER_STATUS_COLORS, ORDER_STATUS_LABELS } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 
@@ -209,6 +212,21 @@ function getInitialFilter(searchParams: ReturnType<typeof useSearchParams>): Cli
   if (searchParams.get("period") === "new") return "new";
   const raw = searchParams.get("segment");
   return CLIENT_FILTERS.some((item) => item.id === raw) ? (raw as ClientFilter) : "all";
+}
+
+function getClientArayNumber(client: Client) {
+  return formatArayPublicNumber(createStableArayNumber({ id: `account:${client.id}` }));
+}
+
+function dialArayNumber(number: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("aray:phone-dial", { detail: { number } }));
+}
+
+async function copyText(value: string) {
+  try {
+    await navigator.clipboard?.writeText(value);
+  } catch {}
 }
 
 export function ClientsList({ clients: initialClients }: { clients: Client[] }) {
@@ -540,6 +558,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
             const avatar = displayName !== "Без имени" ? displayName.charAt(0) : client.email.charAt(0);
             const orderCount = client.orderCount ?? client.orders.length;
             const paidOrderCount = client.paidOrderCount ?? meta.paidOrders.length;
+            const arayNumber = getClientArayNumber(client);
 
             return (
               <article
@@ -570,6 +589,30 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                         <span className="truncate">{client.email}</span>
                         {client.phone ? <span>{client.phone}</span> : <span>телефон не указан</span>}
                         {client.address ? <span className="truncate">адрес есть</span> : null}
+                      </div>
+                      <div className="mt-2 flex max-w-full flex-wrap items-center gap-1.5">
+                        <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2.5 text-[11px] font-bold text-primary">
+                          <PhoneCall className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{arayNumber}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => dialArayNumber(arayNumber)}
+                          className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                          title="Набрать в AR Phone"
+                        >
+                          <PhoneCall className="h-3 w-3" />
+                          Набрать
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void copyText(arayNumber)}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/45 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                          title="Скопировать номер"
+                          aria-label="Скопировать номер"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </button>
                       </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">
                         Зарегистрирован {new Date(client.createdAt).toLocaleDateString("ru-RU")} · {meta.segmentHint}

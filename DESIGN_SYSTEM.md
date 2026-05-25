@@ -253,6 +253,44 @@ className={isActive
 
 `bg-primary text-primary-foreground` больше не используем для переключателей и маленьких рабочих кнопок. Такой стиль слишком тяжёлый в тёмной админке и визуально превращает экран в набор жёлтых плашек.
 
+**ПилоРус public store exception, 2026-05-21:** текстовые filter chips в каталоге утверждены Арманом как эталонный вид для быстрых фильтров: спокойный `bg-card border-border`, на выбранном состоянии допустима плотная primary-заливка. Этот паттерн живёт как `store-control-chip` и применяется только к текстовым/сегментным чипам, где пользователь выбирает режим или фильтр.
+
+**Icon-only actions не являются filter chips.** Иконки хедера, compare/wishlist/cart, иконки на карточке товара, мини-кнопки сторис и floating launchers не должны получать цельную primary-заливку при selected/count state. Их эталон:
+
+```css
+border: 1px solid hsl(var(--border));
+background: hsl(var(--card));
+color: hsl(var(--foreground) / 0.82);
+```
+
+Selected для product-card icon-only:
+
+```css
+border: 1px solid hsl(var(--primary) / 0.52);
+background: hsl(0 0% 100% / 0.98);
+color: hsl(24 22% 9%);
+```
+
+Product-card icon-only selected не использует orange/primary как заливку. Поверх фото товара иконки держим на мягкой светлой surface (`white/96 -> warm-white/88`) с нейтральной чернильной иконкой, независимо от light/dark темы, чтобы они читались на белой товарной фотографии и выглядели дорого, но спокойно. Состояние показывается аккуратной primary-рамкой и маленьким checkmark-бейджем. Статус `В наличии` остаётся компактной светлой меткой с маленькой зелёной точкой, без яркой зелёной капсулы.
+
+Availability sticker contract:
+
+```ts
+getProductAvailability(variants)
+```
+
+Product-card and product-gallery stock stickers use the same `store-stock-badge` surface as service chips: warm light surface, thin warm border, small status dot, no solid green/orange capsule. Supported states are `is-in-stock`, `is-low-stock`, `is-on-order`, `is-out-of-stock`. If `stockQty` is tracked and equals `0`, the variant is not purchasable even when old `inStock` data is still true; the UI shows `Под заказ`/non-purchasable state and cart actions stay disabled. Do not reintroduce direct `variant.inStock` cart checks in public product UI; use `isProductVariantPurchasable()`.
+
+Selected для header icon-only:
+
+```css
+border-color: hsl(var(--border));
+background: hsl(var(--card));
+color: hsl(var(--foreground) / 0.82);
+```
+
+В хедере наличие товара в корзине/избранном/сравнении показывает только маленькая primary-цифра (`store-header-action-badge`). Саму рамку и фон хедера не красим. Если иконка в хедере стала сплошной оранжевой плашкой или получила оранжевую рамку только из-за count, это регресс. Оранжевая заливка разрешена для основного CTA и текстовых filter chips, но не для маленьких иконок-действий.
+
 ### 2.4 CTA secondary (outline)
 
 ```tsx

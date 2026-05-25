@@ -39,6 +39,18 @@ const LazyArayWidget = dynamic(
   { loading: () => null, ssr: false },
 );
 
+const ARAY_PHONE_HOME_OPEN_KEY = "aray-phone-home-open-v1";
+const ARAY_PHONE_HOME_DEFAULT_VERSION_KEY = "aray-phone-home-default-version-v1";
+const ARAY_PHONE_HOME_DEFAULT_VERSION = "2026-05-25-ar-phone-open";
+
+function shouldAutoOpenAdminPhone(page?: string) {
+  if (!page?.startsWith("/admin")) return false;
+  if (typeof window === "undefined") return false;
+  const version = window.localStorage.getItem(ARAY_PHONE_HOME_DEFAULT_VERSION_KEY);
+  if (version !== ARAY_PHONE_HOME_DEFAULT_VERSION) return true;
+  return window.localStorage.getItem(ARAY_PHONE_HOME_OPEN_KEY) !== "closed";
+}
+
 interface ArayGlobalAssistantProps {
   enabled?: boolean;
   page?: string;
@@ -98,6 +110,22 @@ export function ArayGlobalAssistant({
   }, [enabled]);
 
   useEffect(() => {
+    if (!enabled || widgetMountedRef.current) return;
+
+    const mountDelay = page?.startsWith("/admin") ? 900 : 1800;
+    const timer = window.setTimeout(() => {
+      if (widgetMountedRef.current) return;
+      if (shouldAutoOpenAdminPhone(page)) {
+        (window as ArayPendingWindow).__arayPendingOpen = "open";
+      }
+      widgetMountedRef.current = true;
+      setWidgetMounted(true);
+    }, mountDelay);
+
+    return () => window.clearTimeout(timer);
+  }, [enabled, page]);
+
+  useEffect(() => {
     const bootAndReplay = (event: Event) => {
       if (replayingRef.current) return;
       const needsBoot = !widgetMountedRef.current;
@@ -123,10 +151,12 @@ export function ArayGlobalAssistant({
 
     window.addEventListener("aray:open", bootAndReplay);
     window.addEventListener("aray:voice", bootAndReplay);
+    window.addEventListener("aray:phone-open", bootAndReplay);
     window.addEventListener("aray:prompt", bootAndReplay);
     return () => {
       window.removeEventListener("aray:open", bootAndReplay);
       window.removeEventListener("aray:voice", bootAndReplay);
+      window.removeEventListener("aray:phone-open", bootAndReplay);
       window.removeEventListener("aray:prompt", bootAndReplay);
     };
   }, []);

@@ -12,6 +12,7 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { AdminModal } from "@/components/admin/admin-modal";
 import { useToast } from "@/components/ui/use-toast";
@@ -509,7 +510,10 @@ function LeadDetailPanel({
     setActLoading(true);
     fetch(`/api/admin/crm/leads/${lead.id}/activities`)
       .then(r => r.json())
-      .then(d => { setActivities(d.activities || []); setActLoading(false); })
+      .then(d => {
+        setActivities(Array.isArray(d) ? d : d.activities || []);
+        setActLoading(false);
+      })
       .catch(() => setActLoading(false));
   }, [lead.id]);
 
@@ -735,7 +739,7 @@ function LeadDetailPanel({
                   <div key={a.id} className="arayglass rounded-xl p-3 flex gap-2.5">
                     <div className="w-1 shrink-0 rounded-full bg-primary/20 self-stretch" />
                     <div className="min-w-0">
-                      <p className="text-sm text-foreground">{a.content || a.type}</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap break-words">{a.text || a.content || a.type}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{timeAgo(a.createdAt)}</p>
                     </div>
                   </div>
@@ -1170,6 +1174,7 @@ function OrdersKanban({ search }: { search: string }) {
   const [mobileOrderStage, setMobileOrderStage] = useState("NEW");
   const [selectedOrder, setSelectedOrder] = useState<OrderCard | null>(null);
   const dragOrderRef = useRef<OrderCard | null>(null);
+  const hasLoadedOrdersRef = useRef(false);
 
   const fetchOrders = useCallback(async (initial = false) => {
     if (initial) setLoading(true);
@@ -1186,7 +1191,10 @@ function OrdersKanban({ search }: { search: string }) {
     }
   }, [search]);
 
-  useEffect(() => { fetchOrders(orders.length === 0); }, [fetchOrders]);
+  useEffect(() => {
+    fetchOrders(!hasLoadedOrdersRef.current);
+    hasLoadedOrdersRef.current = true;
+  }, [fetchOrders]);
 
   // Auto-refresh every 30s
   useEffect(() => {
@@ -1460,7 +1468,9 @@ function OrdersKanban({ search }: { search: string }) {
 
 export function CrmClient() {
   const { toast } = useToast();
-  const [tab, setTab] = useState<"orders" | "leads">("orders");
+  const searchParams = useSearchParams();
+  const selectedLeadId = searchParams.get("leadId") || "";
+  const [tab, setTab] = useState<"orders" | "leads">(selectedLeadId ? "leads" : "orders");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1500,6 +1510,16 @@ export function CrmClient() {
     if (tab !== "leads") return;
     fetchLeads();
   }, [fetchLeads, tab]);
+
+  useEffect(() => {
+    if (!selectedLeadId) return;
+    setTab("leads");
+    const found = leads.find((lead) => lead.id === selectedLeadId);
+    if (found) {
+      setSelectedLead(found);
+      setMobileStage(found.stage);
+    }
+  }, [leads, selectedLeadId]);
 
   // Фильтрация по источнику
   const filteredLeads = sourceFilter === "ALL" ? leads : leads.filter(l => l.source === sourceFilter);

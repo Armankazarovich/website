@@ -640,7 +640,7 @@ export function useAdminSmartSearch({
     return uniqueResults([...quickResults, ...dynamicResults, ...sectionResults]
       .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title, "ru"))
     ).slice(0, limit);
-  }, [activeContext, activeNavItem, data, limit, pathname, query, quickItems, role, t, visibleSections]);
+  }, [activeNavItem, data, limit, pathname, query, quickItems, t, visibleSections]);
 
   return {
     query,

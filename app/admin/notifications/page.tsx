@@ -282,7 +282,7 @@ export default function NotificationsPage() {
         })
         .finally(() => setSubsLoading(false));
     }
-  }, [tab]);
+  }, [subs.length, tab]);
 
   const filteredSubs = subs.filter((s) => {
     if (subsFilter === "registered") return s.isRegistered;

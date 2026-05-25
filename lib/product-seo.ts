@@ -18,6 +18,7 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { buildArayContentDraft } from "@/lib/aray-content-core";
 
 const PRODUCT_SEO_DEFAULT_SETTINGS: Record<string, string> = {
   company_city: "Химки",
@@ -108,43 +109,27 @@ export function generateProductDescription(
   const city = getProductSeoSetting(settings, "company_city") || "Химках";
   const region = getProductSeoSetting(settings, "delivery_region") || "Москве и Московской области";
   const variants = product.variants ?? [];
-
-  const parts: string[] = [];
-
-  // Часть 1: что это + откуда
-  parts.push(`Купить ${product.name} от производителя в ${city}.`);
-
-  // Часть 2: доступные размеры
-  const sizes = uniqueSizes(variants);
-  if (sizes.length > 0) {
-    if (sizes.length === 1) {
-      parts.push(`Размер ${sizes[0]}.`);
-    } else if (sizes.length <= 4) {
-      parts.push(`Доступные размеры: ${sizes.join(", ")}.`);
-    } else {
-      parts.push(`Доступно ${sizes.length} размеров: ${sizes.slice(0, 3).join(", ")} и другие.`);
-    }
-  }
-
-  // Часть 3: категория (если есть)
-  const categoryName = product.category?.name?.trim();
-  if (categoryName && !product.name.toLowerCase().includes(categoryName.toLowerCase())) {
-    parts.push(`Категория: ${categoryName}.`);
-  }
-
-  // Часть 4: минимальная цена
   const minPrice = getMinPrice(variants);
-  if (minPrice) {
-    parts.push(`Цена от ${formatRub(minPrice.value)} ₽/${minPrice.unit}.`);
-  }
 
-  // Часть 5: доставка из настроек
-  parts.push(`Доставка по ${formatDeliveryRegion(region)} за 1–3 рабочих дня.`);
-
-  // Часть 6: доверие
-  parts.push("Собственное производство, контроль качества на каждом этапе.");
-
-  return parts.join(" ");
+  return buildArayContentDraft({
+    kind: "product",
+    title: product.name,
+    description: product.description,
+    category: product.category?.name ?? null,
+    price: minPrice ? `от ${formatRub(minPrice.value)} ₽` : null,
+    unit: minPrice ? `за ${minPrice.unit}` : null,
+    city,
+    region: formatDeliveryRegion(region),
+    businessType: "catalog",
+    tone: "steady",
+    variants: variants.map((variant) => ({
+      size: variant.size,
+      pricePerCube: toNumber(variant.pricePerCube),
+      pricePerPiece: toNumber(variant.pricePerPiece),
+      inStock: variant.inStock,
+    })),
+    benefits: ["понятная цена", "размеры в наличии", "доставка 1-3 дня"],
+  }).plainDescription;
 }
 
 /**
@@ -286,17 +271,12 @@ export function readinessIssueLabel(issue: ProductReadinessIssue): string {
  *   });
  */
 export function getPublicProductsFilter(): Prisma.ProductWhereInput {
+  const publicVariantFilter = getPublicVariantsFilter();
   return {
     active: true,
     images: { isEmpty: false },
     variants: {
-      some: {
-        inStock: true,
-        OR: [
-          { pricePerCube: { not: null, gt: 0 } },
-          { pricePerPiece: { not: null, gt: 0 } },
-        ],
-      },
+      some: publicVariantFilter,
     },
   };
 }
@@ -305,12 +285,36 @@ export function getPublicProductsFilter(): Prisma.ProductWhereInput {
  * Тот же фильтр, но для вложенных variants — чтобы в списке товара
  * клиенты видели только покупаемые варианты (с ценой и в наличии).
  */
-export function getPublicVariantsFilter(): Prisma.ProductVariantWhereInput {
+function getPublicVariantStockFilter(): Prisma.ProductVariantWhereInput {
   return {
-    inStock: true,
+    OR: [{ stockQty: null }, { stockQty: { gt: 0 } }],
+  };
+}
+
+function getPublicVariantAnyPriceFilter(): Prisma.ProductVariantWhereInput {
+  return {
     OR: [
       { pricePerCube: { not: null, gt: 0 } },
       { pricePerPiece: { not: null, gt: 0 } },
+    ],
+  };
+}
+
+export function getPublicVariantsFilter(): Prisma.ProductVariantWhereInput {
+  return {
+    inStock: true,
+    AND: [getPublicVariantStockFilter(), getPublicVariantAnyPriceFilter()],
+  };
+}
+
+export function getPublicVariantUnitFilter(unitType: "CUBE" | "PIECE"): Prisma.ProductVariantWhereInput {
+  return {
+    inStock: true,
+    AND: [
+      getPublicVariantStockFilter(),
+      unitType === "CUBE"
+        ? { pricePerCube: { not: null, gt: 0 } }
+        : { pricePerPiece: { not: null, gt: 0 } },
     ],
   };
 }

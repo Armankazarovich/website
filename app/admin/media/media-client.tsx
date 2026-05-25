@@ -14,6 +14,7 @@ import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useClassicMode } from "@/lib/use-classic-mode";
 
 type MediaKind = "image" | "video" | "document";
+type PickerKind = "image" | "video" | "all";
 type QuickFilter = "all" | "missing-alt" | "used" | "unused" | "images" | "videos";
 const MEDIA_BATCH = 96;
 const FOLDER_LABELS: Record<string, string> = {
@@ -25,6 +26,8 @@ const FOLDER_LABELS: Record<string, string> = {
   watermarks: "Водяные знаки",
   banners: "Баннеры",
   posts: "Новости",
+  services: "Услуги",
+  stories: "Сторис",
   videos: "Видео",
   brand: "Бренд",
   default: "Разное",
@@ -37,6 +40,8 @@ const FOLDER_ORDER = [
   "brand",
   "banners",
   "posts",
+  "services",
+  "stories",
   "videos",
   "aray",
   "watermarks",
@@ -46,7 +51,7 @@ const FOLDER_ORDER = [
 type MediaFile = {
   url: string; folder: string; filename: string; kind: MediaKind;
   size: number; mtime: number; alt: string;
-  usedIn: { type: "product" | "category"; id: string; name: string; slug: string }[];
+  usedIn: { type: "product" | "category" | "service" | "post" | "story"; id: string; name: string; slug: string }[];
 };
 
 function fmtSize(bytes: number) {
@@ -65,12 +70,13 @@ function folderLabel(folder: string) {
 
 // ── File card ─────────────────────────────────────────────────────────────────
 function MediaCard({
-  file, selected, bulkMode, bulkSelected, onSelect, onDelete, onAltSave, onCopy,
+  file, selected, bulkMode, bulkSelected, pickerMode, onSelect, onDelete, onAltSave, onCopy,
 }: {
   file: MediaFile;
   selected: boolean;
   bulkMode: boolean;
   bulkSelected: boolean;
+  pickerMode?: boolean;
   onSelect: () => void;
   onDelete: () => void;
   onAltSave: (alt: string) => Promise<void>;
@@ -192,7 +198,7 @@ function MediaCard({
         )}
 
         {/* Actions overlay (not in bulk mode) */}
-        {!bulkMode && (
+        {!bulkMode && !pickerMode && (
           <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
             <button onClick={onCopy} title="Копировать URL"
               className="w-7 h-7 rounded-lg bg-black/60 text-white flex items-center justify-center hover:bg-black/80">
@@ -213,11 +219,11 @@ function MediaCard({
       </div>
 
       {/* Info */}
-      <div className="p-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+      <div className="p-2 space-y-1.5" onClick={pickerMode ? undefined : (e) => e.stopPropagation()}>
         <p className="text-[11px] text-muted-foreground truncate" title={file.filename}>{file.filename}</p>
         <p className="text-[10px] text-muted-foreground">{fmtSize(file.size)} · {fmtDate(file.mtime)}</p>
 
-        {!bulkMode && (
+        {!bulkMode && !pickerMode && (
           <>
             {/* ALT input */}
             <div className="flex gap-1">
@@ -274,7 +280,17 @@ function MediaCard({
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boolean; onPick?: (url: string) => void }) {
+export function MediaClient({
+  pickerMode = false,
+  onPick,
+  pickerKind = "image",
+  initialFolder,
+}: {
+  pickerMode?: boolean;
+  onPick?: (url: string, file?: MediaFile) => void;
+  pickerKind?: PickerKind;
+  initialFolder?: string;
+}) {
   const isClassic = useClassicMode();
   const popupStyle = isClassic ? {
     background: "hsl(var(--card))",
@@ -293,7 +309,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [search, setSearch] = useState("");
-  const [folder, setFolder] = useState<string>(pickerMode ? "products" : "all");
+  const [folder, setFolder] = useState<string>(pickerMode ? (initialFolder ?? "products") : "all");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [selected, setSelected] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
@@ -347,7 +363,11 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   // Filter
   const filtered = files.filter((f) => {
-    if (pickerMode && f.kind !== "image") return false;
+    if (pickerMode) {
+      if (pickerKind === "image" && f.kind !== "image") return false;
+      if (pickerKind === "video" && f.kind !== "video") return false;
+      if (pickerKind === "all" && f.kind !== "image" && f.kind !== "video") return false;
+    }
     const needle = search.trim().toLowerCase();
     const matchFolder = folder === "all" || f.folder === folder;
     const matchSearch = !needle || f.filename.toLowerCase().includes(needle) ||
@@ -368,9 +388,9 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 
   useEffect(() => {
     setRenderLimit(MEDIA_BATCH);
-  }, [search, folder, quickFilter, pickerMode]);
+  }, [search, folder, quickFilter, pickerMode, pickerKind]);
 
-  const folders = ["all", ...Array.from(new Set(files.map((f) => f.folder)))]
+  const folders = Array.from(new Set(["all", initialFolder, ...files.map((f) => f.folder)].filter(Boolean) as string[]))
     .sort((a, b) => {
       const ai = FOLDER_ORDER.indexOf(a);
       const bi = FOLDER_ORDER.indexOf(b);
@@ -394,9 +414,7 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
     const fd = new FormData();
     fd.append("file", file);
     const targetFolder = folder === "all"
-      ? file.type.startsWith("video/")
-        ? "videos"
-        : "products"
+      ? initialFolder ?? (file.type.startsWith("video/") ? "videos" : "products")
       : folder;
     fd.append("folder", targetFolder);
 
@@ -766,8 +784,9 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
               selected={selected === file.url}
               bulkMode={bulkMode}
               bulkSelected={bulkSelected.has(file.url)}
+              pickerMode={pickerMode}
               onSelect={() => {
-                if (pickerMode && onPick) { onPick(file.url); return; }
+                if (pickerMode && onPick) { onPick(file.url, file); return; }
                 if (bulkMode) { toggleBulkSelect(file.url); return; }
                 setSelected(selected === file.url ? null : file.url);
               }}
@@ -835,7 +854,21 @@ export function MediaClient({ pickerMode = false, onPick }: { pickerMode?: boole
 }
 
 // ── Picker modal (for use inside product edit) ────────────────────────────────
-export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (url: string) => void }) {
+export function MediaPickerModal({
+  open,
+  onClose,
+  onPick,
+  pickerKind = "image",
+  initialFolder,
+  title = "Выбрать из медиабиблиотеки",
+}: {
+  open: boolean;
+  onClose: () => void;
+  onPick: (url: string, file?: MediaFile) => void;
+  pickerKind?: PickerKind;
+  initialFolder?: string;
+  title?: string;
+}) {
   const isClassic = useClassicMode();
   useAdminOverlayGuard(open);
   const popupStyle = isClassic ? {
@@ -860,23 +893,28 @@ export function MediaPickerModal({ open, onClose, onPick }: { open: boolean; onC
   };
 
   const modal = (
-    <div className="fixed inset-0 z-[220] flex items-center justify-center px-3 sm:px-4" style={overlayStyle}>
+    <div className="fixed inset-0 z-[420] flex items-center justify-center px-3 sm:px-4 pointer-events-auto" style={overlayStyle}>
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Выбрать из медиабиблиотеки"
+        aria-label={title}
         className="admin-popup-liquid admin-modal-panel relative flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl"
         style={modalStyle}
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-          <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}>Выбрать из медиабиблиотеки</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "rgba(255,255,255,0.6)" }}>
+          <h2 className="font-bold text-lg" style={{ color: isClassic ? undefined : "hsl(var(--foreground) / 0.92)" }}>{title}</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-primary/[0.04] flex items-center justify-center transition-colors" style={{ color: isClassic ? undefined : "hsl(var(--foreground) / 0.6)" }}>
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
-          <MediaClient pickerMode onPick={(url) => { onPick(url); onClose(); }} />
+          <MediaClient
+            pickerMode
+            pickerKind={pickerKind}
+            initialFolder={initialFolder}
+            onPick={(url, file) => { onPick(url, file); onClose(); }}
+          />
         </div>
       </div>
     </div>

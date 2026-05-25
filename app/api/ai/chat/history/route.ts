@@ -21,9 +21,9 @@ export async function GET() {
       ? { userId }
       : { sessionId: sessionId! };
 
-    const messages = await prisma.arayMessage.findMany({
+    const latestMessages = await prisma.arayMessage.findMany({
       where,
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
       take: 50, // последние 50 сообщений
       select: {
         id: true,
@@ -33,7 +33,7 @@ export async function GET() {
       },
     });
 
-    return NextResponse.json({ messages });
+    return NextResponse.json({ messages: latestMessages.reverse() });
   } catch (e) {
     console.error("[aray-history] GET error:", e);
     return NextResponse.json({ messages: [] });

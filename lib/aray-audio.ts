@@ -12,6 +12,22 @@
 let currentAudio: HTMLAudioElement | null = null;
 let currentUrl: string | null = null;
 
+function browserSpeechProfile(text: string, lang: string) {
+  const normalized = text.toLowerCase();
+  const isRussian = lang.toLowerCase().startsWith("ru");
+  if (!isRussian) return { rate: 0.92, pitch: 0.98 };
+
+  if (/(сроч|критич|горит|ошиб|опасн|не работает|не хватает|просроч|риск|внимание)/.test(normalized)) {
+    return { rate: 0.88, pitch: 0.96 };
+  }
+
+  if (/(главное|важно|итог|действие|следующий шаг|срок|заказ|задач|цель|бюджет|расход|выручк|готовност)/.test(normalized)) {
+    return { rate: 0.90, pitch: 0.97 };
+  }
+
+  return { rate: 0.94, pitch: 0.98 };
+}
+
 /**
  * Останавливает текущую озвучку (если играет).
  * Безопасно вызывать когда audio нет.
@@ -88,13 +104,24 @@ export function speakAraySpeechBrowser(text: string, lang = "ru-RU"): Promise<vo
 
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = lang;
-  utter.rate = 0.94;
-  utter.pitch = 0.98;
+  const profile = browserSpeechProfile(text, lang);
+  utter.rate = profile.rate;
+  utter.pitch = profile.pitch;
 
   try {
     const voices = window.speechSynthesis.getVoices();
-    const ruVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("ru"));
-    if (ruVoice) utter.voice = ruVoice;
+    const requested = lang.toLowerCase();
+    const base = requested.split("-")[0];
+    const exactVoice = voices.find((voice) => voice.lang.toLowerCase() === requested);
+    const baseVoice = voices.find((voice) => voice.lang.toLowerCase().split("-")[0] === base);
+    const ruVoice = requested.startsWith("ru")
+      ? voices.find((voice) => voice.lang.toLowerCase().startsWith("ru"))
+      : null;
+    const selectedVoice = exactVoice || baseVoice || ruVoice;
+    if (selectedVoice) utter.voice = selectedVoice;
+    if (!selectedVoice && !requested.startsWith("ru") && !requested.startsWith("en")) {
+      return Promise.resolve();
+    }
   } catch {}
 
   return new Promise<void>((resolve) => {

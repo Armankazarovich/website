@@ -131,6 +131,8 @@ run("Admin navigation model validation", "node", ["scripts/validate-admin-naviga
 run("Admin UI integrity guard", "node", ["scripts/validate-admin-ui-integrity.js"]);
 run("Admin responsive guard", "node", ["scripts/validate-admin-responsive.js"]);
 run("Admin performance guard", "node", ["scripts/validate-admin-performance.js"]);
+run("Store stories guard", "node", ["scripts/validate-store-stories.js"]);
+run("Content tools guard", "node", ["scripts/validate-content-tools.js"]);
 run("TypeScript check", "npx", ["tsc", "--noEmit"]);
 scanSecrets();
 

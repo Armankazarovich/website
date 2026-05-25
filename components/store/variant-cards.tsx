@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
+import { getPurchasableQuantityLimit, isProductVariantPurchasable } from "@/lib/product-availability";
 
 interface Variant {
   id: string;
@@ -13,6 +14,8 @@ interface Variant {
   pricePerPiece: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
+  stockQty?: number | null;
+  lowStockThreshold?: number | null;
 }
 
 interface VariantCardsProps {
@@ -22,6 +25,41 @@ interface VariantCardsProps {
   productImage?: string;
   saleUnit: string;
   variants: Variant[];
+}
+
+type PurchaseUnit = "CUBE" | "PIECE";
+
+function getVariantPurchaseOption(variant: Variant, saleUnit: string) {
+  const cubePrice = Number(variant.pricePerCube) || 0;
+  const piecePrice = Number(variant.pricePerPiece) || 0;
+  const preferredUnit: PurchaseUnit | null =
+    saleUnit === "PIECE"
+      ? "PIECE"
+      : saleUnit === "CUBE"
+        ? "CUBE"
+        : cubePrice > 0
+          ? "CUBE"
+          : piecePrice > 0
+            ? "PIECE"
+            : null;
+
+  if (preferredUnit === "CUBE" && cubePrice > 0) {
+    return {
+      unitType: "CUBE" as const,
+      price: cubePrice,
+      unitLabel: "м³",
+      maxQuantity: getPurchasableQuantityLimit(variant, "CUBE"),
+    };
+  }
+  if (preferredUnit === "PIECE" && piecePrice > 0) {
+    return {
+      unitType: "PIECE" as const,
+      price: piecePrice,
+      unitLabel: "шт",
+      maxQuantity: getPurchasableQuantityLimit(variant, "PIECE"),
+    };
+  }
+  return null;
 }
 
 export function VariantCards({
@@ -47,13 +85,10 @@ export function VariantCards({
   }, [query, variants]);
 
   const handleAdd = (e: React.MouseEvent<HTMLDivElement>, v: Variant) => {
-    if (!v.inStock) return;
+    if (!isProductVariantPurchasable(v)) return;
 
-    const isPiece = saleUnit === "PIECE";
-    const unitType = isPiece ? "PIECE" : "CUBE";
-    const price = isPiece
-      ? (v.pricePerPiece ?? 0)
-      : (v.pricePerCube ?? v.pricePerPiece ?? 0);
+    const option = getVariantPurchaseOption(v, saleUnit);
+    if (!option) return;
 
     flyToCart(e.currentTarget, productImage ?? null);
 
@@ -68,13 +103,12 @@ export function VariantCards({
       productSlug,
       variantSize: v.size,
       productImage,
-      unitType,
+      unitType: option.unitType,
       quantity: 1,
-      price,
+      price: option.price,
+      maxQuantity: option.maxQuantity,
     });
   };
-
-  const unit = saleUnit === "PIECE" ? "шт" : "м³";
 
   return (
     <div className="space-y-3">
@@ -92,16 +126,15 @@ export function VariantCards({
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {visibleVariants.map((v) => {
-        const price = saleUnit === "PIECE"
-          ? v.pricePerPiece
-          : (v.pricePerCube ?? v.pricePerPiece);
+        const option = getVariantPurchaseOption(v, saleUnit);
+        const isPurchasable = isProductVariantPurchasable(v);
 
         return (
           <div
             key={v.id}
             onClick={(e) => handleAdd(e, v)}
             className={`relative rounded-2xl border p-4 transition-all duration-200 group ${
-              v.inStock
+              isPurchasable
                 ? "border-border bg-card hover:border-primary hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 active:scale-95 cursor-pointer"
                 : "border-border/40 bg-muted/20 opacity-50 cursor-not-allowed"
             }`}
@@ -109,7 +142,7 @@ export function VariantCards({
             {/* Status dot */}
             <div
               className={`absolute top-3 right-3 w-2 h-2 rounded-full ${
-                v.inStock ? "bg-emerald-500" : "bg-muted-foreground/30"
+                isPurchasable ? "bg-emerald-500" : "bg-muted-foreground/30"
               }`}
             />
 
@@ -119,12 +152,12 @@ export function VariantCards({
             </p>
 
             {/* Price */}
-            {price ? (
+            {option ? (
               <div>
                 <p className="font-bold text-lg text-primary leading-none">
-                  {formatPrice(Number(price))}
+                  {formatPrice(option.price)}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">за {unit}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">за {option.unitLabel}</p>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">По запросу</p>
@@ -138,7 +171,7 @@ export function VariantCards({
             )}
 
             {/* Hover cart overlay — only for in-stock */}
-            {v.inStock && (
+            {isPurchasable && (
               <div className="absolute inset-0 rounded-2xl bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <svg
                   width="22"

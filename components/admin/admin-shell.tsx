@@ -355,7 +355,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setArayAssistantMounted(true), 4500);
+    const timer = window.setTimeout(() => setArayAssistantMounted(true), 900);
     return () => window.clearTimeout(timer);
   }, []);
 

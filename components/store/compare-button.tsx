@@ -1,9 +1,10 @@
 "use client";
 
-import type { MouseEvent } from "react";
-import { GitCompareArrows } from "lucide-react";
+import { useEffect, useState, type MouseEvent } from "react";
+import { Check, GitCompareArrows } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCompareStore, type CompareItem } from "@/store/compare";
+import { flyToCompare } from "@/lib/cart-fly";
 
 type CompareButtonProps = {
   item: CompareItem;
@@ -19,11 +20,14 @@ export function CompareButton({
   className,
 }: CompareButtonProps) {
   const { toggle, has } = useCompareStore();
-  const isSelected = has(item.id);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const isSelected = mounted && has(item.id);
 
   const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
+    if (!isSelected) flyToCompare(event.currentTarget);
     toggle(item);
   };
 
@@ -34,14 +38,12 @@ export function CompareButton({
         onClick={handleClick}
         aria-pressed={isSelected}
         className={cn(
-          "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors",
-          isSelected
-            ? "border-primary/45 bg-primary/[0.12] text-primary hover:bg-primary/[0.16]"
-            : "border-border/70 bg-card/70 text-muted-foreground hover:border-primary/30 hover:bg-primary/[0.08] hover:text-primary",
+          "store-action-button store-action-button-inline",
+          isSelected && "is-selected",
           className
         )}
       >
-        <GitCompareArrows className="h-4 w-4" />
+        <GitCompareArrows className="h-4 w-4" strokeWidth={1.9} />
         {isSelected ? "В сравнении" : "Сравнить"}
       </button>
     );
@@ -54,20 +56,24 @@ export function CompareButton({
       aria-label={isSelected ? "Убрать из сравнения" : "Добавить к сравнению"}
       aria-pressed={isSelected}
       className={cn(
-        "group flex items-center justify-center rounded-xl border transition-colors duration-200 active:scale-90",
-        size === "sm" ? "h-7 w-7" : "h-9 w-9",
-        isSelected
-          ? "border-primary/55 bg-primary/[0.14] text-primary hover:bg-primary/[0.18]"
-          : "border-border/70 bg-card/[0.88] text-muted-foreground hover:border-primary/35 hover:bg-card hover:text-primary",
+        "store-action-button store-action-button-floating",
+        size === "sm" ? "h-8 w-8" : "h-9 w-9",
+        isSelected && "is-selected",
         className
       )}
     >
       <GitCompareArrows
         className={cn(
-          "transition-transform duration-200 group-hover:scale-110",
-          size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"
+          "transition-colors duration-200",
+          size === "sm" ? "h-4 w-4" : "h-4 w-4"
         )}
+        strokeWidth={2.15}
       />
+      {isSelected && (
+        <span className="store-action-checkmark" aria-hidden="true">
+          <Check className="h-2.5 w-2.5" strokeWidth={2.4} />
+        </span>
+      )}
     </button>
   );
 }

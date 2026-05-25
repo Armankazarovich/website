@@ -117,6 +117,7 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
         {/* Шапка */}
         <View style={styles.header}>
           <View style={styles.logoRow}>
+            {/* eslint-disable-next-line jsx-a11y/alt-text -- React PDF Image does not support alt. */}
             <Image src={LOGO} style={styles.logo} />
             <View>
               <Text style={styles.company}>ПилоРус</Text>

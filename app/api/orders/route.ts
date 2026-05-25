@@ -2,16 +2,27 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPurchasableQuantityLimit } from "@/lib/product-availability";
+import { getPublicVariantsFilter } from "@/lib/product-seo";
 import { sendOrderNotification, sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { sendTelegramOrderNotification } from "@/lib/telegram";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { auth } from "@/lib/auth";
+import {
+  buildArayBusinessEventPayload,
+  buildArayBusinessEventPlan,
+  formatArayBusinessEventForCrm,
+} from "@/lib/aray-business-events";
 import { z } from "zod";
 // workflow-engine imported dynamically below to avoid circular deps
 import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
 import nodemailer from "nodemailer";
+
+function saleUnitAllows(saleUnit: "CUBE" | "PIECE" | "BOTH", unitType: "CUBE" | "PIECE") {
+  return saleUnit === "BOTH" || saleUnit === unitType;
+}
 
 const attributionSchema = z.object({
   utmSource: z.string().max(200).nullable().optional(),
@@ -69,6 +80,70 @@ export async function POST(req: NextRequest) {
       if (!isNaN(parsedDate.getTime())) firstTouchAt = parsedDate;
     }
 
+    const requestedVariantIds = Array.from(new Set(items.map((item) => item.variantId)));
+    const variants = await prisma.productVariant.findMany({
+      where: {
+        id: { in: requestedVariantIds },
+        ...getPublicVariantsFilter(),
+        product: {
+          active: true,
+          images: { isEmpty: false },
+        },
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            images: true,
+            saleUnit: true,
+            active: true,
+          },
+        },
+      },
+    });
+    const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
+    const serverItems = items.map((item) => {
+      const variant = variantMap.get(item.variantId);
+      if (!variant || !saleUnitAllows(variant.product.saleUnit, item.unitType)) return null;
+
+      const price = Number(item.unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece);
+      const quantity = Number(item.quantity);
+      const maxQuantity = getPurchasableQuantityLimit(variant, item.unitType);
+
+      if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(quantity) || quantity <= 0) return null;
+      if (maxQuantity !== null && quantity > maxQuantity + 0.0001) return null;
+
+      return {
+        variantId: variant.id,
+        productName: variant.product.name,
+        variantSize: variant.size,
+        unitType: item.unitType,
+        quantity,
+        price,
+      };
+    });
+
+    if (serverItems.some((item) => item === null)) {
+      return NextResponse.json(
+        { error: "Часть товаров уже недоступна или изменила цену. Обновите корзину." },
+        { status: 409 },
+      );
+    }
+
+    const safeOrderItems = serverItems as Array<NonNullable<(typeof serverItems)[number]>>;
+    const serverTotal = Number(
+      safeOrderItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2),
+    );
+
+    if (Math.abs(serverTotal - totalAmount) > 1) {
+      return NextResponse.json(
+        { error: "Цены в корзине обновились. Перезагрузите корзину и оформите заказ еще раз." },
+        { status: 409 },
+      );
+    }
+
     // Привязать заказ к аккаунту если пользователь авторизован
     const session = await auth();
     let userId = session?.user?.id ?? null;
@@ -105,7 +180,7 @@ export async function POST(req: NextRequest) {
         deliveryAddress: address,
         paymentMethod: paymentMethod === "cash" ? "Наличные" : "Безнал по счёту",
         comment: comment || null,
-        totalAmount,
+        totalAmount: serverTotal,
         utmSource: attribution?.utmSource ?? null,
         utmMedium: attribution?.utmMedium ?? null,
         utmCampaign: attribution?.utmCampaign ?? null,
@@ -117,7 +192,7 @@ export async function POST(req: NextRequest) {
         landingPage: attribution?.landingPage ?? null,
         firstTouchAt,
         items: {
-          create: items.map((item) => ({
+          create: safeOrderItems.map((item) => ({
             variantId: item.variantId,
             productName: item.productName,
             variantSize: item.variantSize,
@@ -137,6 +212,36 @@ export async function POST(req: NextRequest) {
       quantity: Number(item.quantity),
       price: Number(item.price),
     }));
+    const orderBusinessEventInput = {
+      kind: "order.created" as const,
+      source: "orders" as const,
+      title: `Заказ #${order.orderNumber}`,
+      description: order.comment,
+      entity: {
+        type: "ORDER",
+        id: order.id,
+        label: `Заказ #${order.orderNumber}`,
+        href: `/admin/orders/${order.id}`,
+      },
+      customer: {
+        name: order.guestName,
+        phone: order.guestPhone,
+        email: order.guestEmail,
+      },
+      valueRub: Number(order.totalAmount),
+      niche: "lumber" as const,
+      context: {
+        orderNumber: order.orderNumber,
+        itemsCount: order.items.length,
+        paymentMethod: order.paymentMethod,
+        deliveryAddress: order.deliveryAddress,
+        paymentStatus: order.paymentStatus,
+        fiscalStatus: order.fiscalStatus,
+      },
+    };
+    const orderBusinessEventPlan = buildArayBusinessEventPlan(orderBusinessEventInput);
+    const orderBusinessEventPayload = buildArayBusinessEventPayload(orderBusinessEventInput, orderBusinessEventPlan);
+    const orderAutomationNote = formatArayBusinessEventForCrm(orderBusinessEventPlan);
 
     // Admin email
     sendOrderNotification({
@@ -266,6 +371,7 @@ export async function POST(req: NextRequest) {
             meta: {
               orderNumber: order.orderNumber,
               totalAmount: Number(order.totalAmount),
+              arayBusinessEvent: orderBusinessEventPayload,
             },
           },
         })
@@ -280,12 +386,22 @@ export async function POST(req: NextRequest) {
         email: normalizedEmail,
         source: "WEBSITE",
         stage: "NEW",
-        value: totalAmount,
-        comment: `Заказ #${order.orderNumber} — ${items.map(i => `${i.productName} ${i.variantSize}`).join(", ")}`,
+        value: serverTotal,
+        comment: `Заказ #${order.orderNumber} — ${safeOrderItems.map(i => `${i.productName} ${i.variantSize}`).join(", ")}`,
         tags: ["Заказ"],
         convertedOrderId: order.id,
       },
-    }).catch(console.error);
+    })
+      .then((lead) =>
+        prisma.leadActivity.create({
+          data: {
+            leadId: lead.id,
+            type: "NOTE",
+            text: orderAutomationNote,
+          },
+        }),
+      )
+      .catch(console.error);
 
     // CRM Automation — trigger workflows
     import("@/lib/workflow-engine").then(({ runWorkflows }) => {
@@ -293,10 +409,11 @@ export async function POST(req: NextRequest) {
         orderId: order.id,
         orderNumber: order.orderNumber,
         status: "NEW",
-        totalAmount: Number(totalAmount),
+        totalAmount: Number(serverTotal),
         customerName: name || "Клиент",
         customerPhone: phone || "",
         customerEmail: normalizedEmail || "",
+        arayBusinessEvent: orderBusinessEventPayload,
       }).catch(console.error);
     }).catch(() => {});
 

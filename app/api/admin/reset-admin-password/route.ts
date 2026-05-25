@@ -4,14 +4,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function GET(req: NextRequest) {
-  const secret = req.nextUrl.searchParams.get("secret");
-  const newPassword = req.nextUrl.searchParams.get("password");
+function isAuthorized(secret: string | null) {
+  return Boolean(process.env.CRON_SECRET && secret === process.env.CRON_SECRET);
+}
 
-  if (secret !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function resetFirstAdminPassword(newPassword: string) {
   if (!newPassword || newPassword.length < 8) {
     return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 });
   }
@@ -36,4 +33,23 @@ export async function GET(req: NextRequest) {
     ok: true,
     message: `Password updated for ${admin.email}`,
   });
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => ({}));
+  const secret = typeof body.secret === "string" ? body.secret : req.headers.get("x-cron-secret");
+  const newPassword = typeof body.password === "string" ? body.password : "";
+
+  if (!isAuthorized(secret)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return resetFirstAdminPassword(newPassword);
+}
+
+export async function GET() {
+  return NextResponse.json(
+    { error: "Use POST with x-cron-secret header and JSON password body" },
+    { status: 405, headers: { Allow: "POST" } },
+  );
 }

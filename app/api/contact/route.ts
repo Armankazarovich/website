@@ -9,11 +9,28 @@ const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, phone, message } = await req.json();
+    const {
+      name,
+      phone,
+      message,
+      source,
+      serviceTitle,
+      serviceSlug,
+      preferredDate,
+      preferredTime,
+    } = await req.json();
 
     if (!phone || phone.length < 6) {
       return NextResponse.json({ error: "Укажите телефон" }, { status: 400 });
     }
+
+    const sourceLabel = source === "SERVICE" ? "услуга на сайте" : "форма на странице Контакты";
+    const serviceLine = serviceTitle ? `Услуга: ${serviceTitle}` : null;
+    const timeLine =
+      preferredDate || preferredTime
+        ? `Желаемое время: ${[preferredDate, preferredTime].filter(Boolean).join(" ")}`
+        : null;
+    const crmComment = [serviceLine, timeLine, message].filter(Boolean).join("\n");
 
     // Telegram уведомление
     if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
@@ -22,9 +39,11 @@ export async function POST(req: NextRequest) {
         ``,
         name ? `👤 *Имя:* ${name}` : null,
         `📞 *Телефон:* ${phone}`,
+        serviceTitle ? `🧩 *Услуга:* ${serviceTitle}` : null,
+        timeLine ? `🗓 *Время:* ${timeLine.replace("Желаемое время: ", "")}` : null,
         message ? `💬 *Вопрос:* ${message}` : null,
         ``,
-        `_Источник: форма на странице Контакты_`,
+        `_Источник: ${sourceLabel}_`,
       ]
         .filter(Boolean)
         .join("\n");
@@ -62,8 +81,10 @@ export async function POST(req: NextRequest) {
               <div style="background:#fff;padding:24px 28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
                 ${name ? `<p><strong>Имя:</strong> ${name}</p>` : ""}
                 <p><strong>Телефон:</strong> <a href="tel:${phone}" style="color:#E8700A;">${phone}</a></p>
+                ${serviceTitle ? `<p><strong>Услуга:</strong> ${serviceTitle}</p>` : ""}
+                ${timeLine ? `<p><strong>Желаемое время:</strong> ${timeLine.replace("Желаемое время: ", "")}</p>` : ""}
                 ${message ? `<p><strong>Вопрос:</strong> ${message}</p>` : ""}
-                <p style="color:#999;font-size:12px;margin-top:16px;">Источник: страница Контакты · pilo-rus.ru</p>
+                <p style="color:var(--muted-foreground);font-size:12px;margin-top:16px;">Источник: ${sourceLabel} · pilo-rus.ru</p>
               </div>
             </div>
           `,
@@ -78,8 +99,10 @@ export async function POST(req: NextRequest) {
         phone,
         source: "WEBSITE",
         stage: "NEW",
-        comment: message || null,
-        tags: ["Контакт"],
+        comment: crmComment || null,
+        tags: source === "SERVICE"
+          ? ["Услуга", serviceTitle || serviceSlug || "Заявка"].filter(Boolean)
+          : ["Контакт"],
       },
     }).catch(console.error);
 

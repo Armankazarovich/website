@@ -89,12 +89,23 @@ const CATALOG_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"]
 export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
   "/admin": {
     title: "Рабочий стол",
-    subtitle: "Сводка магазина",
+    subtitle: "Сводка, заказы и запуск",
     searchHint: "Сводка и показатели",
     keywords: ["арай", "aray", "рабочий стол", "сводка", "показатели"],
     placeholder: "Найти заказ, клиента, товар или раздел...",
     nextStep: "Проверить рабочий стол по реальным сигналам",
-    quickHrefs: ["/admin/finance", "/admin/orders/new", "/admin/orders", "/admin/products", "/admin/aray", "/admin/analytics"],
+    quickHrefs: ["/admin/orders", "/admin/products", "/admin/promotion", "/admin/orders/new", "/admin/stories", "/admin/director"],
+  },
+  "/admin/director": {
+    title: "Роли и разделы",
+    subtitle: "Пульт системы и автоматизации",
+    searchHint: "Роли, разделы и приоритеты",
+    keywords: ["директор", "кабинет", "роли", "разделы", "сотрудники", "зарплаты", "графики", "автоматизация", "отчеты"],
+    placeholder: "Роль, раздел, сотрудник, график, отчет или риск...",
+    nextStep: "Показать карту разделов и приоритеты по роли",
+    quickTitle: "Роли и разделы",
+    quickSubtitle: "Пульт системы",
+    quickHrefs: ["/admin/director", "/admin/finance", "/admin/staff", "/admin/crm", "/admin/tasks", "/admin/aray/modules"],
   },
   "/admin/orders/new": {
     title: "Терминал",
@@ -117,6 +128,18 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     nextStep: "Найти заказ и подсказать действие",
     quickHrefs: ["/admin/orders/new", "/admin/crm", "/admin/clients", "/admin/delivery", "/admin/tasks"],
     mobilePriority: 20,
+  },
+  "/admin/messenger": {
+    title: "Мессенджер",
+    subtitle: "Чаты, CRM и Арай",
+    searchHint: "Переписки и помощь Арая",
+    keywords: ["мессенджер", "чат", "сообщения", "переписка", "арай", "aray", "клиент", "crm"],
+    placeholder: "Клиент, сообщение, задача, CRM или действие Арая...",
+    nextStep: "Открыть диалог и подготовить понятный ответ",
+    quickTitle: "Мессенджер",
+    quickSubtitle: "Чаты и Арай",
+    quickHrefs: ["/admin/messenger", "/admin/crm", "/admin/tasks", "/admin/clients", "/admin/orders"],
+    mobilePriority: 25,
   },
   "/admin/clients": {
     title: "Клиенты",
@@ -391,6 +414,15 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     searchHint: "Сервисы",
     keywords: ["услуги", "сервисы"],
   },
+  "/admin/stories": {
+    title: "Сторис",
+    subtitle: "Видео, live и онлайн-продавец",
+    searchHint: "Видео-сторис, обзоры и отзывы",
+    keywords: ["сторис", "stories", "видео", "live", "онлайн продавец", "отзывы", "обзор товара"],
+    placeholder: "Сторис, товар, услуга, отзыв, видео или live...",
+    nextStep: "Найти нужный обзор и проверить, где он показывается",
+    quickHrefs: ["/admin/services", "/admin/products", "/admin/reviews", "/admin/promotions"],
+  },
   "/cabinet": {
     title: "Главная",
     subtitle: "Личный кабинет",
@@ -421,23 +453,25 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
 };
 
 const GROUP_QUICK_HREFS: Record<string, string[]> = {
-  main: ["/admin", "/admin/orders/new", "/admin/orders", "/admin/products", "/admin/aray"],
-  sales: ["/admin/orders/new", "/admin/orders", "/admin/clients", "/admin/tasks"],
-  products: ["/admin/products", "/admin/products/new", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import"],
-  marketing: ["/admin/promotion", "/admin/promotions", "/admin/reviews", "/admin/email", "/admin/analytics"],
+  main: ["/admin", "/admin/orders", "/admin/products", "/admin/promotion", "/admin/stories", "/admin/director"],
+  sales: ["/admin/orders", "/admin/orders/new", "/admin/messenger", "/admin/crm", "/admin/clients", "/admin/delivery", "/admin/tasks"],
+  products: ["/admin/products", "/admin/products/new", "/admin/products/audit", "/admin/inventory", "/admin/media", "/admin/import"],
+  marketing: ["/admin/promotion", "/admin/stories", "/admin/reviews", "/admin/promotions", "/admin/posts", "/admin/services", "/admin/analytics"],
   finance: ["/admin/finance", "/admin/orders", "/admin/analytics"],
-  settings: ["/admin/settings", "/admin/aray", "/admin/business/settings", "/admin/site", "/admin/appearance", "/admin/terminals", "/admin/staff", "/admin/health"],
+  settings: ["/admin/business/settings", "/admin/staff", "/admin/site", "/admin/appearance", "/admin/aray", "/admin/settings", "/admin/health"],
   help: ["/admin/help", "/admin/terminals/training"],
   personal: ["/cabinet", "/cabinet/orders", "/cabinet/profile", "/catalog"],
 };
 
-const DEFAULT_ADMIN_QUICK_HREFS = ["/admin/orders/new", "/admin/orders", "/admin/products", "/admin/aray", "/admin/analytics"];
+const DEFAULT_ADMIN_QUICK_HREFS = ["/admin", "/admin/orders", "/admin/products", "/admin/promotion", "/admin/orders/new", "/admin/director"];
 const DEFAULT_USER_QUICK_HREFS = ["/cabinet", "/cabinet/orders", "/catalog", "/cabinet/profile"];
 
 const MOBILE_DOCK_LABELS: Record<string, string> = {
   "/admin": "Стол",
+  "/admin/director": "Роли",
   "/admin/orders/new": "Касса",
   "/admin/orders": "Заказы",
+  "/admin/messenger": "Чаты",
   "/admin/crm": "CRM",
   "/admin/products": "Товары",
   "/admin/products/new": "Новый",
@@ -740,8 +774,8 @@ export function getAdminNavigationRoleTabs(role: string, disabledModuleIds?: Dis
   const byHref = new Map(visibleItems.map((item) => [item.href, item]));
   const roleKey = role === "USER" ? "user" : role.toLowerCase();
   const preferredByRole: Record<string, string[]> = {
-    super_admin: ["/admin", "/admin/finance"],
-    admin: ["/admin", "/admin/finance"],
+    super_admin: ["/admin", "/admin/orders"],
+    admin: ["/admin", "/admin/orders"],
     manager: ["/admin/orders/new", "/admin/crm"],
     seller: ["/admin/orders/new", "/admin/crm"],
     courier: ["/admin", "/admin/delivery"],

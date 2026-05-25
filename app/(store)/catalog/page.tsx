@@ -35,6 +35,7 @@ import { getSiteSettings, getPhones } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import { getProductAvailability } from "@/lib/product-availability";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
   const robots = getCatalogRobots(searchParams);
@@ -559,6 +560,7 @@ export default async function CatalogPage({
     "numberOfItems": totalCount,
     "itemListElement": products.map((product, index) => {
       const minPrice = productMinPrice(product);
+      const availability = getProductAvailability(product.variants);
       return {
         "@type": "ListItem",
         "position": (page - 1) * perPage + index + 1,
@@ -574,9 +576,7 @@ export default async function CatalogPage({
                 "priceCurrency": "RUB",
                 "lowPrice": minPrice,
                 "offerCount": product.variants.length,
-                "availability": product.variants.some((variant: any) => variant.inStock)
-                  ? "https://schema.org/InStock"
-                  : "https://schema.org/OutOfStock",
+                "availability": availability.schemaAvailability,
               }
             : undefined,
         },
@@ -942,6 +942,8 @@ export default async function CatalogPage({
                     pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
                     piecesPerCube: v.piecesPerCube,
                     inStock: v.inStock,
+                    stockQty: v.stockQty,
+                    lowStockThreshold: v.lowStockThreshold,
                   }))}
                 />
               ))}

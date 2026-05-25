@@ -43,6 +43,7 @@ const expectedTools = [
   "show_page",
   "navigate_page",
   "web_search",
+  "open_source_search",
   "get_aray_capabilities",
   "get_admin_dashboard",
   "get_orders_list",

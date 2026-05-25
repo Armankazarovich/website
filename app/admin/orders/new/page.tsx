@@ -343,6 +343,8 @@ const INPUT_CLASS = "w-full rounded-xl border border-border bg-background px-3 p
 const COMPACT_INPUT_CLASS = "rounded-xl border border-border bg-background px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/20";
 const SOFT_SELECTED_CLASS = "border-primary/45 bg-primary/10 text-primary";
 const TERMINAL_DRAFT_STORAGE_KEY = "aray-terminal-order-draft:v1";
+const TERMINAL_CART_EVENT = "aray:terminal-cart";
+const TERMINAL_CART_OPEN_EVENT = "aray:terminal-cart-open";
 
 function TerminalPortal({ active, children }: { active: boolean; children: ReactNode }) {
   return active ? <PopupPortal>{children}</PopupPortal> : <>{children}</>;
@@ -752,6 +754,19 @@ export default function NewPhoneOrderPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [showMobileCart]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const openTerminalCart = () => {
+      if (items.length === 0) return;
+      setOrderPanelView("cart");
+      setShowMobileCart(true);
+      searchRef.current?.blur();
+    };
+
+    window.addEventListener(TERMINAL_CART_OPEN_EVENT, openTerminalCart);
+    return () => window.removeEventListener(TERMINAL_CART_OPEN_EVENT, openTerminalCart);
+  }, [items.length]);
+
   const terminalOverlayOpen =
     showMobileCart ||
     showScripts ||
@@ -1019,6 +1034,30 @@ export default function NewPhoneOrderPage() {
   const itemsTotal = useMemo(() => items.reduce((sum, it) => sum + it.quantity * it.price, 0), [items]);
   const totalAmount = itemsTotal + deliveryCost;
   const totalVolume = useMemo(() => items.filter((i) => i.unitType === "CUBE").reduce((s, i) => s + i.quantity, 0), [items]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent(TERMINAL_CART_EVENT, {
+        detail: {
+          items: items.length,
+          total: totalAmount,
+          visible: items.length > 0,
+        },
+      }),
+    );
+  }, [items.length, totalAmount]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window === "undefined") return;
+      window.dispatchEvent(
+        new CustomEvent(TERMINAL_CART_EVENT, {
+          detail: { items: 0, total: 0, visible: false },
+        }),
+      );
+    };
+  }, []);
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
   const selectedVariant = selectedProduct?.variants.find((v) => v.id === selectedVariantId);
@@ -3632,27 +3671,6 @@ export default function NewPhoneOrderPage() {
               </div>
             </div>
           </AdminModal>
-        )}
-
-        {/* ── Floating mobile cart button ── */}
-        {!showMobileCart && items.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              setOrderPanelView("cart");
-              setShowMobileCart(true);
-            }}
-            className="md:hidden fixed z-40 flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-2xl border border-primary/45 bg-card px-3 py-2 text-xs font-bold text-primary shadow-xl shadow-black/10 transition-all active:scale-[0.96]"
-            style={{
-              bottom: "calc(5.35rem + env(safe-area-inset-bottom, 0px))",
-              right: "max(0.75rem, env(safe-area-inset-right, 0px) + 0.75rem)",
-            }}
-          >
-            <ShoppingCart className="h-4 w-4 shrink-0" />
-            <span className="whitespace-nowrap">{items.length} поз.</span>
-            <span className="opacity-70">·</span>
-            <span className="whitespace-nowrap">{totalAmount.toLocaleString("ru-RU")} ₽</span>
-          </button>
         )}
 
         {/* ── SCRIPTS Drawer (over right panel) ── */}

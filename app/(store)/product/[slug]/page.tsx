@@ -19,6 +19,7 @@ import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones, DEFAULT_SETTINGS } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getProductEditTarget, getPublicEditTarget } from "@/lib/public-edit-targets";
+import { getProductAvailability } from "@/lib/product-availability";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -186,6 +187,8 @@ export default async function ProductPage({ params }: Props) {
       pricePerPiece: variant.pricePerPiece ? Number(variant.pricePerPiece) : null,
       piecesPerCube: variant.piecesPerCube,
       inStock: variant.inStock,
+      stockQty: variant.stockQty,
+      lowStockThreshold: variant.lowStockThreshold,
     })),
   };
 
@@ -196,7 +199,7 @@ export default async function ProductPage({ params }: Props) {
   // → кликнет на рекламу → увидит 3000 ₽ за штуку → сочтёт обманом.
   // Логика: если есть ХОТЯ БЫ ОДИН вариант с pricePerPiece — используем ТОЛЬКО piece-цены.
   // Иначе — используем cube-цены.
-  const inStockVariants = product.variants.filter(v => v.inStock);
+  const productAvailability = getProductAvailability(product.variants);
   const pricesPiece = product.variants
     .filter(v => v.pricePerPiece)
     .map(v => Number(v.pricePerPiece));
@@ -228,9 +231,7 @@ export default async function ProductPage({ params }: Props) {
       ...(lowPrice !== undefined ? { "lowPrice": lowPrice } : {}),
       ...(highPrice !== undefined ? { "highPrice": highPrice } : {}),
       "offerCount": product.variants.length,
-      "availability": inStockVariants.length > 0
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
+      "availability": productAvailability.schemaAvailability,
       "seller": { "@type": "Organization", "name": "ООО ПИТИ (ПилоРус)" },
     },
   };
@@ -290,7 +291,7 @@ export default async function ProductPage({ params }: Props) {
           <ProductGallery
             images={product.images}
             name={product.name}
-            inStock={product.variants.some(v => v.inStock)}
+            availability={productAvailability}
           />
         </div>
 
@@ -373,6 +374,8 @@ export default async function ProductPage({ params }: Props) {
               pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
               piecesPerCube: v.piecesPerCube,
               inStock: v.inStock,
+              stockQty: v.stockQty,
+              lowStockThreshold: v.lowStockThreshold,
             }))}
             phoneLink={firstPhoneLink}
           />
@@ -471,6 +474,8 @@ export default async function ProductPage({ params }: Props) {
               pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
               piecesPerCube: v.piecesPerCube,
               inStock: v.inStock,
+              stockQty: v.stockQty,
+              lowStockThreshold: v.lowStockThreshold,
             }))}
           />
         </section>
@@ -560,6 +565,8 @@ export default async function ProductPage({ params }: Props) {
                   pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
                   piecesPerCube: v.piecesPerCube,
                   inStock: v.inStock,
+                  stockQty: v.stockQty,
+                  lowStockThreshold: v.lowStockThreshold,
                 }))}
               />
             ))}

@@ -13,6 +13,7 @@ import {
   getYandexMetrikaStatus,
   type ArayMetrikaGoals,
 } from "@/lib/yandex-metrika";
+import { getYandexUnifiedOAuthApp } from "@/lib/yandex-oauth-app";
 
 type SettingsMap = Record<string, string>;
 
@@ -64,10 +65,7 @@ function connectorSiteName(settings: SettingsMap) {
 }
 
 function hasUnifiedYandexOAuthApp() {
-  return Boolean(
-    (process.env.YANDEX_OAUTH_CLIENT_ID || process.env.YANDEX_LOGIN_CLIENT_ID) &&
-      (process.env.YANDEX_OAUTH_CLIENT_SECRET || process.env.YANDEX_LOGIN_CLIENT_SECRET),
-  );
+  return Boolean(getYandexUnifiedOAuthApp());
 }
 
 function metrikaGoalsReady(goals: ArayMetrikaGoals) {

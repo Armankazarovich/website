@@ -43,6 +43,9 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   delivery_region: "Москва и Московская область",
   company_city: "Химки",
   social_vk: "",
+  logo_url: "/logo.png",
+  site_logo_url: "/logo.png",
+  pwa_logo_url: "/logo.png",
   social_telegram: "",
   social_whatsapp: "+79850670888",
   // Мессенджеры — кнопки заказа

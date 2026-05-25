@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/footer";
 import { RouteTransition } from "@/components/layout/route-transition";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
 import { getStoreShellData } from "@/lib/store-shell-data";
+import { getPublicStoreStories } from "@/lib/store-stories";
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
 const ArayGlobalAssistant = dynamic(
@@ -35,6 +36,13 @@ const CompareDock = dynamic(
   () =>
     import("@/components/store/compare-dock").then((m) => ({
       default: m.CompareDock,
+    })),
+  { ssr: false },
+);
+const StoriesWidget = dynamic(
+  () =>
+    import("@/components/store/stories-widget").then((m) => ({
+      default: m.StoriesWidget,
     })),
   { ssr: false },
 );
@@ -105,6 +113,7 @@ export default async function StoreLayout({
     cardStyle,
     arayEnabled,
   } = await getStoreShellData();
+  const stories = await getPublicStoreStories({ take: 18 });
 
   return (
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>
@@ -132,6 +141,7 @@ export default async function StoreLayout({
           - Header мега-меню (≥1024px) — в шапке */}
         <MobileBottomNav arayEnabled={arayEnabled} />
         <CompareDock />
+        <StoriesWidget initialStories={stories} />
         <SideIconRail />
         <ArayGlobalAssistant enabled={arayEnabled} />
 

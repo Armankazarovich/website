@@ -9,10 +9,17 @@ import {
   Wrench,
   Phone,
   ArrowRight,
+  CalendarCheck,
+  Gauge,
+  GraduationCap,
+  Images,
+  MapPin,
+  Sparkles,
   type LucideIcon,
 } from "lucide-react";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getServiceImageUrls } from "@/lib/service-gallery";
 
 export const dynamic = "force-dynamic";
 
@@ -29,8 +36,14 @@ export const metadata: Metadata = {
 };
 
 const ICON_MAP: Record<string, LucideIcon> = {
+  CalendarCheck,
+  Gauge,
+  GraduationCap,
+  Images,
   Paintbrush,
   Scissors,
+  Sparkles,
+  MapPin,
   Truck,
   Layers,
   Wrench,
@@ -141,12 +154,24 @@ export default async function ServicesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-14">
-          {services.map((service) => (
+          {services.map((service) => {
+            const images = getServiceImageUrls(service.image);
+            return (
             <div
               key={service.id}
-              className="group relative flex flex-col bg-card border border-border rounded-2xl p-6 hover:shadow-lg hover:border-primary/20 transition-all duration-200"
+              className="group relative flex flex-col overflow-hidden bg-card border border-border rounded-2xl hover:border-primary/20 transition-all duration-200"
             >
               <AdminEditButton href="/admin/services" mode="overlay" label="Изменить услугу" />
+              {images[0] && (
+                <Link href={`/services/${service.slug}`} className="block overflow-hidden border-b border-border bg-background">
+                  <img
+                    src={images[0]}
+                    alt={service.title}
+                    className="aspect-[16/8] w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                </Link>
+              )}
+              <div className="flex flex-1 flex-col p-6">
               {/* Icon + title */}
               <div className="flex items-start gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary shrink-0">
@@ -186,6 +211,13 @@ export default async function ServicesPage() {
                   )}
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                  <Link
+                    href={`/services/${service.slug}`}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    Подробнее
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
                   {whatsappEnabled && (
                     <a
                       href={whatsappLink}
@@ -213,21 +245,23 @@ export default async function ServicesPage() {
                     </a>
                   )}
                   <Link
-                    href="/contacts"
+                    href={`/services/${service.slug}#request`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-accent transition-colors"
                   >
-                    Контакты
+                    Заявка
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>
+              </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Bottom CTA */}
-      <div className="bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/15 rounded-2xl p-8 text-center">
+      <div className="bg-primary/5 border border-primary/15 rounded-2xl p-8 text-center">
         <Phone className="w-8 h-8 text-primary mx-auto mb-3" />
         <h2 className="font-display font-bold text-xl mb-2">Нужна другая услуга?</h2>
         <p className="text-muted-foreground mb-5 max-w-md mx-auto">

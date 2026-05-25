@@ -98,10 +98,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly" as const,
   }));
 
-  // Services all share one page, just include it once if there are any
-  const uniqueServiceRoutes: MetadataRoute.Sitemap = services.length > 0
-    ? [{ url: `${BASE}/services`, priority: 0.8, changeFrequency: "monthly" as const }]
-    : [];
+  const serviceRoutes: MetadataRoute.Sitemap = services.map((service) => ({
+    url: `${BASE}/services/${service.slug}`,
+    lastModified: service.updatedAt,
+    priority: 0.7,
+    changeFrequency: "monthly" as const,
+  }));
 
   return [
     ...staticRoutes,
@@ -110,6 +112,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryTypeRoutes,
     ...productRoutes,
     ...postRoutes,
-    ...uniqueServiceRoutes,
+    ...serviceRoutes,
   ];
 }

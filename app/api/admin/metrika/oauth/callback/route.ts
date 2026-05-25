@@ -24,9 +24,29 @@ function oauthRedirectUri(req: Request) {
   );
 }
 
+function adminReturnUrl(req: Request, path: string) {
+  return new URL(path, new URL(oauthRedirectUri(req)).origin);
+}
+
+function metrikaOAuthApp() {
+  const clientId = (
+    process.env.YANDEX_METRIKA_CLIENT_ID ||
+    process.env.YANDEX_OAUTH_CLIENT_ID ||
+    process.env.YANDEX_LOGIN_CLIENT_ID ||
+    ""
+  ).trim();
+  const clientSecret = (
+    process.env.YANDEX_METRIKA_CLIENT_SECRET ||
+    process.env.YANDEX_OAUTH_CLIENT_SECRET ||
+    process.env.YANDEX_LOGIN_CLIENT_SECRET ||
+    ""
+  ).trim();
+
+  return { clientId, clientSecret };
+}
+
 async function exchangeCode(req: Request, code: string) {
-  const clientId = process.env.YANDEX_METRIKA_CLIENT_ID;
-  const clientSecret = process.env.YANDEX_METRIKA_CLIENT_SECRET;
+  const { clientId, clientSecret } = metrikaOAuthApp();
   if (!clientId || !clientSecret) {
     throw new Error("YANDEX_METRIKA_CLIENT_ID / YANDEX_METRIKA_CLIENT_SECRET не настроены");
   }
@@ -99,16 +119,16 @@ export async function GET(req: Request) {
     }
     await saveSetting("yandex_metrika_connected_at", new Date().toISOString(), tenantId);
 
-    const response = NextResponse.redirect(new URL("/admin/promotion?metrika=connected", requestUrl.origin));
+    const response = NextResponse.redirect(adminReturnUrl(req, "/admin/promotion?metrika=connected"));
     response.cookies.set("aray_metrika_oauth_state", "", { path: "/", maxAge: 0 });
     return response;
   } catch (error) {
     const response = NextResponse.redirect(
-      new URL(
+      adminReturnUrl(
+        req,
         `/admin/promotion?metrika=error&message=${encodeURIComponent(
           error instanceof Error ? error.message : "Metrika OAuth error",
         )}`,
-        requestUrl.origin,
       ),
     );
     response.cookies.set("aray_metrika_oauth_state", "", { path: "/", maxAge: 0 });

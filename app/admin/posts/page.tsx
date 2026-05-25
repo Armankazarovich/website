@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
+import { AdminModal } from "@/components/admin/admin-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +15,6 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  X,
   Check,
   ExternalLink,
   Wand2,
@@ -24,7 +24,6 @@ import {
   Library,
   Link2,
 } from "lucide-react";
-import { useClassicMode } from "@/lib/use-classic-mode";
 
 const MediaPickerModal = dynamic(
   () =>
@@ -67,21 +66,6 @@ function EditModal({
   onClose: () => void;
   onSave: (id: string, data: Partial<Post>) => Promise<void>;
 }) {
-  const isClassic = useClassicMode();
-  const popupStyle = isClassic
-    ? {
-        background: "hsl(var(--card))",
-        border: "1px solid hsl(var(--border))",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-      }
-    : {
-        background: "rgba(12,12,14,0.82)",
-        backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-        WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-        border: "1px solid rgba(255,255,255,0.14)",
-        boxShadow:
-          "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
-      };
   const [title, setTitle] = useState(post.title);
   const [excerpt, setExcerpt] = useState(post.excerpt);
   const [topic, setTopic] = useState(post.topic ?? "");
@@ -146,23 +130,30 @@ function EditModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="rounded-2xl w-full max-w-xl" style={popupStyle}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <p
-            className="font-display font-semibold"
-            style={{ color: isClassic ? undefined : "rgba(255,255,255,0.92)" }}
-          >
-            Редактировать статью
-          </p>
-          <button
-            onClick={onClose}
-            style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}
-            className="hover:opacity-80 transition-opacity"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <>
+      <AdminModal
+        open
+        onClose={onClose}
+        title="Редактировать статью"
+        subtitle="Заголовок, SEO-анонс, тема, время чтения и обложка"
+        size="lg"
+        bodyClassName="p-5 sm:p-6"
+        footer={(
+          <>
+            <Button variant="outline" onClick={onClose}>
+              Отмена
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              Сохранить
+            </Button>
+          </>
+        )}
+      >
         <div className="p-6 space-y-4">
           <div>
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1 block">
@@ -352,7 +343,7 @@ function EditModal({
             </div>
           )}
         </div>
-        <div className="flex justify-end gap-2 px-6 pb-5">
+        <div className="hidden">
           <Button variant="outline" onClick={onClose}>
             Отмена
           </Button>
@@ -365,18 +356,20 @@ function EditModal({
             Сохранить
           </Button>
         </div>
-      </div>
+      </AdminModal>
 
       {/* Media picker modal */}
       <MediaPickerModal
         open={showMediaPicker}
         onClose={() => setShowMediaPicker(false)}
+        initialFolder="posts"
+        title="Выбрать обложку статьи"
         onPick={(url) => {
           setCoverImage(url);
           setShowMediaPicker(false);
         }}
       />
-    </div>
+    </>
   );
 }
 
@@ -388,21 +381,6 @@ function GenerateDialog({
   onClose: () => void;
   onConfirm: (data: GeneratedPost) => Promise<void>;
 }) {
-  const isClassic = useClassicMode();
-  const popupStyle = isClassic
-    ? {
-        background: "hsl(var(--card))",
-        border: "1px solid hsl(var(--border))",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-      }
-    : {
-        background: "rgba(12,12,14,0.82)",
-        backdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-        WebkitBackdropFilter: "blur(48px) saturate(220%) brightness(0.85)",
-        border: "1px solid rgba(255,255,255,0.14)",
-        boxShadow:
-          "0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.05) inset",
-      };
   const [topic, setTopic] = useState("");
   const [keywords, setKeywords] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -448,36 +426,46 @@ function GenerateDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div
-        className="rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        style={popupStyle}
-      >
-        <div
-          className="flex items-center justify-between px-6 py-4 border-b border-border sticky top-0 z-10"
-          style={popupStyle}
-        >
-          <div className="flex items-center gap-2">
-            <Wand2 className="w-5 h-5 text-primary" />
-            <p
-              className="font-display font-semibold"
-              style={{
-                color: isClassic ? undefined : "rgba(255,255,255,0.92)",
-              }}
-            >
-              Генерация статьи с Арай
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            style={{ color: isClassic ? undefined : "rgba(255,255,255,0.7)" }}
-            className="hover:opacity-80 transition-opacity"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-4">
+    <AdminModal
+      open
+      onClose={onClose}
+      title="Генерация статьи с Арай"
+      subtitle="SEO-черновик, структура, тема и быстрый предпросмотр перед публикацией"
+      size="lg"
+      bodyClassName="p-5 sm:p-6"
+      footer={(
+        !preview ? (
+          <>
+            <Button variant="outline" onClick={onClose}>
+              Отмена
+            </Button>
+            <Button onClick={handleGenerate} disabled={generating}>
+              {generating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {generating ? "Генерирую..." : "Сгенерировать"}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => setPreview(null)}>
+              Перегенерировать
+            </Button>
+            <Button onClick={handleConfirm} disabled={saving}>
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Check className="w-4 h-4" />
+              )}
+              Сохранить как черновик
+            </Button>
+          </>
+        )
+      )}
+    >
+        <div className="space-y-4">
           {!preview ? (
             <>
               <div>
@@ -544,10 +532,7 @@ function GenerateDialog({
           )}
         </div>
 
-        <div
-          className="flex justify-end gap-2 px-6 pb-5 sticky bottom-0 pt-2 border-t border-border"
-          style={popupStyle}
-        >
+        <div className="hidden">
           {!preview ? (
             <>
               <Button variant="outline" onClick={onClose}>
@@ -578,8 +563,7 @@ function GenerateDialog({
             </>
           )}
         </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }
 

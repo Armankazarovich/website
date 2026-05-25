@@ -13,6 +13,7 @@ export interface CartItem {
   unitType: UnitType;
   quantity: number;
   price: number;
+  maxQuantity?: number | null;
 }
 
 interface CartStore {
@@ -33,6 +34,18 @@ interface CartStore {
 
 const CART_STORAGE_KEY = "pilo-rus-cart";
 
+function normalizeMaxQuantity(value: unknown): number | null {
+  const max = Number(value);
+  return Number.isFinite(max) && max >= 0 ? max : null;
+}
+
+function normalizeQuantity(value: unknown, maxQuantity: number | null): number {
+  const quantity = Number(value);
+  const safeQuantity = Number.isFinite(quantity) ? Math.max(0, quantity) : 0;
+  if (maxQuantity === null) return safeQuantity;
+  return Math.min(safeQuantity, maxQuantity);
+}
+
 function normalizeCartItems(value: unknown): CartItem[] {
   if (!Array.isArray(value)) return [];
 
@@ -40,7 +53,8 @@ function normalizeCartItems(value: unknown): CartItem[] {
     if (!rawItem || typeof rawItem !== "object") return [];
     const item = rawItem as Partial<CartItem>;
     const unitType: UnitType = item.unitType === "PIECE" ? "PIECE" : "CUBE";
-    const quantity = Number(item.quantity);
+    const maxQuantity = normalizeMaxQuantity(item.maxQuantity);
+    const quantity = normalizeQuantity(item.quantity, maxQuantity);
     const price = Number(item.price);
 
     if (
@@ -49,7 +63,6 @@ function normalizeCartItems(value: unknown): CartItem[] {
       typeof item.productName !== "string" ||
       typeof item.productSlug !== "string" ||
       typeof item.variantSize !== "string" ||
-      !Number.isFinite(quantity) ||
       quantity <= 0 ||
       !Number.isFinite(price) ||
       price <= 0
@@ -69,6 +82,7 @@ function normalizeCartItems(value: unknown): CartItem[] {
         unitType,
         quantity,
         price,
+        maxQuantity,
       },
     ];
   });
@@ -125,6 +139,9 @@ export const useCartStore = create<CartStore>()((set, get) => ({
     const id = `${item.variantId}-${item.unitType}`;
     const currentItems = get().items ?? [];
     const existing = currentItems.find((i) => i.id === id);
+    const maxQuantity = normalizeMaxQuantity(item.maxQuantity ?? existing?.maxQuantity);
+    const itemQuantity = normalizeQuantity(item.quantity, maxQuantity);
+    if (itemQuantity <= 0) return;
 
     if (typeof window !== "undefined") {
       window.dispatchEvent(
@@ -134,7 +151,7 @@ export const useCartStore = create<CartStore>()((set, get) => ({
             params: {
               product: item.productName,
               variantId: item.variantId,
-              quantity: item.quantity,
+              quantity: itemQuantity,
               unit: item.unitType,
             },
           },
@@ -147,13 +164,14 @@ export const useCartStore = create<CartStore>()((set, get) => ({
           i.id === id
             ? {
                 ...i,
-                quantity: parseFloat((i.quantity + item.quantity).toFixed(1)),
+                quantity: parseFloat(normalizeQuantity(i.quantity + itemQuantity, maxQuantity).toFixed(1)),
                 productImage: item.productImage || i.productImage,
                 price: item.price,
+                maxQuantity,
               }
             : i,
         )
-      : [...currentItems, { ...item, id }];
+      : [...currentItems, { ...item, id, quantity: itemQuantity, maxQuantity }];
 
     set({ items: nextItems });
     writeCartItemsToStorage(nextItems);
@@ -171,9 +189,11 @@ export const useCartStore = create<CartStore>()((set, get) => ({
       return;
     }
 
-    const nextItems = (get().items ?? []).map((i) =>
-      i.id === id ? { ...i, quantity } : i,
-    );
+    const nextItems = (get().items ?? []).flatMap((i) => {
+      if (i.id !== id) return [i];
+      const nextQuantity = normalizeQuantity(quantity, normalizeMaxQuantity(i.maxQuantity));
+      return nextQuantity > 0 ? [{ ...i, quantity: nextQuantity }] : [];
+    });
     set({ items: nextItems });
     writeCartItemsToStorage(nextItems);
   },

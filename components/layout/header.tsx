@@ -286,7 +286,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 priority
               />
             </div>
-            <div className="hidden min-[380px]:flex flex-col gap-0">
+            <div className="hidden min-[560px]:flex flex-col gap-0">
               <p className="font-display font-bold text-lg leading-none text-foreground tracking-wide">
                 ПилоРус
               </p>
@@ -668,9 +668,9 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleSearch}
               aria-label="Поиск"
-              className="hidden sm:flex w-11 h-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="store-header-action hidden items-center justify-center sm:flex"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4" strokeWidth={1.9} />
             </button>
 
             {/* Wishlist */}
@@ -683,29 +683,27 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Переключить тему"
-              className="w-11 h-11 flex items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground relative overflow-hidden"
+              className="store-header-action relative flex items-center justify-center overflow-hidden"
             >
-              <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" strokeWidth={1.9} />
+              <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" strokeWidth={1.9} />
             </button>
 
 
             {/* Cart */}
-            <div className="relative">
+            <div className="relative hidden sm:block">
               <Link
                 href="/cart"
                 data-cart-icon
                 aria-label="Корзина"
                 className={cn(
-                  "relative w-11 h-11 flex items-center justify-center rounded-xl border transition-all duration-200",
-                  mounted && totalItems > 0
-                    ? "border-brand-orange/50 bg-brand-orange/10 text-brand-orange hover:bg-brand-orange/20 hover:border-brand-orange/70 hover:shadow-[0_0_14px_3px_rgba(232,112,10,0.25)]"
-                    : "border-border/60 bg-muted/50 text-muted-foreground hover:bg-accent hover:text-brand-orange hover:border-brand-orange/30 hover:shadow-[0_0_10px_2px_rgba(232,112,10,0.12)]"
+                  "store-header-action flex items-center justify-center",
+                  mounted && totalItems > 0 && "is-selected"
                 )}
               >
-                <ShoppingCart className="w-4 h-4" />
+                <ShoppingCart className="w-4 h-4" strokeWidth={1.9} />
                 {mounted && totalItems > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-brand-orange text-white text-[10px] min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center font-bold shadow-sm">
+                  <span className="store-header-action-badge">
                     {totalItems > 9 ? "9+" : totalItems}
                   </span>
                 )}
@@ -745,7 +743,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             <button
               onClick={toggleAccount}
               aria-label="Личный кабинет"
-              className="hidden xl:flex w-11 h-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all text-muted-foreground hover:text-foreground"
+              className="store-header-action hidden items-center justify-center xl:flex"
             >
               <User className="w-4 h-4" />
             </button>
@@ -762,7 +760,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
             {/* Hamburger (mobile only) — animates to X */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="xl:hidden flex flex-col items-center justify-center w-11 h-11 rounded-xl border border-border/60 bg-muted/50 hover:bg-accent hover:border-border transition-all gap-[5px] ml-0.5"
+              className="store-header-action xl:hidden flex flex-col items-center justify-center gap-[5px] ml-0.5"
               aria-label={mobileMenuOpen ? "Закрыть меню" : "Открыть меню"}
             >
               <motion.span

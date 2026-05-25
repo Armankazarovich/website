@@ -17,17 +17,13 @@ export function CompareCount({ className }: { className?: string }) {
   return (
     <Link
       href="/compare"
+      data-compare-icon
       aria-label="Сравнение товаров"
-      className={cn(
-        count > 0
-          ? "relative flex h-11 w-11 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 text-primary transition-all duration-200 hover:bg-primary/[0.15]"
-          : "relative flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 text-muted-foreground transition-all duration-200 hover:border-border hover:bg-accent hover:text-foreground",
-        className
-      )}
+      className={cn("store-header-action flex items-center justify-center", count > 0 && "is-selected", className)}
     >
-      <GitCompareArrows className="h-4 w-4" />
+      <GitCompareArrows className="h-4 w-4" strokeWidth={1.9} />
       {count > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+        <span className="store-header-action-badge">
           {count > 9 ? "9+" : count}
         </span>
       )}

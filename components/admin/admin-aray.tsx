@@ -10,6 +10,7 @@ import {
 import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-browser";
 import { ArayOrb } from "@/components/shared/aray-orb";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
+import { prepareAraySpeechText } from "@/lib/aray-speech";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const CHAT_KEY = "aray-chat-history";
@@ -49,6 +50,17 @@ type ArayAction =
   | { type: "popup"; url: string; title: string }
   | { type: "show_url"; url: string; title: string };
 
+function parseShowUrlPayload(value: string): { url: string; title: string } | null {
+  const clean = value.trim();
+  if (!clean) return null;
+  const protocolIdx = clean.indexOf("://");
+  const separatorIdx = clean.indexOf(":", protocolIdx >= 0 ? protocolIdx + 3 : 0);
+  if (separatorIdx < 0) return { url: clean, title: clean };
+  const url = clean.slice(0, separatorIdx).trim();
+  const title = clean.slice(separatorIdx + 1).trim();
+  return url ? { url, title: title || url } : null;
+}
+
 function parseActions(raw: string): ArayAction[] {
   const actions: ArayAction[] = [];
   // __ARAY_POPUP:{"url":"/admin/orders","title":"Заказы"}__
@@ -63,8 +75,9 @@ function parseActions(raw: string): ArayAction[] {
     actions.push({ type: "navigate", path: m[1] });
   }
   // __ARAY_SHOW_URL:https://....:Title__
-  for (const m of raw.matchAll(/__ARAY_SHOW_URL:(.+?):(.+?)__/g)) {
-    actions.push({ type: "popup", url: m[1], title: m[2] });
+  for (const m of raw.matchAll(/__ARAY_SHOW_URL:([\s\S]+?)__/g)) {
+    const payload = parseShowUrlPayload(m[1]);
+    if (payload) actions.push({ type: "popup", url: payload.url, title: payload.title });
   }
   // __ARAY_REFRESH__
   if (raw.includes("__ARAY_REFRESH__")) actions.push({ type: "refresh" });
@@ -76,11 +89,11 @@ function cleanResponse(raw: string): string {
     .replace(/\n?__ARAY_META__[\s\S]*$/, "")
     .replace(/__ARAY_ERR__/, "")
     .replace(/__ARAY_POPUP:\{.+?\}__/g, "")
-    .replace(/__ARAY_SHOW_URL:.+?:.+?__/g, "")
+    .replace(/__ARAY_SHOW_URL:[\s\S]+?__/g, "")
     .replace(/__ARAY_NAVIGATE:.+?__/g, "")
     .replace(/__ARAY_REFRESH__/g, "")
     .replace(/__ARAY_ADD_CART:.+?__/g, "")
-    .replace(/ARAY_ACTIONS:\[[\s\S]*?\]/g, "")
+    .replace(/\n?ARAY_ACTIONS:\[[\s\S]*?\](?=\n__ARAY_META__|\n__ARAY_ERR__|\n__ARAY_ADD_CART:|\n__ARAY_NAVIGATE:|\n__ARAY_POPUP:|\n__ARAY_SHOW_URL:|\n__ARAY_REFRESH__|$)/g, "")
     .trim();
 }
 
@@ -93,11 +106,27 @@ function MdText({ text }: { text: string }) {
     <div className="space-y-1">
       {lines.map((line, i) => {
         if (!line.trim()) return null;
-        const parts = line.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-          p.startsWith("**") && p.endsWith("**")
-            ? <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>
-            : p
-        );
+        const parts = line.split(/(\*\*[^*]+\*\*|\[[^\]\n]+\]\([^)]+\))/g).map((p, j) => {
+          if (p.startsWith("**") && p.endsWith("**")) {
+            return <strong key={j} className="font-semibold">{p.slice(2, -2)}</strong>;
+          }
+          const link = p.match(/^\[([^\]\n]+)\]\(([^)]+)\)$/);
+          if (link) {
+            const href = link[2].trim();
+            return (
+              <a
+                key={j}
+                href={href}
+                target={href.startsWith("/") ? undefined : "_blank"}
+                rel={href.startsWith("/") ? undefined : "noreferrer"}
+                className="font-semibold underline decoration-primary/35 underline-offset-2 hover:text-primary"
+              >
+                {link[1]}
+              </a>
+            );
+          }
+          return p;
+        });
         if (/^[\-\*—]\s/.test(line.trim())) {
           return (
             <div key={i} className="flex gap-2 items-start pl-1">
@@ -183,15 +212,7 @@ function useMic() {
 }
 
 function cleanTTSText(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, "$1").replace(/\*(.*?)\*/g, "$1")
-    .replace(/[#_`~|>]/g, " ")
-    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, "") // все эмодзи
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")  // [ссылки](url) → текст
-    .replace(/https?:\/\/\S+/g, "")           // голые URL
-    .replace(/\d{4,}/g, (m) => m.split("").join(" ")) // длинные числа по цифрам
-    .replace(/₽/g, " рублей").replace(/м³/g, " кубов")
-    .replace(/\s{2,}/g, " ").trim().slice(0, 800);
+  return prepareAraySpeechText(text, { maxLength: 800 });
 }
 
 function useTTS() {
@@ -381,9 +402,20 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
       const { text } = (e as CustomEvent).detail || {};
       if (text) sendMessage(text);
     };
+    const h3 = () => {
+      setOpen(false);
+      setBrowserOpen(false);
+      stopTTS();
+      micCancel();
+    };
     window.addEventListener("aray:open", h1);
     window.addEventListener("aray:fill", h2);
-    return () => { window.removeEventListener("aray:open", h1); window.removeEventListener("aray:fill", h2); };
+    window.addEventListener("aray:close", h3);
+    return () => {
+      window.removeEventListener("aray:open", h1);
+      window.removeEventListener("aray:fill", h2);
+      window.removeEventListener("aray:close", h3);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -447,9 +479,13 @@ export function AdminAray({ staffName = "Коллега", userRole }: {
           setTimeout(() => router.refresh(), 400);
         }
         if (action.type === "popup" || action.type === "show_url") {
-          // Открываем в попап-браузере Арая вместо новой вкладки
-          setBrowserUrl(action.url);
-          setBrowserOpen(true);
+          const isInternalPath = action.url.startsWith("/") && !action.url.startsWith("//");
+          if (isInternalPath) {
+            setBrowserUrl(action.url);
+            setBrowserOpen(true);
+          } else {
+            window.open(action.url, "_blank", "noopener,noreferrer");
+          }
         }
       }
 

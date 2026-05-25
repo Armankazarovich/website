@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -447,7 +447,7 @@ export default function EmailPage() {
   const [productSearch, setProductSearch] = useState("");
 
   // Load subscribers
-  const loadSubscribers = async () => {
+  const loadSubscribers = useCallback(async () => {
     setSubsLoading(true);
     try {
       const res = await fetch("/api/admin/email");
@@ -463,10 +463,10 @@ export default function EmailPage() {
     } finally {
       setSubsLoading(false);
     }
-  };
+  }, []);
 
   // Load SMTP settings
-  const loadSmtp = async () => {
+  const loadSmtp = useCallback(async () => {
     setSmtpLoading(true);
     try {
       const res = await fetch("/api/admin/email?action=smtp_settings");
@@ -482,15 +482,15 @@ export default function EmailPage() {
     } finally {
       setSmtpLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (!subsLoaded) loadSubscribers();
   }, []);
 
   useEffect(() => {
+    if (!subsLoaded) loadSubscribers();
+  }, [loadSubscribers, subsLoaded]);
+
+  useEffect(() => {
     if (tab === "smtp" && !smtpLoaded) loadSmtp();
-  }, [tab]);
+  }, [loadSmtp, smtpLoaded, tab]);
 
   // Load products for inserting into email
   const loadProducts = async () => {

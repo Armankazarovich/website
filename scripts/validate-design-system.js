@@ -123,6 +123,77 @@ function collectUntrackedFindings(findings) {
   }
 }
 
+function collectStoreControlContractFindings(findings) {
+  const file = "app/globals.css";
+  const absolute = path.join(root, file);
+  if (!fs.existsSync(absolute)) return;
+  const text = fs.readFileSync(absolute, "utf8");
+  const selectors = [".store-action-button.is-selected"];
+
+  for (const selector of selectors) {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const blockMatch = text.match(new RegExp(`${escaped}\\s*\\{([\\s\\S]*?)\\}`));
+    if (!blockMatch) {
+      findings.push({
+        file,
+        line: 1,
+        rule: "Keep PiloRus icon-only actions on the approved soft selected contract",
+        sample: `${selector} block is missing`,
+      });
+      continue;
+    }
+
+    const block = blockMatch[1];
+    if (/background\s*:\s*hsl\(var\(--primary\)\s*\)/.test(block) || /text-primary-foreground/.test(block)) {
+      const line = text.slice(0, blockMatch.index || 0).split(/\r?\n/).length;
+      findings.push({
+        file,
+        line,
+        rule: "Icon-only selected actions must not use solid primary fill",
+        sample: `${selector} must stay premium: soft light media surface + ink icon + primary outline only`,
+      });
+    }
+  }
+
+  const headerBlockMatch = text.match(/\.store-header-action\.is-selected\s*\{([\s\S]*?)\}/);
+  if (!headerBlockMatch) {
+    findings.push({
+      file,
+      line: 1,
+      rule: "Keep PiloRus header icon-only actions neutral; count is shown by badge only",
+      sample: ".store-header-action.is-selected block is missing",
+    });
+  } else {
+    const block = headerBlockMatch[1];
+    if (/primary/.test(block) || /text-primary-foreground/.test(block)) {
+      const line = text.slice(0, headerBlockMatch.index || 0).split(/\r?\n/).length;
+      findings.push({
+        file,
+        line,
+        rule: "Header icon-only selected state must stay neutral; only badge uses primary",
+        sample: ".store-header-action.is-selected must stay border-border + bg-card + foreground color",
+      });
+    }
+  }
+
+  const stockRequiredClasses = [
+    ".store-stock-badge.is-in-stock",
+    ".store-stock-badge.is-low-stock",
+    ".store-stock-badge.is-on-order",
+    ".store-stock-badge.is-out-of-stock",
+  ];
+  for (const selector of stockRequiredClasses) {
+    if (!text.includes(selector)) {
+      findings.push({
+        file,
+        line: 1,
+        rule: "Product availability stickers must support the approved stock states",
+        sample: `${selector} is missing`,
+      });
+    }
+  }
+}
+
 function scanLine(file, lineNumber, line, findings) {
   if (!line.trim() || line.includes(allowComment)) return;
   for (const rule of rules) {
@@ -142,6 +213,7 @@ function main() {
   collectDiffFindings(runGit(["diff", "--unified=0", "--no-ext-diff", "--"]), findings);
   collectDiffFindings(runGit(["diff", "--cached", "--unified=0", "--no-ext-diff", "--"]), findings);
   collectUntrackedFindings(findings);
+  collectStoreControlContractFindings(findings);
 
   if (findings.length > 0) {
     console.error("\n[ARAY] Design system guard failed:");

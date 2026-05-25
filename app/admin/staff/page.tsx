@@ -20,11 +20,14 @@ import {
   XCircle,
   Shuffle,
   Check,
+  Copy,
+  PhoneCall,
   X,
 } from "lucide-react";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { InfoPopup } from "@/components/admin/info-popup";
 import { getAccessibleSections, type Section } from "@/lib/permissions";
+import { createStableArayNumber, formatArayPublicNumber } from "@/lib/aray-communication-identity";
 
 // ─── Role definitions ───────────────────────────────────────────────────────
 // Visual labels live here; access chips are derived from lib/permissions.
@@ -110,6 +113,7 @@ const ALL_ROLES = [
 
 const SECTION_LABELS: Partial<Record<Section, string>> = {
   dashboard: "Рабочий стол",
+  director: "Умный кабинет",
   orders: "Заказы",
   delivery: "Доставка",
   products: "Каталог товаров",
@@ -226,6 +230,21 @@ function getInitials(name: string | null, email: string): string {
     return name.slice(0, 2).toUpperCase();
   }
   return email.slice(0, 2).toUpperCase();
+}
+
+function getStaffArayNumber(member: StaffMember) {
+  return formatArayPublicNumber(createStableArayNumber({ id: `account:${member.id}` }));
+}
+
+function dialArayNumber(number: string) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("aray:phone-dial", { detail: { number } }));
+}
+
+async function copyText(value: string) {
+  try {
+    await navigator.clipboard?.writeText(value);
+  } catch {}
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -552,6 +571,7 @@ export default function StaffPage() {
     const initials = getInitials(member.name, member.email);
     const avatarBg = def?.avatarBg || "bg-muted text-muted-foreground";
     const isActive = panel?.id === member.id;
+    const arayNumber = getStaffArayNumber(member);
 
     return (
       <div
@@ -586,6 +606,30 @@ export default function StaffPage() {
             {member.phone && (
               <p className="text-xs text-muted-foreground">{member.phone}</p>
             )}
+            <div className="mt-2 flex max-w-full flex-wrap items-center gap-1.5">
+              <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2.5 text-[11px] font-bold text-primary">
+                <PhoneCall className="h-3 w-3 shrink-0" />
+                <span className="truncate">{arayNumber}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => dialArayNumber(arayNumber)}
+                className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                title="Набрать в AR Phone"
+              >
+                <PhoneCall className="h-3 w-3" />
+                Набрать
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyText(arayNumber)}
+                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/45 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                title="Скопировать номер"
+                aria-label="Скопировать номер"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
             {member.businessRoles?.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {member.businessRoles.map((role) => (

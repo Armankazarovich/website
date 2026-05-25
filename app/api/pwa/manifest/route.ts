@@ -1,36 +1,27 @@
 import { NextRequest } from "next/server";
-import { resolvePwaInstallContextById } from "@/lib/pwa-install-context";
+import { getPwaIconSrc, resolvePwaInstallContextById, type PwaInstallContext } from "@/lib/pwa-install-context";
 
 export const dynamic = "force-dynamic";
 
 const ARAY_ICON_SIZES = [72, 96, 128, 144, 152, 180, 192, 384, 512];
 const SITE_ICON_SIZES = [72, 96, 128, 144, 152, 192, 384, 512];
-const ARAY_ICON_VERSION = "aray-production-20260508";
 
-function buildIcons(iconKind: "aray" | "site") {
-  if (iconKind === "aray") {
+function buildIcons(context: PwaInstallContext) {
+  if (context.iconKind === "aray") {
     return ARAY_ICON_SIZES.map((size) => ({
-      src: `/api/pwa/icon?s=${size}&v=${ARAY_ICON_VERSION}`,
+      src: getPwaIconSrc(context, size),
       sizes: `${size}x${size}`,
       type: "image/png",
       purpose: size >= 192 ? "maskable any" : "any",
     }));
   }
 
-  return [
-    {
-      src: "/logo.svg",
-      sizes: "any",
-      type: "image/svg+xml",
-      purpose: "any maskable",
-    },
-    ...SITE_ICON_SIZES.map((size) => ({
-      src: `/icons/icon-${size}x${size}.png`,
-      sizes: `${size}x${size}`,
-      type: "image/png",
-      purpose: size >= 192 ? "maskable any" : "any",
-    })),
-  ];
+  return SITE_ICON_SIZES.map((size) => ({
+    src: getPwaIconSrc(context, size),
+    sizes: `${size}x${size}`,
+    type: "image/png",
+    purpose: size >= 192 ? "maskable any" : "any",
+  }));
 }
 
 function getShortcutIcon(icons: ReturnType<typeof buildIcons>) {
@@ -43,7 +34,7 @@ function getShortcutIcon(icons: ReturnType<typeof buildIcons>) {
 
 export async function GET(req: NextRequest) {
   const context = resolvePwaInstallContextById(req.nextUrl.searchParams.get("app"));
-  const icons = buildIcons(context.iconKind);
+  const icons = buildIcons(context);
   const shortcutIcon = getShortcutIcon(icons);
 
   const manifest = {

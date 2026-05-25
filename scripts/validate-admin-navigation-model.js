@@ -346,6 +346,7 @@ function assertNavigationOsPlacement(registrySource, structureSource, modelSourc
     ["/admin/analytics", "marketing"],
     ["/admin/posts", "marketing"],
     ["/admin/services", "marketing"],
+    ["/admin/stories", "marketing"],
     ["/admin/finance", "finance"],
     ["/admin/aray", "settings"],
     ["/admin/settings", "settings"],

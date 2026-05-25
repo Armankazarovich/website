@@ -593,6 +593,8 @@ export default async function HomePage() {
                       pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
                       piecesPerCube: v.piecesPerCube,
                       inStock: v.inStock,
+                      stockQty: v.stockQty,
+                      lowStockThreshold: v.lowStockThreshold,
                     }))}
                     featured
                   />

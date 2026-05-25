@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getProductAvailability } from "@/lib/product-availability";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") || "";
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
       include: {
         category: { select: { id: true, name: true, slug: true } },
         variants: {
-          select: { pricePerCube: true, pricePerPiece: true, size: true, inStock: true },
+          select: { pricePerCube: true, pricePerPiece: true, size: true, inStock: true, stockQty: true, lowStockThreshold: true },
           orderBy: { pricePerCube: "asc" },
         },
       },
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
       images: p.images,
       saleUnit: p.saleUnit,
       category: p.category,
-      inStock: p.variants.some(v => v.inStock),
+      inStock: getProductAvailability(p.variants).isPurchasable,
       variants: p.variants.map(v => ({
         pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
         pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
@@ -156,7 +157,7 @@ export async function GET(req: NextRequest) {
       images: p.images,
       saleUnit: p.saleUnit,
       category: p.category,
-      inStock: p.variants.some(v => v.inStock),
+      inStock: getProductAvailability(p.variants).isPurchasable,
       variants: p.variants.map(v => ({
         pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
         pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,

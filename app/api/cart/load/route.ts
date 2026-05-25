@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPurchasableQuantityLimit } from "@/lib/product-availability";
+import { getPublicVariantsFilter } from "@/lib/product-seo";
 
 // Принимает компактный список вариантов и возвращает полные данные из БД
 // Формат items: [{ v: variantId, q: quantity, u: "CUBE"|"PIECE" }]
@@ -20,7 +22,14 @@ export async function POST(req: Request) {
     const variantIds = limited.map((i) => i.v);
 
     const variants = await prisma.productVariant.findMany({
-      where: { id: { in: variantIds } },
+      where: {
+        id: { in: variantIds },
+        ...getPublicVariantsFilter(),
+        product: {
+          active: true,
+          images: { isEmpty: false },
+        },
+      },
       include: {
         product: {
           select: {
@@ -29,7 +38,6 @@ export async function POST(req: Request) {
             slug: true,
             images: true,
             saleUnit: true,
-            active: true,
           },
         },
       },
@@ -39,7 +47,8 @@ export async function POST(req: Request) {
     const cartItems = limited
       .map(({ v, q, u }) => {
         const variant = variants.find((vr) => vr.id === v);
-        if (!variant || !variant.product.active) return null;
+        if (!variant) return null;
+        if (variant.product.saleUnit !== "BOTH" && variant.product.saleUnit !== u) return null;
 
         const price =
           u === "CUBE"
@@ -47,6 +56,10 @@ export async function POST(req: Request) {
             : Number(variant.pricePerPiece ?? 0);
 
         if (price === 0) return null;
+        const maxQuantity = getPurchasableQuantityLimit(variant, u);
+        const quantity = Number.isFinite(Number(q)) ? Math.max(0, Number(q)) : 0;
+        const safeQuantity = maxQuantity === null ? quantity : Math.min(quantity, maxQuantity);
+        if (safeQuantity <= 0) return null;
 
         return {
           variantId: variant.id,
@@ -56,8 +69,9 @@ export async function POST(req: Request) {
           productImage: variant.product.images[0] ?? null,
           variantSize: variant.size,
           unitType: u,
-          quantity: q,
+          quantity: safeQuantity,
           price,
+          maxQuantity,
         };
       })
       .filter(Boolean);

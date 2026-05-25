@@ -57,6 +57,8 @@ const profileSchema = z.object({
   name: z.string().min(2, "Введите имя"),
   phone: z.string().optional(),
   address: z.string().optional(),
+  phoneVisibility: z.enum(["public", "contacts", "private"]).default("contacts"),
+  arayPhoneVisibility: z.enum(["public", "contacts", "private"]).default("contacts"),
 });
 
 const passwordSchema = z
@@ -70,7 +72,8 @@ const passwordSchema = z
     path: ["confirmPassword"],
   });
 
-type ProfileForm = z.infer<typeof profileSchema>;
+type ProfileFormInput = z.input<typeof profileSchema>;
+type ProfileForm = z.output<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 type ThemeMode = "light" | "dark" | "system";
 const AVATAR_MAX_SIZE = 10 * 1024 * 1024;
@@ -95,6 +98,12 @@ const THEME_OPTIONS: {
   { id: "system", label: "Система", icon: Monitor },
 ];
 
+const VISIBILITY_OPTIONS = [
+  { id: "contacts", label: "Контакты", desc: "видят свои и команда" },
+  { id: "private", label: "Никто", desc: "только вы" },
+  { id: "public", label: "Все", desc: "открыто в профиле" },
+] as const;
+
 const SHOW_FUTURE_PROFILE_HUB = false;
 
 type ProfileHubItem = {
@@ -118,6 +127,45 @@ function formatPhone(raw: string): string {
   if (d.length > 7) result += "-" + d.slice(7, 9);
   if (d.length > 9) result += "-" + d.slice(9, 11);
   return result;
+}
+
+function ProfileVisibilityPicker({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: "public" | "contacts" | "private";
+  onChange: (value: "public" | "contacts" | "private") => void;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-semibold">{title}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {VISIBILITY_OPTIONS.map((option) => {
+          const active = value === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onChange(option.id)}
+              className={`min-h-[4.25rem] rounded-2xl border px-2 py-2 text-left transition-all ${
+                active
+                  ? "border-primary/45 bg-primary/10 text-primary"
+                  : "border-border bg-background/45 text-muted-foreground hover:border-primary/25 hover:bg-primary/5 hover:text-foreground"
+              }`}
+            >
+              <span className="flex items-center justify-between gap-2">
+                <span className="truncate text-xs font-bold">{option.label}</span>
+                {active && <Check className="h-3.5 w-3.5 shrink-0" strokeWidth={2.4} />}
+              </span>
+              <span className="mt-1 block text-[10px] leading-4">{option.desc}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export default function ProfilePage() {
@@ -267,9 +315,14 @@ export default function ProfilePage() {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
-  } = useForm<ProfileForm>({
+  } = useForm<ProfileFormInput, any, ProfileForm>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+      phoneVisibility: "contacts",
+      arayPhoneVisibility: "contacts",
+    },
   });
 
   const {
@@ -280,6 +333,8 @@ export default function ProfilePage() {
   } = useForm<PasswordForm>({
     resolver: zodResolver(passwordSchema),
   });
+  const phoneVisibility = watch("phoneVisibility") || "contacts";
+  const arayPhoneVisibility = watch("arayPhoneVisibility") || "contacts";
 
   useEffect(() => {
     setMounted(true);
@@ -297,6 +352,8 @@ export default function ProfilePage() {
           setPhoneValue(data.phone);
           setValue("phone", data.phone);
         }
+        setValue("phoneVisibility", data.phoneVisibility || "contacts");
+        setValue("arayPhoneVisibility", data.arayPhoneVisibility || "contacts");
         if (data.avatarUrl) setAvatarUrl(data.avatarUrl);
       });
   }, [session, setValue]);
@@ -587,6 +644,30 @@ export default function ProfilePage() {
               className="pl-10 h-11 rounded-xl border-border/60 focus:border-primary"
             />
           </div>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-muted/15 p-3 space-y-4">
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Lock className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold">Приватность номеров</p>
+              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                Как в Telegram: вы сами решаете, кому показывать обычный телефон и AR Phone номер.
+              </p>
+            </div>
+          </div>
+          <ProfileVisibilityPicker
+            title="Обычный телефон"
+            value={phoneVisibility}
+            onChange={(value) => setValue("phoneVisibility", value, { shouldDirty: true })}
+          />
+          <ProfileVisibilityPicker
+            title="AR Phone номер"
+            value={arayPhoneVisibility}
+            onChange={(value) => setValue("arayPhoneVisibility", value, { shouldDirty: true })}
+          />
         </div>
 
         {/* Address */}

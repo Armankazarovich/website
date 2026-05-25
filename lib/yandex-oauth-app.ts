@@ -1,5 +1,7 @@
 import "server-only";
 
+import { yandexOAuthCallbackUri } from "@/lib/yandex-oauth-redirect";
+
 export const YANDEX_GROWTH_OAUTH_SCOPES = [
   "metrika:read",
   "metrika:write",
@@ -49,9 +51,9 @@ export function getYandexUnifiedOAuthApp(): YandexUnifiedOAuthApp | null {
 }
 
 export function yandexUnifiedOAuthRedirectUri(req: Request) {
-  const requestUrl = new URL(req.url);
-  return (
-    process.env.YANDEX_OAUTH_REDIRECT_URI ||
-    `${requestUrl.protocol}//${requestUrl.host}/api/admin/aray/connectors/yandex/oauth/callback`
+  return yandexOAuthCallbackUri(
+    req,
+    "YANDEX_OAUTH_REDIRECT_URI",
+    "/api/admin/aray/connectors/yandex/oauth/callback",
   );
 }

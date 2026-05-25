@@ -49,6 +49,12 @@ type Promotion = {
   createdAt: string;
 };
 
+type PromotionStoryKit = {
+  storyScript: string;
+  adText: string;
+  checklist: string[];
+};
+
 type PromoStatus = "active" | "expired" | "hidden" | "draft";
 type PromoFilter = PromoStatus | "all";
 
@@ -394,6 +400,9 @@ function PromotionCard({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [generatingText, setGeneratingText] = useState(false);
+  const [generateError, setGenerateError] = useState("");
+  const [storyKit, setStoryKit] = useState<PromotionStoryKit | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const draftPromo = useMemo(
@@ -427,6 +436,58 @@ function PromotionCard({
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function generatePromotionText() {
+    const cleanTitle = title.trim() || "Акция";
+    setGeneratingText(true);
+    setGenerateError("");
+    try {
+      const res = await fetch("/api/admin/aray/content/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "promotion",
+          title: cleanTitle,
+          description,
+          category: "Акции и скидки",
+          price: discount ? `скидка ${discount}%` : null,
+          unit: validUntil ? `до ${formatDate(validUntil)}` : "по условиям акции",
+          businessType: "promotion",
+          tone: "steady",
+          benefits: ["ясное условие", "ограниченный срок", "готово для рассылки"],
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.draft) {
+        throw new Error(data?.error || "ARAY Content Core не вернул текст акции");
+      }
+      const draft = data.draft as {
+        shortDescription?: string;
+        adText?: string;
+        storyScript?: string;
+        checklist?: string[];
+      };
+      const nextText = [
+        draft.shortDescription || draft.adText,
+        discount ? `Скидка: ${discount}%.` : null,
+        validUntil ? `Действует до ${formatDate(validUntil)}.` : "Срок действия уточняется в условиях акции.",
+        "Чтобы воспользоваться предложением, оставьте заявку или свяжитесь с менеджером.",
+      ]
+        .filter(Boolean)
+        .join("\n");
+      setTitle(title.trim() ? title : cleanTitle);
+      setDescription(nextText);
+      setStoryKit({
+        storyScript: draft.storyScript || "",
+        adText: draft.adText || draft.shortDescription || "",
+        checklist: Array.isArray(draft.checklist) ? draft.checklist : [],
+      });
+    } catch (error) {
+      setGenerateError(error instanceof Error ? error.message : "Не удалось собрать текст акции");
+    } finally {
+      setGeneratingText(false);
     }
   }
 
@@ -517,14 +578,72 @@ function PromotionCard({
             </p>
           </div>
           <div className="sm:col-span-2">
-            <FieldLabel>Описание и условия</FieldLabel>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <FieldLabel>Описание и условия</FieldLabel>
+              <button
+                type="button"
+                onClick={generatePromotionText}
+                disabled={generatingText}
+                className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 text-[11px] font-semibold text-primary transition-colors hover:border-primary/45 hover:bg-primary/10 disabled:opacity-50"
+              >
+                {generatingText ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {generatingText ? "Собираю..." : "Арай текст"}
+              </button>
+            </div>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={5}
               className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
+            {generateError && (
+              <p className="mt-1.5 text-xs text-destructive">{generateError}</p>
+            )}
           </div>
+          {storyKit && (
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-2">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">ARAY Story Kit</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Сценарий сторис и рекламный текст для быстрого продвижения.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStoryKit(null)}
+                  className="shrink-0 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Скрыть
+                </button>
+              </div>
+              <div className="grid gap-2 lg:grid-cols-2">
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Сторис
+                  </p>
+                  <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">
+                    {storyKit.storyScript}
+                  </pre>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Реклама
+                  </p>
+                  <p className="text-xs leading-relaxed text-foreground">
+                    {storyKit.adText}
+                  </p>
+                  {storyKit.checklist.length > 0 && (
+                    <ul className="mt-3 space-y-1 text-xs leading-relaxed text-muted-foreground">
+                      {storyKit.checklist.map((item) => (
+                        <li key={item}>- {item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           {saveError && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive sm:col-span-2">
               {saveError}

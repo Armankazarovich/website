@@ -19,18 +19,20 @@ export function AnimatedCounter({
   className = "",
 }: AnimatedCounterProps) {
   const [display, setDisplay] = useState(0);
+  const displayRef = useRef(0);
   const ref = useRef<HTMLSpanElement>(null);
   const hasAnimated = useRef(false);
 
   useEffect(() => {
-    if (hasAnimated.current && display === value) return;
+    if (hasAnimated.current && displayRef.current === value) return;
     hasAnimated.current = true;
 
-    const start = display;
+    const start = displayRef.current;
     const diff = value - start;
     if (diff === 0) return;
 
     const startTime = performance.now();
+    let frameId = 0;
 
     function step(now: number) {
       const elapsed = now - startTime;
@@ -38,11 +40,13 @@ export function AnimatedCounter({
       // easeOutExpo for snappy feel
       const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
       const current = start + diff * eased;
+      displayRef.current = current;
       setDisplay(current);
-      if (progress < 1) requestAnimationFrame(step);
+      if (progress < 1) frameId = requestAnimationFrame(step);
     }
 
-    requestAnimationFrame(step);
+    frameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frameId);
   }, [value, duration]);
 
   const formatted = decimals > 0

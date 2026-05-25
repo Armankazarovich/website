@@ -144,7 +144,7 @@ export function PhotoEditor({ imageUrl, onSave, onClose, portraitMode = false }:
     });
 
     return () => { mounted = false; canvas?.dispose(); };
-  }, [imageUrl]);
+  }, [imageUrl, portraitMode]);
 
   // ── Background ──
   const applyBackground = useCallback((value: string) => {

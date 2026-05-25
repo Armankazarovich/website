@@ -217,7 +217,9 @@ export default function AdminProductEditPage() {
   const [photoToolsOpen, setPhotoToolsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [improvingDesc, setImprovingDesc] = useState(false);
+  const [contentDrafting, setContentDrafting] = useState(false);
   const [improveError, setImproveError] = useState<string | null>(null);
+  const [contentDraftError, setContentDraftError] = useState<string | null>(null);
   const [duplicating, setDuplicating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -234,6 +236,11 @@ export default function AdminProductEditPage() {
   const [active, setActive] = useState(true);
   const [featured, setFeatured] = useState(false);
   const [variants, setVariants] = useState<Variant[]>([]);
+  const [pendingVariantStockToggle, setPendingVariantStockToggle] = useState<{
+    idx: number;
+    size: string;
+    nextInStock: boolean;
+  } | null>(null);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -531,6 +538,27 @@ export default function AdminProductEditPage() {
       return next;
     }));
 
+  const requestVariantStockToggle = (idx: number) => {
+    const variant = variants[idx];
+    if (!variant) return;
+    setPendingVariantStockToggle({
+      idx,
+      size: variant.size || `#${idx + 1}`,
+      nextInStock: !variant.inStock,
+    });
+  };
+
+  const confirmVariantStockToggle = () => {
+    if (!pendingVariantStockToggle) return;
+    updateVariant(pendingVariantStockToggle.idx, "inStock", pendingVariantStockToggle.nextInStock);
+    setToast(
+      pendingVariantStockToggle.nextInStock
+        ? "Вариант вернётся в наличие после сохранения товара."
+        : "Вариант будет снят с наличия после сохранения товара."
+    );
+    setPendingVariantStockToggle(null);
+  };
+
   // Ручной пересчёт piecesPerCube из size (иконка калькулятора)
   const recalcPieces = (idx: number) => {
     const v = variants[idx];
@@ -590,6 +618,85 @@ export default function AdminProductEditPage() {
       setImproveError("Сервер недоступен, попробуй ещё раз");
     } finally {
       setImprovingDesc(false);
+    }
+  };
+
+  const buildCurrentPriceHint = () => {
+    const priced = variants.find((variant) => {
+      const cube = Number(variant.pricePerCube || 0);
+      const piece = Number(variant.pricePerPiece || 0);
+      return cube > 0 || piece > 0;
+    });
+    if (!priced) return { price: null, unit: null };
+
+    const cube = Number(priced.pricePerCube || 0);
+    const piece = Number(priced.pricePerPiece || 0);
+    if (saleUnit !== "PIECE" && cube > 0) {
+      return {
+        price: `от ${new Intl.NumberFormat("ru-RU").format(Math.round(cube))} ₽`,
+        unit: "за м³",
+      };
+    }
+    if (piece > 0) {
+      return {
+        price: `от ${new Intl.NumberFormat("ru-RU").format(Math.round(piece))} ₽`,
+        unit: "за шт",
+      };
+    }
+    return { price: null, unit: null };
+  };
+
+  const applyArayContentCore = async () => {
+    if (!name.trim()) {
+      setContentDraftError("Сначала укажите название товара");
+      return;
+    }
+
+    setContentDrafting(true);
+    setContentDraftError(null);
+    const priceHint = buildCurrentPriceHint();
+
+    try {
+      const res = await fetch("/api/admin/aray/content/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "product",
+          title: name,
+          description,
+          category: selectedCategoryName,
+          price: priceHint.price,
+          unit: priceHint.unit,
+          region: "Москва и Московская область",
+          businessType: "catalog",
+          tone: "steady",
+          variants: variants.map((variant) => ({
+            size: variant.size,
+            pricePerCube: variant.pricePerCube,
+            pricePerPiece: variant.pricePerPiece,
+            inStock: variant.inStock,
+          })),
+          benefits: previewCardTags.length ? previewCardTags : undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.draft) {
+        throw new Error(data?.error || "ARAY Content Core не вернул черновик");
+      }
+
+      const draft = data.draft as {
+        shortDescription?: string;
+        plainDescription?: string;
+        cardTags?: string[];
+      };
+      if (draft.shortDescription) setShortDescription(draft.shortDescription);
+      if (draft.plainDescription) setDescription(draft.plainDescription);
+      if (Array.isArray(draft.cardTags)) setCardTags(draft.cardTags.slice(0, 3));
+      setToast("ARAY Core собрал описание, карточку и подсказки. Проверьте и сохраните товар.");
+    } catch (error) {
+      setContentDraftError(error instanceof Error ? error.message : "Не удалось собрать текст через ARAY Core");
+    } finally {
+      setContentDrafting(false);
     }
   };
 
@@ -1132,8 +1239,18 @@ export default function AdminProductEditPage() {
               <div>
                 <div className="flex items-center justify-between gap-3 mb-1.5">
                   <label className="block text-sm font-medium">Полное SEO-описание товара</label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                     <span className="hidden text-[11px] text-muted-foreground sm:inline">{description.trim().length}/450</span>
+                    <button
+                      type="button"
+                      onClick={applyArayContentCore}
+                      disabled={contentDrafting || !name.trim()}
+                      title="ARAY соберёт короткое описание, SEO-текст и подсказки карточки из текущих данных"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-semibold bg-card text-primary border border-primary/30 hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {contentDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {contentDrafting ? "Собираю..." : "ARAY Core"}
+                    </button>
                     <button
                       type="button"
                       onClick={improveDescription}
@@ -1158,6 +1275,9 @@ export default function AdminProductEditPage() {
                 </p>
                 {improveError && (
                   <p className="mt-1.5 text-[11px] text-destructive">{improveError}</p>
+                )}
+                {contentDraftError && (
+                  <p className="mt-1.5 text-[11px] text-destructive">{contentDraftError}</p>
                 )}
               </div>
             </div>
@@ -1388,7 +1508,7 @@ export default function AdminProductEditPage() {
                         </div>
                       </label>
                       <button
-                        onClick={() => updateVariant(idx, "inStock", !v.inStock)}
+                        onClick={() => requestVariantStockToggle(idx)}
                         className={cn(
                           "flex min-h-[42px] items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors",
                           v.inStock
@@ -1466,7 +1586,7 @@ export default function AdminProductEditPage() {
                       </button>
                     </div>
                     <button
-                      onClick={() => updateVariant(idx, "inStock", !v.inStock)}
+                      onClick={() => requestVariantStockToggle(idx)}
                       className={cn(
                         "w-10 h-6 rounded-full transition-colors relative shrink-0",
                         v.inStock ? "bg-emerald-500" : "bg-muted"
@@ -1490,7 +1610,7 @@ export default function AdminProductEditPage() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-border bg-card p-3 sm:p-4">
+      <section className="sticky bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] z-30 rounded-2xl border border-border bg-card p-3 shadow-xl sm:p-4 lg:bottom-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Проверьте товар перед сохранением</p>
@@ -1583,6 +1703,19 @@ export default function AdminProductEditPage() {
           onClose={() => setPhotoSearchOpen(false)}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(pendingVariantStockToggle)}
+        onClose={() => setPendingVariantStockToggle(null)}
+        onConfirm={confirmVariantStockToggle}
+        title={pendingVariantStockToggle?.nextInStock ? "Вернуть вариант в наличие?" : "Снять вариант с наличия?"}
+        description={pendingVariantStockToggle
+          ? `Вариант ${pendingVariantStockToggle.size} изменится на "${pendingVariantStockToggle.nextInStock ? "В наличии" : "Скрыт"}". Изменение применится после сохранения товара.`
+          : undefined}
+        confirmLabel={pendingVariantStockToggle?.nextInStock ? "Вернуть в наличие" : "Снять с наличия"}
+        cancelLabel="Оставить как есть"
+        variant="warning"
+      />
 
       <ConfirmDialog
         open={confirmDeleteProduct}

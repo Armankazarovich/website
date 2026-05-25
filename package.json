@@ -37,6 +37,8 @@
     "direct:check": "node scripts/validate-yandex-direct-integration.js",
     "analytics:check": "node scripts/validate-analytics-integration.js",
     "finance:check": "node scripts/validate-finance-integration.js",
+    "stories:check": "node scripts/validate-store-stories.js",
+    "content:check": "node scripts/validate-content-tools.js",
     "architecture:check": "node scripts/aray-architecture-audit.js",
     "role-os:check": "node scripts/validate-dynamic-role-os.js",
     "preflight:section": "node scripts/aray-section-preflight.js",

@@ -15,6 +15,8 @@ export type WishlistItem = {
     pricePerPiece: number | null;
     piecesPerCube: number | null;
     inStock: boolean;
+    stockQty?: number | null;
+    lowStockThreshold?: number | null;
   }>;
 };
 
@@ -52,6 +54,8 @@ function normalizeWishlistItems(value: unknown): WishlistItem[] {
               pricePerPiece: typeof variant.pricePerPiece === "number" ? variant.pricePerPiece : null,
               piecesPerCube: typeof variant.piecesPerCube === "number" ? variant.piecesPerCube : null,
               inStock: variant.inStock !== false,
+              stockQty: typeof variant.stockQty === "number" ? variant.stockQty : null,
+              lowStockThreshold: typeof variant.lowStockThreshold === "number" ? variant.lowStockThreshold : null,
             },
           ];
         })

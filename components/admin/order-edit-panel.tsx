@@ -79,7 +79,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
         .then((data) => setProducts(Array.isArray(data) ? data : []))
         .catch(() => {});
     }
-  }, [editing]);
+  }, [editing, products.length]);
 
   const selProduct = products.find((p) => p.id === selProductId);
   const selVariant = selProduct?.variants.find((v) => v.id === selVariantId);

@@ -58,6 +58,7 @@ export function VoiceModeOverlay() {
   const vadTimerRef = useRef<number | null>(null);
   const lastSpeechAtRef = useRef<number>(0);
   const sendToArayRef = useRef<(() => void) | null>(null);
+  const closeOverlayRef = useRef<(() => void) | null>(null);
   const [autoSend, setAutoSend] = useState(true);
   const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
   const [toast, setToast] = useState<string | null>(null);
@@ -107,7 +108,7 @@ export function VoiceModeOverlay() {
   // ── Закрытие на Escape ──
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeOverlay(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeOverlayRef.current?.(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
@@ -219,7 +220,7 @@ export function VoiceModeOverlay() {
     } catch (e) {
       setError("Не удалось включить микрофон");
     }
-  }, [state, startAudioLevelMonitor]);
+  }, [autoSend, state, startAudioLevelMonitor]);
 
   const stopListening = useCallback(() => {
     try { recognitionRef.current?.stop(); } catch {}
@@ -412,6 +413,7 @@ export function VoiceModeOverlay() {
     setOpen(false);
     setState("idle");
   }, [stopListening]);
+  closeOverlayRef.current = closeOverlay;
 
   // ── Сброс микрофона: останавливаем stream и заново запрашиваем ──
   const resetMicrophone = useCallback(async () => {

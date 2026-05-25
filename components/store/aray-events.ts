@@ -1,6 +1,6 @@
 "use client";
 
-export type ArayOpenMode = "open" | "voice";
+export type ArayOpenMode = "open" | "voice" | "phone";
 
 export type ArayPromptAction = {
   type: "navigate" | "spotlight" | "highlight" | "call";
@@ -45,7 +45,7 @@ export function requestArayOpen(mode: ArayOpenMode = "open") {
   pendingWindow.__arayPendingOpen = mode;
   clearAdminNavigationCapsule();
   window.dispatchEvent(new CustomEvent("aray:ensure-mounted", { detail: { mode } }));
-  window.dispatchEvent(new Event(mode === "voice" ? "aray:voice" : "aray:open"));
+  window.dispatchEvent(new CustomEvent(mode === "voice" ? "aray:voice" : "aray:open", { detail: { mode } }));
 }
 
 export function requestArayClose() {

@@ -380,10 +380,31 @@ type ArayModulePassport = {
   events: string[];
   dataSources: string[];
   quality: string[];
+  originality: {
+    owner: string;
+    productIntent: string;
+    originality: string[];
+    evidenceLogId: string;
+    usageRules: string[];
+    copyPolicy: string[];
+    versionHistory: Array<{
+      version: string;
+      date: string;
+      summary: string;
+      status: "draft" | "beta" | "ready" | "deprecated";
+    }>;
+  };
 };
 ```
 
 No passport means no module.
+
+Originality rule:
+
+- serious ARAY modules must be recorded in `docs/ARAY_ORIGINAL_MODULES_EVIDENCE_LOG.md`;
+- the copy policy must stay honest and calm;
+- public legal or marketing claims must be reviewed before publication;
+- evidence must include files, screenshots when UI matters, checks, and owner confirmation.
 
 ## Enable Flow
 

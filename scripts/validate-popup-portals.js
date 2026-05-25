@@ -42,9 +42,11 @@ const REVIEWED_MANUAL_OVERLAYS = new Set([
   "components/admin/photo-editor.tsx",
   "components/admin/photo-search.tsx",
   "components/layout/header.tsx",
+  "components/layout/pwa-launch-splash.tsx",
   "components/store/aray-chat-host.tsx",
   "components/store/aray-chat-panel.tsx",
   "components/store/aray-widget.tsx",
+  "components/store/compare-dock.tsx",
   "components/store/voice-mode-overlay.tsx",
 ]);
 

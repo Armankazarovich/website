@@ -11,11 +11,8 @@ const VOICE_ID = "13JzN9jg1ViUP8Pf3uet";
 const MODEL_ID = "eleven_multilingual_v2";
 
 // Голосовые настройки настроены на "Брат-Арай":
-// stability 0.52  — живой, но не дерганый
-// similarity 0.78 — узнаваемый Anton Ru
-// style 0.46      — теплее и душевнее, без театральности
-// speed 0.96      — быстрее для рабочего режима, но без проглатывания окончаний
-const VOICE_SETTINGS = {
+// спокойный рабочий тембр, без театральности и без спешки.
+const BASE_VOICE_SETTINGS = {
   stability: 0.52,
   similarity_boost: 0.78,
   style: 0.46,
@@ -23,8 +20,57 @@ const VOICE_SETTINGS = {
   speed: 0.96,
 };
 
+type ArayVoiceTone = "calm" | "important" | "urgent";
+
+function detectVoiceTone(text: string): ArayVoiceTone {
+  const normalized = text.toLowerCase();
+  if (/(сроч|критич|горит|ошиб|опасн|не работает|не хватает|просроч|риск|внимание)/.test(normalized)) {
+    return "urgent";
+  }
+  if (/(главное|важно|итог|действие|следующий шаг|срок|заказ|задач|цель|бюджет|расход|выручк|готовност)/.test(normalized)) {
+    return "important";
+  }
+  return "calm";
+}
+
+function voiceSettingsForTone(tone: ArayVoiceTone) {
+  if (tone === "urgent") {
+    return {
+      ...BASE_VOICE_SETTINGS,
+      stability: 0.64,
+      style: 0.32,
+      speed: 0.90,
+    };
+  }
+  if (tone === "important") {
+    return {
+      ...BASE_VOICE_SETTINGS,
+      stability: 0.60,
+      style: 0.36,
+      speed: 0.92,
+    };
+  }
+  return BASE_VOICE_SETTINGS;
+}
+
+function shapeProfessionalDelivery(text: string, tone: ArayVoiceTone): string {
+  let shaped = text
+    .replace(/\b(Главное|Важно|Итог|Действие|Следующий шаг|Риск|Срок|Бюджет|Заказ|Задача)\s*:/gi, "$1. ")
+    .replace(/\b(Готово|Проверил|Нашел|Создал|Открыл)\s*:/gi, "$1. ")
+    .replace(/\s*—\s*/g, ". ")
+    .replace(/!+/g, ".")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  if (tone === "urgent" && !/^Внимание[.!?]/i.test(shaped)) {
+    shaped = `Внимание. ${shaped}`;
+  }
+
+  return shaped;
+}
+
 // ── Прямой запрос к ElevenLabs ──────────────────────────────────────────────
-async function directElevenLabs(cleanText: string, apiKey: string): Promise<ArrayBuffer | null> {
+async function directElevenLabs(cleanText: string, apiKey: string, voiceSettings: typeof BASE_VOICE_SETTINGS): Promise<ArrayBuffer | null> {
   try {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
       method: "POST",
@@ -37,7 +83,7 @@ async function directElevenLabs(cleanText: string, apiKey: string): Promise<Arra
       body: JSON.stringify({
         text: cleanText,
         model_id: MODEL_ID,
-        voice_settings: VOICE_SETTINGS,
+        voice_settings: voiceSettings,
       }),
     });
 
@@ -58,7 +104,7 @@ async function directElevenLabs(cleanText: string, apiKey: string): Promise<Arra
 }
 
 // ── Запрос через Cloudflare Worker прокси ───────────────────────────────────
-async function cloudflareProxy(cleanText: string, apiKey: string): Promise<ArrayBuffer | null> {
+async function cloudflareProxy(cleanText: string, apiKey: string, voiceSettings: typeof BASE_VOICE_SETTINGS): Promise<ArrayBuffer | null> {
   const proxyUrl = process.env.TTS_PROXY_URL || "https://pilorus-tts.armankazarovich.workers.dev";
   if (!proxyUrl) return null;
 
@@ -72,8 +118,8 @@ async function cloudflareProxy(cleanText: string, apiKey: string): Promise<Array
         voice_id: VOICE_ID,
         modelId: MODEL_ID,
         model_id: MODEL_ID,
-        voiceSettings: VOICE_SETTINGS,
-        voice_settings: VOICE_SETTINGS,
+        voiceSettings: voiceSettings,
+        voice_settings: voiceSettings,
         apiKey,
       }),
     });
@@ -126,8 +172,11 @@ export async function POST(req: NextRequest) {
     // Расшифровывает аббревиатуры (ГОСТ, ООО, НДС), латиницу (WhatsApp→вотсап),
     // единицы (₽/м³→"рублей за кубометр"), телефоны (+7-985→плюс 7 985),
     // скобки→паузы, кавычки→удалить, размеры через ×→"на" и т.д.
-    const cleanText = cleanForTTS(text);
+    const baseCleanText = cleanForTTS(text);
     const speechLang = normalizeSpeechLang(lang);
+    const tone = detectVoiceTone(baseCleanText);
+    const cleanText = shapeProfessionalDelivery(baseCleanText, tone);
+    const voiceSettings = voiceSettingsForTone(tone);
 
     if (!cleanText) {
       return NextResponse.json({ error: "Пустой текст" }, { status: 400 });
@@ -141,12 +190,12 @@ export async function POST(req: NextRequest) {
     // Стратегия: Cloudflare Worker → Direct → Browser fallback
     // VPS в России → ElevenLabs заблокирован → Cloudflare первый
     // 1. Через Cloudflare Worker (за границей, без блокировки)
-    let audio = await cloudflareProxy(cleanText, apiKey);
+    let audio = await cloudflareProxy(cleanText, apiKey, voiceSettings);
 
     // 2. Если CF не настроен/ошибка — пробуем напрямую
     if (!audio) {
       console.log("[TTS] CF failed, trying direct...");
-      audio = await directElevenLabs(cleanText, apiKey);
+      audio = await directElevenLabs(cleanText, apiKey, voiceSettings);
     }
 
     // 3. Если ничего не сработало — браузерный fallback (НЕ логируем, не платный)

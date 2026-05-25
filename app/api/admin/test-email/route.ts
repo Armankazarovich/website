@@ -5,10 +5,11 @@ import nodemailer from "nodemailer";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const secret = searchParams.get("secret");
+  const secret = searchParams.get("secret") || req.headers.get("x-cron-secret");
+  const expectedSecret = process.env.CRON_SECRET;
   const to = searchParams.get("to") || process.env.ADMIN_EMAIL || "info@pilo-rus.ru";
 
-  if (secret !== process.env.CRON_SECRET && secret !== "pilorus_cron_2026") {
+  if (!expectedSecret || secret !== expectedSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

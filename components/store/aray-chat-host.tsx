@@ -33,6 +33,7 @@ import { ArayBrowser, type ArayBrowserAction } from "@/components/store/aray-bro
 import { useCartStore } from "@/store/cart";
 import { getArayContext, initArayTracker } from "@/lib/aray-tracker";
 import { playAraySpeech, speakAraySpeechBrowser, stopAraySpeech } from "@/lib/aray-audio";
+import { canUseArayTtsProxy, hasBrowserVoiceFor, normalizeArayHumanInput, resolveAraySpeechLanguage } from "@/lib/aray-language";
 import { prepareAraySpeechText } from "@/lib/aray-speech";
 import {
   DEFAULT_ARAY_VOICE_PREFERENCES,
@@ -179,6 +180,20 @@ interface ParsedReply {
   actions: AssistantAction[];
 }
 
+function parseShowUrlPayload(raw: string): { url: string; title?: string } | null {
+  const match = raw.match(/__ARAY_SHOW_URL:([\s\S]+?)__/);
+  if (!match) return null;
+  const value = match[1].trim();
+  if (!value) return null;
+  const protocolIdx = value.indexOf("://");
+  const separatorIdx = value.indexOf(":", protocolIdx >= 0 ? protocolIdx + 3 : 0);
+  if (separatorIdx < 0) return { url: value };
+  return {
+    url: value.slice(0, separatorIdx).trim(),
+    title: value.slice(separatorIdx + 1).trim() || undefined,
+  };
+}
+
 function parseReply(raw: string): ParsedReply {
   let text = raw;
   const result: ParsedReply = { text: "", actions: [] };
@@ -198,9 +213,9 @@ function parseReply(raw: string): ParsedReply {
   text = text.replace(/__ARAY_NAVIGATE:[^_]+?__/g, "");
 
   // __ARAY_SHOW_URL:url:title__ — показать попап
-  const showMatch = text.match(/__ARAY_SHOW_URL:([^:]+?):([^_]+?)__/);
-  if (showMatch) result.showUrl = { url: showMatch[1], title: showMatch[2] };
-  text = text.replace(/__ARAY_SHOW_URL:[^_]+?:[^_]+?__/g, "");
+  const showPayload = parseShowUrlPayload(text);
+  if (showPayload) result.showUrl = showPayload;
+  text = text.replace(/__ARAY_SHOW_URL:[\s\S]+?__/g, "");
 
   // __ARAY_POPUP:{...}__ — JSON попап
   const popupMatch = text.match(/__ARAY_POPUP:(\{[^}]+\})__/);
@@ -242,12 +257,16 @@ function parseReply(raw: string): ParsedReply {
   // ARAY_ACTIONS:[...] — кнопки внизу сообщения
   const actionsIdx = text.indexOf("ARAY_ACTIONS:");
   if (actionsIdx !== -1) {
+    const before = text.slice(0, actionsIdx);
+    const rest = text.slice(actionsIdx + "ARAY_ACTIONS:".length);
+    const nextMarker = rest.search(/\n__ARAY_META__|__ARAY_ERR__|__ARAY_ADD_CART:|__ARAY_NAVIGATE:|__ARAY_POPUP:|__ARAY_SHOW_URL:|__ARAY_REFRESH__/);
+    const jsonStr = (nextMarker >= 0 ? rest.slice(0, nextMarker) : rest).trim();
+    const after = nextMarker >= 0 ? rest.slice(nextMarker) : "";
     try {
-      const jsonStr = text.slice(actionsIdx + "ARAY_ACTIONS:".length).trim();
       const actions = JSON.parse(jsonStr) as AssistantAction[];
       if (Array.isArray(actions)) result.actions = actions;
     } catch {}
-    text = text.slice(0, actionsIdx);
+    text = `${before}${after}`;
   }
 
   result.text = text.trim();
@@ -485,21 +504,28 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     if (!text) return;
     const spokenText = normalizeSpeechText(text);
     if (!spokenText) return;
+    const lang = resolveAraySpeechLanguage(spokenText);
     try {
+      if (!canUseArayTtsProxy(lang)) {
+        if (hasBrowserVoiceFor(lang)) {
+          await speakAraySpeechBrowser(spokenText, lang);
+        }
+        return;
+      }
       const res = await fetch("/api/ai/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: spokenText }),
+        body: JSON.stringify({ text: spokenText, lang }),
       });
       if (res.ok && res.headers.get("content-type")?.includes("audio")) {
         const buf = await res.arrayBuffer();
         await playAraySpeech(buf);
       } else {
-        await speakAraySpeechBrowser(spokenText);
+        await speakAraySpeechBrowser(spokenText, lang);
       }
     } catch (e) {
       console.warn("[ArayHost] TTS error", e);
-      await speakAraySpeechBrowser(spokenText);
+      await speakAraySpeechBrowser(spokenText, lang);
     }
   }, []);
 
@@ -511,7 +537,12 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
 
   // ── Отправка сообщения в Арая ───────────────────────────────────────────────
   const sendMessage = useCallback(async (text: string, options?: { silent?: boolean }) => {
-    if (!text.trim() || isProcessing.current) return;
+    const normalizedInput = normalizeArayHumanInput(text);
+    const visibleText = normalizedInput.original || text.trim();
+    const modelText = normalizedInput.corrected
+      ? `${normalizedInput.text}\n\n[ARAY понял ввод в неверной раскладке. Оригинал пользователя: ${visibleText}]`
+      : normalizedInput.text;
+    if (!modelText.trim() || isProcessing.current) return;
     isProcessing.current = true;
     setLoading(true);
     setShowActions(false);
@@ -534,7 +565,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     const userMsg: Message = {
       id: `u-${Date.now()}`,
       role: "user",
-      content: text.trim(),
+      content: visibleText,
       timestamp: new Date(),
     };
 
@@ -554,7 +585,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       const apiMessages = messages
         .filter(m => !m.typing)
         .map(m => ({ role: m.role, content: m.content }));
-      apiMessages.push({ role: "user", content: text.trim() });
+      apiMessages.push({ role: "user", content: modelText.trim() });
 
       const res = await fetch("/api/ai/chat", {
         method: "POST",
@@ -587,7 +618,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
           .replace(/\n?__ARAY_META__[\s\S]*$/, "")
           .replace(/__ARAY_ERR__[\s\S]*$/, "")
           .replace(/__ARAY_NAVIGATE:[^_]+?__/g, "")
-          .replace(/__ARAY_SHOW_URL:[^_]+?:[^_]+?__/g, "")
+          .replace(/__ARAY_SHOW_URL:[\s\S]+?__/g, "")
           .replace(/__ARAY_POPUP:\{[^}]+\}__/g, "")
           .replace(/__ARAY_ADD_CART:[^_]+?__/g, "")
           .replace(/__ARAY_REFRESH__/g, "")
@@ -674,7 +705,7 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
       setLoading(false);
       isProcessing.current = false;
     }
-  }, [pathname, cartItems, messages, voiceEnabled, voicePrefs, speak, router]);
+  }, [browserState, pathname, cartItems, messages, voiceEnabled, voicePrefs, speak, router]);
 
   // ── Listen to global events ──────────────────────────────────────────────────
   // В pinned режиме (на десктопе) окно всегда видимо — aray:open лишь фокусирует
@@ -732,15 +763,6 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
   }, [refreshServerHistory, sendMessage, pinned]);
 
   // ── Escape → close ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !browserState) handleClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, browserState]);
-
   // ── Auto-resize textarea ─────────────────────────────────────────────────────
   useEffect(() => {
     const ta = inputRef.current;
@@ -770,6 +792,15 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
     notifyArayStop(ARAY_CHAT_HOST_SOURCE);
     audioRef.current = null;
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !browserState) handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [browserState, handleClose, open]);
 
   const handleClear = useCallback(() => {
     setMessages([]);
@@ -1075,28 +1106,38 @@ export function ArayChatHost({ pinned = false, placement = "right" }: ArayChatHo
                         {/* Actions buttons */}
                         {!isUser && msg.actions && msg.actions.length > 0 && (
                           <div className="flex flex-wrap gap-1.5 mt-1">
-                            {msg.actions.slice(0, 4).map((a, ii) => (
-                              <button
-                                key={ii}
-                                onClick={() => {
-                                  if (a.type === "navigate" && a.url) {
-                                    if (a.url.startsWith("http")) window.open(a.url, "_blank");
-                                    else router.push(a.url);
-                                  } else if (a.type === "call" && a.url) {
-                                    window.location.href = a.url;
-                                  } else if (a.type === "show" && a.url) {
-                                    if (a.url.startsWith("/") && !a.url.startsWith("//")) {
+                            {msg.actions.slice(0, 4).map((a, ii) => {
+                              const isExternalLink =
+                                a.type === "navigate" &&
+                                typeof a.url === "string" &&
+                                /^https?:\/\//i.test(a.url);
+                              const className = "px-3 py-1.5 rounded-xl text-[12px] font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors";
+                              return isExternalLink ? (
+                                <a key={ii} href={a.url} target="_blank" rel="noreferrer" className={className}>
+                                  {a.label}
+                                </a>
+                              ) : (
+                                <button
+                                  key={ii}
+                                  onClick={() => {
+                                    if (a.type === "navigate" && a.url) {
                                       router.push(a.url);
-                                    } else {
-                                      window.open(a.url, "_blank", "noopener,noreferrer");
+                                    } else if (a.type === "call" && a.url) {
+                                      window.location.href = a.url;
+                                    } else if (a.type === "show" && a.url) {
+                                      if (a.url.startsWith("/") && !a.url.startsWith("//")) {
+                                        router.push(a.url);
+                                      } else {
+                                        window.open(a.url, "_blank", "noopener,noreferrer");
+                                      }
                                     }
-                                  }
-                                }}
-                                className="px-3 py-1.5 rounded-xl text-[12px] font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                              >
-                                {a.label}
-                              </button>
-                            ))}
+                                  }}
+                                  className={className}
+                                >
+                                  {a.label}
+                                </button>
+                              );
+                            })}
                           </div>
                         )}
 

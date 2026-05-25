@@ -12,49 +12,50 @@ export const ADMIN_NAV_GROUP_ORDER = [
 ];
 
 export const ADMIN_NAV_GROUP_DESCRIPTIONS: Record<string, string> = {
-  main: "сводка дня, сигналы и быстрые действия",
-  sales: "терминал, заказы, доставка, клиенты, CRM и задачи",
-  products: "каталог, карточки, категории, склад, медиа и импорт",
-  marketing: "продвижение, акции, отзывы, рассылки, контент и аналитика",
-  finance: "деньги, выручка, платежи и финансовая картина",
-  settings: "бизнес, сайт, ARAY, терминалы, команда и здоровье",
+  main: "сводка дня, роли, риски и быстрые действия",
+  sales: "заказы, терминал, клиенты, доставка, CRM и задачи",
+  products: "каталог, карточки, цены, склад, медиа и импорт",
+  marketing: "Direct, SEO, акции, сторис, отзывы, контент и аналитика",
+  finance: "деньги, расходы, платежи и финансовая картина",
+  settings: "бизнес, сайт, команда, ARAY, рабочие места и здоровье",
   help: "гайды, обучение, база знаний и быстрые подсказки",
   personal: "профиль клиента, заказы, история и подписки",
 };
 
 const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] }>> = {
   main: [
-    { label: "Рабочий стол", hrefs: ["/admin"] },
+    { label: "Рабочий день", hrefs: ["/admin"] },
+    { label: "Роли и система", hrefs: ["/admin/director"] },
   ],
   sales: [
-    { label: "Терминал", hrefs: ["/admin/orders/new"] },
-    { label: "Заказы и доставка", hrefs: ["/admin/orders", "/admin/delivery"] },
+    { label: "Заказы", hrefs: ["/admin/orders", "/admin/orders/new"] },
     { label: "Клиенты и CRM", hrefs: ["/admin/clients", "/admin/crm", "/admin/workflows"] },
+    { label: "Доставка", hrefs: ["/admin/delivery"] },
     { label: "Задачи", hrefs: ["/admin/tasks"] },
   ],
   products: [
-    { label: "Каталог", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit", "/admin/categories", "/admin/product-types", "/catalog"] },
+    { label: "Карточки и цены", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit"] },
+    { label: "Структура каталога", hrefs: ["/admin/categories", "/admin/product-types", "/catalog"] },
     { label: "Склад / остатки", hrefs: ["/admin/inventory"] },
     { label: "Медиа и защита", hrefs: ["/admin/media", "/admin/watermark"] },
     { label: "Импорт", hrefs: ["/admin/import"] },
   ],
   marketing: [
-    { label: "Продвижение", hrefs: ["/admin/promotion", "/admin/promotions"] },
+    { label: "Реклама и SEO", hrefs: ["/admin/promotion", "/admin/analytics"] },
+    { label: "Акции", hrefs: ["/admin/promotions"] },
+    { label: "Сторис и доверие", hrefs: ["/admin/stories", "/admin/reviews"] },
     { label: "Коммуникации", hrefs: ["/admin/email", "/admin/notifications"] },
-    { label: "Репутация", hrefs: ["/admin/reviews"] },
     { label: "Контент", hrefs: ["/admin/posts", "/admin/services"] },
-    { label: "Аналитика", hrefs: ["/admin/analytics"] },
   ],
   finance: [
     { label: "Финансы", hrefs: ["/admin/finance"] },
   ],
   settings: [
-    { label: "Главное", hrefs: ["/admin/settings"] },
-    { label: "Бизнес и сайт", hrefs: ["/admin/business/settings", "/admin/site", "/admin/appearance"] },
-    { label: "ARAY", hrefs: ["/admin/aray"] },
+    { label: "Бизнес и роли", hrefs: ["/admin/business/settings", "/admin/staff"] },
+    { label: "Сайт и оформление", hrefs: ["/admin/site", "/admin/appearance"] },
+    { label: "ARAY и модули", hrefs: ["/admin/aray"] },
     { label: "Рабочие места", hrefs: ["/admin/terminals"] },
-    { label: "Команда", hrefs: ["/admin/staff"] },
-    { label: "Система", hrefs: ["/admin/health"] },
+    { label: "Система", hrefs: ["/admin/settings", "/admin/health"] },
     { label: "Личный кабинет", hrefs: ["/cabinet/notifications", "/cabinet/appearance"] },
   ],
   help: [

@@ -13,6 +13,8 @@ model User {
   name           String?
   email          String             @unique
   phone          String?
+  phoneVisibility String       @default("contacts")
+  arayPhoneVisibility String   @default("contacts")
   passwordHash   String
   role           Role               @default(USER)
   address        String?
@@ -645,6 +647,53 @@ model Post {
   @@index([published, featured])
 }
 
+model StoreStory {
+  id          String         @id @default(cuid())
+  tenantId    String         @default("pilorus")
+  type        StoreStoryType @default(IMAGE)
+  title       String
+  subtitle    String?
+  description String?
+  mediaUrl    String?
+  posterUrl   String?
+  ctaLabel    String?
+  ctaUrl      String?
+  entityType  String?
+  entityId    String?
+  placement   String         @default("site")
+  active      Boolean        @default(true)
+  pinned      Boolean        @default(false)
+  sortOrder   Int            @default(100)
+  views       Int            @default(0)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  relations   StoreStoryRelation[]
+
+  @@index([tenantId])
+  @@index([active, pinned, sortOrder])
+  @@index([entityType, entityId])
+}
+
+model StoreStoryRelation {
+  id         String     @id @default(cuid())
+  tenantId   String     @default("pilorus")
+  storyId    String
+  entityType String
+  entityId   String
+  label      String?
+  image      String?
+  ctaUrl     String?
+  sortOrder  Int        @default(100)
+  createdAt  DateTime   @default(now())
+  story      StoreStory @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, entityType, entityId])
+  @@index([tenantId, entityType, entityId])
+  @@index([storyId, sortOrder])
+}
+
 model Service {
   id          String   @id @default(cuid())
   tenantId        String         @default("pilorus")
@@ -1084,6 +1133,12 @@ enum LeadActivityType {
   TASK
   STAGE_CHANGE
   SYSTEM
+}
+
+enum StoreStoryType {
+  IMAGE
+  VIDEO
+  LIVE
 }
 
 enum ArayLevel {

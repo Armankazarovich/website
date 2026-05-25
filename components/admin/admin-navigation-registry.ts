@@ -6,7 +6,9 @@ import {
   BarChart2,
   Bell,
   BookOpen,
+  BriefcaseBusiness,
   CheckSquare,
+  CirclePlay,
   FileCheck,
   FileDown,
   Globe,
@@ -17,6 +19,7 @@ import {
   LayoutDashboard,
   Mail,
   Megaphone,
+  MessageCircle,
   Monitor,
   Network,
   Package,
@@ -130,6 +133,7 @@ export function getAdminGroupLabel(group: string, t?: (key: TranslationKey) => s
 
 export const allNavItems: NavItem[] = [
   { href: "/admin", label: "Рабочий стол", labelKey: "dashboard", icon: LayoutDashboard, exact: true, roles: ALL_STAFF, group: "main", section: "overview", mobilePriority: 1, surfaces: ADMIN_NAV_MOBILE_DOCK_SURFACES },
+  { href: "/admin/director", label: "Роли и разделы", icon: BriefcaseBusiness, roles: ALL_STAFF, group: "main", section: "director", moduleId: "business.director-cabinet", searchPriority: 5 },
   { href: "/cabinet", label: "Главная", icon: LayoutDashboard, exact: true, roles: ["USER"], group: "main", section: "overview", mobilePriority: 1 },
 
   { href: "/cabinet/orders", label: "Мои заказы", icon: ShoppingBag, roles: ["USER"], group: "personal", section: "orders", mobilePriority: 20 },
@@ -141,6 +145,7 @@ export const allNavItems: NavItem[] = [
 
   { href: "/admin/orders/new", label: "Терминал", badge: "Бета", icon: Receipt, roles: ALL_STAFF, group: "sales", groupKey: "sales", section: "terminal", moduleId: "business.terminal", mobilePriority: 10, surfaces: ADMIN_NAV_MOBILE_DOCK_SURFACES },
   { href: "/admin/orders", label: "Заказы", labelKey: "orders", icon: ShoppingBag, roles: ALL_STAFF, group: "sales", section: "orders", moduleId: "business.orders", mobilePriority: 20 },
+  { href: "/admin/messenger", label: "Мессенджер", icon: MessageCircle, roles: ALL_STAFF, group: "sales", section: "messenger", moduleId: "business.aray-messenger", mobilePriority: 25, surfaces: ADMIN_NAV_MOBILE_DOCK_SURFACES },
   { href: "/admin/delivery", label: "Доставка", labelKey: "delivery", icon: Truck, roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales", section: "delivery", mobilePriority: 30 },
   { href: "/admin/clients", label: "Клиенты", labelKey: "clients", icon: UserCircle, roles: [SA, "ADMIN", "MANAGER"], group: "sales", section: "clients" },
   { href: "/admin/crm", label: "CRM / Лиды", labelKey: "crm", icon: Target, roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales", section: "crm" },
@@ -159,11 +164,11 @@ export const allNavItems: NavItem[] = [
   { href: "/admin/media", label: "Медиа", labelKey: "media", icon: Images, roles: [...GLOBAL_MEDIA_ROLES], group: "products", section: "media" },
   { href: "/admin/watermark", label: "Водяной знак", labelKey: "watermark", icon: Stamp, roles: [SA, "ADMIN"], group: "products", section: "media-protection" },
   { href: "/admin/import", label: "Импорт", labelKey: "import_export", icon: FileDown, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products", section: "import" },
-  { href: "/admin/business/settings", label: "Настройки бизнеса", icon: Settings, roles: [SA, "ADMIN", "MANAGER"], group: "settings", section: "business-settings", moduleId: "business.role-os" },
+  { href: "/admin/business/settings", label: "Роли и бизнес", icon: Settings, roles: [SA, "ADMIN", "MANAGER"], group: "settings", section: "business-settings", moduleId: "business.role-os" },
   { href: "/admin/site", label: "Сайт", labelKey: "site_settings", icon: Globe, roles: [SA, "ADMIN"], group: "settings", section: "site" },
   { href: "/admin/appearance", label: "Оформление", labelKey: "appearance", icon: Palette, roles: [SA, "ADMIN"], group: "settings", section: "appearance" },
 
-  { href: "/admin/promotion", label: "Продвижение", labelKey: "promotion", icon: BarChart2, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", groupKey: "marketing", section: "promotion" },
+  { href: "/admin/promotion", label: "Реклама / Direct", labelKey: "promotion", icon: BarChart2, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", groupKey: "marketing", section: "promotion" },
   { href: "/admin/promotions", label: "Акции", labelKey: "promotions", icon: Megaphone, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", section: "promotions" },
   { href: "/admin/reviews", label: "Отзывы", labelKey: "reviews", icon: Star, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", section: "reviews" },
   { href: "/admin/email", label: "Рассылки", labelKey: "email", icon: Mail, roles: [SA, "ADMIN"], group: "marketing", section: "email" },
@@ -171,6 +176,7 @@ export const allNavItems: NavItem[] = [
   { href: "/admin/analytics", label: "Аналитика", labelKey: "analytics", icon: BarChart2, roles: [SA, "ADMIN", "ACCOUNTANT"], group: "marketing", section: "analytics" },
   { href: "/admin/posts", label: "Статьи / Новости", icon: BookOpen, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", section: "content" },
   { href: "/admin/services", label: "Услуги", icon: Wrench, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", section: "content" },
+  { href: "/admin/stories", label: "Сторис", icon: CirclePlay, roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "marketing", section: "content" },
 
   { href: "/admin/finance", label: "Финансы", labelKey: "finance", icon: Wallet, roles: [SA, "ADMIN", "ACCOUNTANT"], group: "finance", groupKey: "finance", section: "finance", moduleId: "finance.wallet-ledger" },
 

@@ -26,7 +26,9 @@ const ROLE_POLICIES: Record<string, string[]> = {
   "core.notifications": ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"],
   "core.aray-voice": ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"],
   "business.orders": ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"],
+  "business.director-cabinet": ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"],
   "business.role-os": ["SUPER_ADMIN", "ADMIN", "MANAGER"],
+  "business.aray-messenger": ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"],
   "business.terminal": ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"],
   "finance.wallet-ledger": ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"],
   "marketplace.marketplace": ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"],
@@ -35,7 +37,9 @@ const ROLE_POLICIES: Record<string, string[]> = {
 const CONNECTOR_REQUIREMENTS: Record<string, string[]> = {
   "core.notifications": ["notifications"],
   "business.orders": ["orders", "notifications"],
+  "business.director-cabinet": ["orders", "notifications"],
   "business.role-os": ["notifications"],
+  "business.aray-messenger": ["notifications", "ai"],
   "business.terminal": ["orders", "catalog", "search", "notifications", "ai"],
   "finance.wallet-ledger": ["orders", "notifications"],
   "marketplace.marketplace": ["catalog", "search"],
@@ -239,12 +243,12 @@ export async function ensureArayModuleStates(tenantId = getCurrentTenantId()) {
     select: { moduleId: true },
   });
   const existingIds = new Set(existing.map((state) => state.moduleId));
-  const missingModules = arayModuleRegistry.filter((module) => !existingIds.has(module.id));
+  const missingModules = arayModuleRegistry.filter((moduleItem) => !existingIds.has(moduleItem.id));
 
-  await Promise.all(
-    missingModules.map((module) => {
-      const passport = module as ArayModulePassport;
-      return prisma.arayModuleState.upsert({
+  for (const moduleItem of missingModules) {
+    const passport = moduleItem as ArayModulePassport;
+    try {
+      await prisma.arayModuleState.upsert({
         where: {
           tenantId_moduleId: {
             tenantId,
@@ -262,8 +266,10 @@ export async function ensureArayModuleStates(tenantId = getCurrentTenantId()) {
           connectorPolicy: { requiredTypes: getConnectorRequirements(passport) },
         },
       });
-    }),
-  );
+    } catch (error: any) {
+      if (error?.code !== "P2002") throw error;
+    }
+  }
 }
 
 export async function getArayModuleControlItemsForRole({

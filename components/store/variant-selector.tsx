@@ -10,6 +10,11 @@ import { cn } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
 import { haptic } from "@/lib/haptic";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
+import {
+  clampProductQuantity,
+  getPurchasableQuantityLimit,
+  isProductVariantPurchasable,
+} from "@/lib/product-availability";
 
 interface Variant {
   id: string;
@@ -18,6 +23,8 @@ interface Variant {
   pricePerPiece: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
+  stockQty?: number | null;
+  lowStockThreshold?: number | null;
 }
 
 interface VariantSelectorProps {
@@ -30,36 +37,84 @@ interface VariantSelectorProps {
   phoneLink?: string;
 }
 
+function getVariantUnitPrice(variant: Variant | null | undefined, unitType: UnitType) {
+  if (!variant) return null;
+  const price = Number(unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function getPreferredUnit(
+  variant: Variant | null | undefined,
+  saleUnit: "CUBE" | "PIECE" | "BOTH",
+  currentUnit?: UnitType,
+): UnitType | null {
+  const hasCube = Boolean(getVariantUnitPrice(variant, "CUBE"));
+  const hasPiece = Boolean(getVariantUnitPrice(variant, "PIECE"));
+  if (currentUnit === "CUBE" && hasCube) return "CUBE";
+  if (currentUnit === "PIECE" && hasPiece) return "PIECE";
+  if (saleUnit === "CUBE") return hasCube ? "CUBE" : null;
+  if (saleUnit === "PIECE") return hasPiece ? "PIECE" : null;
+  if (hasCube) return "CUBE";
+  if (hasPiece) return "PIECE";
+  return null;
+}
+
+function quantityStep(unitType: UnitType) {
+  return unitType === "CUBE" ? 0.1 : 1;
+}
+
+function normalizeQuantityForUnit(
+  value: number,
+  unitType: UnitType,
+  variant: Variant | null | undefined,
+) {
+  const step = quantityStep(unitType);
+  const safe = Number.isFinite(value) ? value : step;
+  const rounded = unitType === "CUBE" ? Number(safe.toFixed(1)) : Math.round(safe);
+  const clamped = clampProductQuantity(rounded, variant, unitType);
+  const limit = getPurchasableQuantityLimit(variant, unitType);
+  if (limit !== null && limit < step) return limit;
+  return Math.max(step, clamped);
+}
+
 export function VariantSelector({
   productId, productName, productSlug, productImage, saleUnit, variants, phoneLink,
 }: VariantSelectorProps) {
   const effectivePhone = phoneLink || PHONE_LINK;
   const { addItem } = useCartStore();
+  const initialVariant =
+    variants.find((variant) => isProductVariantPurchasable(variant) && getPreferredUnit(variant, saleUnit)) ||
+    variants[0] ||
+    null;
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
-    variants.find((v) => v.inStock) || variants[0] || null
+    initialVariant
   );
   const [unitType, setUnitType] = useState<UnitType>(
-    saleUnit === "PIECE" ? "PIECE" : "CUBE"
+    getPreferredUnit(initialVariant, saleUnit) || (saleUnit === "PIECE" ? "PIECE" : "CUBE")
   );
-  const [quantity, setQuantity] = useState(saleUnit === "PIECE" ? 1 : 1);
+  const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
   const [addedTotal, setAddedTotal] = useState(0);
   const [variantQuery, setVariantQuery] = useState("");
   const justAddedTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // Sync unit type with saleUnit
+  // Sync unit type with saleUnit and selected size.
   useEffect(() => {
-    if (saleUnit === "CUBE") setUnitType("CUBE");
-    if (saleUnit === "PIECE") setUnitType("PIECE");
-  }, [saleUnit]);
+    const preferred = getPreferredUnit(selectedVariant, saleUnit, unitType);
+    if (!preferred) return;
+    if (preferred !== unitType) {
+      setUnitType(preferred);
+      setQuantity(normalizeQuantityForUnit(1, preferred, selectedVariant));
+      return;
+    }
+    setQuantity((value) => normalizeQuantityForUnit(value, preferred, selectedVariant));
+  }, [saleUnit, selectedVariant, unitType]);
 
-  const currentPrice =
-    selectedVariant
-      ? unitType === "CUBE"
-        ? selectedVariant.pricePerCube
-        : selectedVariant.pricePerPiece
-      : null;
+  const currentPrice = getVariantUnitPrice(selectedVariant, unitType);
+  const maxQuantity = getPurchasableQuantityLimit(selectedVariant, unitType);
+  const canUseCube = Boolean(getVariantUnitPrice(selectedVariant, "CUBE"));
+  const canUsePiece = Boolean(getVariantUnitPrice(selectedVariant, "PIECE"));
 
   const totalPrice = currentPrice ? currentPrice * quantity : 0;
   const visibleVariants = useMemo(() => {
@@ -87,7 +142,9 @@ export function VariantSelector({
   };
 
   const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!selectedVariant || !currentPrice) return;
+    if (!selectedVariant || !isProductVariantPurchasable(selectedVariant) || !currentPrice) return;
+    const safeQuantity = normalizeQuantityForUnit(quantity, unitType, selectedVariant);
+    if (safeQuantity <= 0) return;
 
     flyToCart(e.currentTarget, productImage ?? null);
     haptic("success"); // двойной пульс — подтверждение добавления
@@ -100,8 +157,9 @@ export function VariantSelector({
       variantSize: selectedVariant.size,
       productImage,
       unitType,
-      quantity,
+      quantity: safeQuantity,
       price: Number(currentPrice),
+      maxQuantity,
     });
     trackArayMetrikaGoal("aray_cart_add", {
       source: "product_page",
@@ -110,21 +168,21 @@ export function VariantSelector({
       productName,
       variantSize: selectedVariant.size,
       unit: unitType,
-      quantity,
+      quantity: safeQuantity,
       price: Number(currentPrice),
     });
 
     // Show confirmation state
-    setAddedTotal(quantity * Number(currentPrice));
+    setAddedTotal(safeQuantity * Number(currentPrice));
+    setQuantity(safeQuantity);
     setJustAdded(true);
     clearTimeout(justAddedTimer.current);
     justAddedTimer.current = setTimeout(() => setJustAdded(false), 2500);
   };
 
   const adjustQty = (delta: number) => {
-    const step = unitType === "CUBE" ? 0.1 : 1;
-    const newQty = Math.max(step, parseFloat((quantity + delta * step).toFixed(1)));
-    setQuantity(newQty);
+    const step = quantityStep(unitType);
+    setQuantity((value) => normalizeQuantityForUnit(value + delta * step, unitType, selectedVariant));
   };
 
   return (
@@ -167,22 +225,27 @@ export function VariantSelector({
               : "flex flex-wrap gap-2",
           )}
         >
-          {visibleVariants.map((v) => (
+          {visibleVariants.map((v) => {
+            const hasSaleUnit = Boolean(getPreferredUnit(v, saleUnit));
+            const disabled = !isProductVariantPurchasable(v) || !hasSaleUnit;
+
+            return (
             <button
               key={v.id}
               onClick={() => setSelectedVariant(v)}
-              disabled={!v.inStock}
+              disabled={disabled}
               className={cn(
                 "px-4 py-3 sm:py-1.5 rounded-lg border text-sm font-medium transition-all",
                 selectedVariant?.id === v.id
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:border-primary/50",
-                !v.inStock && "opacity-40 cursor-not-allowed line-through"
+                disabled && "opacity-40 cursor-not-allowed line-through"
               )}
             >
               {v.size}
             </button>
-          ))}
+          );
+          })}
           {visibleVariants.length === 0 && (
             <p className="col-span-full rounded-xl border border-border bg-muted/30 px-3 py-4 text-center text-sm text-muted-foreground">
               Такого размера не нашли
@@ -197,23 +260,27 @@ export function VariantSelector({
           <h3 className="font-medium mb-3">Единица измерения</h3>
           <div className="inline-flex rounded-xl border border-border p-1 bg-muted">
             <button
-              onClick={() => { setUnitType("CUBE"); setQuantity(1); }}
+              onClick={() => { setUnitType("CUBE"); setQuantity(normalizeQuantityForUnit(1, "CUBE", selectedVariant)); }}
+              disabled={!canUseCube}
               className={cn(
                 "px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-all",
                 unitType === "CUBE"
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+                !canUseCube && "pointer-events-none opacity-40"
               )}
             >
               м³ (куб)
             </button>
             <button
-              onClick={() => { setUnitType("PIECE"); setQuantity(1); }}
+              onClick={() => { setUnitType("PIECE"); setQuantity(normalizeQuantityForUnit(1, "PIECE", selectedVariant)); }}
+              disabled={!canUsePiece}
               className={cn(
                 "px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-all",
                 unitType === "PIECE"
                   ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+                !canUsePiece && "pointer-events-none opacity-40"
               )}
             >
               шт (штука)
@@ -265,7 +332,7 @@ export function VariantSelector({
               value={quantity}
               onChange={(e) => {
                 const v = parseFloat(e.target.value);
-                if (!isNaN(v) && v > 0) setQuantity(v);
+                if (!isNaN(v) && v > 0) setQuantity(normalizeQuantityForUnit(v, unitType, selectedVariant));
               }}
               className="w-20 text-center text-base py-3 bg-background border-x border-border font-medium focus:outline-none"
               step={unitType === "CUBE" ? "0.1" : "1"}
@@ -273,6 +340,7 @@ export function VariantSelector({
             />
             <button
               onClick={() => adjustQty(1)}
+              disabled={maxQuantity !== null && quantity >= maxQuantity}
               className="px-4 py-3 text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -298,7 +366,7 @@ export function VariantSelector({
               : ""
           )}
           onClick={handleAdd}
-          disabled={!selectedVariant?.inStock || !currentPrice || justAdded}
+          disabled={!selectedVariant || !isProductVariantPurchasable(selectedVariant) || !currentPrice || justAdded}
         >
           {justAdded ? (
             <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
@@ -307,7 +375,7 @@ export function VariantSelector({
                 {quantity} {unitType === "CUBE" ? "м³" : "шт"} · {formatPrice(addedTotal)}
               </span>
             </span>
-          ) : !selectedVariant?.inStock ? (
+          ) : !selectedVariant || !isProductVariantPurchasable(selectedVariant) ? (
             "Нет в наличии"
           ) : (
             <>
@@ -323,7 +391,7 @@ export function VariantSelector({
         </Button>
       </div>
 
-      {!selectedVariant?.inStock && (
+      {(!selectedVariant || !isProductVariantPurchasable(selectedVariant)) && (
         <p className="text-sm text-muted-foreground text-center">
           Этот размер временно отсутствует.{" "}
           <a href={`tel:${effectivePhone}`} className="text-primary hover:underline">

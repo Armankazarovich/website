@@ -4,6 +4,7 @@ export type ArayProviderKind =
   | "brain"
   | "knowledge"
   | "voice"
+  | "video"
   | "documents"
   | "search"
   | "demand"
@@ -168,6 +169,35 @@ export const ARAY_PROVIDER_MATRIX: ArayProviderDefinition[] = [
       "YANDEX_SPEECHKIT_API_KEY",
       "YANDEX_SPEECHKIT_FOLDER_ID",
     ],
+  },
+  {
+    id: "zangi-video-calls",
+    title: "Zangi: звонки и видео",
+    plainName: "Звонки, видеовстречи, Zangi Number и запасной video SDK",
+    priority: "P0",
+    kind: "video",
+    owner: "SUPER_ADMIN",
+    purpose:
+      "Дать ARAY Messenger простой сценарий звонка: позвонить клиенту, подготовить видеовстречу, собрать контекст CRM, пригласить участника и сохранить следующее действие.",
+    humanAction:
+      "Супер-админ запрашивает Zangi API/SDK или white-label доступ. Если web-видео недоступно быстро, подключается fallback-провайдер без изменения интерфейса ARAY.",
+    safeRule:
+      "ARAY не имитирует живую комнату без подключенного провайдера. До ключей он готовит приглашение, ссылку-черновик, CRM-контекст и чеклист встречи.",
+    requiredEnv: ["ZANGI_API_KEY"],
+    optionalEnv: [
+      "ARAY_VIDEO_PROVIDER",
+      "ARAY_VIDEO_MEETING_BASE_URL",
+      "ZANGI_APP_ID",
+      "ZANGI_APP_SECRET",
+      "ZANGI_WEBHOOK_SECRET",
+      "LIVEKIT_API_KEY",
+      "LIVEKIT_API_SECRET",
+      "DAILY_API_KEY",
+      "VONAGE_API_KEY",
+      "VONAGE_API_SECRET",
+      "BITRIX24_WEBHOOK_URL",
+    ],
+    officialSetupUrl: "https://zangi.com/voice-api",
   },
   {
     id: "market-demand",
@@ -362,15 +392,16 @@ export const ARAY_CONNECTOR_BUNDLE_DEFINITIONS: ArayConnectorBundleDefinition[] 
   {
     id: "inbox-reputation-stack",
     title: "Сообщения и репутация",
-    subtitle: "Заявки, отзывы, уведомления и ответы в одной очереди ARAY.",
+    subtitle: "Заявки, отзывы, звонки, видео, уведомления и ответы в одной очереди ARAY.",
     priority: "P0",
-    providerIds: ["unified-inbox", "external-login"],
+    providerIds: ["unified-inbox", "zangi-video-calls", "external-login"],
     safeAutomation: [
       "собрать сообщения по каналам",
+      "подготовить звонок или видеовстречу из карточки клиента",
       "найти отзывы и отправить их на одобрение",
       "уведомить нужную роль перед публичным ответом",
     ],
-    ownerAction: "Владелец подключает каналы и выбирает, кто может одобрять ответы.",
+    ownerAction: "Владелец подключает каналы, Zangi/видеопровайдера и выбирает, кто может одобрять ответы.",
     nextActionLabel: "Открыть сообщения",
     href: "/admin/notifications",
   },

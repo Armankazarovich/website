@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   TrendingUp,
   ShoppingCart,
@@ -884,7 +884,7 @@ export default function AnalyticsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90>(30);
 
-  async function load(quiet = false, nextRange = rangeDays) {
+  const load = useCallback(async (quiet = false, nextRange = rangeDays) => {
     if (!quiet) setLoading(true);
     else setRefreshing(true);
     setError("");
@@ -901,11 +901,11 @@ export default function AnalyticsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }
+  }, [rangeDays]);
 
   useEffect(() => {
     load(false, rangeDays);
-  }, [rangeDays]);
+  }, [load, rangeDays]);
 
   // ── Error state
   if (!loading && error) {

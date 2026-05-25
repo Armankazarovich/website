@@ -71,6 +71,10 @@ async function saveSetting(tenantId: string, key: string, value: string) {
   });
 }
 
+function adminReturnUrl(req: Request, path: string) {
+  return new URL(path, new URL(yandexUnifiedOAuthRedirectUri(req)).origin);
+}
+
 export async function GET(req: Request) {
   const auth = await authorize();
   if (!auth.authorized) return auth.response;
@@ -84,7 +88,7 @@ export async function GET(req: Request) {
   const tenantId = getCurrentTenantId();
 
   const redirectWith = (params: Record<string, string>) => {
-    const url = new URL("/admin/promotion", requestUrl.origin);
+    const url = adminReturnUrl(req, "/admin/promotion");
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
     }

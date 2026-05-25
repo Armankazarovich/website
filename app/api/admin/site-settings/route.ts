@@ -46,6 +46,8 @@ const ALLOWED_KEYS = new Set([
   "widget_enabled", "widget_position", "widget_label", "widget_show_email",
   // Социальные сети (в виджете)
   "social_whatsapp", "social_telegram", "social_vk",
+  // Бренд и PWA
+  "logo_url", "site_logo_url", "pwa_logo_url",
   // Футер
   "footer_copyright",
   // Водяной знак

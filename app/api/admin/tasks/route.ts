@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -9,11 +10,15 @@ import {
   normalizeTaskRelationType,
 } from "@/lib/task-relations";
 
+const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] as const;
+const TASK_STATUSES = new Set(["BACKLOG", "TODO", "IN_PROGRESS", "REVIEW", "DONE"]);
+const TASK_PRIORITIES = new Set(["LOW", "MEDIUM", "HIGH", "URGENT"]);
+
 async function getSession() {
   const session = await auth();
   const role = session?.user?.role;
   const id = session?.user?.id;
-  if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role as string)) return null;
+  if (!session || !STAFF_ROLES.includes(role as any)) return null;
   return { role, id };
 }
 
@@ -28,7 +33,38 @@ const taskInclude = {
   },
 };
 
-// GET /api/admin/tasks — list all tasks
+function normalizeEnumValue(value: unknown, allowed: Set<string>, fallback: string) {
+  const candidate = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return allowed.has(candidate) ? candidate : fallback;
+}
+
+function normalizeText(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function normalizeOptionalText(value: unknown) {
+  const text = normalizeText(value);
+  return text || null;
+}
+
+function normalizeTags(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => normalizeText(item))
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function parseOptionalDate(value: unknown): { date: Date | null; error?: string } {
+  const text = normalizeText(value);
+  if (!text) return { date: null };
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(text)
+    ? new Date(`${text}T12:00:00.000Z`)
+    : new Date(text);
+  if (Number.isNaN(parsed.getTime())) return { date: null, error: "Некорректная дата задачи" };
+  return { date: parsed };
+}
+
 export async function GET(req: Request) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,9 +95,8 @@ export async function GET(req: Request) {
     orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
   });
 
-  // Also get all staff for assignee dropdown
   const staff = await prisma.user.findMany({
-    where: { role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] } },
+    where: { role: { in: [...STAFF_ROLES] as any } },
     select: { id: true, name: true, email: true, role: true },
     orderBy: { name: "asc" },
   });
@@ -69,15 +104,36 @@ export async function GET(req: Request) {
   return NextResponse.json({ tasks, staff });
 }
 
-// POST /api/admin/tasks — create task
 export async function POST(req: Request) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
-  const { title, description, status, priority, assigneeId, orderId, dueDate, tags } = body;
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Некорректные данные задачи" }, { status: 400 });
+  }
 
-  if (!title?.trim()) return NextResponse.json({ error: "Название обязательно" }, { status: 400 });
+  const title = normalizeText(body.title);
+  const description = normalizeOptionalText(body.description);
+  const status = normalizeEnumValue(body.status, TASK_STATUSES, "TODO");
+  const priority = normalizeEnumValue(body.priority, TASK_PRIORITIES, "MEDIUM");
+  const assigneeId = normalizeOptionalText(body.assigneeId);
+  const orderId = normalizeOptionalText(body.orderId);
+  const tags = normalizeTags(body.tags);
+  const due = parseOptionalDate(body.dueDate);
+
+  if (!title) return NextResponse.json({ error: "Название задачи обязательно" }, { status: 400 });
+  if (due.error) return NextResponse.json({ error: due.error }, { status: 400 });
+
+  if (assigneeId) {
+    const assignee = await prisma.user.findFirst({
+      where: { id: assigneeId, role: { in: [...STAFF_ROLES] as any } },
+      select: { id: true },
+    });
+    if (!assignee) return NextResponse.json({ error: "Исполнитель не найден" }, { status: 400 });
+  }
 
   const orderRelation = buildOrderTaskRelation(
     orderId,
@@ -91,15 +147,15 @@ export async function POST(req: Request) {
   const task = await prisma.$transaction(async (tx) => {
     const created = await tx.task.create({
       data: {
-        title: title.trim(),
-        description: description?.trim() || null,
-        status: status || "TODO",
-        priority: priority || "MEDIUM",
-        assigneeId: assigneeId || null,
+        title,
+        description,
+        status: status as any,
+        priority: priority as any,
+        assigneeId,
         createdById: s.id,
-        orderId: orderId || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
-        tags: tags || [],
+        orderId,
+        dueDate: due.date,
+        tags,
       },
     });
 

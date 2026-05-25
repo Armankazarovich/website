@@ -4,13 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const CRM_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"];
 
 async function getSession() {
   const session = await auth();
   const role = session?.user?.role;
   const id = session?.user?.id;
-  if (!session || !STAFF_ROLES.includes(role as string)) return null;
+  if (!session || !CRM_ROLES.includes(role as string)) return null;
   return { role, id };
 }
 
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(activities);
+  return NextResponse.json({ activities });
 }
 
 // POST /api/admin/crm/leads/[id]/activities — добавить активность

@@ -19,7 +19,15 @@ export async function GET() {
       [user, memory] = await Promise.all([
         prisma.user.findUnique({
           where: { id: userId },
-          select: { name: true, email: true, role: true, orders: { where: { status: { notIn: ["CANCELLED"] } }, select: { id: true, orderNumber: true, status: true, totalAmount: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 5 } },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            phoneVisibility: true,
+            arayPhoneVisibility: true,
+            orders: { where: { status: { notIn: ["CANCELLED"] } }, select: { id: true, orderNumber: true, status: true, totalAmount: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 5 },
+          },
         }),
         prisma.arayMemory.findUnique({ where: { userId } }),
       ]);
@@ -39,9 +47,14 @@ export async function GET() {
 
     return NextResponse.json({
       authenticated: !!userId,
+      userId: user?.id || null,
       name: user?.name || (memory?.facts as any)?.имя || null,
       email: user?.email || null,
       role: user?.role || null,
+      privacy: user ? {
+        phoneVisibility: user.phoneVisibility || "contacts",
+        arayPhoneVisibility: user.arayPhoneVisibility || "contacts",
+      } : null,
       level,
       levelInfo,
       totalChats: memory?.totalChats || 0,

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useWishlistStore } from "@/store/wishlist";
 
 export function WishlistCount() {
@@ -17,15 +18,11 @@ export function WishlistCount() {
     <Link
       href="/wishlist"
       aria-label="Избранное"
-      className={
-        count > 0
-          ? "relative flex h-11 w-11 items-center justify-center rounded-xl border border-red-400/40 bg-red-500/8 text-red-500 transition-all duration-200 hover:bg-red-500/15"
-          : "relative flex h-11 w-11 items-center justify-center rounded-xl border border-border/60 bg-muted/50 text-muted-foreground transition-all duration-200 hover:border-border hover:bg-accent hover:text-foreground"
-      }
+      className={cn("store-header-action flex items-center justify-center", count > 0 && "is-selected")}
     >
-      <Heart className={`w-4 h-4 transition-all ${count > 0 ? "fill-red-500/20" : ""}`} />
+      <Heart className="w-4 h-4" strokeWidth={1.9} />
       {count > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1 shadow-sm shadow-red-500/30">
+        <span className="store-header-action-badge">
           {count > 99 ? "99+" : count}
         </span>
       )}

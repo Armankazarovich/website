@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { buildPwaManifestHref, getPwaIconSrc, resolvePwaInstallContext, type PwaInstallContext } from "@/lib/pwa-install-context";
+import { clearStoredPwaInstallPrompt, rememberPwaInstallPrompt, type BeforeInstallPromptEvent } from "@/lib/pwa-install-events";
 
 type ManagedIconLink = {
   rel: string;
@@ -33,11 +34,11 @@ function buildIconLinks(context: PwaInstallContext): ManagedIconLink[] {
   }
 
   return [
-    { rel: "icon", href: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
-    { rel: "icon", href: "/icons/icon-96x96.png", sizes: "96x96", type: "image/png" },
-    { rel: "icon", href: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-    { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
-    { rel: "shortcut icon", href: "/icons/icon-192x192.png" },
+    { rel: "icon", href: getPwaIconSrc(context, 32), sizes: "32x32", type: "image/png" },
+    { rel: "icon", href: getPwaIconSrc(context, 96), sizes: "96x96", type: "image/png" },
+    { rel: "icon", href: getPwaIconSrc(context, 192), sizes: "192x192", type: "image/png" },
+    { rel: "apple-touch-icon", href: getPwaIconSrc(context, 180), sizes: "180x180" },
+    { rel: "shortcut icon", href: getPwaIconSrc(context, 192) },
   ];
 }
 
@@ -92,6 +93,18 @@ function syncIconLinks(context: PwaInstallContext) {
 }
 
 export function PwaManifestSync() {
+  useEffect(() => {
+    const installHandler = (event: Event) => rememberPwaInstallPrompt(event as BeforeInstallPromptEvent);
+    const installedHandler = () => clearStoredPwaInstallPrompt();
+
+    window.addEventListener("beforeinstallprompt", installHandler);
+    window.addEventListener("appinstalled", installedHandler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", installHandler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
+  }, []);
+
   useEffect(() => {
     let syncingHead = false;
 

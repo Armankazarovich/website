@@ -24,6 +24,9 @@ export type PwaInstallContext = {
   shortcuts?: PwaShortcut[];
 };
 
+export const PWA_ARAY_ICON_VERSION = "aray-production-20260508";
+export const PWA_SITE_ICON_VERSION = "site-brand-20260522";
+
 const ARAY_THEME = "hsl(201 70% 11%)";
 const ARAY_BACKGROUND = "hsl(210 54% 6%)";
 const ARAY_MARKET_THEME = "hsl(200 79% 11%)";
@@ -457,12 +460,17 @@ export function resolvePwaInstallContextById(id?: string | null): PwaInstallCont
 }
 
 export function getPwaIconSrc(context: PwaInstallContext, size = 192) {
-  if (context.iconKind === "aray") return `/api/pwa/icon?s=${size}&v=aray-production-20260508`;
-  return `/icons/icon-${size}x${size}.png`;
+  if (context.iconKind === "aray") return `/api/pwa/icon?s=${size}&v=${PWA_ARAY_ICON_VERSION}`;
+  const params = new URLSearchParams({
+    s: String(size),
+    app: context.id,
+    v: PWA_SITE_ICON_VERSION,
+  });
+  return `/api/pwa/site-icon?${params.toString()}`;
 }
 
 export function buildPwaManifestHref(context: PwaInstallContext) {
   const params = new URLSearchParams({ app: context.id });
-  if (context.iconKind === "aray") params.set("v", "aray-production-20260508");
+  params.set("v", context.iconKind === "aray" ? PWA_ARAY_ICON_VERSION : PWA_SITE_ICON_VERSION);
   return `/api/pwa/manifest?${params.toString()}`;
 }

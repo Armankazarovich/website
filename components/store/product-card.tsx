@@ -37,6 +37,11 @@ import type { CompareItem } from "@/store/compare";
 import { buildProductInsightTags } from "@/lib/product-insights";
 import { getProductEditTarget } from "@/lib/public-edit-targets";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
+import {
+  getProductAvailability,
+  getPurchasableQuantityLimit,
+  isProductVariantPurchasable,
+} from "@/lib/product-availability";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -66,6 +71,8 @@ interface Variant {
   pricePerPiece: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
+  stockQty?: number | null;
+  lowStockThreshold?: number | null;
 }
 
 interface ProductCardProps {
@@ -160,8 +167,9 @@ export function ProductCard({
   const { cardStyle } = useStoreSettings();
   const [imgError, setImgError] = useState(false);
 
-  const activeVariants = variants.filter((v) => v.inStock);
-  const hasStock = activeVariants.length > 0;
+  const availability = getProductAvailability(variants);
+  const activeVariants = variants.filter(isProductVariantPurchasable);
+  const hasStock = availability.isPurchasable;
   const teaser = shortCardDescription(shortDescription, { name, category, backup: description });
   const insightTags = buildProductInsightTags({ name, category, shortDescription, description, saleUnit, variants, cardTags });
 
@@ -208,7 +216,7 @@ export function ProductCard({
   }, [variantPickerOpen]);
 
   const pickVariant = (variant: Variant, closePicker = false) => {
-    if (!variant.inStock) return;
+    if (!isProductVariantPurchasable(variant)) return;
     setSelectedId(variant.id);
     setSelectedUnit((current) => {
       if (current === "PIECE" && variant.pricePerPiece) return "PIECE";
@@ -262,17 +270,34 @@ export function ProductCard({
     return "за штуку";
   };
   const selectedSheetPrice = getUnitPrice(selectedVariant, effectiveUnit);
-  const sheetTotal = selectedSheetPrice ? selectedSheetPrice * sheetQuantity : null;
 
   // Live quantity from cart store
   const cartItemId = selectedVariant ? `${selectedVariant.id}-${effectiveUnit}` : null;
   const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
+  const getCartQtyForUnit = (unitType: UnitType) =>
+    selectedVariant ? (items.find((item) => item.id === `${selectedVariant.id}-${unitType}`)?.quantity ?? 0) : 0;
+  const getStockLimitForUnit = (unitType: UnitType) => getPurchasableQuantityLimit(selectedVariant, unitType);
+  const getRemainingQuantity = (unitType: UnitType) => {
+    const limit = getStockLimitForUnit(unitType);
+    return limit === null ? null : Math.max(0, limit - getCartQtyForUnit(unitType));
+  };
+  const selectedStockLimit = getStockLimitForUnit(effectiveUnit);
+  const remainingSheetQuantity = getRemainingQuantity(effectiveUnit);
+  const sheetQuantityStep = effectiveUnit === "CUBE" ? 0.1 : 1;
+  const selectedSheetQuantity =
+    remainingSheetQuantity === null ? sheetQuantity : Math.min(sheetQuantity, remainingSheetQuantity);
+  const sheetTotal = selectedSheetPrice ? selectedSheetPrice * selectedSheetQuantity : null;
+  const stockLimitReached = selectedStockLimit !== null && cartQty >= selectedStockLimit;
 
   // Core add logic — reused by direct add and unit picker
   const doAddToCart = (unit: UnitType, srcEl: HTMLElement) => {
-    if (!selectedVariant || !hasStock) return;
+    if (!selectedVariant || !isProductVariantPurchasable(selectedVariant)) return;
     const price = unit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
     if (!price) return;
+    const maxQuantity = getStockLimitForUnit(unit);
+    const currentCartQty = getCartQtyForUnit(unit);
+    const quantityToAdd = maxQuantity === null ? 1 : Math.min(1, Math.max(0, maxQuantity - currentCartQty));
+    if (quantityToAdd <= 0) return;
 
     flyToCart(srcEl, images[0] ?? null);
     if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
@@ -285,8 +310,9 @@ export function ProductCard({
       variantSize: selectedVariant.size,
       productImage: images[0],
       unitType: unit,
-      quantity: 1,
+      quantity: quantityToAdd,
       price: Number(price),
+      maxQuantity,
     });
     trackArayMetrikaGoal("aray_cart_add", {
       source: "catalog_card",
@@ -295,7 +321,7 @@ export function ProductCard({
       productName: name,
       variantSize: selectedVariant.size,
       unit,
-      quantity: 1,
+      quantity: quantityToAdd,
       price: Number(price),
     });
 
@@ -331,12 +357,8 @@ export function ProductCard({
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!selectedVariant || !hasStock) return;
+    if (!selectedVariant || !isProductVariantPurchasable(selectedVariant)) return;
     if (canSwitchUnit) {
-      if (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches) {
-        setVariantPickerOpen(true);
-        return;
-      }
       doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
       return;
     }
@@ -360,7 +382,8 @@ export function ProductCard({
     if (cartQty === 0) {
       doAddToCart(effectiveUnit, e.currentTarget as HTMLElement);
     } else if (cartItemId) {
-      updateQuantity(cartItemId, parseFloat((cartQty + 1).toFixed(1)));
+      const nextQty = parseFloat((cartQty + 1).toFixed(1));
+      updateQuantity(cartItemId, selectedStockLimit === null ? nextQty : Math.min(nextQty, selectedStockLimit));
     }
   };
 
@@ -374,7 +397,7 @@ export function ProductCard({
   const handleSheetAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!selectedVariant || !selectedSheetPrice || sheetQuantity <= 0) return;
+    if (!selectedVariant || !isProductVariantPurchasable(selectedVariant) || !selectedSheetPrice || selectedSheetQuantity <= 0) return;
 
     flyToCart(e.currentTarget, images[0] ?? null);
     if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
@@ -387,8 +410,9 @@ export function ProductCard({
       variantSize: selectedVariant.size,
       productImage: images[0],
       unitType: effectiveUnit,
-      quantity: sheetQuantity,
+      quantity: selectedSheetQuantity,
       price: Number(selectedSheetPrice),
+      maxQuantity: selectedStockLimit,
     });
     trackArayMetrikaGoal("aray_cart_add", {
       source: "catalog_size_sheet",
@@ -397,7 +421,7 @@ export function ProductCard({
       productName: name,
       variantSize: selectedVariant.size,
       unit: effectiveUnit,
-      quantity: sheetQuantity,
+      quantity: selectedSheetQuantity,
       price: Number(selectedSheetPrice),
     });
 
@@ -459,12 +483,12 @@ export function ProductCard({
             {featured && (
               <span className="inline-flex items-center gap-1 h-6 bg-brand-orange text-white text-[10px] font-bold px-2 rounded-lg shadow-md uppercase tracking-wide">Хит</span>
             )}
-            <span className={`store-stock-badge pointer-events-none inline-flex items-center gap-1 h-6 text-[10px] font-semibold px-2 rounded-xl ${hasStock ? "is-in-stock" : "is-out-of-stock"}`}>
-              <span className={`store-stock-dot w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "" : "opacity-50"}`} />
-              {hasStock ? "В наличии" : "Нет"}
+            <span className={`store-stock-badge pointer-events-none inline-flex items-center gap-1 h-6 text-[10px] font-semibold px-2 rounded-xl ${availability.className}`}>
+              <span className="store-stock-dot w-1.5 h-1.5 rounded-full shrink-0" />
+              {availability.label}
             </span>
           </div>
-          <div className="flex items-center gap-1 rounded-2xl border border-border/60 bg-background/55 p-0.5">
+          <div className="store-action-cluster">
             <CompareButton size="sm" item={compareItem} />
             <WishlistButton size="sm" item={compareItem} />
           </div>
@@ -494,11 +518,11 @@ export function ProductCard({
                     e.preventDefault();
                     pickVariant(v);
                   }}
-                  disabled={!v.inStock}
+                  disabled={!isProductVariantPurchasable(v)}
                   className={cn(
                     "store-size-chip is-overlay",
-                    selectedVariant?.id === v.id && v.inStock && "is-selected",
-                    !v.inStock && "is-disabled"
+                    selectedVariant?.id === v.id && isProductVariantPurchasable(v) && "is-selected",
+                    !isProductVariantPurchasable(v) && "is-disabled"
                   )}
                 >
                   {v.size}
@@ -518,7 +542,7 @@ export function ProductCard({
                   <span className="font-display font-bold text-base text-white tabular-nums">{cartQty}</span>
                   <span className="text-[10px] text-white/60 ml-0.5">{unit}</span>
                 </div>
-                <button onClick={handleIncrement} className="flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all active:scale-90 shadow-sm">
+                <button onClick={handleIncrement} disabled={stockLimitReached} className="flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-45">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
@@ -529,7 +553,9 @@ export function ProductCard({
                 }`}>
                 <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
                 <span className="store-card-price-wrap">
-                  {displayPrice ? (
+                  {!hasStock ? (
+                    <span>{availability.label}</span>
+                  ) : displayPrice ? (
                     <>
                       <span className="store-card-price">{formatPrice(displayPrice)}</span>
                       <span className="store-card-price-unit">/ {displayUnitLabel}</span>
@@ -582,7 +608,7 @@ export function ProductCard({
         {isShowcase && (
           <>
             <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/55 to-transparent pointer-events-none z-[1]" />
-            {displayPrice && (
+            {hasStock && displayPrice && (
               <div className="absolute top-2 right-10 z-10 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-md">
                 {formatPrice(displayPrice)}/{displayUnitLabel}
               </div>
@@ -602,14 +628,14 @@ export function ProductCard({
                 Хит
               </span>
             )}
-            <span className={`store-stock-badge pointer-events-none inline-flex items-center gap-1 h-7 text-[10px] font-semibold px-2.5 rounded-xl ${hasStock ? "is-in-stock" : "is-out-of-stock"}`}>
-              <span className={`store-stock-dot w-1.5 h-1.5 rounded-full shrink-0 ${hasStock ? "" : "opacity-50"}`} />
-              {hasStock ? "В наличии" : "Нет"}
+            <span className={`store-stock-badge pointer-events-none inline-flex items-center gap-1 h-7 text-[10px] font-semibold px-2.5 rounded-xl ${availability.className}`}>
+              <span className="store-stock-dot w-1.5 h-1.5 rounded-full shrink-0" />
+              {availability.label}
             </span>
           </div>
 
           {/* Wishlist — та же высота h-7 */}
-          <div className="flex items-center gap-1 rounded-2xl border border-border/60 bg-background/55 p-0.5">
+          <div className="store-action-cluster">
             <CompareButton size="sm" item={compareItem} />
             <WishlistButton
               size="sm"
@@ -671,7 +697,7 @@ export function ProductCard({
 
         {/* Кнопка / степпер */}
         <div className={`store-card-buy-zone mt-auto relative ${isMinimal ? "pt-2" : "pt-3"}`}>
-          {displayPrice && (
+          {hasStock && displayPrice && (
             <div className="store-card-price-panel store-card-price-panel-inline store-card-price-panel-cta" aria-label="Цена и единица покупки">
               {selectedVariant && (
                 variants.length > 1 ? (
@@ -782,7 +808,7 @@ export function ProductCard({
                         key={`card-picker-${variant.id}`}
                         type="button"
                         title={variant.size}
-                        disabled={!variant.inStock || !priceInfo}
+                        disabled={!isProductVariantPurchasable(variant) || !priceInfo}
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -790,8 +816,8 @@ export function ProductCard({
                         }}
                         className={cn(
                           "store-card-variant-option",
-                          selected && variant.inStock && "is-selected",
-                          (!variant.inStock || !priceInfo) && "is-disabled",
+                          selected && isProductVariantPurchasable(variant) && "is-selected",
+                          (!isProductVariantPurchasable(variant) || !priceInfo) && "is-disabled",
                         )}
                       >
                         <span className="store-card-variant-size">{variant.size}</span>
@@ -829,7 +855,8 @@ export function ProductCard({
 
               <button
                 onClick={handleIncrement}
-                className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 shadow-sm"
+                disabled={stockLimitReached}
+                className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -847,7 +874,7 @@ export function ProductCard({
             >
               <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
               <span className="store-card-price-wrap">
-                <span className="text-sm">В корзину</span>
+                <span className="text-sm">{hasStock ? "В корзину" : availability.label}</span>
               </span>
               <ChevronRight className="w-3.5 h-3.5 shrink-0 opacity-60" />
             </button>
@@ -929,7 +956,7 @@ export function ProductCard({
                             key={`picker-${variant.id}`}
                             type="button"
                             title={variant.size}
-                            disabled={!variant.inStock}
+                            disabled={!isProductVariantPurchasable(variant)}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -937,8 +964,8 @@ export function ProductCard({
                             }}
                             className={cn(
                               "store-variant-option",
-                              selected && variant.inStock && "is-selected",
-                              !variant.inStock && "is-disabled",
+                              selected && isProductVariantPurchasable(variant) && "is-selected",
+                              !isProductVariantPurchasable(variant) && "is-disabled",
                             )}
                           >
                             <span className="store-variant-option-size">{variant.size}</span>
@@ -999,7 +1026,7 @@ export function ProductCard({
                           <div className="store-variant-price-row">
                             <span>Количество</span>
                             <strong>
-                              {sheetQuantity} {getUnitLabel(effectiveUnit)}
+                              {selectedSheetQuantity} {getUnitLabel(effectiveUnit)}
                             </strong>
                           </div>
                           <div className="store-variant-price-row is-total">
@@ -1016,22 +1043,28 @@ export function ProductCard({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setSheetQuantity((value) => Math.max(1, Number((value - 1).toFixed(1))));
+                              setSheetQuantity((value) => Math.max(sheetQuantityStep, Number((value - sheetQuantityStep).toFixed(1))));
                             }}
                             aria-label="Уменьшить количество"
                           >
                             <Minus className="h-4 w-4" />
                           </button>
                           <span>
-                            <strong>{sheetQuantity}</strong>
+                            <strong>{selectedSheetQuantity}</strong>
                             <small>{getUnitLabel(effectiveUnit)}</small>
                           </span>
                           <button
                             type="button"
+                            disabled={remainingSheetQuantity !== null && selectedSheetQuantity >= remainingSheetQuantity}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setSheetQuantity((value) => Number((value + 1).toFixed(1)));
+                              setSheetQuantity((value) => {
+                                const nextValue = Number((value + sheetQuantityStep).toFixed(1));
+                                return remainingSheetQuantity === null
+                                  ? nextValue
+                                  : Math.min(nextValue, remainingSheetQuantity);
+                              });
                             }}
                             aria-label="Увеличить количество"
                           >
@@ -1041,7 +1074,7 @@ export function ProductCard({
                         <button
                           type="button"
                           onClick={handleSheetAdd}
-                          disabled={!selectedVariant || !selectedSheetPrice}
+                          disabled={!selectedVariant || !isProductVariantPurchasable(selectedVariant) || !selectedSheetPrice || selectedSheetQuantity <= 0}
                           className="store-variant-sheet-done flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-primary px-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/92 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <ShoppingCart className="h-4 w-4 shrink-0" aria-hidden="true" />

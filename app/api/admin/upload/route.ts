@@ -12,6 +12,8 @@ import { canUploadGlobalMedia } from "@/lib/media-permissions";
 const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: number }> = {
   categories: { width: 900, height: 600, quality: 85 },
   products: { width: 1200, height: 900, quality: 85 },
+  stories: { width: 1080, height: 1920, quality: 86 },
+  services: { width: 1200, height: 900, quality: 85 },
   default: { width: 1200, height: 900, quality: 85 },
 };
 
@@ -31,6 +33,8 @@ const ALLOWED_FOLDERS = [
   "watermarks",
   "banners",
   "posts",
+  "services",
+  "stories",
   "videos",
   "default",
 ];

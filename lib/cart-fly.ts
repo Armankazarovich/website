@@ -1,11 +1,22 @@
 "use client";
 
 export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
-  const cartIcon = document.querySelector("[data-cart-icon]") as HTMLElement;
-  if (!cartIcon) return;
+  flyToTarget(fromElement, "[data-cart-icon]", "cart");
+}
+
+export function flyToCompare(fromElement: HTMLElement) {
+  flyToTarget(fromElement, "[data-compare-icon]", "compare");
+}
+
+function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "cart" | "compare") {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+  const targetIcon = document.querySelector(targetSelector) as HTMLElement;
+  if (!targetIcon) return;
 
   const fromRect = fromElement.getBoundingClientRect();
-  const toRect = cartIcon.getBoundingClientRect();
+  const toRect = targetIcon.getBoundingClientRect();
+  if (toRect.width <= 0 || toRect.height <= 0) return;
 
   // Read current brand color from CSS variable (supports theme switching)
   const hsl = getComputedStyle(document.documentElement)
@@ -36,7 +47,10 @@ export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
     align-items: center;
     justify-content: center;
   `;
-  el.innerHTML = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`;
+  el.innerHTML =
+    icon === "compare"
+      ? `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h12"/><path d="M14 17H4"/><path d="M18 5l2 2-2 2"/><path d="M6 15l-2 2 2 2"/></svg>`
+      : `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>`;
   document.body.appendChild(el);
 
   const duration = 600;
@@ -66,10 +80,8 @@ export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
       requestAnimationFrame(animate);
     } else {
       el.remove();
-      // Burst particles at cart
       spawnBurst(toRect);
-      // Bounce the cart icon
-      cartIcon.animate(
+      targetIcon.animate(
         [
           { transform: "scale(1)" },
           { transform: "scale(1.5)" },

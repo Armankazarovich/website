@@ -242,8 +242,12 @@ function getMetrikaTokenInfo(settings?: MetrikaSettings) {
 
 function hasMetrikaOAuthApp() {
   return Boolean(
-    process.env.YANDEX_METRIKA_CLIENT_ID &&
-      process.env.YANDEX_METRIKA_CLIENT_SECRET,
+    (process.env.YANDEX_METRIKA_CLIENT_ID &&
+      process.env.YANDEX_METRIKA_CLIENT_SECRET) ||
+      (process.env.YANDEX_OAUTH_CLIENT_ID &&
+        process.env.YANDEX_OAUTH_CLIENT_SECRET) ||
+      (process.env.YANDEX_LOGIN_CLIENT_ID &&
+        process.env.YANDEX_LOGIN_CLIENT_SECRET),
   );
 }
 

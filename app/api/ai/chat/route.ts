@@ -26,6 +26,11 @@ import {
   resolveNotificationStatus,
 } from "@/lib/notification-center";
 import { isArayExternalTabOnly } from "@/lib/aray-navigation";
+import {
+  buildArayOpenSourceSearch,
+  shouldUseOpenSourceShortcut,
+  wantsOpenSourceAutoOpen,
+} from "@/lib/aray-open-sources";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -42,6 +47,48 @@ type IncomingAttachment = {
   dataUrl?: string;
   note?: string;
 };
+
+const ARAY_CHAT_RATE_WINDOW_MS = 60_000;
+const ARAY_CHAT_RATE_LIMIT = new Map<string, { count: number; resetAt: number }>();
+const ARAY_MAX_REQUEST_BYTES = 8 * 1024 * 1024;
+const ARAY_MAX_TEXT_CHARS = 80_000;
+const ARAY_MAX_IMAGE_DATA_URL_CHARS = 6_000_000;
+
+function getClientIp(req: NextRequest) {
+  const forwarded = req.headers.get("x-forwarded-for");
+  return forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
+}
+
+function checkArayChatRateLimit(key: string, limit: number) {
+  const now = Date.now();
+  const existing = ARAY_CHAT_RATE_LIMIT.get(key);
+  if (!existing || existing.resetAt <= now) {
+    ARAY_CHAT_RATE_LIMIT.set(key, { count: 1, resetAt: now + ARAY_CHAT_RATE_WINDOW_MS });
+    return true;
+  }
+  if (existing.count >= limit) return false;
+  existing.count += 1;
+  return true;
+}
+
+function estimateMessageChars(messages: unknown) {
+  if (!Array.isArray(messages)) return 0;
+  return messages.slice(-24).reduce((sum, message) => {
+    if (!message || typeof message !== "object") return sum;
+    const item = message as Record<string, unknown>;
+    const content = typeof item.content === "string" ? item.content.length : 0;
+    const attachmentChars = Array.isArray(item.attachments)
+      ? item.attachments.slice(0, 4).reduce((inner, file) => {
+          if (!file || typeof file !== "object") return inner;
+          const meta = file as Record<string, unknown>;
+          return inner
+            + (typeof meta.text === "string" ? meta.text.length : 0)
+            + (typeof meta.dataUrl === "string" ? meta.dataUrl.length : 0);
+        }, 0)
+      : 0;
+    return sum + content + attachmentChars;
+  }, 0);
+}
 
 function isSupportedImageMime(mimeType?: string) {
   return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(mimeType || "");
@@ -69,7 +116,9 @@ function sanitizeAttachment(input: unknown): IncomingAttachment | null {
     size: typeof item.size === "number" ? Math.max(0, Math.min(item.size, 20 * 1024 * 1024)) : undefined,
     kind,
     text: typeof item.text === "string" ? item.text.slice(0, 12000) : undefined,
-    dataUrl: typeof item.dataUrl === "string" ? item.dataUrl : undefined,
+    dataUrl: typeof item.dataUrl === "string" && item.dataUrl.length <= ARAY_MAX_IMAGE_DATA_URL_CHARS
+      ? item.dataUrl
+      : undefined,
     note: typeof item.note === "string" ? item.note.slice(0, 120) : undefined,
   };
 }
@@ -142,6 +191,151 @@ function messageContentToText(content: any): string {
   return "";
 }
 
+type TaskDraftStaff = {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+};
+
+const TASK_STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] as const;
+
+function normalizeTaskCommandText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-я0-9@.+:-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isTaskCreationRequest(text: string): boolean {
+  const normalized = normalizeTaskCommandText(text);
+  if (!normalized.includes("задач")) return false;
+  return /(постав|созда|добав|назнач|поруч|запланир|напомн)/.test(normalized);
+}
+
+function parseTaskDueDate(text: string): string | null {
+  const normalized = normalizeTaskCommandText(text);
+  const now = new Date();
+  const due = new Date(now);
+  let hasDate = false;
+
+  if (normalized.includes("послезавтра")) {
+    due.setDate(due.getDate() + 2);
+    hasDate = true;
+  } else if (normalized.includes("завтра")) {
+    due.setDate(due.getDate() + 1);
+    hasDate = true;
+  } else if (normalized.includes("сегодня")) {
+    hasDate = true;
+  }
+
+  const timeMatch = normalized.match(/(?:в|к|до)?\s*(\d{1,2})(?::|\.)(\d{2})/);
+  if (timeMatch) {
+    const hours = Math.min(23, Math.max(0, Number(timeMatch[1])));
+    const minutes = Math.min(59, Math.max(0, Number(timeMatch[2])));
+    due.setHours(hours, minutes, 0, 0);
+    if (!hasDate && due.getTime() < now.getTime()) due.setDate(due.getDate() + 1);
+    hasDate = true;
+  } else if (hasDate) {
+    due.setHours(17, 0, 0, 0);
+  }
+
+  return hasDate ? due.toISOString() : null;
+}
+
+function formatTaskDueDateForHuman(value: string): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const hasExplicitTime = /T\d{2}:\d{2}|(?:\b|[^\d])\d{1,2}(?::|\.)\d{2}(?:\b|[^\d])/.test(value);
+  const dateText = date.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Moscow",
+  });
+  if (!hasExplicitTime) return dateText;
+  const timeText = date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Moscow",
+  });
+  return `${dateText}, ${timeText}`;
+}
+
+function parseTaskPriority(text: string): "LOW" | "MEDIUM" | "HIGH" | "URGENT" {
+  const normalized = normalizeTaskCommandText(text);
+  if (/(сроч|горит|немедленно|критич)/.test(normalized)) return "URGENT";
+  if (/(важн|высок)/.test(normalized)) return "HIGH";
+  if (/(низк|не сроч)/.test(normalized)) return "LOW";
+  return "MEDIUM";
+}
+
+function parseNaturalTaskTitle(text: string): string {
+  const original = text.trim();
+  const afterTask = original.match(/задач[ауие]?\s+([\s\S]+)$/i)?.[1] ?? original;
+  const cleaned = afterTask
+    .replace(/(?:^|\s)(?:на\s+)?(?:сегодня|завтра|послезавтра)(?=\s|$)[\s\S]*$/i, "")
+    .replace(/(?:^|\s)(?:в|к|до)\s*\d{1,2}(?::|\.)\d{2}(?=\s|$)[\s\S]*$/i, "")
+    .replace(/^(?:что|чтобы|по\s+теме)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return (cleaned || "Новая задача ARAY").slice(0, 140);
+}
+
+function resolveTaskAssignee(text: string, staff: TaskDraftStaff[]): TaskDraftStaff | null {
+  const normalized = normalizeTaskCommandText(text);
+  if (!normalized) return null;
+
+  if (normalized.includes("администратор")) {
+    return staff.find((user) =>
+      normalizeTaskCommandText(user.name || "").includes("администратор") ||
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN"
+    ) ?? null;
+  }
+
+  for (const user of staff) {
+    const name = normalizeTaskCommandText(user.name || "");
+    const email = normalizeTaskCommandText(user.email || "");
+    const nameParts = name.split(" ").filter((part) => part.length >= 3);
+    if (name && normalized.includes(name)) return user;
+    if (email && normalized.includes(email)) return user;
+    if (nameParts.length && nameParts.some((part) => normalized.includes(part))) return user;
+  }
+
+  return null;
+}
+
+async function buildNaturalTaskConfirmationDraft(text: string): Promise<ArayConfirmationDraft | null> {
+  if (!isTaskCreationRequest(text)) return null;
+
+  const staff = await prisma.user.findMany({
+    where: { role: { in: TASK_STAFF_ROLES as any } },
+    select: { id: true, name: true, email: true, role: true },
+    orderBy: { createdAt: "asc" },
+  });
+  const assignee = resolveTaskAssignee(text, staff);
+  const dueDate = parseTaskDueDate(text);
+  const draft: Record<string, unknown> = {
+    title: parseNaturalTaskTitle(text),
+    description: `Создано через ARAY из команды: ${text.trim()}`,
+    priority: parseTaskPriority(text),
+    status: "TODO",
+    tags: ["aray"],
+  };
+  if (assignee) {
+    draft.assigneeId = assignee.id;
+    draft.assigneeName = assignee.name || assignee.email;
+  }
+  if (dueDate) draft.dueDate = dueDate;
+
+  return buildConfirmationDraft("create_task", draft);
+}
+
 function generateSessionId(): string {
   return `aray_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -150,11 +344,12 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
 
   try {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return new Response(
-        encoder.encode("__ARAY_ERR__ANTHROPIC_API_KEY не настроен на сервере."),
-        { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-      );
+    const contentLength = Number(req.headers.get("content-length") || 0);
+    if (contentLength > ARAY_MAX_REQUEST_BYTES) {
+      return new Response(encoder.encode("__ARAY_ERR__Слишком большой запрос. Отправь меньше файлов или одно фото за раз."), {
+        status: 413,
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+      });
     }
 
     const body = await req.json();
@@ -187,6 +382,22 @@ export async function POST(req: NextRequest) {
       responseHeaders.set("Set-Cookie",
         `aray_sid=${sessionId}; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; SameSite=Lax; Path=/`
       );
+    }
+
+    const rateKey = userId ? `user:${userId}` : `anon:${sessionId || getClientIp(req)}`;
+    const rateLimit = arayRole === "customer" ? 18 : 45;
+    if (!checkArayChatRateLimit(rateKey, rateLimit)) {
+      return new Response(encoder.encode("__ARAY_ERR__Слишком много запросов подряд. Подожди минуту и продолжим спокойно."), {
+        status: 429,
+        headers: responseHeaders,
+      });
+    }
+
+    if (estimateMessageChars(messages) > ARAY_MAX_TEXT_CHARS) {
+      return new Response(encoder.encode("__ARAY_ERR__Сообщение или вложения слишком большие. Разбей на части, и я обработаю по очереди."), {
+        status: 413,
+        headers: responseHeaders,
+      });
     }
 
     if (confirmAction) {
@@ -277,6 +488,28 @@ export async function POST(req: NextRequest) {
     const hasTools = arayRole !== "customer" || !!context?.productName;
     const tier = classifyQuery(lastUserMessage, { role: arayRole, hasTools, messageCount: formattedMessages.length });
     const modelConfig = getModelConfig(tier);
+    const canCreateTask = arayRole !== "customer" && getToolsForRole(arayRole, sessionRole || undefined)
+      .some((toolDef: any) => toolDef?.name === "create_task");
+    const directTaskDraft = canCreateTask ? await buildNaturalTaskConfirmationDraft(lastUserMessage).catch(() => null) : null;
+    if (directTaskDraft) {
+      const confirmationText = summarizeConfirmationDraft([directTaskDraft]);
+      return new Response(
+        encoder.encode(`${confirmationText}\n__ARAY_CONFIRM__${JSON.stringify([directTaskDraft])}\n__ARAY_META__${JSON.stringify({ role: arayRole, model: "task-router", memoryId: memory?.id || null })}`),
+        { headers: responseHeaders },
+      );
+    }
+
+    if (shouldUseOpenSourceShortcut(lastUserMessage)) {
+      const result = buildArayOpenSourceSearch({
+        query: lastUserMessage,
+        kind: "auto",
+        autoOpen: wantsOpenSourceAutoOpen(lastUserMessage),
+      });
+      return new Response(
+        encoder.encode(`${result.message}${result.action ? `\n${result.action}` : ""}\n__ARAY_META__${JSON.stringify({ role: arayRole, model: "open-source-router", memoryId: memory?.id || null })}`),
+        { headers: responseHeaders },
+      );
+    }
 
     // Контекст навигации и действий (от трекера)
     let trackerContext = "";
@@ -344,6 +577,13 @@ export async function POST(req: NextRequest) {
 
     const systemPrompt = basePrompt + memoryContext + trackerContext + profileContext + voiceModeInstruction + translatorInstruction + getBrevityInstruction(tier);
 
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return new Response(
+        encoder.encode("__ARAY_ERR__ANTHROPIC_API_KEY не настроен на сервере. Быстрые команды ARAY работают, но для свободного диалога нужен основной AI-ключ."),
+        { status: 503, headers: responseHeaders },
+      );
+    }
+
     // ── Streaming response ───────────────────────────────────────────────────
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
@@ -391,6 +631,12 @@ export async function POST(req: NextRequest) {
             })
           );
 
+          if (confirmationDrafts.length > 0) {
+            const confirmationText = summarizeConfirmationDraft(confirmationDrafts);
+            fullText += confirmationText;
+            await writer.write(encoder.encode(confirmationText));
+            await writer.write(encoder.encode(`\n__ARAY_CONFIRM__${JSON.stringify(confirmationDrafts)}`));
+          } else {
           const followStream = anthropic.messages.stream({
             model: modelConfig.model,
             max_tokens: modelConfig.maxTokens,
@@ -411,9 +657,6 @@ export async function POST(req: NextRequest) {
 
           // Сохраняем usage второго stream для логирования
           followMsg = await followStream.finalMessage();
-
-          if (confirmationDrafts.length > 0) {
-            await writer.write(encoder.encode(`\n__ARAY_CONFIRM__${JSON.stringify(confirmationDrafts)}`));
           }
         }
 
@@ -529,6 +772,31 @@ function buildConfirmationDraft(name: string, input: Record<string, unknown>): A
     message:
       "Подготовил черновик действия, но не выполняю его без подтверждения сотрудника. Проверь детали и подтверди действие в интерфейсе.",
   };
+}
+
+function summarizeConfirmationDraft(drafts: ArayConfirmationDraft[]) {
+  const first = drafts[0];
+  if (!first) return "Подготовил действие, но не выполняю без подтверждения.";
+
+  if (first.tool === "create_task") {
+    const title = typeof first.draft.title === "string" ? first.draft.title.trim() : "";
+    const dueDate = typeof first.draft.dueDate === "string" ? first.draft.dueDate.trim() : "";
+    const dueDateLabel = dueDate ? formatTaskDueDateForHuman(dueDate) : "";
+    const assignee = typeof first.draft.assigneeName === "string"
+      ? first.draft.assigneeName.trim()
+      : typeof first.draft.assigneeId === "string"
+        ? first.draft.assigneeId.trim()
+        : "";
+    return [
+      "Подготовил задачу, но пока не создаю без подтверждения.",
+      title ? `Задача: ${title}` : "",
+      dueDateLabel ? `Срок: ${dueDateLabel}` : "",
+      assignee ? `Исполнитель: ${assignee}` : "",
+      "Проверь карточку ниже и нажми «Подтвердить» или ответь «да».",
+    ].filter(Boolean).join("\n");
+  }
+
+  return "Подготовил безопасный черновик действия. Проверь карточку ниже и подтверди, если всё верно.";
 }
 
 function isConfirmationDraft(value: unknown): value is ArayConfirmationDraft {
@@ -850,6 +1118,22 @@ async function handleTool(
       }
     }
 
+    if (name === "open_source_search") {
+      const result = buildArayOpenSourceSearch({
+        query: String(input.query || ""),
+        kind: typeof input.kind === "string" ? input.kind : "auto",
+        from: typeof input.from === "string" ? input.from : null,
+        to: typeof input.to === "string" ? input.to : null,
+        city: typeof input.city === "string" ? input.city : null,
+        autoOpen: Boolean(input.autoOpen),
+      });
+      return {
+        ...result,
+        message: result.message,
+        action: result.action || null,
+      };
+    }
+
     if (name === "get_aray_capabilities") {
       const area = String(input.area || "all");
       const mutatingTools = Array.from(MUTATING_ADMIN_TOOLS);
@@ -863,6 +1147,7 @@ async function handleTool(
         "show_page",
         "navigate_page",
         "web_search",
+        "open_source_search",
       ].filter((tool) => toolNames.includes(tool));
       const adminTools = [
         "get_admin_dashboard",
@@ -897,6 +1182,7 @@ async function handleTool(
             promptActions: true,
             confirmationCards: true,
             attachments: ["image", "text", "audio accepted", "video accepted", "pdf/file accepted"],
+            openSources: ["movies", "music", "playlists", "video", "images", "documents", "reviews", "routes"],
           },
           direct: {
             draft: "/api/admin/direct/draft",
@@ -959,6 +1245,22 @@ async function handleTool(
       }
 
       const tags = Array.isArray(input.tags) ? input.tags.map(String) : [];
+      const taskPriority = ["LOW", "MEDIUM", "HIGH", "URGENT"].includes(String(input.priority || "").toUpperCase())
+        ? String(input.priority).toUpperCase()
+        : "MEDIUM";
+      const taskAssigneeId = input.assigneeId ? String(input.assigneeId).trim() : null;
+      if (taskAssigneeId) {
+        const assignee = await prisma.user.findFirst({
+          where: { id: taskAssigneeId, role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] as any } },
+          select: { id: true },
+        });
+        if (!assignee) return { error: "Исполнитель задачи не найден" };
+      }
+      const dueDateText = input.dueDate ? String(input.dueDate).trim() : "";
+      const taskDueDate = dueDateText
+        ? (/^\d{4}-\d{2}-\d{2}$/.test(dueDateText) ? new Date(`${dueDateText}T12:00:00.000Z`) : new Date(dueDateText))
+        : null;
+      if (taskDueDate && Number.isNaN(taskDueDate.getTime())) return { error: "Некорректная дата задачи" };
       const sourceType = input.sourceType ? String(input.sourceType).trim().toLowerCase() : "";
       const sourceId = input.sourceId ? String(input.sourceId).trim() : "";
       const sourceLabel = input.sourceLabel ? String(input.sourceLabel).trim() : "";
@@ -990,12 +1292,12 @@ async function handleTool(
           data: {
             title,
             description: input.description ? String(input.description) : null,
-            priority: (input.priority as any) || "MEDIUM",
+            priority: taskPriority as any,
             status: "TODO",
-            assigneeId: input.assigneeId ? String(input.assigneeId) : null,
+            assigneeId: taskAssigneeId,
             createdById: userId || null,
             orderId,
-            dueDate: input.dueDate ? new Date(String(input.dueDate)) : null,
+            dueDate: taskDueDate,
             tags,
           },
         });
@@ -1274,8 +1576,10 @@ async function handleTool(
         console.error("[notification-center] failed to record ARAY push event", logError);
       }
 
+      const hasRecipients = sent > 0;
+      const zeroRecipients = !sendError && subs.length === 0;
       return {
-        success: !sendError,
+        success: !sendError && hasRecipients,
         sent,
         errors,
         cleaned,
@@ -1283,7 +1587,11 @@ async function handleTool(
         notificationEventId,
         message: sendError
           ? `Push не отправлен: ${sendError}`
-          : `Push отправлен: ${sent} получателей${errors > 0 ? `, ${errors} ошибок` : ""} ✅`,
+          : zeroRecipients
+            ? "Push не отправлен: нет подписанных получателей. Сначала собери подписки или выбери другой сегмент."
+            : hasRecipients
+              ? `Push отправлен: ${sent} получателей${errors > 0 ? `, ${errors} ошибок` : ""} ✅`
+              : `Push не отправлен: получателей нет${errors > 0 ? `, ${errors} ошибок` : ""}.`,
       };
     }
 
@@ -1325,11 +1633,12 @@ async function handleTool(
 
     if (name === "admin_navigate") {
       const path = String(input.path || "/admin");
+      const safePath = path.startsWith("/") && !path.startsWith("//") ? path : "/admin";
       return {
         success: true,
-        path,
-        action: `__ARAY_NAVIGATE:${path}__`,
-        message: "Открыл нужный раздел. Проверь, пожалуйста.",
+        path: safePath,
+        action: `__ARAY_NAVIGATE:${safePath}__`,
+        message: "Открываю нужный раздел.",
       };
     }
 
@@ -1378,7 +1687,7 @@ async function handleTool(
         return {
           success: true,
           action: `__ARAY_NAVIGATE:${url}__`,
-          message: "Открыл нужный раздел. Проверь, пожалуйста.",
+          message: "Открываю нужный раздел.",
         };
       }
 
@@ -1386,7 +1695,7 @@ async function handleTool(
         return {
           success: true,
           action: `__ARAY_SHOW_URL:${url}:${title || url}__`,
-          message: "Открыл вкладку.",
+          message: "Открываю вкладку.",
         };
       }
 
@@ -1394,14 +1703,14 @@ async function handleTool(
         return {
           success: true,
           action: `__ARAY_SHOW_URL:${url}:${title || url}__`,
-          message: "Открыл вкладку.",
+          message: "Открываю вкладку.",
         };
       }
 
       return {
         success: true,
         action: `__ARAY_NAVIGATE:${url}__`,
-        message: "Открыл нужный раздел. Проверь, пожалуйста.",
+        message: "Открываю нужный раздел.",
       };
     }
 

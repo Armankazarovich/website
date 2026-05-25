@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/layout/theme-provider";
 import { PaletteProvider } from "@/components/palette-provider";
@@ -10,6 +11,7 @@ import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
 import { UtmTracker } from "@/components/utm-tracker";
 import { ThemeChromeSync } from "@/components/layout/theme-chrome-sync";
+import { PwaLaunchSplash } from "@/components/layout/pwa-launch-splash";
 import { UserPreferencesSync } from "@/components/user-preferences-sync";
 import { PwaManifestSync } from "@/components/pwa-manifest-sync";
 import {
@@ -54,6 +56,7 @@ const oswald = localFont({
 });
 
 export const metadata: Metadata = {
+  applicationName: "ПилоРус",
   title: {
     default: "ПилоРус — Пиломатериалы от производителя",
     template: "%s | ПилоРус",
@@ -94,6 +97,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "ПилоРус",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-title": "ПилоРус",
   },
 };
 
@@ -292,6 +299,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <PaletteProvider enabledIds={enabledIds} defaultPalette={defaultPalette}>
             <UserPreferencesSync />
             <PwaManifestSync />
+            <Suspense fallback={null}>
+              <PwaLaunchSplash />
+            </Suspense>
             {children}
             <Toaster />
             <HapticInit />

@@ -10,7 +10,7 @@ import { formatPrice } from "@/lib/utils";
 import { useSearchDrawer } from "@/store/search-drawer";
 import { PopupPortal } from "@/components/ui/popup-portal";
 
-interface Variant { pricePerCube: number | null; pricePerPiece: number | null; size?: string; }
+interface Variant { pricePerCube: number | null; pricePerPiece: number | null; size?: string; inStock?: boolean; stockQty?: number | null; lowStockThreshold?: number | null; }
 interface Product {
   id: string; slug: string; name: string; images: string[];
   saleUnit: string; category: { name: string; slug: string };
@@ -61,7 +61,7 @@ function ProductRow({ p, onClose }: { p: Product; onClose: () => void }) {
         )}
         {p.inStock !== undefined && (
           <p className={`text-[10px] ${p.inStock ? "text-emerald-500" : "text-muted-foreground"}`}>
-            {p.inStock ? "В наличии" : "Нет"}
+            {p.inStock ? "В наличии" : "Под заказ"}
           </p>
         )}
       </div>

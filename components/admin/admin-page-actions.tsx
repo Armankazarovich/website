@@ -148,10 +148,12 @@ export function useAdminPageActions(config: {
 export function useAdminPageHeader(config: AdminHeaderMeta | null) {
   const ctx = useContext(PageActionsContext);
   const setHeaderMeta = ctx?.setHeaderMeta;
+  const headerRef = useRef(config);
+  headerRef.current = config;
 
   useEffect(() => {
     if (!setHeaderMeta) return;
-    setHeaderMeta(config);
+    setHeaderMeta(headerRef.current);
     return () => setHeaderMeta(null);
   }, [
     setHeaderMeta,
