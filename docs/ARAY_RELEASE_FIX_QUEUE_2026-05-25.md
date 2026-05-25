@@ -89,22 +89,28 @@ Goal: привести систему к показу и деплою без п�
     - voice;
     - mobile ARAY everywhere.
 
-15. `todo` Cart performance:
+15. `todo` ARAY omnichannel center:
+    - ARAY is not a separate social messenger. It is one work center for external channels.
+    - Channels to organize under one style: Telegram, WhatsApp, Zangi, phone, video, email, mailings/newsletters, site forms.
+    - User command model: "find who", "show where", "write through which channel", "save to CRM", "create task/follow-up".
+    - Every channel action must show source/channel, keep consent/confirmation before sending, and save the conversation context in CRM.
+
+16. `todo` Cart performance:
     - проверить открытие/закрытие корзины на mobile;
     - проверить badge, totals, item update/remove;
     - не должно быть задержки после add-to-cart.
 
-16. `todo` Pilorus mobile stories:
+17. `todo` Pilorus mobile stories:
     - сторисы должны быть видны на мобильной версии;
     - stories widget не должен закрывать важные кнопки;
     - admin stories upload / library / cover should work.
 
-17. `todo` Admin search / ARAY coexistence:
+18. `todo` Admin search / ARAY coexistence:
     - поиск не должен мешать ARAY;
     - dropdown над ARAY;
     - ARAY можно сдвинуть/закрыть вручную.
 
-18. `todo` Release checks:
+19. `todo` Release checks:
     - TypeScript;
     - design check;
     - navigation check;
@@ -116,6 +122,6 @@ Goal: привести систему к показу и деплою без п�
     - full quality gate;
     - production build.
 
-19. `todo` Deploy:
+20. `todo` Deploy:
     - деплой только после зеленых проверок;
     - если деплой требует внешних прав, указать точный стоп-фактор.

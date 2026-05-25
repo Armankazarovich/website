@@ -12,25 +12,47 @@ export async function POST(req: NextRequest) {
     const {
       name,
       phone,
+      contact,
       message,
       source,
       serviceTitle,
       serviceSlug,
+      productTitle,
+      productSlug,
+      productSku,
       preferredDate,
       preferredTime,
     } = await req.json();
 
-    if (!phone || phone.length < 6) {
-      return NextResponse.json({ error: "Укажите телефон" }, { status: 400 });
+    const cleanPhone = typeof phone === "string" ? phone.trim() : "";
+    const cleanContact = typeof contact === "string" ? contact.trim() : "";
+    const cleanMessage = typeof message === "string" ? message.trim() : "";
+    const contactValue = cleanPhone || cleanContact;
+    const contactDigits = contactValue.replace(/\D/g, "");
+    const contactEmail = contactValue.includes("@") ? contactValue : null;
+    const leadPhone = cleanPhone || (contactDigits.length >= 6 ? contactValue : null);
+
+    if (!leadPhone && !contactEmail && !cleanMessage) {
+      return NextResponse.json({ error: "Укажите телефон, email или вопрос" }, { status: 400 });
     }
 
-    const sourceLabel = source === "SERVICE" ? "услуга на сайте" : "форма на странице Контакты";
+    const sourceLabel =
+      source === "SERVICE"
+        ? "услуга на сайте"
+        : source === "PRODUCT"
+          ? "товарная страница"
+          : "форма на странице Контакты";
     const serviceLine = serviceTitle ? `Услуга: ${serviceTitle}` : null;
+    const productLine = productTitle
+      ? `Товар: ${productTitle}${productSku ? ` (${productSku})` : ""}`
+      : null;
+    const productLink = productSlug ? `Ссылка: /product/${productSlug}` : null;
+    const contactLine = cleanContact && !cleanPhone ? `Контакт: ${cleanContact}` : null;
     const timeLine =
       preferredDate || preferredTime
         ? `Желаемое время: ${[preferredDate, preferredTime].filter(Boolean).join(" ")}`
         : null;
-    const crmComment = [serviceLine, timeLine, message].filter(Boolean).join("\n");
+    const crmComment = [productLine, productLink, serviceLine, timeLine, contactLine, cleanMessage].filter(Boolean).join("\n");
 
     // Telegram уведомление
     if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
@@ -38,10 +60,13 @@ export async function POST(req: NextRequest) {
         `📩 *Новая заявка с сайта!*`,
         ``,
         name ? `👤 *Имя:* ${name}` : null,
-        `📞 *Телефон:* ${phone}`,
+        leadPhone ? `📞 *Телефон:* ${leadPhone}` : null,
+        contactEmail ? `✉️ *Email:* ${contactEmail}` : null,
+        productTitle ? `🧱 *Товар:* ${productTitle}` : null,
+        productSku ? `🏷 *Артикул:* ${productSku}` : null,
         serviceTitle ? `🧩 *Услуга:* ${serviceTitle}` : null,
         timeLine ? `🗓 *Время:* ${timeLine.replace("Желаемое время: ", "")}` : null,
-        message ? `💬 *Вопрос:* ${message}` : null,
+        cleanMessage ? `💬 *Вопрос:* ${cleanMessage}` : null,
         ``,
         `_Источник: ${sourceLabel}_`,
       ]
@@ -72,7 +97,7 @@ export async function POST(req: NextRequest) {
         .sendMail({
           from: `"ПилоРус" <${process.env.SMTP_USER}>`,
           to: adminEmail,
-          subject: `📩 Заявка с сайта — ${phone}`,
+          subject: `📩 Заявка с сайта — ${leadPhone || contactEmail || productTitle || "контакт"}`,
           html: `
             <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;">
               <div style="background:#5C3317;padding:20px 28px;border-radius:12px 12px 0 0;">
@@ -80,10 +105,13 @@ export async function POST(req: NextRequest) {
               </div>
               <div style="background:#fff;padding:24px 28px;border:1px solid #eee;border-radius:0 0 12px 12px;">
                 ${name ? `<p><strong>Имя:</strong> ${name}</p>` : ""}
-                <p><strong>Телефон:</strong> <a href="tel:${phone}" style="color:#E8700A;">${phone}</a></p>
+                ${leadPhone ? `<p><strong>Телефон:</strong> <a href="tel:${leadPhone}" style="color:var(--primary);">${leadPhone}</a></p>` : ""}
+                ${contactEmail ? `<p><strong>Email:</strong> <a href="mailto:${contactEmail}" style="color:var(--primary);">${contactEmail}</a></p>` : ""}
+                ${productTitle ? `<p><strong>Товар:</strong> ${productTitle}</p>` : ""}
+                ${productSku ? `<p><strong>Артикул:</strong> ${productSku}</p>` : ""}
                 ${serviceTitle ? `<p><strong>Услуга:</strong> ${serviceTitle}</p>` : ""}
                 ${timeLine ? `<p><strong>Желаемое время:</strong> ${timeLine.replace("Желаемое время: ", "")}</p>` : ""}
-                ${message ? `<p><strong>Вопрос:</strong> ${message}</p>` : ""}
+                ${cleanMessage ? `<p><strong>Вопрос:</strong> ${cleanMessage}</p>` : ""}
                 <p style="color:var(--muted-foreground);font-size:12px;margin-top:16px;">Источник: ${sourceLabel} · pilo-rus.ru</p>
               </div>
             </div>
@@ -95,14 +123,17 @@ export async function POST(req: NextRequest) {
     // 🎯 Авто-создание лида в CRM при заявке с формы контактов
     prisma.lead.create({
       data: {
-        name: name || phone,
-        phone,
+        name: name || leadPhone || contactEmail || "Посетитель сайта",
+        phone: leadPhone,
+        email: contactEmail,
         source: "WEBSITE",
         stage: "NEW",
         comment: crmComment || null,
         tags: source === "SERVICE"
           ? ["Услуга", serviceTitle || serviceSlug || "Заявка"].filter(Boolean)
-          : ["Контакт"],
+          : source === "PRODUCT"
+            ? ["Товар", productTitle || productSlug || "Заявка", productSku].filter(Boolean)
+            : ["Контакт"],
       },
     }).catch(console.error);
 

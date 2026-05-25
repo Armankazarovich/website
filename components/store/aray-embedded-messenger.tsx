@@ -367,7 +367,7 @@ function MessengerActionTile({
         "inline-flex min-h-11 items-center gap-2 rounded-xl border px-2.5 text-left transition disabled:opacity-45",
         danger
           ? "border-destructive/25 bg-background/65 text-destructive hover:bg-destructive/10"
-          : "border-transparent bg-muted/20 text-foreground hover:bg-primary/10 hover:text-primary",
+          : "aray-dialog-action-tile border-transparent bg-muted/20 text-foreground hover:bg-primary/10 hover:text-primary",
       )}
     >
       <span className={cn("inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl", danger ? "bg-destructive/10" : "bg-primary/10 text-primary")}>
@@ -2127,7 +2127,7 @@ export function ArayEmbeddedMessenger({
                   transition={{ duration: 0.18, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
-                  <div className="mt-3 rounded-2xl border border-border/70 bg-background/80 p-2 shadow-[0_12px_34px_rgba(0,0,0,0.18)]">
+                  <div className="aray-dialog-action-center mt-3 rounded-2xl border border-border/70 bg-background/80 p-2 shadow-[0_12px_34px_rgba(0,0,0,0.18)]">
                     <div className="mb-2 flex items-center justify-between gap-2 px-1">
                       <div className="min-w-0">
                         <p className="text-[11px] font-bold text-foreground">Центр действий</p>
@@ -2142,7 +2142,7 @@ export function ArayEmbeddedMessenger({
                         type="button"
                         onClick={askArayForThreadSummary}
                         disabled={privateArayBusy}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
+                        className="aray-dialog-action-button inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
                       >
                         <History className="h-3.5 w-3.5 shrink-0 text-primary" />
                         <span className="min-w-0 truncate">Собрать историю</span>
@@ -2151,7 +2151,7 @@ export function ArayEmbeddedMessenger({
                         type="button"
                         onClick={askArayForNextStep}
                         disabled={privateArayBusy}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
+                        className="aray-dialog-action-button inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
                       >
                         <ArayIcon size={18} id={`settings-next-${selected.id}`} />
                         <span className="min-w-0 truncate">Следующий шаг</span>
@@ -2162,7 +2162,7 @@ export function ArayEmbeddedMessenger({
                           setSystemEventsOpen((value) => !value);
                           setThreadSettingsOpen(false);
                         }}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary"
+                        className="aray-dialog-action-button inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary"
                       >
                         <ChevronDown className={cn("h-3.5 w-3.5 shrink-0 text-primary transition-transform", systemEventsOpen && "rotate-180")} />
                         <span className="min-w-0 truncate">CRM-история</span>
@@ -2170,7 +2170,7 @@ export function ArayEmbeddedMessenger({
                       <button
                         type="button"
                         onClick={clearDraftAndAssistant}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary"
+                        className="aray-dialog-action-button inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary"
                       >
                         <RefreshCw className="h-3.5 w-3.5 shrink-0 text-primary" />
                         <span className="min-w-0 truncate">Очистить черновик</span>
@@ -2182,7 +2182,7 @@ export function ArayEmbeddedMessenger({
                           setThreadListOpen(true);
                           setThreadSettingsOpen(false);
                         }}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary"
+                        className="aray-dialog-action-button inline-flex min-h-10 items-center gap-2 rounded-xl bg-muted/18 px-2.5 text-left text-[11px] font-semibold text-foreground transition hover:bg-primary/10 hover:text-primary"
                       >
                         <UserPlus className="h-3.5 w-3.5 shrink-0 text-primary" />
                         <span className="min-w-0 truncate">Добавить контакт</span>
@@ -2207,13 +2207,13 @@ export function ArayEmbeddedMessenger({
                             setComposerRoute("person");
                             setThreadSettingsOpen(false);
                           }}
-                          className="shrink-0 rounded-full border border-border bg-muted/15 px-3 py-1.5 text-[10.5px] font-semibold text-muted-foreground transition hover:border-primary/45 hover:text-primary"
+                          className="aray-dialog-chip shrink-0 rounded-full border border-border bg-muted/15 px-3 py-1.5 text-[10.5px] font-semibold text-muted-foreground transition hover:border-primary/45 hover:text-primary"
                         >
                           {item.label}
                         </button>
                       ))}
                     </div>
-                    <div className="mt-2 rounded-xl bg-muted/12 p-1.5">
+                    <div className="aray-dialog-action-group mt-2 rounded-xl bg-muted/12 p-1.5">
                       <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-semibold text-muted-foreground">
                         <Settings className="h-3 w-3" />
                         Продажи и работа
@@ -2277,7 +2277,7 @@ export function ArayEmbeddedMessenger({
                         />
                       </div>
                     </div>
-                    <div className="mt-2 rounded-xl bg-muted/12 p-1.5">
+                    <div className="aray-dialog-action-group mt-2 rounded-xl bg-muted/12 p-1.5">
                       <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-semibold text-muted-foreground">
                         <FileText className="h-3 w-3" />
                         Документы
@@ -2289,7 +2289,7 @@ export function ArayEmbeddedMessenger({
                             type="button"
                             onClick={() => requestDocumentDraft(item.type)}
                             disabled={sending || privateArayBusy}
-                            className="min-h-10 rounded-xl bg-background/65 px-2 text-left text-[11px] font-bold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
+                            className="aray-dialog-document-button min-h-10 rounded-xl bg-background/65 px-2 text-left text-[11px] font-bold text-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-45"
                           >
                             <span className="block truncate">{item.label}</span>
                             <span className="block truncate text-[9px] font-normal text-muted-foreground">{item.hint}</span>

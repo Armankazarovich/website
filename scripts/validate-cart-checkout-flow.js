@@ -129,6 +129,8 @@ async function main() {
   check(
     "Cart hydration keeps a live cart",
     includesAll(cartStore, [
+      "if (value == null) return null",
+      "getInitialCartItems",
       "currentItems.length > 0",
       "writeCartItemsToStorage(currentItems)",
       "hasHydrated: true",
@@ -146,6 +148,15 @@ async function main() {
       "productImage: selectedProduct.images?.[0]",
     ]),
     "Calculator must use the same cart store and open the same cart drawer.",
+  );
+
+  check(
+    "Browser cart flow guard has stable selectors",
+    includesAll(calculatorPage, ["addItem"]) &&
+      includesAll(read("components/store/product-card.tsx"), ["data-add-to-cart", "addItem"]) &&
+      includesAll(read("app/(store)/cart/page.tsx"), ["data-cart-item", "data-cart-empty-state", "data-cart-checkout-link"]) &&
+      exists("scripts/validate-browser-cart-flow.js"),
+    "The real browser test needs stable selectors for add-to-cart and cart page states.",
   );
 
   check(
@@ -186,10 +197,21 @@ async function main() {
     includesAll(checkoutPage, [
       "hydrateCart",
       "hasHydrated",
+      "useCartStore((state) => state.items)",
       "shouldRedirectToCart",
-      "items.map((item)",
+      "visibleItems.map((item)",
     ]),
     "Checkout may redirect to cart only after hydration has finished.",
+  );
+
+  check(
+    "Cart page subscribes to cart state fields directly",
+    includesAll(read("app/(store)/cart/page.tsx"), [
+      "useCartStore((state) => state.items)",
+      "useCartStore((state) => state.hasHydrated)",
+      "data-cart-item",
+    ]),
+    "Cart page should re-render when items hydrate from browser storage.",
   );
 
   check(

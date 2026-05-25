@@ -126,6 +126,8 @@ const levels = [
       {
         name: "Cart store protects in-memory state",
         ok: includesAll("store/cart.ts", [
+          "if (value == null) return null",
+          "getInitialCartItems",
           "currentItems.length > 0",
           "writeCartItemsToStorage(currentItems)",
           "hasHydrated: true",

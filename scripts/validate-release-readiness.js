@@ -44,6 +44,21 @@ check(
   "The main quality gate must run architecture levels and cart/checkout protection.",
 );
 check(
+  "Browser cart guard is wired into deploy",
+  Boolean(packageJson.scripts?.["browser:cart:check"]) &&
+    exists("scripts/validate-browser-cart-flow.js") &&
+    read("scripts/deploy-preflight.js").includes("browser:cart:check") &&
+    includesAll(read("scripts/validate-browser-cart-flow.js"), ["data-product-seller-panel", "data-product-channel"]),
+  "Deploy must include a real browser add-to-cart/cart-page/product-page scenario, not only API checks.",
+);
+check(
+  "Text encoding guard is wired",
+  Boolean(packageJson.scripts?.["text:check"]) &&
+    exists("scripts/validate-text-encoding-guard.js") &&
+    read("scripts/aray-quality-gate.js").includes("validate-text-encoding-guard.js"),
+  "Release quality must block corrupted Russian text before it reaches users.",
+);
+check(
   "Deploy runs preflight before push",
   Boolean(packageJson.scripts?.deploy?.includes("deploy-preflight.js")) &&
     exists("scripts/deploy-preflight.js") &&
@@ -152,17 +167,18 @@ check(
 );
 check(
   "Store add-to-cart surfaces use shared animation",
-  includesAll(read("components/store/product-card.tsx"), ["flyToCart", "addItem"]) &&
+  includesAll(read("components/store/product-card.tsx"), ["flyToCart", "addItem", "data-add-to-cart"]) &&
     includesAll(read("components/store/variant-selector.tsx"), ["flyToCart", "addItem"]) &&
     includesAll(read("components/store/variant-cards.tsx"), ["flyToCart", "addItem"]),
   "Catalog cards, product variant selector, and variant cards must share add-to-cart animation wiring.",
 );
 check(
   "Cart, calculator, and checkout share one contract",
-  includesAll(read("store/cart.ts"), ["currentItems.length > 0", "writeCartItemsToStorage(currentItems)"]) &&
+  includesAll(read("store/cart.ts"), ["if (value == null) return null", "getInitialCartItems", "currentItems.length > 0", "writeCartItemsToStorage(currentItems)"]) &&
     includesAll(read("app/api/calculator/products/route.ts"), ["getPublicVariantsFilter", "images: { isEmpty: false }"]) &&
     includesAll(read("app/api/cart/load/route.ts"), ["getPublicVariantsFilter", "getPurchasableQuantityLimit"]) &&
-    includesAll(read("app/(store)/checkout/page.tsx"), ["hydrateCart", "hasHydrated", "shouldRedirectToCart"]),
+    includesAll(read("app/(store)/checkout/page.tsx"), ["hydrateCart", "hasHydrated", "shouldRedirectToCart"]) &&
+    includesAll(read("app/(store)/cart/page.tsx"), ["data-cart-item", "data-cart-empty-state", "data-cart-checkout-link"]),
   "Calculator items must survive cart hydration and remain accepted by checkout/order validation.",
 );
 check(
@@ -178,6 +194,17 @@ check(
     "app/(store)/contacts/page.tsx",
   ]),
   "Main buyer flows must have route files before release.",
+);
+
+const productPage = read("app/(store)/product/[slug]/page.tsx");
+const productActions = read("components/store/product-page-actions.tsx");
+const contactRoute = read("app/api/contact/route.ts");
+check(
+  "Product page has smart seller controls",
+  includesAll(productPage, ["ProductSellerPanel", "ProductSmartSummary", "ProductShareButton", "productSku", "smartTags"]) &&
+    includesAll(productActions, ["ProductShareButton", "ProductSellerPanel", "ProductSmartSummary", "CHANNELS", "Telegram", "WhatsApp", "Zangi", "Почта", "data-product-seller-panel"]) &&
+    includesAll(contactRoute, ["source === \"PRODUCT\"", "productTitle", "productSku", "Укажите телефон, email или вопрос"]),
+  "Product pages need share, SKU, smart tags, CRM lead capture, and a first omnichannel ARAY entry.",
 );
 
 const embeddedMessenger = read("components/store/aray-embedded-messenger.tsx");
@@ -220,6 +247,17 @@ check(
     "app/api/admin/tasks/[id]/route.ts",
   ]),
   "Messenger, AR Phone resolve, and tasks APIs are required for the unified work center.",
+);
+check(
+  "ARAY omnichannel center is queued",
+  includesAll(queue, [
+    "ARAY omnichannel center",
+    "Telegram, WhatsApp, Zangi",
+    "email, mailings/newsletters",
+    "find who",
+    "save to CRM",
+  ]),
+  "ARAY must be treated as a channel synchronizer, not a separate isolated messenger.",
 );
 
 check(

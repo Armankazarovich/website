@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useCartStore } from "@/store/cart";
+import { readCartItemsFromStorage, useCartStore, type CartItem } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -186,7 +186,11 @@ function CheckoutRegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, clearCart, hasHydrated } = useCartStore();
+  const items = useCartStore((state) => state.items);
+  const totalPrice = useCartStore((state) => state.totalPrice);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const hasHydrated = useCartStore((state) => state.hasHydrated);
+  const [storageFallbackItems, setStorageFallbackItems] = useState<CartItem[]>([]);
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -293,7 +297,13 @@ export default function CheckoutPage() {
   const { data: session } = useSession();
 
   useEffect(() => {
-    useCartStore.getState().hydrateCart();
+    const cartStore = useCartStore.getState();
+    cartStore.hydrateCart();
+    const nextItems = cartStore.items.length > 0 ? cartStore.items : readCartItemsFromStorage();
+    if (nextItems.length > 0) {
+      cartStore.loadItems(nextItems);
+      setStorageFallbackItems(nextItems);
+    }
   }, []);
 
   const {
@@ -397,7 +407,10 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, [session?.user?.id, reset]);
 
-  const shouldRedirectToCart = mounted && hasHydrated && items.length === 0 && !success;
+  const visibleItems = items.length > 0 ? items : storageFallbackItems;
+  const visibleTotalPrice = visibleItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const checkoutTotal = items.length > 0 ? totalPrice() : visibleTotalPrice;
+  const shouldRedirectToCart = mounted && hasHydrated && visibleItems.length === 0 && !success;
 
   useEffect(() => {
     if (shouldRedirectToCart) {
@@ -496,7 +509,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           ...orderData,
           comment,
-          items: items.map((item) => ({
+          items: visibleItems.map((item) => ({
             variantId: item.variantId,
             productName: item.productName,
             variantSize: item.variantSize,
@@ -504,7 +517,7 @@ export default function CheckoutPage() {
             quantity: item.quantity,
             price: item.price,
           })),
-          totalAmount: totalPrice(),
+          totalAmount: checkoutTotal,
           attribution: attribution || undefined,
         }),
       });
@@ -516,7 +529,7 @@ export default function CheckoutPage() {
       setOrderPhone(data.phone);
       trackArayMetrikaGoal("aray_order_success", {
         orderNumber: json.orderNumber,
-        total: totalPrice(),
+        total: checkoutTotal,
       });
       clearCart();
       setSuccess(true);
@@ -1401,7 +1414,7 @@ export default function CheckoutPage() {
           <div className="lg:sticky lg:top-24 bg-card rounded-2xl border border-border p-6 space-y-4">
             <h2 className="font-display font-bold text-xl">Ваш заказ</h2>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <div key={item.id} className="flex justify-between text-sm">
                   <div className="flex-1 min-w-0 mr-2">
                     <p className="font-medium line-clamp-1">
@@ -1425,7 +1438,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between items-center">
                 <span className="font-medium">Товары:</span>
                 <span className="font-display font-bold text-xl text-primary">
-                  {formatPrice(totalPrice())}
+                  {formatPrice(checkoutTotal)}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">

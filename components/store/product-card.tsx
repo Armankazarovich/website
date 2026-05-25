@@ -864,6 +864,7 @@ export function ProductCard({
           ) : (
             /* ── Добавить в корзину ── */
             <button
+              data-add-to-cart
               onClick={handleAdd}
               disabled={!hasStock}
               className={`store-card-cta w-full flex items-center justify-between px-3 py-2.5 rounded-xl font-semibold transition-all duration-200 active:scale-95 ${

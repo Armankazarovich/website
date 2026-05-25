@@ -36,6 +36,7 @@ interface CartStore {
 const CART_STORAGE_KEY = "pilo-rus-cart";
 
 function normalizeMaxQuantity(value: unknown): number | null {
+  if (value == null) return null;
   const max = Number(value);
   return Number.isFinite(max) && max >= 0 ? max : null;
 }
@@ -89,7 +90,7 @@ function normalizeCartItems(value: unknown): CartItem[] {
   });
 }
 
-function readCartItemsFromStorage(): CartItem[] {
+export function readCartItemsFromStorage(): CartItem[] {
   if (typeof window === "undefined") return [];
 
   try {
@@ -120,10 +121,14 @@ function writeCartItemsToStorage(items: CartItem[]) {
   }
 }
 
+function getInitialCartItems(): CartItem[] {
+  return typeof window === "undefined" ? [] : readCartItemsFromStorage();
+}
+
 export const useCartStore = create<CartStore>()((set, get) => ({
-  items: [],
+  items: getInitialCartItems(),
   cartOpen: false,
-  hasHydrated: false,
+  hasHydrated: typeof window !== "undefined",
 
   setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 

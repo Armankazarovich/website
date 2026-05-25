@@ -117,6 +117,7 @@ function scanSecrets() {
 }
 
 run("Diff whitespace check", "git", ["diff", "--check"]);
+run("Text encoding guard", "node", ["scripts/validate-text-encoding-guard.js"]);
 run("Design system guard", "node", ["scripts/validate-design-system.js"]);
 run("Release protection system guard", "node", ["scripts/validate-release-protection-system.js"]);
 run("Agent registry validation", "node", ["scripts/validate-aray-agent-registry.js"]);

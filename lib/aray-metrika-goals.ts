@@ -7,7 +7,10 @@ export type ArayMetrikaGoal =
   | "aray_messenger_click"
   | "aray_cart_add"
   | "aray_checkout_start"
-  | "aray_engaged_session";
+  | "aray_engaged_session"
+  | "product_share"
+  | "product_aray_open"
+  | "product_request_sent";
 
 type ArayMetrikaPayload = {
   goal: ArayMetrikaGoal;

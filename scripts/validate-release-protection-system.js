@@ -93,6 +93,36 @@ check(
 );
 
 check(
+  "Browser cart flow guard is wired before deploy",
+  Boolean(packageJson.scripts?.["browser:cart:check"]) &&
+    Boolean(packageJson.scripts?.["browser:cart:check:prod"]) &&
+    deployPreflight.includes("browser:cart:check") &&
+    includesAll("scripts/validate-browser-cart-flow.js", [
+      "data-add-to-cart",
+      "pilo-rus-cart",
+      "data-cart-item",
+      "data-cart-empty-state",
+      "data-product-seller-panel",
+      "data-product-channel",
+      "Chrome DevTools",
+    ]),
+  "Deploy must include a real browser add-to-cart, cart-page, and product seller scenario.",
+);
+
+check(
+  "Text encoding guard is in quality",
+  Boolean(packageJson.scripts?.["text:check"]) &&
+    qualityGate.includes("validate-text-encoding-guard.js") &&
+    includesAll("scripts/validate-text-encoding-guard.js", [
+      "Unicode replacement character",
+      "Mojibake token",
+      "Question mark before use client directive",
+      "reportPath",
+    ]),
+  "Visible app surfaces must fail quality when Russian text is corrupted.",
+);
+
+check(
   "Release readiness guard is in quality",
   qualityGate.includes("validate-release-readiness.js") &&
     Boolean(packageJson.scripts?.["release:check"]),

@@ -35,7 +35,7 @@ function CartItemImage({ src, alt }: { src: string; alt: string }) {
     <Image src={src} alt={alt} fill className="object-cover" unoptimized onError={() => setError(true)} />
   );
 }
-import { useCartStore } from "@/store/cart";
+import { readCartItemsFromStorage, useCartStore, type CartItem } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
@@ -298,18 +298,28 @@ function ShareCartButton() {
 
 // ─── Main Cart Page ────────────────────────────────────────────────────────────
 export default function CartPage() {
-  const {
-    items,
-    removeItem,
-    updateQuantity,
-    totalPrice,
-    clearCart,
-    hasHydrated,
-  } = useCartStore();
+  const items = useCartStore((state) => state.items);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
+  const totalPrice = useCartStore((state) => state.totalPrice);
+  const clearCart = useCartStore((state) => state.clearCart);
+  const hasHydrated = useCartStore((state) => state.hasHydrated);
+  const [storageFallbackItems, setStorageFallbackItems] = useState<CartItem[]>([]);
+  const [cartEffectReady, setCartEffectReady] = useState(false);
 
   useEffect(() => {
-    useCartStore.getState().hydrateCart();
+    setCartEffectReady(true);
+    const cartStore = useCartStore.getState();
+    cartStore.hydrateCart();
+    const nextItems = cartStore.items.length > 0 ? cartStore.items : readCartItemsFromStorage();
+    if (nextItems.length > 0) {
+      cartStore.loadItems(nextItems);
+      setStorageFallbackItems(nextItems);
+    }
   }, []);
+
+  const visibleItems = items.length > 0 ? items : storageFallbackItems;
+  const visibleTotalPrice = visibleItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (!hasHydrated) {
     return (
@@ -319,13 +329,21 @@ export default function CartPage() {
     );
   }
 
-  if (items.length === 0) {
+  if (visibleItems.length === 0) {
     return (
-      <div className="container store-mobile-safe-bottom py-12 sm:py-20">
+      <div
+        data-cart-page-state
+        data-store-items={items.length}
+        data-fallback-items={storageFallbackItems.length}
+        data-visible-items={visibleItems.length}
+        data-hydrated={String(hasHydrated)}
+        data-effect-ready={String(cartEffectReady)}
+        className="container store-mobile-safe-bottom py-12 sm:py-20"
+      >
         <Suspense>
           <ShareBanner />
         </Suspense>
-        <div className="store-empty-action-card mx-auto max-w-2xl rounded-2xl p-6 text-center sm:p-8">
+        <div data-cart-empty-state className="store-empty-action-card mx-auto max-w-2xl rounded-2xl p-6 text-center sm:p-8">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <ShoppingCart className="h-8 w-8" />
           </div>
@@ -367,7 +385,15 @@ export default function CartPage() {
   }
 
   return (
-    <div className="container store-mobile-safe-bottom pt-8 pb-14 sm:pb-16">
+    <div
+      data-cart-page-state
+      data-store-items={items.length}
+      data-fallback-items={storageFallbackItems.length}
+      data-visible-items={visibleItems.length}
+      data-hydrated={String(hasHydrated)}
+      data-effect-ready={String(cartEffectReady)}
+      className="container store-mobile-safe-bottom pt-8 pb-14 sm:pb-16"
+    >
       {/* Share banner — SSR safe */}
       <Suspense fallback={null}>
         <ShareBanner />
@@ -379,7 +405,7 @@ export default function CartPage() {
           <div>
             <h1 className="font-display font-bold text-3xl">Корзина</h1>
             <p className="text-sm text-muted-foreground">
-              {items.length} {items.length === 1 ? "позиция" : items.length < 5 ? "позиции" : "позиций"} к оформлению
+              {visibleItems.length} {visibleItems.length === 1 ? "позиция" : visibleItems.length < 5 ? "позиции" : "позиций"} к оформлению
             </p>
           </div>
         </div>
@@ -389,9 +415,10 @@ export default function CartPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Items */}
         <div className="lg:col-span-2 space-y-4">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <div
               key={item.id}
+              data-cart-item
               className="flex gap-3 p-3 sm:gap-4 sm:p-4 bg-card rounded-2xl border border-border"
             >
               {/* Image */}
@@ -489,7 +516,7 @@ export default function CartPage() {
             <h2 className="font-display font-bold text-xl">Итого</h2>
 
             <div className="space-y-2 text-sm">
-              {items.map((item) => (
+              {visibleItems.map((item) => (
                 <div key={item.id} className="flex justify-between text-muted-foreground">
                   <span className="line-clamp-1 mr-2">
                     {item.productName} × {item.unitType === "CUBE" ? item.quantity.toFixed(1) : item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
@@ -502,7 +529,7 @@ export default function CartPage() {
             <div className="border-t border-border pt-4 flex justify-between items-center">
               <span className="font-medium">Сумма заказа:</span>
               <span className="font-display font-bold text-2xl text-primary">
-                {formatPrice(totalPrice())}
+                {formatPrice(items.length > 0 ? totalPrice() : visibleTotalPrice)}
               </span>
             </div>
 
@@ -517,12 +544,13 @@ export default function CartPage() {
 
             <Button size="lg" className="w-full" asChild>
               <Link
+                data-cart-checkout-link
                 href="/checkout"
                 onClick={() =>
                   trackArayMetrikaGoal("aray_checkout_start", {
                     source: "cart_page",
-                    total: totalPrice(),
-                    count: items.length,
+                    total: items.length > 0 ? totalPrice() : visibleTotalPrice,
+                    count: visibleItems.length,
                   })
                 }
               >
