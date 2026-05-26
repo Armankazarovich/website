@@ -263,6 +263,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   const linked = relatedActions.length > 0;
   const actionHref = current.ctaUrl || firstAction?.ctaUrl || (current.type === "LIVE" && current.mediaUrl ? current.mediaUrl : "");
   const hasInlineVideo = isVideoStory(current) && Boolean(current.mediaUrl) && canInlineVideo(current.mediaUrl);
+  const compactLabel = current.type === "LIVE" ? "LIVE" : "Обзор";
   const openStory = () => {
     setSoundEnabled(false);
     setExpanded(true);
@@ -283,8 +284,9 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         <button
           type="button"
           onClick={() => setHidden(false)}
-          className="group fixed right-0 z-[44] hidden h-[104px] w-11 items-center justify-center rounded-l-2xl border border-r-0 border-primary/28 bg-card text-primary shadow-xl transition-colors hover:border-primary/55 lg:flex"
-          style={{ bottom: "calc(7.25rem + env(safe-area-inset-bottom, 0px))" }}
+          data-store-stories-side-tab
+          className="group fixed right-0 z-[44] hidden h-[104px] w-11 items-center justify-center rounded-l-2xl border border-r-0 border-primary/28 bg-card text-primary shadow-xl transition-colors hover:border-primary/55 sm:flex"
+          style={{ bottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))" }}
           aria-label="Показать сторис"
           title="Показать сторис"
         >
@@ -298,11 +300,17 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         <button
           type="button"
           onClick={() => setHidden(false)}
-          className="fixed right-3 z-[44] flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/30 bg-card text-primary shadow-xl lg:hidden"
-          style={{ bottom: "calc(9.4rem + env(safe-area-inset-bottom, 0px))" }}
+          data-store-stories-compact-trigger
+          data-store-stories-side-tab
+          className="fixed right-0 z-[44] flex h-16 w-9 items-center justify-center rounded-l-2xl border border-r-0 border-primary/32 bg-card text-primary shadow-xl shadow-black/20 sm:hidden"
+          style={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))" }}
           aria-label="Показать сторис"
+          title="Показать сторис"
         >
-          <CirclePlay className="h-5 w-5" />
+          {current.type === "LIVE" ? <Radio className="h-4 w-4" /> : <CirclePlay className="h-4 w-4" />}
+          {current.type === "LIVE" && (
+            <span className="absolute right-1.5 top-2 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.75)]" />
+          )}
         </button>
       </>
     );
@@ -312,8 +320,9 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
     <>
       {!expanded && (
       <div
-        className="fixed right-5 z-[44] hidden w-[152px] lg:block"
-        style={{ bottom: "calc(7.25rem + env(safe-area-inset-bottom, 0px))" }}
+        data-store-stories-card
+        className="fixed right-6 z-[44] hidden w-[152px] xl:block"
+        style={{ bottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))" }}
         aria-label="Сторис продавца"
       >
         <button
@@ -359,47 +368,73 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
 
       {!expanded && (
       <div
-        className="fixed right-3 z-[44] flex w-[126px] flex-col lg:hidden"
-        style={{ bottom: "calc(8.35rem + env(safe-area-inset-bottom, 0px))" }}
+        data-store-stories-mini-video
+        className="fixed right-3 z-[44] h-[108px] w-[70px] sm:hidden"
+        style={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <button
           type="button"
           onClick={openStory}
-          className="relative h-[164px] w-full overflow-hidden rounded-2xl border border-primary/28 bg-card text-primary shadow-xl"
+          data-store-stories-compact-trigger
+          className="relative flex h-full w-full overflow-hidden rounded-[20px] border border-primary/35 bg-card shadow-2xl shadow-black/25 transition-transform active:scale-[0.96]"
           aria-label="Открыть сторис"
+          title={current.title}
         >
           <StoryMedia story={current} expanded={false} />
-          <span className="absolute inset-0 bg-background/60" />
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-semibold text-foreground">
-            {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
-            {current.type === "LIVE" ? "LIVE" : "Видео"}
+          <span className="absolute inset-0 bg-background/45" />
+          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
+            {current.type === "LIVE" ? <Radio className="h-2.5 w-2.5 text-primary" /> : <CirclePlay className="h-2.5 w-2.5 text-primary" />}
+            {compactLabel}
           </span>
-          <span className="absolute inset-x-2 bottom-2 line-clamp-2 rounded-xl border border-border bg-card px-2 py-2 text-left text-[10px] font-semibold leading-3 text-foreground">
+          <span className="absolute bottom-1.5 left-1.5 right-1.5 line-clamp-2 text-left text-[9.5px] font-semibold leading-3 text-foreground">
             {current.title}
+          </span>
+          {current.type === "LIVE" && (
+            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.75)]" />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={hideWidget}
+          className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
+          aria-label="Свернуть сторис в бок"
+          title="Свернуть в бок"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      )}
+
+      {!expanded && (
+      <div
+        data-store-stories-side-tab
+        className="group fixed right-0 z-[44] hidden h-[104px] w-11 items-center justify-center rounded-l-2xl border border-r-0 border-primary/28 bg-card text-primary shadow-xl transition-colors hover:border-primary/55 sm:flex xl:hidden"
+        style={{ bottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))" }}
+        aria-label="Сторис продавца"
+      >
+        <button
+          type="button"
+          onClick={openStory}
+          className="relative flex h-full w-full items-center justify-center"
+          aria-label="Открыть сторис"
+          title={current.title}
+        >
+          <span className="absolute right-0 top-3 h-8 w-0.5 rounded-l-full bg-primary" />
+          {current.type === "LIVE" ? <Radio className="h-5 w-5" /> : <CirclePlay className="h-5 w-5" />}
+          <span className="pointer-events-none absolute right-full mr-2 flex min-h-10 max-w-[220px] items-center gap-2 whitespace-nowrap rounded-full border border-border bg-card px-3 text-xs font-semibold text-foreground opacity-0 shadow-xl transition-opacity group-hover:opacity-100">
+            {current.type === "LIVE" ? <Radio className="h-3.5 w-3.5 text-primary" /> : <CirclePlay className="h-3.5 w-3.5 text-primary" />}
+            <span className="max-w-[160px] truncate">{current.title}</span>
           </span>
         </button>
         <button
           type="button"
           onClick={hideWidget}
-          className="absolute -right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+          className="absolute -left-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
           aria-label="Скрыть сторис в бок"
+          title="Скрыть сторис"
         >
-          <ChevronRight className="h-4 w-4" />
+          <X className="h-3.5 w-3.5" />
         </button>
-        <div className="mt-2 flex justify-center gap-1.5">
-          {stories.slice(0, 4).map((story, storyIndex) => (
-            <button
-              key={story.id}
-              type="button"
-              aria-label={`Сторис ${storyIndex + 1}`}
-              onClick={() => setIndex(storyIndex)}
-              className={cn(
-                "h-1.5 rounded-full transition-all",
-                storyIndex === index ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/35",
-              )}
-            />
-          ))}
-        </div>
       </div>
       )}
 

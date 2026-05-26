@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence, useDragControls } from "framer-motion";
 import { Send, Loader2, RotateCcw, Mic, MicOff, ShoppingCart, ExternalLink, LayoutGrid, Package, MapPin, Phone, PhoneCall, Video, Share2, Copy, Volume2, VolumeX, MessageSquare, ChevronDown, ChevronLeft, ShieldCheck, CheckCircle2, XCircle, Paperclip, FileText, Image as ImageIcon, Trash2, FileAudio, Film, FileArchive, Settings2, Target, Bot, Megaphone, BarChart3, MousePointer2, Wallet, Gift, CreditCard, Landmark, UserPlus, X } from "lucide-react";
@@ -136,6 +136,7 @@ type ArayLiveAction = {
   id: string;
   label: string;
   detail?: string;
+  href?: string;
   kind: "open" | "show" | "write" | "confirm" | "voice" | "file";
 };
 
@@ -341,6 +342,23 @@ function sanitizeArayUrl(url: string): string {
   return target;
 }
 
+function resolveLiveActionHref(detail?: string): string | undefined {
+  const raw = detail?.trim();
+  if (!raw) return undefined;
+
+  const lower = raw.toLowerCase();
+  const looksNavigable =
+    (raw.startsWith("/") && !raw.startsWith("//")) ||
+    lower.startsWith("http://") ||
+    lower.startsWith("https://") ||
+    lower.startsWith("tel:") ||
+    lower.startsWith("mailto:");
+
+  if (!looksNavigable) return undefined;
+  const safeUrl = sanitizeArayUrl(raw);
+  return safeUrl || undefined;
+}
+
 function sanitizeArayAction(action: ArayAction): ArayAction {
   if (!action.url) return action;
   const safeUrl = sanitizeArayUrl(action.url);
@@ -432,16 +450,31 @@ function readLocalArayHistory(): Message[] {
     const raw = window.localStorage.getItem(ARAY_LOCAL_HISTORY_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? mapLocalHistoryMessages(parsed) : [];
+    return Array.isArray(parsed) ? dedupeRepeatedArayHistory(mapLocalHistoryMessages(parsed)) : [];
   } catch {
     return [];
   }
 }
 
+function dedupeRepeatedArayHistory(messages: Message[]) {
+  const next: Message[] = [];
+  for (const message of messages) {
+    const last = next[next.length - 1];
+    const sameStoryContext =
+      last &&
+      last.role === message.role &&
+      last.content.trim() === message.content.trim() &&
+      message.content.includes("Открыл чат по сторис");
+    if (sameStoryContext) continue;
+    next.push(message);
+  }
+  return next;
+}
+
 function writeLocalArayHistory(messages: Message[]) {
   if (typeof window === "undefined") return;
   try {
-    const compact = messages
+    const compact = dedupeRepeatedArayHistory(messages)
       .filter((message) => !message.streaming && message.content.trim())
       .filter((message) => !isArayNavigationNoise(message))
       .slice(-50)
@@ -609,6 +642,10 @@ function getAttachmentKind(file: File): ArayAttachment["kind"] {
   return "file";
 }
 
+function isPdfAttachment(file: File) {
+  return file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+}
+
 function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -703,11 +740,18 @@ async function prepareArayAttachment(file: File): Promise<ArayAttachment> {
     };
   }
 
+  if (isPdfAttachment(file)) {
+    const canReadInline = file.size <= 4 * 1024 * 1024;
+    return {
+      ...base,
+      dataUrl: canReadInline ? await readFileAsDataUrl(file) : undefined,
+      note: canReadInline ? "pdf-document-ready" : "pdf-too-large-for-inline-reading",
+    };
+  }
+
   return {
     ...base,
-    note: file.name.toLowerCase().endsWith(".pdf")
-      ? "pdf-text-extraction-not-enabled-yet"
-      : "file-preview-not-enabled-yet",
+    note: "file-preview-not-enabled-yet",
   };
 }
 
@@ -727,7 +771,8 @@ function getAttachmentActionHint(file: ArayAttachment) {
   if (file.kind === "video") return "Видео принято. Я смогу использовать его для разборов, рекламы и сценариев.";
   if (file.kind === "archive") return "Архив принят. Авто-распаковка будет подключена отдельным безопасным обработчиком.";
   if (file.kind === "text") return "Текст прочитан и передан мне.";
-  if (file.note === "pdf-text-extraction-not-enabled-yet") return "PDF принят. Для точного чтения можно прислать фото страницы или текст.";
+  if (file.note === "pdf-document-ready") return "PDF передан Араю для чтения и разбора.";
+  if (file.note === "pdf-too-large-for-inline-reading") return "PDF принят, но большой: лучше прислать нужные страницы отдельными файлами или фото.";
   return "Файл принят. Если нужно, я подскажу следующий безопасный способ обработки.";
 }
 
@@ -906,6 +951,7 @@ function ArayPhoneShortcutPad({
 }) {
   const [dialValue, setDialValue] = useState("");
   const [dialOpen, setDialOpen] = useState(false);
+  const [channelsOpen, setChannelsOpen] = useState(false);
   const timeText = now
     ? now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
     : "--:--";
@@ -920,6 +966,7 @@ function ArayPhoneShortcutPad({
       icon: <MessageSquare className="h-4 w-4" />,
       onClick: () => {
         setDialOpen(false);
+        setChannelsOpen(false);
         onAction(ARAY_PHONE_CHAT_ACTION);
       },
       active: !dialOpen,
@@ -929,6 +976,7 @@ function ArayPhoneShortcutPad({
       hint: "номер",
       icon: <PhoneCall className="h-4 w-4" />,
       onClick: () => {
+        setChannelsOpen(false);
         setDialOpen((value) => !value);
       },
       active: dialOpen,
@@ -940,6 +988,7 @@ function ArayPhoneShortcutPad({
       onClick: () => {
         onStartOwnVideo();
         setDialOpen(false);
+        setChannelsOpen(false);
       },
       active: false,
     },
@@ -947,19 +996,11 @@ function ArayPhoneShortcutPad({
       label: "Пригласить",
       hint: "контакт",
       icon: <UserPlus className="h-4 w-4" />,
-      onClick: () => onAction(ARAY_PHONE_CONTACT_ACTION),
-    },
-    {
-      label: "Поделиться",
-      hint: "мой номер",
-      icon: <Share2 className="h-4 w-4" />,
-      onClick: onShareOwnNumber,
-    },
-    {
-      label: "Аккаунт",
-      hint: "настройки",
-      icon: <Settings2 className="h-4 w-4" />,
-      onClick: () => onAction(ARAY_PHONE_ACCOUNT_ACTION),
+      onClick: () => {
+        setDialOpen(false);
+        setChannelsOpen(false);
+        onAction(ARAY_PHONE_CONTACT_ACTION);
+      },
     },
   ];
   const externalChannels = [
@@ -969,10 +1010,7 @@ function ArayPhoneShortcutPad({
       hint: "браузер",
       logo: "TG",
       accent: "hsl(200 92% 55%)",
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "https://web.telegram.org/a/", label: "Telegram", icon: "chat" });
-      },
+      url: "https://web.telegram.org/a/",
     },
     {
       key: "whatsapp",
@@ -980,10 +1018,7 @@ function ArayPhoneShortcutPad({
       hint: "браузер",
       logo: "WA",
       accent: "hsl(142 70% 45%)",
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "https://web.whatsapp.com/", label: "WhatsApp", icon: "chat" });
-      },
+      url: "https://web.whatsapp.com/",
     },
     {
       key: "zangi",
@@ -991,10 +1026,7 @@ function ArayPhoneShortcutPad({
       hint: "сайт",
       logo: "ZA",
       accent: "hsl(258 86% 66%)",
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "https://zangi.com/", label: "Zangi", icon: "chat" });
-      },
+      url: "https://zangi.com/",
     },
     {
       key: "max",
@@ -1002,10 +1034,7 @@ function ArayPhoneShortcutPad({
       hint: "браузер",
       logo: "MX",
       accent: "hsl(214 94% 58%)",
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "https://web.max.ru/", label: "MAX", icon: "chat" });
-      },
+      url: "https://web.max.ru/",
     },
     {
       key: "vk",
@@ -1013,10 +1042,7 @@ function ArayPhoneShortcutPad({
       hint: "браузер",
       logo: "VK",
       accent: "hsl(212 88% 56%)",
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "https://vk.com/im", label: "VK", icon: "chat" });
-      },
+      url: "https://vk.com/im",
     },
     {
       key: "email",
@@ -1024,10 +1050,7 @@ function ArayPhoneShortcutPad({
       hint: "центр",
       logo: "@",
       accent: primaryColor,
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "/admin/email", label: "Почта", icon: "direct" });
-      },
+      url: "/admin/email",
     },
     {
       key: "mailings",
@@ -1035,21 +1058,15 @@ function ArayPhoneShortcutPad({
       hint: "центр",
       logo: "RS",
       accent: "hsl(32 95% 52%)",
-      onClick: () => {
-        setDialOpen(false);
-        onAction({ type: "navigate", url: "/admin/notifications", label: "Рассылки", icon: "direct" });
-      },
+      url: "/admin/notifications",
     },
     {
       key: "meet",
       label: "Meet",
-      hint: "попап",
+      hint: "видео",
       logo: "JV",
       accent: "hsl(184 78% 44%)",
-      onClick: () => {
-        setDialOpen(false);
-        onStartOwnVideo();
-      },
+      url: "",
     },
   ];
   const integrationHighlights = [
@@ -1057,7 +1074,86 @@ function ArayPhoneShortcutPad({
     { label: "AI", hint: "ответ и шаг", icon: <Bot className="h-3.5 w-3.5" /> },
     { label: "Задачи", hint: "контроль", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
   ];
-
+  const openExternalChannel = (item: (typeof externalChannels)[number]) => {
+    setDialOpen(false);
+    if (item.key === "meet") {
+      onStartOwnVideo();
+      return;
+    }
+    if (item.url) {
+      onAction({ type: "navigate", url: item.url, label: item.label, icon: "chat" });
+    }
+  };
+  const integrationsPanel = channelsOpen ? (
+    <div
+      data-aray-phone-integrations
+      className="mt-2 rounded-[20px] p-2"
+      style={{ background: "hsl(var(--background) / 0.56)", border: `1px solid ${primaryBorder}` }}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2 px-1">
+        <span className="truncate text-[10px] font-bold" style={{ color: txt }}>
+          Внешние каналы
+        </span>
+        <button
+          type="button"
+          onClick={() => {
+            setChannelsOpen(false);
+            onAction({ type: "navigate", url: "/admin/aray/connectors", label: "Подключения ARAY", icon: "settings" });
+          }}
+          className="shrink-0 rounded-full px-2 py-1 text-[9px] font-semibold transition hover:bg-muted/40"
+          style={{ color: primaryColor, border: `1px solid ${primaryBorder}` }}
+        >
+          Настроить
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-1">
+        {externalChannels.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            data-aray-phone-channel={item.key}
+            onClick={() => openExternalChannel(item)}
+            className="flex min-h-10 min-w-0 items-center gap-2 rounded-2xl px-2 text-left transition hover:bg-muted/40 active:scale-[0.98]"
+            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+            aria-label={`Открыть ${item.label}`}
+            title={`${item.label} · ${item.hint}`}
+          >
+            <span
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-2xl text-[9px] font-black"
+              style={{ color: item.accent, background: "hsl(var(--background))", border: `1px solid ${item.accent}` }}
+            >
+              {item.logo}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[10px] font-bold leading-none" style={{ color: txt }}>
+                {item.label}
+              </span>
+              <span className="mt-1 block truncate text-[8.5px] font-semibold leading-none" style={{ color: txtSub }}>
+                {item.hint}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-1">
+        {integrationHighlights.map((item) => (
+          <div
+            key={item.label}
+            className="min-w-0 rounded-2xl px-2 py-1.5"
+            style={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))" }}
+          >
+            <span className="flex items-center gap-1 text-[9px] font-bold leading-none" style={{ color: txt }}>
+              {item.icon}
+              <span className="truncate">{item.label}</span>
+            </span>
+            <span className="mt-1 block truncate text-[8px] font-semibold leading-none" style={{ color: txtSub }}>
+              {item.hint}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
   if (compact) {
     return (
       <div
@@ -1099,6 +1195,24 @@ function ArayPhoneShortcutPad({
           >
             <Share2 className="h-3.5 w-3.5" />
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setDialOpen(false);
+              setChannelsOpen((value) => !value);
+            }}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl transition hover:bg-muted/40"
+            style={{
+              color: channelsOpen ? primaryColor : txtSub,
+              background: channelsOpen ? primarySoft : "transparent",
+              border: `1px solid ${primaryBorder}`,
+            }}
+            aria-expanded={channelsOpen}
+            aria-label="Подключения ARAY"
+            title="Подключения ARAY"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+          </button>
         </div>
         <div className="mt-2 grid grid-cols-3 gap-1">
           {phoneActions.slice(0, 3).map((item) => (
@@ -1118,59 +1232,7 @@ function ArayPhoneShortcutPad({
             </button>
           ))}
         </div>
-        <div data-aray-phone-integrations className="mt-2 grid grid-cols-2 gap-1">
-          {externalChannels.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              data-aray-phone-channel={item.key}
-              onClick={item.onClick}
-              className="flex min-h-10 min-w-0 items-center gap-2 rounded-2xl px-2 text-left transition hover:scale-[1.015] active:scale-[0.98]"
-              style={{
-                background: "hsl(var(--background) / 0.48)",
-                border: `1px solid ${primaryBorder}`,
-              }}
-              aria-label={`Открыть ${item.label}`}
-              title={`${item.label} · ${item.hint}`}
-            >
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-2xl text-[9px] font-black"
-                style={{
-                  color: item.accent,
-                  background: "hsl(var(--foreground) / 0.045)",
-                  boxShadow: `inset 0 0 0 1px ${item.accent}`,
-                }}
-              >
-                {item.logo}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[10px] font-bold leading-none" style={{ color: txt }}>
-                  {item.label}
-                </span>
-                <span className="mt-1 block truncate text-[8.5px] font-semibold leading-none" style={{ color: txtSub }}>
-                  {item.hint}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="mt-2 grid grid-cols-3 gap-1">
-          {integrationHighlights.map((item) => (
-            <div
-              key={item.label}
-              className="min-w-0 rounded-2xl px-2 py-1.5"
-              style={{ background: "hsl(var(--foreground) / 0.035)", border: "1px solid hsl(var(--foreground) / 0.05)" }}
-            >
-              <span className="flex items-center gap-1 text-[9px] font-bold leading-none" style={{ color: txt }}>
-                {item.icon}
-                <span className="truncate">{item.label}</span>
-              </span>
-              <span className="mt-1 block truncate text-[8px] font-semibold leading-none" style={{ color: txtSub }}>
-                {item.hint}
-              </span>
-            </div>
-          ))}
-        </div>
+        {integrationsPanel}
         {dialOpen && (
           <div className="mt-2 flex gap-1.5">
             <input
@@ -1229,11 +1291,15 @@ function ArayPhoneShortcutPad({
           </span>
           <button
             type="button"
-            onClick={() => onAction(ARAY_PHONE_ACCOUNT_ACTION)}
+            onClick={() => {
+              setDialOpen(false);
+              setChannelsOpen((value) => !value);
+            }}
             className="flex h-6 w-6 items-center justify-center rounded-full transition hover:bg-muted/40"
-            style={{ color: txtSub }}
-            aria-label="Аккаунт AR Phone"
-            title="Аккаунт AR Phone"
+            style={{ color: channelsOpen ? primaryColor : txtSub, background: channelsOpen ? primarySoft : "transparent" }}
+            aria-expanded={channelsOpen}
+            aria-label="Подключения ARAY"
+            title="Подключения ARAY"
           >
             <Settings2 className="h-3.5 w-3.5" />
           </button>
@@ -1316,6 +1382,7 @@ function ArayPhoneShortcutPad({
           </button>
         ))}
       </div>
+      {integrationsPanel}
       <div className="mt-2 flex items-center justify-center gap-1.5">
         {phoneActions.slice(3).map((item) => (
           <button
@@ -1333,76 +1400,6 @@ function ArayPhoneShortcutPad({
             <span className="truncate">{item.label}</span>
           </button>
         ))}
-      </div>
-      <div
-        data-aray-phone-integrations
-        className="mt-2 rounded-[20px] p-2"
-        style={{
-          background: "hsl(var(--background) / 0.48)",
-          border: `1px solid ${primaryBorder}`,
-        }}
-      >
-        <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
-          <span className="text-[9.5px] font-bold uppercase tracking-[0.12em]" style={{ color: txtSub }}>
-            Внешние каналы
-          </span>
-          <span className="truncate text-[9.5px] font-semibold" style={{ color: primaryColor }}>
-            через Арай
-          </span>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          {externalChannels.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              data-aray-phone-channel={item.key}
-              onClick={item.onClick}
-              className="group flex min-h-12 min-w-0 items-center gap-2 rounded-[16px] px-2.5 text-left transition hover:bg-muted/40 active:scale-[0.98]"
-              style={{ border: "1px solid hsl(var(--foreground) / 0.055)" }}
-              aria-label={`Открыть ${item.label}`}
-              title={`${item.label} · ${item.hint}`}
-            >
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-2xl text-[9px] font-black tracking-normal transition group-hover:scale-105"
-                style={{
-                  color: item.accent,
-                  background: "hsl(var(--foreground) / 0.045)",
-                  boxShadow: `inset 0 0 0 1px ${item.accent}`,
-                }}
-              >
-                {item.logo}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate text-[10.5px] font-bold leading-none" style={{ color: txt }}>
-                  {item.label}
-                </span>
-                <span className="mt-1 block truncate text-[9px] font-semibold leading-none" style={{ color: txtSub }}>
-                  {item.hint}
-                </span>
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="mt-2 grid grid-cols-3 gap-1.5">
-          {integrationHighlights.map((item) => (
-            <div
-              key={item.label}
-              className="min-w-0 rounded-[15px] px-2 py-2"
-              style={{
-                background: "linear-gradient(180deg, hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.02))",
-                border: "1px solid hsl(var(--foreground) / 0.055)",
-              }}
-            >
-              <span className="flex items-center gap-1.5 text-[9.5px] font-bold leading-none" style={{ color: txt }}>
-                {item.icon}
-                <span className="truncate">{item.label}</span>
-              </span>
-              <span className="mt-1 block truncate text-[8.5px] font-semibold leading-none" style={{ color: txtSub }}>
-                {item.hint}
-              </span>
-            </div>
-          ))}
-        </div>
       </div>
       {dialOpen && (
         <div
@@ -1769,13 +1766,6 @@ function extractArayMessengerQuery(text: string) {
     .trim();
 }
 
-function formatArayActionLabel(label: string) {
-  return label
-    .replace(/^\s*(?:открыть|показать|перейти|новая вкладка)\s*:\s*/i, "")
-    .replace(/\s+/g, " ")
-    .trim() || "источник";
-}
-
 function formatExternalActionLabel(url: string, index: number) {
   try {
     const parsed = new URL(url);
@@ -2006,6 +1996,69 @@ function ArayAdminNavigationStrip(_props: {
   isDark: boolean;
 }) {
   return null;
+}
+
+type ArayStartAction = {
+  id: string;
+  label: string;
+  hint: string;
+  icon: ReactNode;
+  onSelect: () => void;
+  primary?: boolean;
+};
+
+function ArayStartPanel({
+  actions,
+  isDark,
+  primaryColor,
+  primarySoft,
+  primaryBorder,
+  txt,
+  txtSub,
+}: {
+  actions: ArayStartAction[];
+  isDark: boolean;
+  primaryColor: string;
+  primarySoft: string;
+  primaryBorder: string;
+  txt: string;
+  txtSub: string;
+}) {
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="w-full max-w-[360px] space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        {actions.map((action) => (
+          <button
+            key={action.id}
+            type="button"
+            onClick={action.onSelect}
+            className="group flex min-h-[62px] min-w-0 items-center gap-2 rounded-2xl px-3 py-2 text-left transition-all active:scale-[0.98]"
+            style={{
+              background: action.primary ? primarySoft : "hsl(var(--card))",
+              border: `1px solid ${action.primary ? primaryBorder : "hsl(var(--border))"}`,
+              color: txt,
+            }}
+            aria-label={action.label}
+          >
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
+              style={{ background: primarySoft, color: primaryColor }}
+            >
+              {action.icon}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[12px] font-bold leading-4">{action.label}</span>
+              <span className="mt-0.5 block line-clamp-2 text-[10.5px] leading-3.5" style={{ color: txtSub }}>
+                {action.hint}
+              </span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ─── Голосовой ввод (микрофон) ───────────────────────────────────────────────
@@ -2793,6 +2846,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const messagesRef = useRef<Message[]>([]);
   const [attachments, setAttachments] = useState<ArayAttachment[]>([]);
   const [attachmentsBusy, setAttachmentsBusy] = useState(false);
   const [voiceMode, setVoiceMode] = useState<"text" | "voice">("voice"); // voice-first по умолчанию!
@@ -2855,7 +2909,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const messagesCountRef = useRef(0);
 
   const cleanConversationMessages = useMemo(
-    () => messages.filter((message) => !isArayNavigationNoise(message)),
+    () => dedupeRepeatedArayHistory(messages.filter((message) => !isArayNavigationNoise(message))),
     [messages],
   );
   const shouldCompactHistory = cleanConversationMessages.length > ARAY_HISTORY_COMPACT_AFTER;
@@ -2878,11 +2932,44 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   ) => {
     if (SILENT_LIVE_ACTION_LABELS.has(label)) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    setLiveActions((current) => [...current.slice(-3), { id, label, detail, kind }]);
+    const href = resolveLiveActionHref(detail);
+    setLiveActions((current) => [...current.slice(-2), { id, label, detail, href, kind }]);
     window.setTimeout(() => {
       setLiveActions((current) => current.filter((item) => item.id !== id));
     }, 6500);
   }, []);
+
+  const handleLiveActionClick = useCallback((item: ArayLiveAction) => {
+    if (!item.href) return;
+    const target = sanitizeArayUrl(item.href);
+    if (!target) return;
+
+    haptic("light");
+    setLiveActions((current) => current.filter((action) => action.id !== item.id));
+
+    const internalPath = toInternalAppPath(target);
+    if (internalPath) {
+      setBrowserOpen(false);
+      setBrowserAction(null);
+      router.push(internalPath);
+      return;
+    }
+
+    if (target.startsWith("tel:") || target.startsWith("mailto:")) {
+      window.location.href = target;
+      return;
+    }
+
+    setBrowserOpen(false);
+    setBrowserAction(null);
+    if (!isArayExternalTabOnly(target)) {
+      setBrowserUrl(target);
+      setBrowserOpen(true);
+      return;
+    }
+
+    openArayExternalPopup(target);
+  }, [router]);
 
   useEffect(
     () => () => {
@@ -3005,6 +3092,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
 
   useEffect(() => {
     messagesCountRef.current = messages.length;
+    messagesRef.current = messages;
   }, [messages.length]);
 
   useEffect(() => {
@@ -3019,7 +3107,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       if (!res.ok) throw new Error("history");
       const data = await res.json();
       if (data.messages?.length) {
-        setMessages(mapServerHistoryMessages(data.messages));
+        setMessages(dedupeRepeatedArayHistory(mapServerHistoryMessages(data.messages)));
         return;
       }
       const localHistory = readLocalArayHistory();
@@ -3460,8 +3548,14 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         localStorage.setItem("aray-voice-mode", "text");
       }
       setShowMessages(true);
-      setMessages(prev => [...prev, assistantMessage]);
-      saveMessageToDB("assistant", assistantText);
+      const isDuplicateStoryMessage = messagesRef.current
+        .slice(-8)
+        .some((message) => message.role === "assistant" && message.content.trim() === assistantText.trim());
+      if (!isDuplicateStoryMessage) {
+        messagesRef.current = [...messagesRef.current, assistantMessage];
+        setMessages(prev => [...prev, assistantMessage]);
+        saveMessageToDB("assistant", assistantText);
+      }
     };
 
     window.addEventListener("aray:story-context", handler as EventListener);
@@ -4482,8 +4576,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       }
       const openKind = openArayTarget(action.url);
       if (openKind) {
-        const label = formatArayActionLabel(action.label);
-        pushLiveAction(openKind === "tab" ? "Открыл вкладку" : "Перешёл в раздел", label, "open");
         if (isMobile) stopAraySpeech();
       }
       return;
@@ -4506,7 +4598,6 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       voiceModeRef.current = "text";
       localStorage.setItem("aray-voice-mode", "text");
     }
-    pushLiveAction("Открываю страницу", href, "open");
     openArayTarget(href);
     if (isMobile) stopAraySpeech();
     setShowMessages(true);
@@ -4529,6 +4620,127 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }
     sendMessage(prompt);
   }, [adminQuickActions, handleOpenAdminPage, pathname, sendMessage]);
+
+  const openStartAction = (action: ArayAction) => {
+    haptic("light");
+    handleAction(action);
+  };
+  const openStartAttachment = () => {
+    haptic("light");
+    setArayWorkspaceView("chat");
+    setShowMessages(true);
+    if (voiceModeRef.current !== "text") {
+      setVoiceMode("text");
+      voiceModeRef.current = "text";
+      localStorage.setItem("aray-voice-mode", "text");
+    }
+    fileInputRef.current?.click();
+  };
+  const startScreenActions: ArayStartAction[] = isAdmin
+    ? [
+        {
+          id: "admin-messenger",
+          label: "Мессенджер",
+          hint: "чаты, почта, клиенты",
+          icon: <MessageSquare className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/messenger", label: "Мессенджер", icon: "messenger" }),
+          primary: true,
+        },
+        {
+          id: "admin-client",
+          label: "Клиент",
+          hint: "найти или создать",
+          icon: <UserPlus className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/messenger?add=contact", label: "Клиент", icon: "client" }),
+        },
+        {
+          id: "admin-orders",
+          label: "Заказы",
+          hint: "открыть и проверить",
+          icon: <Package className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/orders", label: "Заказы", icon: "orders" }),
+        },
+        {
+          id: "admin-site",
+          label: "Сайт",
+          hint: "страницы и блоки",
+          icon: <LayoutGrid className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/site", label: "Сайт", icon: "site" }),
+        },
+        {
+          id: "admin-tasks",
+          label: "Задачи",
+          hint: "контроль работы",
+          icon: <CheckCircle2 className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/tasks", label: "Задачи", icon: "tasks" }),
+        },
+        {
+          id: "admin-connectors",
+          label: "Связи",
+          hint: "мессенджеры и почта",
+          icon: <Settings2 className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/aray/connectors", label: "Связи", icon: "settings" }),
+        },
+      ]
+    : [
+        {
+          id: "store-pick",
+          label: "Подобрать",
+          hint: productName ? "под этот товар" : "материал под задачу",
+          icon: <Target className="h-4 w-4" />,
+          onSelect: () => openStartAction({
+            type: "prompt",
+            label: "Подобрать",
+            prompt: productName
+              ? `Подбери количество, доставку и следующий шаг для товара ${productName}.`
+              : "Помоги подобрать пиломатериалы под мой проект. Спроси размеры, назначение и бюджет.",
+            icon: "prompt",
+          }),
+          primary: true,
+        },
+        {
+          id: "store-estimate",
+          label: "Рассчитать",
+          hint: "смета и доставка",
+          icon: <ShoppingCart className="h-4 w-4" />,
+          onSelect: () => openStartAction({
+            type: "prompt",
+            label: "Рассчитать",
+            prompt: cartCount > 0
+              ? "Проверь мою корзину, посчитай доставку и подскажи, что можно улучшить."
+              : "Помоги посчитать пиломатериалы и доставку. Сначала уточни размеры и город.",
+            icon: "cart",
+          }),
+        },
+        {
+          id: "store-catalog",
+          label: "Каталог",
+          hint: "товары и цены",
+          icon: <LayoutGrid className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/catalog", label: "Каталог", icon: "catalog" }),
+        },
+        {
+          id: "store-stories",
+          label: "Сторис",
+          hint: "лайв и обзоры",
+          icon: <Video className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/stories", label: "Сторис", icon: "video" }),
+        },
+        {
+          id: "store-delivery",
+          label: "Доставка",
+          hint: "сроки и адрес",
+          icon: <MapPin className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/delivery", label: "Доставка", icon: "delivery" }),
+        },
+        {
+          id: "store-attach",
+          label: "Фото/PDF",
+          hint: "показать Араю",
+          icon: <Paperclip className="h-4 w-4" />,
+          onSelect: openStartAttachment,
+        },
+      ];
 
   const handleCancelConfirmation = useCallback((confirmation: ArayConfirmationDraft) => {
     haptic("light");
@@ -4694,26 +4906,30 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       <AnimatePresence>
         {open && liveActions.length > 0 && (
           <motion.div
-            className="pointer-events-none fixed left-3 right-3 top-3 z-[120] space-y-2 lg:left-auto lg:right-4 lg:top-[calc(64px+0.75rem)] lg:w-[280px]"
-            initial={{ opacity: 0, y: -8 }}
+            className="pointer-events-none fixed left-3 right-3 top-[38svh] z-[400] space-y-2 lg:left-auto lg:right-4 lg:top-[calc(64px+0.75rem)] lg:w-[300px]"
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+            exit={{ opacity: 0, y: 8 }}
             aria-live="polite"
           >
             {liveActions.map((item) => (
-              <motion.div
+              <motion.button
                 key={item.id}
+                type="button"
                 layout
                 initial={{ opacity: 0, x: 12 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 12 }}
-                className="rounded-2xl border border-border bg-card px-3 py-2"
+                disabled={!item.href}
+                onClick={() => handleLiveActionClick(item)}
+                className="pointer-events-auto w-full rounded-2xl border border-border bg-card/95 px-3 py-2 text-left transition-colors enabled:cursor-pointer enabled:hover:border-primary/45 enabled:hover:bg-muted/35 disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                aria-label={item.href ? `Открыть: ${item.label}` : item.label}
               >
                 <div className="flex min-w-0 items-start gap-2">
                   <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <MousePointer2 className="h-3.5 w-3.5" />
                   </span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-bold text-foreground">{item.label}</span>
                     {item.detail && (
                       <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4 text-muted-foreground">
@@ -4721,8 +4937,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       </span>
                     )}
                   </span>
+                  {item.href && <ExternalLink className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
                 </div>
-              </motion.div>
+              </motion.button>
             ))}
           </motion.div>
         )}
@@ -4865,7 +5082,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                 )}
                 {/* Орб-зона — voice-first центральный элемент */}
                 {arayWorkspaceView !== "messenger" && !showMessages && (
-                  <div className="flex flex-col items-center justify-center gap-4 py-6 px-4 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="flex flex-col items-center justify-start gap-4 overflow-y-auto py-6 px-4 animate-in fade-in zoom-in-95 duration-300">
                     {/* Орб — БЕЗ motion.div! CSS transform убивает SVG анимации на мобилке */}
                     <div
                       className="relative cursor-pointer transition-transform duration-150 active:scale-[0.92]"
@@ -4892,6 +5109,18 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       <p className="max-w-[240px] text-center text-[12px] leading-snug" style={{ color: txtSub }}>
                         {voiceNotice}
                       </p>
+                    )}
+
+                    {!speaking && !listening && !voicePreparing && (
+                      <ArayStartPanel
+                        actions={startScreenActions}
+                        isDark={isDark}
+                        primaryColor={primaryColor}
+                        primarySoft={primarySoft}
+                        primaryBorder={primaryBorder}
+                        txt={txt}
+                        txtSub={txtSub}
+                      />
                     )}
 
                     {isAdmin && (
@@ -5297,7 +5526,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex flex-col items-center justify-center gap-5 py-8 px-4 flex-1">
+                    className="flex flex-1 flex-col items-center justify-start gap-5 overflow-y-auto py-8 px-4">
 
                     {/* Большой орб — БЕЗ motion.div! CSS transform убивает SVG анимации на мобилке */}
                     <div
@@ -5324,6 +5553,18 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       <p className="max-w-[250px] text-center text-[12px] leading-snug" style={{ color: txtSub }}>
                         {voiceNotice}
                       </p>
+                    )}
+
+                    {!speaking && !listening && !voicePreparing && (
+                      <ArayStartPanel
+                        actions={startScreenActions}
+                        isDark={isDark}
+                        primaryColor={primaryColor}
+                        primarySoft={primarySoft}
+                        primaryBorder={primaryBorder}
+                        txt={txt}
+                        txtSub={txtSub}
+                      />
                     )}
 
                     {isAdmin && (

@@ -61,6 +61,7 @@ const levels = [
         name: "Protected surface list covers site builder and deploy gates",
         ok: includesAll("docs/ARAY_PROTECTED_SURFACES_2026-05-25.md", [
           "Site builder and multi-site constructor",
+          "one-click store constructor contract",
           "Release/deploy gates",
           "Cart and checkout",
         ]),
@@ -105,6 +106,16 @@ const levels = [
           "status: 409",
         ]),
         detail: "Checkout cannot trust client prices.",
+      },
+      {
+        name: "One-click store constructor source contract exists",
+        ok: includesAll("lib/store-constructor-blueprints.ts", [
+          "STORE_CONSTRUCTOR_BLUEPRINT_VERSION",
+          "ONE_CLICK_STORE_REQUIRED_MODULES",
+          "ONE_CLICK_STORE_REQUIRED_ROUTES",
+          "getOneClickStoreLaunchContract",
+        ]),
+        detail: "New shops must be generated from a shared blueprint, not page-level guesses.",
       },
     ],
   },
@@ -294,6 +305,14 @@ const levels = [
         ok: exists("scripts/deploy-preflight.js") &&
           includesAll("package.json", ["deploy-preflight.js", "quality:full"]),
         detail: "Deploy should run local quality before push.",
+      },
+      {
+        name: "One-click store constructor guard is wired",
+        ok: packageScript("constructor:check") &&
+          includesAll("scripts/aray-quality-gate.js", ["validate-store-constructor-blueprints.js"]) &&
+          includesAll("lib/aray-module-registry.ts", ["constructor.store-builder", "/admin/site/constructor"]) &&
+          exists("app/api/admin/site-constructor/blueprints/route.ts"),
+        detail: "Store constructor architecture must fail quality if the module, route, API or blueprint is broken.",
       },
       {
         name: "Live release smoke exists",

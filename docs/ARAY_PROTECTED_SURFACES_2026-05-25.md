@@ -13,7 +13,7 @@ Purpose: keep working modules stable while launch fixes are added. These areas a
 - CRM and tasks: CRM mobile stages, task queue, client history, orders-to-leads sync.
 - Media and stories: media picker, story filters, story publish/public API.
 - Admin navigation/search: ARAY capsule, section navigation, global admin search overlays.
-- Site builder and multi-site constructor: site/PWA identity must be tenant-aware without breaking PiloRus defaults.
+- Site builder and multi-site constructor: site/PWA identity and the one-click store constructor contract must be tenant-aware without breaking PiloRus defaults.
 - Release/deploy gates: static readiness, smoke routes, quality gate, full build gate.
 
 ## Rules
@@ -23,5 +23,4 @@ Purpose: keep working modules stable while launch fixes are added. These areas a
 - Keep one source of truth for brand assets. PiloRus PWA uses prepared transparent PNG icons from `public/icons`.
 - Public store PWA install stays a simple logo button. Detailed install guidance belongs inside the opened panel.
 - Mobile store header must always show both the PiloRus icon and the PiloRus name.
-- New site-builder work must add tenant-specific behavior without changing the locked PiloRus baseline.
-
+- New site-builder work must add tenant-specific behavior through `lib/store-constructor-blueprints.ts` without changing the locked PiloRus baseline.

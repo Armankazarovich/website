@@ -29,7 +29,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ArayIcon } from "@/components/shared/aray-orb";
-import { allNavItems, getAdminGroupLabel, type NavItem } from "@/components/admin/admin-navigation-registry";
+import { ADMIN_NAV_PRIMARY_SURFACES, allNavItems, getAdminGroupLabel, type NavItem } from "@/components/admin/admin-navigation-registry";
 import { ADMIN_NAV_GROUP_ORDER } from "@/components/admin/admin-nav-structure";
 import {
   getAdminNavigationKeywords,
@@ -352,7 +352,9 @@ function getNavItemLabel(item: NavItem, t: AdminTranslate) {
 function isNavItemVisible(item: NavItem, role: string, disabledModuleIds?: string[]) {
   const roleVisible = !item.roles || item.roles.includes(role);
   const moduleVisible = !item.moduleId || !disabledModuleIds?.includes(item.moduleId);
-  return roleVisible && moduleVisible;
+  const surfaces = item.surfaces || ADMIN_NAV_PRIMARY_SURFACES;
+  const searchVisible = surfaces.includes("headerSearch") || surfaces.includes("searchPanel");
+  return roleVisible && moduleVisible && searchVisible;
 }
 
 function getGroupRank(group: string) {
@@ -458,7 +460,7 @@ export function useAdminSmartSearch({
     [pathname, visibleSections],
   );
   const activeContext = useMemo(
-    () => getAdminNavigationSearchContext({ pathname, role, t, disabledModuleIds }),
+    () => getAdminNavigationSearchContext({ pathname, role, t, disabledModuleIds, surface: "searchPanel" }),
     [disabledModuleIds, pathname, role, t],
   );
 

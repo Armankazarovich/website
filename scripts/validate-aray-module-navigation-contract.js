@@ -49,6 +49,10 @@ const requiredContracts = [
       "/api/admin/notifications/telegram-setup",
     ],
   },
+  {
+    moduleId: "constructor.store-builder",
+    routes: ["/admin/site/constructor", "/api/admin/site-constructor/blueprints"],
+  },
 ];
 
 const errors = [];

@@ -23,6 +23,7 @@ const required = [
   "invoices-documents",
   "delivery-pickup",
   "service-integrations",
+  "one-click-store-constructor",
   "smart-business-map",
   "reviews-reputation",
 ];
@@ -38,12 +39,13 @@ for (const route of [
   "/admin/finance",
   "/admin/delivery",
   "/admin/aray/connectors",
+  "/admin/site/constructor",
   "/admin/reviews",
 ]) {
   if (!source.includes(route)) fail(`Missing admin route in store capability registry: ${route}`);
 }
 
-for (const highRisk of ["arc-loyalty", "online-payments", "invoices-documents", "service-integrations"]) {
+for (const highRisk of ["arc-loyalty", "online-payments", "invoices-documents", "service-integrations", "one-click-store-constructor"]) {
   const pattern = new RegExp(`id:\\s*"${highRisk}"[\\s\\S]*?risk:\\s*"high"`);
   if (!pattern.test(source)) fail(`Capability ${highRisk} must stay high-risk until legal/security review`);
 }
@@ -53,4 +55,3 @@ if (source.toLowerCase().includes("coin")) {
 }
 
 console.log(`[Store Capabilities] passed: ${required.length} capabilities`);
-

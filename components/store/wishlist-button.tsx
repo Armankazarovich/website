@@ -35,6 +35,7 @@ export function WishlistButton({
         type="button"
         onClick={handleClick}
         aria-pressed={isSaved}
+        data-store-wishlist-action
         className={cn(
           "store-action-button store-action-button-inline",
           isSaved && "is-selected",
@@ -53,6 +54,7 @@ export function WishlistButton({
       onClick={handleClick}
       aria-label={isSaved ? "Удалить из избранного" : "Добавить в избранное"}
       aria-pressed={isSaved}
+      data-store-wishlist-action
       className={cn(
         "store-action-button store-action-button-floating",
         size === "sm" ? "h-8 w-8" : "h-9 w-9",

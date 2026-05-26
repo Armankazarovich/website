@@ -698,6 +698,7 @@ function ProfilePanel() {
   const accountNavigationContext = getAdminNavigationSearchContext({
     pathname: pathname || (isStaff ? "/admin" : "/cabinet"),
     role,
+    surface: "accountDrawer",
   });
   const quickActionItems = filterDrawerRows(
     isStaff
@@ -794,7 +795,7 @@ function ProfilePanel() {
       ];
 
   const staffNavigationSections = isStaff
-    ? buildAdminNavigationGroups(role, undefined, ACCOUNT_DRAWER_GROUP_ICONS)
+    ? buildAdminNavigationGroups(role, undefined, ACCOUNT_DRAWER_GROUP_ICONS, undefined, "accountDrawer")
         .map((group) => {
           const items = filterDrawerRows(
             group.items.map((item) => ({

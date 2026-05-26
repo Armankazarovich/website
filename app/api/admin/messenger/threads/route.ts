@@ -267,6 +267,41 @@ function serializeAccountSuggestion(user: any) {
   };
 }
 
+function serializeEmailSuggestion(input: {
+  email: string;
+  name?: string | null;
+  source?: string | null;
+  createdAt?: Date | null;
+}) {
+  const email = cleanText(input.email, 120).toLowerCase();
+  const now = input.createdAt?.toISOString?.() || new Date().toISOString();
+  const name = cleanText(input.name, 120) || email.split("@")[0] || "Почтовый контакт";
+
+  return {
+    id: `email:${email}`,
+    name,
+    phone: null,
+    email,
+    company: "Почта",
+    source: "OTHER",
+    stage: "CONTACTED",
+    value: null,
+    currency: "RUB",
+    comment: `Email: ${email}`,
+    tags: ["email", "mail", "messenger"],
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+    assignee: null,
+    activities: [],
+    activityCount: 0,
+    lastActivityText: `Почтовый контакт${input.source ? `: ${input.source}` : ""}. Нажми, чтобы открыть диалог.`,
+    lastActivityAt: now,
+    commerce: buildEmptyCommerceProfile(),
+    virtualKind: "email",
+  };
+}
+
 const threadInclude = {
   assignee: { select: { id: true, name: true, email: true } },
   activities: {
@@ -340,7 +375,7 @@ export async function GET(req: NextRequest) {
         }
       : where;
 
-  const [recentLeads, directLeads, matchingUsers, openCount] = await Promise.all([
+  const [recentLeads, directLeads, matchingUsers, mailSubscribers, mailOrders, openCount] = await Promise.all([
     prisma.lead.findMany({
       where,
       include: threadInclude,
@@ -378,6 +413,42 @@ export async function GET(req: NextRequest) {
           take: 60,
         })
       : Promise.resolve([]),
+    prisma.newsletterSubscriber.findMany({
+      where: {
+        tenantId,
+        active: true,
+        ...(search
+          ? {
+              OR: [
+                { email: { contains: search, mode: "insensitive" as const } },
+                { name: { contains: search, mode: "insensitive" as const } },
+                { source: { contains: search, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
+      },
+      select: { email: true, name: true, source: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: search ? 80 : 16,
+    }),
+    prisma.order.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        guestEmail: { not: null },
+        ...(search
+          ? {
+              OR: [
+                { guestEmail: { contains: search, mode: "insensitive" as const } },
+                { guestName: { contains: search, mode: "insensitive" as const } },
+              ],
+            }
+          : {}),
+      },
+      select: { guestEmail: true, guestName: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: search ? 80 : 16,
+    }),
     prisma.lead.count({ where: { tenantId, deletedAt: null, stage: { notIn: ["WON", "LOST"] as any } } }),
   ]);
 
@@ -425,6 +496,31 @@ export async function GET(req: NextRequest) {
       normalizePhoneTail(lead.phone) ? `phone:${normalizePhoneTail(lead.phone)}` : "",
     ]).filter(Boolean),
   );
+  const emailSuggestions = Array.from(
+    new Map(
+      [
+        ...mailOrders.flatMap((order) => {
+          const email = cleanText(order.guestEmail, 120).toLowerCase();
+          return email
+            ? [[email, { email, name: order.guestName, source: "заказ", createdAt: order.createdAt }] as const]
+            : [];
+        }),
+        ...mailSubscribers.flatMap((subscriber) => {
+          const email = cleanText(subscriber.email, 120).toLowerCase();
+          return email
+            ? [[email, { email, name: subscriber.name, source: subscriber.source || "почтовая база", createdAt: subscriber.createdAt }] as const]
+            : [];
+        }),
+      ].filter(([email]) => !leadIdentityKeys.has(`email:${email}`)),
+    ).values(),
+  )
+    .filter((item) =>
+      search
+        ? textMatchesSearch([item.email, item.name, item.source].filter(Boolean).join(" "), search)
+        : true,
+    )
+    .slice(0, search ? 12 : 8)
+    .map(serializeEmailSuggestion);
   const accountSuggestions = search
     ? matchingUsers
         .filter((user) => {
@@ -444,6 +540,7 @@ export async function GET(req: NextRequest) {
     : [];
   const threadResults = [
     ...leads.map((lead) => serializeThread(lead, commerceProfiles.get(lead.id))),
+    ...emailSuggestions,
     ...accountSuggestions,
   ];
 

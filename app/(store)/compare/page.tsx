@@ -119,7 +119,7 @@ export default function ComparePage() {
   }, [hydrateCompare]);
 
   return (
-    <div className="container store-mobile-safe-bottom py-6 md:py-8">
+    <div data-compare-page className="container store-mobile-safe-bottom py-6 md:py-8">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
           <BackButton href="/catalog" label="Каталог" className="mb-0 mt-1 shrink-0" />
@@ -148,7 +148,7 @@ export default function ComparePage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="store-empty-action-card mx-auto flex max-w-3xl flex-col items-center justify-center rounded-2xl p-6 text-center sm:p-8">
+        <div data-compare-empty className="store-empty-action-card mx-auto flex max-w-3xl flex-col items-center justify-center rounded-2xl p-6 text-center sm:p-8">
           <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <GitCompareArrows className="h-8 w-8" />
           </div>
@@ -166,19 +166,20 @@ export default function ComparePage() {
         <div className="space-y-6">
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {items.map((item) => (
-              <ProductCard
-                key={item.id}
-                id={item.id}
-                slug={item.slug}
-                name={item.name}
-                category={item.category}
-                shortDescription={item.shortDescription}
-                description={item.description}
-                images={item.images}
-                cardTags={item.cardTags}
-                saleUnit={item.saleUnit}
-                variants={item.variants}
-              />
+              <div key={item.id} data-compare-item={item.id}>
+                <ProductCard
+                  id={item.id}
+                  slug={item.slug}
+                  name={item.name}
+                  category={item.category}
+                  shortDescription={item.shortDescription}
+                  description={item.description}
+                  images={item.images}
+                  cardTags={item.cardTags}
+                  saleUnit={item.saleUnit}
+                  variants={item.variants}
+                />
+              </div>
             ))}
           </div>
 

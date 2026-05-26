@@ -44,12 +44,69 @@ check(
   "The main quality gate must run architecture levels and cart/checkout protection.",
 );
 check(
+  "One-click store constructor contract is wired",
+  Boolean(packageJson.scripts?.["constructor:check"]) &&
+    exists("lib/store-constructor-blueprints.ts") &&
+    exists("app/admin/site/constructor/page.tsx") &&
+    exists("app/api/admin/site-constructor/blueprints/route.ts") &&
+    read("scripts/aray-quality-gate.js").includes("validate-store-constructor-blueprints.js") &&
+    includesAll(read("lib/store-constructor-blueprints.ts"), [
+      "STORE_CONSTRUCTOR_BLUEPRINT_VERSION",
+      "ONE_CLICK_STORE_REQUIRED_MODULES",
+      "ONE_CLICK_STORE_REQUIRED_ROUTES",
+      "ONE_CLICK_STORE_QUALITY_GATES",
+      "getOneClickStoreLaunchContract",
+      "constructor.store-builder",
+      "business.aray-messenger",
+      "business.terminal",
+    ]) &&
+    includesAll(read("lib/aray-module-registry.ts"), [
+      'id: "constructor.store-builder"',
+      'category: "constructor"',
+      '"/admin/site/constructor"',
+      '"/api/admin/site-constructor/blueprints"',
+    ]) &&
+    read("lib/store-capability-registry.ts").includes('id: "one-click-store-constructor"'),
+  "The site builder needs a real blueprint contract, module passport, API route and quality guard before any one-click launch work.",
+);
+check(
   "Browser cart guard is wired into deploy",
   Boolean(packageJson.scripts?.["browser:cart:check"]) &&
     exists("scripts/validate-browser-cart-flow.js") &&
     read("scripts/deploy-preflight.js").includes("browser:cart:check") &&
-    includesAll(read("scripts/validate-browser-cart-flow.js"), ["data-product-seller-panel", "data-product-channel"]),
-  "Deploy must include a real browser add-to-cart/cart-page/product-page scenario, not only API checks.",
+    includesAll(read("scripts/validate-browser-cart-flow.js"), ["data-product-aray-action", "data-product-share", "hides bulky duplicate contact form"]),
+  "Deploy must include a real browser add-to-cart/cart-page/product-page scenario and keep product contact routed through the compact ARAY entry.",
+);
+check(
+  "Browser stories responsive guard is available",
+  Boolean(packageJson.scripts?.["browser:stories:check"]) &&
+    exists("scripts/validate-browser-stories-responsive.js") &&
+    read("scripts/deploy-preflight.js").includes("browser:stories:check") &&
+    includesAll(read("scripts/validate-browser-stories-responsive.js"), [
+      "data-store-stories-card",
+      "data-store-stories-side-tab",
+      "data-store-stories-compact-trigger",
+      "390",
+      "900",
+      "1366",
+    ]),
+  "Stories widget must have a real browser responsive check for mobile, narrow desktop and wide desktop.",
+);
+check(
+  "Browser mobile store guard is wired into deploy",
+  Boolean(packageJson.scripts?.["browser:mobile:check"]) &&
+    Boolean(packageJson.scripts?.["browser:mobile:check:prod"]) &&
+    exists("scripts/validate-browser-store-mobile-flow.js") &&
+    read("scripts/deploy-preflight.js").includes("browser:mobile:check") &&
+    includesAll(read("scripts/validate-browser-store-mobile-flow.js"), [
+      "data-add-to-cart",
+      "data-cart-qty-plus",
+      "data-cart-qty-minus",
+      "data-store-compare-action",
+      "data-store-wishlist-action",
+      "data-store-selection-dock",
+    ]),
+  "Deploy must include a real mobile touch scenario for cart, quantity, compare, and wishlist.",
 );
 check(
   "Text encoding guard is wired",
@@ -110,6 +167,15 @@ check(
     !sitePwaIcon.includes("background: { r: 82"),
   "PiloRus PWA icon should be the prepared PNG, not a generated colored tile.",
 );
+check(
+  "PWA icon guard is wired",
+  Boolean(packageJson.scripts?.["pwa:icons"]) &&
+    Boolean(packageJson.scripts?.["pwa:check"]) &&
+    exists("scripts/generate-pilorus-pwa-icons.js") &&
+    exists("scripts/validate-pwa-icons.js") &&
+    read("scripts/aray-quality-gate.js").includes("validate-pwa-icons.js"),
+  "PWA icon generation and validation must be part of the standard quality gate.",
+);
 
 const storePwaInstall = read("components/store/pwa-install.tsx");
 check(
@@ -127,7 +193,7 @@ check(
 const pwaContext = read("lib/pwa-install-context.ts");
 check(
   "PWA icon cache version is bumped",
-  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-20260525"/.test(pwaContext),
+  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-20260526"/.test(pwaContext),
   "Mobile PWA should request the fresh icon version after logo changes.",
 );
 
@@ -173,6 +239,15 @@ check(
   "Catalog cards, product variant selector, and variant cards must share add-to-cart animation wiring.",
 );
 check(
+  "Product cards avoid cart hydration mismatch",
+  includesAll(read("components/store/product-card.tsx"), [
+    "portalReady && cartItemId",
+    "portalReady && selectedVariant",
+    "data-store-card-cart-quantity",
+  ]),
+  "Catalog cards must not swap server add-buttons for client cart steppers before hydration completes.",
+);
+check(
   "Cart, calculator, and checkout share one contract",
   includesAll(read("store/cart.ts"), ["if (value == null) return null", "getInitialCartItems", "currentItems.length > 0", "writeCartItemsToStorage(currentItems)"]) &&
     includesAll(read("app/api/calculator/products/route.ts"), ["getPublicVariantsFilter", "images: { isEmpty: false }"]) &&
@@ -202,11 +277,12 @@ const contactRoute = read("app/api/contact/route.ts");
 const arayWidget = read("components/store/aray-widget.tsx");
 const arayNavigation = read("lib/aray-navigation.ts");
 check(
-  "Product page has smart seller controls",
-  includesAll(productPage, ["ProductSellerPanel", "ProductShareButton", "productSku"]) &&
-    includesAll(productActions, ["ProductShareButton", "ProductSellerPanel", "CHANNELS", "Telegram", "WhatsApp", "Zangi", "Почта", "data-product-seller-panel"]) &&
+  "Product page uses compact shared ARAY entry",
+  includesAll(productPage, ["ProductArayButton", "ProductShareButton", "productSku"]) &&
+    !productPage.includes("ProductSellerPanel") &&
+    includesAll(productActions, ["ProductArayButton", "data-product-aray-action", "dispatchArayPrompt", "ProductShareButton"]) &&
     includesAll(contactRoute, ["source === \"PRODUCT\"", "productTitle", "productSku", "Укажите телефон, email или вопрос"]),
-  "Product pages need share, CRM lead capture, and a first omnichannel ARAY entry. The SKU/tag strip is queued for the constructor, not shown live.",
+  "Product pages should open the shared ARAY widget instead of rendering a second large contact center under the buy controls.",
 );
 check(
   "AR Phone has external channel hub",
@@ -233,9 +309,14 @@ check(
 );
 
 const embeddedMessenger = read("components/store/aray-embedded-messenger.tsx");
+const adminMessengerPage = read("app/admin/messenger/page.tsx");
+const adminMessengerHub = read("app/admin/messenger/messenger-hub-client.tsx");
 check(
   "ARAY messenger has one action center",
   includesAll(embeddedMessenger, [
+    "data-aray-embedded-messenger",
+    "data-aray-phone-number",
+    "data-aray-messenger-tools",
     "MessengerActionTile",
     "createTask",
     "prepareVideoCall",
@@ -243,6 +324,12 @@ check(
     "AR Phone",
   ]),
   "Messenger must connect chat, ARAY, tasks, AR Phone, and video from one panel.",
+);
+check(
+  "Admin messenger uses embedded ARAY workspace",
+  includesAll(adminMessengerPage, ["AdminMessengerHubClient"]) &&
+    includesAll(adminMessengerHub, ["ArayEmbeddedMessenger", "__aray_dial__", "initialLeadId", "aray:prompt"]),
+  "/admin/messenger must open the same ARAY work center instead of a competing page-only messenger.",
 );
 check(
   "ARAY messenger protects long links",

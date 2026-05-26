@@ -148,6 +148,7 @@ export function CompareDock() {
         type="button"
         onClick={() => setOpen(true)}
         whileTap={{ scale: 0.96 }}
+        data-store-selection-dock
         className="fixed right-0 top-1/2 z-[49] flex -translate-y-1/2 flex-col items-center gap-1.5 rounded-l-2xl border-y border-l border-border bg-card/95 px-1.5 py-2.5 text-foreground shadow-xl sm:hidden"
         aria-label="Открыть мой выбор"
       >
@@ -188,6 +189,7 @@ export function CompareDock() {
               onClick={() => setOpen(false)}
             />
             <motion.aside
+              data-store-selection-panel
               className="fixed inset-y-0 right-0 z-[71] flex w-[min(88vw,360px)] flex-col overflow-hidden rounded-l-3xl border-l border-border bg-card text-card-foreground shadow-2xl sm:hidden"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}

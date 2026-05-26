@@ -52,7 +52,7 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
   ],
   settings: [
     { label: "Бизнес и роли", hrefs: ["/admin/business/settings", "/admin/staff"] },
-    { label: "Сайт и оформление", hrefs: ["/admin/site", "/admin/appearance"] },
+    { label: "Сайт и оформление", hrefs: ["/admin/site", "/admin/site/constructor", "/admin/appearance"] },
     { label: "ARAY и модули", hrefs: ["/admin/aray"] },
     { label: "Рабочие места", hrefs: ["/admin/terminals"] },
     { label: "Система", hrefs: ["/admin/settings", "/admin/health"] },

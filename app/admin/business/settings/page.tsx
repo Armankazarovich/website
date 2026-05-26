@@ -22,6 +22,7 @@ const settingGroups = [
     description: "Главная, блоки сайта, баннеры, тексты, SEO и внешний вид.",
     items: [
       { title: "Настройки сайта", href: "/admin/site", icon: Globe, text: "Контакты, SEO, аналитика, футер, виджеты." },
+      { title: "Конструктор магазина", href: "/admin/site/constructor", icon: Wand2, text: "Паспорт запуска, тип бизнеса, PWA, каталог, Арай и преддеплой." },
       { title: "Оформление", href: "/admin/appearance", icon: Brush, text: "Палитра, карточки, мобильный вид, ARAY на сайте." },
       { title: "Медиабиблиотека", href: "/admin/media", icon: Images, text: "Фото, документы, alt-тексты и бизнес-медиа." },
     ],
@@ -71,9 +72,9 @@ export default function BusinessSettingsPage() {
       <div className="admin-alert admin-alert-info flex items-start gap-3 p-4 text-sm leading-6">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
-          <p className="font-semibold text-foreground">ARAY-мастер для автозаполнения уже зафиксирован в roadmap.</p>
+          <p className="font-semibold text-foreground">ARAY-мастер для автозаполнения закреплен в конструкторе.</p>
           <p className="mt-1 text-muted-foreground">
-            Сейчас эта страница собирает живые ручные настройки сайта, каталога, склада и терминала. Связка с будущим конструктором сайта остается следующим шагом, без ложной кнопки “готово”.
+            Сейчас ручные настройки остаются рядом, а новый раздел «Конструктор магазина» держит контракт запуска: тип бизнеса, тенант, каталог, Арай, PWA и проверки перед деплоем.
           </p>
         </div>
       </div>

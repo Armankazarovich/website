@@ -13,7 +13,7 @@ import { ProductGallery } from "@/components/store/product-gallery";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { CompareButton } from "@/components/store/compare-button";
 import { WishlistButton } from "@/components/store/wishlist-button";
-import { ProductSellerPanel, ProductShareButton } from "@/components/store/product-page-actions";
+import { ProductArayButton, ProductShareButton } from "@/components/store/product-page-actions";
 import type { CompareItem } from "@/store/compare";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
@@ -166,16 +166,6 @@ export default async function ProductPage({ params }: Props) {
   const firstPhoneLink = phonesList[0]?.tel || getSetting(siteSettings, "phone_link");
   const firstPhoneDisplay = phonesList[0]?.display || getSetting(siteSettings, "phone");
 
-  // Messenger settings
-  const whatsappEnabled = getSetting(siteSettings, "whatsapp_enabled") === "true";
-  const whatsappNumber = getSetting(siteSettings, "whatsapp_number");
-  const waMessage = `Здравствуйте! Хочу заказать: ${product.name}\nhttps://pilo-rus.ru/product/${product.slug}`;
-  const telegramEnabled = getSetting(siteSettings, "telegram_enabled") === "true";
-  const telegramUsername = getSetting(siteSettings, "telegram_username");
-  const tgMessage = getSetting(siteSettings, "telegram_message") || `Здравствуйте! Хочу заказать: ${product.name}`;
-  const telegramLink = telegramUsername
-    ? `https://t.me/${telegramUsername.replace("@", "")}?text=${encodeURIComponent(tgMessage)}`
-    : null;
   const intro = productIntro(product.shortDescription || product.description);
   const productEditTarget = getProductEditTarget(product.id);
   const relatedEditTarget = getPublicEditTarget("product.related");
@@ -333,6 +323,12 @@ export default async function ProductPage({ params }: Props) {
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <CompareButton item={compareItem} mode="inline" />
               <WishlistButton item={compareItem} mode="inline" />
+              <ProductArayButton
+                productName={product.name}
+                productSku={sku}
+                productUrl={productUrl}
+                category={product.category.name}
+              />
               <ProductShareButton title={product.name} url={productUrl} />
               {isAdmin && (
                 <Link
@@ -390,18 +386,6 @@ export default async function ProductPage({ params }: Props) {
               lowStockThreshold: v.lowStockThreshold,
             }))}
             phoneLink={firstPhoneLink}
-          />
-
-          <ProductSellerPanel
-            productName={product.name}
-            productSlug={product.slug}
-            productSku={sku}
-            productUrl={productUrl}
-            category={product.category.name}
-            phoneDisplay={firstPhoneDisplay}
-            phoneLink={firstPhoneLink}
-            whatsappUrl={whatsappEnabled ? `https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(waMessage)}` : null}
-            telegramUrl={telegramEnabled ? telegramLink : null}
           />
 
           {/* Calculator link */}

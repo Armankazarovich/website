@@ -466,6 +466,7 @@ function assertModuleNavigationContracts(registrySource, modelSource, mobileSour
     "business.role-os",
     "business.terminal",
     "core.notifications",
+    "constructor.store-builder",
   ];
 
   for (const moduleId of requiredModuleContracts) {

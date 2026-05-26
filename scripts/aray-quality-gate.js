@@ -127,6 +127,7 @@ run("Section approval protocol guard", "node", ["scripts/validate-section-approv
 run("Public edit target registry guard", "node", ["scripts/validate-public-edit-targets.js"]);
 run("ARAY service package guard", "node", ["scripts/validate-aray-service-packages.js"]);
 run("Store capability registry guard", "node", ["scripts/validate-store-capabilities.js"]);
+run("Store constructor blueprint guard", "node", ["scripts/validate-store-constructor-blueprints.js"]);
 run("Module registry validation", "node", ["scripts/validate-aray-modules.js"]);
 run("Module navigation foundation check", "node", ["scripts/validate-aray-module-navigation-contract.js"]);
 run("Dynamic role OS guard", "node", ["scripts/validate-dynamic-role-os.js"]);
@@ -135,6 +136,7 @@ run("Admin UI integrity guard", "node", ["scripts/validate-admin-ui-integrity.js
 run("Admin responsive guard", "node", ["scripts/validate-admin-responsive.js"]);
 run("Admin performance guard", "node", ["scripts/validate-admin-performance.js"]);
 run("Cart and checkout flow guard", "node", ["scripts/validate-cart-checkout-flow.js"]);
+run("PWA icon guard", "node", ["scripts/validate-pwa-icons.js"]);
 run("Release readiness guard", "node", ["scripts/validate-release-readiness.js"]);
 run("Store stories guard", "node", ["scripts/validate-store-stories.js"]);
 run("Content tools guard", "node", ["scripts/validate-content-tools.js"]);

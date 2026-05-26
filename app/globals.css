@@ -2104,7 +2104,14 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .store-stock-badge.is-in-stock {
-  border-color: hsl(35 18% 72% / 0.78);
+  border-color: hsl(150 72% 28% / 0.88);
+  background:
+    linear-gradient(180deg, hsl(151 71% 45%) 0%, hsl(148 76% 34%) 100%);
+  color: hsl(0 0% 100%);
+  box-shadow:
+    inset 0 0 0 1px hsl(0 0% 100% / 0.18),
+    inset 0 1px 0 hsl(0 0% 100% / 0.28),
+    0 10px 20px -14px hsl(148 70% 24% / 0.86);
 }
 
 .store-stock-badge.is-low-stock,
@@ -2128,24 +2135,31 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .store-stock-badge.is-in-stock .store-stock-dot {
+  background: hsl(0 0% 100%);
+  box-shadow:
+    0 0 0 1px hsl(0 0% 100% / 0.55),
+    0 0 0 3px hsl(0 0% 100% / 0.15);
+}
+
+.store-stock-badge.is-in-stock .store-stock-dot {
   animation: store-stock-live-pulse 2.15s ease-out infinite;
 }
 
 @keyframes store-stock-live-pulse {
   0% {
     box-shadow:
-      0 0 0 1px hsl(0 0% 100% / 0.92),
-      0 0 0 0 hsl(150 66% 45% / 0.42);
+      0 0 0 1px hsl(0 0% 100% / 0.55),
+      0 0 0 0 hsl(0 0% 100% / 0.42);
   }
   70% {
     box-shadow:
-      0 0 0 1px hsl(0 0% 100% / 0.92),
-      0 0 0 6px hsl(150 66% 45% / 0);
+      0 0 0 1px hsl(0 0% 100% / 0.55),
+      0 0 0 6px hsl(0 0% 100% / 0);
   }
   100% {
     box-shadow:
-      0 0 0 1px hsl(0 0% 100% / 0.92),
-      0 0 0 0 hsl(150 66% 45% / 0);
+      0 0 0 1px hsl(0 0% 100% / 0.55),
+      0 0 0 0 hsl(0 0% 100% / 0);
   }
 }
 
@@ -4394,6 +4408,17 @@ button, a, [role="button"], input, select, textarea {
     inset 0 0 0 1px hsl(0 0% 100% / 0.06),
     inset 0 1px 0 hsl(0 0% 100% / 0.12),
     0 10px 22px -18px hsl(0 0% 0% / 0.88);
+}
+
+.dark .store-stock-badge.is-in-stock {
+  border-color: hsl(150 68% 40% / 0.9);
+  background:
+    linear-gradient(180deg, hsl(151 68% 43%) 0%, hsl(148 74% 32%) 100%);
+  color: hsl(0 0% 100%);
+  box-shadow:
+    inset 0 0 0 1px hsl(0 0% 100% / 0.16),
+    inset 0 1px 0 hsl(0 0% 100% / 0.24),
+    0 10px 24px -14px hsl(148 72% 26% / 0.75);
 }
 
 .dark .store-stock-badge.is-low-stock,

@@ -33,6 +33,7 @@ const requiredIds = [
   "business.role-os",
   "finance.wallet-ledger",
   "marketplace.marketplace",
+  "constructor.store-builder",
   "core.aray-voice",
   "core.notifications",
 ];
@@ -43,6 +44,9 @@ const requiredFiles = [
   "app/admin/aray/modules/page.tsx",
   "app/api/admin/aray/modules/route.ts",
   "docs/aray-module-system-law-2026-05-07.md",
+  "lib/store-constructor-blueprints.ts",
+  "app/admin/site/constructor/page.tsx",
+  "app/api/admin/site-constructor/blueprints/route.ts",
 ];
 
 function fail(message) {

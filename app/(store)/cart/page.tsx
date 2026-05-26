@@ -456,11 +456,12 @@ export default function CartPage() {
                           parseFloat((item.quantity - (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
                           )
                       }
+                      data-cart-qty-minus
                       className="store-quantity-button is-minus"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="store-quantity-value">
+                    <span data-cart-qty-value className="store-quantity-value">
                       {item.unitType === "CUBE"
                         ? item.quantity.toFixed(1)
                         : item.quantity}{" "}
@@ -474,6 +475,7 @@ export default function CartPage() {
                           parseFloat((item.quantity + (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
                           )
                       }
+                      data-cart-qty-plus
                       className="store-quantity-button"
                     >
                       <Plus className="w-3 h-3" />

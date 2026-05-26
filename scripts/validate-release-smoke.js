@@ -15,7 +15,7 @@ const routes = [
   { label: "Stories", path: "/stories", statuses: [200] },
   { label: "Services", path: "/services", statuses: [200] },
   { label: "PWA manifest", path: "/api/pwa/manifest?app=pilorus-catalog", statuses: [200], contentType: "json" },
-  { label: "PWA site icon", path: "/api/pwa/site-icon?s=192&v=site-brand-20260525", statuses: [200], contentType: "image/png" },
+  { label: "PWA site icon", path: "/api/pwa/site-icon?s=192&v=site-brand-20260526", statuses: [200], contentType: "image/png" },
   { label: "ARAY PWA icon", path: "/api/pwa/icon?s=192", statuses: [200], contentType: "image/png" },
   { label: "Public stories API", path: "/api/stories", statuses: [200] },
   { label: "Admin CRM auth gate", path: "/admin/crm", statuses: [200, 302, 307, 308] },

@@ -94,6 +94,13 @@ function isSupportedImageMime(mimeType?: string) {
   return ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(mimeType || "");
 }
 
+function isSupportedPdfAttachment(file: IncomingAttachment) {
+  return (
+    file.note === "pdf-document-ready" &&
+    (file.mimeType === "application/pdf" || file.name?.toLowerCase().endsWith(".pdf"))
+  );
+}
+
 function getDataUrlPayload(dataUrl?: string) {
   if (!dataUrl) return null;
   const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
@@ -147,6 +154,21 @@ function buildAttachmentContentBlocks(text: string, attachments: IncomingAttachm
       continue;
     }
 
+    if (isSupportedPdfAttachment(file)) {
+      const payload = getDataUrlPayload(file.dataUrl);
+      if (payload?.data && payload.mediaType === "application/pdf") {
+        blocks.push({
+          type: "document",
+          source: { type: "base64", media_type: "application/pdf", data: payload.data },
+        });
+        blocks.push({
+          type: "text",
+          text: `\n\n[PDF-документ: ${file.name}. Прочитай документ, извлеки важные данные, таблицы и условия. Если человек просит создать заказ, счет, КП, задачу или изменить данные, сначала подготовь черновик и попроси подтверждение.]`,
+        });
+        continue;
+      }
+    }
+
     if (file.kind === "audio") {
       blocks.push({
         type: "text",
@@ -173,7 +195,7 @@ function buildAttachmentContentBlocks(text: string, attachments: IncomingAttachm
 
     blocks.push({
       type: "text",
-      text: `\n\n[Файл приложен: ${file.name}, тип ${file.mimeType}. ${file.note === "pdf-text-extraction-not-enabled-yet" ? "PDF пока виден как файл без извлечения текста: попроси прислать фото страницы или текст, если нужно прочитать содержимое." : "Содержимое файла пока не извлечено автоматически."}]`,
+      text: `\n\n[Файл приложен: ${file.name}, тип ${file.mimeType}. ${file.note === "pdf-too-large-for-inline-reading" ? "PDF большой для прямого чтения в этом запросе: попроси прислать нужные страницы отдельными файлами или фото." : "Содержимое файла пока не извлечено автоматически."}]`,
     });
   }
 

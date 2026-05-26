@@ -138,7 +138,7 @@ export function AdminNavRail({ role, disabledModuleIds }: Props) {
 
   // ── Фильтрация по роли + группировка ──
   const groups = useMemo<Group[]>(
-    () => buildAdminNavigationGroups(role, t, GROUP_ICONS, disabledModuleIds).map(({ key, label, icon, items }) => ({
+    () => buildAdminNavigationGroups(role, t, GROUP_ICONS, disabledModuleIds, "desktopRail").map(({ key, label, icon, items }) => ({
       key,
       label,
       icon,

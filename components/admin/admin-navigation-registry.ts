@@ -145,7 +145,7 @@ export const allNavItems: NavItem[] = [
 
   { href: "/admin/orders/new", label: "Терминал", badge: "Бета", icon: Receipt, roles: ALL_STAFF, group: "sales", groupKey: "sales", section: "terminal", moduleId: "business.terminal", mobilePriority: 10, surfaces: ADMIN_NAV_MOBILE_DOCK_SURFACES },
   { href: "/admin/orders", label: "Заказы", labelKey: "orders", icon: ShoppingBag, roles: ALL_STAFF, group: "sales", section: "orders", moduleId: "business.orders", mobilePriority: 20 },
-  { href: "/admin/messenger", label: "Мессенджер", icon: MessageCircle, roles: ALL_STAFF, group: "sales", section: "messenger", moduleId: "business.aray-messenger", mobilePriority: 25, surfaces: ADMIN_NAV_MOBILE_DOCK_SURFACES },
+  { href: "/admin/messenger", label: "Мессенджер", icon: MessageCircle, roles: ALL_STAFF, group: "sales", section: "messenger", moduleId: "business.aray-messenger", surfaces: ["direct", "aray"] },
   { href: "/admin/delivery", label: "Доставка", labelKey: "delivery", icon: Truck, roles: [SA, "ADMIN", "MANAGER", "COURIER"], group: "sales", section: "delivery", mobilePriority: 30 },
   { href: "/admin/clients", label: "Клиенты", labelKey: "clients", icon: UserCircle, roles: [SA, "ADMIN", "MANAGER"], group: "sales", section: "clients" },
   { href: "/admin/crm", label: "CRM / Лиды", labelKey: "crm", icon: Target, roles: [SA, "ADMIN", "MANAGER", "SELLER"], group: "sales", section: "crm" },
@@ -166,6 +166,7 @@ export const allNavItems: NavItem[] = [
   { href: "/admin/import", label: "Импорт", labelKey: "import_export", icon: FileDown, roles: [SA, "ADMIN", "MANAGER", "WAREHOUSE"], group: "products", section: "import" },
   { href: "/admin/business/settings", label: "Роли и бизнес", icon: Settings, roles: [SA, "ADMIN", "MANAGER"], group: "settings", section: "business-settings", moduleId: "business.role-os" },
   { href: "/admin/site", label: "Сайт", labelKey: "site_settings", icon: Globe, roles: [SA, "ADMIN"], group: "settings", section: "site" },
+  { href: "/admin/site/constructor", label: "Конструктор магазина", icon: Globe, roles: [SA, "ADMIN"], group: "settings", section: "site", moduleId: "constructor.store-builder" },
   { href: "/admin/appearance", label: "Оформление", labelKey: "appearance", icon: Palette, roles: [SA, "ADMIN"], group: "settings", section: "appearance" },
 
   { href: "/admin/promotion", label: "Реклама / Direct", labelKey: "promotion", icon: BarChart2, roles: [SA, "ADMIN", "MANAGER"], group: "marketing", groupKey: "marketing", section: "promotion" },
@@ -264,6 +265,17 @@ export const ADMIN_ROUTE_CLASSIFICATIONS: Record<string, AdminRouteClassificatio
     parentHref: "/admin/aray",
     reason: "module control center for passports, dependencies, permissions and ARAY skills",
     surfaces: ["direct", "searchPanel", "aray"],
+  },
+  "/api/admin/site-constructor/blueprints": {
+    href: "/api/admin/site-constructor/blueprints",
+    label: "Store constructor blueprints API",
+    kind: "utility",
+    group: "settings",
+    roles: [SA, "ADMIN"],
+    moduleId: "constructor.store-builder",
+    parentHref: "/admin/site/constructor",
+    reason: "blueprint contract for one-click store creation",
+    surfaces: ["direct", "aray"],
   },
   "/admin/orders/[id]": {
     href: "/admin/orders/[id]",

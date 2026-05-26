@@ -409,31 +409,31 @@ async function runBrowserFlow(browserPath) {
     );
 
     await navigate(client, `${baseUrl}${productHref}`);
-    await waitForCondition(client, "document.querySelector('[data-product-seller-panel]') !== null", 20000);
+    await waitForCondition(client, "document.querySelector('[data-product-aray-action]') !== null", 20000);
     const productPageState = await client.evaluate(`(${() => ({
-      sellerPanel: Boolean(document.querySelector("[data-product-seller-panel]")),
+      arayButton: Boolean(document.querySelector("[data-product-aray-action]")),
       shareButton: Boolean(document.querySelector("[data-product-share]")),
-      channels: Array.from(document.querySelectorAll("[data-product-channel]"))
-        .map((node) => node.getAttribute("data-product-channel"))
-        .filter(Boolean),
+      phoneLink: Boolean(document.querySelector('a[href^="tel:"]')),
+      sellerPanel: Boolean(document.querySelector("[data-product-seller-panel]")),
+      channelCount: document.querySelectorAll("[data-product-channel]").length,
       requestMessage: Boolean(document.querySelector("[data-product-request-message]")),
       requestContact: Boolean(document.querySelector("[data-product-request-contact]")),
       requestSubmit: Boolean(document.querySelector("[data-product-request-submit]")),
       text: document.body.innerText.slice(0, 4000),
     })})()`);
     check(
-      "Product page has seller and sharing controls",
-      productPageState.sellerPanel &&
-        productPageState.shareButton &&
-        productPageState.requestMessage &&
-        productPageState.requestContact &&
-        productPageState.requestSubmit,
-      `seller: ${productPageState.sellerPanel}, share: ${productPageState.shareButton}, form: ${productPageState.requestMessage}/${productPageState.requestContact}/${productPageState.requestSubmit}`,
+      "Product page has compact ARAY and sharing controls",
+      productPageState.arayButton && productPageState.shareButton && productPageState.phoneLink,
+      `aray: ${productPageState.arayButton}, share: ${productPageState.shareButton}, phone: ${productPageState.phoneLink}`,
     );
     check(
-      "Product page exposes omnichannel choices",
-      ["aray", "telegram", "whatsapp", "email", "phone", "zangi"].every((channel) => productPageState.channels.includes(channel)),
-      `channels: ${productPageState.channels.join(", ")}`,
+      "Product page hides bulky duplicate contact form",
+      !productPageState.sellerPanel &&
+        productPageState.channelCount === 0 &&
+        !productPageState.requestMessage &&
+        !productPageState.requestContact &&
+        !productPageState.requestSubmit,
+      `seller: ${productPageState.sellerPanel}, channels: ${productPageState.channelCount}, form: ${productPageState.requestMessage}/${productPageState.requestContact}/${productPageState.requestSubmit}`,
     );
   } finally {
     await client?.close();

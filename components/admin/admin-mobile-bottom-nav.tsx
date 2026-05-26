@@ -259,7 +259,7 @@ export function AdminMobileBottomNav({
   const pendingStaff: Array<{ id: string; name?: string; email?: string }> = [];
 
   const navGroups = useMemo<AdminNavigationGroup[]>(
-    () => buildAdminNavigationGroups(role, t, MOBILE_GROUP_ICONS, disabledModuleIds),
+    () => buildAdminNavigationGroups(role, t, MOBILE_GROUP_ICONS, disabledModuleIds, "mobileMenu"),
     [disabledModuleIds, role, t],
   );
   const activeNavItem = useMemo(() => {

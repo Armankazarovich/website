@@ -36,6 +36,14 @@ type ProductSmartSummaryProps = {
   tags: string[];
 };
 
+type ProductArayButtonProps = {
+  productName: string;
+  productSku: string;
+  productUrl: string;
+  category: string;
+  className?: string;
+};
+
 type ProductSellerPanelProps = {
   productName: string;
   productSlug: string;
@@ -127,6 +135,46 @@ export function ProductShareButton({ title, url, className }: ProductShareButton
     >
       {copied ? <CheckCircle2 className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
       {copied ? "Скопировано" : "Поделиться"}
+    </button>
+  );
+}
+
+export function ProductArayButton({
+  productName,
+  productSku,
+  productUrl,
+  category,
+  className,
+}: ProductArayButtonProps) {
+  const askAray = () => {
+    const context = [
+      `Товар: ${productName}`,
+      `Артикул: ${productSku}`,
+      `Категория: ${category}`,
+      `Ссылка: ${absoluteProductUrl(productUrl)}`,
+    ].join("\n");
+
+    dispatchArayPrompt({
+      text: [
+        "Открой единый ARAY-виджет и помоги клиенту по товару ПилоРус.",
+        context,
+        "Спроси коротко: нужен объем, размер, доставка или оформление заказа.",
+      ].join("\n\n"),
+      displayText: "Спросить Арая по товару",
+      context,
+    });
+    trackArayMetrikaGoal("product_aray_open", { product: productName, sku: productSku });
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={askAray}
+      data-product-aray-action
+      className={cn("store-action-button store-action-button-inline", className)}
+    >
+      <Bot className="h-4 w-4" />
+      Спросить Арая
     </button>
   );
 }

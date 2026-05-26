@@ -5,8 +5,10 @@ import { Plus, Sparkles } from "lucide-react";
 import { ArayIcon } from "@/components/shared/aray-orb";
 import {
   ALL_STAFF,
+  ADMIN_NAV_PRIMARY_SURFACES,
   allNavItems,
   getAdminGroupLabel,
+  type AdminNavigationSurface,
   type NavItem,
 } from "@/components/admin/admin-navigation-registry";
 import {
@@ -264,6 +266,15 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     searchHint: "Витрина и страницы",
     keywords: ["сайт", "страницы", "витрина"],
   },
+  "/admin/site/constructor": {
+    title: "Конструктор магазина",
+    subtitle: "Один клик, тенант и преддеплой",
+    searchHint: "Конструктор магазина и запуск",
+    keywords: ["конструктор", "магазин", "tenant", "one click", "pilorus", "запуск"],
+    placeholder: "Магазин, тип бизнеса, модуль, маршрут или проверка запуска...",
+    nextStep: "Проверить контракт создания магазина и преддеплой",
+    quickHrefs: ["/admin/site/constructor", "/admin/site", "/admin/business/settings", "/admin/products", "/admin/aray/modules"],
+  },
   "/admin/appearance": {
     title: "Оформление",
     subtitle: "Темы и палитры",
@@ -458,7 +469,7 @@ const GROUP_QUICK_HREFS: Record<string, string[]> = {
   products: ["/admin/products", "/admin/products/new", "/admin/products/audit", "/admin/inventory", "/admin/media", "/admin/import"],
   marketing: ["/admin/promotion", "/admin/stories", "/admin/reviews", "/admin/promotions", "/admin/posts", "/admin/services", "/admin/analytics"],
   finance: ["/admin/finance", "/admin/orders", "/admin/analytics"],
-  settings: ["/admin/business/settings", "/admin/staff", "/admin/site", "/admin/appearance", "/admin/aray", "/admin/settings", "/admin/health"],
+  settings: ["/admin/business/settings", "/admin/site/constructor", "/admin/staff", "/admin/site", "/admin/appearance", "/admin/aray", "/admin/settings", "/admin/health"],
   help: ["/admin/help", "/admin/terminals/training"],
   personal: ["/cabinet", "/cabinet/orders", "/cabinet/profile", "/catalog"],
 };
@@ -483,6 +494,7 @@ const MOBILE_DOCK_LABELS: Record<string, string> = {
   "/admin/analytics": "Отчеты",
   "/admin/finance": "Деньги",
   "/admin/business/settings": "Бизнес",
+  "/admin/site/constructor": "Констр.",
   "/admin/settings": "Система",
   "/admin/health": "Health",
   "/admin/terminals": "Терминал",
@@ -552,6 +564,11 @@ function isModuleVisible(item: NavItem, disabledModuleIds?: DisabledModuleIds) {
   return !item.moduleId || !disabledModuleIds?.includes(item.moduleId);
 }
 
+function isSurfaceVisible(item: NavItem, surface?: AdminNavigationSurface) {
+  if (!surface) return true;
+  return (item.surfaces || ADMIN_NAV_PRIMARY_SURFACES).includes(surface);
+}
+
 export function isAdminNavItemVisible(item: NavItem, role?: string, disabledModuleIds?: DisabledModuleIds) {
   return (!item.roles || !role || item.roles.includes(role)) && isModuleVisible(item, disabledModuleIds);
 }
@@ -572,9 +589,13 @@ export function getAdminNavItemLabel(item: NavItem, t?: AdminNavigationTranslate
   return item.labelKey && t ? t(item.labelKey) : item.label;
 }
 
-export function getVisibleAdminNavItems(role?: string, disabledModuleIds?: DisabledModuleIds) {
+export function getVisibleAdminNavItems(
+  role?: string,
+  disabledModuleIds?: DisabledModuleIds,
+  surface?: AdminNavigationSurface,
+) {
   return allNavItems
-    .filter((item) => isAdminNavItemVisible(item, role, disabledModuleIds))
+    .filter((item) => isAdminNavItemVisible(item, role, disabledModuleIds) && isSurfaceVisible(item, surface))
     .sort((a, b) => getGroupRank(a.group) - getGroupRank(b.group));
 }
 
@@ -589,9 +610,10 @@ export function buildAdminNavigationGroups(
   t: AdminNavigationTranslate | undefined,
   iconsByGroup: Record<string, ElementType>,
   disabledModuleIds?: DisabledModuleIds,
+  surface?: AdminNavigationSurface,
 ): AdminNavigationGroup[] {
   const map = new Map<string, NavItem[]>();
-  for (const item of getVisibleAdminNavItems(role, disabledModuleIds)) {
+  for (const item of getVisibleAdminNavItems(role, disabledModuleIds, surface)) {
     const items = map.get(item.group) || [];
     items.push(item);
     map.set(item.group, items);
@@ -663,6 +685,7 @@ function getQuickDescriptor(
   role: string,
   t?: AdminNavigationTranslate,
   disabledModuleIds?: DisabledModuleIds,
+  surface?: AdminNavigationSurface,
 ): AdminNavigationQuickDescriptor | null {
   const special = SPECIAL_QUICK[href];
   if (special) return isQuickVisible(special, role, disabledModuleIds) ? special : null;
@@ -672,6 +695,7 @@ function getQuickDescriptor(
   const routeMeta = findRouteMeta(hrefPath)?.[1];
   if (!item) return null;
   if (!isAdminNavItemVisible(item, role, disabledModuleIds)) return null;
+  if (surface && !isSurfaceVisible(item, surface)) return null;
 
   return {
     href,
@@ -710,10 +734,11 @@ function buildQuickItems(
   role: string,
   t?: AdminNavigationTranslate,
   disabledModuleIds?: DisabledModuleIds,
+  surface?: AdminNavigationSurface,
 ) {
   return uniqueQuick(
     hrefs
-      .map((href) => getQuickDescriptor(href, role, t, disabledModuleIds))
+      .map((href) => getQuickDescriptor(href, role, t, disabledModuleIds, surface))
       .filter((item): item is AdminNavigationQuickDescriptor => Boolean(item)),
   );
 }
@@ -735,13 +760,15 @@ export function getAdminNavigationSearchContext({
   role,
   t,
   disabledModuleIds,
+  surface,
 }: {
   pathname: string;
   role: string;
   t?: AdminNavigationTranslate;
   disabledModuleIds?: DisabledModuleIds;
+  surface?: AdminNavigationSurface;
 }): AdminNavigationSearchContext {
-  const visibleItems = getVisibleAdminNavItems(role, disabledModuleIds);
+  const visibleItems = getVisibleAdminNavItems(role, disabledModuleIds, surface);
   const activeItem = getActiveAdminNavItem(visibleItems, pathname);
   const routeMatch = findRouteMeta(pathname);
   const routeMeta = routeMatch?.[1];
@@ -764,13 +791,13 @@ export function getAdminNavigationSearchContext({
     label,
     placeholder,
     nextStep,
-    quick: buildQuickItems(quickHrefs, role, t, disabledModuleIds),
+    quick: buildQuickItems(quickHrefs, role, t, disabledModuleIds, surface),
     hints,
   };
 }
 
 export function getAdminNavigationRoleTabs(role: string, disabledModuleIds?: DisabledModuleIds) {
-  const visibleItems = getVisibleAdminNavItems(role, disabledModuleIds);
+  const visibleItems = getVisibleAdminNavItems(role, disabledModuleIds, "mobileDock");
   const byHref = new Map(visibleItems.map((item) => [item.href, item]));
   const roleKey = role === "USER" ? "user" : role.toLowerCase();
   const preferredByRole: Record<string, string[]> = {
@@ -814,9 +841,9 @@ export function getAdminNavigationMobileCapsule({
   t?: AdminNavigationTranslate;
   disabledModuleIds?: DisabledModuleIds;
 }): AdminNavigationMobileCapsule {
-  const visibleItems = getVisibleAdminNavItems(role, disabledModuleIds);
+  const visibleItems = getVisibleAdminNavItems(role, disabledModuleIds, "mobileMenu");
   const activeItem = getActiveAdminNavItem(visibleItems, pathname);
-  const context = getAdminNavigationSearchContext({ pathname, role, t, disabledModuleIds });
+  const context = getAdminNavigationSearchContext({ pathname, role, t, disabledModuleIds, surface: "mobileMenu" });
   const roleTabs = getAdminNavigationRoleTabs(role, disabledModuleIds);
   const candidates: AdminNavigationMobileDockItem[] = [];
   const currentRoute = getQuickDescriptor(context.match, role, t, disabledModuleIds);

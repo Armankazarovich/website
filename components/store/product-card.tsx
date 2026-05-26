@@ -273,9 +273,9 @@ export function ProductCard({
 
   // Live quantity from cart store
   const cartItemId = selectedVariant ? `${selectedVariant.id}-${effectiveUnit}` : null;
-  const cartQty = cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
+  const cartQty = portalReady && cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
   const getCartQtyForUnit = (unitType: UnitType) =>
-    selectedVariant ? (items.find((item) => item.id === `${selectedVariant.id}-${unitType}`)?.quantity ?? 0) : 0;
+    portalReady && selectedVariant ? (items.find((item) => item.id === `${selectedVariant.id}-${unitType}`)?.quantity ?? 0) : 0;
   const getStockLimitForUnit = (unitType: UnitType) => getPurchasableQuantityLimit(selectedVariant, unitType);
   const getRemainingQuantity = (unitType: UnitType) => {
     const limit = getStockLimitForUnit(unitType);
@@ -535,21 +535,21 @@ export function ProductCard({
           <div className="relative">
             {cartQty > 0 ? (
               <div className="flex items-center gap-2">
-                <button onClick={handleDecrement} className="flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-xl border border-white/30 bg-white/10 hover:bg-white/20 text-white transition-all active:scale-90">
+                <button data-store-card-cart-decrement onClick={handleDecrement} className="flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-xl border border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground transition-all hover:bg-primary-foreground/20 active:scale-90">
                   <Minus className="w-3 h-3" />
                 </button>
                 <div className="flex-1 text-center">
-                  <span className="font-display font-bold text-base text-white tabular-nums">{cartQty}</span>
-                  <span className="text-[10px] text-white/60 ml-0.5">{unit}</span>
+                  <span data-store-card-cart-quantity className="font-display text-base font-bold tabular-nums text-primary-foreground">{cartQty}</span>
+                  <span className="ml-0.5 text-[10px] text-primary-foreground/60">{unit}</span>
                 </div>
-                <button onClick={handleIncrement} disabled={stockLimitReached} className="flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-45">
+                <button data-store-card-cart-increment onClick={handleIncrement} disabled={stockLimitReached} className="flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-45">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
             ) : (
-              <button onClick={handleAdd} disabled={!hasStock}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl font-semibold transition-all duration-200 active:scale-95 text-sm ${
-                  !hasStock ? "bg-white/10 text-white/40 cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90 shadow-lg"
+              <button data-add-to-cart onClick={handleAdd} disabled={!hasStock}
+                className={`store-card-cta w-full flex items-center justify-between px-3 py-2 rounded-xl font-semibold transition-all duration-200 active:scale-95 text-sm ${
+                  !hasStock ? "cursor-not-allowed bg-card/25 text-muted-foreground" : "bg-brand-orange text-primary-foreground hover:bg-brand-orange/90"
                 }`}>
                 <ShoppingCart className="w-3.5 h-3.5 shrink-0" />
                 <span className="store-card-price-wrap">
@@ -842,6 +842,7 @@ export function ProductCard({
             /* ── Степпер количества ── */
             <div className="flex items-center gap-2">
               <button
+                data-store-card-cart-decrement
                 onClick={handleDecrement}
                 className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl border border-border bg-muted hover:bg-destructive/10 hover:border-destructive/40 hover:text-destructive transition-all active:scale-90"
               >
@@ -849,11 +850,12 @@ export function ProductCard({
               </button>
 
               <div className="flex-1 text-center">
-                <span className="font-display font-bold text-base tabular-nums">{cartQty}</span>
+                <span data-store-card-cart-quantity className="font-display font-bold text-base tabular-nums">{cartQty}</span>
                 <span className="text-[10px] text-muted-foreground ml-0.5">{unit}</span>
               </div>
 
               <button
+                data-store-card-cart-increment
                 onClick={handleIncrement}
                 disabled={stockLimitReached}
                 className="flex items-center justify-center w-11 h-11 sm:w-10 sm:h-10 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all active:scale-90 disabled:cursor-not-allowed disabled:opacity-45"

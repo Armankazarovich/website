@@ -126,7 +126,7 @@ Code layers:
 - `lib/aray-module-registry.ts`
 - `lib/aray-module-state.ts`
 - `app/admin/messenger/page.tsx`
-- `app/admin/messenger/messenger-client.tsx`
+- `app/admin/messenger/messenger-hub-client.tsx`
 - `app/api/admin/messenger/threads/route.ts`
 - `app/api/admin/messenger/threads/[id]/messages/route.ts`
 - `app/api/ai/chat/route.ts`

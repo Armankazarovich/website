@@ -102,11 +102,55 @@ check(
       "pilo-rus-cart",
       "data-cart-item",
       "data-cart-empty-state",
-      "data-product-seller-panel",
-      "data-product-channel",
+      "data-product-aray-action",
+      "hides bulky duplicate contact form",
       "Chrome DevTools",
     ]),
-  "Deploy must include a real browser add-to-cart, cart-page, and product seller scenario.",
+  "Deploy must include a real browser add-to-cart, cart-page, and compact ARAY product-action scenario.",
+);
+
+check(
+  "Browser mobile store guard is wired before deploy",
+  Boolean(packageJson.scripts?.["browser:mobile:check"]) &&
+    Boolean(packageJson.scripts?.["browser:mobile:check:prod"]) &&
+    exists("scripts/validate-browser-store-mobile-flow.js") &&
+    deployPreflight.includes("browser:mobile:check") &&
+    includesAll("scripts/validate-browser-store-mobile-flow.js", [
+      "Input.dispatchTouchEvent",
+      "data-cart-qty-plus",
+      "data-cart-qty-minus",
+      "data-store-compare-action",
+      "data-store-wishlist-action",
+      "data-store-selection-dock",
+    ]),
+  "Deploy must include a real mobile touch check for cart quantity, compare, and wishlist.",
+);
+
+check(
+  "Browser stories responsive guard is wired before deploy",
+  Boolean(packageJson.scripts?.["browser:stories:check"]) &&
+    Boolean(packageJson.scripts?.["browser:stories:check:prod"]) &&
+    exists("scripts/validate-browser-stories-responsive.js") &&
+    deployPreflight.includes("browser:stories:check") &&
+    includesAll("scripts/validate-browser-stories-responsive.js", [
+      "data-store-stories-card",
+      "data-store-stories-side-tab",
+      "data-store-stories-compact-trigger",
+      "390",
+      "900",
+      "1366",
+    ]),
+  "Deploy must include a responsive browser check for the public stories widget.",
+);
+
+check(
+  "PWA icon guard is in quality",
+  Boolean(packageJson.scripts?.["pwa:icons"]) &&
+    Boolean(packageJson.scripts?.["pwa:check"]) &&
+    exists("scripts/generate-pilorus-pwa-icons.js") &&
+    exists("scripts/validate-pwa-icons.js") &&
+    qualityGate.includes("validate-pwa-icons.js"),
+  "PWA icons must be generated, validated, and protected by the main quality gate.",
 );
 
 check(
@@ -124,6 +168,18 @@ check(
     "/admin/notifications",
   ]),
   "AR Phone must keep the external channel launcher in release checks.",
+);
+
+check(
+  "Admin messenger stays in embedded ARAY workspace",
+  includesAll("app/admin/messenger/page.tsx", ["AdminMessengerHubClient"]) &&
+    includesAll("app/admin/messenger/messenger-hub-client.tsx", [
+      "ArayEmbeddedMessenger",
+      "__aray_dial__",
+      "initialLeadId",
+      "aray:prompt",
+    ]),
+  "/admin/messenger must keep using the embedded ARAY Messenger workspace.",
 );
 
 check(

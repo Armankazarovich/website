@@ -104,6 +104,11 @@ const checks = [
       "setHidden(true)",
       "onVideoEnded",
       "canInlineVideo",
+      "data-store-stories-card",
+      "data-store-stories-side-tab",
+      "data-store-stories-compact-trigger",
+      "xl:block",
+      "sm:hidden",
     ],
   },
   {

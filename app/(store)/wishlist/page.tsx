@@ -14,12 +14,14 @@ import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 export default function WishlistPage() {
   const { items, remove, clear, hydrateWishlist } = useWishlistStore();
   const addToCompare = useCompareStore((state) => state.add);
+  const hydrateCompare = useCompareStore((state) => state.hydrateCompare);
   const router = useRouter();
   const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     hydrateWishlist();
-  }, [hydrateWishlist]);
+    hydrateCompare();
+  }, [hydrateWishlist, hydrateCompare]);
 
   const compareSavedItems = () => {
     items.slice(0, 6).forEach((item) => addToCompare(item));
@@ -27,7 +29,7 @@ export default function WishlistPage() {
   };
 
   return (
-    <div className="container store-mobile-safe-bottom py-6 md:py-8">
+    <div data-wishlist-page className="container store-mobile-safe-bottom py-6 md:py-8">
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -57,7 +59,7 @@ export default function WishlistPage() {
 
       {items.length === 0 ? (
         /* Empty state */
-        <div className="store-empty-action-card mx-auto flex max-w-3xl flex-col items-center justify-center rounded-2xl p-6 text-center sm:p-8">
+        <div data-wishlist-empty className="store-empty-action-card mx-auto flex max-w-3xl flex-col items-center justify-center rounded-2xl p-6 text-center sm:p-8">
           <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 text-red-500">
             <Heart className="h-8 w-8" />
           </div>
@@ -101,17 +103,18 @@ export default function WishlistPage() {
           {/* Products grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {items.map((item) => (
-              <ProductCard
-                key={item.id}
-                id={item.id}
-                slug={item.slug}
-                name={item.name}
-                category={item.category}
-                images={item.images}
-                cardTags={item.cardTags}
-                saleUnit={item.saleUnit}
-                variants={item.variants}
-              />
+              <div key={item.id} data-wishlist-item={item.id}>
+                <ProductCard
+                  id={item.id}
+                  slug={item.slug}
+                  name={item.name}
+                  category={item.category}
+                  images={item.images}
+                  cardTags={item.cardTags}
+                  saleUnit={item.saleUnit}
+                  variants={item.variants}
+                />
+              </div>
             ))}
           </div>
 

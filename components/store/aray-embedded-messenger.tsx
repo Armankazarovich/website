@@ -111,7 +111,7 @@ type MessengerThread = {
   lastActivityText: string;
   lastActivityAt: string;
   commerce?: MessengerCommerceProfile;
-  virtualKind?: "account";
+  virtualKind?: "account" | "email";
 };
 
 type MessengerResponse = {
@@ -674,12 +674,14 @@ export function ArayEmbeddedMessenger({
   onContextChange,
   onBack,
   initialSearch,
+  initialLeadId,
 }: {
   staffName?: string;
   onAskAray: (payload: ArayEmbeddedMessengerPrompt) => void;
   onContextChange?: (context: ArayEmbeddedMessengerContext | null) => void;
   onBack: () => void;
   initialSearch?: string | null;
+  initialLeadId?: string | null;
 }) {
   const router = useRouter();
   const initialSearchValue = initialSearch?.trim().startsWith("__") ? "" : initialSearch?.trim() || "";
@@ -721,6 +723,7 @@ export function ArayEmbeddedMessenger({
   const inputSpeechTranscriptRef = useRef("");
   const autoOpenSearchRef = useRef("");
   const pendingDialNumberRef = useRef("");
+  const initialLeadIdRef = useRef(initialLeadId?.trim() || "");
   const privateArayThreadIdRef = useRef<string | null>(null);
 
   const selected = useMemo(
@@ -766,16 +769,43 @@ export function ArayEmbeddedMessenger({
     setThreadListOpen(true);
   }, [initialSearch]);
 
+  useEffect(() => {
+    const cleanLeadId = initialLeadId?.trim() || "";
+    if (!cleanLeadId) {
+      initialLeadIdRef.current = "";
+      return;
+    }
+    if (initialLeadIdRef.current === cleanLeadId) return;
+    initialLeadIdRef.current = cleanLeadId;
+    autoOpenSearchRef.current = "";
+    setThreadListOpen(true);
+  }, [initialLeadId]);
+
   const fetchThreads = useCallback(async (query = search) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (query.trim()) params.set("search", query.trim());
+      const cleanQuery = query.trim();
+      const cleanLeadId = initialLeadIdRef.current;
+      if (cleanQuery) params.set("search", cleanQuery);
+      if (cleanLeadId) params.set("leadId", cleanLeadId);
       const res = await fetch(`/api/admin/messenger/threads?${params.toString()}`, { cache: "no-store" });
       const data: MessengerResponse & { error?: string } = await res.json();
       if (!res.ok) throw new Error(data.error || "Не удалось открыть диалоги");
       const nextThreads = data.threads || [];
       setThreads(nextThreads);
+      if (cleanLeadId) {
+        const match = nextThreads.find((thread) => thread.id === cleanLeadId);
+        initialLeadIdRef.current = "";
+        if (match) {
+          autoOpenSearchRef.current = "";
+          setSelectedId(match.id);
+          setThreadListOpen(false);
+          setContactFormOpen(false);
+          setStatus(`Открыл диалог: ${match.name}`);
+          return;
+        }
+      }
       const pendingDial = pendingDialNumberRef.current;
       if (pendingDial) {
         const match = findThreadByArayDial(nextThreads, pendingDial);
@@ -822,7 +852,7 @@ export function ArayEmbeddedMessenger({
         }
         return;
       }
-      const autoQuery = query.trim().toLowerCase();
+      const autoQuery = cleanQuery.toLowerCase();
       if (autoQuery && autoOpenSearchRef.current === autoQuery && nextThreads.length > 0) {
         const match = nextThreads.find((thread) =>
           [thread.name, thread.phone || "", thread.email || "", thread.company || "", thread.lastActivityText || ""]
@@ -956,10 +986,72 @@ export function ArayEmbeddedMessenger({
     }
   }, []);
 
+  const openEmailContactThread = useCallback(async (thread: MessengerThread) => {
+    if (thread.virtualKind !== "email" && !thread.id.startsWith("email:")) return false;
+    setStatus(`Открываю почтовый контакт: ${thread.email || thread.name}`);
+    try {
+      const res = await fetch("/api/admin/messenger/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: thread.name || thread.email || "Почтовый контакт",
+          phone: "",
+          email: thread.email || thread.id.replace(/^email:/, ""),
+          company: "Почта",
+          message: "Контакт открыт из почтовой базы ARAY",
+        }),
+      });
+      const data: { thread?: MessengerThread; error?: string } = await res.json().catch(() => ({}));
+      if (!res.ok || !data.thread) throw new Error(data.error || "Почтовый контакт не открыт");
+
+      setThreads((current) => {
+        const without = current.filter((item) => item.id !== thread.id && item.id !== data.thread!.id);
+        return [data.thread!, ...without];
+      });
+      setSelectedId(data.thread.id);
+      setThreadListOpen(false);
+      setContactFormOpen(false);
+      setSystemEventsOpen(false);
+      setToolsOpen(false);
+      setCallStudioOpen(false);
+      setVideoRoomOpen(false);
+      setThreadSettingsOpen(false);
+      setDeleteConfirmOpen(false);
+      setComposerRoute("auto");
+      setPrivateArayOpen(false);
+      setComposerMode("client");
+      setPrivateArayBusy(false);
+      setProofreadingDraft(false);
+      setDraftReview(null);
+      privateArayThreadIdRef.current = null;
+      setPrivateArayMessages([]);
+      setDraft("");
+      setStatus(`Почтовый контакт открыт: ${data.thread.name}`);
+      return true;
+    } catch (error: any) {
+      setContactDraft((current) => ({
+        ...current,
+        name: current.name || thread.name,
+        phone: current.phone || "",
+        email: current.email || thread.email || thread.id.replace(/^email:/, ""),
+        company: current.company || "Почта",
+        message: current.message || "Контакт из почтовой базы ARAY",
+      }));
+      setContactFormOpen(true);
+      setThreadListOpen(true);
+      setStatus(error?.message || "Проверь почтовый контакт и создай диалог.");
+      return true;
+    }
+  }, []);
+
   const openThread = useCallback(async (id: string) => {
     const thread = threads.find((item) => item.id === id);
     if (thread && (thread.virtualKind === "account" || thread.id.startsWith("account:"))) {
       const opened = await openDirectoryAccountThread(thread);
+      if (opened) return;
+    }
+    if (thread && (thread.virtualKind === "email" || thread.id.startsWith("email:"))) {
+      const opened = await openEmailContactThread(thread);
       if (opened) return;
     }
     if (thread?.deletedAt) {
@@ -985,7 +1077,7 @@ export function ArayEmbeddedMessenger({
     setPrivateArayMessages([]);
     setDraft("");
     setStatus(thread?.deletedAt ? "Диалог восстановлен и открыт" : null);
-  }, [openDirectoryAccountThread, restoreArchivedThread, threads]);
+  }, [openDirectoryAccountThread, openEmailContactThread, restoreArchivedThread, threads]);
 
   const createContactThread = useCallback(async () => {
     const name = contactDraft.name.trim();
@@ -1770,7 +1862,7 @@ export function ArayEmbeddedMessenger({
   }, [onContextChange, selected, showList]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div data-aray-embedded-messenger className="flex min-h-0 flex-1 flex-col">
       <AnimatePresence mode="wait" initial={false}>
       {showList ? (
         <motion.div
@@ -2045,7 +2137,7 @@ export function ArayEmbeddedMessenger({
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
         >
-          <div className="shrink-0 border-b border-border/70 px-4 py-3">
+          <div className="shrink-0 border-b border-border/70 px-3 py-2.5">
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -2055,33 +2147,15 @@ export function ArayEmbeddedMessenger({
               >
                 <ArrowLeft className="h-4 w-4" />
               </button>
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-[12px] font-bold text-primary">
-                {getInitials(selected.name)}
-              </span>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-[13px] font-bold text-foreground">{selected.name}</p>
-                  <span className="rounded-full border border-border px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                    {STAGE_LABELS[selected.stage] || selected.stage}
-                  </span>
-                </div>
+                <p className="truncate text-[13px] font-bold text-foreground">{selected.name}</p>
                 <p className="truncate text-[11px] text-muted-foreground">{threadSubtitle(selected)}</p>
-                <div className="mt-1 flex max-w-full flex-wrap gap-1 overflow-hidden">
-                  {getThreadSmartFacts(selected).slice(0, 4).map((fact) => (
-                    <span
-                      key={`${selected.id}-header-${fact.title}-${fact.label}`}
-                      title={fact.title}
-                      className="max-w-full truncate rounded-full border border-border/70 bg-muted/20 px-2 py-0.5 text-[9.5px] font-semibold text-muted-foreground"
-                    >
-                      {fact.label}
-                    </span>
-                  ))}
-                </div>
                 <button
                   type="button"
+                  data-aray-phone-number
                   onClick={openArayNumberPanel}
-                  className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2 py-0.5 text-[10px] font-semibold text-primary transition hover:bg-primary/14"
-                  title="Открыть звонки и видео"
+                  className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary transition hover:bg-primary/15"
+                  title="Открыть AR Phone"
                 >
                   <PhoneCall className="h-3 w-3 shrink-0" />
                   <span className="truncate">{selectedPublicArayNumber}</span>
@@ -2090,10 +2164,10 @@ export function ArayEmbeddedMessenger({
               <div className="flex shrink-0 items-center gap-1">
                 <button
                   type="button"
-                  onClick={startVoiceCall}
-                  disabled={!selectedCallHref || sending || privateArayBusy}
-                  title={selectedCallHref ? "Позвонить" : "Нет телефона"}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-35"
+                  onClick={selectedCallHref ? startVoiceCall : openArayNumberPanel}
+                  disabled={sending || privateArayBusy}
+                  title={selectedCallHref ? "Позвонить" : "Открыть AR Phone"}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-35"
                   aria-label="Позвонить"
                 >
                   <PhoneCall className="h-4 w-4" />
@@ -2103,23 +2177,24 @@ export function ArayEmbeddedMessenger({
                   onClick={() => void prepareVideoCall()}
                   disabled={sending || privateArayBusy}
                   title="Открыть AR Phone"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-35"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-primary/10 hover:text-primary disabled:opacity-35"
                   aria-label="Открыть AR Phone"
                 >
                   <Video className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setThreadSettingsOpen((value) => !value)}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-transparent transition hover:bg-primary/10"
+                  onClick={() => openArayTarget("/admin/aray/connectors")}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-muted-foreground transition hover:bg-primary/10 hover:text-primary"
                   aria-label="Настройки диалога"
+                  title="Подключения ARAY"
                 >
-                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  <Settings className="h-4 w-4" />
                 </button>
               </div>
             </div>
             <AnimatePresence initial={false}>
-              {threadSettingsOpen && (
+              {false && threadSettingsOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: -6, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -2156,9 +2231,10 @@ export function ArayEmbeddedMessenger({
                         <ArayIcon size={18} id={`settings-next-${selected.id}`} />
                         <span className="min-w-0 truncate">Следующий шаг</span>
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
+                <button
+                  type="button"
+                  data-aray-messenger-tools
+                  onClick={() => {
                           setSystemEventsOpen((value) => !value);
                           setThreadSettingsOpen(false);
                         }}
@@ -2537,39 +2613,37 @@ export function ArayEmbeddedMessenger({
             )}
           </div>
 
-          <div className="shrink-0 border-t border-border/70 bg-background/70 px-4 py-3">
-            <div className="hidden">
-              {([
-                { id: "auto", label: "Умно", helper: draftGoesToAray ? "к Араю" : "в CRM", icon: <SlidersHorizontal className="h-3 w-3" /> },
-                { id: "person", label: "Клиенту", helper: "CRM", icon: <MessageSquare className="h-3 w-3" /> },
-                { id: "aray", label: "Араю", helper: "помощь", icon: <ArayIcon size={13} id={`route-segment-${selected.id}`} /> },
-              ] as Array<{ id: ComposerRoute; label: string; helper: string; icon: ReactNode }>).map((item) => {
-                const active =
-                  composerRoute === item.id ||
-                  (composerRoute === "auto" && item.id === "auto");
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setComposerRoute(item.id)}
-                    className={cn(
-                      "inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-2 py-1.5 text-[10.5px] font-semibold transition",
-                      active
-                        ? "bg-primary/12 text-primary"
-                        : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
-                    )}
-                    aria-label={`Отправлять: ${item.label}`}
-                  >
-                    {item.icon}
-                    <span className="min-w-0 text-left leading-3">
-                      <span className="block truncate">{item.label}</span>
-                      <span className={cn("block truncate text-[8.5px] font-medium", active ? "text-primary/70" : "text-muted-foreground/70")}>
-                        {item.helper}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
+          <div className="relative shrink-0 border-t border-border/70 bg-background/70 px-4 py-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2 px-1">
+              <div className="inline-grid min-w-[192px] max-w-full flex-1 grid-cols-3 rounded-full border border-border/70 bg-muted/15 p-0.5 sm:flex-none">
+                {([
+                  { id: "auto", label: "Умно", helper: draftGoesToAray ? "к Араю" : "в CRM", icon: <SlidersHorizontal className="h-3 w-3" /> },
+                  { id: "person", label: "Клиент", helper: "CRM", icon: <MessageSquare className="h-3 w-3" /> },
+                  { id: "aray", label: "Арай", helper: "помощь", icon: <ArayIcon size={13} id={`route-segment-${selected.id}`} /> },
+                ] as Array<{ id: ComposerRoute; label: string; helper: string; icon: ReactNode }>).map((item) => {
+                  const active =
+                    composerRoute === item.id ||
+                    (composerRoute === "auto" && item.id === "auto");
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setComposerRoute(item.id)}
+                      className={cn(
+                        "inline-flex min-w-0 items-center justify-center gap-1 rounded-full px-2 py-1.5 text-[10.5px] font-semibold transition",
+                        active
+                          ? "bg-primary/12 text-primary"
+                          : "text-muted-foreground hover:bg-background/60 hover:text-foreground",
+                      )}
+                      aria-label={`Отправлять: ${item.label}`}
+                      title={`${item.label}: ${item.helper}`}
+                    >
+                      {item.icon}
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div className="mb-2 flex min-h-5 items-center justify-between gap-2 px-1 text-[10.5px] text-muted-foreground">
               <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -2815,7 +2889,7 @@ export function ArayEmbeddedMessenger({
                 </motion.div>
               )}
             </AnimatePresence>
-            {smartMessengerActions.length > 0 && !threadSettingsOpen && !callStudioOpen && (
+            {false && smartMessengerActions.length > 0 && !toolsOpen && !threadSettingsOpen && !callStudioOpen && (
               <div className="mb-2 rounded-2xl border border-primary/15 bg-primary/[0.045] p-2">
                 <div className="mb-1.5 flex items-center justify-between gap-2 px-1">
                   <span className="inline-flex min-w-0 items-center gap-1.5 text-[10.5px] font-bold text-foreground">
@@ -2888,22 +2962,6 @@ export function ArayEmbeddedMessenger({
               />
               <button
                 type="button"
-                onClick={() => {
-                  setThreadSettingsOpen((value) => !value);
-                  setToolsOpen(false);
-                }}
-                className={cn(
-                  "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted/15 text-muted-foreground transition hover:border-primary/45 hover:text-primary disabled:opacity-45",
-                  threadSettingsOpen && "border-primary/55 bg-primary/10 text-primary",
-                )}
-                aria-label="Центр действий диалога"
-                title="Центр действий"
-                disabled={sending || privateArayBusy}
-              >
-                <Settings className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
                 onClick={toggleVoiceDraft}
                 className={cn(
                   "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-muted/15 text-muted-foreground transition hover:border-primary/45 hover:text-primary disabled:opacity-45",
@@ -2959,15 +3017,15 @@ export function ArayEmbeddedMessenger({
               </button>
             </div>
             <AnimatePresence initial={false}>
-              {toolsOpen && (
+              {false && toolsOpen && (
                 <motion.div
                   initial={{ opacity: 0, y: 8, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: "auto" }}
                   exit={{ opacity: 0, y: 8, height: 0 }}
                   transition={{ duration: 0.18, ease: "easeOut" }}
-                  className="overflow-hidden"
+                  className="absolute bottom-[4.25rem] left-4 right-4 z-30 overflow-hidden"
                 >
-                  <div className="mt-2 max-h-[248px] overflow-y-auto rounded-2xl border border-border/70 bg-background/78 p-2 shadow-[0_14px_42px_rgba(0,0,0,0.18)]">
+                  <div className="max-h-[min(320px,46dvh)] overflow-y-auto rounded-2xl border border-border/70 bg-background/95 p-2 shadow-[0_18px_48px_rgba(0,0,0,0.28)]">
                     <div className="mb-2 flex items-center justify-between gap-2 px-1">
                       <div className="min-w-0">
                         <p className="text-[11px] font-bold text-foreground">Действия</p>

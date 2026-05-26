@@ -75,12 +75,15 @@ const checks = [
   },
   {
     file: "components/store/stories-widget.tsx",
-    label: "public story widget stays lower right and can collapse to a sticky side icon",
+    label: "public story widget uses responsive card, side tab and compact mobile trigger",
     patterns: [
-      "fixed right-5",
+      "data-store-stories-card",
+      "data-store-stories-side-tab",
+      "data-store-stories-compact-trigger",
       "rounded-l-2xl",
       "store-story-side-panel",
-      "calc(7.25rem + env(safe-area-inset-bottom, 0px))",
+      "calc(6.75rem + env(safe-area-inset-bottom, 0px))",
+      "calc(5.75rem + env(safe-area-inset-bottom, 0px))",
       "STORIES_WIDGET_HIDDEN_KEY",
       "hideWidget",
     ],

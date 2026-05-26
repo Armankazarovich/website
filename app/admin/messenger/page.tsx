@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { AdminMessengerClient } from "./messenger-client";
+import { AdminMessengerHubClient } from "./messenger-hub-client";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,10 @@ export default async function AdminMessengerPage() {
   if (!session || !MESSENGER_ROLES.includes(role)) redirect("/login");
 
   return (
-    <div className="flex min-h-[calc(100dvh-148px)] flex-col pb-24 lg:h-[calc(100vh-64px)] lg:min-h-0 lg:overflow-hidden lg:pb-0">
-      <AdminMessengerClient staffName={(session.user as any)?.name || "Команда"} />
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-background">
+      <Suspense fallback={<div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">Открываю ARAY Messenger...</div>}>
+        <AdminMessengerHubClient staffName={(session.user as any)?.name || "Команда"} />
+      </Suspense>
     </div>
   );
 }

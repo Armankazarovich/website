@@ -46,5 +46,7 @@ if (status && !allowDirty) {
 
 run("Full local quality gate", "npm", ["run", "quality:full"]);
 run("Browser cart flow guard", "npm", ["run", "browser:cart:check"]);
+run("Browser mobile store guard", "npm", ["run", "browser:mobile:check"]);
+run("Browser stories responsive guard", "npm", ["run", "browser:stories:check"]);
 
 console.log("\n[ARAY Deploy Preflight] Passed");

@@ -377,13 +377,24 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
   const effectiveSubtitle = headerMeta?.subtitle || pageMeta.subtitle;
   const HeaderIcon = pageMeta.icon;
   const isDarkTheme = (resolvedTheme || theme) === "dark";
+  const isMessengerWorkspace = pathname === "/admin/messenger";
+  const mainClassName = isMessengerWorkspace
+    ? `admin-content-root flex-1 min-w-0 relative ${UI_LAYERS.content} overflow-hidden p-0`
+    : `admin-content-root flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 px-3 sm:px-5 lg:px-8 py-5 lg:py-7`;
+  const mainStyle = isMessengerWorkspace
+    ? { paddingBottom: 0 }
+    : { paddingBottom: "max(calc(132px + env(safe-area-inset-bottom, 16px)), 132px)" };
 
   return (
-    <div className="admin-shell-root relative flex flex-col min-h-screen bg-background overflow-x-clip">
+    <div
+      className="admin-shell-root relative flex flex-col min-h-screen bg-background overflow-x-clip"
+      data-admin-route={isMessengerWorkspace ? "messenger" : undefined}
+    >
       {/* ─── Стеклянный sticky хедер ──────────────────── */}
-      <AppHeader
-        containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-4 xl:grid xl:grid-cols-[minmax(18rem,26rem)_minmax(24rem,1fr)_auto]"
-        leftSlot={
+      {!isMessengerWorkspace && (
+        <AppHeader
+          containerClassName="max-w-none px-3 sm:px-5 lg:pl-20 lg:pr-4 xl:grid xl:grid-cols-[minmax(18rem,26rem)_minmax(24rem,1fr)_auto]"
+          leftSlot={
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
             {/* Кнопка «Назад» — глобальная, скрыта на корневых маршрутах */}
             {showBack && (
@@ -449,8 +460,8 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               </div>
             </Link>
           </div>
-        }
-        centerSlot={
+          }
+          centerSlot={
           <div className="hidden w-full min-w-0 items-center gap-3 md:flex">
             {headerMeta?.context && (
               <div className="hidden min-w-0 flex-[0.9] min-[1180px]:block">
@@ -465,8 +476,8 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               />
             </div>
           </div>
-        }
-        rightSlot={
+          }
+          rightSlot={
           <div className="flex items-center gap-1.5">
             {/* Поиск — компактная иконка → открывает side-panel слева */}
             <button
@@ -556,21 +567,26 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
               </div>
             )}
           </div>
-        }
-      />
+          }
+        />
+      )}
 
-      <div className="relative z-[5] lg:hidden px-3 pt-3 -mb-2">
-        <AdminWeatherChip variant="mobile" />
-      </div>
+      {!isMessengerWorkspace && (
+        <div className="relative z-[5] lg:hidden px-3 pt-3 -mb-2">
+          <AdminWeatherChip variant="mobile" />
+        </div>
+      )}
 
       {/* ─── Узкий рельс слева (lg+ только) ───────────── */}
-      <AdminNavRail
-        role={role}
-        avatarUrl={avatarUrl}
-        userName={userName}
-        email={email}
-        disabledModuleIds={disabledModuleIds}
-      />
+      {!isMessengerWorkspace && (
+        <AdminNavRail
+          role={role}
+          avatarUrl={avatarUrl}
+          userName={userName}
+          email={email}
+          disabledModuleIds={disabledModuleIds}
+        />
+      )}
 
       {/* ─── Контент ──────────────────────────────────── */}
       {/* lg:ml-16 — отступ под рельс слева. Арай работает как обычный store widget,
@@ -581,8 +597,8 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
          элемента → клики могли проваливаться в старый слой). Анимация при смене
          страницы остаётся в leftSlot хедера (иконка + заголовок влетают). */}
       <main
-        className={`admin-content-root flex-1 min-w-0 relative ${UI_LAYERS.content} lg:ml-20 px-3 sm:px-5 lg:px-8 py-5 lg:py-7`}
-        style={{ paddingBottom: "max(calc(132px + env(safe-area-inset-bottom, 16px)), 132px)" }}
+        className={mainClassName}
+        style={mainStyle}
       >
         <RouteTransition surface="admin" className="admin-page-transition-shell">
           <AccessGuard role={role}>{children}</AccessGuard>
@@ -590,12 +606,14 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
       </main>
 
       {/* ─── Mobile bottom nav (с Арай-орбом) ─────────── */}
-      <AdminMobileBottomNav
-        role={role}
-        disabledModuleIds={disabledModuleIds}
-        onArayOpen={requestArayOpen}
-        onSearchOpen={() => setSearchOpen(true)}
-      />
+      {!isMessengerWorkspace && (
+        <AdminMobileBottomNav
+          role={role}
+          disabledModuleIds={disabledModuleIds}
+          onArayOpen={requestArayOpen}
+          onSearchOpen={() => setSearchOpen(true)}
+        />
+      )}
 
       {/* ─── Поиск-панель слева (по кнопке Search или ⌘K) ── */}
       <AdminSearchPanel
@@ -606,7 +624,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
       />
 
       {/* ─── ARAY — единый PiloRus assistant surface: dock + voice-first panel. ── */}
-      {arayAssistantMounted && (
+      {arayAssistantMounted && !isMessengerWorkspace && (
         <LazyAdminArayAssistant
           enabled
           page={pathname}

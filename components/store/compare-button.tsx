@@ -37,6 +37,7 @@ export function CompareButton({
         type="button"
         onClick={handleClick}
         aria-pressed={isSelected}
+        data-store-compare-action
         className={cn(
           "store-action-button store-action-button-inline",
           isSelected && "is-selected",
@@ -55,6 +56,7 @@ export function CompareButton({
       onClick={handleClick}
       aria-label={isSelected ? "Убрать из сравнения" : "Добавить к сравнению"}
       aria-pressed={isSelected}
+      data-store-compare-action
       className={cn(
         "store-action-button store-action-button-floating",
         size === "sm" ? "h-8 w-8" : "h-9 w-9",

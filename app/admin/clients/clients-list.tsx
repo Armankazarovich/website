@@ -223,6 +223,11 @@ function dialArayNumber(number: string) {
   window.dispatchEvent(new CustomEvent("aray:phone-dial", { detail: { number } }));
 }
 
+function getTelHref(phone: string) {
+  const clean = phone.replace(/[^\d+]/g, "");
+  return clean ? `tel:${clean}` : undefined;
+}
+
 async function copyText(value: string) {
   try {
     await navigator.clipboard?.writeText(value);
@@ -559,6 +564,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
             const orderCount = client.orderCount ?? client.orders.length;
             const paidOrderCount = client.paidOrderCount ?? meta.paidOrders.length;
             const arayNumber = getClientArayNumber(client);
+            const phoneHref = client.phone ? getTelHref(client.phone) : undefined;
 
             return (
               <article
@@ -587,22 +593,59 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                       </div>
                       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="truncate">{client.email}</span>
-                        {client.phone ? <span>{client.phone}</span> : <span>телефон не указан</span>}
+                        {client.phone ? (
+                          <a
+                            href={phoneHref}
+                            className="inline-flex items-center gap-1 font-semibold text-foreground transition-colors hover:text-primary"
+                            title="Позвонить по живому телефону"
+                          >
+                            <PhoneCall className="h-3 w-3" />
+                            {client.phone}
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(client)}
+                            className="font-semibold text-destructive transition-colors hover:text-primary"
+                          >
+                            нет живого телефона
+                          </button>
+                        )}
                         {client.address ? <span className="truncate">адрес есть</span> : null}
                       </div>
                       <div className="mt-2 flex max-w-full flex-wrap items-center gap-1.5">
-                        <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2.5 text-[11px] font-bold text-primary">
+                        {client.phone ? (
+                          <a
+                            href={phoneHref}
+                            className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[11px] font-bold text-primary transition-colors hover:bg-primary/15"
+                            title="Позвонить по живому телефону"
+                          >
+                            <PhoneCall className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{client.phone}</span>
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleEdit(client)}
+                            className="inline-flex min-h-7 items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 text-[10.5px] font-semibold text-destructive transition-colors hover:border-primary/35 hover:text-primary"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            Добавить телефон
+                          </button>
+                        )}
+                        <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-border bg-background/45 px-2.5 text-[10.5px] font-semibold text-muted-foreground">
                           <PhoneCall className="h-3 w-3 shrink-0" />
+                          <span className="text-[9px] uppercase tracking-wide">AR</span>
                           <span className="truncate">{arayNumber}</span>
                         </span>
                         <button
                           type="button"
                           onClick={() => dialArayNumber(arayNumber)}
                           className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                          title="Набрать в AR Phone"
+                          title="Набрать внутренний номер в AR Phone"
                         >
                           <PhoneCall className="h-3 w-3" />
-                          Набрать
+                          AR Phone
                         </button>
                         <button
                           type="button"
