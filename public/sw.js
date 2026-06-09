@@ -2,7 +2,7 @@
 // Стратегии: CacheFirst для статики, NetworkFirst для HTML/API
 // Версия: меняй CACHE_VERSION при каждом деплое для сброса кэша
 
-var CACHE_VERSION = 'aray-v6';
+var CACHE_VERSION = 'aray-v7';
 var STATIC_CACHE  = CACHE_VERSION + '-static';
 var IMAGE_CACHE   = CACHE_VERSION + '-images';
 var PAGE_CACHE    = CACHE_VERSION + '-pages';
@@ -136,7 +136,7 @@ self.addEventListener('fetch', function(event) {
   }
 
   // ── HTML страницы — NetworkFirst + offline fallback ──
-  if (req.headers.get('accept') && req.headers.get('accept').includes('text/html')) {
+  if (req.mode === 'navigate' || (req.headers.get('accept') && req.headers.get('accept').includes('text/html'))) {
     event.respondWith(networkFirstWithFallback(req));
     return;
   }
@@ -159,9 +159,29 @@ function cacheFirst(req, cacheName) {
   });
 }
 
+function matchPageFallback(req) {
+  var url = new URL(req.url);
+  return caches.match(req).then(function(cached) {
+    if (cached) return cached;
+    return caches.match(url.pathname).then(function(pathCached) {
+      if (pathCached) return pathCached;
+      if (url.pathname !== '/catalog' && url.pathname.startsWith('/catalog')) {
+        return caches.match('/catalog');
+      }
+      return caches.match('/offline');
+    });
+  });
+}
+
 // ── СТРАТЕГИЯ: NetworkFirst с offline fallback ────────────────────────────────
 function networkFirstWithFallback(req) {
-  return fetch(req).then(function(response) {
+  var timeout = new Promise(function(_, reject) {
+    setTimeout(function() {
+      reject(new Error('network timeout'));
+    }, 4200);
+  });
+
+  return Promise.race([fetch(req), timeout]).then(function(response) {
     if (response && response.status === 200) {
       // Кэшируем только успешные HTML ответы
       var resClone = response.clone();
@@ -172,10 +192,7 @@ function networkFirstWithFallback(req) {
     return response;
   }).catch(function() {
     // Нет сети — пробуем кэш, потом /offline
-    return caches.match(req).then(function(cached) {
-      if (cached) return cached;
-      return caches.match('/offline');
-    });
+    return matchPageFallback(req);
   });
 }
 

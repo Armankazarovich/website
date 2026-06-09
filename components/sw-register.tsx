@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 const LOCAL_SW_RESET_KEY = "aray-local-sw-disabled-v1";
+const SW_CONTROLLER_RELOAD_KEY = "aray-sw-controller-reload-v1";
 
 function isLocalDevHost() {
   if (typeof window === "undefined") return false;
@@ -51,6 +52,8 @@ export function SwRegister() {
       return;
     }
 
+    let removeControllerListener: (() => void) | null = null;
+
     // Чуть откладываем — не блокируем первый рендер
     const timer = setTimeout(async () => {
       try {
@@ -58,6 +61,22 @@ export function SwRegister() {
 
         // Проверяем обновление при каждом открытии
         reg.update().catch(() => {});
+
+        const reloadAfterControllerChange = () => {
+          try {
+            if (!window.sessionStorage.getItem(SW_CONTROLLER_RELOAD_KEY)) {
+              window.sessionStorage.setItem(SW_CONTROLLER_RELOAD_KEY, "1");
+              window.setTimeout(() => {
+                window.location.reload();
+              }, 350);
+            }
+          } catch {}
+        };
+
+        navigator.serviceWorker.addEventListener("controllerchange", reloadAfterControllerChange);
+        removeControllerListener = () => {
+          navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterControllerChange);
+        };
 
         // Если нашёлся новый SW — активируем сразу
         reg.addEventListener("updatefound", () => {
@@ -79,7 +98,10 @@ export function SwRegister() {
       }
     }, 800);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      removeControllerListener?.();
+    };
   }, []);
 
   return null;
