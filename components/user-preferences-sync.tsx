@@ -21,6 +21,11 @@ type PreferencesPayload = {
   updatedAt?: string;
 };
 
+type PreferencesResponse = {
+  authenticated?: boolean;
+  preferences?: PreferencesPayload;
+};
+
 function normalizeTheme(value: unknown): ThemeMode {
   return typeof value === "string" && VALID_THEMES.has(value) ? (value as ThemeMode) : "system";
 }
@@ -94,15 +99,12 @@ export function UserPreferencesSync() {
     let alive = true;
 
     fetch("/api/me/preferences", { cache: "no-store" })
-      .then((response) => {
-        if (response.status === 401) return null;
-        if (!response.ok) return null;
-        setCanSync(true);
-        return response.json();
-      })
-      .then((data: { preferences?: PreferencesPayload } | null) => {
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: PreferencesResponse | null) => {
         if (!alive) return;
 
+        const authenticated = data?.authenticated === true;
+        setCanSync(authenticated);
         const server = data?.preferences || {};
         const serverTimestamp = Date.parse(server.updatedAt || "") || 0;
         const localTimestamp = readLocalTimestamp();
@@ -130,7 +132,7 @@ export function UserPreferencesSync() {
           window.setTimeout(() => {
             applyingServerRef.current = false;
           }, 250);
-        } else if (localTimestamp > serverTimestamp && data) {
+        } else if (localTimestamp > serverTimestamp && authenticated) {
           void savePreferences({
             ...(isAdminPath
               ? { palette: localPalette && isPaletteId(localPalette) ? localPalette : palette }

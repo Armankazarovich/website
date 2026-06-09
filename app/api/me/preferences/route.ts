@@ -76,7 +76,7 @@ function sanitizePreferences(body: Record<string, unknown>, existing: UserPrefer
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ authenticated: false, preferences: {} });
   }
 
   const row = await prisma.siteSettings.findUnique({
@@ -84,6 +84,7 @@ export async function GET() {
   }).catch(() => null);
 
   return NextResponse.json({
+    authenticated: true,
     preferences: parsePreferences(row?.value),
   });
 }
@@ -91,7 +92,7 @@ export async function GET() {
 export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ ok: false, authenticated: false, preferences: {} });
   }
 
   const body = await req.json().catch(() => ({}));
@@ -106,5 +107,5 @@ export async function PATCH(req: Request) {
     update: { value },
   });
 
-  return NextResponse.json({ ok: true, preferences });
+  return NextResponse.json({ ok: true, authenticated: true, preferences });
 }
