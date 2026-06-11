@@ -212,7 +212,7 @@ jobs:
             source .env
             set +a
             npx prisma db push --skip-generate --accept-data-loss 2>&1 | tail -20
-            tsx prisma/data-migrate.ts
+            npx tsx prisma/data-migrate.ts
 
             # ── 7. Restart pm2 ──
             echo "🚀 Restarting pm2..."
