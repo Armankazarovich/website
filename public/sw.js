@@ -1,68 +1,312 @@
-// ARAY Service Worker v2 — Caching + Push Notifications
-// Стратегии: CacheFirst для статики, NetworkFirst для HTML/API
-// Версия: меняй CACHE_VERSION при каждом деплое для сброса кэша
+// PiloRus service worker: safe offline mode + background refresh.
+// Public pages use fast network-first. Admin, cabinet and checkout stay live-only.
 
-var CACHE_VERSION = 'aray-v7';
-var STATIC_CACHE  = CACHE_VERSION + '-static';
-var IMAGE_CACHE   = CACHE_VERSION + '-images';
-var PAGE_CACHE    = CACHE_VERSION + '-pages';
+var CACHE_VERSION = 'aray-pilorus-v1';
+var STATIC_CACHE = CACHE_VERSION + '-static';
+var IMAGE_CACHE = CACHE_VERSION + '-images';
+var PAGE_CACHE = CACHE_VERSION + '-pages';
+var API_CACHE = CACHE_VERSION + '-api';
+
 var IS_LOCAL_DEV_SW = ['localhost', '127.0.0.1', '::1'].indexOf(self.location.hostname) !== -1;
+var FAST_PAGE_CACHE_MS = 900;
+var COLD_PAGE_NETWORK_MS = 12000;
+var STATIC_CACHE_MAX_ITEMS = 90;
+var IMAGE_CACHE_MAX_ITEMS = 55;
+var PAGE_CACHE_MAX_ITEMS = 24;
+var API_CACHE_MAX_ITEMS = 8;
+var MAX_CACHEABLE_IMAGE_BYTES = 900 * 1024;
 
-function disableLocalDevSw() {
-  return caches.keys().then(function(keys) {
-    return Promise.all(
-      keys
-        .filter(function(key) { return key.startsWith('aray-'); })
-        .map(function(key) { return caches.delete(key); })
-    );
-  }).then(function() {
-    return self.registration.unregister();
-  });
-}
+var CACHE_LIMITS = {};
+CACHE_LIMITS[STATIC_CACHE] = STATIC_CACHE_MAX_ITEMS;
+CACHE_LIMITS[IMAGE_CACHE] = IMAGE_CACHE_MAX_ITEMS;
+CACHE_LIMITS[PAGE_CACHE] = PAGE_CACHE_MAX_ITEMS;
+CACHE_LIMITS[API_CACHE] = API_CACHE_MAX_ITEMS;
+
+var CORE_PAGE_URLS = [
+  '/offline',
+  '/',
+  '/catalog',
+  '/cart',
+  '/compare',
+  '/wishlist',
+  '/delivery',
+  '/about',
+  '/contacts',
+  '/promotions'
+];
+
+var CORE_STATIC_URLS = [
+  '/manifest.json',
+  '/favicon.ico',
+  '/favicon-32.png',
+  '/apple-touch-icon.png',
+  '/icons/icon-72x72.png',
+  '/icons/icon-96x96.png',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png'
+];
 
 function shouldDeleteCacheKey(key, includeAllOriginCaches) {
   if (includeAllOriginCaches) return true;
-  return key.startsWith('aray-') || key.startsWith('workbox-');
+  return key.indexOf('aray-') === 0 || key.indexOf('workbox-') === 0;
 }
 
 function clearRuntimeCaches(includeAllOriginCaches) {
   return caches.keys().then(function(keys) {
-    var targets = keys.filter(function(key) {
-      return shouldDeleteCacheKey(key, !!includeAllOriginCaches);
+    return Promise.all(
+      keys
+        .filter(function(key) { return shouldDeleteCacheKey(key, !!includeAllOriginCaches); })
+        .map(function(key) {
+          return caches.delete(key).then(function(deleted) { return deleted ? key : null; });
+        })
+    );
+  }).then(function(deleted) {
+    return deleted.filter(Boolean);
+  });
+}
+
+function disableLocalDevSw() {
+  return clearRuntimeCaches(false).then(function() {
+    return self.registration.unregister();
+  });
+}
+
+function cacheLimitFor(cacheName) {
+  return CACHE_LIMITS[cacheName] || 50;
+}
+
+function trimCache(cacheName, maxItems) {
+  return caches.open(cacheName).then(function(cache) {
+    return cache.keys().then(function(keys) {
+      if (keys.length <= maxItems) return [];
+      return Promise.all(keys.slice(0, keys.length - maxItems).map(function(request) {
+        return cache.delete(request);
+      }));
     });
-    return Promise.all(targets.map(function(key) {
-      return caches.delete(key).then(function(deleted) {
-        return deleted ? key : null;
-      });
-    })).then(function(deleted) {
-      return deleted.filter(Boolean);
+  }).catch(function() {});
+}
+
+function trimRuntimeCaches() {
+  return Promise.all([
+    trimCache(STATIC_CACHE, STATIC_CACHE_MAX_ITEMS),
+    trimCache(IMAGE_CACHE, IMAGE_CACHE_MAX_ITEMS),
+    trimCache(PAGE_CACHE, PAGE_CACHE_MAX_ITEMS),
+    trimCache(API_CACHE, API_CACHE_MAX_ITEMS)
+  ]);
+}
+
+function shouldCacheResponse(response) {
+  return response && response.status === 200 && (response.type === 'basic' || response.type === 'default');
+}
+
+function isOversizedImageResponse(response) {
+  if (!response) return false;
+  var contentLength = Number(response.headers && response.headers.get('content-length'));
+  return Number.isFinite(contentLength) && contentLength > MAX_CACHEABLE_IMAGE_BYTES;
+}
+
+function safeCachePut(cacheName, cache, req, response) {
+  if (!shouldCacheResponse(response)) return Promise.resolve(false);
+  if (cacheName === IMAGE_CACHE && isOversizedImageResponse(response)) return Promise.resolve(false);
+
+  return cache.put(req, response.clone()).then(function() {
+    return trimCache(cacheName, cacheLimitFor(cacheName));
+  }).then(function() {
+    return true;
+  }).catch(function(error) {
+    var name = error && error.name ? error.name : '';
+    if (name === 'QuotaExceededError' || String(error).indexOf('Quota') !== -1) {
+      return trimRuntimeCaches().then(function() { return false; });
+    }
+    return false;
+  });
+}
+
+function uniqueUrls(urls) {
+  var seen = {};
+  return urls.filter(function(url) {
+    if (!url || seen[url]) return false;
+    seen[url] = true;
+    return true;
+  });
+}
+
+function pagePathCacheKey(req) {
+  try {
+    var url = new URL(req.url);
+    if (url.origin !== self.location.origin) return null;
+    return url.pathname;
+  } catch (error) {
+    return null;
+  }
+}
+
+function putPageResponse(req, response) {
+  var pathKey = pagePathCacheKey(req);
+  return caches.open(PAGE_CACHE).then(function(cache) {
+    var writes = [safeCachePut(PAGE_CACHE, cache, req, response.clone())];
+    if (pathKey) writes.push(safeCachePut(PAGE_CACHE, cache, pathKey, response.clone()));
+    return Promise.all(writes);
+  });
+}
+
+function precacheCore() {
+  return caches.open(STATIC_CACHE).then(function(cache) {
+    return Promise.all(
+      CORE_STATIC_URLS.map(function(url) {
+        return fetch(new Request(url, { credentials: 'same-origin', cache: 'reload' }))
+          .then(function(response) {
+            if (shouldCacheResponse(response)) return safeCachePut(STATIC_CACHE, cache, url, response);
+          })
+          .catch(function() {});
+      })
+    );
+  }).then(function() {
+    return warmCoreRoutes();
+  });
+}
+
+function warmCoreRoutes(extraUrls) {
+  var urls = uniqueUrls(CORE_PAGE_URLS.concat(extraUrls || []));
+  return caches.open(PAGE_CACHE).then(function(cache) {
+    return Promise.all(
+      urls.map(function(url) {
+        return fetch(new Request(url, { credentials: 'same-origin', cache: 'reload' }))
+          .then(function(response) {
+            if (shouldCacheResponse(response)) return safeCachePut(PAGE_CACHE, cache, url, response);
+          })
+          .catch(function() {});
+      })
+    );
+  });
+}
+
+function matchPageFallback(req) {
+  var url = new URL(req.url);
+  return caches.match(req).then(function(cached) {
+    if (cached) return cached;
+    return caches.match(url.pathname).then(function(pathCached) {
+      if (pathCached) return pathCached;
+      if (url.pathname !== '/catalog' && url.pathname.indexOf('/catalog') === 0) {
+        return caches.match('/catalog');
+      }
+      return caches.match('/offline');
     });
   });
 }
 
-// Файлы для предзагрузки при установке SW
-var PRECACHE_URLS = [
-  '/offline',
-  '/aray/aray-production-logo.png',
-];
+function cacheFirst(req, cacheName) {
+  return caches.open(cacheName).then(function(cache) {
+    return cache.match(req).then(function(cached) {
+      if (cached) return cached;
+      return fetch(req).then(function(response) {
+        if (shouldCacheResponse(response)) {
+          safeCachePut(cacheName, cache, req, response.clone()).catch(function() {});
+        }
+        return response;
+      }).catch(function() {
+        return cached || new Response('', { status: 503 });
+      });
+    });
+  });
+}
 
-// ── INSTALL — предзагрузка ────────────────────────────────────────────────────
+function staleWhileRevalidate(req, cacheName) {
+  return caches.open(cacheName).then(function(cache) {
+    return cache.match(req).then(function(cached) {
+      var fresh = fetch(req).then(function(response) {
+        if (shouldCacheResponse(response)) {
+          safeCachePut(cacheName, cache, req, response.clone()).catch(function() {});
+        }
+        return response;
+      });
+      return cached || fresh.catch(function() {
+        return new Response('', { status: 503 });
+      });
+    });
+  });
+}
+
+function timeoutReject(ms) {
+  return new Promise(function(_, reject) {
+    setTimeout(function() { reject(new Error('network timeout')); }, ms);
+  });
+}
+
+function cachedPageFor(req) {
+  var pathKey = pagePathCacheKey(req);
+  return caches.open(PAGE_CACHE).then(function(cache) {
+    return cache.match(req).then(function(cached) {
+      if (cached || !pathKey) return cached || null;
+      return cache.match(pathKey);
+    });
+  });
+}
+
+function fetchFreshPage(req) {
+  return fetch(req).then(function(response) {
+    if (response && response.status >= 500) throw new Error('server error');
+    if (shouldCacheResponse(response)) {
+      putPageResponse(req, response.clone()).catch(function() {});
+    }
+    return response;
+  });
+}
+
+function fastPageWithBackgroundRefresh(req, event) {
+  return cachedPageFor(req).then(function(cached) {
+    if (cached) {
+      if (self.navigator && self.navigator.onLine === false) return cached;
+      var fresh = fetchFreshPage(req);
+      if (event && event.waitUntil) event.waitUntil(fresh.catch(function() {}));
+      return Promise.race([
+        fresh,
+        new Promise(function(resolve) {
+          setTimeout(function() { resolve(cached); }, FAST_PAGE_CACHE_MS);
+        })
+      ]).catch(function() {
+        return cached;
+      });
+    }
+
+    return Promise.race([fetchFreshPage(req), timeoutReject(COLD_PAGE_NETWORK_MS)]).catch(function() {
+      return matchPageFallback(req);
+    });
+  });
+}
+
+function isCacheableApi(pathname) {
+  return (
+    pathname.indexOf('/api/pwa/manifest') === 0 ||
+    pathname.indexOf('/api/pwa/site-icon') === 0 ||
+    pathname.indexOf('/api/pwa/icon') === 0
+  );
+}
+
+function isLiveOnlyPath(pathname) {
+  return (
+    pathname.indexOf('/admin') === 0 ||
+    pathname.indexOf('/cabinet') === 0 ||
+    pathname.indexOf('/login') === 0 ||
+    pathname.indexOf('/checkout') === 0 ||
+    pathname.indexOf('/api/auth') === 0 ||
+    pathname.indexOf('/api/admin') === 0 ||
+    pathname.indexOf('/api/orders') === 0 ||
+    pathname.indexOf('/api/cart') === 0 ||
+    pathname.indexOf('/_next/static/chunks/app/admin/') !== -1 ||
+    pathname.indexOf('/_next/static/chunks/app/cabinet/') !== -1
+  );
+}
+
 self.addEventListener('install', function(event) {
   if (IS_LOCAL_DEV_SW) {
     event.waitUntil(self.skipWaiting());
     return;
   }
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(STATIC_CACHE).then(function(cache) {
-      return cache.addAll(PRECACHE_URLS).catch(function() {
-        // Не фейлим установку если offline страница ещё не готова
-      });
-    })
-  );
+  event.waitUntil(precacheCore().catch(function() {}));
 });
 
-// ── ACTIVATE — чистим старые кэши ────────────────────────────────────────────
 self.addEventListener('activate', function(event) {
   if (IS_LOCAL_DEV_SW) {
     event.waitUntil(disableLocalDevSw());
@@ -73,130 +317,66 @@ self.addEventListener('activate', function(event) {
       return Promise.all(
         keys
           .filter(function(key) {
-            // Удаляем кэши не принадлежащие текущей версии
-            return key.startsWith('aray-') && !key.startsWith(CACHE_VERSION);
+            return (key.indexOf('aray-') === 0 || key.indexOf('workbox-') === 0) && key.indexOf(CACHE_VERSION) !== 0;
           })
           .map(function(key) { return caches.delete(key); })
       );
     }).then(function() {
       return clients.claim();
+    }).then(function() {
+      return trimRuntimeCaches();
+    }).then(function() {
+      return warmCoreRoutes();
     })
   );
 });
 
-// ── FETCH — стратегии кэширования ────────────────────────────────────────────
 self.addEventListener('fetch', function(event) {
   if (IS_LOCAL_DEV_SW) return;
-  var req = event.request;
-  var url = new URL(req.url);
 
-  // Только GET запросы, только наш origin
+  var req = event.request;
   if (req.method !== 'GET') return;
+
+  var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // API запросы — пропускаем (всегда свежие данные)
-  if (url.pathname.startsWith('/api/')) return;
+  if (isLiveOnlyPath(url.pathname)) return;
 
-  // Видео и пользовательские загрузки не держим в CacheStorage: это может
-  // быстро раздуть PWA-кэш и оставить менеджера на старых тяжёлых файлах.
-  if (
-    url.pathname.startsWith('/uploads/') ||
-    /\.(mp4|webm|mov|avi|mkv)$/i.test(url.pathname)
-  ) {
+  if (url.pathname.indexOf('/api/') === 0) {
+    if (isCacheableApi(url.pathname)) {
+      event.respondWith(staleWhileRevalidate(req, API_CACHE));
+    }
     return;
   }
 
-  // Админка и кабинет должны всегда брать свежий HTML/JS.
-  // Иначе после деплоя менеджер может остаться на старом client-bundle и получить "мертвые" кнопки.
-  if (
-    url.pathname.startsWith('/admin') ||
-    url.pathname.startsWith('/cabinet') ||
-    url.pathname.startsWith('/login') ||
-    url.pathname.indexOf('/_next/static/chunks/app/admin/') !== -1 ||
-    url.pathname.indexOf('/_next/static/chunks/app/cabinet/') !== -1
-  ) {
-    return;
-  }
+  if (/\.(mp4|webm|mov|avi|mkv)$/i.test(url.pathname)) return;
 
-  // ── _next/static — CacheFirst (immutable, 1 год) ──
-  if (url.pathname.startsWith('/_next/static/')) {
+  if (url.pathname.indexOf('/_next/static/') === 0) {
     event.respondWith(cacheFirst(req, STATIC_CACHE));
     return;
   }
 
-  // ── Картинки и иконки — CacheFirst (30 дней) ──
+  if (url.pathname.indexOf('/fonts/') === 0 || /\.(woff2?|ttf|otf|eot)$/i.test(url.pathname)) {
+    event.respondWith(cacheFirst(req, STATIC_CACHE));
+    return;
+  }
+
   if (
-    url.pathname.startsWith('/images/') ||
-    url.pathname.startsWith('/icons/') ||
-    url.pathname.startsWith('/uploads/') ||
-    /\.(png|jpg|jpeg|webp|avif|svg|gif|ico)$/.test(url.pathname)
+    url.pathname.indexOf('/_next/image') === 0 ||
+    url.pathname.indexOf('/images/') === 0 ||
+    url.pathname.indexOf('/icons/') === 0 ||
+    url.pathname.indexOf('/uploads/') === 0 ||
+    /\.(png|jpg|jpeg|webp|avif|svg|gif|ico)$/i.test(url.pathname)
   ) {
     event.respondWith(cacheFirst(req, IMAGE_CACHE));
     return;
   }
 
-  // ── HTML страницы — NetworkFirst + offline fallback ──
-  if (req.mode === 'navigate' || (req.headers.get('accept') && req.headers.get('accept').includes('text/html'))) {
-    event.respondWith(networkFirstWithFallback(req));
-    return;
+  if (req.mode === 'navigate' || (req.headers.get('accept') || '').indexOf('text/html') !== -1) {
+    event.respondWith(fastPageWithBackgroundRefresh(req, event));
   }
 });
 
-// ── СТРАТЕГИЯ: CacheFirst ─────────────────────────────────────────────────────
-function cacheFirst(req, cacheName) {
-  return caches.open(cacheName).then(function(cache) {
-    return cache.match(req).then(function(cached) {
-      if (cached) return cached;
-      return fetch(req).then(function(response) {
-        if (response && response.status === 200) {
-          cache.put(req, response.clone());
-        }
-        return response;
-      }).catch(function() {
-        return cached || new Response('', { status: 503 });
-      });
-    });
-  });
-}
-
-function matchPageFallback(req) {
-  var url = new URL(req.url);
-  return caches.match(req).then(function(cached) {
-    if (cached) return cached;
-    return caches.match(url.pathname).then(function(pathCached) {
-      if (pathCached) return pathCached;
-      if (url.pathname !== '/catalog' && url.pathname.startsWith('/catalog')) {
-        return caches.match('/catalog');
-      }
-      return caches.match('/offline');
-    });
-  });
-}
-
-// ── СТРАТЕГИЯ: NetworkFirst с offline fallback ────────────────────────────────
-function networkFirstWithFallback(req) {
-  var timeout = new Promise(function(_, reject) {
-    setTimeout(function() {
-      reject(new Error('network timeout'));
-    }, 4200);
-  });
-
-  return Promise.race([fetch(req), timeout]).then(function(response) {
-    if (response && response.status === 200) {
-      // Кэшируем только успешные HTML ответы
-      var resClone = response.clone();
-      caches.open(PAGE_CACHE).then(function(cache) {
-        cache.put(req, resClone);
-      });
-    }
-    return response;
-  }).catch(function() {
-    // Нет сети — пробуем кэш, потом /offline
-    return matchPageFallback(req);
-  });
-}
-
-// ── PUSH УВЕДОМЛЕНИЯ ─────────────────────────────────────────────────────────
 self.addEventListener('push', function(event) {
   if (IS_LOCAL_DEV_SW) return;
   if (!event.data) return;
@@ -204,34 +384,25 @@ self.addEventListener('push', function(event) {
   var data;
   try {
     data = event.data.json();
-  } catch (e) {
-    data = { title: 'Арай', body: event.data.text(), url: '/' };
+  } catch (error) {
+    data = { title: 'PiloRus', body: event.data.text(), url: '/' };
   }
 
-  var title = data.title || 'Арай';
+  var targetUrl = data.url || '/';
+  var isAdmin = targetUrl.indexOf('/admin') === 0;
   var options = {
     body: data.body || '',
-    icon: '/api/pwa/icon?s=192&v=pilorus-brand-header-20260526',
-    badge: '/api/pwa/icon?s=72&v=pilorus-brand-header-20260526',
-    data: { url: data.url || '/' },
+    icon: data.icon || (isAdmin ? '/api/pwa/icon?s=192&v=pilorus-brand-header-20260526' : '/icons/icon-192x192.png'),
+    badge: isAdmin ? '/api/pwa/icon?s=72&v=pilorus-brand-header-20260526' : '/icons/icon-72x72.png',
+    data: { url: targetUrl },
     vibrate: [200, 100, 200]
   };
 
-  event.waitUntil(
-    self.registration.showNotification(title, options).then(function() {
-      if (self.navigator && 'setAppBadge' in self.navigator) {
-        self.navigator.setAppBadge(1).catch(function() {});
-      }
-    })
-  );
+  event.waitUntil(self.registration.showNotification(data.title || 'PiloRus', options));
 });
 
-// ── КЛИК ПО УВЕДОМЛЕНИЮ ──────────────────────────────────────────────────────
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
-  if (self.navigator && 'clearAppBadge' in self.navigator) {
-    self.navigator.clearAppBadge().catch(function() {});
-  }
 
   var url = '/';
   if (event.notification.data && event.notification.data.url) {
@@ -241,24 +412,32 @@ self.addEventListener('notificationclick', function(event) {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
       for (var i = 0; i < list.length; i++) {
-        if (list[i].url === url && 'focus' in list[i]) {
-          return list[i].focus();
-        }
+        if (list[i].url === url && 'focus' in list[i]) return list[i].focus();
       }
       return clients.openWindow(url);
     })
   );
 });
 
-// ── SKIP_WAITING — мгновенная активация нового SW ────────────────────────────
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'CLEAR_ARAY_CACHES') {
     var includeAllOriginCaches = !!event.data.includeAllOriginCaches;
     event.waitUntil(
       clearRuntimeCaches(includeAllOriginCaches).then(function(deletedCaches) {
+        if (event.ports && event.ports[0]) event.ports[0].postMessage({ ok: true, deletedCaches: deletedCaches });
+      }).catch(function(error) {
         if (event.ports && event.ports[0]) {
-          event.ports[0].postMessage({ ok: true, deletedCaches: deletedCaches });
+          event.ports[0].postMessage({ ok: false, error: String(error && error.message || error) });
         }
+      })
+    );
+    return;
+  }
+
+  if (event.data && event.data.type === 'WARM_ARAY_ROUTES') {
+    event.waitUntil(
+      warmCoreRoutes(event.data.urls || []).then(function() {
+        if (event.ports && event.ports[0]) event.ports[0].postMessage({ ok: true });
       }).catch(function(error) {
         if (event.ports && event.ports[0]) {
           event.ports[0].postMessage({ ok: false, error: String(error && error.message || error) });
@@ -270,5 +449,11 @@ self.addEventListener('message', function(event) {
 
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+});
+
+self.addEventListener('sync', function(event) {
+  if (event.tag === 'aray-background-refresh') {
+    event.waitUntil(warmCoreRoutes());
   }
 });

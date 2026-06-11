@@ -61,7 +61,7 @@ export async function sendPasswordResetEmail(email: string, resetUrl: string) {
               <!-- Footer -->
               <tr>
                 <td style="background:#f9f9f9;padding:20px 36px;border-top:1px solid #eee;">
-                  <p style="margin:0;color:#aaa;font-size:12px;">© 2024 ПилоРус · Химки, ул. Заводская 2А, стр.28 · ${DEFAULT_SETTINGS.phone}</p>
+                  <p style="margin:0;color:inherit;opacity:.55;font-size:12px;">© 2024 ПилоРус · ${DEFAULT_SETTINGS.address} · ${DEFAULT_SETTINGS.phone}</p>
                 </td>
               </tr>
             </table>
@@ -163,7 +163,7 @@ export async function sendOrderStatusEmail(email: string, data: {
         <!-- Footer -->
         <tr>
           <td class="email-footer" style="background:#f9f6f2;padding:18px 32px;border-top:1px solid #ede8e0;">
-            <p style="margin:0;color:#bbb;font-size:12px;">© 2026 ПилоРус · Химки, ул. Заводская 2А, стр.28</p>
+            <p style="margin:0;color:inherit;opacity:.55;font-size:12px;">© 2026 ПилоРус · ${DEFAULT_SETTINGS.address}</p>
           </td>
         </tr>
       </table>

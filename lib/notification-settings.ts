@@ -95,9 +95,9 @@ export const NOTIFICATION_EVENT_DEFINITIONS: NotificationEventDefinition[] = [
   {
     key: "order_status",
     label: "Статус заказа",
-    description: "Клиент получает короткое сообщение, когда заказ перешел на следующий этап.",
-    defaultRoles: ["USER"],
-    defaultChannels: ["PUSH", "ARAY", "EMAIL"],
+    description: "Клиент и команда видят короткое сообщение, когда заказ перешел на следующий этап.",
+    defaultRoles: ["USER", "SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER", "WAREHOUSE", "COURIER"],
+    defaultChannels: ["SYSTEM", "PUSH", "ARAY", "EMAIL"],
   },
   {
     key: "client_broadcast",

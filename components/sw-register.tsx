@@ -3,7 +3,14 @@
 import { useEffect } from "react";
 
 const LOCAL_SW_RESET_KEY = "aray-local-sw-disabled-v1";
-const SW_CONTROLLER_RELOAD_KEY = "aray-sw-controller-reload-v1";
+const BACKGROUND_REFRESH_TAG = "aray-background-refresh";
+const SW_CONTROLLER_RELOAD_KEY = "aray-sw-controller-reload-v2";
+
+type SyncRegistration = ServiceWorkerRegistration & {
+  sync?: {
+    register: (tag: string) => Promise<void>;
+  };
+};
 
 function isLocalDevHost() {
   if (typeof window === "undefined") return false;
@@ -44,6 +51,38 @@ async function disableLocalServiceWorkerCache() {
   } catch {}
 }
 
+function currentWarmUrls() {
+  if (typeof window === "undefined") return [];
+  return [
+    `${window.location.pathname}${window.location.search}`,
+    "/",
+    "/catalog",
+    "/cart",
+    "/compare",
+    "/wishlist",
+  ];
+}
+
+function postWarmRoutesMessage(registration: ServiceWorkerRegistration) {
+  const worker = registration.active || navigator.serviceWorker.controller;
+  if (!worker) return;
+
+  try {
+    const channel = new MessageChannel();
+    worker.postMessage({ type: "WARM_ARAY_ROUTES", urls: currentWarmUrls() }, [channel.port2]);
+  } catch {}
+}
+
+async function warmArayRoutes(registration: ServiceWorkerRegistration) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return;
+
+  try {
+    await (registration as SyncRegistration).sync?.register(BACKGROUND_REFRESH_TAG);
+  } catch {}
+
+  postWarmRoutesMessage(registration);
+}
+
 export function SwRegister() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
@@ -52,7 +91,7 @@ export function SwRegister() {
       return;
     }
 
-    let removeControllerListener: (() => void) | null = null;
+    let removeRefreshListeners: (() => void) | null = null;
 
     // Чуть откладываем — не блокируем первый рендер
     const timer = setTimeout(async () => {
@@ -61,8 +100,31 @@ export function SwRegister() {
 
         // Проверяем обновление при каждом открытии
         reg.update().catch(() => {});
+        warmArayRoutes(reg).catch(() => {});
+
+        const refreshRoutes = () => {
+          navigator.serviceWorker.ready
+            .then((readyReg) => {
+              readyReg.update().catch(() => {});
+              return warmArayRoutes(readyReg);
+            })
+            .catch(() => {});
+        };
+
+        const refreshWhenVisible = () => {
+          if (document.visibilityState === "visible") refreshRoutes();
+        };
+
+        window.addEventListener("online", refreshRoutes);
+        document.addEventListener("visibilitychange", refreshWhenVisible);
+        removeRefreshListeners = () => {
+          window.removeEventListener("online", refreshRoutes);
+          document.removeEventListener("visibilitychange", refreshWhenVisible);
+        };
 
         const reloadAfterControllerChange = () => {
+          refreshRoutes();
+
           try {
             if (!window.sessionStorage.getItem(SW_CONTROLLER_RELOAD_KEY)) {
               window.sessionStorage.setItem(SW_CONTROLLER_RELOAD_KEY, "1");
@@ -74,7 +136,9 @@ export function SwRegister() {
         };
 
         navigator.serviceWorker.addEventListener("controllerchange", reloadAfterControllerChange);
-        removeControllerListener = () => {
+        const previousRemove = removeRefreshListeners;
+        removeRefreshListeners = () => {
+          previousRemove?.();
           navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterControllerChange);
         };
 
@@ -100,7 +164,7 @@ export function SwRegister() {
 
     return () => {
       clearTimeout(timer);
-      removeControllerListener?.();
+      removeRefreshListeners?.();
     };
   }, []);
 

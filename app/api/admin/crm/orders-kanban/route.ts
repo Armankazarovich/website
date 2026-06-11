@@ -9,6 +9,12 @@ import { sendTelegramStatusUpdate, deleteTelegramMessage, FINAL_STATUSES } from 
 import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { isOrderInventoryError, syncOrderInventoryForStatus } from "@/lib/order-inventory";
+import {
+  ORDER_STATUS_NOTIFICATION_DESCRIPTIONS,
+  ORDER_STATUS_NOTIFICATION_LABELS,
+  buildOrderStatusNotificationSummary,
+  recordStaffOrderStatusNotification,
+} from "@/lib/order-status-notifications";
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
 const ORDER_STATUSES = new Set([
@@ -22,28 +28,6 @@ const ORDER_STATUSES = new Set([
   "COMPLETED",
   "CANCELLED",
 ]);
-
-const STATUS_LABELS: Record<string, string> = {
-  CONFIRMED: "Ваш заказ подтверждён",
-  PROCESSING: "Заказ передан в комплектацию",
-  SHIPPED: "Ваш заказ отгружен",
-  IN_DELIVERY: "Ваш заказ доставляется",
-  READY_PICKUP: "Ваш заказ готов к выдаче",
-  DELIVERED: "Ваш заказ доставлен",
-  COMPLETED: "Заказ завершён — самовывоз получен",
-  CANCELLED: "Ваш заказ отменён",
-};
-
-const STATUS_DESCRIPTIONS: Record<string, string> = {
-  CONFIRMED: "Ваш заказ подтверждён менеджером. Мы свяжемся с вами для уточнения деталей доставки.",
-  PROCESSING: "Ваш заказ передан в комплектацию. Материалы готовятся к отгрузке.",
-  SHIPPED: "Ваш заказ отгружен и доставляется по указанному адресу. Ожидайте звонка водителя.",
-  IN_DELIVERY: "Ваш заказ в пути! Водитель уже едет к вам. Ожидайте звонка.",
-  READY_PICKUP: "Ваш заказ готов к самовывозу. Приезжайте: Химки, ул. Заводская 2А, стр.28",
-  DELIVERED: "Ваш заказ успешно доставлен. Спасибо за покупку в ПилоРус!",
-  COMPLETED: "Вы получили заказ самовывозом. Спасибо за покупку в ПилоРус!",
-  CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
-};
 
 // GET /api/admin/crm/orders-kanban — заказы для Kanban по статусам
 export async function GET(req: NextRequest) {
@@ -98,6 +82,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const tenantId = getCurrentTenantId();
+  const actorId = session.user.id || null;
 
   const { orderId, status } = await req.json();
   if (status && !ORDER_STATUSES.has(status)) {
@@ -174,6 +159,14 @@ export async function PATCH(req: NextRequest) {
     totalAmount: order.totalAmount,
   }, "order.status_changed").catch(console.error);
 
+  await recordStaffOrderStatusNotification({
+    tenantId,
+    actorId,
+    order,
+    status,
+    previousStatus: prevOrder.status,
+  });
+
   import("@/lib/workflow-engine").then(({ runWorkflows }) => {
     runWorkflows("order_status_changed", {
       tenantId,
@@ -225,27 +218,55 @@ export async function PATCH(req: NextRequest) {
   }
 
   // 2. Push всем сотрудникам
-  if (STATUS_LABELS[status]) {
+  if (ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     sendPushToStaff({
-      title: `Заказ #${order.orderNumber} — ${STATUS_LABELS[status]}`,
+      title: `Заказ #${order.orderNumber} — ${ORDER_STATUS_NOTIFICATION_LABELS[status]}`,
       body: order.guestName || "Клиент",
       url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      sourceUserId: actorId,
+      recipientRole: "STAFF",
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.status.staff",
+        orderNumber: order.orderNumber,
+        status,
+      },
     }).catch(console.error);
   }
 
   // 3. Push клиенту (если зарегистрирован)
-  if (order.userId && STATUS_LABELS[status]) {
+  if (order.userId && ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     sendPushToUser(order.userId, {
-      title: `Заказ #${order.orderNumber} — ${STATUS_LABELS[status]}`,
-      body: STATUS_DESCRIPTIONS[status] || "",
+      title: `Заказ #${order.orderNumber} — ${ORDER_STATUS_NOTIFICATION_LABELS[status]}`,
+      body: ORDER_STATUS_NOTIFICATION_DESCRIPTIONS[status] || "",
       url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
       icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      sourceUserId: actorId,
+      recipientLabel: order.guestName || order.guestEmail || order.guestPhone || null,
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.status.customer",
+        orderNumber: order.orderNumber,
+        status,
+      },
     }).catch(console.error);
   }
 
   // 4. Email клиенту
-  if (STATUS_LABELS[status]) {
+  if (ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     let email = order.guestEmail;
     if (!email && order.userId) {
       const user = await prisma.user.findUnique({
@@ -259,13 +280,25 @@ export async function PATCH(req: NextRequest) {
       sendOrderStatusEmail(email, {
         orderNumber: order.orderNumber,
         status,
-        statusLabel: STATUS_LABELS[status],
-        statusDescription: STATUS_DESCRIPTIONS[status] || "",
+        statusLabel: ORDER_STATUS_NOTIFICATION_LABELS[status],
+        statusDescription: ORDER_STATUS_NOTIFICATION_DESCRIPTIONS[status] || "",
         trackUrl: `${baseUrl}/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
         customerName: order.guestName || "Клиент",
       }).catch(console.error);
     }
   }
 
-  return NextResponse.json({ id: order.id, orderNumber: order.orderNumber, status: order.status });
+  return NextResponse.json({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    notifications: buildOrderStatusNotificationSummary({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      guestEmail: order.guestEmail,
+      userId: order.userId,
+    }),
+  });
 }

@@ -98,7 +98,10 @@ async function recordPushDelivery(
   if (options.recordEvent === false) return;
 
   try {
-    const status = resolveNotificationStatus(result);
+    const noTargets = options.targetCount === 0;
+    const eventError = result.error || (noTargets ? "Нет push-подписок для получателя" : null);
+    const resultForStatus = eventError ? { ...result, error: eventError } : result;
+    const status = resolveNotificationStatus(resultForStatus);
     const now = new Date();
     await recordNotificationCenterEvent({
       tenantId: options.tenantId || getCurrentTenantId(),
@@ -117,7 +120,7 @@ async function recordPushDelivery(
       sentCount: result.sent,
       failedCount: result.failed,
       cleanedCount: result.cleaned || 0,
-      error: result.error || null,
+      error: eventError,
       entityType: options.entityType || null,
       entityId: options.entityId || null,
       entityLabel: options.entityLabel || null,

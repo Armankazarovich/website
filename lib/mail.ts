@@ -220,7 +220,7 @@ export async function sendCustomerOrderConfirmation(
         <!-- Footer -->
         <tr>
           <td class="email-footer" style="background:#f9f6f2;padding:16px 28px;border-top:1px solid #ede8e0;">
-            <p style="margin:0;color:#bbb;font-size:12px;">© 2026 ПилоРус · Химки, ул. Заводская 2А, стр.28 · pilo-rus.ru</p>
+            <p style="margin:0;color:inherit;opacity:.55;font-size:12px;">© 2026 ПилоРус · ${DEFAULT_SETTINGS.address} · pilo-rus.ru</p>
           </td>
         </tr>
 

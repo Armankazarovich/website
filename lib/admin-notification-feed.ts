@@ -13,6 +13,7 @@ import {
 
 export type AdminNotificationFeedItemKind =
   | "new_order"
+  | "order_status"
   | "pending_review"
   | "pending_staff"
   | "notification_issue"
@@ -31,6 +32,7 @@ export type AdminNotificationFeedItem = {
 export type AdminNotificationFeedSummary = {
   total: number;
   newOrders: number;
+  orderStatuses: number;
   pendingReviews: number;
   pendingStaff: number;
   notificationIssues: number;
@@ -51,6 +53,7 @@ type FeedOptions = {
 const EMPTY_FEED: AdminNotificationFeed = {
   total: 0,
   newOrders: 0,
+  orderStatuses: 0,
   pendingReviews: 0,
   pendingStaff: 0,
   notificationIssues: 0,
@@ -103,6 +106,7 @@ export async function getAdminNotificationFeed(
   const schedule = await getNotificationScheduleForRole(staffRole);
 
   const newOrdersEnabled = can("new_order", enabledEvents);
+  const orderStatusesEnabled = can("order_status", enabledEvents);
   const reviewsEnabled = can("pending_review", enabledEvents);
   const staffEnabled = can("pending_staff", enabledEvents);
   const issuesEnabled = can("notification_issue", enabledEvents);
@@ -114,6 +118,15 @@ export async function getAdminNotificationFeed(
     archivedAt: null,
   } satisfies Prisma.NotificationCenterEventWhereInput;
 
+  const orderStatusWhere = {
+    tenantId: NOTIFICATION_TENANT_ID,
+    channel: "SYSTEM",
+    source: "ORDER",
+    recipientRole: "STAFF",
+    archivedAt: null,
+    readAt: null,
+  } satisfies Prisma.NotificationCenterEventWhereInput;
+
   const taskWhere = {
     tenantId: NOTIFICATION_TENANT_ID,
     assigneeId: options.userId || "__none__",
@@ -122,11 +135,13 @@ export async function getAdminNotificationFeed(
 
   const [
     newOrders,
+    orderStatuses,
     pendingReviews,
     pendingStaff,
     notificationIssues,
     assignedTasks,
     orderItems,
+    orderStatusItems,
     reviewItems,
     staffItems,
     issueItems,
@@ -134,6 +149,9 @@ export async function getAdminNotificationFeed(
   ] = await Promise.all([
     newOrdersEnabled
       ? prisma.order.count({ where: { tenantId: NOTIFICATION_TENANT_ID, status: "NEW", deletedAt: null } })
+      : Promise.resolve(0),
+    orderStatusesEnabled
+      ? prisma.notificationCenterEvent.count({ where: orderStatusWhere })
       : Promise.resolve(0),
     reviewsEnabled
       ? prisma.review.count({ where: { tenantId: NOTIFICATION_TENANT_ID, approved: false } })
@@ -158,6 +176,21 @@ export async function getAdminNotificationFeed(
             guestName: true,
             guestPhone: true,
             totalAmount: true,
+            createdAt: true,
+          },
+        })
+      : Promise.resolve([]),
+    includeItems && orderStatusesEnabled
+      ? prisma.notificationCenterEvent.findMany({
+          where: orderStatusWhere,
+          orderBy: { createdAt: "desc" },
+          take,
+          select: {
+            id: true,
+            title: true,
+            body: true,
+            entityHref: true,
+            url: true,
             createdAt: true,
           },
         })
@@ -236,6 +269,15 @@ export async function getAdminNotificationFeed(
           createdAt: toDateString(order.createdAt),
           tone: "primary" as const,
         })),
+        ...orderStatusItems.map((event) => ({
+          id: `order-status-${event.id}`,
+          kind: "order_status" as const,
+          title: event.title,
+          body: event.body,
+          href: event.entityHref || event.url || "/admin/orders",
+          createdAt: toDateString(event.createdAt),
+          tone: "primary" as const,
+        })),
         ...reviewItems.map((review) => ({
           id: `review-${review.id}`,
           kind: "pending_review" as const,
@@ -279,11 +321,12 @@ export async function getAdminNotificationFeed(
         .slice(0, take)
     : [];
 
-  const total = newOrders + pendingReviews + pendingStaff + notificationIssues + assignedTasks;
+  const total = newOrders + orderStatuses + pendingReviews + pendingStaff + notificationIssues + assignedTasks;
 
   return {
     total,
     newOrders,
+    orderStatuses,
     pendingReviews,
     pendingStaff,
     notificationIssues,

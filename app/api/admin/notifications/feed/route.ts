@@ -23,6 +23,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       total: 0,
       newOrders: 0,
+      orderStatuses: 0,
       pendingReviews: 0,
       pendingStaff: 0,
       notificationIssues: 0,
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       total: 0,
       newOrders: 0,
+      orderStatuses: 0,
       pendingReviews: 0,
       pendingStaff: 0,
       notificationIssues: 0,

@@ -9,6 +9,12 @@ import { sendTelegramStatusUpdate, sendTelegramOrderEdited, deleteTelegramMessag
 import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { runWorkflows } from "@/lib/workflow-engine";
+import {
+  ORDER_STATUS_NOTIFICATION_DESCRIPTIONS,
+  ORDER_STATUS_NOTIFICATION_LABELS,
+  buildOrderStatusNotificationSummary,
+  recordStaffOrderStatusNotification,
+} from "@/lib/order-status-notifications";
 import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
@@ -17,28 +23,6 @@ import {
   resyncOrderInventory,
   syncOrderInventoryForStatus,
 } from "@/lib/order-inventory";
-
-const statusLabels: Record<string, string> = {
-  CONFIRMED: "Ваш заказ подтверждён",
-  PROCESSING: "Заказ передан в комплектацию",
-  SHIPPED: "Ваш заказ отгружен",
-  IN_DELIVERY: "Ваш заказ доставляется",
-  READY_PICKUP: "Ваш заказ готов к выдаче",
-  DELIVERED: "Ваш заказ доставлен",
-  COMPLETED: "Заказ завершён — самовывоз получен",
-  CANCELLED: "Ваш заказ отменён",
-};
-
-const statusDescriptions: Record<string, string> = {
-  CONFIRMED: "Ваш заказ подтверждён менеджером. Мы свяжемся с вами для уточнения деталей доставки.",
-  PROCESSING: "Ваш заказ передан в комплектацию. Материалы готовятся к отгрузке.",
-  SHIPPED: "Ваш заказ отгружен и доставляется по указанному адресу. Ожидайте звонка водителя.",
-  IN_DELIVERY: "Ваш заказ в пути! Водитель уже едет к вам. Ожидайте звонка.",
-  READY_PICKUP: "Ваш заказ готов к самовывозу. Приезжайте: Химки, ул. Заводская 2А, стр.28",
-  DELIVERED: "Ваш заказ успешно доставлен. Спасибо за покупку в ПилоРус!",
-  COMPLETED: "Вы получили заказ самовывозом. Спасибо за покупку в ПилоРус!",
-  CANCELLED: "К сожалению, ваш заказ был отменён. Для уточнения деталей позвоните нам.",
-};
 
 const ORDER_STATUSES = new Set([
   "NEW",
@@ -237,11 +221,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // ⚡ Автоворкфлоу при смене статуса
   if (status) {
+    await recordStaffOrderStatusNotification({
+      tenantId,
+      actorId,
+      order,
+      status,
+      previousStatus: existingOrder.status,
+    });
+
     runWorkflows("order_status_changed", {
       orderId: order.id,
       orderNumber: order.orderNumber,
       tenantId,
       status,
+      previousStatus: existingOrder.status,
       guestName: order.guestName,
       guestPhone: order.guestPhone,
       deliveryAddress: (order as any).deliveryAddress,
@@ -263,10 +256,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Push клиенту
-  if (order.userId && statusLabels[status]) {
+  if (order.userId && ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     sendPushToUser(order.userId, {
-      title: `Заказ #${order.orderNumber} — ${statusLabels[status]}`,
-      body: statusDescriptions[status] || "",
+      title: `Заказ #${order.orderNumber} — ${ORDER_STATUS_NOTIFICATION_LABELS[status]}`,
+      body: ORDER_STATUS_NOTIFICATION_DESCRIPTIONS[status] || "",
       url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
       icon: "/icons/icon-192x192.png",
     }, {
@@ -292,7 +285,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Telegram + push сотрудникам при смене статуса
-  if (status && statusLabels[status]) {
+  if (status && ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     sendTelegramStatusUpdate({
       id: order.id,
       orderNumber: order.orderNumber,
@@ -302,7 +295,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       telegramMessageId: order.telegramMessageId ?? null, // редактируем существующее, не создаём новое
     }).catch(console.error);
     sendPushToStaff({
-      title: `Заказ #${order.orderNumber} — ${statusLabels[status]}`,
+      title: `Заказ #${order.orderNumber} — ${ORDER_STATUS_NOTIFICATION_LABELS[status]}`,
       body: order.guestName || "Клиент",
       url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
@@ -393,7 +386,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Email клиенту
-  if (statusLabels[status]) {
+  if (ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     let email = order.guestEmail;
     if (!email && order.userId) {
       const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { email: true } });
@@ -404,15 +397,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       sendOrderStatusEmail(email, {
         orderNumber: order.orderNumber,
         status,
-        statusLabel: statusLabels[status],
-        statusDescription: statusDescriptions[status] || "",
+        statusLabel: ORDER_STATUS_NOTIFICATION_LABELS[status],
+        statusDescription: ORDER_STATUS_NOTIFICATION_DESCRIPTIONS[status] || "",
         trackUrl: `${baseUrl}/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
         customerName: order.guestName || "Клиент",
       }).catch(console.error);
     }
   }
 
-  return NextResponse.json(order);
+  return NextResponse.json({
+    ...order,
+    notifications: status
+      ? buildOrderStatusNotificationSummary({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          guestName: order.guestName,
+          guestPhone: order.guestPhone,
+          guestEmail: order.guestEmail,
+          userId: order.userId,
+        })
+      : null,
+  });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
